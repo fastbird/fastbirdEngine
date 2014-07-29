@@ -4,7 +4,7 @@ Open source game engine.
 
 Compilation
 ---------------
-You need these libraries below to compile the source code. Check the /code folder, you can find the helper .bat files.
+You need these libraries to compile the source code. You can find the helper .bat files setting environment variables for these paths in the code/ folder.
 * FreeImage 3.15.4
 * Lua 5.2.3
 * Zlib 1.2.8
