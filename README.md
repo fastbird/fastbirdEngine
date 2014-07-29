@@ -19,11 +19,11 @@ How-tos
 -------------
 2014 July : https://github.com/fastbird/fastbirdEngine/wiki/2014-July
 
-* How to initialize the engine
-* How to create sky
-* How to load a collada model and material
-* How to use voxelizer
-* How to use render to texture system
-* How to profile the performance
-* How to do parallel computing
+* initialize the engine
+* create sky
+* load a collada model and material
+* use voxelizer
+* use render to texture system
+* profile the performance
+* do parallel computing
  
