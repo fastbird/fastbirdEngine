@@ -1,4 +1,4 @@
-fastbirdEngine
+Fastbird Engine
 ==============
 Open source game engine.
 
