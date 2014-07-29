@@ -1,0 +1,16 @@
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/dust.hlsl</ShaderFile>
+	<Shaders>VS|GS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>0.0, 0.0, 0.0, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<MaterialParameters>
+	</MaterialParameters>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="COLOR" index="0" format="UBYTE4" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

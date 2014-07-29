@@ -1,0 +1,320 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Profile|Win32">
+      <Configuration>Profile</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{13356807-5ACE-4E77-930A-CB196E3D78C4}</ProjectGuid>
+    <RootNamespace>Engine</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Engine.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\fastbirdModules.props" />
+    <Import Project="Engine.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\fastbirdModules.props" />
+    <Import Project="Engine.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)_$(Configuration)</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_ENGINE;_DEBUG;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;$(DXSDK_DIR)include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapExports>true</MapExports>
+      <AssemblyDebug>true</AssemblyDebug>
+      <ShowProgress>NotSet</ShowProgress>
+      <AdditionalLibraryDirectories>$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;d3dx10.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent />
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy $(TargetPath) $(SolutionDir)..\</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="Documents\dll.txt" />
+    <None Include="Documents\terrain.txt" />
+    <None Include="Renderer\Shaders\HelpMesh.hlsl" />
+    <None Include="Renderer\Shaders\MeshPBR.hlsl" />
+    <None Include="Renderer\Shaders\module.hlsl" />
+    <None Include="Renderer\Shaders\CommonFunctions.hlsl" />
+    <None Include="Renderer\Shaders\dust.hlsl" />
+    <None Include="Renderer\Shaders\HighlightMesh.hlsl" />
+    <None Include="Renderer\Shaders\particle.hlsl" />
+    <None Include="Renderer\Shaders\SkySphere.hlsl" />
+    <None Include="Renderer\Shaders\star.hlsl" />
+    <None Include="Renderer\Shaders\font.hlsl" />
+    <None Include="Renderer\Shaders\Line.hlsl" />
+    <None Include="Renderer\Shaders\locator.hlsl" />
+    <None Include="Renderer\Shaders\Mesh.hlsl" />
+    <None Include="Renderer\Shaders\modules.hlsl" />
+    <None Include="Renderer\Shaders\Quad.hlsl" />
+    <None Include="Renderer\Shaders\skybox.hlsl" />
+    <None Include="Renderer\Shaders\terrain.hlsl" />
+    <None Include="Renderer\Shaders\UI.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DllMain.h" />
+    <ClInclude Include="Foundation\Engine.h" />
+    <ClInclude Include="Foundation\Keyboard.h" />
+    <ClInclude Include="Foundation\Mouse.h" />
+    <ClInclude Include="Foundation\Object.h" />
+    <ClInclude Include="GlobalEnv.h" />
+    <ClInclude Include="ICamera.h" />
+    <ClInclude Include="IColladaImporter.h" />
+    <ClInclude Include="IConsole.h" />
+    <ClInclude Include="IDGenerator.h" />
+    <ClInclude Include="IDustRenderer.h" />
+    <ClInclude Include="IEngine.h" />
+    <ClInclude Include="IFont.h" />
+    <ClInclude Include="IIndexBuffer.h" />
+    <ClInclude Include="IInputDevice.h" />
+    <ClInclude Include="IInputLayout.h" />
+    <ClInclude Include="IInputListener.h" />
+    <ClInclude Include="IKeyboard.h" />
+    <ClInclude Include="ILaserRenderer.h" />
+    <ClInclude Include="ILight.h" />
+    <ClInclude Include="IMaterial.h" />
+    <ClInclude Include="IMeshGroup.h" />
+    <ClInclude Include="IMeshObject.h" />
+    <ClInclude Include="IMouse.h" />
+    <ClInclude Include="IObject.h" />
+    <ClInclude Include="IParticleEmitter.h" />
+    <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="IRenderToTexture.h" />
+    <ClInclude Include="IScene.h" />
+    <ClInclude Include="ISceneManager.h" />
+    <ClInclude Include="IScript.h" />
+    <ClInclude Include="IScriptSystem.h" />
+    <ClInclude Include="IScriptTable.h" />
+    <ClInclude Include="IShader.h" />
+    <ClInclude Include="ISkyBox.h" />
+    <ClInclude Include="ISkySphere.h" />
+    <ClInclude Include="ITerrain.h" />
+    <ClInclude Include="ITexture.h" />
+    <ClInclude Include="IUIObject.h" />
+    <ClInclude Include="IVertexBuffer.h" />
+    <ClInclude Include="IVoxelizer.h" />
+    <ClInclude Include="Misc\CandidatesData.h" />
+    <ClInclude Include="Misc\ColladaImporter.h" />
+    <ClInclude Include="Misc\ColorRamp.h" />
+    <ClInclude Include="Misc\Console.h" />
+    <ClInclude Include="Misc\EngineCommand.h" />
+    <ClInclude Include="Misc\ToolConn.h" />
+    <ClInclude Include="Misc\Voxelizer.h" />
+    <ClInclude Include="Renderer\Camera.h" />
+    <ClInclude Include="Renderer\D3D11\ConvertEnumD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\IndexBufferD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\InputLayoutD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\RendererD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\RenderStateD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\RenderToTextureD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\ShaderD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\TextureD3D11.h" />
+    <ClInclude Include="Renderer\D3D11\VertexBufferD3D11.h" />
+    <ClInclude Include="Renderer\D3D9\RendererD3D9.h" />
+    <ClInclude Include="Renderer\D3DEventMarker.h" />
+    <ClInclude Include="Renderer\Font.h" />
+    <ClInclude Include="Renderer\Inputlayout.h" />
+    <ClInclude Include="Renderer\Light.h" />
+    <ClInclude Include="Renderer\Material.h" />
+    <ClInclude Include="Renderer\ParticleEmitter.h" />
+    <ClInclude Include="Renderer\ParticleEnum.h" />
+    <ClInclude Include="Renderer\ParticleManager.h" />
+    <ClInclude Include="Renderer\Renderer.h" />
+    <ClInclude Include="Renderer\RendererEnums.h" />
+    <ClInclude Include="Renderer\RendererStructs.h" />
+    <ClInclude Include="Renderer\IRenderState.h" />
+    <ClInclude Include="Renderer\RenderToTexture.h" />
+    <ClInclude Include="Renderer\Shader.h" />
+    <ClInclude Include="Renderer\Shaders\Constants.h" />
+    <ClInclude Include="Renderer\Shaders\ShaderCommon.h" />
+    <ClInclude Include="Renderer\Texture.h" />
+    <ClInclude Include="Renderer\TextureUtil.h" />
+    <ClInclude Include="Renderer\VertexBuffer.h" />
+    <ClInclude Include="RenderObjects\DebugHud.h" />
+    <ClInclude Include="RenderObjects\DustRenderer.h" />
+    <ClInclude Include="RenderObjects\LaserRenderer.h" />
+    <ClInclude Include="RenderObjects\MeshGroup.h" />
+    <ClInclude Include="RenderObjects\MeshObject.h" />
+    <ClInclude Include="RenderObjects\ParticleRenderObject.h" />
+    <ClInclude Include="RenderObjects\SkyBox.h" />
+    <ClInclude Include="RenderObjects\SkySphere.h" />
+    <ClInclude Include="RenderObjects\Terrain.h" />
+    <ClInclude Include="RenderObjects\TerrainPatch.h" />
+    <ClInclude Include="RenderObjects\UIObject.h" />
+    <ClInclude Include="SceneGraph\Scene.h" />
+    <ClInclude Include="SceneGraph\SpatialObject.h" />
+    <ClInclude Include="ScriptSystem\ScriptSystem.h" />
+    <ClInclude Include="StdAfx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="Foundation\Engine.cpp" />
+    <ClCompile Include="Foundation\Keyboard.cpp" />
+    <ClCompile Include="Foundation\Mouse.cpp" />
+    <ClCompile Include="Foundation\Object.cpp" />
+    <ClCompile Include="Misc\CandidatesData.cpp" />
+    <ClCompile Include="Misc\ColladaImporter.cpp" />
+    <ClCompile Include="Misc\ColorRamp.cpp" />
+    <ClCompile Include="Misc\Console.cpp" />
+    <ClCompile Include="Misc\EngineCommand.cpp">
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
+    </ClCompile>
+    <ClCompile Include="Misc\ToolConn.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Misc\Voxelizer.cpp" />
+    <ClCompile Include="Renderer\Camera.cpp" />
+    <ClInclude Include="Renderer\D3D11\ConvertStructD3D11.h">
+      <FileType>CppCode</FileType>
+    </ClInclude>
+    <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\InputLayoutD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\RendererD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\RenderStateD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\RenderToTextureD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\ShaderD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\TextureD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D11\VertexBufferD3D11.cpp" />
+    <ClCompile Include="Renderer\D3D9\RendererD3D9.cpp" />
+    <ClCompile Include="Renderer\D3DEventMarker.cpp" />
+    <ClCompile Include="Renderer\Font.cpp" />
+    <ClCompile Include="Renderer\InputLayout.cpp" />
+    <ClCompile Include="Renderer\Light.cpp" />
+    <ClCompile Include="Renderer\Material.cpp" />
+    <ClCompile Include="Renderer\ParticleEmitter.cpp" />
+    <ClCompile Include="Renderer\ParticleManager.cpp" />
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Renderer\RenderToTexture.cpp" />
+    <ClCompile Include="Renderer\Shader.cpp" />
+    <ClCompile Include="Renderer\Texture.cpp" />
+    <ClCompile Include="Renderer\TextureUtil.cpp" />
+    <ClCompile Include="Renderer\VertexBuffer.cpp" />
+    <ClCompile Include="RenderObjects\DebugHud.cpp" />
+    <ClCompile Include="RenderObjects\DustRenderer.cpp" />
+    <ClCompile Include="RenderObjects\LaserRenderer.cpp" />
+    <ClCompile Include="RenderObjects\MeshGroup.cpp" />
+    <ClCompile Include="RenderObjects\MeshObject.cpp" />
+    <ClCompile Include="RenderObjects\ParticleRenderObject.cpp" />
+    <ClCompile Include="RenderObjects\SkyBox.cpp" />
+    <ClCompile Include="RenderObjects\SkySphere.cpp" />
+    <ClCompile Include="RenderObjects\Terrain.cpp" />
+    <ClCompile Include="RenderObjects\TerrainPatch.cpp" />
+    <ClCompile Include="RenderObjects\UIObject.cpp" />
+    <ClCompile Include="SceneGraph\Scene.cpp" />
+    <ClCompile Include="SceneGraph\SpatialObject.cpp" />
+    <ClCompile Include="ScriptSystem\ScriptSystem.cpp" />
+    <ClCompile Include="StdAfx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommonLib\CommonLib.vcxproj">
+      <Project>{af027364-5028-433c-8f67-a120c053c977}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

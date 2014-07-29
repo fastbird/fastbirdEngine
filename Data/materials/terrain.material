@@ -1,0 +1,28 @@
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/terrain.hlsl</ShaderFile>
+	<MaterialConstants>
+		<AmbientColor>1, 1, 1, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/Textures/diffuse.png</Texture>
+		<Texture slot="1" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/Textures/dirt_grass_rock.png</Texture>
+		<Texture slot="2" shader="ps" type="ColorRamp"> 
+			<Bar pos="0">1, 0, 0, 1</Bar>
+			<Bar pos="0.4">0, 1, 0, 1</Bar>
+			<Bar pos="0.8">0, 1, 0, 1</Bar>
+			<Bar pos="1.0">0, 0, 1, 1</Bar>
+		</Texture>
+	</Textures>
+	<MaterialParameters>
+		<param comment="dirtColor_specularInten">0.6431, 0.5176, 0.3254, 0.05</param>
+		<param comment="grassColor_specularPower">0.3764, 0.5215, 0.098, 1</param>
+		<param comment="rockColor">0.6196, 0.6196, 0.6274, 0.05</param>		
+	</MaterialParameters>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

@@ -1,0 +1,20 @@
+vertex size
+
+size available up to 18km * 18km.
+resolution 0.5m
+vertex count 36,001 * 36,001 = 1,296,072,001
+size of one vertex = (position(vec3) + uv(float2)) * vc  = 20 * vc = 25,921,440,020 = 25Gb.???
+
+
+1km*1km
+resolution 1m
+vertex count 1001 * 1001 = 1,002,001
+size of one vertex = (position(vec3) + uv(float2)) * vc = 20 * vc = 20,040,020 = 20mb
+
+
+
+
+
+
+1 3 5 7 9
+0 2 4 6 8 

@@ -1,0 +1,7 @@
+<TextureAtlas file="es/textures/ui.dds">
+	<region ID="1"	name="hull_icon" x="0" y="0" width="32" height="32"/>
+	<region ID="2"	name="checkbox_unchecked" x="32" y="0" width="32" height="32"/>
+	<region ID="3"	name="checkbox_checked" x="64" y="0" width="32" height="32"/>
+	<region ID="4"	name="radiobox_unchecked" x="96" y="0" width="32" height="32"/>
+	<region ID="5"	name="radiobox_checked" x="128" y="0" width="32" height="32"/>
+</TextureAtlas>

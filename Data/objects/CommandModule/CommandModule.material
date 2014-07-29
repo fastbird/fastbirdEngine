@@ -1,0 +1,28 @@
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/Module.hlsl</ShaderFile>
+	<Shaders>VS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/CommandModule/module1_Diffuse.dds</Texture>
+		<Texture slot="1" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/CommandModule/module1_Normal.dds</Texture>
+		<Texture slot="2" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/CommandModule/module1_Specular.dds</Texture>
+		<Texture slot="3" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/CommandModule/module1_AmbientOcclusion.dds</Texture>
+	</Textures>
+	<MaterialParameters>
+		<param comment="x_x_x_x">0.5, 0.25, 0.25, 0.0</param>
+		<param comment="LitColor_x">1.0, 0.1, 0, 0</param>
+	</MaterialParameters>
+	<ShaderDefines>
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="2" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="TANGENT" index="0" format="FLOAT3" slot="4" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

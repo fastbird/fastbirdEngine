@@ -1,0 +1,462 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Document">
+      <UniqueIdentifier>{91996dc8-36f5-47ff-ae0d-c932d1fb8bc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SceneGraph">
+      <UniqueIdentifier>{1a0c319f-1e1a-4fed-a6db-71e589083e7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{e282c464-c982-41a8-bf7d-3f4c4fa4d625}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Animation">
+      <UniqueIdentifier>{84bf99cb-e062-4e56-98f1-640b46adc364}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physics">
+      <UniqueIdentifier>{447451a5-ef4f-4f8b-b15e-0f464d74397a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AI">
+      <UniqueIdentifier>{2c378c83-e939-4d6f-9e34-f7a049d71aab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{4a172b19-207d-497e-8c48-3bacb734d726}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\D3D9">
+      <UniqueIdentifier>{5b296952-dfd1-4b73-9e78-5ded7b89e42d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\D3D11">
+      <UniqueIdentifier>{5388449c-5710-4534-97ae-d3f1bb94622b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer\Shaders">
+      <UniqueIdentifier>{8c8c81ff-fe5c-426c-b917-be2b5e5d4d0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderObjects">
+      <UniqueIdentifier>{599c69b1-43a5-41fc-a45e-52593db95d92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Foundation">
+      <UniqueIdentifier>{2a199b2f-de47-41b6-82de-22293dd0cd2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ScriptSystem">
+      <UniqueIdentifier>{91734bd0-38b0-4952-8c7d-da3dca7a2db3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Documents\dll.txt">
+      <Filter>Document</Filter>
+    </None>
+    <None Include="Documents\terrain.txt">
+      <Filter>Document</Filter>
+    </None>
+    <None Include="Renderer\Shaders\terrain.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\font.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\skybox.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Mesh.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\locator.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\UI.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Line.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Quad.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\dust.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\modules.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\CommonFunctions.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\star.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\HighlightMesh.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\module.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\HelpMesh.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\MeshPBR.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\SkySphere.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\particle.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="ISceneManager.h" />
+    <ClInclude Include="IShader.h" />
+    <ClInclude Include="ITerrain.h" />
+    <ClInclude Include="IVertexBuffer.h" />
+    <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="ICamera.h" />
+    <ClInclude Include="IEngine.h" />
+    <ClInclude Include="IIndexBuffer.h" />
+    <ClInclude Include="IInputListener.h" />
+    <ClInclude Include="IKeyboard.h" />
+    <ClInclude Include="IMouse.h" />
+    <ClInclude Include="Renderer\Shaders\ShaderCommon.h">
+      <Filter>Renderer\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Foundation\Engine.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Foundation\Mouse.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Foundation\Keyboard.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Camera.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D9\RendererD3D9.h">
+      <Filter>Renderer\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\IndexBufferD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\VertexBufferD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\RendererD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\ShaderD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\Terrain.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="IScene.h" />
+    <ClInclude Include="RenderObjects\TerrainPatch.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneGraph\Scene.h">
+      <Filter>SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="IObject.h" />
+    <ClInclude Include="Foundation\Object.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\DebugHud.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="IFont.h" />
+    <ClInclude Include="ITexture.h" />
+    <ClInclude Include="Renderer\D3D11\TextureD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\TextureUtil.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\RendererEnums.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\ConvertEnumD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\RendererStructs.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\ConvertStructD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shaders\Constants.h">
+      <Filter>Renderer\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\IRenderState.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3D11\RenderStateD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Light.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Shader.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IMaterial.h" />
+    <ClInclude Include="Renderer\Material.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IInputLayout.h" />
+    <ClInclude Include="Renderer\D3D11\InputLayoutD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\ColorRamp.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Texture.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\ToolConn.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ISkyBox.h" />
+    <ClInclude Include="RenderObjects\SkyBox.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\D3DEventMarker.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="DllMain.h" />
+    <ClInclude Include="RenderObjects\MeshObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="IMeshObject.h" />
+    <ClInclude Include="Misc\Console.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="IConsole.h" />
+    <ClInclude Include="ScriptSystem\ScriptSystem.h">
+      <Filter>ScriptSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="IScriptSystem.h" />
+    <ClInclude Include="IScriptTable.h" />
+    <ClInclude Include="IScript.h" />
+    <ClInclude Include="IInputDevice.h" />
+    <ClInclude Include="SceneGraph\SpatialObject.h">
+      <Filter>SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="IDGenerator.h" />
+    <ClInclude Include="IUIObject.h" />
+    <ClInclude Include="RenderObjects\UIObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalEnv.h" />
+    <ClInclude Include="Renderer\VertexBuffer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\CandidatesData.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Font.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IVoxelizer.h" />
+    <ClInclude Include="Misc\Voxelizer.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\RenderToTexture.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderToTexture.h" />
+    <ClInclude Include="Renderer\D3D11\RenderToTextureD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\EngineCommand.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ILight.h" />
+    <ClInclude Include="Misc\ColladaImporter.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="IColladaImporter.h" />
+    <ClInclude Include="RenderObjects\DustRenderer.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="IDustRenderer.h" />
+    <ClInclude Include="Renderer\Inputlayout.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\MeshGroup.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\SkySphere.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="ISkySphere.h" />
+    <ClInclude Include="IMeshGroup.h" />
+    <ClInclude Include="IParticleEmitter.h" />
+    <ClInclude Include="Renderer\ParticleManager.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\ParticleEnum.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\ParticleEmitter.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\ParticleRenderObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderObjects\LaserRenderer.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="ILaserRenderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="StdAfx.cpp" />
+    <ClCompile Include="Foundation\Engine.cpp">
+      <Filter>Foundation</Filter>
+    </ClCompile>
+    <ClCompile Include="Foundation\Keyboard.cpp">
+      <Filter>Foundation</Filter>
+    </ClCompile>
+    <ClCompile Include="Foundation\Mouse.cpp">
+      <Filter>Foundation</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Camera.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D9\RendererD3D9.cpp">
+      <Filter>Renderer\D3D9</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\VertexBufferD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\RendererD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\ShaderD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\Terrain.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\TerrainPatch.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneGraph\Scene.cpp">
+      <Filter>SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Foundation\Object.cpp">
+      <Filter>Foundation</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\DebugHud.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\TextureD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\TextureUtil.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\RenderStateD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Light.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Shader.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Material.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\InputLayoutD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\ColorRamp.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Texture.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\ToolConn.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\SkyBox.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3DEventMarker.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\MeshObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\Console.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptSystem\ScriptSystem.cpp">
+      <Filter>ScriptSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneGraph\SpatialObject.cpp">
+      <Filter>SceneGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="RenderObjects\UIObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\VertexBuffer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\CandidatesData.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Font.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\Voxelizer.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\RenderToTexture.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\D3D11\RenderToTextureD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\EngineCommand.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\ColladaImporter.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\DustRenderer.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\InputLayout.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\MeshGroup.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\SkySphere.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\ParticleManager.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\ParticleEmitter.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\ParticleRenderObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\LaserRenderer.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{AF027364-5028-433C-8F67-A120C053C977}</ProjectGuid>
+    <RootNamespace>CommonLib</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\fastbirdLibs.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\fastbirdLibs.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PreprocessorDefinitions>_DEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(TBB_HOME)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_WINLIB;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="BlockFrequent.h" />
+    <ClInclude Include="CircularBuffer.h" />
+    <ClInclude Include="Collision\GeomCollisions.h" />
+    <ClInclude Include="Color.h" />
+    <ClInclude Include="CommonLib.h" />
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Debug.h" />
+    <ClInclude Include="Hammersley.h" />
+    <ClInclude Include="Math\BVaabb.h" />
+    <ClInclude Include="Math\GeomUtils.h" />
+    <ClInclude Include="Math\MathDefines.h" />
+    <ClInclude Include="Math\OBB.h" />
+    <ClInclude Include="MurmurHash.h" />
+    <ClInclude Include="System.h" />
+    <ClInclude Include="threads.h" />
+    <ClInclude Include="INIReader.h" />
+    <ClInclude Include="LuaUtils.h" />
+    <ClInclude Include="Math\AABB.h" />
+    <ClInclude Include="Math\BoundingVolume.h" />
+    <ClInclude Include="Math\BVSphere.h" />
+    <ClInclude Include="Math\Mat33.h" />
+    <ClInclude Include="Math\Mat44.h" />
+    <ClInclude Include="Math\fbMath.h" />
+    <ClInclude Include="Math\Plane3.h" />
+    <ClInclude Include="Math\Quat.h" />
+    <ClInclude Include="Math\Random.h" />
+    <ClInclude Include="Math\Ray3.h" />
+    <ClInclude Include="Math\Transformation.h" />
+    <ClInclude Include="Math\Vec2.h" />
+    <ClInclude Include="Math\Vec2I.h" />
+    <ClInclude Include="Math\Vec3.h" />
+    <ClInclude Include="Math\Vec3I.h" />
+    <ClInclude Include="Math\Vec4.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="TaskScheduler.h" />
+    <ClInclude Include="SmartPtr.h" />
+    <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="StringUtils.h" />
+    <ClInclude Include="Task.h" />
+    <ClInclude Include="Timer.h" />
+    <ClInclude Include="tinydir.h" />
+    <ClInclude Include="tinyxml2.h" />
+    <ClInclude Include="Unicode.h" />
+    <ClInclude Include="VectorMap.h" />
+    <ClInclude Include="WorkerThread.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Collision\GeomCollisions.cpp" />
+    <ClCompile Include="Color.cpp" />
+    <ClCompile Include="CommonLib.cpp" />
+    <ClCompile Include="Debug.cpp" />
+    <ClCompile Include="Hammersley.cpp" />
+    <ClCompile Include="INIReader.cpp" />
+    <ClCompile Include="Math\BVSphere.cpp" />
+    <ClCompile Include="Math\BVaabb.cpp" />
+    <ClCompile Include="Math\GeomUtils.cpp" />
+    <ClCompile Include="Math\Mat33.cpp" />
+    <ClCompile Include="Math\Mat44.cpp" />
+    <ClCompile Include="Math\fbMath.cpp" />
+    <ClCompile Include="Math\Quat.cpp" />
+    <ClCompile Include="Math\Ray3.cpp" />
+    <ClCompile Include="Math\Transformation.cpp" />
+    <ClCompile Include="Math\Vec2.cpp" />
+    <ClCompile Include="Math\Vec2I.cpp" />
+    <ClCompile Include="Math\Vec3.cpp" />
+    <ClCompile Include="Math\Vec3I.cpp" />
+    <ClCompile Include="Math\Vec4.cpp" />
+    <ClCompile Include="MurmurHash.cpp" />
+    <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="TaskScheduler.cpp" />
+    <ClCompile Include="StdAfx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="StringUtils.cpp" />
+    <ClCompile Include="Task.cpp" />
+    <ClCompile Include="threads.cpp" />
+    <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="tinyxml2.cpp" />
+    <ClCompile Include="Unicode.cpp" />
+    <ClCompile Include="WorkerThread.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

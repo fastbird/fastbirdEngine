@@ -1,0 +1,16 @@
+#pragma once
+namespace fastbird
+{
+	static const float PI = 3.1415926535897932384626433832795f;
+	static const float HALF_PI = 1.5707963267948966192313216916398f;
+	static const float F_PI = 0.78539816339744830961566084581988f;
+	static const float TWO_PI = 6.283185307179586476925286766559f;
+	static const float EPSILON = 0.00001f;
+	static const float ZERO_TOLERANCE = 1e-06f;
+	static const float ROOT_2 = 1.4142135623730950488016887242097f;
+	static const float INV_ROOT_2 = 0.70710678118654752440084436210485f;
+	static const float ROOT_3 = 1.7320508075688772935274463415059f;
+	static const float LOG2 = 0.69314718055994530941723212145818f;
+	static const float INV_LOG2 = 1.4426950408889634073599246810019f;
+	static const float LARGE_FLOAT = 1e18f; // keep LARGE_FLOAT*LARGE_FLOAT < FLT_MAX
+}
