@@ -17,7 +17,8 @@ You need these libraries below to compile the source code. Check the /code folde
 
 How-tos
 -------------
-2014 July : https://github.com/fastbird/fastbirdEngine/wiki/2014-July
+2014 July HOW-TOs: https://github.com/fastbird/fastbirdEngine/wiki/2014-July
+Describing the following topics.
 
 * initialize the engine
 * create sky
