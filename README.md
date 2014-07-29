@@ -13,7 +13,7 @@ You need these libraries to compile the source code. You can find the helper .ba
 
 How-tos
 -------------
-2014 July HOW-TOs: https://github.com/fastbird/fastbirdEngine/wiki/2014-July
+2014 July HOW-TOs: https://github.com/fastbird/fastbirdEngine/wiki/2014-July-How-to
 * initialize the engine
 * create sky
 * load a collada model and material
