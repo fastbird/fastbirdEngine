@@ -13,14 +13,19 @@ You need these libraries to compile the source code. You can find the helper .ba
 
 How-tos
 -------------
-2014 July HOW-TOs: https://github.com/fastbird/fastbirdEngine/wiki/2014-July-How-to
-* initialize the engine
-* create sky
-* load a collada model and material
-* use voxelizer
-* use render to texture system
-* profile the performance
-* do parallel computing
+
+* Basic HOW-TOs: https://github.com/fastbird/fastbirdEngine/wiki/2014-July-How-to
+  * initialize the engine
+  * create sky
+  * load a collada model and material
+  * use voxelizer
+  * use render to texture system
+  * profile the performance
+  * do parallel computing
+
+* Material HOW-TO : https://github.com/fastbird/fastbirdEngine/wiki/Material-How-to
+
+* Particle HOW_TO : https://github.com/fastbird/fastbirdEngine/wiki/Particle-How-to
 
 Development Log
 ------------------
