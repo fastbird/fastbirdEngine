@@ -4,12 +4,14 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/IEngine.h>
 
+DEFINE_GUID(WKPDID_D3DDebugObjectName, 0x429b8c22, 0x9188, 0x4b0c, 0x87, 0x42, 0xac, 0xb0, 0xbf, 0x85, 0xc2, 0x00);
+
 using namespace fastbird;
 
 //----------------------------------------------------------------------------
 TextureD3D11* TextureD3D11::CreateInstance()
 {
-	TextureD3D11* pTexture = new TextureD3D11();
+	TextureD3D11* pTexture = FB_NEW(TextureD3D11)();
 	return pTexture;
 }
 
@@ -20,7 +22,6 @@ TextureD3D11::TextureD3D11()
 	, mSamplerState(0)
 	, mSlot(0)
 	, mSRViewParent(0)
-	, mAdamTexture(0)
 	, mBindingShader(BINDING_SHADER_PS)
 {
 	mHr = S_FALSE;
@@ -115,8 +116,8 @@ ID3D11ShaderResourceView* TextureD3D11::GetHardwareResourceView()
 {
 	if (!mSRView && mSRViewParent && *mSRViewParent)
 	{
-		(*mSRViewParent)->AddRef();
 		mSRView = *mSRViewParent;
+		mSRView->AddRef();
 		mSRViewParent = 0;
 	}
 	return mSRView;
@@ -196,16 +197,18 @@ ITexture* TextureD3D11::Clone() const
 	TextureD3D11* pNewTexture = TextureD3D11::CreateInstance();
 	pNewTexture->mTexture = mTexture; if (mTexture) mTexture->AddRef();
 	pNewTexture->mSRView = mSRView; if (mSRView) mSRView->AddRef();
-	const TextureD3D11* pAdam = this;
-	while(pAdam->mAdamTexture)
+	Texture* pAdam = (Texture*)this;
+	while (pAdam->GetAdamTexture())
 	{
-		pAdam = pAdam->mAdamTexture;
+		pAdam = pAdam->GetAdamTexture();
 	}
-	pNewTexture->mAdamTexture = (TextureD3D11*)pAdam;
+	pNewTexture->SetAdamTexture(pAdam);
 	
 	if (!pNewTexture->mSRView)
 	{
-		pNewTexture->mSRViewParent = (ID3D11ShaderResourceView**)&pAdam->mSRView;
+		TextureD3D11* pT = (TextureD3D11*)pAdam;
+		assert(pT);
+		pNewTexture->mSRViewParent = (ID3D11ShaderResourceView**)&pT->mSRView;
 	}
 	pNewTexture->mSamplerState = mSamplerState; if (mSamplerState) mSamplerState->AddRef();
 	pNewTexture->mPixelFormat = mPixelFormat;
@@ -243,7 +246,50 @@ ID3D11DepthStencilView* TextureD3D11::GetDepthStencilView(int idx) const
 	return mDSViews[idx];
 }
 
+void TextureD3D11::SetDebugName(const char* name)
+{
+	if (mTexture)
+		mTexture->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	if (mSRView)
+	{
+		char buff[255];
+		sprintf_s(buff, "%s SRV", name);
+		mSRView->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
+	}
+	int i = 0;
+	for each(auto it in mRTViews)
+	{
+		char buff[255];
+		sprintf_s(buff, "%s RTV %d", name, i++);
+		it->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
+	}
+
+	i = 0;
+	for each(auto it in mDSViews)
+	{
+		char buff[255];
+		sprintf_s(buff, "%s DSV %d", name, i++);
+		it->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
+	}
+}
+
 void TextureD3D11::GenerateMips()
 {
 	gFBEnv->pRenderer->GenerateMips(this);
+}
+
+void TextureD3D11::OnReloaded()
+{
+	// only called for adam texture
+	assert(!mAdamTexture);
+
+	FB_FOREACH(it, Texture::mTextures)
+	{
+		TextureD3D11* pT = (TextureD3D11*)*it;
+		if (pT->GetAdamTexture() == this)
+		{
+			SAFE_RELEASE(pT->mSRView);
+			pT->mSRViewParent = (ID3D11ShaderResourceView**)&mSRView;
+		}
+	}
 }

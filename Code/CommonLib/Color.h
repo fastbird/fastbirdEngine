@@ -12,9 +12,11 @@ namespace fastbird
 		const static Color Red;
 		const static Color DarkGray;
 		const static Color Gray;
+		const static Color Silver;
 		const static Color Green;
 		const static Color Yellow;
 		const static Color Blue;
+		const static Color Zero;
 
 		Color(){}
 		Color(const Vec3& color)
@@ -61,6 +63,23 @@ namespace fastbird
 			return Color(mValue*scalar);
 		}
 
+		inline Color operator*(const Color& other) const
+		{
+			return Color(mValue*other.mValue);
+		}
+
+		inline Color& operator*= (float scalar)
+		{
+			mValue *= scalar;
+			return *this;
+		}
+
+		inline Color& operator*= (const Color& c)
+		{
+			mValue *= c.mValue;
+			return *this;
+		}
+
 		inline Color operator+ (const Color& r) const
 		{
 			return mValue + r.GetVec4();
@@ -83,6 +102,11 @@ namespace fastbird
 		float g() const {return mValue.y;}
 		float b() const {return mValue.z;}
 		float a() const {return mValue.w;}
+
+		float& r(){ return mValue.x; }
+		float& g(){ return mValue.y; }
+		float& b(){ return mValue.z; }
+		float& a(){ return mValue.w; }
 
 	private:
 		Vec4 mValue;

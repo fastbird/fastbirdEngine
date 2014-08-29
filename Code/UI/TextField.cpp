@@ -7,17 +7,16 @@
 namespace fastbird
 {
 const float TextField::LEFT_GAP = 0.001f;
-const float TextField::BOTTOM_GAP = 0.004f;
 
 TextField::TextField()
 	: WinBase()
 	, mCursorPos(0)
 	, mPasswd(false)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UITextField.material");
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 }
 
@@ -32,12 +31,12 @@ void TextField::GatherVisit(std::vector<IUIObject*>& v)
 		v.push_back(KeyboardCursor::GetKeyboardCursor().GetUIObject());
 }
 
-void TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	__super::OnInputFromHandler(mouse, keyboard);
+	bool mouseIn = __super::OnInputFromHandler(mouse, keyboard);
 
 	if (!mVisible || !GetFocus(false))
-		return;
+		return mouseIn;
 
 	if (keyboard->IsValid())
 	{
@@ -94,6 +93,7 @@ void TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	{
 		mouse->Invalidate();
 	}
+	return mouseIn;
 }
 
 void TextField::SetText(const wchar_t* szText)
@@ -116,13 +116,13 @@ void TextField::SetText(const wchar_t* szText)
 void TextField::OnPosChanged()
 {
 	__super::OnPosChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
 }
 
 void TextField::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
 }
 
 
@@ -174,7 +174,7 @@ void TextField::MoveCursor(int move)
 
 	KeyboardCursor::GetKeyboardCursor().SetNPos(
 		Vec2(mWNPos.x + LEFT_GAP + xpos,
-		mWNPos.y + mWNSize.y - BOTTOM_GAP));
+		mWNPos.y + mWNSize.y - GetTextBottomGap()));
 	
 }
 

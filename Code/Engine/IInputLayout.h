@@ -15,5 +15,8 @@ namespace fastbird
 		virtual bool HasVertexComponent(VERTEX_COMPONENT com) = 0;
 
 		virtual void Bind() = 0;
+
+		// do not call directly. use FB_SET_DEVICE_DEBUG_NAME define.
+		virtual void SetDebugName(const char*) = 0;
 	};
 }

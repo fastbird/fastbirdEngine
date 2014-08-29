@@ -156,6 +156,7 @@ void DebugHud::Render()
 
 	IFont* pFont = gFBEnv->pRenderer->GetFont();
 	pFont->PrepareRenderResources();
+	pFont->SetRenderStates(false, false);
 	while (!mTexts.empty())
 	{
 		const TextData& textData = mTexts.front();
@@ -166,9 +167,10 @@ void DebugHud::Render()
 
 	// render text for duration
 	{
+		pFont->SetRenderStates();
 		auto it = mTextsForDur.begin();
-		Vec2I lastDrawPos(0, 0); // not a robust solution but enough for now.
-		for ( ; it!=mTextsForDur.end();)
+		int count = 0;
+		for (; it != mTextsForDur.end(); ++count)
 		{
 			it->mSecs -= gFBEnv->pTimer->GetDeltaTime();
 			if (it->mSecs<=0.f)
@@ -179,14 +181,12 @@ void DebugHud::Render()
 			else
 			{
 				Vec2I offset(0, 0);
-				if (lastDrawPos == it->mPos)
-				{
-					offset.y += (int)pFont->GetHeight();
-				}
+				offset.y += (int)pFont->GetHeight() * count;
 
-				pFont->Write((float)it->mPos.x+offset.x, (float)it->mPos.y+offset.y, 0.5f, it->mColor.Get4Byte(), 
+				Vec2I drawPos = it->mPos + offset;
+				pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, it->mColor.Get4Byte(),
 					(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
-				lastDrawPos = it->mPos + offset;
+				
 
 				it++;
 			}

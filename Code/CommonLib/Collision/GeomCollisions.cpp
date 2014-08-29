@@ -54,4 +54,14 @@ namespace fastbird
 
 		return ( (min < pseudo_max) && (max > pseudo_min) );
 	}
+
+	float GetTimeToExitNDCSquare(const Vec2& pos, const Vec2& dir)
+	{
+		float xdist = dir.x >= 0 ? 1.0f - pos.x : -1.0f - pos.x;
+		float xtook = xdist / dir.x;
+			
+		float ydist = dir.y >= 0 ? 1.0f - pos.y : -1.0f - pos.y;
+		float ytook = ydist / dir.y;
+		return std::min(ytook, xtook);
+	}
 }

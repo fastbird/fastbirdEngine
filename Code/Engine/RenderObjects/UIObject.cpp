@@ -3,7 +3,6 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/IRenderer.h>
 #include <Engine/IFont.h>
-#include <Engine/Renderer/D3DEventMarker.h>
 #include <Engine/IConsole.h>
 #include <UI/ComponentType.h>
 
@@ -13,9 +12,23 @@ namespace fastbird
 
 SmartPtr<IRasterizerState> UIObject::mRasterizerStateShared;
 
-IUIObject* IUIObject::CreateUIObject()
+IUIObject* IUIObject::CreateUIObject(bool usingSmartPtr)
 {
-	return new UIObject;
+	IUIObject* p = FB_NEW(UIObject);
+	if (!usingSmartPtr)
+		p->AddRef();
+	return p;
+}
+
+// only not using smart ptr
+void IUIObject::Delete()
+{
+	this->Release();
+}
+
+void UIObject::ClearSharedRS()
+{
+	mRasterizerStateShared = 0;
 }
 
 //---------------------------------------------------------------------------
@@ -33,12 +46,18 @@ UIObject::UIObject()
 	, mTextSize(30.0f)
 	, mScissor(false)
 	, mOut(false)
+	, mAlphaBlending(false)
+	, mAnimNDCOffset(0, 0)
+	, mAnimNOffset(0, 0)
 {
 	mObjectConstants.gWorld.MakeIdentity();
 	mObjectConstants.gWorldViewProj.MakeIdentity();
 	SetMaterial("es/materials/UI.material");
 	mOwnerUI = 0;
 	mTextColor = Color::White;
+
+	SetBlendState(BLEND_DESC());
+	SetDepthStencilState(DEPTH_STENCIL_DESC());
 }
 UIObject::~UIObject()
 {
@@ -104,6 +123,14 @@ void UIObject::SetNPosOffset(const Vec2& nposOffset)
 	UpdateRegion();
 }
 
+void UIObject::SetAnimNPosOffset(const Vec2& nposOffset)
+{
+	mAnimNOffset = nposOffset;
+	mAnimNDCOffset.x = nposOffset.x*2.f;
+	mAnimNDCOffset.y = -nposOffset.y*2.f;
+	UpdateRegion();
+}
+
 void UIObject::SetTexCoord(Vec2 coord[], DWORD num)
 {
 	mTexcoords.clear();
@@ -126,8 +153,8 @@ void UIObject::SetColors(DWORD colors[], DWORD num)
 
 void UIObject::UpdateRegion()
 {
-	mRegion.left = (LONG)((mNPos.x + mNOffset.x) * gFBEnv->pRenderer->GetWidth());
-	mRegion.top = (LONG)((mNPos.y + mNOffset.y) * gFBEnv->pRenderer->GetHeight());
+	mRegion.left = (LONG)((mNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth());
+	mRegion.top = (LONG)((mNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight());
 	mRegion.right = mRegion.left + (LONG)(mNSize.x * gFBEnv->pRenderer->GetWidth());
 	mRegion.bottom = mRegion.top + (LONG)(mNSize.y * gFBEnv->pRenderer->GetHeight());
 }
@@ -142,13 +169,14 @@ void UIObject::SetText(const wchar_t* s)
 	mText = s;
 }
 
+// 0~1
 void UIObject::SetTextStartNPos(const Vec2& npos)
 {
 	mTextNPos = npos;
 }
 
 //---------------------------------------------------------------------------
-void UIObject::SetMaterial(const char* name)
+void UIObject::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 {
 	mMaterial = fastbird::IMaterial::CreateMaterial(name);
 	assert(mMaterial);
@@ -182,7 +210,7 @@ void UIObject::PreRender()
 	if (mOut)
 		return;
 
-	mObjectConstants.gWorld.SetTranslation( Vec3(mNDCPos+mNDCOffset, 0.f ));
+	mObjectConstants.gWorld.SetTranslation( Vec3(mNDCPos+mNDCOffset+mAnimNDCOffset, 0.f ));
 	mObjectConstants.gWorld[0][0] = mAlpha;
 
 	if (mDirty)
@@ -234,11 +262,11 @@ void UIObject::Render()
 		{
 			pFont->PrepareRenderResources();
 			pFont->SetDefaultConstants();
-			pFont->SetRenderStates(true, mScissor);
+			pFont->SetRenderStates(!mAlphaBlending, mScissor);
 			pFont->SetHeight(mTextSize);
 			pFont->Write(
-				(mTextNPos.x+mNOffset.x) * gFBEnv->pRenderer->GetWidth(),
-				(mTextNPos.y+mNOffset.y) * gFBEnv->pRenderer->GetHeight(),
+				(mTextNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth(),
+				(mTextNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight(),
 				0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
 			pFont->SetBackToOrigHeight();
 		}
@@ -343,5 +371,27 @@ void UIObject::SetUseScissor(bool use, const RECT& rect)
 	}
 }
 
+void UIObject::SetAlphaBlending(bool set)
+{
+	mAlphaBlending = set;
+	if (set)
+	{
+		BLEND_DESC desc;
+		desc.RenderTarget[0].BlendEnable = true;
+		desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+		desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+		desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+		SetBlendState(desc);
 
+		DEPTH_STENCIL_DESC ddesc;
+		ddesc.DepthEnable = false;
+		SetDepthStencilState(ddesc);
+	}
+	else
+	{
+		SetBlendState(BLEND_DESC());
+		SetDepthStencilState(DEPTH_STENCIL_DESC());
+	}
+	
+}
 }

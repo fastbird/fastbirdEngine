@@ -19,6 +19,7 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		void SetHardwareInputLayout(ID3D11InputLayout* pLayout);
 		ID3D11InputLayout* GetHardwareInputLayout() const { return m_pInputLayout; }
+		virtual void SetDebugName(const char*);
 
 	protected:
 		InputLayoutD3D11();

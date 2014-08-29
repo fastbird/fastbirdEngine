@@ -20,13 +20,32 @@ namespace fastbird
 
 		virtual void AttachSkyBox(ISkyBox* pSkyBox);
 		virtual void AttachSkySphere(ISkySphere* p);
+		virtual void AttachSkySphereBlend(ISkySphere* p);
 		virtual void DetachSkySphere();
+		virtual void DetachSkySphereBlend();
+		virtual void SwapSkySphereBlendAndDetach();
+		virtual ISkySphere* GetSkySphereBlend() const { return mSkySphereBlend; }
 		virtual void ToggleSkyRendering();
+		virtual void SetSkyRendering(bool render);
+		virtual bool GetSkyRendering() const { return mSkyRendering; }
+		virtual ISkySphere* GetSkySphere() const {return mSkySphere;}
+		virtual void SetSkipSpatialObjects(bool skip);
 
 		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject);
+		virtual void ClearEverySpatialObject();
 
 		virtual void PreRender();
 		virtual void Render();
+
+		virtual const Vec3& GetWindVector() const;
+
+		virtual void AddCloudVolume(IMeshObject* p);
+		virtual void RemoveClouds();
+		virtual void RenderCloudVolumes();
+
+		virtual const Color& GetFogColor() const { return mFogColor; }
+		virtual void SetFogColor(const Color& c);
+		virtual void SetDrawClouds(bool e);
 
 
 	protected:
@@ -38,9 +57,20 @@ namespace fastbird
         OBJECTS mObjects;
 		SPATIAL_OBJECTS mSpatialObjects;
 		SPATIAL_OBJECTS mVisibleObjects;
+		SPATIAL_OBJECTS mVisibleTransparentObjects;
 		SmartPtr<ISkyBox> mSkyBox;
 		SmartPtr<ISkySphere> mSkySphere;
+		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
+		bool mSkipSpatialObjects;
 		bool mSkyRendering;
+		FB_CRITICAL_SECTION mSpatialObjectsCS;
+
+		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
+		Vec3 mWindDir;
+		float mWindVelocity;
+		Vec3 mWindVector;
+		Color mFogColor;
+		bool mDrawClouds;
     };
 }
 

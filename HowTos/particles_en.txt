@@ -1,0 +1,120 @@
+How to particles
+
+This document explains about particle emitter in fastbird-engine.
+
+A particle emitter is defined like the below. This content is the part of data/particles/7_explosion.particle.
+
+<ParticleEmitter emitterLifeTime="1.0" emitterID="7">
+	
+	<ParticleTemplate texture="data/particles/nova.png" emitPerSec="0" numInitialParticle="1"
+	
+		cross="false" blendMode="Additive" preMultiAlpha="true" stretchMax="0"
+		glow="1.0" emitTo="WorldSpace" range="Point" rangeRadius="0.0"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="1.0, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="0.5, 1.0" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="5.0" scaleAccelUntil="10 percent" scaleDeaccel="20.0" scaleDeaccelAfter="90 percent"
+		
+		velocityMinMax="0.0,0.0" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1, 1, 1"
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="0, 0 deg" rotSpeedMin = "35" rotSpeedMax="15"		
+		rotAccel="0 deg" rotAccelUntil="0 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="20 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.0"
+	/>
+	
+</ParticleEmitter>
+
+Let's check it out one by one.
+
+* <ParticleEmitter>
+** emitterLifeTime : Life time. -1 is infinite.
+** emitterID : unique id. you can use this id to load a particle. And this id 
+should be a prefix of the file name like 7_explosion.particle. You can also load
+a particle emitter without the id, this case you can use filename.
+* <ParticleTemplate> : Can be defined more than one.
+** texture : texture file used.
+** emitPerSec : Emit per second.
+** numInitialParticle : The number of particles when the particle emitter is activated.
+** cross : When you want render the particle as crossed quad, true.
+** blendMode : currently supporting Additive, AlphaBlend, InvColorBlend, Replace blend modes.
+** preMultiAlpha : if true, the final color get multipiled by alpha before the shader ouputs the result.
+** stretchMax : if true, particle will be stretched to u direction according to the emitter's speed.
+** glow : glow power. 0 is no glow.
+** emitTo : Where to emit. World space for independent particles, local space for dependent particles to the emitter transform.
+** range / rangeRadius : emittion position variation.
+** uvAnimColRow : if the texture contains uv animation frames, specify the columns and rows here.
+** uvAnimFramesPerSec : uv animation fps. if 0, the animation play once through the particle life time.
+** lifeTimeMinMax : life time min/max.
+** align
+*** billboard : billboard alignment.
+*** direction : quad u direction will be aligned to the emitter's forward direction.
+** DefaultDirection : not used for now.
+** Scale
+*** sizeMinMax: size min/max
+*** sizeRatioMinMax : ratio of u and v. if 1, its square other wise rectangle.
+*** scaleAccel : size acceleration
+*** scaleAccelUntil : the time the acceleration is finished.
+*** scaleDeaccel : size deacceleration
+*** scaleDeaccelAfter : when the deacceleration is finished.
+** Velocity
+*** velocityMinMax : velocity min/max.
+*** velocityDirectionMin/Max : Random direction for velocity.
+*** accel/deaccel : acceleration / deacceleration.
+*** accelUntil/deaccelAfter : the time finishing/starting acc/deacc
+** Rotation
+*** rotMinMax : rotation min/max
+*** rotSpeedMin/Max : rotation speed min/max
+*** rotAccel/Deaccel : rot acc/deacc
+*** rotAccelUntil/rotDeaccelAfter : the time finishing/starting acc/deacc
+** fadeInUntil/fadeOutAfter : the time finishing fadein/fadeout
+** Intensity : intensity.
+
+You can define one ore more <ParticleTemplate> to have a emitter emitting serveral
+types of particles.
+
+
+How to use in the engine
+
+You can load and use it like the below code.
+
+IParticleEmitter* pEmitter = gEnv->pEngine->GetParticleEmitter(7, false); // Get the particle emitter object. It will be cached for next GetParticleEmitter() call.
+pEmitter->SetPos(...)
+pEmitter->Active(true); // Start emittion and add it to the scene.
+
+when you turn the emitter off for temporary.
+pEmitter->StopImmediate(); // sudden stop
+pEmitter->Stop(); // emittion will be stopped immediately, and wait for all particles are dead
+
+When you want to destroy the emitter
+gEnv->pEngine->ReleaseParticleEmitter(pEmitter);
+
+If you don't want to control the particle emitter's instance life time, you can
+use smartpointer. this is for the one time play particle like explosion or hit effects.
+
+SmartPtr<IParticleEmitter> pOneTimeParticle = gEnv->pEngine->GetParticleEmitter(7, true);
+pOneTimeParticle->SetPos(...)
+pOneTimeParticle->Active(true)
+pOneTimeParticle = 0; // You can set the smartptr to zero here or you can leave it.
+
+.particle can be hot reloaded in the run time. You can open a .particle file
+while you are running the game, and edit/save it then you can see the modification is
+applied to the game immediately. this is necessary for fast development iteration.
+
+
+Also you can use runtime editing feature while editing your new particle.
+Open the console(press `) and type EditParticle <emitterid>.
+Then the emitter will be loaded in the center of screen and the camera will orbit
+around the emitter. if you want to check the moving particle, type MoveEditParticle 1
+in the console. then the particle will move like pendulum.
+ 
+
+You can test the particle system with EngineApp project in the github(https://github.com/fastbird/fastbirdEngine)
+

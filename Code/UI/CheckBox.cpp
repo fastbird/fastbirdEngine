@@ -17,12 +17,12 @@ CheckBox::CheckBox()
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
-	mStaticText->SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
+	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
 	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
 
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
 
 CheckBox::~CheckBox()

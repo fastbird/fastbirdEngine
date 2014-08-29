@@ -6,7 +6,7 @@
 #include <sstream>
 
 #define REGISTER_CVAR(name, def, category, desc) \
-	CVar* pCVar##name = new CVar(#name, def, name, category, desc);\
+	CVar* pCVar##name = FB_NEW(CVar)(#name, def, name, category, desc); \
 	mCVars.push_back(pCVar##name);\
 	gFBEnv->pConsole->RegisterVariable(pCVar##name);
 
@@ -146,6 +146,12 @@ namespace fastbird
 		std::string mDesc;
 	};
 
+	class ICVarListener
+	{
+	public:
+		virtual bool OnChangeCVar(CVar* pCVar) = 0;
+	};
+
 	//--------------------------------------------------------------------------
 	class IConsole : public ReferenceCounter
 	{
@@ -162,6 +168,8 @@ namespace fastbird
 		virtual void ProcessCommand(const char* command) = 0;
 		virtual void ToggleOpen() = 0;
 		virtual void Render() = 0;
+		virtual void AddListener(ICVarListener* pListener) = 0;
+		virtual void RemoveListener(ICVarListener* pListener) = 0;
 		virtual EngineCommand* GetEngineCommand() = 0;
 	};
 

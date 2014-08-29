@@ -24,6 +24,7 @@ namespace fastbird
 		typedef std::function< void(void*) > EVENT_FUNCTION;
 		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION) = 0;
 		virtual void UnregisterEventFunc(EVENT e, FunctionID id) = 0;
+		virtual void DisableEvent(EVENT e) = 0;
 
 	};
 }

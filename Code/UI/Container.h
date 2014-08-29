@@ -3,20 +3,29 @@
 namespace fastbird
 {
 	class RadioBox;
+	class Scroller;
 	class Container : public WinBase
 	{
 	public:
-		Container(){}
+		Container() : mScroller(0){}
 		virtual ~Container();
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
+		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
 		virtual void RemoveChild(IWinBase* child);
-		virtual void OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+		virtual IWinBase* GetChild(const char* name);
+		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual IWinBase* FocusTest(Vec2 normalizedMousePos);
 		virtual bool GetFocus(bool includeChildren = false) const;
-		virtual void OnStartUpdate();
+		virtual void OnStartUpdate(float elapsedTime);
+		virtual void OnChildPosSizeChanged(WinBase* child);
+		virtual void Scrolled();
+		virtual void SetNPosOffset(const Vec2& offset);
+		virtual void SetAnimNPosOffset(const Vec2& offset);
 
 		void OnClickRadio(RadioBox* pRadio);
+
+		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
 		
 	private:
 		friend class WinBase;
@@ -34,6 +43,7 @@ namespace fastbird
 		typedef std::list<IWinBase*> COMPONENTS;
 		COMPONENTS mChildren;
 		COMPONENTS mPendingDelete;
+		Scroller* mScroller;
 
 	};
 }

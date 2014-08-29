@@ -16,6 +16,8 @@ namespace fastbird
 		Transformation();
 		~Transformation();
 
+		Transformation(const Quat& q);
+
 		void MakeIdentity ();
 		void MakeUnitScale ();
 		inline bool IsIdentity () const
@@ -33,6 +35,7 @@ namespace fastbird
 
 		void SetRotation (const Mat33& r);
 		void SetRotation (const Quat& r);
+		void SetDir(const Vec3& dir);
 		void AddRotation (const Quat& addR);
 		inline const Quat& GetRotation() const
 		{

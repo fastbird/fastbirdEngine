@@ -5,6 +5,7 @@
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/Math/Vec3.h>
 #include <Engine/Renderer/RendererStructs.h>
+#include <Engine/IEngineEventListener.h>
 
 namespace fastbird
 {
@@ -12,6 +13,7 @@ namespace fastbird
 	class IIndexBuffer;
 	class IMaterial;
 	class IInputLayout;
+	class IVertexBuffer;
 	class IObject : public ReferenceCounter
 	{
 	public:
@@ -19,18 +21,21 @@ namespace fastbird
 		{
 			OF_HIDE = 0x1,
 			OF_QUERYABLE = 0x2,
+			OF_IGNORE_ME = 0x4, // in scene
+			OF_NO_DEPTH_PASS = 0x8,
 		};
 		virtual ~IObject() {}
 		
 		// Defined in Object
         virtual void OnAttachedToScene(IScene* pScene) = 0;
         virtual void OnDetachedFromScene(IScene* pScene) = 0;
-		virtual void SetMaterial(const char* name) = 0;
-		virtual void SetMaterial(IMaterial* pMat) = 0;
-		virtual IMaterial* GetMaterial() const = 0;
+		virtual void SetMaterial(const char* name, int pass = 0) = 0;
+		virtual void SetMaterial(IMaterial* pMat, int pass = 0) = 0;
+		virtual IMaterial* GetMaterial(int pass = 0) const = 0;
 		virtual void SetRasterizerState(const RASTERIZER_DESC& desc) = 0;
 		virtual void SetBlendState(const BLEND_DESC& desc) = 0;
 		virtual void SetDepthStencilState(const DEPTH_STENCIL_DESC& desc) = 0;
+		virtual void ClearRenderStates() = 0;
 		virtual void SetVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
 		virtual void SetIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
 		// override the input layout defined in material
@@ -47,9 +52,11 @@ namespace fastbird
 		virtual void SetRadius(float r) = 0;
 		virtual void AttachToScene() = 0;
 		virtual void DetachFromScene() = 0;
-		virtual bool IsAttached(IScene* pScene) const = 0;
+		virtual bool IsAttached(IScene* pScene=0) const = 0;
 		virtual void SetName(const char* name) {}
 		virtual const char* GetName() const { return ""; }
+		virtual void RegisterEventListener(IObjectEventListener* listener) = 0;
+		virtual void RemoveEventListener(IObjectEventListener* listener) = 0;
 
 		// defined in SpatialObject
 		virtual void SetDistToCam(float dist){}
@@ -62,6 +69,7 @@ namespace fastbird
 		virtual void PreRender() = 0;
 		virtual void Render() = 0;		
 		virtual void PostRender() = 0;
+		virtual void SetEnableHighlight(bool highlight) {}
 	};
 }
 

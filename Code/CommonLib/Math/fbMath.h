@@ -198,4 +198,49 @@ namespace fastbird
 	{
 		return Vec3(std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z));
 	}
+
+	inline Vec2 Abs(const Vec2& v)
+	{
+		return Vec2(abs(v.x), abs(v.y));
+	}
+
+	// 0 <= r < infinite
+	// 0 <= theta <= PI
+	// 0 <= phi < TWO_PI
+	inline Vec3 SphericalToCartesian(float r, float theta, float phi)
+	{
+		float st = sin(theta);
+		float cp = cos(phi);
+		float sp = sin(phi);
+		float ct = cos(theta);
+
+		return Vec3(r*st*cp, r*st*sp, r*ct);
+	}
+
+	// for r == 1.0
+	inline Vec3 SphericalToCartesian(float theta, float phi)
+	{
+		float st = sin(theta);
+		float cp = cos(phi);
+		float sp = sin(phi);
+		float ct = cos(theta);
+
+		return Vec3(st*cp, st*sp, ct);
+	}
+
+	inline Vec3 CartesianToSpherical(const Vec3& c)
+	{
+		float r = c.Length();
+		float theta = acos(c.z / r);
+		float phi = atan2(c.y, c.x);
+		phi += phi < 0 ? TWO_PI : 0;
+		return Vec3(r, theta, phi);
+	}
+
+	inline float SmoothStep(float min, float max, float v)
+	{
+		float size = max - min;
+		float pos = v - min;
+		return pos / size;
+	}
 }

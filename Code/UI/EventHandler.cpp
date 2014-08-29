@@ -14,7 +14,6 @@ EventHandler::~EventHandler()
 {
 }
 
-
 IEventHandler::FunctionID EventHandler::RegisterEventFunc(EVENT e, EVENT_FUNCTION func)
 {
 	mFuncMap[UNIQUE_ID] = func;
@@ -29,8 +28,11 @@ void EventHandler::UnregisterEventFunc(EVENT e, FunctionID id)
 	mFuncMap.erase(mFuncMap.find(id));
 }
 
-void EventHandler::OnEvent(EVENT e)
+bool EventHandler::OnEvent(EVENT e)
 {
+	if (mDisabledEvent.find(e) != mDisabledEvent.end())
+		return false;
+
 	auto it = mEventFuncMap.find(e);
 	if (it!=mEventFuncMap.end())
 	{
@@ -38,7 +40,15 @@ void EventHandler::OnEvent(EVENT e)
 		{
 			mFuncMap[funcID](dynamic_cast<WinBase*>(this));
 		}
+		return true;
 	}
+
+	return false;
+}
+
+void EventHandler::DisableEvent(EVENT e)
+{
+	mDisabledEvent.insert(e);
 }
 
 

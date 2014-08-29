@@ -35,6 +35,7 @@ public:
 		inline T& operator*() const { return *mIterator;}
 		bool operator==(const IteratorWrapper& other) const
 		{
+			assert(mBuffer == other.mBuffer);
 			return mIterator == other.mIterator;
 		}
 
@@ -53,8 +54,6 @@ public:
 
 			return *this;
 		}
-
-
 
 	private:
 		iterator mIterator;
@@ -76,36 +75,43 @@ public:
 		mInit = true;
 	}
 
-	void push_back(const value_type& data)
+	size_t push_back(const value_type& data)
 	{
 		if (!mInit)
 		{
 			Init(8);
 		}
 		(*mEnd) = data;
-		mEnd++;
+		size_t idx = std::distance(mVector.begin(), mEnd);
+		++mEnd;
 		
 		if (mEnd==mVector.end())
 		{
 			mEnd = mVector.begin();
-			assert(mBegin != mEnd); // buffer is too small.
 			if (mBegin==mEnd)
 			{
-				mBegin++;
+				Log("Particle circular buffer is too small. some will be deleted.");
+				++mBegin;
 				if (mBegin == mVector.end())
 				{
+					assert(0);
 					mBegin = mVector.begin();
 				}
 			}
 		}
+
+		return idx;
 	}
 	IteratorWrapper begin()
 	{
 		while(1)
 		{
-			if (mBegin == mEnd || !mBegin->IsAvailable())
+			if (!mBegin->IsAvailable() || mBegin == mEnd )
+			{
 				return IteratorWrapper(mBegin, &mVector);
-			mBegin++;
+			}
+				
+			++mBegin;
 			if (mBegin==mVector.end())
 				mBegin=mVector.begin();
 		}
@@ -127,6 +133,15 @@ public:
 			return *(mEnd-1);
 		}
 	}
+
+	value_type& GetAt(size_t idx)
+	{
+		return mVector.at(idx);
+	}
+
+	VECTOR& GetVector() { return mVector; }
+	iterator& GetRawBeginIter() { return mBegin; }
+	iterator& GetRawEndIter() { return mEnd; }
 
 private:
 	size_t mNext;

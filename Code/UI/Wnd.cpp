@@ -7,9 +7,9 @@ namespace fastbird
 
 Wnd::Wnd()
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
 
 Wnd::~Wnd()
@@ -26,21 +26,23 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 	__super::GatherVisit(v);
 }
 
-void Wnd::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+bool Wnd::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mVisible)
-		return;
+		return false;
 
-	__super::OnInputFromHandler(mouse, keyboard);
+	bool mouseIn = __super::OnInputFromHandler(mouse, keyboard);
 
-	if (!mVisible || !WinBase::GetFocus())
-		return;
+	if (!WinBase::GetFocus())
+		return mouseIn;
 
 	if (keyboard->IsValid())
 	{
 		char c = (char)keyboard->GetChar();
 		keyboard->Invalidate();
 	}
+
+	return mouseIn;
 }
 
 }

@@ -8,16 +8,15 @@ namespace fastbird
 {
 
 const float StaticText::LEFT_GAP = 0.001f;
-const float StaticText::BOTTOM_GAP = 0.004f;
 
 StaticText::StaticText()
 	: WinBase()
 	, mCursorPos(0)
 	, mPasswd(false)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 	mUIObject->SetNoDrawBackground(true);
 }
@@ -28,18 +27,29 @@ StaticText::~StaticText()
 
 void StaticText::GatherVisit(std::vector<IUIObject*>& v)
 {
+	if (!mVisible)
+		return;
 	v.push_back(mUIObject);	
 }
 
 void StaticText::OnPosChanged()
 {
 	WinBase::OnPosChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	AlignText();
 }
 
 void StaticText::OnSizeChanged()
 {
 	WinBase::OnSizeChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	AlignText();
+}
+
+bool StaticText::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	__super::SetProperty(prop, val);
+	if (prop== UIProperty::TEXT_COLOR)
+		mUIObject->SetTextColor(mTextColor);
+
+	return true;
 }
 }

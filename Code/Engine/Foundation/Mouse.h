@@ -17,7 +17,7 @@ namespace fastbird
 		virtual void PushEvent(const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
-		virtual bool IsValid() const;
+		virtual bool IsValid() const { return mValid; }
 		virtual void Invalidate();
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
@@ -28,6 +28,7 @@ namespace fastbird
 		virtual void GetDragStart(long &x, long &y) const;
 		virtual bool IsDragStartIn(const RECT& region) const;
 
+		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(float* time = 0) const;
 		virtual bool IsLButtonClicked() const;
 		virtual bool IsLButtonDoubleClicked() const;
@@ -35,6 +36,7 @@ namespace fastbird
 		virtual bool IsRButtonDown(float* time = 0) const;
 		virtual bool IsRButtonClicked() const;
 		virtual bool IsRButtonPressed() const;
+		virtual bool IsMButtonDown() const;
 		virtual bool IsMoved() const;
 
 		virtual long GetWheel() const;
@@ -55,6 +57,7 @@ namespace fastbird
 
 	private:
 		int mButtonsDown;
+		int mButtonsDownPrev;
 		int mButtonsPressed;
 		int mButtonsClicked;
 		int mButtonsDoubleClicked;

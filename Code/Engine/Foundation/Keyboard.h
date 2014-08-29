@@ -14,7 +14,7 @@ namespace fastbird
 		virtual void PushEvent(const KeyboardEvent& keyboardEvent);
 		virtual void PushChar(unsigned keycode);
 		virtual void EndFrame();
-		virtual bool IsValid() const;
+		virtual bool IsValid() const { return mValid; }
 		virtual void Invalidate();
 		virtual bool IsKeyDown(unsigned short keycode) const;
 		virtual bool IsKeyPressed(unsigned short keycode) const;

@@ -11,17 +11,20 @@ namespace fastbird
 		MeshObject();
 		virtual ~MeshObject();
 		
+		static void ClearHighlightMesh();
 		//------------------------------------------------------------------------
 		// IObject
 		//------------------------------------------------------------------------
 		virtual void PreRender();
 		virtual void Render();		
 		virtual void PostRender();
-		virtual void SetMaterial(const char* name);
-		virtual void SetMaterial(IMaterial* pMat);
+		virtual void SetMaterial(const char* name, int pass = 0);
+		virtual void SetMaterial(IMaterial* pMat, int pass = 0);
 		virtual void SetMaterialFor(int matGroupIdx, IMaterial* pMat);
+		virtual IMaterial* GetMaterial(int pass =0) const;
 		virtual void SetName(const char* name) { mName = name;}
 		virtual const char* GetName() const { return mName.c_str(); }
+		virtual void SetEnableHighlight(bool enable);
 
 		//------------------------------------------------------------------------
 		// IMeshObject
@@ -45,7 +48,7 @@ namespace fastbird
 		virtual Vec3* GetPositions(int matGroupIdx, size_t& outNumPositions);
 		virtual Vec3* GetNormals(int matGroupIdx, size_t& outNumNormals);
 		virtual Vec2* GetUVs(int matGroupIdx, size_t& outNumUVs);
-		virtual void GenerateTangent(UINT* indices, size_t num);
+		virtual void GenerateTangent(int matGroupIdx, UINT* indices, size_t num);
 		virtual void EndModification(bool keepMeshData);
 
 		virtual void SetTopology(PRIMITIVE_TOPOLOGY topology);
@@ -54,7 +57,6 @@ namespace fastbird
 
 		virtual const AUXILIARIES& GetAuxiliaries() const { return mAuxCloned ? *mAuxCloned : mAuxil; }
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) {mAuxil = aux; }
-
 		struct MaterialGroup
 		{
 			SmartPtr<IMaterial> mMaterial;
@@ -74,6 +76,8 @@ namespace fastbird
 
 	private:
 		void CreateMaterialGroupFor(int matGroupIdx);
+		friend class Engine;
+		virtual void Delete();
 
 	private:
 		// OBJECT
@@ -89,5 +93,8 @@ namespace fastbird
 		AUXILIARIES mAuxil;
 		AUXILIARIES* mAuxCloned;
 		bool mModifying;
+		bool mRenderHighlight;
+		SmartPtr<IRasterizerState> mHighlightRasterizeState;
+		static SmartPtr<IMaterial> mHighlightMaterial;
 	};
 }

@@ -11,7 +11,7 @@ namespace fastbird
 {
 FileSelector::FileSelector()
 {	
-	SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.15, 0.15, 0.15, 1.0");
+	SetProperty(UIProperty::BACK_COLOR, "0.15, 0.15, 0.15, 1.0");
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.05f, 0.01f, 0.9f, 0.05f, ComponentType::StaticText) );
 	mStaticText->SetText(L"Select a file:");
@@ -34,8 +34,8 @@ FileSelector::FileSelector()
 	{
 		mDriveButtons.push_back(static_cast<Button*>(
 			AddChild(xpos, 0.07f, 0.08f, 0.05f, ComponentType::Button)));
-		mDriveButtons.back()->SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
-		mDriveButtons.back()->SetProperty(IWinBase::PROPERTY_BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
+		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
+		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
 		mDriveButtons.back()->SetText(AnsiToWide(drives[i].c_str(), drives[i].size()));
 		mDriveButtons.back()->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
 			std::bind(&FileSelector::OnDriveClick, this, std::placeholders::_1));
@@ -43,11 +43,11 @@ FileSelector::FileSelector()
 	}
 	mFileTextField = static_cast<TextField*>(
 		AddChild(0.05f, 0.13f, 0.9f, 0.05f, ComponentType::TextField) );
-	mFileTextField->SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
+	mFileTextField->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
 
 	mListBox = static_cast<ListBox*>(
 		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox) );
-	mListBox->SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
+	mListBox->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
 	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK, 
 		std::bind(&FileSelector::OnListClick, this, std::placeholders::_1));
 	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOUBLE_CLICK, 
@@ -57,18 +57,18 @@ FileSelector::FileSelector()
 		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
 	mOKButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK, 
 		std::bind(&FileSelector::OnOK, this, std::placeholders::_1));
-	mOKButton->SetProperty(IWinBase::PROPERTY_TEXT_ALIGN, "center");
+	mOKButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mOKButton->SetText(L"OK");
 
 	mCancelButton = static_cast<Button*>(
 		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
 	mCancelButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
 		std::bind(&FileSelector::OnCancel, this, std::placeholders::_1));
-	mCancelButton->SetProperty(IWinBase::PROPERTY_TEXT_ALIGN, "center");
+	mCancelButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mCancelButton->SetText(L"Cancel");	
 
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
 
 FileSelector::~FileSelector()

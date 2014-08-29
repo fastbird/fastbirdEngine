@@ -150,10 +150,10 @@ TEST(CommonLib, DISABLED_Thread)
 	float time = 0;
 	{
 		Profiler profile("Perlin_SingleThread", &time);
-		PerlinTask* PerlinTaskST = new PerlinTask(ImageST, 0, 0, 2048, 2048, 2048, NULL);   
+		PerlinTask* PerlinTaskST = FB_NEW(PerlinTask)(ImageST, 0, 0, 2048, 2048, 2048, NULL);
 		
 		PerlinTaskST->Execute(NULL);
-		delete PerlinTaskST;
+		FB_SAFE_DEL(PerlinTaskST);
 	}
     printf("  Single-thread: %.2fs\n", time);
 
@@ -168,7 +168,7 @@ TEST(CommonLib, DISABLED_Thread)
 		{
 			for(int x=0; x<32; x++)
 			{
-				Tasks[y*32+x] = new PerlinTask(
+				Tasks[y * 32 + x] = FB_NEW(PerlinTask)(
 					ImageMT + y * 64 * 2048 + x * 64, x * 64, y * 64, 64, 64, 2048, 
 					Tasks[0] ? Tasks[0]->GetSyncCounter() : NULL);
 			}

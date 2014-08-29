@@ -3,7 +3,7 @@
 #include <Engine/Renderer/RendererEnums.h>
 #include <Engine/Renderer/RendererStructs.h>
 #include <Engine/Misc/ColorRamp.h>
-
+#include <Engine/Renderer/RendererEnums.h>
 namespace fastbird
 {
 	class ITexture;
@@ -18,6 +18,15 @@ namespace fastbird
 
 		struct ShaderDefine
 		{
+			ShaderDefine()
+			{
+
+			}
+			ShaderDefine(const char* _name, const char* _value)
+				: name(_name), value(_value)
+			{
+
+			}
 			bool operator==(const ShaderDefine& b) const
 			{
 				if (name == b.name && value == b.value)
@@ -38,6 +47,7 @@ namespace fastbird
 		virtual const char* GetName() const = 0;
 
 		virtual IMaterial* Clone() = 0;
+		virtual IMaterial* GetAdam() const = 0;
 
 		virtual void SetAmbientColor(float r, float g, float b, float a) = 0;
 		virtual void SetAmbientColor(const Vec4& ambient) = 0;
@@ -63,11 +73,13 @@ namespace fastbird
 
 		virtual void RefreshColorRampTexture(int slot, BINDING_SHADER shader) = 0;
 
-		virtual void SetShaderDefines(const char* name, const char* val) = 0;
 		virtual void SetMaterialParameters(unsigned index, const Vec4& value) = 0;
 		virtual const SHADER_DEFINES& GetShaderDefines() const = 0;
+		virtual void AddShaderDefine(const char* def, const char* val) = 0;
+		virtual void RemoveShaderDefine(const char* def) = 0;
+		virtual void ApplyShaderDefines() = 0;
 
-
+		
 		virtual const Vec4& GetAmbientColor() const = 0;
 		virtual const Vec4& GetDiffuseColor() const = 0;
 		virtual const Vec4& GetSpecularColor() const = 0;
@@ -76,9 +88,17 @@ namespace fastbird
 		virtual const char* GetShaderFile() const = 0;
 		virtual void* GetShaderByteCode(unsigned& size) const = 0;
 		virtual const Vec4& GetMaterialParameters(unsigned index) const = 0;
+		virtual bool IsRelatedShader(const char* shaderFile) = 0;
 
 		virtual void Bind(bool inputLayout) = 0;
+		virtual bool BindSubPass(RENDER_PASS p) = 0;
+		virtual void BindMaterialParams() = 0;
 		virtual void RegisterReloading() = 0;
+		virtual bool IsTransparent() const = 0;
+		virtual void ReloadShader() = 0;
+
+		virtual int GetBindingShaders() const = 0;
+		virtual void CopyMaterialParamFrom(const IMaterial* src) = 0;
 	};
 
 	inline bool operator==(const IMaterial::SHADER_DEFINES& a,

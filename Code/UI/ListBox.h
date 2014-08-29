@@ -22,7 +22,6 @@ public:
 
 protected:
 	const static float LEFT_GAP;
-	const static float BOTTOM_GAP;
 	virtual void OnPosChanged();
 	virtual void OnSizeChanged();
 

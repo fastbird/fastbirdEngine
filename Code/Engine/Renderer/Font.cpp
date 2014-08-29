@@ -100,7 +100,7 @@ Font::~Font()
 	std::map<int, SCharDescr*>::iterator it = mChars.begin();
 	while( it != mChars.end() )
 	{
-		delete it->second;
+		FB_SAFE_DEL(it->second);
 		it++;
 	}
 }
@@ -133,12 +133,12 @@ int Font::Init(const char *fontFile)
 		Profiler profiler("'Font loding'");
 		FontLoader *loader = 0;
 		if( strcmp(str, "BMF") == 0 )
-			loader = new FontLoaderBinaryFormat(f, this, fontFile);
+			loader = FB_NEW(FontLoaderBinaryFormat)(f, this, fontFile);
 		else
-			loader = new FontLoaderTextFormat(f, this, fontFile);
+			loader = FB_NEW(FontLoaderTextFormat)(f, this, fontFile);
 
 		r = loader->Load();
-		delete loader;
+		FB_SAFE_DEL(loader);
 	}
 
 	mVertexBuffer = gFBEnv->pEngine->GetRenderer()->CreateVertexBuffer(0, sizeof(FontVertex), MAX_BATCH, 
@@ -151,6 +151,7 @@ int Font::Init(const char *fontFile)
 		IMaterial::SHADER_DEFINES());
 	mInputLayout = gFBEnv->pEngine->GetRenderer()->GetInputLayout(
 		DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES, mShader);
+	FB_SET_DEVICE_DEBUG_NAME(mInputLayout, "font input layout");
 		
 	mInitialized = r==0;
 
@@ -163,7 +164,12 @@ int Font::Init(const char *fontFile)
 	ds.DepthEnable = false;
 	SetDepthStencilState(ds);
 
-	SetBlendState(BLEND_DESC());
+	BLEND_DESC desc;
+	desc.RenderTarget[0].BlendEnable = true;
+	desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+	desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+	desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+	SetBlendState(desc);
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
 		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
 		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
@@ -508,6 +514,7 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 	font->mPages[id] = gFBEnv->pEngine->GetRenderer()->CreateTexture(str.c_str());
 	font->mPages[id]->SetShaderStage(BINDING_SHADER_PS);
 	font->mPages[id]->SetSlot(0);
+	font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 
 	//font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 	
@@ -546,7 +553,7 @@ void FontLoader::AddChar(int id, int x, int y, int w, int h, int xoffset, int yo
 
 	if( id >= 0 )
 	{
-		SCharDescr *ch = new SCharDescr;
+		SCharDescr *ch = FB_NEW(SCharDescr);
 		ch->srcX = x;
 		ch->srcY = y;
 		ch->srcW = w;
@@ -1011,14 +1018,14 @@ struct infoBlock
 };
 #pragma pack(pop)
 
-	char *buffer = new char[size];
+	char *buffer = FB_ARRNEW(char, size);
 	fread(buffer, size, 1, f);
 
 	// We're only interested in the outline thickness
 	infoBlock *blk = (infoBlock*)buffer;
 	SetFontInfo(blk->outline);
 
-	delete[] buffer;
+	FB_ARRDELETE(buffer);
 }
 
 void FontLoaderBinaryFormat::ReadCommonBlock(int size)
@@ -1041,14 +1048,14 @@ struct commonBlock
 }; 
 #pragma pack(pop)
 
-	char *buffer = new char[size];
+	char *buffer = FB_ARRNEW(char, size);
 	fread(buffer, size, 1, f);
 
 	commonBlock *blk = (commonBlock*)buffer;
 
 	SetCommonInfo(blk->lineHeight, blk->base, blk->scaleW, blk->scaleH, blk->pages, blk->packed ? true : false);
 
-	delete[] buffer;
+	FB_ARRDELETE(buffer);
 }
 
 void FontLoaderBinaryFormat::ReadPagesBlock(int size)
@@ -1061,7 +1068,7 @@ struct pagesBlock
 };
 #pragma pack(pop)
 
-	char *buffer = new char[size];
+	char *buffer = FB_ARRNEW(char, size);
 	fread(buffer, size, 1, f);
 
 	pagesBlock *blk = (pagesBlock*)buffer;
@@ -1072,7 +1079,7 @@ struct pagesBlock
 		pos += 1 + (int)strlen(&blk->pageNames[pos]);
 	}
 
-	delete[] buffer;
+	FB_ARRDELETE(buffer);
 }
 
 void FontLoaderBinaryFormat::ReadCharsBlock(int size)
@@ -1097,7 +1104,7 @@ struct charsBlock
 };
 #pragma pack(pop)
 
-	char *buffer = new char[size];
+	char *buffer = FB_ARRNEW(char, size);
 	fread(buffer, size, 1, f);
 
 	charsBlock *blk = (charsBlock*)buffer;
@@ -1116,7 +1123,7 @@ struct charsBlock
 				blk->chars[n].chnl);
 	}
 
-	delete[] buffer;
+	FB_ARRDELETE(buffer);
 }
 
 void FontLoaderBinaryFormat::ReadKerningPairsBlock(int size)
@@ -1134,7 +1141,7 @@ struct kerningPairsBlock
 };
 #pragma pack(pop)
 
-	char *buffer = new char[size];
+	char *buffer = FB_ARRNEW(char, size);
 	fread(buffer, size, 1, f);
 
 	kerningPairsBlock *blk = (kerningPairsBlock*)buffer;
@@ -1146,5 +1153,5 @@ struct kerningPairsBlock
 					   blk->kerningPairs[n].amount);
 	}
 
-	delete[] buffer;
+	FB_ARRDELETE(buffer);
 }

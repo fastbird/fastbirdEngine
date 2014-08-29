@@ -23,8 +23,9 @@
 #pragma once
 #ifndef IEngine_header_included
 #define IEngine_header_included
-
 #include <CommonLib/SmartPtr.h>
+
+#include <Engine/GlobalEnv.h>
 #include <Engine/IInputListener.h>
 
 #define FB_DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__
@@ -43,19 +44,19 @@ namespace fastbird
 	class IMeshObject;
 	class IMeshGroup;
 	class IParticleEmitter;
+	class IFileChangeListener;
 
 	class CLASS_DECLSPEC_ENGINE IEngine : public ReferenceCounter
 	{
 	public:
 		static IEngine* CreateInstance();
+		static void DeleteInstance(IEngine* e);
 
 		virtual ~IEngine(){}
 		virtual void GetGlobalEnv(GlobalEnv** outGloblEnv) = 0;
 		virtual HWND CreateEngineWindow(int x, int y, int width, int height, 
 			const char* title, WNDPROC winProc)
-			{
-				int a=0;
-				a++;
+		{
 				return 0;
 		}
 		virtual HWND GetWindowHandle() const = 0;
@@ -70,15 +71,17 @@ namespace fastbird
 
 		virtual inline IRenderer* GetRenderer() const = 0;
 		virtual inline IScene* GetScene() const = 0;
+		virtual inline IScene* GetOriginalScene() const = 0;
 		virtual void SetSceneOverride(IScene* pScene) = 0;
 
 		virtual void UpdateInput() = 0;
 		virtual void UpdateFrame(float dt) = 0;
 
-		virtual ICamera* CreateAndRegisterCamera(const char* cameraName) = 0;
-		virtual void RegisterCamera(const char* cameraName, ICamera* pCamera) = 0;
-		virtual ICamera* GetCamera(int idx) = 0;
-		virtual ICamera* GetCamera(const char* cameraName) = 0;
+		virtual size_t CreateCameraAndRegister(const char* cameraName) = 0;
+		virtual size_t RegisterCamera(const char* cameraName, ICamera* pCamera) = 0;
+		virtual bool SetActiveCamera(size_t idx) = 0;
+		virtual ICamera* GetCamera(size_t idx) = 0;
+		virtual ICamera* GetCamera(const std::string& cameraName) = 0;
 		
 		// Terrain
 		// numVertX * numVertY = (2^n+1) * (2^m+1)
@@ -111,8 +114,24 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
-		virtual IParticleEmitter* GetParticleEmitter(const char* file) = 0;
-		virtual IParticleEmitter* GetParticleEmitter(unsigned id) = 0;
+		virtual void DeleteMeshObject(IMeshObject* p) = 0;
+		virtual void DeleteMeshGroup(IMeshGroup* p) = 0;
+		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr) = 0;
+		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr) = 0;
+		virtual void ReleaseParticleEmitter(IParticleEmitter* p) = 0;
+
+		// usually you should not use these functions.
+		virtual void GetMousePos(long& x, long& y) = 0;
+		virtual bool IsMouseLButtonDown() const = 0;
+		virtual IKeyboard* GetKeyboard() const = 0;
+		virtual IMouse* GetMouse() const = 0;
+
+		virtual std::string GetConfigStringValue(const char* section, const char* name) = 0;
+		virtual int GetConfigIntValue(const char* section, const char* name) = 0;
+		virtual bool GetConfigBoolValue(const char* section, const char* name) = 0;
+
+		virtual void RegisterFileChangeListener(IFileChangeListener* listener) = 0;
+		virtual void RemoveFileChangeListener(IFileChangeListener* listener) = 0;
 
 #ifdef _FBENGINE_FOR_WINDOWS_
 		// return processed
@@ -124,6 +143,13 @@ namespace fastbird
 		static void Log(const char* szFmt, ...);
 		static void Error(const char* szFmt, ...);
 		static void LogLastError(const char* file, int line, const char* function);
+	};
+
+	//--------------------------------------------------------------------------------
+	class IFileChangeListener
+	{
+	public:
+		virtual void OnFileChanged(const char* file) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

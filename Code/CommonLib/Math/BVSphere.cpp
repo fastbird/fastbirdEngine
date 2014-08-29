@@ -8,9 +8,9 @@ using namespace fastbird;
 BoundingVolume* BoundingVolume::Create(BVType type /*= BV_SPHERE*/)
 {
 	if (type == BV_SPHERE)
-		return new BVSphere;
+		return FB_NEW(BVSphere);
 	else if (type == BV_AABB)
-		return new BVaabb;
+		return FB_NEW(BVaabb);
 
 	else
 	{

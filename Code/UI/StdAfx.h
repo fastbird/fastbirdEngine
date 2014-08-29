@@ -16,9 +16,12 @@
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/Math/Vec2.h>
 #include <CommonLib/Math/Vec2I.h>
+#include <CommonLib/Math/fbMath.h>
 #include <CommonLib/Color.h>
 #include <CommonLib/Unicode.h>
 #include <CommonLib/tinydir.h>
+#include <CommonLib/Timer.h>
+#include <CommonLib/tinyxml2.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>

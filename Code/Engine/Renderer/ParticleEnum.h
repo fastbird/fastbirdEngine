@@ -27,7 +27,7 @@ namespace fastbird
 		{
 			if (_stricmp(str, "Billboard")==0)
 				return Billboard;
-			else if (_stricmp(str, "Direction")==0)
+			else if (_stricmp(str, "Direction") == 0)
 				return Direction;
 			else
 			{
@@ -117,5 +117,29 @@ namespace fastbird
 				return NUM;
 			}
 		}
+	}
+
+	namespace ParticleBlendMode
+	{
+		enum Enum{ Additive, AlphaBlend, InvColorBlend, Replace, NUM };
+		static const char* strings[] ={ "Additive", "AlphaBlend", "InvColorBlend", "Replace" };
+		inline std::string ConvertToString(Enum a){
+			assert(a >= 0 && a < NUM);
+		}
+		inline Enum ConvertToEnum(const char* str){
+			if (_stricmp(str, "Additive") == 0)
+				return Additive;
+			if (_stricmp(str, "AlphaBlend") == 0)
+				return AlphaBlend;
+			if (_stricmp(str, "InvColorBlend") == 0)
+				return InvColorBlend;
+			if (_stricmp(str, "Replace") == 0)
+				return Replace;
+			else{
+				assert(0);
+				return NUM;
+			}
+		}
+
 	}
 }

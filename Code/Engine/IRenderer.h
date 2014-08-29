@@ -6,6 +6,7 @@
 #include <Engine/IVertexBuffer.h>
 #include <Engine/IIndexBuffer.h>
 #include <Engine/Renderer/RendererStructs.h>
+#include <Engine/Renderer/RendererEnums.h>
 #include <Engine/IInputLayout.h>
 #include <Engine/IScene.h>
 #include <Engine/IShader.h>
@@ -16,6 +17,17 @@
 #include <CommonLib/Math/Vec2.h>
 
 #undef DrawText
+
+#ifdef _DEBUG
+#define FB_SET_DEVICE_DEBUG_NAME(pObj, name) \
+	assert(pObj); \
+	assert(name); \
+	assert(strlen(name) > 0); \
+	pObj->SetDebugName((name))
+
+#else
+#define FB_SET_DEVICE_DEBUG_NAME(pObj, name)
+#endif
 
 namespace fastbird
 {	
@@ -29,6 +41,16 @@ class IDepthStencilState;
 class IFont;
 class IRenderToTexture;
 class ILight;
+struct CloudProperties
+{
+	float		fLength;
+	float		fWidth;
+	float		fHigh;
+	float		fCellSize;
+	float		fEvolvingSpeed;
+	Vec3		vCloudPos;
+	unsigned	particleID;
+};
 
 class IRenderer : public ReferenceCounter
 {
@@ -38,6 +60,7 @@ public:
 	static IRenderer* CreateOpenGLInstance();
 
 	virtual ~IRenderer() {}
+
 	// threadPool 0 : no thread pool
 	virtual bool Init(int threadPool) = 0;
 	virtual int InitSwapChain(HWND handle, int width, int height) = 0;
@@ -49,6 +72,8 @@ public:
 	virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
 	virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil) = 0;
 	virtual void Clear() = 0;
+	virtual void Clear(float r, float g, float b, float a) = 0;// only color
+	virtual void ClearState() = 0;
 	virtual void SetCamera(ICamera* pCamera) = 0;
 	virtual ICamera* GetCamera() const = 0;
 	virtual void UpdateFrameConstantsBuffer() = 0;
@@ -57,13 +82,21 @@ public:
 	virtual void UpdateRareConstantsBuffer() = 0;
 	virtual void* MapMaterialParameterBuffer() = 0;
 	virtual void UnmapMaterialParameterBuffer() = 0;
+	virtual void* MapBigBuffer() = 0;
+	virtual void UnmapBigBuffer() = 0;
 	virtual void Present() = 0;
 	virtual void SetVertexBuffer(unsigned int startSlot, unsigned int numBuffers,
 		IVertexBuffer* pVertexBuffers[], unsigned int strides[], unsigned int offsets[]) = 0;
 	virtual void SetIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
-	virtual void SetShader(IShader* pShader) = 0;
+	virtual void SetShaders(IShader* pShader) = 0;
+	virtual void SetVSShader(IShader* pShader) = 0;
+	virtual void SetPSShader(IShader* pShader) = 0;
+	virtual void SetGSShader(IShader* pShader) = 0;
+	virtual void SetDSShader(IShader* pShader) = 0;
+	virtual void SetHSShader(IShader* pShader) = 0;
 	virtual void SetInputLayout(IInputLayout* pInputLayout) = 0;
 	virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) = 0;
+	virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot) = 0;
 	virtual void GenerateMips(ITexture* pTexture) = 0;
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
 	virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) = 0;
@@ -72,6 +105,7 @@ public:
 	virtual unsigned GetHeight() const=0;
 	virtual void SetWireframe(bool enable) = 0;
 	virtual bool GetWireframe() const = 0;
+	virtual unsigned GetMultiSampleCount() const = 0;
 
 	virtual MapData MapVertexBuffer(IVertexBuffer* pBuffer, UINT subResource, 
 		MAP_TYPE type, MAP_FLAG flag) = 0;
@@ -94,17 +128,28 @@ public:
 	virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) = 0;
 
-	virtual void SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, 
+	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num, 
 		ITexture* pDepthStencil, size_t dsIndex) = 0;
+	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num) = 0;
 	virtual void RestoreRenderTarget() = 0;
+	// internal use
+	// after called:
+	// 0 : current rendertarget
+	// 1 : glow rendertarget
+	// 2 : not changed
+	// 3 : not changed
+	virtual void SetGlowRenderTarget() = 0;
+	virtual void UnSetGlowRenderTarget() = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
 	virtual void RestoreViewports() = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
 	virtual void RestoreScissorRects() = 0;
 	// to restore directionalLight call this function with null light.
 	virtual void SetDirectionalLight(ILight* pLight) = 0;
+	virtual ILight* GetDirectionalLight() const = 0;
 	// returning number of vertices.
 	virtual int BindFullscreenQuadUV_VB(bool farSide) = 0;
+	virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside) = 0;
 
 	virtual IMaterial* CreateMaterial(const char* file) = 0;
 	virtual IMaterial* GetMissingMaterial() = 0;
@@ -153,6 +198,8 @@ public:
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
+	virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
+		DWORD color, IMaterial* pMat) = 0;
 
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e) = 0;
@@ -163,6 +210,48 @@ public:
 
 	// will hold reference.
 	virtual void SetEnvironmentTexture(ITexture* pTexture) = 0;
+
+	//-------------------------------------------------------------------------
+	// Render States
+	virtual void RestoreRasterizerState() = 0;
+	virtual void RestoreBlendState() = 0;
+	virtual void RestoreDepthStencilState() = 0;
+	virtual void LockDepthStencilState() = 0;
+	virtual void UnlockDepthStencilState() = 0;
+
+	// blend
+	virtual void SetAlphaBlendState() = 0;
+	virtual void SetRedAlphaMask() = 0;
+	virtual void SetGreenAlphaMask() = 0;
+	virtual void SetGreenMask() = 0;
+	virtual void SetBlueMask() = 0;
+	virtual void SetGreenAlphaMaskMax() = 0;
+	
+	virtual void SetGreenAlphaMaskAddAddBlend() = 0;
+	virtual void SetRedAlphaMaskAddMinusBlend() = 0;
+
+	virtual void SetGreenAlphaMaskAddMinusBlend() = 0;
+	virtual void SetRedAlphaMaskAddAddBlend() = 0;
+
+	// depth
+	virtual void SetNoDepthWriteLessEqual() = 0;
+	virtual void SetLessEqualDepth() = 0;
+
+	// raster
+	virtual void SetFrontFaceCullRS() = 0;
+
+	virtual void SetDepthWriteShader() = 0;
+	virtual void SetOccPreShader() = 0;
+	virtual void SetOccPreGSShader() = 0;
+	virtual void SetPositionInputLayout() = 0;
+
+	virtual void UpdateEnvMapInNextFrame(ISkySphere* sky) = 0;
+
+	virtual void InitCloud(unsigned numThreads, unsigned numCloud, CloudProperties* clouds) = 0;
+	virtual void CleanCloud() = 0;
+
+	virtual void SetCloudRendering(bool rendering) = 0;
+	
 };
 
 }

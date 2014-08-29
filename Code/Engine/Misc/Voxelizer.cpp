@@ -9,7 +9,12 @@ namespace fastbird
 
 IVoxelizer* IVoxelizer::CreateVoxelizer()
 {
-	return new Voxelizer;
+	return FB_NEW(Voxelizer);
+}
+
+void IVoxelizer::DeleteVoxelizer(IVoxelizer* p)
+{
+	FB_SAFE_DEL(p);
 }
 
 Voxelizer::Voxelizer()
@@ -59,12 +64,17 @@ void Voxelizer::CalcDistanceMap()
 	RASTERIZER_DESC rd_cull_back;
 
 	IMeshObject* pMeshObject = mColladaImporter->GetMeshObject();
-	assert(pMeshObject);
+	if (!pMeshObject)
+	{
+		Log("Voxelizing mesh %s is not found!", mFilepath.c_str());
+		return;
+	}
+		
 	float radius = pMeshObject->GetBoundingVolume()->GetRadius() * 1.05f;
 	// draw depth maps;
 	// x axis
 	SmartPtr<IRenderToTexture> pDepthRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
-	pDepthRT->SetColorTextureDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false);
+	pDepthRT->SetColorTextureDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false);
 	pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 	ICamera* pCam = pDepthRT->GetCamera();
 	pCam->SetOrthogonal(true);
@@ -82,7 +92,7 @@ void Voxelizer::CalcDistanceMap()
 		BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
 
 	
-	pCam->SetDir(Vec3(-radius, 0, 0));	
+	pCam->SetDir(Vec3(-radius, 0, 0).NormalizeCopy());	
 	pDepthRT->Render();
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
@@ -153,7 +163,7 @@ void Voxelizer::CalcDistanceMap()
 	}
 
 	// y axis
-	pCam->SetDir(Vec3(0, radius, 0));
+	pCam->SetDir(Vec3(0, radius, 0).NormalizeCopy());
 	pMeshObject->SetRasterizerState(rd_cull_back);
 	pDepthRT->Render();
 	//pColorTexture->SaveToFile("test.bmp");
@@ -220,7 +230,7 @@ void Voxelizer::CalcDistanceMap()
 	}
 
 	// z axis
-	pCam->SetDir(Vec3(0, 0, -radius));
+	pCam->SetDir(Vec3(0, 0, -radius).NormalizeCopy());
 	pMeshObject->SetRasterizerState(rd_cull_back);
 	pDepthRT->Render();
 	//pColorTexture->SaveToFile("test.bmp");

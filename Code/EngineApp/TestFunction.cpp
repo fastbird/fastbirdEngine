@@ -12,13 +12,13 @@ int TestFunction()
 	{
 		while(1)
 		{
-			int* p = (int*)new int;
+			int* p = FB_NEW(int);
 			if (p==0)
 			{
 				size_t size = pointers.size();
 				for(size_t i=0; i<size; i++)
 				{
-					delete pointers[i];
+					FB_SAFE_DEL(pointers[i]);
 				}
 				pointers.clear();
 				break;
@@ -32,7 +32,7 @@ int TestFunction()
 		size_t size = pointers.size();
 		for(size_t i=0; i<size; i++)
 		{
-			delete pointers[i];
+			FB_SAFE_DEL(pointers[i]);
 		}
 		pointers.clear();
 	}

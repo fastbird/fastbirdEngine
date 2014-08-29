@@ -16,6 +16,8 @@ namespace fastbird
 
 		virtual std::string GetStringVariable(const char* name, 
 			const std::string& def);
+		virtual int GetIntVariable(const char* name, int def = 0);
+		virtual float GetRealVariable(const char* name, float def = 0);
 		
 
 	protected:

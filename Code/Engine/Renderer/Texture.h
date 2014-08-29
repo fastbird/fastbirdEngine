@@ -10,7 +10,10 @@ namespace fastbird
 		Texture();
 		virtual ~Texture();
 
+		static size_t NextTextureID;
 		
+		static void ReloadTexture(const char* unifiedPath);
+
 		virtual void SetName(const char* filepath);
 		virtual const std::string& GetName() const { return mName; }
 
@@ -23,6 +26,11 @@ namespace fastbird
 		virtual MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag);
 		virtual void Unmap(UINT subResource);
 
+		Texture* GetAdamTexture() const { return mAdamTexture; }
+		void SetAdamTexture(Texture* adam) { mAdamTexture = adam; }
+
+		size_t GetTextureID() const { return mTextureID; }
+
 	protected:
 		std::string mName;
 		TEXTURE_TYPE mType;
@@ -30,5 +38,7 @@ namespace fastbird
 	protected:
 		static std::vector<Texture*> mTextures;
 		SAMPLER_DESC mSamplerDesc;
+		SmartPtr<Texture> mAdamTexture;
+		size_t mTextureID;
 	};
 }

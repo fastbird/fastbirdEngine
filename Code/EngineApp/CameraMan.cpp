@@ -62,7 +62,7 @@ void CameraMan::Update(float elapsedTime)
 		
 		sprintf_s(buffer, "Cam matrix[0] = %s", StringConverter::toString(row0, 10, 4).c_str());
 		int x = 1100;
-		int y = 150;
+		int y = 180;
 		
 		int yStep = 16;
 		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
@@ -92,10 +92,6 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 	float deltaTime =  gEnv->pTimer->GetDeltaTime();
 	if (pKeyboard && pKeyboard->IsValid())
 	{
-		if (pKeyboard->IsKeyDown(VK_SHIFT))
-		{
-			cameraSpeed *= 5.0f;
-		}
 		if (pKeyboard->IsKeyDown('W'))
 		{
 			Vec3 forward = mCamera->GetForward();

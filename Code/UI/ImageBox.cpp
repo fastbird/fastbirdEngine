@@ -9,10 +9,10 @@ ImageBox::ImageBox()
 	, mAtlasRegion(0)
 	, mUseHighlight(false)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER, 
 		std::bind(&ImageBox::OnMouseHover, this, std::placeholders::_1));
@@ -24,11 +24,11 @@ ImageBox::~ImageBox()
 {
 }
 
-void ImageBox::SetImageFile(const char* file)
+void ImageBox::SetTexture(const char* file)
 {
 	mImageFile = file;
-
-	mUIObject->GetMaterial()->SetTexture(file, BINDING_SHADER_PS, 0);
+	ITexture* pTexture = gEnv->pRenderer->CreateTexture(file);
+	SetTexture(pTexture);
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)
@@ -41,19 +41,11 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	const RECT& r = mUIObject->GetRegion();
 	float width = (float)(r.right - r.left);
 	float height = (float)(r.bottom - r.top);
-	if (width > height)
-	{
-		float ratio = (float)(width) / (float)(height);
-		float halfu = ratio * .5f;
-		Vec2 texcoords[4] = {
-			Vec2(0.5f - halfu, 1.f),
-			Vec2(0.5f - halfu, 0.f),
-			Vec2(0.5f+halfu, 1.f),
-			Vec2(0.5f+halfu, 0.f)
-		};
-		mUIObject->SetTexCoord(texcoords, 4);
-	}
-	else if (width==height)
+	float imgRatio = width / height;
+	const RECT& uiRect = mUIObject->GetRegion();
+	float uiRatio = (uiRect.right - uiRect.left) /
+		(float)(uiRect.bottom - uiRect.top);
+	if (uiRatio == imgRatio)
 	{
 		Vec2 texcoords[4] = {
 			Vec2(0.f, 1.f),
@@ -65,13 +57,12 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	}
 	else
 	{
-		float ratio = (float)(height) / (float)(width);
-		float halfv = ratio * .5f;
+		float halfu = (imgRatio - uiRatio)* .5f;
 		Vec2 texcoords[4] = {
-			Vec2(0.f, 0.5f + halfv),
-			Vec2(0.f, 0.5f - halfv),
-			Vec2(1.f, 0.5f + halfv),
-			Vec2(1.f, 0.5f - halfv)
+			Vec2(0.5f - halfu, 1.f),
+			Vec2(0.5f - halfu, 0.f),
+			Vec2(0.5f + halfu, 1.f),
+			Vec2(0.5f + halfu, 0.f)
 		};
 		mUIObject->SetTexCoord(texcoords, 4);
 	}
@@ -84,8 +75,10 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 	{
 		mTexture = mTextureAtlas->mTexture->Clone();
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
+		SAMPLER_DESC sdesc;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
 		mUIObject->GetMaterial()->SetTexture(mTexture, 
-			BINDING_SHADER_PS, 0);
+			BINDING_SHADER_PS, 0, sdesc);
 		if (mAtlasRegion)
 		{
 			Vec2 texcoords[4];
@@ -127,6 +120,7 @@ void ImageBox::ChangeRegion(const char* region)
 void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 {
 	v.push_back(mUIObject);
+	__super::GatherVisit(v);
 }
 
 void ImageBox::Highlight(bool enable)
@@ -151,6 +145,31 @@ void ImageBox::OnMouseHover(void* arg)
 
 void ImageBox::OnMouseOut(void* arg)
 {
+}
+
+bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	switch (prop)
+	{
+	case UIProperty::TEXTUREATLAS:
+	{
+									 mImageFile = val;
+									 return true;
+	}
+		break;
+
+	case UIProperty::REGION:
+	{
+							   if (!mImageFile.empty())
+							   {
+								   SetTextureAtlasRegion(mImageFile.c_str(), val);
+							   }
+							   return true;
+	}
+		break;
+	}
+
+	return __super::SetProperty(prop, val);
 }
 
 }

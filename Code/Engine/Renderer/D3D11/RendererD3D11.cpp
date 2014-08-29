@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Renderer/D3D11/RendererD3D11.h>
+#include <Engine/RenderObjects/UIObject.h>
 #include <Engine/Foundation/Object.h>
 #include <Engine/IEngine.h>
 #include <Engine/GlobalEnv.h>
@@ -29,11 +30,12 @@ using namespace fastbird;
 //----------------------------------------------------------------------------
 IRenderer* IRenderer::CreateD3D11Instance()
 {
-	return new RendererD3D11();
+	return FB_NEW(RendererD3D11);
 }
 
 //----------------------------------------------------------------------------
 RendererD3D11::RendererD3D11()
+: mCurrentDSView(0)
 {
 	m_pDevice = 0;
 	m_pFactory = 0;
@@ -47,21 +49,15 @@ RendererD3D11::RendererD3D11()
 	m_pMaterialConstantsBuffer = 0;
 	m_pMaterialParametersBuffer = 0;
 	m_pRareConstantsBuffer = 0;
+	m_pBigBuffer = 0;
 	m_pImmutableConstantsBuffer = 0;
 	m_pWireframeRasterizeState = 0;
-	mForcedWireframe = false;
 	m_pThreadPump = 0;
-
-	mWidth = 0;
-	mHeight = 0;
-	mMultiSampleDesc.Count = 4;
-	mMultiSampleDesc.Quality = 16;
-	mDepthStencilCreated = false;
+	mMultiSampleDesc.Count = 1;
+	mMultiSampleDesc.Quality = 0;
 	mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	mFrameConstants.gViewProj.MakeIdentity();
 	mFrameConstants.gView.MakeIdentity();
-	mCamera = 0;
-	mClearColor.SetColor(0, 0, 0);
 
 	mBindedShader = 0;
 	mBindedInputLayout = 0;
@@ -70,44 +66,8 @@ RendererD3D11::RendererD3D11()
 
 //----------------------------------------------------------------------------
 RendererD3D11::~RendererD3D11()
-{	
-	for (int i = 0; i < DEFAULT_MATERIALS::COUNT; i++)
-	{
-		mMaterials[i] = 0;
-	}
-	mDirectionalLight = 0;
-	mDirectionalLightOverride = 0;
-	mVBQuadUV_Far = 0;
-	mVBQuadUV_Near = 0;
-	mDebugHud = 0;
-	mMissingMaterial = 0;
-	mEnvironmentTexture = 0;
-	
-	mFont = 0;
-	mMaterialCache.clear();
-	mTextureAtalsCache.clear();
-	mTextureCache.clear();
-	mInputLayouts.clear();
-
-	for (int i = 0; i < DEFAULT_INPUTS::COUNT; i++)
-	{
-		mDynVBs[i] = 0;
-	}
-
-	mRasterizerMap.clear();
-	mBlendMap.clear();
-	mDepthStencilMap.clear();
-
-	{
-		auto it = mSamplerMap.begin(), itEnd = mSamplerMap.end();
-		for(; it!=itEnd; it++)
-		{
-			SAFE_RELEASE(it->second);
-		}
-	}
-
-	Deinit();
-	
+{
+	Deinit();	
 	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is destroyed.");
 }
 
@@ -119,22 +79,39 @@ void RendererD3D11::Deinit()
 		m_pThreadPump->WaitForAllItems();
 		SAFE_RELEASE(m_pThreadPump);
 	}
-	OnDeinit();
+	__super::Deinit();
+	mRasterizerMap.clear();
+	mBlendMap.clear();
+	mDepthStencilMap.clear();
+	{
+		auto it = mSamplerMap.begin(), itEnd = mSamplerMap.end();
+		for (; it != itEnd; it++)
+		{
+			SAFE_RELEASE(it->second);
+		}
+	}	
+	m_pImmediateContext->ClearState();
 	SAFE_RELEASE(m_pWireframeRasterizeState);
 	SAFE_RELEASE(m_pMaterialParametersBuffer);
 	SAFE_RELEASE(m_pMaterialConstantsBuffer);
 	SAFE_RELEASE(m_pObjectConstantsBuffer);
 	SAFE_RELEASE(m_pFrameConstantsBuffer);
 	SAFE_RELEASE(m_pRareConstantsBuffer);
+	SAFE_RELEASE(m_pBigBuffer);
 	SAFE_RELEASE(m_pImmutableConstantsBuffer);
+	for each(auto r in mRenderTargetTextures)
+	{
+		SAFE_RELEASE(r);
+	}
+	
+	UIObject::ClearSharedRS();
+
 	SAFE_RELEASE(m_pDepthStencilView);
 	SAFE_RELEASE(m_pDepthStencil);
 	SAFE_RELEASE(m_pRenderTargetView);
-	SAFE_RELEASE(m_pImmediateContext);
 	SAFE_RELEASE(m_pSwapChain);
-	
 	// 0 is already released
-	for (size_t i=1; i<mSwapChains.size(); i++)
+	for (size_t i = 1; i<mSwapChains.size(); i++)
 	{
 		SAFE_RELEASE(mSwapChains[i]);
 		SAFE_RELEASE(mRenderTargetViews[i]);
@@ -143,15 +120,16 @@ void RendererD3D11::Deinit()
 	mSwapChains.clear();
 	mRenderTargetViews.clear();
 	mDepthStencilViews.clear();
-	for each(auto r in mRenderTargetTextures)
-	{
-		SAFE_RELEASE(r);
-	}
+	SAFE_RELEASE(m_pImmediateContext);
 
-	/*ID3D11Debug* pDebug;
-	m_pDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&pDebug));
-	pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-	SAFE_RELEASE(pDebug);*/
+	if (gFBEnv->pConsole->GetEngineCommand()->r_ReportDeviceObjectLeak)
+	{
+		ID3D11Debug* pDebug;
+		m_pDevice->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&pDebug));
+		pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		SAFE_RELEASE(pDebug);
+	}	
+	
 	SAFE_RELEASE(m_pDevice);
 
 	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is deinitilized.");
@@ -223,21 +201,19 @@ bool RendererD3D11::Init(int threadPool)
 		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
 		return false;
 	}
-
-
-	mMultiSampleDesc.Count = 1;
-	mMultiSampleDesc.Quality = 0;
-	unsigned msQuality = 0;
 	
-	hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &msQuality);
+	unsigned msQuality = 0;	
+	unsigned msCount = 1;
+	hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, msCount, &msQuality);
 	if (SUCCEEDED(hr))
 	{
-		mMultiSampleDesc.Count = 4;
-		mMultiSampleDesc.Quality = msQuality-1;
+		hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R32G32B32A32_FLOAT, msCount, &msQuality);
+		if (SUCCEEDED(hr))
+		{
+			mMultiSampleDesc.Count = msCount;
+			mMultiSampleDesc.Quality = std::min(msQuality - 1, (unsigned)4);
+		}
 	}
-
-
-	
 	/*RECT rc;
 	GetClientRect(gEnv->pEngine->GetWindowHandle(), &rc);
 	int width = rc.right - rc.left;
@@ -329,6 +305,14 @@ bool RendererD3D11::Init(int threadPool)
 		assert(0);
 	}
 
+	Desc.ByteWidth = sizeof(BIG_BUFFER);
+	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pBigBuffer);
+	if (FAILED(hr))
+	{
+		Log(FB_DEFAULT_DEBUG_ARG, "Failed to create big buffer!");
+		assert(0);
+	}
+
 	Desc.ByteWidth = sizeof(IMMUTABLE_CONSTANTS);
 	hr = m_pDevice->CreateBuffer( &Desc, NULL, &m_pImmutableConstantsBuffer );
 	if ( FAILED( hr ) )
@@ -370,13 +354,6 @@ bool RendererD3D11::Init(int threadPool)
 		assert(0);
 	}
 
-	// Light
-	mDirectionalLight = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-	mDirectionalLight->SetPosition(Vec3(1, -1, 1));
-	mDirectionalLight->SetDiffuse(Vec3(1, 1, 1));
-	mDirectionalLight->SetSpecular(Vec3(1, 1, 1));
-	mDirectionalLight->SetIntensity(1.0f);
-
 	if (threadPool!=0)
 	{
 		hr = D3DX11CreateThreadPump(1, threadPool, &m_pThreadPump);
@@ -409,7 +386,8 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 	HRESULT hr = m_pFactory->CreateSwapChain(m_pDevice, &sd, &pSwapChain);
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "CreateSwapChain failed!");
+		Error(FB_DEFAULT_DEBUG_ARG, "CreateSwapChain failed!");
+		assert(0);
 		return false;
 	}
 
@@ -418,7 +396,8 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 	hr = pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (void**)&pBackBuffer);
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to get backbuffer!");
+		Error(FB_DEFAULT_DEBUG_ARG, "Failed to get backbuffer!");
+		assert(0);
 		SAFE_RELEASE(pSwapChain);
 		return false;
 	}
@@ -427,7 +406,8 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 	pBackBuffer->Release();
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a render target view!");
+		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create a render target view!");
+		assert(0);
 		SAFE_RELEASE(pSwapChain);
 		return false;
 	}
@@ -450,7 +430,8 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 	ID3D11DepthStencilView* pDepthStencilView = 0;
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil texture!");
+		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil texture!");
+		assert(0);
 	}
 	else
 	{
@@ -534,6 +515,17 @@ void RendererD3D11::Clear()
 }
 
 //----------------------------------------------------------------------------
+void RendererD3D11::Clear(float r, float g, float b, float a)// only color
+{
+	float ClearColor[4] = { r, g, b, a }; // red,green,blue,alpha
+	for (size_t i = 0; i<mCurrentRTViews.size(); i++)
+	{
+		if (mCurrentRTViews[i])
+			m_pImmediateContext->ClearRenderTargetView(mCurrentRTViews[i], ClearColor);
+	}
+}
+
+//----------------------------------------------------------------------------
 void RendererD3D11::UpdateFrameConstantsBuffer()
 {
 	if (mCamera)
@@ -553,6 +545,13 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 	mFrameConstants.gDirectionalLightSpecular = float4(pLight->GetSpecular(), 1.0f);
 	mFrameConstants.gCameraPos = mCamera->GetPos();
 	mFrameConstants.gTime = gFBEnv->pTimer->GetTime();
+	long x, y;
+	gFBEnv->pEngine->GetMousePos(x, y);
+	mFrameConstants.gMousePos.x = (float)x;
+	mFrameConstants.gMousePos.y = (float)y;
+	bool lbuttonDown = gFBEnv->pEngine->IsMouseLButtonDown();
+	mFrameConstants.gMousePos.z = lbuttonDown ? (float)x : 0;
+	mFrameConstants.gMousePos.w = lbuttonDown ? (float)y : 0;
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	m_pImmediateContext->Map( m_pFrameConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 	memcpy(mappedResource.pData, &mFrameConstants, sizeof(FRAME_CONSTANTS));
@@ -562,7 +561,12 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 	m_pImmediateContext->PSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
 
 	if (m_pImmutableConstantsBuffer)
-		m_pImmediateContext->PSSetConstantBuffers(5, 1, &m_pImmutableConstantsBuffer);
+		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
+}
+
+void RendererD3D11::ClearState()
+{
+	m_pImmediateContext->ClearState();
 }
 
 //----------------------------------------------------------------------------
@@ -591,6 +595,13 @@ void RendererD3D11::UpdateMaterialConstantsBuffer(void* pData)
 //----------------------------------------------------------------------------
 void RendererD3D11::UpdateRareConstantsBuffer()
 {
+	static int entered = 0;
+	++entered;
+	if (entered != 1)
+	{
+		--entered;
+		return;
+	}
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT hr;
 	hr = m_pImmediateContext->Map( m_pRareConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
@@ -602,9 +613,12 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	pRareConstants->gScreenSize.y = (float)mHeight;
 	pRareConstants->gTangentTheta = tan(mCamera->GetFOV()/2.0f);
 	pRareConstants->gScreenRatio = mWidth / (float)mHeight;
+	pRareConstants->gFogColor = gFBEnv->pEngine->GetScene()->GetFogColor().GetVec4();
 	m_pImmediateContext->Unmap(m_pRareConstantsBuffer, 0);
+	m_pImmediateContext->VSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	m_pImmediateContext->GSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	m_pImmediateContext->PSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
+	--entered;
 }
 
 //----------------------------------------------------------------------------
@@ -612,8 +626,7 @@ void* RendererD3D11::MapMaterialParameterBuffer()
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	m_pImmediateContext->Map( m_pMaterialParametersBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
-	return mappedResource.pData;
-	
+	return mappedResource.pData;	
 }
 
 //----------------------------------------------------------------------------
@@ -626,17 +639,30 @@ void RendererD3D11::UnmapMaterialParameterBuffer()
 }
 
 //----------------------------------------------------------------------------
+void* RendererD3D11::MapBigBuffer()
+{
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map(m_pBigBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	return mappedResource.pData;
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::UnmapBigBuffer()
+{
+	m_pImmediateContext->Unmap(m_pBigBuffer, 0);
+	m_pImmediateContext->PSSetConstantBuffers(5, 1, &m_pBigBuffer);
+}
+
+unsigned RendererD3D11::GetMultiSampleCount() const
+{
+	return mMultiSampleDesc.Count;
+}
+//----------------------------------------------------------------------------
 IRenderToTexture* RendererD3D11::CreateRenderToTexture(bool everyframe)
 {
-	if (everyframe)
-	{
-		mRenderToTextures.push_back(new RenderToTextureD3D11);
-		return mRenderToTextures.back();
-	}
-	else
-	{
-		return new RenderToTextureD3D11;
-	}
+	mRenderToTextures.push_back(FB_NEW(RenderToTextureD3D11));
+	mRenderToTextures.back()->SetEveryFrame(everyframe);
+	return mRenderToTextures.back();
 }
 
 void RendererD3D11::DeleteRenderToTexture(IRenderToTexture* removeRT)
@@ -662,6 +688,11 @@ void RendererD3D11::Present()
 		{
 			if ((*it)->mHr==S_OK)
 			{
+				TextureD3D11* pt = (TextureD3D11*)(*it);
+				size_t id = pt->GetTextureID();
+				char buf[256];
+				sprintf_s(buf, "TextureID(%u)", id);
+				FB_SET_DEVICE_DEBUG_NAME(pt, buf);
 				it = mCheckTextures.erase(it);
 			}
 			else
@@ -719,6 +750,43 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 	}
 }
 
+void RendererD3D11::SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot)
+{
+	std::vector<ID3D11ShaderResourceView*> rvs;
+	std::vector<ID3D11SamplerState*> samplers;
+	rvs.reserve(num);
+	for (int i = 0; i < num; i++)
+	{
+		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTextures[i]);
+		if (pTextureD3D11)
+		{
+			rvs.push_back(pTextureD3D11->GetHardwareResourceView());
+			samplers.push_back(pTextureD3D11->GetSamplerState());
+		}
+		else
+		{
+			rvs.push_back(0);
+			samplers.push_back(0);
+		}
+	}
+
+	switch (shaderType)
+	{
+	case BINDING_SHADER_VS:
+		m_pImmediateContext->VSSetShaderResources(startSlot, num, &rvs[0]);
+		m_pImmediateContext->VSSetSamplers(startSlot, num, &samplers[0]);
+		break;
+	case BINDING_SHADER_PS:
+		m_pImmediateContext->PSSetShaderResources(startSlot, num, &rvs[0]);
+		m_pImmediateContext->PSSetSamplers(startSlot, num, &samplers[0]);
+		break;
+	default:
+		assert(0);
+		break;
+	}
+	
+}
+
 void RendererD3D11::GenerateMips(ITexture* pTexture)
 {
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTexture);
@@ -770,6 +838,13 @@ IVertexBuffer* RendererD3D11::CreateVertexBuffer(void* data, unsigned stride,
 	{
 		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a vertex buffer!");
 	}
+	else
+	{
+		static unsigned ID = 0;
+		char buf[256];
+		sprintf_s(buf, "VertexBuffer ID(%d)", ID++);
+		pHardwareBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
+	}
 	
 
 	pVertexBufferD3D11->SetHardwareBuffer(pHardwareBuffer);
@@ -807,26 +882,95 @@ IIndexBuffer* RendererD3D11::CreateIndexBuffer(void* data, unsigned int numIndic
 	return pIndexBufferD3D11;
 }
 
+class IncludeProcessor : public ID3DInclude
+{
+public:
+	IncludeProcessor(const char* filename, IShader* pshader)
+		: mShader(pshader)
+	{
+		assert(mShader);
+		mWorkingDirectory = fastbird::GetDirectoryPath(filename) + "/";
+	}
+	~IncludeProcessor()
+	{
+		mShader->SetIncludeFiles(mProcessedFiles);
+	}
+	virtual COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Open(
+		D3D10_INCLUDE_TYPE IncludeType,
+		LPCSTR pFileName,
+		LPCVOID pParentData,
+		LPCVOID *ppData,
+		UINT *pBytes
+		)
+	{
+		assert(IncludeType == D3D10_INCLUDE_LOCAL);
+		FILE* file = 0;
+		std::string filepath = mWorkingDirectory + pFileName;
+		fopen_s(&file, filepath.c_str(), "rb");
+		if (file == 0)
+		{
+			filepath = "code/engine/renderer/shaders/";
+			filepath += pFileName;
+			fopen_s(&file, filepath.c_str(), "rb");
+			if (file == 0)
+			{
+				Error("Failed to open include file %s", filepath.c_str());
+				return S_OK;
+			}
+		}
+
+		ToLowerCase(filepath);
+		mProcessedFiles.insert(filepath);
+
+		fseek(file, 0, SEEK_END);
+		long size = ftell(file);
+		rewind(file);
+		char* buffer = FB_ARRNEW(char, size);
+		int elements = fread(buffer, 1, size, file);
+		assert(elements == size);
+		*ppData = buffer;
+		*pBytes = size;
+		fclose(file);
+		return S_OK;
+	}
+
+	virtual COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Close(LPCVOID pData)
+	{
+		FB_ARRDELETE((void*)pData);
+		return S_OK;
+	}
+
+private:
+	std::string mWorkingDirectory;
+	std::set<std::string> mProcessedFiles;
+	IShader* mShader;
+
+};
+
 //----------------------------------------------------------------------------
 HRESULT CompileShaderFromFile(const char* filename, const char* entryPoint, 
-	const char* shaderModel, ID3DBlob** ppBlobOut, D3D_SHADER_MACRO* pDefines = 0)
+	const char* shaderModel, ID3DBlob** ppBlobOut, D3D_SHADER_MACRO* pDefines=0, IncludeProcessor* includeProcessor=0)
 {
 	HRESULT hr = S_OK;
 	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined(DEBUG) || defined(_DEBUG)
 	dwShaderFlags |= D3DCOMPILE_DEBUG;
 #endif
-
 	ID3DBlob* pErrorBlob = 0;
-	hr = D3DX11CompileFromFile( filename, pDefines, 0, entryPoint, shaderModel, dwShaderFlags, 0,
+	hr = D3DX11CompileFromFile(filename, pDefines, includeProcessor, entryPoint, shaderModel, dwShaderFlags, 0,
 		0, ppBlobOut, &pErrorBlob, 0);
 	if (FAILED(hr))
 	{
 		if (pErrorBlob)
 		{
-			IEngine::Log("[Error] CompileShaderFromFile %s failed!", filename);
-			IEngine::Log((const char*)pErrorBlob->GetBufferPointer());
-			assert(0 && "Shader Error");
+			IEngine::Error("[Error] CompileShaderFromFile %s failed!", filename);
+			IEngine::Error((const char*)pErrorBlob->GetBufferPointer());
+			Beep(100, 50);
+		}
+		else
+		{
+			Error("Shader compile error. maybe file not found %s", filename);
+			Beep(100, 50);
 		}
 	}
 	if (pErrorBlob)
@@ -855,6 +999,10 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 
 		pShader = ShaderD3D11::CreateInstance(filepath.c_str());
 	}
+	assert(pShader);
+	pShader->SetShaderDefines(defines);
+	pShader->SetBindingShaders(shaders);
+
 	char onlyname[MAX_PATH];
 	strcpy_s( onlyname, MAX_PATH, StripPath(filepath.c_str()) );
 	StripExtension(onlyname);
@@ -875,6 +1023,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		pShaderMacros = &shaderMacros[0];
 	}	
 
+	IncludeProcessor includeProcessor(filepath.c_str(), pShader);
 	HRESULT hr;
 	// Load VS
 	if (shaders & BINDING_SHADER_VS)
@@ -883,10 +1032,11 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		VSName+="_VertexShader";
 		ID3DBlob* pVSBlob = 0;
 		hr = CompileShaderFromFile(filepath.c_str(), VSName.c_str(), "vs_5_0", &pVSBlob,
-			pShaderMacros);
+			pShaderMacros, &includeProcessor);
 		if (FAILED(hr))
 		{		
 			SAFE_RELEASE(pVSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
 		}
 		// Create VS
@@ -897,7 +1047,15 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pVSBlob->GetBufferPointer());
 			SAFE_RELEASE(pVSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
+		}
+		else
+		{
+			static unsigned vsID = 0;
+			char buf[256];
+			sprintf_s(buf, "VS ID(%u)", vsID++);
+			pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 		}
 		pShader->SetVertexShader(pVertexShader);
 		pShader->SetVertexShaderBytecode(pVSBlob); // pVSBlob will be released here
@@ -910,10 +1068,11 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		GSName+="_GeometryShader";
 		ID3DBlob* pGSBlob = 0;
 		HRESULT hr = CompileShaderFromFile(filepath.c_str(), GSName.c_str(), "gs_5_0", &pGSBlob,
-			pShaderMacros);
+			pShaderMacros, &includeProcessor);
 		if (FAILED(hr))
 		{
 			SAFE_RELEASE(pGSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
 		}
 		// Create GS
@@ -924,6 +1083,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pGSBlob->GetBufferPointer());
 			SAFE_RELEASE(pGSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
 		}
 		else
@@ -941,10 +1101,11 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		PSName+="_PixelShader";
 		ID3DBlob* pPSBlob = 0;
 		hr = CompileShaderFromFile(filepath.c_str(), PSName.c_str(), "ps_5_0", &pPSBlob,
-			pShaderMacros);
+			pShaderMacros, &includeProcessor);
 		if (FAILED(hr))
 		{
 			SAFE_RELEASE(pPSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
 		}
 		// Create PS
@@ -955,13 +1116,13 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pPSBlob->GetBufferPointer());
 			SAFE_RELEASE(pPSBlob);
+			pShader->SetCompileFailed(true);
 			return pShader;
 		}
 		pShader->SetPixelShader(pPixelShader);
 		SAFE_RELEASE(pPSBlob);
 	}
-	pShader->SetShaderDefines(defines);
-	pShader->SetBindingShaders(shaders);
+	pShader->SetCompileFailed(false);
 
 	return pShader;
 }
@@ -999,6 +1160,13 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 	if (pReloadingTexture)
 	{
 		pTexture = (TextureD3D11*)pReloadingTexture;
+
+		bool found = false;
+		FB_FOREACH(it, mCheckTextures)
+		{
+			if ((*it)->GetName() == file)
+				return pTexture;
+		}
 	}
 	else
 	{
@@ -1010,6 +1178,7 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 	SAFE_RELEASE(pTexture->mSRView);
 	if (m_pThreadPump)
 	{
+		pTexture->mHr = S_FALSE;
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 
 			&pTexture->mLoadInfo, m_pThreadPump, 
 			&pTexture->mSRView, &pTexture->mHr);
@@ -1020,6 +1189,11 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 
 			&pTexture->mLoadInfo, nullptr, 
 			&pTexture->mSRView, nullptr);
+
+		size_t tid = pTexture->GetTextureID();
+		char buf[256];
+		sprintf_s(buf, "Texture(%u)", tid);
+		FB_SET_DEVICE_DEBUG_NAME(pTexture, buf);
 	}
 	pTexture->SetSize(Vec2I(imageInfo.Width, imageInfo.Height));
 	
@@ -1028,7 +1202,17 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 		Error("[Error] Failed to load a texture (%s).", filepath.c_str());		
 	}
 
-	return pTexture->Clone();
+	if (pReloadingTexture)
+	{
+		TextureD3D11* pT = (TextureD3D11*)pReloadingTexture;
+		pT->OnReloaded();
+		return pReloadingTexture;
+	}
+	else
+	{
+		return pTexture->Clone();
+	}
+	
 	
 	/*
 	FIBITMAP* pImage = LoadImage(file, 0);
@@ -1104,9 +1288,11 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 }
 
 //----------------------------------------------------------------------------
+// type : TEXTURE_TYPE
 ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 	BUFFER_USAGE usage, int  buffer_cpu_access, int type)
 {
+	bool engineUsingMS = mMultiSampleDesc.Count != 1;
 	bool cubeMap = (type & TEXTURE_TYPE_CUBE_MAP) != 0;
 
 	if (type & TEXTURE_TYPE_DEPTH_STENCIL_SRV)
@@ -1122,12 +1308,25 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 	desc.Width = width;
 	desc.Height = height;
 	desc.MipLevels = 1;
-	if (type & TEXTURE_TYPE_RENDER_TARGET_SRV)
+	if (type & TEXTURE_TYPE_MIPS)
+	{
+		assert(!(type & TEXTURE_TYPE_MULTISAMPLE));
 		desc.MipLevels = GetMipLevels((float)std::min(width, height));
+	}
+		
 	desc.ArraySize = cubeMap ? 6 : 1;
 	desc.Format = ConvertEnumD3D11(format);
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
+	//bool renderTarget = (type & TEXTURE_TYPE_RENDER_TARGET) || (type & TEXTURE_TYPE_RENDER_TARGET_SRV);
+	//bool depthStencil = (type & TEXTURE_TYPE_DEPTH_STENCIL) || (type & TEXTURE_TYPE_DEPTH_STENCIL_SRV);
+	if (engineUsingMS && type & TEXTURE_TYPE_MULTISAMPLE)
+	{
+		desc.SampleDesc = mMultiSampleDesc;
+	}
+	else
+	{
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+	}
 	desc.Usage = ConvertEnumD3D11(usage);
 	desc.BindFlags = 0;
 	if ( usage != BUFFER_USAGE_STAGING && 
@@ -1145,8 +1344,9 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 	desc.MiscFlags = cubeMap ? 
 		D3D11_RESOURCE_MISC_TEXTURECUBE: 
 		0;
-	if ((type & TEXTURE_TYPE_RENDER_TARGET_SRV))
+	if (type & TEXTURE_TYPE_MIPS)
 	{
+		assert(!(type & TEXTURE_TYPE_MULTISAMPLE));
 		desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	}
 
@@ -1192,22 +1392,30 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 		srvDesc.Format = ConvertEnumD3D11(format);
 		if (type & TEXTURE_TYPE_DEPTH_STENCIL_SRV)
 			srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-		srvDesc.ViewDimension = cubeMap ? D3D11_SRV_DIMENSION_TEXTURECUBE: 
-			D3D11_SRV_DIMENSION_TEXTURE2D;
+		if (engineUsingMS && type & TEXTURE_TYPE_MULTISAMPLE)
+		{
+			srvDesc.ViewDimension = cubeMap ? D3D11_SRV_DIMENSION_TEXTURECUBE :
+				D3D11_SRV_DIMENSION_TEXTURE2DMS;
+		}
+		else
+		{
+			srvDesc.ViewDimension = cubeMap ? D3D11_SRV_DIMENSION_TEXTURECUBE :
+				D3D11_SRV_DIMENSION_TEXTURE2D;
+		}
+		
 
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.MipLevels=1;
-		if (type & TEXTURE_TYPE_RENDER_TARGET_SRV)
+		if (type & TEXTURE_TYPE_MIPS)
 		{
 			srvDesc.Texture2D.MipLevels = desc.MipLevels;
-			//srvDesc.Texture2D.MipLevels=3;
 		}		
 
 		ID3D11ShaderResourceView* pResourceView;
 		m_pDevice->CreateShaderResourceView(pTextureD3D11, &srvDesc, &pResourceView);
 		pTexture->SetHardwareResourceView(pResourceView);
 	}
-
+	static size_t RTV_ID = 0;
 	if ((type & TEXTURE_TYPE_RENDER_TARGET) ||
 		(type & TEXTURE_TYPE_RENDER_TARGET_SRV))
 	{
@@ -1215,17 +1423,25 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 		for (int i=0; i<view; i++)
 		{
 			// Create the render target view.
-			D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc = 
+			D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+			renderTargetViewDesc.Format = desc.Format;
+			if (engineUsingMS && type & TEXTURE_TYPE_MULTISAMPLE)
 			{
-				desc.Format,
-				cubeMap ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D,
-				0
-			};
+				renderTargetViewDesc.ViewDimension = cubeMap ? D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D11_RTV_DIMENSION_TEXTURE2DMS;
+			}
+			else
+			{
+				renderTargetViewDesc.ViewDimension = cubeMap ? D3D11_RTV_DIMENSION_TEXTURE2DARRAY : D3D11_RTV_DIMENSION_TEXTURE2D;
+			}
 			if (cubeMap)
 			{
 				renderTargetViewDesc.Texture2DArray.ArraySize = 1;
 				renderTargetViewDesc.Texture2DArray.FirstArraySlice = i;
 				renderTargetViewDesc.Texture2DArray.MipSlice = 0;
+			}
+			else
+			{
+				renderTargetViewDesc.Texture2D.MipSlice = 0;
 			}
 
 			ID3D11RenderTargetView* pRenderTargetView;		
@@ -1233,6 +1449,12 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 			if(FAILED(hr))
 			{
 				Error("Cannot create RenderTargetView!");
+			}
+			else
+			{
+				char buf[256];
+				sprintf_s(buf, "RenderTargetView(%u)", RTV_ID++);
+				pRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 			}
 			pTexture->AddRenderTargetView(pRenderTargetView);
 		}
@@ -1273,14 +1495,14 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 }
 
 //-----------------------------------------------------------------------------
-void RendererD3D11::SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, ITexture* pDepthStencil, size_t dsIndex)
+void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num, ITexture* pDepthStencil, size_t dsIndex)
 {
 	std::vector<ID3D11RenderTargetView*> rtviews;
-	if (pRenderTarget)
+	if (pRenderTargets)
 	{
 		for (int i=0; i<num; i++)
 		{
-			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTarget[i]);
+			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTargets[i]);
 			rtviews.push_back(pTextureD3D11 ? pTextureD3D11->GetRenderTargetView(rtIndex[i]) : 0);
 		}
 	}
@@ -1300,6 +1522,54 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[],
 	mCurrentDSView = pDepthStencilView;
 }
 
+//----------------------------------------------------------------------------
+void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num)
+{
+	std::vector<ID3D11RenderTargetView*> rtviews;
+	if (pRenderTargets)
+	{
+		for (int i = 0; i<num; i++)
+		{
+			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTargets[i]);
+			rtviews.push_back(pTextureD3D11 ? pTextureD3D11->GetRenderTargetView(rtIndex[i]) : 0);
+		}
+	}
+	else
+	{
+		rtviews.push_back(0);
+	}
+	m_pImmediateContext->OMSetRenderTargets(rtviews.size(), &rtviews[0], mDepthStencilViews[0]);
+	mCurrentRTViews = rtviews;
+	mCurrentDSView = mDepthStencilViews[0];
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::SetGlowRenderTarget()
+{
+	__super::SetGlowRenderTarget();
+
+	mRTViewsBeforeGlow = mCurrentRTViews;	
+	TextureD3D11* rt = static_cast<TextureD3D11*>(mGlowTarget.get());
+	if (mCurrentRTViews.size() < 2)
+	{
+		assert(mCurrentRTViews.size() == 1);
+		mCurrentRTViews.push_back(rt->GetRenderTargetView(0));
+	}
+	else
+	{
+		mCurrentRTViews[1] = rt->GetRenderTargetView(0);
+	}
+	m_pImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::UnSetGlowRenderTarget()
+{
+	mCurrentRTViews = mRTViewsBeforeGlow;
+	m_pImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
+}
+
+//----------------------------------------------------------------------------
 void RendererD3D11::RestoreRenderTarget()
 {
 	m_pImmediateContext->OMSetRenderTargets(mRenderTargetViews.size(), &mRenderTargetViews[0], mDepthStencilViews[0]);
@@ -1307,6 +1577,7 @@ void RendererD3D11::RestoreRenderTarget()
 	mCurrentDSView = mDepthStencilViews[0];
 }
 
+//----------------------------------------------------------------------------
 void RendererD3D11::OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView)
 {
 	if (mCurrentRTViews.end() !=
@@ -1316,6 +1587,7 @@ void RendererD3D11::OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView)
 	}
 }
 
+//----------------------------------------------------------------------------
 void RendererD3D11::OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView)
 {
 	if (mCurrentDSView == pDSView)
@@ -1366,7 +1638,6 @@ IInputLayout* RendererD3D11::GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 
 	unsigned int byteLength = 0;
 	void* pShaderBytecodeWithInputSignature = material->GetShaderByteCode(byteLength);
-	assert(pShaderBytecodeWithInputSignature);
 	if (!pShaderBytecodeWithInputSignature)
 		return 0;	
 
@@ -1431,6 +1702,13 @@ IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 	{
 		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create input layout!");
 	}
+	else
+	{
+		static unsigned ID = 0;
+		char buf[256];
+		sprintf_s(buf, "InputLayout ID(%u)", ID++);
+		pHardwareInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
+	}
 	pInputLayoutD3D11->SetHardwareInputLayout(pHardwareInputLayout);
 	pInputLayoutD3D11->SetDescs(descs);
 
@@ -1438,11 +1716,10 @@ IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 }
 
 //----------------------------------------------------------------------------
-void RendererD3D11::SetShader(IShader* pShader)
+void RendererD3D11::SetShaders(IShader* pShader)
 {
 	if (!pShader->IsValid())
 	{
-		assert(0 && "Shader is not valid!");
 		return;
 	}
 	if (mBindedShader == pShader)
@@ -1460,6 +1737,100 @@ void RendererD3D11::SetShader(IShader* pShader)
 	ID3D11PixelShader* pPS = pShaderD3D11->GetPixelShader();
 	m_pImmediateContext->PSSetShader(pPS, 0, 0);
 	mBindedShader = pShader;
+}
+
+void RendererD3D11::SetVSShader(IShader* pShader)
+{
+	if (pShader == 0)
+	{
+		m_pImmediateContext->VSSetShader(0, 0, 0);
+		return;
+	}
+
+	if (!pShader->IsValid())
+	{
+		return;
+	}
+
+	ShaderD3D11* pShaderD3D11 = static_cast<ShaderD3D11*>(pShader);
+	ID3D11VertexShader* pVS = pShaderD3D11->GetVertexShader();
+	m_pImmediateContext->VSSetShader(pVS, 0, 0);
+	mBindedShader = 0;
+}
+void RendererD3D11::SetPSShader(IShader* pShader)
+{
+	if (pShader == 0)
+	{
+		m_pImmediateContext->PSSetShader(0, 0, 0);
+		return;
+	}
+
+	if (!pShader->IsValid())
+	{
+		return;
+	}
+
+	ShaderD3D11* pShaderD3D11 = static_cast<ShaderD3D11*>(pShader);
+	ID3D11PixelShader* pPS = pShaderD3D11->GetPixelShader();
+	m_pImmediateContext->PSSetShader(pPS, 0, 0);
+	mBindedShader = 0;
+}
+
+void RendererD3D11::SetGSShader(IShader* pShader)
+{
+	if (pShader == 0)
+	{
+		m_pImmediateContext->GSSetShader(0, 0, 0);
+		return;
+	}
+
+	if (!pShader->IsValid())
+	{
+		return;
+	}
+
+	ShaderD3D11* pShaderD3D11 = static_cast<ShaderD3D11*>(pShader);
+	ID3D11GeometryShader* pGS = pShaderD3D11->GetGeometryShader();
+	m_pImmediateContext->GSSetShader(pGS, 0, 0);
+	mBindedShader = 0;
+}
+
+void RendererD3D11::SetHSShader(IShader* pShader)
+{
+	if (pShader == 0)
+	{
+		m_pImmediateContext->HSSetShader(0, 0, 0);
+		return;
+	}
+
+	if (!pShader->IsValid())
+	{
+		return;
+	}
+
+	ShaderD3D11* pShaderD3D11 = static_cast<ShaderD3D11*>(pShader);
+	ID3D11HullShader* pHS = pShaderD3D11->GetHullShader();
+	m_pImmediateContext->HSSetShader(pHS, 0, 0);
+	mBindedShader = 0;
+}
+
+void RendererD3D11::SetDSShader(IShader* pShader)
+{
+	if (pShader == 0)
+	{
+		m_pImmediateContext->DSSetShader(0, 0, 0);
+		return;
+	}
+
+	if (!pShader->IsValid())
+	{
+		return;
+	}
+
+	ShaderD3D11* pShaderD3D11 = static_cast<ShaderD3D11*>(pShader);
+	ID3D11DomainShader* pDS = pShaderD3D11->GetDomainShader();
+	m_pImmediateContext->DSSetShader(pDS, 0, 0);
+	mBindedShader = 0;
 }
 
 //----------------------------------------------------------------------------
@@ -1690,6 +2061,7 @@ void RendererD3D11::SetTextureSamplerState(ITexture* pTexture, const SAMPLER_DES
 //----------------------------------------------------------------------------
 IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& desc)
 {
+	size_t numRS = 0;
 	RasterizerStateD3D11* pRS = 0;
 	auto find = mRasterizerMap.find(desc);
 	if (find == mRasterizerMap.end())
@@ -1704,9 +2076,12 @@ IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& de
 			assert(0);
 			return 0;
 		}
-		pRS = new RasterizerStateD3D11;
+		pRS = FB_NEW(RasterizerStateD3D11);
 		mRasterizerMap[desc] = pRS;
 		pRS->SetHardwareRasterizerState(pRasterizerState);		
+		char buff[255];
+		sprintf_s(buff, "RasterizerState(%u)", numRS++);
+		FB_SET_DEVICE_DEBUG_NAME(pRS, buff);
 	}
 	else
 	{
@@ -1718,6 +2093,7 @@ IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& de
 //----------------------------------------------------------------------------
 IBlendState* RendererD3D11::CreateBlendState(const BLEND_DESC& desc)
 {
+	static size_t numBlendStates = 0;
 	BlendStateD3D11* pBlendStateD3D11 = 0;
 
 	auto find = mBlendMap.find(desc);
@@ -1733,9 +2109,12 @@ IBlendState* RendererD3D11::CreateBlendState(const BLEND_DESC& desc)
 			assert(0);
 			return 0;
 		}
-		pBlendStateD3D11 = new BlendStateD3D11;
+		pBlendStateD3D11 = FB_NEW(BlendStateD3D11);
 		pBlendStateD3D11->SetHardwareBlendState(pBlendState);
 		mBlendMap[desc] = pBlendStateD3D11;
+		char buff[255];
+		sprintf_s(buff, "BlendState(%u)", numBlendStates++);
+		FB_SET_DEVICE_DEBUG_NAME(pBlendStateD3D11, buff);
 		return pBlendStateD3D11;
 	}
 	else
@@ -1748,6 +2127,7 @@ IBlendState* RendererD3D11::CreateBlendState(const BLEND_DESC& desc)
 //----------------------------------------------------------------------------
 IDepthStencilState* RendererD3D11::CreateDepthStencilState( const DEPTH_STENCIL_DESC& desc )
 {
+	static size_t numDepthStencilStates = 0;
 	DepthStencilStateD3D11* pDSSD3D11 = 0;
 	auto find = mDepthStencilMap.find(desc);
 	if (find == mDepthStencilMap.end())
@@ -1762,9 +2142,12 @@ IDepthStencilState* RendererD3D11::CreateDepthStencilState( const DEPTH_STENCIL_
 			assert(0);
 			return 0;
 		}
-		pDSSD3D11 = new DepthStencilStateD3D11;
+		pDSSD3D11 = FB_NEW(DepthStencilStateD3D11);
 		mDepthStencilMap[desc] = pDSSD3D11;
 		pDSSD3D11->SetHardwareBlendState(pHardwareState);
+		char buff[255];
+		sprintf_s(buff, "DepthStencilState(%u)", numDepthStencilStates++);
+		FB_SET_DEVICE_DEBUG_NAME(pDSSD3D11, buff);
 	}
 	else
 	{
@@ -1786,6 +2169,8 @@ void RendererD3D11::SetRasterizerState(IRasterizerState* pRasterizerState)
 //----------------------------------------------------------------------------
 void RendererD3D11::SetBlendState(IBlendState* pBlendState)
 {
+	if (mLockBlendState)
+		return;
 	BlendStateD3D11* pBlendStateD3D11 = (BlendStateD3D11*)pBlendState;
 	m_pImmediateContext->OMSetBlendState(pBlendStateD3D11->GetHardwareBlendState(), 
 		pBlendStateD3D11->GetBlendFactor(), pBlendStateD3D11->GetBlendMask());
@@ -1795,6 +2180,8 @@ void RendererD3D11::SetBlendState(IBlendState* pBlendState)
 void RendererD3D11::SetDepthStencilState(IDepthStencilState* pDepthStencilState,
 	unsigned stencilRef)
 {
+	if (mLockDepthStencil)
+		return;
 	DepthStencilStateD3D11* pDSSD11 = (DepthStencilStateD3D11*)pDepthStencilState;
 	m_pImmediateContext->OMSetDepthStencilState(pDSSD11->GetHardwareBlendState(),
 		stencilRef);
@@ -1837,4 +2224,38 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Bind();
 	// draw
 	Draw(4, 0);
+}
+
+void RendererD3D11::DrawFullscreenQuad(IShader* pixelShader, bool farside)
+{
+	// vertex buffer
+	mQuadInputLayout->Bind();
+	BindFullscreenQuadUV_VB(farside);
+	mFullscreenQuadVS->BindVS();
+	pixelShader->BindPS();
+
+	// draw
+	Draw(4, 0);
+}
+
+void RendererD3D11::DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
+	DWORD color, IMaterial* pMat)
+{
+	IVertexBuffer* pVB = mDynVBs[DEFAULT_INPUTS::POSITION_VEC4_COLOR];
+	assert(pVB);
+	MapData mapped = pVB->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
+	DEFAULT_INPUTS::POSITION_VEC4_COLOR_V* data = (DEFAULT_INPUTS::POSITION_VEC4_COLOR_V*)mapped.pData;
+	data->p = pos;
+	data->v4 = Vec4(size.x, size.y, offset.x, offset.y);
+	data->color = color;
+	pVB->Unmap();
+	pVB->Bind();
+	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
+	pMat->Bind(true);
+	Draw(1, 0);
+
+	// vertexBuffer
+
+
+
 }

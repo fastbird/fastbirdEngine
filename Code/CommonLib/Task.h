@@ -22,15 +22,16 @@ protected:
 
     DWORD mTaskID;              // Internal task-id, used for task hashing.
     Task* mHashNext;            // Internal hashmap next element pointer.
+	DWORD mMyHash;
     volatile long* mExecCounter;	// Pointer to a variable that gets decremented when execution is done.
     volatile long mSyncCounter;  // Used to wait for subtasks to complete.
     HANDLE mWaitEvent;       // Event used to wait for a task to complete.
+	std::atomic<bool> mExecuted;          // Is this task executed?
+	std::atomic<bool> mIsHashed;          // Is this task in the dependencies hashmap?
     bool mScheduled : 1;         // Is this task scheduled?
-    bool mExecuted : 1;          // Is this task executed?
     bool mAutoDestroy : 1;       // Is this task automatically destroyed after execution?
     bool mIsDependency : 1;      // Is this task a dependency for another task?
-    bool mIsHashed : 1;          // Is this task in the dependencies hashmap?
-	bool mIsAdded : 1;			 // Is added to scheduler
+    
 
 public:
     Task(bool _AutoDestroy = true, bool _WaitEvent = false, 
@@ -43,12 +44,6 @@ public:
     {
         return mExecuted && !mSyncCounter;
     }
-
-	void SetAdded(bool added) { mIsAdded = added; }
-	bool IsAdded() const
-	{
-		return mIsAdded;
-	}
 
 	// wait to finish
 	void Sync();

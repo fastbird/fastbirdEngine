@@ -32,12 +32,16 @@ namespace fastbird
 		virtual Vec3* GetPositions(int matGroupIdx, size_t& outNumVertices) = 0;
 		virtual Vec3* GetNormals(int matGroupIdx, size_t& outNumVertices) = 0;
 		virtual Vec2* GetUVs(int matGroupIdx, size_t& outNumVertices) = 0;
-		virtual void GenerateTangent(UINT* indices, size_t num) = 0;
+		virtual void GenerateTangent(int matGroupIdx, UINT* indices, size_t num) = 0;
 		virtual void EndModification(bool keepMeshData) = 0;
 		virtual void SetTopology(PRIMITIVE_TOPOLOGY topology) = 0;
 		virtual PRIMITIVE_TOPOLOGY GetTopology() = 0;
 		virtual void SetInstanceVB(IVertexBuffer* pBuffer) = 0;
 		virtual const AUXILIARIES& GetAuxiliaries() const = 0;
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) = 0;
+
+	private:
+		friend class Engine;
+		virtual void Delete() = 0;
 	};
 }

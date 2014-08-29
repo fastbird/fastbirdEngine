@@ -26,7 +26,7 @@ namespace fastbird
 			const int count = InterlockedDecrement(&mRefCounter);
 			if (count == 0)
 			{
-				delete this;
+				FB_DELETE(this);
 			}
 			else if (count < 0)
 			{

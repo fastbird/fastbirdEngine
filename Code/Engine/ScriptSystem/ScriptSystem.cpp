@@ -95,4 +95,34 @@ std::string ScriptSystem::GetStringVariable(const char* name,
 	return ret;
 }
 
+int ScriptSystem::GetIntVariable(const char* name, int def/* = 0*/)
+{
+	int ret = def;
+	if (name == 0 || strlen(name) == 0)
+		return ret;
+
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState);
+	lua_getglobal(mLuaState, name);
+	if (!lua_isnil(mLuaState, -1))
+		ret = lua_tointeger(mLuaState, -1);
+	lua_pop(mLuaState, 1);
+	return ret;
+}
+
+float ScriptSystem::GetRealVariable(const char* name, float def)
+{
+	float ret = def;
+	if (name == 0 || strlen(name) == 0)
+		return ret;
+
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState);
+	int top = lua_gettop(mLuaState);
+	lua_getglobal(mLuaState, name);
+	int top2 = lua_gettop(mLuaState);
+	if (!lua_isnil(mLuaState, -1))
+		ret = (float)lua_tonumber(mLuaState, -1);
+	lua_pop(mLuaState, 1);
+	return ret;
+}
+
 }

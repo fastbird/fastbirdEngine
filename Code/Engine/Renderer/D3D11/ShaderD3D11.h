@@ -20,6 +20,11 @@ namespace fastbird
 		void SetDomainShader(ID3D11DomainShader* pDomainShader);
 		void SetPixelShader(ID3D11PixelShader* pPixelShader);
 		virtual void Bind();
+		virtual void BindVS();
+		virtual void BindGS();
+		virtual void BindPS();
+		virtual void BindDS();
+		virtual void BindHS();
 		virtual void* GetVSByteCode(unsigned& size) const;
 
 		ID3D11VertexShader* GetVertexShader() const { return m_pVertexShader; }
@@ -28,6 +33,7 @@ namespace fastbird
 		ID3D11DomainShader* GetDomainShader() const { return m_pDomainShader; }
 		ID3D11PixelShader* GetPixelShader() const { return m_pPixelShader; }
 		bool IsValid() const;
+		virtual void SetDebugName(const char*);
 
 
 	protected:
@@ -41,6 +47,7 @@ namespace fastbird
 		ID3D11HullShader* m_pHullShader;
 		ID3D11DomainShader* m_pDomainShader;
 		ID3D11PixelShader* m_pPixelShader;
+		bool mValid;
 	};
 }
 

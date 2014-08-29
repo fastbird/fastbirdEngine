@@ -15,11 +15,11 @@ public:
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::StaticText; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
+	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	
 
 protected:
 	const static float LEFT_GAP;
-	const static float BOTTOM_GAP;
 	virtual void OnPosChanged();
 	virtual void OnSizeChanged();
 

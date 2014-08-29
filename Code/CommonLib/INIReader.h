@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SmartPtr.h"
+#include <CommonLib/SmartPtr.h>
 
 /* for ini - from http://code.google.com/p/inih/
 The "inih" library is distributed under the New BSD license:

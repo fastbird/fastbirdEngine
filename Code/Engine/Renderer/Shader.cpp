@@ -7,6 +7,11 @@
 using namespace fastbird;
 
 std::vector<Shader*> Shader::mShaders;
+//----------------------------------------------------------------------------
+void IShader::ReloadShader(const char* name)
+{
+	return Shader::ReloadShader(name);
+}
 
 //----------------------------------------------------------------------------
 void IShader::ReloadShader(const char* filepath, const IMaterial::SHADER_DEFINES& shaderDefines)
@@ -34,6 +39,28 @@ Shader::~Shader()
 }
 
 //----------------------------------------------------------------------------
+void Shader::ReloadShader(const char* filepath)
+{
+	std::string path = filepath;
+	ToLowerCase(path);
+	auto it = mShaders.begin(), itEnd = mShaders.end();
+	for (; it != itEnd; it++)
+	{
+		
+		if (strcmp(path.c_str(), (*it)->GetName()) == 0 || (*it)->CheckIncludes(path))
+		{
+			bool failed = gFBEnv->pEngine->GetRenderer()->CreateShader((*it)->GetName(), (*it)->GetBindingShaders(),
+				(*it)->GetShaderDefines(), (*it)) == 0;
+			if (failed)
+			{
+				Log("Reloading shader is stopped due to the failure of compilation.");
+				break;
+			}
+		}
+	}
+}
+
+//----------------------------------------------------------------------------
 void Shader::ReloadShader(const char* filepath, const IMaterial::SHADER_DEFINES& shaderDefines)
 {
 	auto it = mShaders.begin(), itEnd = mShaders.end();
@@ -43,8 +70,14 @@ void Shader::ReloadShader(const char* filepath, const IMaterial::SHADER_DEFINES&
 		{
 			if ((*it)->GetShaderDefines() == shaderDefines)
 			{
-				gFBEnv->pEngine->GetRenderer()->CreateShader(filepath, (*it)->GetBindingShaders(), 
-					shaderDefines, (*it));
+				bool failed = gFBEnv->pEngine->GetRenderer()->CreateShader(filepath, (*it)->GetBindingShaders(), 
+					shaderDefines, (*it))==0;
+				if (failed)
+				{
+					Log("Reloading shader is stopped due to the failure of compilation.");
+					break;
+				}
+					
 			}			
 		}
 	}
@@ -70,4 +103,9 @@ IShader* Shader::FindShader(const char* name, const IMaterial::SHADER_DEFINES& s
 void Shader::SetShaderDefines(const IMaterial::SHADER_DEFINES& defines)
 {
 	mDefines = defines;
+}
+
+bool Shader::CheckIncludes(const std::string& inc)
+{
+	return mIncludeFiles.find(inc) != mIncludeFiles.end();
 }

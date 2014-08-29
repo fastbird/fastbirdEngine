@@ -25,6 +25,8 @@ namespace fastbird
 		virtual void ToggleOpen();
 		virtual void Render();
 		virtual EngineCommand* GetEngineCommand() { return mEngineCommand; }
+		virtual void AddListener(ICVarListener* pListener);
+		virtual void RemoveListener(ICVarListener* pListener);
 
 		//-------------------------------------------------------------------------
 		// IInputListener
@@ -34,6 +36,7 @@ namespace fastbird
 
 		void AutoCompletion();
 		bool IsValidCharForInput(unsigned int chr);
+		void OnCVarChanged(CVar* cvar);
 
 	
 	private:
@@ -69,7 +72,6 @@ namespace fastbird
 		std::wstring mPrompt;
 		int mPromptStart;
 		Vec2I mInputPosition;
-		SmartPtr<IDepthStencilState> mDepthStencilState;
 		typedef std::vector<CVar*> CVARS;
 		CVARS mCVars;
 
@@ -87,6 +89,8 @@ namespace fastbird
 		int mHistoryIndex;
 
 		SmartPtr<EngineCommand> mEngineCommand;
+
+		std::vector<ICVarListener*> mCVarListeners;
 
 	};
 }

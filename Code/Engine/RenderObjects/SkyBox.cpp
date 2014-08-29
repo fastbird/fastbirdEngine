@@ -4,7 +4,6 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/IRenderer.h>
 #include <Engine/IInputLayout.h>
-#include <Engine/Renderer/D3DEventMarker.h>
 #include <Engine/ICamera.h>
 #include <CommonLib/Math/fbMath.h>
 
@@ -13,7 +12,7 @@ using namespace fastbird;
 //----------------------------------------------------------------------------
 ISkyBox* ISkyBox::CreateSkyBoxInstance()
 {
-	return new SkyBox();
+	return FB_NEW(SkyBox);
 }
 
 

@@ -11,7 +11,7 @@ namespace fastbird
 	{
 	}
 
-	void LaserRenderer::SetMaterial(const char* name)
+	void LaserRenderer::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 	{
 		assert(name);
 		mMaterial = IMaterial::CreateMaterial(name);

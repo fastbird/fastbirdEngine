@@ -32,12 +32,11 @@ namespace fastbird
 	typedef DEFAULT_INPUTS::V_PCTB  FontVertex;
 
 	//------------------------------------------------------------------------
-	class Font : public IFont, public Object
+	class Font : public IFont
 	{
 	public:
 		Font();
 		virtual ~Font();
-
 		//--------------------------------------------------------------------
 		// IFont
 		//--------------------------------------------------------------------

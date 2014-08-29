@@ -70,6 +70,7 @@ namespace fastbird
 		// normalized pos(0.0~1.0)
 		virtual void GetNPos(float &x, float &y) const = 0;
 		virtual Vec2 GetNPos() const = 0;
+		virtual bool IsLButtonDownPrev() const = 0;
 		virtual bool IsLButtonDown(float* time = 0) const = 0;
 		virtual bool IsLButtonClicked() const = 0;
 		virtual bool IsLButtonDoubleClicked() const = 0;
@@ -77,6 +78,7 @@ namespace fastbird
 		virtual bool IsRButtonDown(float* time = 0) const = 0;
 		virtual bool IsRButtonClicked() const = 0;
 		virtual bool IsRButtonPressed() const = 0;
+		virtual bool IsMButtonDown() const = 0;
 		virtual bool IsMoved() const = 0;
 		virtual void GetDragStart(long &x, long &y) const = 0;
 		virtual bool IsDragStartIn(const RECT& region) const = 0;

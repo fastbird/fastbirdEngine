@@ -75,7 +75,7 @@ public:
 			// left side is available for sort.
 			if (l > Start + 1)
 			{
-				QuickSortTask* SubTask0 = new QuickSortTask(Data, Start, l, mExecCounter ? mExecCounter : &mSyncCounter);
+				QuickSortTask* SubTask0 = FB_NEW(QuickSortTask)(Data, Start, l, mExecCounter ? mExecCounter : &mSyncCounter);
 
 				if (Parent)
 				{
@@ -91,7 +91,7 @@ public:
 
 			if (End > r + 1)
 			{
-				QuickSortTask* SubTask1 = new QuickSortTask(Data, r, End, mExecCounter ? mExecCounter : &mSyncCounter);
+				QuickSortTask* SubTask1 = FB_NEW(QuickSortTask)(Data, r, End, mExecCounter ? mExecCounter : &mSyncCounter);
 
 				if (Parent)
 				{

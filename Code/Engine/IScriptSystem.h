@@ -12,6 +12,8 @@ namespace fastbird
 		virtual bool ExecuteLua(const std::string& chunk) = 0;
 		virtual std::string GetStringVariable(const char* name, 
 			const std::string& def =std::string()) = 0;
+		virtual int GetIntVariable(const char* name, int def = 0) = 0;
+		virtual float GetRealVariable(const char* name, float def = 0) = 0;
 	};
 
 	

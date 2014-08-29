@@ -12,9 +12,9 @@ namespace fastbird
 
 #define ARRAYCOUNT(A)       (sizeof(A) / sizeof(A[0]))
 
-#define FB_FOREACH(it, container) auto it = container.begin();\
-	auto it ## End = container.end(); \
-	for (; it<it ## End; ++it)
+#define FB_FOREACH(it, container) auto it = (container).begin();\
+	auto it ## End = (container).end(); \
+	for (; it!=it ## End; ++it)
 
 
 #if defined(_DEBUG)

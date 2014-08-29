@@ -18,6 +18,8 @@ namespace fastbird
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil);
 
 		virtual void Render(size_t face=0);
+		virtual void SetEveryFrame(bool everyframe) { mEveryFrame = everyframe; }
+		virtual bool IsEveryFrame() const { return mEveryFrame; }
 
 	protected:
 		SmartPtr<ITexture> mRenderTargetTexture;
@@ -28,5 +30,6 @@ namespace fastbird
 		Color mClearColor;
 		float mDepthClear;
 		UINT8 mStencilClear;
+		bool mEveryFrame;
 	};
 }

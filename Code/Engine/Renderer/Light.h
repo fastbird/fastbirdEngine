@@ -21,6 +21,9 @@ namespace fastbird
 		virtual float GetAttenuation() const { return 0.0f; }
 		virtual float GetExponent() const { return 0.0f; }
 
+		virtual void AddTheta(float radian);
+		virtual void AddPhi(float radian);
+
 		virtual void SetPosition(const Vec3& pos);
 		virtual void SetDiffuse(const Vec3& diffuse);
 		virtual void SetSpecular(const Vec3& specular);
@@ -28,10 +31,35 @@ namespace fastbird
 		virtual void SetAttenuation(float attenuation){}
 		virtual void SetExponent(float exponent) {}
 
+		virtual void PrepareInterpolation(float destTheta, float destPhi, float destIntensity, const Vec3& destDiffuse, float time);
+		virtual void AddInterpolTime(float time);
+		virtual const Vec3& GetInterpolDir(unsigned target) const;
+		virtual float GetInterpolIntensity(unsigned target) const;
+		virtual const Vec3& GetInterpolDiffuse(unsigned target) const;
+		virtual float GetTheta() const;
+		virtual float GetPhi() const;
+
+		virtual void Update(float dt);
+
+		virtual void PreRender();
+		virtual void Render();
+		virtual void PostRender();
+
 	private:
 		Vec3 mDirection;
 		Vec3 mDiffuse;
 		Vec3 mSpecular;
+		float mTheta;
+		float mPhi;
 		float mIntensity;
+
+		// for interpolation
+		float mInterpolPhi[2]; // 0 cur, //1 dest
+		float mInterpolTheta[2];
+		float mInterpolIntensity[2];
+		Vec3 mInterpolDiffuse[2];
+		float mInterpolTime[2];
+		bool mInterpolating;
+
 	};
 }

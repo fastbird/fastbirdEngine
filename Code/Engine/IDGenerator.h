@@ -12,18 +12,15 @@ namespace fastbird
 			: mPrefix(rhs.mPrefix)
 			, mNext(rhs.mNext)
 		{
-			InitializeCriticalSection(&mCriticalSection);
 		}
 
 		IDGenerator(const char* prefix)
 			: mPrefix(prefix)
 			, mNext(1)
 		{
-			InitializeCriticalSection(&mCriticalSection);
 		}
 		~IDGenerator()
 		{
-			DeleteCriticalSection(&mCriticalSection);
 		}
 
 		std::string Generate()
@@ -53,6 +50,6 @@ namespace fastbird
 	protected:
 		std::string mPrefix;
 		unsigned long long int mNext;
-		CRITICAL_SECTION mCriticalSection;
+		FB_CRITICAL_SECTION mCriticalSection;
 	};
 };

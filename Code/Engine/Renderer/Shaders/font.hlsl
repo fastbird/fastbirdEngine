@@ -68,5 +68,5 @@ float4 font_PixelShader( in v2p IN ) : SV_Target
 		color.a   = val > 0.5 ? 1 : 2*val;
     }
 	color.rgb *= IN.color.rgb;
-	return float4(IN.color.rgb, 1);
+	return float4(IN.color.rgb, color.a);
 }

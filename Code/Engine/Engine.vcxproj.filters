@@ -30,6 +30,7 @@
     </Filter>
     <Filter Include="Renderer\Shaders">
       <UniqueIdentifier>{8c8c81ff-fe5c-426c-b917-be2b5e5d4d0b}</UniqueIdentifier>
+      <ParseFiles>false</ParseFiles>
     </Filter>
     <Filter Include="RenderObjects">
       <UniqueIdentifier>{599c69b1-43a5-41fc-a45e-52593db95d92}</UniqueIdentifier>
@@ -48,58 +49,103 @@
     <None Include="Documents\terrain.txt">
       <Filter>Document</Filter>
     </None>
-    <None Include="Renderer\Shaders\terrain.hlsl">
+    <None Include="Renderer\Shaders\CommonFunctions.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\font.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\skybox.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\Mesh.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\locator.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\UI.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\Line.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\Quad.hlsl">
+    <None Include="Renderer\Shaders\Constants.h">
       <Filter>Renderer\Shaders</Filter>
     </None>
     <None Include="Renderer\Shaders\dust.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\modules.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\CommonFunctions.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\star.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\HighlightMesh.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
-    <None Include="Renderer\Shaders\module.hlsl">
+    <None Include="Renderer\Shaders\font.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
     <None Include="Renderer\Shaders\HelpMesh.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
+    <None Include="Renderer\Shaders\HighlightMesh.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Line.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\locator.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Mesh.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
     <None Include="Renderer\Shaders\MeshPBR.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\module.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\modules.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\particle.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\Quad.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\ShaderCommon.h">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\skybox.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
     <None Include="Renderer\Shaders\SkySphere.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\particle.hlsl">
+    <None Include="Renderer\Shaders\star.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\terrain.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\UI.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\UIHexagonal.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\DownScale2x2_Lum.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\DownScale3x3.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\FullScreenQuadVS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\ToneMapping.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\BrightPassPS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\BloomPS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\LuminanceAvgPS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\GodRayPS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\ModulesImmutable.h">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\OccPrePass.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\OccPrePassGS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\CopyPS.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -116,9 +162,6 @@
     <ClInclude Include="IInputListener.h" />
     <ClInclude Include="IKeyboard.h" />
     <ClInclude Include="IMouse.h" />
-    <ClInclude Include="Renderer\Shaders\ShaderCommon.h">
-      <Filter>Renderer\Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="Foundation\Engine.h">
       <Filter>Foundation</Filter>
     </ClInclude>
@@ -182,9 +225,6 @@
     </ClInclude>
     <ClInclude Include="Renderer\D3D11\ConvertStructD3D11.h">
       <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Shaders\Constants.h">
-      <Filter>Renderer\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\IRenderState.h">
       <Filter>Renderer</Filter>
@@ -310,6 +350,23 @@
       <Filter>RenderObjects</Filter>
     </ClInclude>
     <ClInclude Include="ILaserRenderer.h" />
+    <ClInclude Include="IBillboardQuad.h" />
+    <ClInclude Include="RenderObjects\BillboardQuad.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="IEngineEventListener.h" />
+    <ClInclude Include="Renderer\CloudSimulation.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\CloudParticle.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\CloudManager.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\VolumetricCloud.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -457,6 +514,21 @@
     </ClCompile>
     <ClCompile Include="RenderObjects\LaserRenderer.cpp">
       <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\BillboardQuad.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\CloudSimulation.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\CloudParticle.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\CloudManager.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\VolumetricCloud.cpp">
+      <Filter>Renderer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

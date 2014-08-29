@@ -12,13 +12,12 @@ namespace fastbird
 	{
 	public:
 		virtual ~ICamera(){}
-
 		virtual void SetOrthogonal(bool ortho) = 0;
 		virtual void SetPos(const Vec3& pos) = 0;
 		virtual const Vec3& GetPos() const = 0;
 		virtual void SetDir(const Vec3& dir) = 0;
 		virtual const Vec3 GetDir() const = 0;
-		virtual void SetTransformation(const Vec3& pos, const Quat& rot) = 0;
+		virtual void SetCamTransform(const Vec3& pos, const Quat& rot) = 0;
 		virtual const Mat44& GetViewMat() = 0;
 		virtual const Mat44& GetInvViewMat() = 0;
 		virtual const Mat44& GetInvViewProjMat() = 0;
@@ -41,7 +40,7 @@ namespace fastbird
 		virtual float GetHeight() const = 0;
 		virtual void SetName(const char* name) = 0;
 		virtual const char* GetName() const = 0;
-
+		virtual void ProcessInputData() = 0;
 		virtual void Update() = 0;
 
 		virtual bool IsCulled(BoundingVolume* pBV) const = 0;
@@ -49,8 +48,17 @@ namespace fastbird
 
 		virtual void SetYZSwap(bool enable) = 0;
 
-		virtual const Vec3& GetFrustumMin()const = 0;
-		virtual const Vec3& GetFrustumMax() const = 0;
+		// you usually don't need to use this function
+		// recommend you to create your own camera manager;
+		// this is for engine internal - particle editor.
+		virtual void SetTarget(SpatialObject* pObj) = 0;
+
+		virtual void SetCurrent(bool cur) = 0;
+		virtual void SetCameraIndex(size_t idx) = 0;
+		virtual void SetEnalbeInput(bool enable) = 0;
+
+		// internal use only
+		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard) = 0;
 	};
 }
 

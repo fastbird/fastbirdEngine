@@ -10,7 +10,7 @@ namespace fastbird
 //--------------------------------------------------------------------------
 IConsole* IConsole::CreateConsole()
 {
-	Console* pCon = new Console();
+	Console* pCon = FB_NEW(Console);
 	return pCon;
 }
 
@@ -31,13 +31,13 @@ Console::Console()
 	gFBEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_CONSOLE, 0);
 
-	mCandiData = new CandidatesData;
+	mCandiData = FB_NEW(CandidatesData);
 }
 
 //--------------------------------------------------------------------------
 Console::~Console()
 {
-	SAFE_DELETE(mCandiData);
+	FB_DELETE(mCandiData);
 }
 
 /*
@@ -73,9 +73,6 @@ void Output(void* arg)
 //--------------------------------------------------------------------------
 bool Console::Init()
 {
-	DEPTH_STENCIL_DESC ddesc;
-	ddesc.DepthEnable = false;
-	mDepthStencilState = gFBEnv->pRenderer->CreateDepthStencilState(ddesc);
 
 	// calc background size
 	IFont* pFont = gFBEnv->pRenderer->GetFont();
@@ -86,7 +83,7 @@ bool Console::Init()
 	mPromptStart = 2;
 	mInputPosition = Vec2I(14, mHeight - mLineGap);
 
-	mEngineCommand = new EngineCommand();
+	mEngineCommand = FB_NEW(EngineCommand);
 
 	return true;
 }
@@ -161,7 +158,7 @@ void Console::AddCandidatesTo(const char* parent, const StringVector& candidates
 //--------------------------------------------------------------------------
 void Console::Log(const char* szFmt, ...)
 {
-	return;
+	LOCK_CRITICAL_SECTION lock(mBufferwCS);
 	char buf[2048];
 
 	va_list args;
@@ -213,7 +210,6 @@ void Console::Log(const char* szFmt, ...)
 	mBufferw.clear();
 	auto rit = mBuffer.rbegin(), ritEnd = mBuffer.rend();
 	int remainedLined = mLines-1;
-	LOCK_CRITICAL_SECTION lock(mBufferwCS);
 	for (; rit != ritEnd && remainedLined; rit++)
 	{
 		mBufferw.push_back( AnsiToWide(rit->c_str(), rit->length()*2) );
@@ -496,8 +492,11 @@ void Console::ProcessCommand(const char* command)
 				if (numWords==2)
 				{
 					c->SetData(words[1]);
+					OnCVarChanged(c);
 				}
-				this->Log("%s=%s", c->mName.c_str(), c->GetData().c_str());
+				this->Log("%s %s", c->mName.c_str(), c->GetData().c_str());
+				mHistory.push_back(command);
+				mHistoryIndex = mHistory.size() - 1;
 			}
 		}
 	}
@@ -617,6 +616,25 @@ void Console::GetPrevHistory()
 	StartHighlighting();
 	mCursorPos = mInputString.size();
 	mInputStringw = AnsiToWide(mInputString.c_str(), mInputString.size());
+}
+
+void Console::AddListener(ICVarListener* pListener)
+{
+	assert(std::find(mCVarListeners.begin(), mCVarListeners.end(), pListener) == mCVarListeners.end());
+	mCVarListeners.push_back(pListener);
+}
+void Console::RemoveListener(ICVarListener* pListener)
+{
+	mCVarListeners.erase(std::remove(mCVarListeners.begin(), mCVarListeners.end(), pListener),
+		mCVarListeners.end());
+}
+
+void Console::OnCVarChanged(CVar* cvar)
+{
+	FB_FOREACH(it, mCVarListeners)
+	{
+		(*it)->OnChangeCVar(cvar);
+	}
 }
 
 }

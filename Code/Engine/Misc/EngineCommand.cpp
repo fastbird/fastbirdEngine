@@ -1,20 +1,107 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Misc/EngineCommand.h>
 #include <Engine/IConsole.h>
+#include <Engine/IParticleEmitter.h>
+#include <Engine/ICamera.h>
+#include <Engine/Renderer/ParticleManager.h>
+#include <Engine/IScriptSystem.h>
 namespace fastbird
 {
+void EditParticle(StringVector& arg);
+static void Run(StringVector& arg);
+static ConsoleCommand ccSpawnParticle("EditParticle", EditParticle, "EditParticle");
+static ConsoleCommand ccRun("Run", Run, "Run command");
 
 EngineCommand::EngineCommand()
 {
-	REGISTER_CVAR(UI_Debug, 0, CVAR_CATEGORY_CLIENT, "UI debug");
-	REGISTER_CVAR(r_noObjectConstants, 0, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
-	REGISTER_CVAR(e_profile, 1, CVAR_CATEGORY_CLIENT, "enable profiler");
+	WheelSens = gFBEnv->pScriptSystem->GetRealVariable("WheelSens", 0.01f);
+	REGISTER_CVAR(WheelSens, WheelSens, CVAR_CATEGORY_CLIENT, "WheelSensitivity");
+
+	MouseSens = gFBEnv->pScriptSystem->GetRealVariable("MouseSens", 0.03f);
+	REGISTER_CVAR(MouseSens, MouseSens, CVAR_CATEGORY_CLIENT, "MouseSensitivity");
+
+	r_noObjectConstants = gFBEnv->pScriptSystem->GetIntVariable("r_noObjectConstants", 0);
+	REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
+
+	r_noParticleDraw = gFBEnv->pScriptSystem->GetIntVariable("r_noParticleDraw", 0);
+	REGISTER_CVAR(r_noParticleDraw, r_noParticleDraw, CVAR_CATEGORY_CLIENT, "No particle Draw");
+
+	r_particleProfile = gFBEnv->pScriptSystem->GetIntVariable("r_particleProfile", 0);
+	REGISTER_CVAR(r_particleProfile, r_particleProfile, CVAR_CATEGORY_CLIENT, "enable profiler");
+
+	r_HDR = gFBEnv->pScriptSystem->GetIntVariable("r_HDR", 1);
+	REGISTER_CVAR(r_HDR, r_HDR, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
+
+	r_GodRay = gFBEnv->pScriptSystem->GetIntVariable("r_GodRay", 1);
+	REGISTER_CVAR(r_GodRay, r_GodRay, CVAR_CATEGORY_CLIENT, "enable GodRay rendering");
+
+	r_GodRayWeight = gFBEnv->pScriptSystem->GetRealVariable("r_GodRayWeight", 0.1f);
+	REGISTER_CVAR(r_GodRayWeight, r_GodRayWeight, CVAR_CATEGORY_CLIENT, "enable GodRay rendering");
+
+	r_GodRayDecay = gFBEnv->pScriptSystem->GetRealVariable("r_GodRayDecay", 0.9f);
+	REGISTER_CVAR(r_GodRayDecay, r_GodRayDecay, CVAR_CATEGORY_CLIENT, "GodRay property");
+
+	r_GodRayDensity = gFBEnv->pScriptSystem->GetRealVariable("r_GodRayDensity", 0.2f);
+	REGISTER_CVAR(r_GodRayDensity, r_GodRayDensity, CVAR_CATEGORY_CLIENT, "GodRay property");
+
+	r_GodRayExposure = gFBEnv->pScriptSystem->GetRealVariable("r_GodRayExposure", 0.8f);
+	REGISTER_CVAR(r_GodRayExposure, r_GodRayExposure, CVAR_CATEGORY_CLIENT, "GodRay property");
+
+	r_ReportDeviceObjectLeak = gFBEnv->pScriptSystem->GetIntVariable("r_ReportDeviceObjectLeak");
+	REGISTER_CVAR(r_ReportDeviceObjectLeak, r_ReportDeviceObjectLeak, CVAR_CATEGORY_CLIENT, "ReportResourceLeak");
+
+	r_Glow = gFBEnv->pScriptSystem->GetIntVariable("r_Glow", 1);
+	REGISTER_CVAR(r_Glow, r_Glow, CVAR_CATEGORY_CLIENT, "Glow");
+
+	UI_Debug = gFBEnv->pScriptSystem->GetIntVariable("UI_Debug", 0);
+	REGISTER_CVAR(UI_Debug, UI_Debug, CVAR_CATEGORY_CLIENT, "UI debug");
+
+	e_profile = gFBEnv->pScriptSystem->GetIntVariable("e_profile", 1);
+	REGISTER_CVAR(e_profile, e_profile, CVAR_CATEGORY_CLIENT, "enable profiler");
+
+	REGISTER_CVAR(MoveEditParticle, 0, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
+
+	REGISTER_CC(&ccSpawnParticle);
+	REGISTER_CC(&ccRun);
 }
 EngineCommand::~EngineCommand()
 {
 	for each (auto p in mCVars)
 	{
-		delete p;
+		FB_SAFE_DEL(p);
+	}
+
+	for each (auto p in mCommands)
+	{
+		gFBEnv->pConsole->UnregisterCommand(p);
 	}
 }
+
+void EditParticle(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+
+	ParticleManager::GetParticleManager().EditThisParticle(arg[1].c_str());
 }
+
+void Run(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+
+	std::ifstream file(arg[1]);
+	if (file.is_open())
+	{
+		while (file.good())
+		{
+			char buffer[512];
+			file.getline(buffer, 512);
+			gFBEnv->pConsole->ProcessCommand(buffer);
+		}
+	}
+	
+}
+
+}
+

@@ -5,11 +5,15 @@ using namespace fastbird;
 
 std::vector<Texture*> Texture::mTextures;
 
+size_t Texture::NextTextureID = 0;
+
 //----------------------------------------------------------------------------
 Texture::Texture()
+: mAdamTexture(0)
 {
 	mTextures.push_back(this);
 	mType = TEXTURE_TYPE_DEFAULT;
+	mTextureID = NextTextureID++;
 }
 
 //----------------------------------------------------------------------------
@@ -17,6 +21,30 @@ Texture::~Texture()
 {
 	mTextures.erase(std::remove(mTextures.begin(), mTextures.end(), this), 
 		mTextures.end());
+}
+
+//static 
+void ITexture::ReloadTexture(const char* unifiedPath)
+{
+	Texture::ReloadTexture(unifiedPath);
+}
+
+void Texture::ReloadTexture(const char* unifiedPath)
+{
+	std::string lower = unifiedPath;
+	ToLowerCase(lower);
+	FB_FOREACH(it, Texture::mTextures)
+	{
+		Texture* p = *it;
+		if (!p->GetAdamTexture())
+		{
+			if (p->GetName() == lower)
+			{
+				gFBEnv->pRenderer->CreateTexture(lower.c_str(), p);
+			}
+		}
+	}
+
 }
 
 //----------------------------------------------------------------------------

@@ -577,3 +577,14 @@ bool tinydir_isdir(const char *path)
 }
 
 #endif
+
+_TINYDIR_FUNC
+bool FBCreateDirectory(const char* path)
+{
+#ifdef _MSC_VER
+	return CreateDirectory(path, 0)!=0;
+#else
+	assert(0);
+	return false;
+#endif
+}

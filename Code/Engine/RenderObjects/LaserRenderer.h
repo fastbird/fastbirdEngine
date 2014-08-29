@@ -9,7 +9,7 @@ namespace fastbird
 		~LaserRenderer();
 		virtual void AddLaser(const fastbird::Vec3& from, const fastbird::Vec3& to, float thickness, const fastbird::Color& color);
 
-		virtual void SetMaterial(const char* name);
+		virtual void SetMaterial(const char* name, int pass = 0);
 		virtual void PreRender();
 		virtual void Render();
 		virtual void PostRender();

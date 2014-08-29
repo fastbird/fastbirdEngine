@@ -26,6 +26,7 @@ namespace fastbird
 		virtual const char* GetName() const { return mName.c_str(); }
 
 		virtual IMaterial* Clone();
+		virtual IMaterial* GetAdam() const;
 
 		virtual void SetAmbientColor(float r, float g, float b, float a);
 		virtual void SetAmbientColor(const Vec4& ambient);
@@ -50,7 +51,10 @@ namespace fastbird
 		virtual ColorRamp& GetColorRamp(int slot, BINDING_SHADER shader);
 		virtual void RefreshColorRampTexture(int slot, BINDING_SHADER shader);
 
-		virtual void SetShaderDefines(const char* name, const char* val);
+		virtual void AddShaderDefine(const char* def, const char* val);
+		virtual void RemoveShaderDefine(const char* def);
+		virtual void ApplyShaderDefines();
+
 		virtual void SetMaterialParameters(unsigned index, const Vec4& value);
 		virtual const SHADER_DEFINES& GetShaderDefines() const {return mShaderDefines; }
 
@@ -62,9 +66,22 @@ namespace fastbird
 		virtual const char* GetShaderFile() const;
 		virtual void* GetShaderByteCode(unsigned& size) const;
 		virtual const Vec4& GetMaterialParameters(unsigned index) const;
+		virtual bool IsRelatedShader(const char* shaderFile);
 
 		virtual void Bind(bool inputLayout);
+		IMaterial* GetSubPassMaterial(RENDER_PASS p) const;
+		virtual bool BindSubPass(RENDER_PASS p);
+		virtual void BindMaterialParams();
 		virtual void RegisterReloading();
+
+		virtual bool IsTransparent() const { return mTransparent; }
+		virtual void ReloadShader();
+
+		virtual int GetBindingShaders() const { return mShaders; }
+		virtual void CopyMaterialParamFrom(const IMaterial* src);
+
+	private:
+		void LoadSubMaterial(tinyxml2::XMLElement* mat);
 
 	private:
 		ITexture* CreateColorRampTexture(ColorRamp& cr);
@@ -109,6 +126,11 @@ namespace fastbird
 		INPUT_ELEMENT_DESCS mInputElementDescs;
 		SmartPtr<IInputLayout> mInputLayout;
 		int mShaders; // combination of enum BINDING_SHADER;
+		bool mTransparent;
+
+		std::vector<SmartPtr<IMaterial>> mSubMaterials;
+
+		RENDER_PASS mRenderPass;
 
 	};
 }

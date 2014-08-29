@@ -1,12 +1,15 @@
 #include <Engine/StdAfx.h>
 #include <Engine/SceneGraph/SpatialObject.h>
 #include <Engine/IScene.h>
+#include <Engine/ICamera.h>
 
 using namespace fastbird;
 
 //----------------------------------------------------------------------------
 SpatialObject::SpatialObject()
 	:mDistToCam(-1.f)
+	, mCameraTargeting(0)
+	, mPrevPos(0, 0, 0)
 {
 }
 
@@ -14,6 +17,8 @@ SpatialObject::SpatialObject()
 SpatialObject::~SpatialObject()
 {
 	mDestructing = true;
+	if (mCameraTargeting)
+		mCameraTargeting->SetTarget(0);
 	for each(auto scene in mScenes)
 	{
 		scene->DetachObject(this);
@@ -35,13 +40,31 @@ void SpatialObject::SetPos(const Vec3& pos)
 {
 	if (mBoundingVolume && mBoundingVolumeWorld)
 		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + pos);
+	mPrevPos = mTransformation.GetTranslation();
 	mTransformation.SetTranslation(pos);
+	mTransformChanged = true;
 }
 
 //----------------------------------------------------------------------------
 void SpatialObject::SetRot(const Quat& rot)
 {
 	mTransformation.SetRotation(rot);
+	mTransformChanged = true;
+}
+
+void SpatialObject::SetScale(const Vec3& scale)
+{
+	if (mBoundingVolume && mBoundingVolumeWorld)
+		mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius() * std::max(scale.x, std::max(scale.y, scale.z)));
+	mTransformation.SetScale(scale);
+	mTransformChanged = true;
+}
+
+//----------------------------------------------------------------------------
+void SpatialObject::SetDir(const Vec3& dir)
+{
+	mTransformation.SetDir(dir);
+	mTransformChanged = true;
 }
 
 //----------------------------------------------------------------------------
@@ -61,7 +84,9 @@ void SpatialObject::SetTransform(const Transformation& t)
 {
 	if (mBoundingVolume && mBoundingVolumeWorld)
 		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + t.GetTranslation());
+	mPrevPos = mTransformation.GetTranslation();
 	mTransformation = t;
+	mTransformChanged = true;
 }
 
 //----------------------------------------------------------------------------

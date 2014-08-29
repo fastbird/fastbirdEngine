@@ -17,8 +17,9 @@ namespace fastbird
 		static IUIManager& GetUIManager();
 
 		virtual void Shutdown() = 0;
-		virtual void Update() = 0;
+		virtual void Update(float elapsedTime) = 0;
 
+		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname) = 0;
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type) = 0;
 		// in normalized space 0.0f~1.0f
@@ -28,6 +29,8 @@ namespace fastbird
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
 		virtual void DirtyRenderList() = 0;
 		virtual HCURSOR GetMouseCursorOver() const = 0;
+		virtual void SetMouseCursorOver() = 0;
+		virtual bool IsMouseInUI() const = 0;
 		virtual void DisplayMsg(const std::string& msg, ...) = 0;
 
 	protected:
@@ -38,5 +41,6 @@ namespace fastbird
 
 		friend class Container;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
+		virtual void DeleteComponent(IWinBase* com) = 0;
 	};
 }

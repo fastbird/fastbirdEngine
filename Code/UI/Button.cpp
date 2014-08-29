@@ -7,15 +7,14 @@ namespace fastbird
 {
 
 const float Button::LEFT_GAP = 0.001f;
-const float Button::BOTTOM_GAP = 0.006f;
 
 Button::Button()
 	: WinBase()
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UIButton.material");
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mTextColor = Vec3(1.0f, 0.92f, 0.0f);
 	mUIObject->SetTextColor(mTextColor);
 	mBackColor = Color(0.0f, 0.0f, 0.0f);
@@ -59,24 +58,16 @@ void Button::OnMouseOut(void* arg)
 	mUIObject->SetTextColor(mTextColor);
 }
 
-void Button::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 {
-	__super::OnInputFromHandler(mouse, keyboard);
-
-	if (!mVisible)
-		return;
-}
-
-bool Button::SetProperty(Property prop, const char* val)
-{
-	if (prop == PROPERTY_BACK_COLOR)
+	if (prop == UIProperty::BACK_COLOR)
 	{
 		mBackColor = StringConverter::parseVec4(val);
 		mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
 		return true;
 	}
 	
-	if (prop == PROPERTY_BACK_COLOR_OVER)
+	if (prop == UIProperty::BACK_COLOR_OVER)
 	{
 		Vec4 color;
 		color = StringConverter::parseVec4(val);

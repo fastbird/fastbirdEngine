@@ -70,11 +70,6 @@ namespace fastbird
 		mCurrentChar = 0;
 	}
 
-	bool Keyboard::IsValid() const
-	{
-		return mValid;
-	}
-
 	void Keyboard::Invalidate()
 	{
 		mValid = false;

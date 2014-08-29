@@ -6,6 +6,7 @@
 #include <Engine/IRenderer.h>
 #include <Engine/IMouse.h>
 #include <Engine/IKeyboard.h>
+#include <Engine/Misc/EngineCommand.h>
 #include <CommonLib/Timer.h>
 #include <CommonLib/Math/BoundingVolume.h>
 #include <CommonLib/Debug.h>
@@ -18,6 +19,11 @@ Camera::Camera()
 	, mProjPropertyChanged(true)
 	, mOrthogonal(false)
 	, mYZSwap(true)
+	, mTarget(0)
+	, mCurrentCamera(false)
+	, mCamIndex(-1)
+	, mProcessInput(false)
+	, mPrevTargetPos(0, 0, 0)
 {
 	// proj properties
 	mFov = Radian(70);
@@ -47,12 +53,14 @@ void Camera::SetOrthogonal(bool ortho)
 
 void Camera::SetPos(const Vec3& pos)
 {
+	WRITE_LOCK lock(mCamPosRWCS);
 	SpatialObject::SetPos(pos);
 	mViewPropertyChanged = true;
 }
 
 const Vec3& Camera::GetPos() const
 {
+	READ_LOCK lock(*(FB_READ_WRITE_CS*)&mCamPosRWCS);
 	return SpatialObject::GetPos();
 }
 
@@ -64,32 +72,11 @@ void Camera::SetRot(const Quat& rot)
 
 void Camera::SetDir(const Vec3& dir)
 {
-	Vec3 forward = dir;
-	forward.Normalize();
-	Vec3 right;
-	if (forward == Vec3::UNIT_Z || forward == -Vec3::UNIT_Z)
-	{
-		right = Vec3::UNIT_X;
-	}
-	else
-	{
-		right = forward.Cross(Vec3::UNIT_Z);
-	} 
-	Vec3 up = right.Cross(forward);
-
-
-	right.Normalize();
-	up.Normalize();
-
-	Mat33 rot;
-	rot.SetColumn(0, right);
-	rot.SetColumn(1, forward);
-	rot.SetColumn(2, up);
-	mTransformation.SetRotation(rot);
+	SpatialObject::SetDir(dir);
 	mViewPropertyChanged = true;
 }
 
-void Camera::SetTransformation(const Vec3& pos, const Quat& rot)
+void Camera::SetCamTransform(const Vec3& pos, const Quat& rot)
 {
 	mTransformation.SetTranslation(pos);
 	mTransformation.SetRotation(rot);
@@ -123,6 +110,59 @@ void Camera::GetNearFar(float& n, float& f) const
 }
 
 //----------------------------------------------------------------------------
+void Camera::ProcessInputData()
+{
+	if (!mProcessInput || !mCurrentCamera)
+		return;
+	if (mUserParams.Changed() || mPrevTargetPos != mTarget->GetPos())
+	{
+		mInternalParams.dist += mUserParams.dDist;
+		mInternalParams.dist = std::max(2.0f, mInternalParams.dist);
+		if (mInternalParams.dist > 300.0f)
+			mInternalParams.dist = 300.0f;
+
+		mInternalParams.pitch += mUserParams.dPitch;
+		if (mInternalParams.pitch > fastbird::HALF_PI - fastbird::Radian(5.f))
+		{
+			mInternalParams.pitch = fastbird::HALF_PI - fastbird::Radian(5.f);
+		}
+		else if (mInternalParams.pitch <  -fastbird::HALF_PI + fastbird::Radian(5.f))
+		{
+			mInternalParams.pitch = -fastbird::HALF_PI + fastbird::Radian(5.f);
+		}
+
+		mInternalParams.yaw += mUserParams.dYaw;
+		if (mInternalParams.yaw > fastbird::TWO_PI)
+		{
+			mInternalParams.yaw -= fastbird::TWO_PI;
+		}
+		else if (mInternalParams.yaw < -fastbird::TWO_PI)
+		{
+			mInternalParams.yaw += fastbird::TWO_PI;
+		}
+
+		Vec3 defaultDir = -Vec3::UNIT_Y;
+		Quat qPitch(mInternalParams.pitch, Vec3::UNIT_X);
+		Quat qYaw(-mInternalParams.yaw, Vec3::UNIT_Z);
+		Vec3 toCam = qPitch * defaultDir;
+		toCam = qYaw * toCam;
+		Vec3 forward = -toCam;
+		Vec3 right = forward.Cross(Vec3::UNIT_Z);
+		right.Normalize();
+		Vec3 up = right.Cross(forward);
+		forward = up.Cross(right);
+
+		Mat33 rot(right.x, forward.x, up.x,
+			right.y, forward.y, up.y,
+			right.z, forward.z, up.z);
+		Vec3 pos = mTarget->GetPos() + toCam * mInternalParams.dist;
+		SetCamTransform(pos, rot);
+		mUserParams.Clear();
+		mPrevTargetPos = mTarget->GetPos();
+	}
+}
+
+//----------------------------------------------------------------------------
 void Camera::Update()
 {
 	// world coordinates (Blender style)
@@ -145,10 +185,11 @@ void Camera::Update()
 	bool projChanged = mProjPropertyChanged;
 	if (mProjPropertyChanged)
 	{
+		mAspectRatio = mWidth / mHeight;
 		mProjPropertyChanged = false;
 		if (!mOrthogonal)
 		{
-			mProjMat = MakeProjectionMatrix(mFov, mWidth/mHeight, mNear, mFar);
+			mProjMat = MakeProjectionMatrix(mFov, mAspectRatio, mNear, mFar);
 		}
 		else
 		{
@@ -215,17 +256,6 @@ void Camera::UpdateFrustum()
 		float length = mPlanes[i].mNormal.Normalize();
 		mPlanes[i].mConstant /= length;
 	}
-
-	mFrustumMax = Vec3(-FLT_MAX,-FLT_MAX, -FLT_MAX);
-	mFrustumMin = Vec3(FLT_MAX,FLT_MAX, FLT_MAX);
-	for (int i=0; i<6; i++)
-	{
-		Vec3 pos = mPlanes[i].mNormal * mPlanes[i].mConstant;
-
-		mFrustumMax = Max(mFrustumMax, pos);
-		mFrustumMin = Min(mFrustumMin, pos);
-		
-	}
 }
 
 //----------------------------------------------------------------------------
@@ -266,17 +296,9 @@ const Mat44& Camera::GetInvViewProjMat()
 //----------------------------------------------------------------------------
 bool Camera::IsCulled(BoundingVolume* pBV) const
 {
-	if (pBV->GetBVType() == BoundingVolume::BV_SPHERE)
+	for (int i=0; i<6; i++)
 	{
-		for (int i=0; i<6; i++)
-		{
-			if (pBV->WhichSide(mPlanes[i])<0)
-				return true;
-		}
-	}
-	else if (pBV->GetBVType() == BoundingVolume::BV_AABB)
-	{
-		if (pBV->WhichSide(mFrustumMin, mFrustumMax)<0)
+		if (pBV->WhichSide(mPlanes[i])<0)
 			return true;
 	}
 
@@ -313,4 +335,71 @@ void Camera::Render()
 //----------------------------------------------------------------------------
 void Camera::PostRender()
 {
+}
+
+//----------------------------------------------------------------------------
+void Camera::SetTarget(SpatialObject* pObj)
+{
+	if (mTarget)
+		mTarget->CameraTargetingYou(0);
+	mTarget = pObj;
+	if (mTarget)
+		mTarget->CameraTargetingYou(this);
+}
+
+//---------------------------------------------------------------------------
+void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)
+{
+	if (!mCurrentCamera)
+		return;
+	if (!mProcessInput || !mTarget)
+		return;
+
+	if (pMouse && pMouse->IsValid() && !pKeyboard->IsKeyDown(VK_CONTROL))
+	{
+		const Vec3 camPos = GetPos();
+		Vec3 toCam = camPos - mTarget->GetPos();
+		const float distToTarget = toCam.Normalize();
+		long dx, dy;
+		pMouse->GetHDDeltaXY(dx, dy);
+
+		if (pMouse->IsLButtonDown())
+		{
+			float mouseSens = gFBEnv->pConsole->GetEngineCommand()->MouseSens;
+			if (dx != 0)
+			{
+				mUserParams.dYaw = dx * mouseSens;
+			}
+
+			if (dy != 0)
+			{
+				mUserParams.dPitch = -dy * mouseSens;
+			}
+
+			pMouse->LockMousePos(true);
+			pMouse->Invalidate();
+		}
+		else
+		{
+			pMouse->LockMousePos(false);
+		}
+
+		long wheel = pMouse->GetWheel();
+		if (wheel)
+		{
+			float shift = 1.0f;
+			if (pKeyboard->IsKeyDown(VK_SHIFT))
+				shift = 0.1f;
+			float wheelSens = gFBEnv->pConsole->GetEngineCommand()->WheelSens;
+			float wheelSensitivity = wheelSens * (float)pMouse->GetNumLinesWheelScroll();
+			wheelSensitivity *= std::max(1.f, mInternalParams.dist * 0.05f);
+			mUserParams.dDist += -wheel * wheelSensitivity * shift;
+			pMouse->Invalidate();
+		}
+	}
+}
+
+void Camera::SetEnalbeInput(bool enable)
+{
+	mProcessInput = enable;
 }

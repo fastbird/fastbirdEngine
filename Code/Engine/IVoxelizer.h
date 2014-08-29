@@ -9,6 +9,7 @@ namespace fastbird
 	{
 	public:
 		static IVoxelizer* CreateVoxelizer();
+		static void DeleteVoxelizer(IVoxelizer* p);
 		virtual bool RunVoxelizer(const char* filename, UINT numVoxels, bool swapYZ, bool oppositCull) = 0;
 		virtual IMeshObject* GetMeshObject() const = 0;
 

@@ -10,6 +10,7 @@ namespace fastbird
 	char* StripLeft(char* s);
 	void StripExtension(char* s);
 	std::string GetFileName(const char* s);
+	std::string GetDirectoryPath(const char* s);
 	const char* StripPath(const char* s);
 	const char* GetExtension(const char* s);
 	bool CheckExtension(const char* filename, const char* extension);
@@ -25,6 +26,7 @@ namespace fastbird
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
 	void ToLowerCase( std::string& str );
 	void ToUpperCase( std::string& str );
+	bool IsNumeric(const char* str);
 
 	class StringConverter
     {
@@ -51,11 +53,16 @@ namespace fastbird
         static std::string toString(unsigned long val, 
             unsigned short width = 0, char fill = ' ', 
             std::ios::fmtflags flags = std::ios::fmtflags(0) );
+		
+		static std::string toStringK(unsigned val);
 
         /** Converts a long to a String. */
         static std::string toString(long val, 
             unsigned short width = 0, char fill = ' ', 
             std::ios::fmtflags flags = std::ios::fmtflags(0) );
+
+		
+
         /** Converts a boolean to a String. 
         @param yesNo If set to true, result is 'yes' or 'no' instead of 'true' or 'false'
         */

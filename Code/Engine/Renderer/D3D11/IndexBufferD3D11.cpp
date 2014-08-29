@@ -8,7 +8,7 @@ namespace fastbird
 {
 	IndexBufferD3D11* IndexBufferD3D11::CreateInstance(unsigned int numIndices, INDEXBUFFER_FORMAT format)
 	{
-		IndexBufferD3D11* pIndexBuffer = new IndexBufferD3D11(numIndices, format);
+		IndexBufferD3D11* pIndexBuffer = FB_NEW(IndexBufferD3D11)(numIndices, format);
 		return pIndexBuffer;
 	}
 

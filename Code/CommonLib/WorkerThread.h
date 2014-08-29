@@ -12,11 +12,13 @@ protected:
     SyncEvent* mTasksEvent;      // Event used when waiting for a task.
     TaskScheduler* mScheduler;          // Scheduler owning this worker thread.
 
+	FB_CRITICAL_SECTION mTaskCS;
+
 public:
     WorkerThread(TaskScheduler* scheduler);
 	~WorkerThread();
 
-    void SetTask(Task* task);
+    void SetTask(Task* t);
 	virtual bool Run();
 };
 
