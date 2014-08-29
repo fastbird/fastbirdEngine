@@ -29,5 +29,5 @@ How-tos
 
 Development Log
 ------------------
-You can find the development log from the following site
+You can find the development log at the site below
 * http://jungwan.net/w/
