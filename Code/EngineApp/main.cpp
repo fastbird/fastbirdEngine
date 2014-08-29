@@ -1,27 +1,39 @@
 #include "StdAfx.h"
 #include "InputHandler.h"
 #include "CameraMan.h"
+#include "QuickSortTask.h"
 #include <Engine/IVoxelizer.h>
 #include <Engine/IRenderToTexture.h>
+#include <Engine/IParticleEmitter.h>
 #include <CommonLib/threads.h>
-#include "QuickSortTask.h"
 #include <CommonLib/Profiler.h>
 using namespace fastbird;
 
-#define RUN_PARALLEL_EXAMPLE 1
+#define RUN_PARALLEL_EXAMPLE 0
 
 fastbird::GlobalEnv* gEnv = 0;
 CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
 TaskScheduler* gTaskSchedular = 0;
-SmartPtr<IMeshObject> gMeshObject;
-std::vector< SmartPtr<IMeshObject> > gVoxels;
+IMeshObject* gMeshObject = 0;
+#define NUM_PARTICLES 50
+IParticleEmitter* gParticleEmitter[NUM_PARTICLES] = { 0 };
+std::vector< IMeshObject* > gVoxels;
 
 //-----------------------------------------------------------------------------
 void UpdateFrame()
 {
 	gEnv->pTimer->Tick();
 	float elapsedTime = gpTimer->GetDeltaTime();
+	for (int i = 0; i < NUM_PARTICLES; ++i)
+	{
+		if (gParticleEmitter[i])
+		{
+			if (!gParticleEmitter[i]->IsAlive())
+				gParticleEmitter[i]->Active(true);
+		}
+	}
+	gEnv->pRenderer->DrawText(Vec2I(100, 200), "Press CTRL to lock the camera rotation.", Color(1, 1, 1, 1));
 	gEnv->pEngine->UpdateInput();
 	gCameraMan->Update(elapsedTime);
 	gEnv->pEngine->UpdateFrame(elapsedTime);
@@ -74,11 +86,11 @@ LRESULT CALLBACK WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		{
 			gEnv->pRenderer->SetClearColor(0, 0, 0, 1);
 		}
-		gInputHandler = new InputHandler();
-		gCameraMan = new CameraMan(gEnv->pRenderer->GetCamera());
+		gInputHandler = FB_NEW(InputHandler)();
+		gCameraMan = FB_NEW(CameraMan)(gEnv->pRenderer->GetCamera());
 		gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
 
-		gTaskSchedular = new TaskScheduler(8);
+		gTaskSchedular = FB_NEW(TaskScheduler)(6);
 	}
 
 //-----------------------------------------------------------------------------
@@ -105,16 +117,20 @@ int main()
 	// 3. How to load model file and material.
 	//----------------------------------------------------------------------------
 	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
-	gMeshObject->AttachToScene();
-	gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+	if (gMeshObject)
+	{
+		gMeshObject->AttachToScene();
+		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+	}
+	
 
 	//----------------------------------------------------------------------------
 	// 4. How to use voxelizer (Need to include <Engine/IVoxelizer.h>)
 	//----------------------------------------------------------------------------
-	SmartPtr<IVoxelizer> voxelizer = IVoxelizer::CreateVoxelizer();
-	bool ret = voxelizer->RunVoxelizer("data/objects/etc/spaceship.dae", 64, false, true);
+	IVoxelizer* voxelizer = IVoxelizer::CreateVoxelizer();
+	bool ret = voxelizer->RunVoxelizer("data/objects/etc/spaceship.dae", 32, false, true);
 	assert(ret);
-	SmartPtr<IMeshObject> voxelObject = gEnv->pEngine->GetMeshObject("data/objects/etc/cube.dae");
+	IMeshObject* voxelObject = gEnv->pEngine->GetMeshObject("data/objects/etc/cube.dae");
 	const IVoxelizer::HULLS& h = voxelizer->GetHulls();
 	Vec3 offset(30, 0, 0);
 	for each(auto v in h)
@@ -124,29 +140,35 @@ int main()
 		m->SetPos(offset + v*2.0f);
 		m->AttachToScene();
 	}
-	voxelizer = 0;
+	IVoxelizer::DeleteVoxelizer(voxelizer);
+	gEnv->pEngine->DeleteMeshObject(voxelObject);
 	voxelObject = 0;
 
 	//----------------------------------------------------------------------------
 	// 5. How to use Render To Texture (Need to include <Engine/IRenderToTexture.h>)
 	//----------------------------------------------------------------------------
-	SmartPtr<IRenderToTexture> rtt = gEnv->pRenderer->CreateRenderToTexture(false);
-	rtt->GetScene()->AttachObject(gMeshObject);
-	ICamera* pRTTCam = rtt->GetCamera();
-	pRTTCam->SetPos(Vec3(-5, 0, 0));
-	pRTTCam->SetDir(Vec3(1, 0, 0));
-	rtt->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false);
-	rtt->Render();
-	rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
-	rtt = 0;
-	
+	if (gMeshObject)
+	{
+		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(false);
+		assert(rtt);
+		rtt->GetScene()->AttachObject(gMeshObject);
+		ICamera* pRTTCam = rtt->GetCamera();
+		pRTTCam->SetPos(Vec3(-5, 0, 0));
+		pRTTCam->SetDir(Vec3(1, 0, 0));
+		rtt->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false);
+		rtt->Render();
+		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
+		gEnv->pRenderer->DeleteRenderToTexture(rtt);
+		rtt = 0;
+	}
+		
 #if RUN_PARALLEL_EXAMPLE
 	//----------------------------------------------------------------------------
 	// 6. How to parallel computing. (Need to include <CommonLib/threads.h>)
 	// reference : Efficient and Scalable Multicore Programming
 	//----------------------------------------------------------------------------
 	int numInts = INT_MAX/100;
-	int* pInts = new int[numInts];
+	int* pInts = FB_ARRNEW(int, numInts);
 	{
 		//------------------------------------------------------------------------
 		// 7. how to profile (Need to include <CommonLib/Profiler.h>)
@@ -159,7 +181,7 @@ int main()
 			random = random * 196314165 + 907633515;
 		}
 	}
-	QuickSortTask* pQuickSort = new QuickSortTask(pInts, 0, numInts, 0);
+	QuickSortTask* pQuickSort = FB_NEW(QuickSortTask)(pInts, 0, numInts, 0);
 	// single threaded
 	{
 		Profiler pro("QuickSort_SingleThread.");
@@ -169,7 +191,7 @@ int main()
 	{
 		assert(pInts[i] <= pInts[i + 1]);
 	}
-	delete pQuickSort;
+	FB_SAFE_DEL(pQuickSort);
 	
 	DWORD random = 0;
 	for (int i = 0; i < numInts; i++)
@@ -178,7 +200,7 @@ int main()
 		random = random * 196314165 + 907633515;
 	}
 	// multi threaded.
-	pQuickSort = new QuickSortTask(pInts, 0, numInts, 0);
+	pQuickSort = FB_NEW(QuickSortTask)(pInts, 0, numInts, 0);
 	gTaskSchedular->AddTask(pQuickSort);
 	{
 		Profiler pro("QuickSort_MultiThread.");
@@ -188,29 +210,52 @@ int main()
 	{
 		assert(pInts[i] <= pInts[i + 1]);
 	}
-	delete pQuickSort;
+	FB_SAFE_DEL(pQuickSort);
 
-	delete[] pInts;
+	FB_ARRDELETE(pInts);
 #endif // RUN_PARALLEL_EXAMPLE
 	//----------------------------------------------------------------------------
+
+
+	//----------------------------------------------------------------------------
+	// 6. How to particles
+	//----------------------------------------------------------------------------
+	for (int i = 0; i < NUM_PARTICLES; ++i)
+	{
+		gParticleEmitter[i] = gEnv->pEngine->GetParticleEmitter(7, false);
+		assert(gParticleEmitter);
+		gParticleEmitter[i]->Active(true);
+		gParticleEmitter[i]->SetPos(Random(Vec3(-10.0f, -10.0f, -10.0f), Vec3(10.0f, 10.0f, 10.0f)));
+	}
+
 
 	//----------------------------------------------------------------------------
 	// Entering game loop.
 	//----------------------------------------------------------------------------
 	RunGame();
+
 	gTaskSchedular->Finalize();
 
-	gMeshObject = 0;
+	gEnv->pEngine->DeleteMeshObject(gMeshObject);
+	for each (IMeshObject* var in gVoxels)
+	{
+		gEnv->pEngine->DeleteMeshObject(var);
+	}
+	for (int i = 0; i < NUM_PARTICLES; ++i)
+		gEnv->pEngine->ReleaseParticleEmitter(gParticleEmitter[i]);
 	gVoxels.clear();
-	SAFE_DELETE(gCameraMan);
-	SAFE_DELETE(gInputHandler);
-	SAFE_DELETE(gTaskSchedular);
+	FB_SAFE_DEL(gCameraMan);
+	FB_SAFE_DEL(gInputHandler);
+	FB_SAFE_DEL(gTaskSchedular);
 
 	if (gEnv)
 	{
 		Destroy_fastbird_Engine();
 		Log("Engine Destroyed.");
 	}
+#ifdef USING_FB_MEMORY_MANAGER
+	FBReportMemoryForModule();
+#endif
 }
 
 //---------------------------------------------------------------------------

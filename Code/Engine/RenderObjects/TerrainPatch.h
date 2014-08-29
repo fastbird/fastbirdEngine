@@ -26,7 +26,10 @@ namespace fastbird
 		virtual void Render();
 		virtual void PreRender();
 		virtual void PostRender();
-		virtual void SetMaterial(IMaterial* pMat){ mMaterial = pMat; }
+		virtual void SetMaterial(IMaterial* pMat, int pass = 0)
+		{ 
+			mMaterial = pMat; 
+		}
 
 		//------------------------------------------------------------------------
 		// OWN

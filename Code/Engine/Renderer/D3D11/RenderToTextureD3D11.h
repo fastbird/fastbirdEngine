@@ -9,7 +9,7 @@ namespace fastbird
 		RenderToTextureD3D11() {}
 		virtual ~RenderToTextureD3D11() {}
 
-		virtual void SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap);
+		virtual void SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap);
 		virtual void SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap);
 
 	private:

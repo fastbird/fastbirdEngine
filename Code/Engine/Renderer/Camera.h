@@ -37,7 +37,7 @@ namespace fastbird
 		virtual void SetDir(const Vec3& dir);
 		virtual void SetRot(const Quat& rot);
 		virtual const Quat& GetRot() const { return mTransformation.GetRotation(); }
-		virtual void SetTransformation(const Vec3& pos, const Quat& rot);
+		virtual void SetCamTransform(const Vec3& pos, const Quat& rot);
 		virtual void SetTransform(const Transformation& t);
 		virtual const Vec3 GetDir() const;
 		virtual const Mat44& GetViewMat();
@@ -65,14 +65,51 @@ namespace fastbird
 		virtual bool IsCulled(BoundingVolume* pBV) const;
 		virtual Ray3 ScreenPosToRay(long x, long y);
 		virtual void SetYZSwap(bool enable){mYZSwap = enable; mProjPropertyChanged = true; }
-		virtual const Vec3& GetFrustumMin() const { return mFrustumMin; }
-		virtual const Vec3& GetFrustumMax() const { return mFrustumMax; }
+		virtual void SetTarget(SpatialObject* pObj);
+		virtual void SetCurrent(bool cur) { mCurrentCamera = cur; }
+		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
+		virtual void SetCameraIndex(size_t idx) {mCamIndex = idx;}
+		virtual void SetEnalbeInput(bool enable);
 
 	protected:
 		void UpdateFrustum();
+		void ProcessInputData();
 
 
 	private:
+		struct UserParameters
+		{
+			UserParameters()
+			{
+				Clear();
+			}
+			void Clear()
+			{
+				dDist = 0.00f, dYaw = 0.f, dPitch = 0.f;
+			}
+
+			bool Changed()
+			{
+				return dDist != 0.f || dYaw != 0.f || dPitch != 0.f;
+			}
+			float dDist;
+			float dYaw;
+			float dPitch;
+
+		} mUserParams;
+
+		struct InternalParameters
+		{
+			InternalParameters()
+			{
+				dist = 10.0f;
+				yaw = 0.f;
+				pitch = 0.f;
+			}
+			float dist;
+			float yaw;
+			float pitch;
+		} mInternalParams;
 
 		bool mViewPropertyChanged;
 		bool mProjPropertyChanged;
@@ -90,9 +127,14 @@ namespace fastbird
 		float mHeight;
 		std::string mName;
 		Plane3 mPlanes[6];
-		Vec3 mFrustumMax;
-		Vec3 mFrustumMin;
+		SpatialObject* mTarget;
+		size_t mCamIndex;
 		bool mYZSwap;
+		bool mCurrentCamera;
+		bool mProcessInput;
+		Vec3 mPrevTargetPos;
+
+		FB_READ_WRITE_CS mCamPosRWCS;
 	};
 }
 

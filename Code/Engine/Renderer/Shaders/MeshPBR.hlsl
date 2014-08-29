@@ -22,9 +22,6 @@ SamplerState gMetallicSampler : register(s2);
 Texture2D	gRoughnessTexture : register(t3);
 SamplerState gRoughnessSampler : register(s3);
 
-TextureCube gEnvTexture : register(t4);
-SamplerState gEnvSampler : register(s4);
-
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
@@ -64,7 +61,8 @@ v2p meshpbr_VertexShader( in a2v INPUT )
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
-{	
+{
+	INPUT.UV.y = 1.0 - INPUT.UV.y;
 	// process normal map.
 	float3 baseColor = gDiffuseTexture.Sample(gDiffuseSampler, INPUT.UV).xyz;
 	float metallic = gMetallicTexture.Sample(gMetallicSampler, INPUT.UV).r;	
@@ -91,12 +89,12 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	const float3 dielectricColor = float3(0.04, 0.04, 0.04);
 	const float minRoughness = 1e-4;
 	roughness = max(minRoughness, roughness);
-	float3 diffColor = baseColor * (1.0 - metallic);
+	float3 diffColor = baseColor * (1.0 - metallic*.9);
 	float3 specColor = lerp(dielectricColor, baseColor, metallic);	
 
-	float ndl = saturate(dot(normal, toLightDir));
+	float ndl = max(dot(normal, toLightDir), 1e-8);
 	float3 h = (toViewDir + toLightDir) * .5f;
-	float ndh = saturate(dot(normal, h));
+	float ndh = max(abs(dot(normal, h)), 1e-8);
 	float vdh = max( 1e-8, abs(dot(toViewDir, h)) );
 	float ndv = max( 1e-8, abs(dot( normal, toViewDir)) );
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(ndl, vdh, ndh, ndv, specColor, roughness));
@@ -104,18 +102,52 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	
 	// need to work further.
 #ifdef ENV_TEXTURE
-	float3 reflect = normalize(-(toViewDir - 2 * normal * dot(toViewDir, normal)));
-	reflect.yz = -reflect.yz;
-	envContrib += gEnvTexture.SampleLevel(gEnvSampler, reflect, 1) * 
-		CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness);
+	vec3 ltangent = normalize(INPUT.Tangent
+		- normal*dot(INPUT.Tangent, normal)); // local tangent
+	vec3 lbitangent = normalize(INPUT.Binormal
+		- normal*dot(INPUT.Binormal,normal)
+		- ltangent*dot(INPUT.Binormal, ltangent)); // local bitangent
+		
+	for(int i=0; i<ENV_SAMPLES; ++i)
+	{
+		vec2 hamOffset = gHammersley[i];
+		vec3 Sd = ImportanceSampleLambert(hamOffset,ltangent,lbitangent,normal);
+		float pdfD = ProbabilityLambert(Sd, normal);
+		float lodD = ComputeLOD(Sd, pdfD);
+		envContrib +=gEnvTexture.SampleLevel(gEnvSampler, Sd, lodD).rgb * diffColor;
+		vec3 Hn = ImportanceSampleGGX(hamOffset,ltangent,lbitangent,normal,roughness);
+		
+		float3 Ln = normalize(-(toViewDir - 2 * Hn * dot(toViewDir, Hn)));
+		Ln.yz = Ln.zy;
+
+		float ndl = dot(normal, Ln);
+
+		// Horizon fading trick from http://marmosetco.tumblr.com/post/81245981087
+		const float horizonFade = 1.3;
+		float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
+		horiz *= horiz;
+		ndl = max( 1e-8, abs(ndl) );
+
+		float vdh = max( 1e-8, abs(dot(toViewDir, Hn)) );
+		float ndh = max( 1e-8, abs(dot(normal, Hn)) );
+		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
+			ProbabilityGGX(ndh, vdh, roughness));
+		envContrib += gEnvTexture.SampleLevel(gEnvSampler, Ln, lodS).rgb
+			 * CookTorranceContrib(
+				vdh, ndh, ndl, ndv,
+				specColor,
+				roughness) * horiz;
+	}
+
+	envContrib /= ENV_SAMPLES;
 #else
 	float3 reflect = normalize(-(toViewDir - 2 * normal * dot(toViewDir, normal)));
-	float3 starColor = Star(reflect, float3(gWorld[0][3], gWorld[1][3], gWorld[2][3]));
+	reflect.yz = reflect.zy;
+	float3 starColor = StarNest(reflect, float3(gWorld[0][3], gWorld[1][3], gWorld[2][3]));
 	envContrib += starColor * 
 		CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness);
 #endif
-	
-
-
-	return float4(shadedColor+envContrib, 1.0);
+	float2 screenUV = GetScreenUV(INPUT.Position.xy);
+	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib, INPUT.WorldPos );
+	return float4(foggedColor, 1.0);
 }

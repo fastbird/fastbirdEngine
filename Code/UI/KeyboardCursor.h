@@ -5,10 +5,10 @@ namespace fastbird
 	class IUIObject;
 	class KeyboardCursor
 	{	
+	public:
 		KeyboardCursor();
 		~KeyboardCursor();
 
-	public:
 		static void InitializeKeyboardCursor();
 		static void FinalizeKeyboardCursor();
 		static KeyboardCursor& GetKeyboardCursor();
@@ -20,7 +20,7 @@ namespace fastbird
 
 	private:
 		static KeyboardCursor* mInstance;
-		SmartPtr<IUIObject> mUIObject;
+		IUIObject* mUIObject;
 		bool mVisible;
 	};
 }

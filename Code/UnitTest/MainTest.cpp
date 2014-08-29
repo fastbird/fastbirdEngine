@@ -38,9 +38,8 @@ int main(int argc, char** argv)
 	fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
 	
     testing::InitGoogleTest(&argc, argv); 
-    RUN_ALL_TESTS(); 
+    //RUN_ALL_TESTS(); 
     std::getchar(); // keep console window open until Return keystroke
-	delete fastbird::gpTimer;
 
 	::Destroy_fastbird_Engine();
 }

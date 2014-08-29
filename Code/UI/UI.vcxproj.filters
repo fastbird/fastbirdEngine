@@ -58,6 +58,20 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="IRadioBox.h" />
+    <ClInclude Include="HexagonalContextMenu.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="CardScroller.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="IUIAnimation.h" />
+    <ClInclude Include="UIAnimation.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="VerticalGauge.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="UIProperty.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -65,6 +79,9 @@
     </Filter>
     <Filter Include="Manager">
       <UniqueIdentifier>{c4c330da-1175-4bf0-88cf-e4fd7c557501}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Animation">
+      <UniqueIdentifier>{435c2949-5ad0-4113-9a3b-0fdbe1009562}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +128,18 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="RadioBox.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="HexagonalContextMenu.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="CardScroller.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="UIAnimation.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="VerticalGauge.cpp">
       <Filter>Components</Filter>
     </ClCompile>
   </ItemGroup>

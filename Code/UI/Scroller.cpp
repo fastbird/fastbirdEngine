@@ -1,5 +1,6 @@
 #include <UI/StdAfx.h>
 #include <UI/Scroller.h>
+#include <UI/Container.h>
 
 namespace fastbird
 {
@@ -10,9 +11,9 @@ Scroller::Scroller()
 	, mMaxOffset(0, 0)
 	, mOwner(0)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
 
 void Scroller::GatherVisit(std::vector<IUIObject*>& v)
@@ -20,12 +21,14 @@ void Scroller::GatherVisit(std::vector<IUIObject*>& v)
 	v.push_back(mUIObject);	
 }
 
-void Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mParent)
-		return;
+		return false;
 
-	if (mouse->IsValid() && mOwner->GetFocus(true))
+	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
+	Vec2 npos = mouse->GetNPos();
+	if (mouse->IsValid() && mParent->IsIn(npos))
 	{
 		long wheel = mouse->GetWheel();
 		if (wheel)
@@ -37,6 +40,7 @@ void Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			mouse->Invalidate();
 		}
 	}
+	return isIn;
 }
 
 

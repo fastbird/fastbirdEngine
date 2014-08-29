@@ -13,6 +13,10 @@ extern "C" {
 #include <string>
 #include <vector>
 #include <limits>
+#include <set>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/SmartPtr.h>

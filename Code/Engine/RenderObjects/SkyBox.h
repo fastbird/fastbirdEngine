@@ -16,6 +16,7 @@ namespace fastbird
 		virtual void PreRender();
 		virtual void Render();		
 		virtual void PostRender();
+		virtual IMaterial* GetMaterial(int pass = 0) const { return mMaterial; }
 
 		//--------------------------------------------------------------------
 		// ISkyBox Interfaces

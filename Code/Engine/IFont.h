@@ -1,4 +1,5 @@
 #pragma once
+#include <Engine/Foundation/Object.h>
 #include <CommonLib/SmartPtr.h>
 namespace fastbird
 {
@@ -11,7 +12,7 @@ namespace fastbird
 	};
 
 	//------------------------------------------------------------------------
-	class IFont : public ReferenceCounter
+	class IFont : public Object
 	{
 	public:
 		virtual ~IFont(){}

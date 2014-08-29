@@ -43,6 +43,8 @@ Material::Material()
 	, mReloadingTryCount(0)
 	, mAdamMaterial(0)
 	, mShaders(0)
+	, mTransparent(false)
+	, mRenderPass(RENDER_PASS::PASS_NORMAL)
 {
 	WRITE_LOCK wl(mRWCSMaterial);
 	mMaterials.push_back(this);
@@ -65,17 +67,30 @@ Material::Material(const Material& mat)
 	mShaderDefines =		mat.mShaderDefines;
 	mInputElementDescs =	mat.mInputElementDescs;
 	mInputLayout =			mat.mInputLayout;
+	mShaders = mat.mShaders;
 	mTextures = mat.mTextures;
+	mTransparent = mat.mTransparent;
+	mRenderPass = mat.mRenderPass;
+	size_t num = mat.mSubMaterials.size();
+	for (size_t i = 0; i < num; ++i)
+	{
+		mSubMaterials.push_back(mat.mSubMaterials[i]->Clone());
+	}
 }
 
 IMaterial* Material::Clone()
 {
-	Material* pMat = new Material(*this);
-	pMat->SetAdam(const_cast<Material*>(this));
+	Material* pMat = FB_NEW(Material)(*this);
+	pMat->SetAdam(mAdamMaterial ? mAdamMaterial : const_cast<Material*>(this));
 
 	mInstances.push_back(pMat);
 
 	return pMat;
+}
+
+IMaterial* Material::GetAdam() const
+{
+	return mAdamMaterial;
 }
 
 //----------------------------------------------------------------------------
@@ -105,6 +120,8 @@ bool Material::LoadFromFile(const char* filepath)
 		if (doc.ErrorID()==tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 		{
 			Log("Material %s is not found!", filepath);
+			if (mReloading)
+				return true;
 		}
 		const char* errMsg = doc.GetErrorStr1();
 		if (errMsg)
@@ -127,6 +144,12 @@ bool Material::LoadFromFile(const char* filepath)
 	{
 		assert(0);
 		return false;
+	}
+
+	const char* sz = pRoot->Attribute("transparent");
+	if (sz)
+	{
+		mTransparent = StringConverter::parseBool(sz);
 	}
 
 	tinyxml2::XMLElement* pMaterialConstants = pRoot->FirstChildElement("MaterialConstants");
@@ -322,7 +345,61 @@ bool Material::LoadFromFile(const char* filepath)
 		}
 	}
 
+	tinyxml2::XMLElement* subMat = pRoot->FirstChildElement("Material");
+	while (subMat)
+	{
+		Material* pMat = FB_NEW(Material);
+		mSubMaterials.push_back(pMat);
+		pMat->LoadSubMaterial(subMat);
+
+		subMat = subMat->NextSiblingElement("Material");
+	}
+
 	return true;
+}
+
+void Material::LoadSubMaterial(tinyxml2::XMLElement* subMat)
+{
+	const char* sz = subMat->Attribute("pass");
+	assert(sz && "pass should be exists");
+	if (sz)
+		mRenderPass = (RENDER_PASS)ConvertRenderPass(sz);
+
+	mShaders = BINDING_SHADER_VS | BINDING_SHADER_PS;
+	tinyxml2::XMLElement* pShaders = subMat->FirstChildElement("Shaders");
+	if (pShaders)
+	{
+		const char* shaders = pShaders->GetText();
+		if (shaders)
+		{
+			mShaders = 0;
+			std::string strShaders = shaders;
+			ToLowerCase(strShaders);
+			if (strShaders.find("vs") != std::string::npos){
+				mShaders |= BINDING_SHADER_VS;
+			}
+			if (strShaders.find("hs") != std::string::npos){
+				mShaders |= BINDING_SHADER_HS;
+			}
+			if (strShaders.find("ds") != std::string::npos){
+				mShaders |= BINDING_SHADER_DS;
+			}
+			if (strShaders.find("gs") != std::string::npos){
+				mShaders |= BINDING_SHADER_GS;
+			}
+			if (strShaders.find("ps") != std::string::npos){
+				mShaders |= BINDING_SHADER_PS;
+			}
+		}
+	}
+	tinyxml2::XMLElement* pShaderFileElem = subMat->FirstChildElement("ShaderFile");
+	if (pShaderFileElem){
+		const char* shaderFile = pShaderFileElem->GetText();
+		if (shaderFile){
+			mShader = gFBEnv->pEngine->GetRenderer()->CreateShader(shaderFile, mShaders, mShaderDefines);
+			mShaderFile = mShader->GetName();
+		}
+	}
 }
 
 void Material::RemoveInstance(Material* pInstance)
@@ -339,7 +416,7 @@ void Material::ReloadMaterial(const char* name)
 	READ_LOCK rl(mRWCSMaterial);
 	for each(auto mat in mMaterials)
 	{
-		if (strcmp(mat->GetName(), filepath.c_str())==0)
+		if (strcmp(mat->GetName(), filepath.c_str()) == 0)
 		{
 			// not reloading instances.
 			mat->RegisterReloading();
@@ -353,17 +430,35 @@ void Material::ReloadShader(const char* shader)
 {
 	std::string shaderPath(shader);
 	ToLowerCase(shaderPath);
-	std::vector<SHADER_DEFINES> reloaded;
+	typedef VectorMap<std::string, std::vector<SHADER_DEFINES>> RELOAD_CACHE;
+	RELOAD_CACHE reloaded;
 	READ_LOCK rl(mRWCSMaterial);
 	for each(auto mat in mMaterials)
 	{
-		if (strcmp(shaderPath.c_str(), mat->GetShaderFile())==0)
+		if (mat->IsRelatedShader(shaderPath.c_str()))
 		{
-			auto itFind = std::find(reloaded.begin(), reloaded.end(), mat->GetShaderDefines());
-			if (itFind==reloaded.end())
+			IMaterial* adam = mat->GetAdam();
+			// child don't need reload.
+			if (adam)
+				continue;
+			auto cache = reloaded.Find(mat->GetShaderFile());
+			bool alreadyReloaded = false;
+			if (cache != reloaded.end())
 			{
-				Shader::ReloadShader(shader, mat->GetShaderDefines());
-				reloaded.push_back(mat->GetShaderDefines());
+				auto defines = std::find(cache->second.begin(), cache->second.end(), mat->GetShaderDefines());
+				if (defines != cache->second.end())
+					alreadyReloaded = true;
+			}
+			else
+			{
+				cache = reloaded.Insert(std::make_pair(mat->GetShaderFile(), std::vector<SHADER_DEFINES>()));
+			}
+			
+			if (!alreadyReloaded)
+			{
+				Log("Reloading a shader(%s) using by the material(%s)", mat->GetShaderFile(), mat->GetName());
+				Shader::ReloadShader(mat->GetShaderFile(), mat->GetShaderDefines());
+				cache->second.push_back(mat->GetShaderDefines());
 			}
 		}
 	}
@@ -564,7 +659,7 @@ void Material::RefreshColorRampTexture(int slot, BINDING_SHADER shader)
 		}
 		pTexture->Unmap(0);
 	}
-	RemoveTexture(pTexture);
+	//RemoveTexture(pTexture);
 
 	mColorRampMap[pTexture] = cr;
 }
@@ -612,7 +707,7 @@ void Material::RemoveTexture(BINDING_SHADER shader, int slot)
 }
 
 //----------------------------------------------------------------------------
-void Material::SetShaderDefines(const char* name, const char* val)
+void Material::AddShaderDefine(const char* name, const char* val)
 {
 	if (name==0 || val==0)
 		return;
@@ -627,6 +722,28 @@ void Material::SetShaderDefines(const char* name, const char* val)
 	mShaderDefines.push_back(ShaderDefine());
 	mShaderDefines.back().name = name;
 	mShaderDefines.back().value = val;
+}
+
+void Material::RemoveShaderDefine(const char* def)
+{
+	if (def == 0)
+		return;
+
+	FB_FOREACH(it, mShaderDefines)
+	{
+		if (strcmp(it->name.c_str(), def) == 0)
+		{
+			it = mShaderDefines.erase(it);
+			return;
+		}		
+	}	
+}
+
+void Material::ApplyShaderDefines()
+{
+	assert(mAdamMaterial);
+	mShader = gFBEnv->pEngine->GetRenderer()->CreateShader(
+		mAdamMaterial->GetShaderFile(), mShaders, mShaderDefines);
 }
 
 //----------------------------------------------------------------------------
@@ -684,7 +801,21 @@ void* Material::GetShaderByteCode(unsigned& size) const
 const Vec4& Material::GetMaterialParameters(unsigned index) const
 {
 	auto it = mMaterialParameters.Find(index);
+	assert(it != mMaterialParameters.end());
 	return it->second;
+}
+
+//----------------------------------------------------------------------------
+bool Material::IsRelatedShader(const char* shaderFile)
+{
+	if (mShader)
+	{
+		if (strcmp(shaderFile, mShader->GetName()) == 0 || mShader->CheckIncludes(shaderFile))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 //----------------------------------------------------------------------------
@@ -724,17 +855,7 @@ void Material::Bind(bool inputLayout)
 	}
 	gFBEnv->pEngine->GetRenderer()->UpdateMaterialConstantsBuffer(&mMaterialConstants);
 
-	if (!mMaterialParameters.empty())
-	{
-		Vec4* pDest = (Vec4*)gFBEnv->pEngine->GetRenderer()->MapMaterialParameterBuffer();
-		auto it = mMaterialParameters.begin(), itEnd = mMaterialParameters.end();
-		for (; it!=itEnd; it++)
-		{
-			Vec4* pCurDest = pDest + it->first;
-			memcpy(pCurDest, &(it->second), sizeof(Vec4));
-		}
-		gFBEnv->pEngine->GetRenderer()->UnmapMaterialParameterBuffer();
-	}
+	BindMaterialParams();	
 
 	auto it = mTextures.begin(),
 		itEnd = mTextures.end();
@@ -744,10 +865,75 @@ void Material::Bind(bool inputLayout)
 	}
 }
 
+//------------------------------------------------------
+IMaterial* Material::GetSubPassMaterial(RENDER_PASS p) const
+{
+	FB_FOREACH(it, mSubMaterials)
+	{
+		Material* pmat = (Material*)(*it).get();
+		if (pmat->mRenderPass == p)
+			return pmat;
+	}
+	return 0;
+}
+
+//------------------------------------------------------
+bool Material::BindSubPass(RENDER_PASS p)
+{
+	IMaterial* pmat = GetSubPassMaterial(p);
+	if (pmat){
+		pmat->Bind(false);
+		BindMaterialParams(); // use parent material param
+		return true;
+	}
+
+	return false;
+}
+
+void Material::BindMaterialParams()
+{
+	if (!mMaterialParameters.empty())
+	{
+		Vec4* pDest = (Vec4*)gFBEnv->pEngine->GetRenderer()->MapMaterialParameterBuffer();
+		if (pDest)
+		{
+			auto it = mMaterialParameters.begin(), itEnd = mMaterialParameters.end();
+			for (; it != itEnd; it++)
+			{
+				Vec4* pCurDest = pDest + it->first;
+				memcpy(pCurDest, &(it->second), sizeof(Vec4));
+			}
+			gFBEnv->pEngine->GetRenderer()->UnmapMaterialParameterBuffer();
+		}
+	}
+}
+
 //----------------------------------------------------------------------------
 void Material::RegisterReloading()
 {
+	if (mAdamMaterial == 0)
+	{
+		FB_FOREACH(it, mMaterials)
+		{
+			if ((*it)->GetAdam() == this)
+				(*it)->RegisterReloading();
+		}
+	}
 	mReloading = true;
 	mReloadingTryCount = 0;
 	mInputLayout = 0;
+}
+
+void Material::ReloadShader()
+{
+	if (!mShader)
+		return;
+	mShader = gFBEnv->pEngine->GetRenderer()->CreateShader(mShader->GetName(), mShaders, mShaderDefines);
+}
+
+void Material::CopyMaterialParamFrom(const IMaterial* src)
+{
+	assert(src);
+	const Material* pMat = (const Material*)src;
+	mMaterialParameters = pMat->mMaterialParameters;
 }

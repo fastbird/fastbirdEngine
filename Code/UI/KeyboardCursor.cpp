@@ -10,7 +10,7 @@ KeyboardCursor* KeyboardCursor::mInstance = 0;
 void KeyboardCursor::InitializeKeyboardCursor()
 {
 	if (!mInstance)
-		mInstance = new KeyboardCursor();
+		mInstance = FB_NEW(KeyboardCursor);
 }
 
 KeyboardCursor& KeyboardCursor::GetKeyboardCursor()
@@ -20,7 +20,7 @@ KeyboardCursor& KeyboardCursor::GetKeyboardCursor()
 }
 void KeyboardCursor::FinalizeKeyboardCursor()
 {
-	SAFE_DELETE(mInstance);
+	FB_SAFE_DEL(mInstance);
 }
 
 
@@ -28,13 +28,14 @@ void KeyboardCursor::FinalizeKeyboardCursor()
 KeyboardCursor::KeyboardCursor()
 	: mVisible(false)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/materials/KeyboardCursor.material");
 	mUIObject->SetDebugString("KeyboardCursor");
 }
 
 KeyboardCursor::~KeyboardCursor()
 {
+	FB_RELEASE(mUIObject);
 }
 
 //---------------------------------------------------------------------------------------

@@ -226,6 +226,8 @@ namespace fastbird
 		TEXTURE_TYPE_DEPTH_STENCIL=0x10,
 		TEXTURE_TYPE_DEPTH_STENCIL_SRV=0x20, //DXGI_FORMAT_R32_TYPELESS
 		TEXTURE_TYPE_CUBE_MAP=0x40,
+		TEXTURE_TYPE_MULTISAMPLE = 0x80,
+		TEXTURE_TYPE_MIPS = 0x100,
 		TEXTURE_TYPE_COUNT
 	};
 
@@ -502,4 +504,28 @@ namespace fastbird
 		STENCIL_OP_INCR	= 7,
 		STENCIL_OP_DECR	= 8
 	};
+	
+	enum RENDER_PASS
+	{
+		PASS_NORMAL = 0,
+		PASS_GODRAY_OCC_PRE, // for GodRay - occlusion pre pass
+		PASS_GLOW,
+		PASS_DEPTH,
+	};
+
+	inline RENDER_PASS ConvertRenderPass(const char* str)
+	{
+		if (stricmp(str, "NORMAL") == 0)
+			return PASS_NORMAL;
+		else if (stricmp(str, "GODRAY_OCC_PRE") == 0)
+			return PASS_GODRAY_OCC_PRE;
+		else if (stricmp(str, "GLOW") == 0)
+			return PASS_GLOW;
+		else if (stricmp(str, "DEPTH") == 0)
+			return PASS_DEPTH;
+		else{
+			assert(0);
+			return PASS_NORMAL;
+		}
+	}
 }

@@ -28,6 +28,13 @@ void RasterizerStateD3D11::Bind()
 }
 
 //----------------------------------------------------------------------------
+void RasterizerStateD3D11::SetDebugName(const char* name)
+{
+	if (mRasterizerState)
+		mRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+}
+
+//----------------------------------------------------------------------------
 void RasterizerStateD3D11::SetHardwareRasterizerState(ID3D11RasterizerState* pRasterizerState)
 {
 	SAFE_RELEASE(mRasterizerState);
@@ -58,6 +65,13 @@ void BlendStateD3D11::Bind()
 }
 
 //----------------------------------------------------------------------------
+void BlendStateD3D11::SetDebugName(const char* name)
+{
+	if (mBlendState)
+		mBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+}
+
+//----------------------------------------------------------------------------
 void BlendStateD3D11::SetHardwareBlendState(ID3D11BlendState* pBlendState)
 {
 	SAFE_RELEASE(mBlendState);
@@ -85,6 +99,13 @@ DepthStencilStateD3D11::~DepthStencilStateD3D11()
 void DepthStencilStateD3D11::Bind(unsigned stencilRef)
 {
 	gFBEnv->pEngine->GetRenderer()->SetDepthStencilState(this, stencilRef);
+}
+
+//----------------------------------------------------------------------------
+void DepthStencilStateD3D11::SetDebugName(const char* name)
+{
+	if (mDepthStencilState)
+		mDepthStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
 }
 
 //----------------------------------------------------------------------------

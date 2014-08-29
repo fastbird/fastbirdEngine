@@ -1,25 +1,22 @@
 #pragma once
 #include <CommonLib/threads.h>
-
+#include <CommonLib/SpinLock.h>
+#include <CommonLib/LockFreeQueue.h>
 namespace fastbird
 {
 
 class TaskScheduler
 {
-	static const int MAX_NUM_QUEUE = 65536;
     friend class Task;
     friend class WorkerThread;
-
+	
+	std::thread mSchedulerThread;
     // Array of worker threads
-    WorkerThread** mWorkerThreads;
+    std::vector<WorkerThread*> mWorkerThreads;
     int mNumWorkerThreads;
 
     // Lock used to check if a scheduling slice is already running (never waits)
     SpinLock<false, false> mSchedulerLock;
-
-    // Lock used to keep the pending tasks and idle threads queues consistent 
-	// (rarely spins more than a couple of times)
-    SpinLock<true, false> mQueuesLock;
 
     // Hash table of active tasks
     Task* mActiveTasksMap[1024];
@@ -29,14 +26,19 @@ class TaskScheduler
     LockFreeQueue<Task> mReadyTasksQueue;
     LockFreeQueue<WorkerThread> mIdleThreadsQueue;
 
+	FB_CRITICAL_SECTION mQueueCS;
+
     // Used to maintain the number of scheduling slices requested
     volatile long mSchedulingSlices;
 
     Task* GetNextReadyTask(WorkerThread* Thread);
-    WorkerThread* GetNextIdleThread(Task* Task);
+    WorkerThread* GetNextIdleThread(Task* t);
+	void AddIdleWorker(WorkerThread* w);
+	void AddReadyTask(Task* t);
+	void AddPendingTask(Task* t);
 
-    void ScheduleTask(Task* Task);
-    void SchedulerSlice();
+    void ScheduleTask(Task* t);
+	void SchedulerSlice();
 
 	bool mFinalize;
 
@@ -46,6 +48,10 @@ public:
 
     void AddTask(Task* NewTask);
 	void Finalize();
+
+	bool IsFinalized() { return mFinalize; }
+	// don't need to call this explicitly.
+	void _Schedule();
 };
 
 }

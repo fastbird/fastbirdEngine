@@ -316,7 +316,7 @@ namespace fastbird
 		UINT back;
 	};
 
-	namespace DEFAULT_MATERIALS{ enum Enum {QUAD,COUNT}; }
+	namespace DEFAULT_MATERIALS{ enum Enum {QUAD,BILLBOARDQUAD, COUNT}; }
 	namespace DEFAULT_INPUTS{ enum Enum {
 		POSITION,
 		POSITION_COLOR,
@@ -324,6 +324,8 @@ namespace fastbird
 		POSITION_TEXCOORD,
 		POSITION_COLOR_TEXCOORD_BLENDINDICES,
 		POSITION_NORMAL_TEXCOORD,
+		POSITION_VEC4,
+		POSITION_VEC4_COLOR,
 		COUNT,
 	};
 
@@ -414,6 +416,29 @@ namespace fastbird
 		fastbird::Vec2 uv;	// 8
 	};
 	typedef POSITION_NORMAL_TEXCOORD_V V_PNT;
+
+	struct POSITION_VEC4_V
+	{
+		POSITION_VEC4_V(){}
+		POSITION_VEC4_V(const fastbird::Vec3& _p, const fastbird::Vec4& _v4)
+			: p(_p), v4(_v4){}
+		fastbird::Vec3 p;		// 12
+		fastbird::Vec4 v4;		// 4
+	};
+	typedef POSITION_VEC4_V V_PV4;
+
+	struct POSITION_VEC4_COLOR_V
+	{
+		POSITION_VEC4_COLOR_V(){}
+		POSITION_VEC4_COLOR_V(const fastbird::Vec3& _p, const fastbird::Vec4& _v4, DWORD _color)
+			: p(_p), v4(_v4), color(_color){}
+		fastbird::Vec3 p;		// 12
+		fastbird::Vec4 v4;		// 28
+		DWORD color;			// 32
+	};
+	typedef POSITION_VEC4_COLOR_V V_PV4C;
+
+
 	}
 }
 #endif //_fastbird_RenderStructs_header_included_

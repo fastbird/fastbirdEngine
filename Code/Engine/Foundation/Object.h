@@ -3,8 +3,10 @@
 #define _fastbird_Object_header_included_
 
 #include <Engine/IObject.h>
-#include <CommonLib/MaTH/BoundingVolume.h>
 #include <Engine/Renderer/IRenderState.h>
+#include <Engine/IInputLayout.h>
+#include <Engine/Renderer/RendererStructs.h>
+#include <CommonLib/MaTH/BoundingVolume.h>
 
 namespace fastbird
 {
@@ -23,9 +25,9 @@ namespace fastbird
 		virtual void Clone(IObject* cloned) const;
 		virtual void OnAttachedToScene(IScene* pScene);
         virtual void OnDetachedFromScene(IScene* pScene);
-		virtual void SetMaterial(const char* name);
-		virtual void SetMaterial(IMaterial* pMat);
-		virtual IMaterial* GetMaterial() const;
+		virtual void SetMaterial(const char* name, int pass = 0);
+		virtual void SetMaterial(IMaterial* pMat, int pass = 0);
+		virtual IMaterial* GetMaterial(int pass = 0) const;
 		virtual void SetRasterizerState(const RASTERIZER_DESC& desc);
 		virtual void SetBlendState(const BLEND_DESC& desc);
 		virtual void SetDepthStencilState(const DEPTH_STENCIL_DESC& desc);
@@ -45,7 +47,11 @@ namespace fastbird
 		virtual void SetRadius(float r);
 		virtual void AttachToScene();
 		virtual void DetachFromScene();
-		virtual bool IsAttached(IScene* pScene) const;
+		virtual bool IsAttached(IScene* pScene=0) const;
+		virtual void ClearRenderStates();
+
+		virtual void RegisterEventListener(IObjectEventListener* listener);
+		virtual void RemoveEventListener(IObjectEventListener* listener);
 
 		// own
 		void BindRenderStates(unsigned stencilRef=0);
@@ -83,6 +89,7 @@ namespace fastbird
 		SmartPtr<IRasterizerState> mRasterizerState;
 		SmartPtr<IBlendState> mBlendState;
 		SmartPtr<IDepthStencilState> mDepthStencilState;
+		std::vector<IObjectEventListener*> mEventListener;
 		int mGameType;
 		void* mGamePtr;
 		bool mDestructing;

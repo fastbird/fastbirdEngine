@@ -22,12 +22,15 @@ void BVaabb::Merge(const BoundingVolume* pBV)
 
 	mAABB.Merge(center + Vec3(0, 0, radius));
 	mAABB.Merge(center + Vec3(0, 0, -radius));	
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length()*.5f;
 
 }
 
-void BVaabb::Merge(const Vec3& pos)
+void BVaabb::Merge(const Vec3& worldPos)
 {
-	mAABB.Merge(pos);
+	mAABB.Merge(worldPos);
+	mCenter = mAABB.GetCenter();
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length()*.5f;
 }
 
 void BVaabb::SetCenter (const Vec3& center)
@@ -57,6 +60,7 @@ void BVaabb::SetRadius (float fRadius)
 
 	mAABB.Merge(center + Vec3(0, 0, fRadius));
 	mAABB.Merge(center + Vec3(0, 0, -fRadius));	
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length() * .5f;
 	
 }
 
@@ -67,8 +71,7 @@ const Vec3& BVaabb::GetCenter () const
 
 float BVaabb::GetRadius () const
 {
-	Vec3 axis =  mAABB.GetMax() - mCenter;
-	return std::max(axis.x, std::max(axis.y, axis.z));
+	return mRadius;
 }
 
 void BVaabb::ComputeFromData(const Vec3* pVertices, size_t numVertices)
@@ -80,6 +83,7 @@ void BVaabb::ComputeFromData(const Vec3* pVertices, size_t numVertices)
 		mAABB.Merge(pVertices[i]);
 	}
 	mCenter = mAABB.GetCenter();
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length() * .5f;
 }
 
 void BVaabb::StartComputeFromData()
@@ -99,6 +103,7 @@ void BVaabb::AddComputeData(const Vec3* pVertices, size_t numVertices)
 void BVaabb::EndComputeFromData()
 {
 	mCenter = mAABB.GetCenter();
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length() * .5f;
 }
 
 void BVaabb::TransformBy(const Transformation& transform,
@@ -111,21 +116,20 @@ void BVaabb::TransformBy(const Transformation& transform,
 	pNewBound->SetAABB(newAABB);
 }
 
-int BVaabb::WhichSide(const Vec3& min, const Vec3& max) const
+int BVaabb::WhichSide(const Plane3& plane) const
 {
 	if (mAlwaysPass)
 		return 1;
-	const Vec3& objMin = mAABB.GetMin();
-	const Vec3& objMax = mAABB.GetMax();
-	if (min.x > objMax.x || max.x < objMin.x ||
-		min.y > objMax.y || max.y < objMin.y ||
-		min.z > objMax.z || max.z < objMin.z)
-		return -1; // outside
+	float fDistance = plane.DistanceTo(mCenter);
+	if (fDistance <= -mRadius)
+	{
+		return -1;
+	}
 
-	else if (min.x < objMin.x && max.x > objMax.x &&
-		min.y < objMin.y && max.y > objMax.y &&
-		min.z < objMin.z && max.z > objMax.z)
-		return 1;
+	if (fDistance >= mRadius)
+	{
+		return +1;
+	}
 
 	return 0;
 }

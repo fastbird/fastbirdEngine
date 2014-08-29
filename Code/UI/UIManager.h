@@ -18,7 +18,8 @@ namespace fastbird
 		virtual void Shutdown();
 
 		// IUIManager Interfaces
-		virtual void Update();
+		virtual void Update(float elapsedTime);
+		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname);
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type);
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual void DeleteWindow(IWinBase* pWnd);
@@ -31,21 +32,25 @@ namespace fastbird
 		virtual void EnableInputListener(bool enable);
 		virtual bool IsEnabledInputLIstener() const;
 		virtual HCURSOR GetMouseCursorOver() const;
+		virtual void SetMouseCursorOver();
 		virtual void DisplayMsg(const std::string& msg, ...);
+		virtual bool IsMouseInUI() const { return mMouseIn; }		
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
 
 	private:
 		virtual IWinBase* CreateComponent(ComponentType::Enum type);
+		virtual void DeleteComponent(IWinBase* com);
 
 	private:
 		bool mInputListenerEnable;
 
 		typedef std::list<IWinBase*> WINDOWS;
-		 WINDOWS mWindows;
-		 bool mNeedToRegisterUIObject;
+		 WINDOWS mWindows;		 
 		 IWinBase* mFocusWnd;
+		 bool mNeedToRegisterUIObject;
+		 bool mMouseIn;
 	
 	};
 }

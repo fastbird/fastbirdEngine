@@ -37,6 +37,26 @@ namespace fastbird
 		Bar& GetBar(int idx) { assert((unsigned)idx < mBars.size()); return mBars[idx]; }
 		void GenerateColorRampTextureData(int textureWidth);
 		const Color& operator[] (int idx) const;
+		void UpperAlign(float gap = 0.07f)
+		{
+			for (size_t i = 1; i < mBars.size(); ++i)
+			{
+				if (mBars[i].position - mBars[i - 1].position< gap)
+				{
+					mBars[i].position = mBars[i - 1].position + gap;
+				}
+			}
+		}
+		void LowerAlign(float gap = 0.07f)
+		{
+			for (int i = (int)mBars.size() - 2; i >= 0; --i)
+			{
+				if (mBars[i + 1].position - mBars[i].position < gap)
+				{
+					mBars[i].position = mBars[i + 1].position - gap;
+				}
+			}
+		}
 
 		bool operator==(const ColorRamp& other) const;
 

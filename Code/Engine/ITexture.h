@@ -13,6 +13,7 @@ namespace fastbird
 	public:
 		virtual ~ITexture(){}
 
+		static void ReloadTexture(const char* unifiedPath);
 		virtual bool IsReady() const = 0;
 		virtual Vec2I GetSize() const = 0;
 		virtual PIXEL_FORMAT GetFormat() const = 0;
@@ -44,6 +45,9 @@ namespace fastbird
 		virtual void SaveToFile(const char* filename) = 0;
 
 		virtual void GenerateMips() = 0;
+
+		// do not call directly. use FB_SET_DEVICE_DEBUG_NAME define.
+		virtual void SetDebugName(const char*) = 0;
 	};
 
 	struct TextureAtlasRegion
@@ -72,9 +76,14 @@ namespace fastbird
 		{
 			for each ( auto c in mRegions)
 			{
-				delete c.second;
+				FB_SAFE_DEL(c.second);
 			}
 			mRegions.clear();
+		}
+
+		TextureAtlasRegion* CreateRegion()
+		{
+			return FB_NEW(TextureAtlasRegion);
 		}
 
 		void AddRegion(TextureAtlasRegion* pRegion)

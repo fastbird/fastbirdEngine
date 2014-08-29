@@ -22,6 +22,7 @@ namespace fastbird
 
 		// Create default bounding volume which is a sphere
 		static BoundingVolume* Create(BVType type = BV_SPHERE);
+		void Delete();
 
 		BoundingVolume() : mAlwaysPass(false) {}
 		virtual ~BoundingVolume(){}

@@ -13,7 +13,12 @@ namespace fastbird
 
 IColladaImporter* IColladaImporter::CreateColladaImporter()
 {
-	return new ColladaImporter;
+	return FB_NEW(ColladaImporter);
+}
+
+void IColladaImporter::DeleteColladaImporter(IColladaImporter* p)
+{
+	FB_SAFE_DEL(p);
 }
 
 ColladaImporter::ColladaImporter()
@@ -35,6 +40,7 @@ ColladaImporter::~ColladaImporter()
 bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, bool useIndexBuffer, 
 	bool mergeMatGroups, bool keepMeshData, bool generateTangent, bool meshGroup)
 {
+	assert(filepath);
 	mMeshObjects.clear();
 	mGenerateTangent = generateTangent;
 	Profiler profiler("'Import Collada'");
@@ -67,13 +73,14 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 		successful = true;
 	}
 
-	if (mUseMeshGroup)
+	if (!mUseMeshGroup)
 	{
-		mMeshGroup->SetAuxiliaries(mAuxil);
-	}
-	else
-	{
-		mMeshObjects[0]->SetAuxiliaries(mAuxil);
+		if (!mMeshObjects.empty())
+			mMeshObjects[0]->SetAuxiliaries(mAuxil);
+		else
+		{
+			Error("Importing MeshObject %s is failed!", filepath);
+		}
 	}
 
 	return successful;
@@ -116,9 +123,18 @@ void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 	transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
 	transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
 	transform.SetTranslation(Vec3((float)trans.x, (float)trans.y, (float)trans.z));
+
+	if (name.find("_POS") == 0)
+	{
+		mMeshGroup->AddAuxiliary(parent, AUXILIARIES::value_type(name, transform));
+	}
 		
 	const InstanceGeometryPointerArray& ga = node->getInstanceGeometries();
 	size_t gaCount = ga.getCount();
+	assert(gaCount <= 1);// this is temporary.
+	// Currently the engine doesn't support serveral geometries in one node.
+	// So we are assuming one node have one mesh. This has no problem for now.
+
 	size_t idx = -1;
 	for(size_t g = 0; g<gaCount; g++)
 	{
@@ -127,10 +143,16 @@ void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 		if (pMeshObject)
 		{
 			size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, parent);
-			if (g==0)
-				idx = idxTemp; // this is temporary.
-								// Currently the engine doesn't have seperated node - object structure like ogre.
-								// So we are assuming one node have one mesh. This has no problem for now.
+			if (g == 0)
+			{
+				idx = idxTemp; 
+				if (name.find("_PART") == 0)
+				{
+					AUXILIARIES aux;
+					aux.push_back(AUXILIARIES::value_type(name, transform));
+					mMeshGroup->SetAuxiliaries(idx, aux);
+				}
+			}
 		}
 	}
 
@@ -148,7 +170,7 @@ void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 
 bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualScene )
 {
-	mMeshGroup = new MeshGroup();
+	mMeshGroup = FB_NEW(MeshGroup);
 
 	using namespace COLLADAFW;
 	const NodePointerArray& node = visualScene->getRootNodes();
@@ -165,30 +187,44 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 		transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
 		transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
 		transform.SetTranslation(Vec3((float)trans.x, (float)trans.y, (float)trans.z));
-		size_t idx = -1;
-		// auxiliaries
-		if (name.find("_POS") == 0)
-		{
-			mAuxil.push_back(AUXILIARIES::value_type(name, transform));
-		}
-		else if (mUseMeshGroup)
+		size_t idx = -1;		
+		if (mUseMeshGroup)
 		{
 			const InstanceGeometryPointerArray& ga = node[i]->getInstanceGeometries();
 			size_t gaCount = ga.getCount();
-			for(size_t g = 0; g<gaCount; g++)
+			assert(gaCount <= 1);// this is temporary.
+								// Currently the engine doesn't support serveral geometries in one node.
+								// So we are assuming one node have one mesh. This has no problem for now.
+
+			for (size_t g = 0; g < gaCount; g++)
 			{
 				std::string id = ga[g]->getInstanciatedObjectId().toAscii();
 				IMeshObject* pMeshObject = GetMeshObject(id.c_str());
 				if (pMeshObject)
 				{
 					size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, -1);
-					if (g==0)
-						idx = idxTemp; // this is temporary.
-									   // Currently the engine doesn't have seperated node - object structure like ogre.
-									   // So we are assuming one node have one mesh. This has no problem for now.
+					if (g == 0)
+					{
+						idx = idxTemp;
+						if (name.find("_PART") == 0)
+						{
+							AUXILIARIES aux;
+							aux.push_back(AUXILIARIES::value_type(name, transform));
+							mMeshGroup->SetAuxiliaries(idx, aux);
+						}
+					}
 				}
 			}
 		}
+		else
+		{
+			// auxiliaries
+			if (name.find("_POS") == 0)
+			{
+				mAuxil.push_back(AUXILIARIES::value_type(name, transform));
+			}
+		}
+
 		if (idx != -1 && mUseMeshGroup)
 		{
 			const NodePointerArray& na = node[i]->getChildNodes();
@@ -405,6 +441,8 @@ void ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
 				for (size_t i=0; i<pc; i++)
 				{
 					std::string file = GetMaterialFilepath( meshPrimitives[i]->getMaterial().c_str() );
+					if (file.empty())
+						file = "es/materials/missing.material";
 					mMaterials[mNumMeshes].push_back(IMaterial::CreateMaterial(file.c_str()));					
 				}
 			}
@@ -534,15 +572,6 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 					}
 				}
 			}
-			if (!mMergeMaterialGroups)
-			{
-				IIndexBuffer* pIndexBuffer = CreateIndexBuffer(&indices[0], indices.size());
-				pMeshObject->SetIndexBuffer(pri, pIndexBuffer);
-				indices.clear();
-				vertSet.clear();
-				vertToIdx.clear();
-				nextIdx = 0;
-			}
 		}
 		else // not using index buffer
 		{
@@ -564,7 +593,7 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 					uvs.push_back(uvCoord);
 				}
 			}
-		}
+		} // mUseIndexBuffer
 
 		if (!mMergeMaterialGroups)
 		{
@@ -585,8 +614,34 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 			uvs.clear();
 
 			pMeshObject->SetMaterialFor(pri, mMaterials[mesh][pri]);
-		}
-	}
+
+			if (mUseIndexBuffer)
+			{
+				IIndexBuffer* pIndexBuffer = CreateIndexBuffer(&indices[0], indices.size());
+				pMeshObject->SetIndexBuffer(pri, pIndexBuffer);
+
+				if (mGenerateTangent)
+				{
+					size_t size = indices.size();
+					pMeshObject->GenerateTangent(pri, size ? &indices[0] : 0, size);
+				}
+			}
+			else
+			{
+				if (mGenerateTangent)
+				{
+					size_t size = indices.size();
+					pMeshObject->GenerateTangent(pri, size ? &indices[0] : 0, size);
+				}
+			}
+
+			// clear for only only not merge
+			indices.clear();
+			vertSet.clear();
+			vertToIdx.clear();
+			nextIdx = 0;
+		} // !mMergeMaterialGroups
+	} // pri
 
 	if (mMergeMaterialGroups)
 	{
@@ -603,13 +658,12 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 		{
 			IIndexBuffer* pIndexBuffer = CreateIndexBuffer(&indices[0], indices.size());
 			pMeshObject->SetIndexBuffer(0, pIndexBuffer);
+			if (mGenerateTangent)
+			{
+				size_t size = indices.size();
+				pMeshObject->GenerateTangent(0, size ? &indices[0] : 0, size);
+			}
 		}
-	}
-
-	if (mGenerateTangent)
-	{
-		size_t size = indices.size();
-		pMeshObject->GenerateTangent(size ? &indices[0]: 0, size);
 	}
 
 	pMeshObject->EndModification(mKeepMeshdata);

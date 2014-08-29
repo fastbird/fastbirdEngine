@@ -6,18 +6,18 @@
 
 //-------------------------------------------------------------------------------------------------
 #define _FBENGINE_FOR_WINDOWS_
+
 // use std::min(), std::max()
 #define NOMINMAX
-
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#if defined(_DEBUG)
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+#if defined(_DEBUG) && !defined(_WINDLL)
+	#define _CRTDBG_MAP_ALLOC
+	#include <stdlib.h>
+	#include <crtdbg.h>
 #else
-#include <stdlib.h>
+	#include <stdlib.h>
 #endif
 
 //-------------------------------------------------------------------------------------------------
@@ -32,5 +32,10 @@
 	#define CLASS_DECLSPEC_UI __declspec(dllexport)
 #endif
 
-#define SAFE_RELEASE(x) (x)?(x)->Release():0; (x)=0
-#define SAFE_DELETE(x) (x)?delete (x):0; (x)=0;
+// need to check object.h file in engine project
+#define USING_FB_MEMORY_MANAGER
+#include <CommonLib/MemoryManager.h>
+
+#define SAFE_RELEASE(x) (x) ? (x)->Release() : 0; (x)=0
+// for engine obj
+#define FB_RELEASE(x) (x) ? (x)->Delete() : 0; (x)=0

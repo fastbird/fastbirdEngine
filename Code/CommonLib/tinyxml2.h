@@ -183,7 +183,7 @@ public:
 	~DynArray()
 	{
 		if ( mem != pool ) {
-			delete [] mem;
+			FB_ARRDELETE(mem);
 		}
 	}
 	void Push( T t )
@@ -221,9 +221,10 @@ private:
 	void EnsureCapacity( int cap ) {
 		if ( cap > allocated ) {
 			int newAllocated = cap * 2;
-			T* newMem = new T[newAllocated];
+			T* newMem = FB_ARRNEW(T, newAllocated);
 			memcpy( newMem, mem, sizeof(T)*size );	// warning: not using constructors, only works for PODs
-			if ( mem != pool ) delete [] mem;
+			if ( mem != pool ) 
+				FB_ARRDELETE(mem);
 			mem = newMem;
 			allocated = newAllocated;
 		}
@@ -263,7 +264,7 @@ public:
 	~MemPoolT() {
 		// Delete the blocks.
 		for( int i=0; i<blockPtrs.Size(); ++i ) {
-			delete blockPtrs[i];
+			FB_SAFE_DEL(blockPtrs[i]);
 		}
 	}
 
@@ -273,7 +274,7 @@ public:
 	virtual void* Alloc() {
 		if ( !root ) {
 			// Need a new block.
-			Block* block = new Block();
+			Block* block = FB_NEW(Block);
 			blockPtrs.Push( block );
 
 			for( int i=0; i<COUNT-1; ++i ) {

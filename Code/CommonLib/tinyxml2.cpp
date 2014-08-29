@@ -22,7 +22,7 @@ distribution.
 */
 
 #include <CommonLib/StdAfx.h>
-#include "tinyxml2.h"
+#include <CommonLib/tinyxml2.h>
 
 #include <new>		// yes, this one new style header, is in the Android SDK.
 #ifdef ANDROID_NDK
@@ -91,7 +91,7 @@ namespace tinyxml2
 	void StrPair::Reset()
 	{
 		if ( flags & NEEDS_DELETE ) {
-			delete [] start;
+			FB_ARRDELETE(start);
 		}
 		flags = 0;
 		start = 0;
@@ -103,7 +103,7 @@ namespace tinyxml2
 	{
 		Reset();
 		size_t len = strlen( str );
-		start = new char[ len+1 ];
+		start = FB_ARRNEW(char, len + 1);
 		memcpy( start, str, len+1 );
 		end = start + len;
 		this->flags = flags | NEEDS_DELETE;
@@ -517,7 +517,7 @@ namespace tinyxml2
 	#pragma warning (pop)
 	#endif
 		if ( XMLUtil::StringEqual( p, xmlHeader, xmlHeaderLen ) ) {
-			returnNode = new (commentPool.Alloc()) XMLDeclaration( this );
+			returnNode = new (commentPool.Alloc()) XMLDeclaration(this);
 			returnNode->memPool = &commentPool;
 			p += xmlHeaderLen;
 		}
@@ -1467,7 +1467,7 @@ namespace tinyxml2
 	XMLDocument::~XMLDocument()
 	{
 		DeleteChildren();
-		delete [] charBuffer;
+		FB_ARRDELETE(charBuffer);
 
 	#if 0
 		textPool.Trace( "text" );
@@ -1489,7 +1489,7 @@ namespace tinyxml2
 		errorStr1 = 0;
 		errorStr2 = 0;
 
-		delete [] charBuffer;
+		FB_ARRDELETE(charBuffer);
 		charBuffer = 0;
 
 	}
@@ -1575,7 +1575,7 @@ namespace tinyxml2
 			return errorID;
 		}
 
-		charBuffer = new char[size+1];
+		charBuffer = FB_ARRNEW(char, size + 1);
 		size_t read = fread( charBuffer, 1, size, fp );
 		if ( read != size ) {
 			SetError( XML_ERROR_FILE_READ_ERROR, 0, 0 );
@@ -1641,7 +1641,7 @@ namespace tinyxml2
 		}
 
 		size_t len = strlen( p );
-		charBuffer = new char[ len+1 ];
+		charBuffer = FB_ARRNEW(char, len + 1);
 		memcpy( charBuffer, p, len+1 );
 
 

@@ -11,4 +11,6 @@ programs
 * Lua : http://www.lua.org/
 * ZLib : http://www.zlib.net/
 * OpenCollada : http://github.com/KhronosGroup/OpenCOLLADA/
-* StarNest effect : Pablo Roman Andrioli(https://www.shadertoy.com/view/4dfGDM)
+* StarNest effect(MIT) : Pablo Roman Andrioli(https://www.shadertoy.com/view/4dfGDM)
+* AngelCode Bitmap Font Generator : http://www.angelcode.com/products/bmfont/
+* TinyXml2(zlib) : http://www.grinninglizard.com/tinyxml2docs/index.html

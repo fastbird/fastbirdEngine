@@ -11,9 +11,10 @@ RenderToTexture::RenderToTexture()
 	: mClearColor(0, 0, 0, 1)
 	, mDepthClear(1.f)
 	, mStencilClear(0)
+	, mEveryFrame(false)
 {
-	mScene = new Scene();
-	mCamera = new Camera();
+	mScene = FB_NEW(Scene);
+	mCamera = FB_NEW(Camera);
 }
 
 void RenderToTexture::SetClearValues(const Color& color, float z, UINT8 stencil)
@@ -36,7 +37,7 @@ void RenderToTexture::Render(size_t face)
 	if (mLight)
 		gFBEnv->pRenderer->SetDirectionalLight(mLight);
 	gFBEnv->pRenderer->SetCamera(mCamera);
-	const Vec2I resol = mRenderTargetTexture->GetSize();
+	const Vec2I& resol = mRenderTargetTexture->GetSize();
 	Viewport vp = {0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f};
 	gFBEnv->pRenderer->SetViewports(&vp, 1);
 	gFBEnv->pRenderer->UpdateFrameConstantsBuffer();

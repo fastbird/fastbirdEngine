@@ -41,6 +41,24 @@ std::string GetFileName(const char* s)
 	return name;
 }
 
+std::string GetDirectoryPath(const char* s)
+{
+	assert(s && strlen(s) != 0);
+	std::string ret(s);
+	size_t f = ret.find_last_of('/');
+	if (f == std::string::npos)
+	{
+		f = ret.find_last_of('\\');
+	}
+
+	if (f != std::string::npos)
+	{
+		return ret.substr(0, f);
+	}
+	
+	return ret;
+}
+
 //------------------------------------------------------------------------
 const char* StripPath(const char* s)
 {
@@ -67,7 +85,7 @@ const char* GetExtension(const char* s)
 		}
 	}
 
-	return 0;
+	return "";
 }
 
 //------------------------------------------------------------------------
@@ -311,6 +329,17 @@ void ToUpperCase( std::string& str )
 			toupper);
 }
 
+bool IsNumeric(const char* str)
+{
+	size_t len = strlen(str);
+	for (size_t i = 0; i < len; i++)
+	{
+		if (!isdigit(str[i]))
+			return false;
+	}
+	return true;
+}
+
 // STRING CONVERTER
 //-----------------------------------------------------------------------
 std::string StringConverter::toString(float val, unsigned short precision, 
@@ -360,6 +389,23 @@ std::string StringConverter::toString(unsigned long val,
         stream.setf(flags);
     stream << val;
     return stream.str();
+}
+
+//-----------------------------------------------------------------------
+std::string StringConverter::toStringK(unsigned val)
+{
+	std::stringstream stream;
+	if (val > 1000)
+	{
+		val += 500;
+		val /= 1000;
+		stream << val << "K";
+	}
+	else
+	{
+		stream << val;
+	}
+	return stream.str();
 }
 //-----------------------------------------------------------------------
 std::string StringConverter::toString(long val, 

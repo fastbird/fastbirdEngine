@@ -1,0 +1,123 @@
+How to particles
+
+이 문서는 fastbird engine의 파티클 시스템에 대해 설명합니다.
+
+Particle Emitter는 아래와 같이 정의됩니다. 아래 내용은 data/particles/7_explosion.particle 의
+일부분입니다.
+
+<ParticleEmitter emitterLifeTime="1.0" emitterID="7">
+	
+	<ParticleTemplate texture="data/particles/nova.png" emitPerSec="0" numInitialParticle="1"
+	
+		cross="false" blendMode="Additive" preMultiAlpha="true" stretchMax="0"
+		glow="1.0" emitTo="WorldSpace" range="Point" rangeRadius="0.0"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="1.0, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="0.5, 1.0" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="5.0" scaleAccelUntil="10 percent" scaleDeaccel="20.0" scaleDeaccelAfter="90 percent"
+		
+		velocityMinMax="0.0,0.0" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1, 1, 1"
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="0, 0 deg" rotSpeedMin = "35" rotSpeedMax="15"		
+		rotAccel="0 deg" rotAccelUntil="0 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="20 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.0"
+	/>
+	
+</ParticleEmitter>
+
+구성 요소를 하나씩 살펴보면
+
+* <ParticleEmitter>
+** emitterLifeTime : 에미터의 지속시간입니다. -1은 무한대 입니다.
+** emitterID : 고유 아이디로 파티클 로딩 함수의 인자로 사용됩니다. 파일 이름으로도 로딩할 수 있습니다.
+
+* <ParticleTemplate> : 1개 이상 정의될 수 있습니다.
+** texture : 사용할 텍스쳐 파일
+** emitPerSec : 초당 생성될 파티클 수
+** numInitialParticle : 에미터 생성시점에 바로 생성되는 파티클 수
+** cross : 쿼드가 아니라 십자가 형태로 렌더링 하고 싶을 때  true.
+** blendMode : Additive, AlphaBlend, InvColorBlend, Replace 를 지정할 수 있음
+** preMultiAlpha : 최종 결과 생상에 알파를 곱해서 출력할지 여부
+** stretchMax : 에미터의 속도에 따라서 파티클을 늘리고 싶을 경우 사용합니다.
+** glow : 파티클 주변 glow 파워
+** emitTo : 뿌려진 파티클이 에미터와 함께 움직일지 독립적으로 움직일지 여부. WorldSpace면 독립적, LocalSpace면 함께 움직임
+** range / rangeRadius : 파티클 생성 포지션 지정
+** uvAnimColRow : texture가 uv 에니메이션을 위한 텍스쳐일 경우 행과 열 개수를 입력
+** uvAnimFramesPerSec : 에니메이션 초당 프레임수. 0을 지정하면 파티클 라이프타임동안 1회가 재생됨.
+** lifeTimeMinMax : 생존시간 최소 최대값
+** align : 정렬 타입.
+*** billboard : 카메라를 향함
+*** direction: u방향이 emitter의 forward에 정렬됨
+** DefaultDirection : 사용되지 않음
+** Scale
+*** sizeMinMax: 크기 최소 최대값
+*** sizeRatioMinMax : u과 v의 비율. 정사각형이면 1.0,  u가 2배 길면 2.
+*** scaleAccel : 가속도
+*** scaleAccelUntil : 가속이 끝나는 시간
+*** scaleDeaccel : 감속도
+*** scaleDeaccelAfter : 감속이 시작되는 시간
+** Velocity
+*** velocityMinMax : 속도 최소 최대 값
+*** velocityDirectionMin/Max : 방향 랜덤 값
+*** accel/deaccel : 가속도 감속도
+*** accelUntil/deaccelAfter : 가속이 끝나는 시간, 감속이 시작되는 시간
+** Rotation
+*** rotMinMax : 회전 최소 최대 값
+*** rotSpeedMin/Max : 회전 속도 최소 최대 값
+*** rotAccel/Deaccel : 회전 가속 감속 값
+*** rotAccelUntil/rotDeaccelAfter : 회적 가속 끝 / 감속 시작 시간
+** fadeInUntil/fadeOutAfter : 페이드인이 끝나는 시간 / 페이드아웃이 시작되는 시간
+** Intensity : 생상 발기 최소 최대 값.
+
+한 emitter가 여러 종류의 파티클을 발생시킨다면 <ParticleTemplate>을 여러개
+정의하면 됩니다.
+
+
+엔진에서 사용법
+
+파티클 에미터는 아래와 같이 사용할 수 있습니다.
+
+IParticleEmitter* pEmitter = gEnv->pEngine->GetParticleEmitter(7, false); // 파티클 객체를 얻어온다. 한번 얻어온 객체는 캐싱된다.
+pEmitter->SetPos(...)
+pEmitter->Active(true); // 에미션을 시작하고 장면에 추가한다.
+
+파티클을 완전히 없앨 때는
+gEnv->pEngine->ReleaseParticleEmitter(pEmitter);
+
+임시로 끌때는
+pEmitter->StopImmediate(); // 갑자기 꺼짐 혹은
+pEmitter->Stop(); // emittion이 중단되고 이미 에밋된 모든 파티클이 소멸하면 꺼짐.
+
+또한 파티클에미터 객체의 라이프 타임에 관여하고 싶지 않을 때, 즉 그냥 한번 플레이하고
+사라지면 되는 파티클의 경우는 아래와 같이 편리하게 사용할 수 있습니다.
+
+SmartPtr<IParticleEmitter> pOneTimeParticle = gEnv->pEngine->GetParticleEmitter(7, true);
+pOneTimeParticle->SetPos(...)
+pOneTimeParticle->Active(true)
+pOneTimeParticle = 0; // 0으로 만들어줘도 되고 아니면 블록을 벋어나서 자동으로 0이되도 상관 없음.
+
+GetParticleEmitter()의 두번째 인자기 true이고 SmartPtr을 사용하여 리턴값을 스마트
+포인터에 받았습니다.
+
+
+.particle은 핫리로딩이 지원됩니다. 게임 실행 중에 .particle파일을 에디터로 열고
+편집 후 저장하면 게임에 바로 변경사항이 반영됩니다. 빠른 이터레이션을 위해 필요한
+기능입니다.
+
+파티클을 작성할 때는 새로운 .particle파일을 만든 후(emitter ID를 유니크하게)에 
+게임을 실행하고 콘솔을 연후(`) editparticle <emitterID> 를 입력하면 해당 파티클이
+화면에 로딩되고 카메라가 로딩된 에미터에 고정됩니다. 이 상태에서 hot-reloading기능을
+이용하여 원하는 대로 편집니다.
+
+또한, 파티클 편집 중에 콘솔에 MoveEditParticle 1 을 입력하면 파티클이 좌우로
+날아다닙니다. 움직이는 모습을 확인 하고 싶을 때 사용하면 좋습니다.
+
+GitHub(https://github.com/fastbird/fastbirdEngine)에 있는 EngineApp 프로젝트를 컴파일하여 동작을 테스트할 수 있습니다.

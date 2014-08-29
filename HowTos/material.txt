@@ -1,0 +1,198 @@
+How to Material
+
+
+메테리얼 파일 형식
+
+먼저 간단한 매테리얼 파일을 하나 열어보는 것으로 시작하겠습니다.
+. es/materials/ 폴더에 있는 missing.material입니다. 
+이 메테리얼은 원하는 매테리얼 파일을 찾지 못했을 때 대신 열리는 매테리얼입니다. 
+폴더 이름에 es가 있는데 essential의 약자고 엔진 기본 데이터들이 들어 있는 
+폴더입니다. 게임에 필요한 매테리얼들은 data/materials/ 폴더나 
+data/objects/각모델 폴더에 저장하시면 됩니다.
+
+missing.material
+
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/Mesh.hlsl</ShaderFile>
+	<Shaders>VS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 0, 0, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">es/textures/missingmaterial.dds</Texture>
+	</Textures>
+	<MaterialParameters>
+	</MaterialParameters>
+	<ShaderDefines>
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>
+
+
+매테리얼 정의는 xml로 되어 있고 xml element들이 그리 많지 않습니다. 
+하나씩 살펴보면.
+
+*  <ShaderFile> : 사용할 shader file(.hlsl)을 지정합니다. 경로는 실행파일에 
+상대적으로 되어 있고 엔진 기본 셰이더들은 Code/Engine/Renderer/Shaders/안에
+모두 들어있습니다. 게임 별로 별도로 정의할 셰이더는 정하기 나름이지만
+data/shaders에 넣으면 좋습니다.
+
+* <MaterialConstants> :  이 항목은 셰이더로 보낼 constants 데이터입니다. 여기
+정의된 데이터는 아래 ConstantsBuffer 로 보내어져서 셰이더 내에서 접근할 수
+있게 됩니다 . 아래 내용은 /Code/Engine/Renderer/Shaders/Constants.h 의 
+일부분입니다.
+
+cbuffer MATERIAL_CONSTANTS
+	#ifndef CPP
+		: register (b2)
+	#endif
+{
+	float4 gAmbientColor;
+	float4 gDiffuseColor;
+	float4 gSpecularColor;
+	float4 gEmissiveColor;
+};
+
+* <Textures> : 텍스쳐를 정의합니다. slot 은 셰이더 내의 레지스터 번호를 의미하고,
+0일 경우 셰이더 내에서 t0과 s0를 사용하게 됩니다. 아래는 Code/Engine/Renderer/Shaders/mesh.hlsl
+의 텍스쳐 정의부분입니다.
+
+Texture2D  gDiffuseTexture : register(t0);
+SamplerState gDiffuseSampler : register(s0);
+
+* <MaterialParameters> 셰이더로 보낼 추가 데이터들을 정의합니다. 이 예제에서는
+정의되어 있지 않은데, 정의하고 싶을 경우 아래와 같이 합니다.
+<MaterialParameters>
+		<param comment="partSize, uvStepSize, radius, empty">2.0f, 0.25, 0.8, 0</param>
+		<param comment="x, y, z, w">2.5f, 1.25, 0.3, 0.5</param>
+</MaterialParameters>
+
+<param> 은 최고 5개 까지 정의할 수 있고 이곳에 정의한 데이터는 셰이더 내에서
+
+cbuffer MATERIAL_PARAMETERS
+#ifndef CPP
+	: register (b3)
+#endif
+{
+	float4 gMaterialParam[5];
+};
+
+이 ConstantsBuffer에 저장됩니다. 셰이더 프로그램에서 gMaterialParam 변수를 사용하면
+접근 할 수 있습니다.
+
+* <ShaderDefines> : 셰이더 파일에 #ifdef를 사용하여 기능 변경을 하고 싶을 때 사용합니다.
+사용 예는
+
+<ShaderDefines>
+		<Define name="ENV_TEXTURE" val="1"></Define>
+		<Define name="PRE_MULTIPLIED_ALPHA" val="1"></Define>
+</ShaderDefines>
+
+과 같고 위의 경우 ENV_TEXTURE와 PRE_MULTIPLIED_ALPHA가 정의되어서 셰이더 파일
+내에서 #ifdef로 원하는 조건으로 컴파일을 할 수 있게 됩니다. 엔진단에서의
+개수제한은 없습니다.
+
+* <Shaders> : 셰이더 파일에 정의되어 있는 셰이더 함수 종류를 명시합니다. 아래처럼
+사용합니다.
+
+<Shaders>VS|GS|PS</Shaders>
+
+정의되지 않았을 경우에는 <Shaders>VS|PS</Shaders> 가 정의된 것으로 가정합니다.
+
+* <InputLayout> : Assembly Stage에서 사용할 InputLayout을 정의합니다. 나머지 항목들은
+DirectX에 정의되어 있는 그대로이고 format은 FLOAT4, FLOAT3, UBYTE4, FLOAT2, INT4가
+정의되어 있습니다. 엔진은 주로 컴포턴트별로 다른 버텍스 버퍼 슬롯을 사용합니다.
+Position은 0번 Normal은 1번 UV는 2번 이런 식이죠.
+
+
+셰이더
+
+여기까지 매테리얼 파일을 만드는 법을 알아보았고, 이제 셰이더 작성법에 대해
+알아보겠습니다.
+
+현제 엔진은 directX만 지원하고 있고 셰이더 파일 확장자는 .hlsl입니다. 만약
+mymesh.hlsl을 만들었다면 매테리얼과 함께 사용하기 위해서는 이 .hlsl파일 안에
+ mymesh_VertexShader, mymesh_PixelShader등의 셰이더 프로그램들을 정의해야 합니다. 여기서 mymesh는 
+셰이더파일의 파일이름으로 고정되어 있고 postfix로 붙는 _VertexShader, _PixelShader
+등은 엔진 코드내에 미리 정해진 이름입니다. 
+
+만약  <Shaders>VS|GS|PS</Shaders>을 매테리얼 파일에 정의했다면 mymesh_GeometryShader
+함수도 만들어야 합니다.
+
+아래에 하얀색으로 메시를 칠해주는
+셰이더를 만들어 보겠습니다.
+
+#include "Constants.h"
+struct a2v
+{
+	float4 Position : POSITION;
+};
+
+struct v2p 
+{
+	float4 Position   : SV_Position;
+};
+
+v2p mymesh_VertexShader( in a2v INPUT )
+{
+    v2p OUTPUT;
+
+	OUTPUT.Position = mul( gWorldViewProj, INPUT.Position );
+	return OUTPUT;
+}
+
+float4 mymesh_PixelShader( in v2p INPUT ) : SV_Target
+{	
+	// Diffuse Light
+	return float4(1.0, 1.0, 1.0, 1.0);
+}
+
+Constants.h 파일에는 ConstantsBuffer들이 정의되어 있습니다. gWorldViewProj를
+위해서 포함시켰습니다.
+이 파일의 위치는 engine/renderer/shaders/constants.h 입니다. hlsl파일이 어디에
+ 만들어져 있든 engine/renderer/shaders/ 폴더에서도 include 파일들을 찾습니다. 
+hlsl 파일과 같은 폴더에 있는 파일들이 우선순위가 높습니다.
+
+a2v 구조체는 InputLayout을 결정합니다. 이 셰이더파일의  경우 매테리얼 파일에 정의되는
+InputLayout은
+
+<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+</InputLayout>
+
+입니다. 포지션 하나만 정의하면 되죠.
+
+
+나머지는 hlsl 문법입니다.
+
+매테리얼과 hlsl파일은 핫리로딩을 지원합니다. 즉, 게임 실행중에 hlsl파일이나
+material파일을 변경해서 저장하면 변경내용이 즉시 게임에 반영되어 결과를 보여줍니다.
+빠른 작업 이터레이션을 위해 꼭 필요한 기능이죠.
+
+
+
+엔진 내에서 사용방법
+
+엔진내에서는 object에 SetMaterial()함수를 이용하여 매테리얼을 할당합니다.
+예를 들어서
+IMeshObject gMeshObject = 0;
+
+gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
+if (gMeshObject)
+{
+	gMeshObject->AttachToScene();
+	gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+}
+
+와 같은 식입니다. SetMaterial함수를 사용하지 않고 .dae파일 내부에 파일을 세팅하는 방식으로 사용할 수도 있습니다.
+아래 그림처럼요.
+
+materialdae.jpg
+
+매테리얼 시스템은 GitHub(https://github.com/fastbird/fastbirdEngine)에 있는 프로젝트를 컴파일 하여 확인 하실 수 있습니다.

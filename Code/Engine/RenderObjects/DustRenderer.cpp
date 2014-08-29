@@ -1,12 +1,11 @@
 #include <Engine/StdAfx.h>
 #include <Engine/RenderObjects/DustRenderer.h>
-#include <Engine/Renderer/D3DEventMarker.h>
 
 namespace fastbird
 {
 IDustRenderer* IDustRenderer::CreateDustRenderer()
 {
-	return new DustRenderer();
+	return FB_NEW(DustRenderer);
 }
 
 //---------------------------------------------------------------------------
@@ -14,6 +13,9 @@ DustRenderer::DustRenderer()
 	: mMin(0, 0, 0)
 {
 	SetMaterial("es/materials/DustRenderer.material");
+	SetDepthStencilState(DEPTH_STENCIL_DESC());
+	SetRasterizerState(RASTERIZER_DESC());
+	SetBlendState(BLEND_DESC());
 }
 
 DustRenderer::~DustRenderer()
@@ -69,8 +71,11 @@ void DustRenderer::PreRender()
 
 void DustRenderer::Render()
 {
-	if (mObjFlag & IObject::OF_HIDE)
-			return;
+	if ((mObjFlag & IObject::OF_HIDE) || gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+		return;
+
+	if (!mVBPos)
+		return;
 
 	D3DEventMarker mark("DustRenderer");
 
@@ -93,7 +98,7 @@ void DustRenderer::PostRender()
 			return;
 }
 
-void DustRenderer::SetMaterial(const char* name)
+void DustRenderer::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 {
 	mMaterial = IMaterial::CreateMaterial(name);
 	if (!mMaterial)

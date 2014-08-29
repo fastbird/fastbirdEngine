@@ -7,14 +7,13 @@ namespace fastbird
 {
 //-----------------------------------------------------------------------------
 const float ListItem::LEFT_GAP = 0.001f;
-const float ListItem::BOTTOM_GAP = 0.004f;
 const size_t ListItem::INVALID_INDEX = -1;
 ListItem::ListItem()
 	: mIndex(INVALID_INDEX)
 {
-	mUIObject = IUIObject::CreateUIObject();
+	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);
 }
 
@@ -26,13 +25,13 @@ void ListItem::GatherVisit(std::vector<IUIObject*>& v)
 void ListItem::OnPosChanged()
 {
 	WinBase::OnPosChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
 }
 
 void ListItem::OnSizeChanged()
 {
 	WinBase::OnSizeChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
 }
 
 //-----------------------------------------------------------------------------
@@ -42,7 +41,7 @@ ListBox::ListBox()
 	, mCurSelected(ListItem::INVALID_INDEX)
 {
 	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ToString(GetType());
+	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
 
 void ListBox::GatherVisit(std::vector<IUIObject*>& v)
@@ -74,18 +73,13 @@ std::string ListBox::GetSelectedString()
 
 void ListBox::InsertItem(const wchar_t* szString)
 {
-	if (wcscmp(szString, L"test.bvh")==0)
-	{
-		int a=0;
-		a++;
-	}
 	mItems.push_back(static_cast<ListItem*>(
 		AddChild(0.01f, mNextHeight, 0.97f, 0.07f, ComponentType::ListItem)));
 	ListItem* pAddedItem = mItems.back();
 	const RECT& rect = mUIObject->GetRegion();
 	pAddedItem->SetScissorRect(true, rect);
-	pAddedItem->SetProperty(IWinBase::PROPERTY_BACK_COLOR, "0.4, 0.4, 0.3, 1.0");
-	pAddedItem->SetProperty(IWinBase::PROPERTY_NO_BACKGROUND, "true");
+	pAddedItem->SetProperty(UIProperty::BACK_COLOR, "0.4, 0.4, 0.3, 1.0");
+	pAddedItem->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	pAddedItem->SetIndex(mItems.size()-1);
 	pAddedItem->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
@@ -120,9 +114,9 @@ void ListBox::OnItemClicked(void* arg)
 	{
 		if (mCurSelected != ListItem::INVALID_INDEX)
 		{
-			mItems[mCurSelected]->SetProperty(IWinBase::PROPERTY_NO_BACKGROUND, "true");
+			mItems[mCurSelected]->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		}
-		mItems[index]->SetProperty(IWinBase::PROPERTY_NO_BACKGROUND, "false");
+		mItems[index]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 		mCurSelected = index;
 	}
 	OnEvent(IEventHandler::EVENT_MOUSE_CLICK);
@@ -136,9 +130,9 @@ void ListBox::OnItemDoubleClicked(void* arg)
 	{
 		if (mCurSelected != ListItem::INVALID_INDEX)
 		{
-			mItems[mCurSelected]->SetProperty(IWinBase::PROPERTY_NO_BACKGROUND, "true");
+			mItems[mCurSelected]->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		}
-		mItems[index]->SetProperty(IWinBase::PROPERTY_NO_BACKGROUND, "false");
+		mItems[index]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 		mCurSelected = index;
 	}
 	OnEvent(IEventHandler::EVENT_MOUSE_DOUBLE_CLICK);

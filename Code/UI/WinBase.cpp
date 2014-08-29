@@ -2,12 +2,12 @@
 #include <UI/WinBase.h>
 #include <UI/IUIManager.h>
 #include <UI/Container.h>
+#include <UI/UIAnimation.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
 {
 const float WinBase::LEFT_GAP = 0.001f;
-const float WinBase::BOTTOM_GAP = 0.006f;
 HCURSOR WinBase::mCursorOver = 0;
 
 WinBase::WinBase()
@@ -24,18 +24,38 @@ WinBase::WinBase()
 	, mTextColorHover(1.f, 1.0f, 0.f, 1.f)
 	, mTextColorDown(1.0f, 0.5f, 0.0f, 1.f)
 	, mTextAlignH(ALIGNH::LEFT)
+	, mTextAlignV(ALIGNV::BOTTOM)
 	, mMatchSize(false)
 	, mSize(10, 10)
 	, mTextSize(30.0f)
 	, mFixedTextSize(false)
 	, mWNPosOffset(0, 0)
+	, mMouseDragStartInHere(false)
+	, mDestNPos(0, 0)
+	, mAnimationEnabled(false)
+	, mAnimationSpeed(0.f)
+	, mAspectRatio(0)
+	, mNPos(0, 0), mWNPos(0, 0)
+	, mAnimation(0)
+	, mUIObject(0)
 {
+}
+
+WinBase::~WinBase()
+{
+	FB_SAFE_DEL(mAnimation);
+	FB_RELEASE(mUIObject);
 }
 
 //---------------------------------------------------------------------------
 void WinBase::SetName(const char* name)
 {
 	mName = name;
+}
+
+const char* WinBase::GetName() const
+{
+	return mName.c_str();
 }
 
 //---------------------------------------------------------------------------
@@ -113,6 +133,7 @@ fastbird::Vec2I WinBase::ConvertToScreen(const fastbird::Vec2 npos) const
 	return gEnv->pRenderer->ToSreenPos(ndc);
 }
 
+
 fastbird::Vec2 WinBase::ConvertToNormalized(const fastbird::Vec2I pos) const
 {
 	Vec2 ndc = gEnv->pRenderer->ToNdcPos(pos);
@@ -149,6 +170,8 @@ void WinBase::UpdateAlignedPos()
 //---------------------------------------------------------------------------
 void WinBase::SetVisible(bool show)
 {
+	if (mVisible == show)
+		return;
 	mVisible = show;
 	IUIManager::GetUIManager().DirtyRenderList();
 }
@@ -171,30 +194,45 @@ void WinBase::SetParent(Container* parent)
 }
 
 //---------------------------------------------------------------------------
-void WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+bool WinBase::IsIn(const Vec2& mouseNormpos)
+{
+	float wx = mWNPos.x + mWNPosOffset.x;
+	float wy = mWNPos.y + mWNPosOffset.y;
+	return !(mouseNormpos.x < wx ||
+		mouseNormpos.x > wx + mWNSize.x ||
+		mouseNormpos.y < wy ||
+		mouseNormpos.y > wy + mWNSize.y);
+}
+
+//---------------------------------------------------------------------------
+bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mVisible)
-		return;
+		return false;
+	mMouseIn = false;
 	if (mouse->IsValid())
 	{
 		// hit test
 		
 		Vec2 mousepos = mouse->GetNPos();
-		float wx = mWNPos.x + mWNPosOffset.x;
-		float wy = mWNPos.y + mWNPosOffset.y;
-		mMouseIn = !(mousepos.x < wx ||
-			mousepos.x > wx+mWNSize.x ||
-			mousepos.y < wy ||
-			mousepos.y > wy+mWNSize.y);
+		mMouseIn = IsIn(mousepos);
 
 		if (mouse->IsValid())
 		{
 			if (mMouseIn)
 			{
-				if (mouse->IsLButtonDown() && mouse->IsDragStartIn(mUIObject->GetRegion()))
+				if (mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
 				{
-					mouse->Invalidate();
-					OnEvent(IEventHandler::EVENT_MOUSE_DOWN);
+					mMouseDragStartInHere = true;
+				}
+				else
+				{
+					mMouseDragStartInHere = false;
+				}
+				if (mouse->IsLButtonDown() && mMouseDragStartInHere)
+				{
+					if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
+						mouse->Invalidate();
 				}
 				else if (mMouseInPrev)
 				{
@@ -207,13 +245,13 @@ void WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 
 				if (mouse->IsLButtonClicked())
 				{
-					mouse->Invalidate();
-					OnEvent(EVENT_MOUSE_CLICK);
+					if (OnEvent(EVENT_MOUSE_CLICK))
+						mouse->Invalidate();
 				}
 				else if (mouse->IsLButtonDoubleClicked())
 				{
-					mouse->Invalidate();
-					OnEvent(EVENT_MOUSE_DOUBLE_CLICK);
+					if (OnEvent(EVENT_MOUSE_DOUBLE_CLICK))
+						mouse->Invalidate();
 				}
 			}
 			else
@@ -231,7 +269,7 @@ void WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	}
 
 	if (!GetFocus())
-		return;
+		return mMouseIn;
 
 	if (keyboard->IsValid())
 	{
@@ -247,18 +285,14 @@ void WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			break;
 		}
 	}
+
+	return mMouseIn;
 }
 
 IWinBase* WinBase::FocusTest(Vec2 normalizedMousePos)
 {
-	float wx = mWNPos.x + mWNPosOffset.x;
-	float wy = mWNPos.y + mWNPosOffset.y;
-	bool in = !(normalizedMousePos.x < wx ||
-			normalizedMousePos.x > wx+mWNSize.x ||
-			normalizedMousePos.y < wy ||
-			normalizedMousePos.y > wy+mWNSize.y);
 	IWinBase* ret = 0;
-	in ? ret = this : ret = 0;
+	IsIn(normalizedMousePos) ? ret = this : ret = 0;
 	return ret;
 }
 
@@ -323,46 +357,77 @@ void WinBase::AlignText()
 	}
 	if (mUIObject)
 	{
+		Vec2 startPos = mWNPos;
 		switch(mTextAlignH)
 		{
 		case ALIGNH::LEFT:
 			{
-				mUIObject->SetTextStartNPos(Vec2(mWNPos.x + LEFT_GAP, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+							 startPos.x = mWNPos.x + LEFT_GAP;				
 			}
 			break;
 
 		case ALIGNH::CENTER:
 			{
-				mUIObject->SetTextStartNPos(Vec2(mWNPos.x + mWNSize.x*.5f - nwidth*.5f, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+							   startPos.x = mWNPos.x + mWNSize.x*.5f - nwidth*.5f;
 			}
 			break;
 
 		case ALIGNH::RIGHT:
 			{
-				mUIObject->SetTextStartNPos(Vec2(mWNPos.x + mWNSize.x - nwidth, mWNPos.y + mWNSize.y - BOTTOM_GAP));
+							  startPos.x = mWNPos.x + mWNSize.x - nwidth;
 			}
 			break;
 		}
+
+		switch (mTextAlignV)
+		{
+		case ALIGNV::TOP:
+		{
+							startPos.y = mWNPos.y + (mTextSize / (float)gEnv->pRenderer->GetHeight());
+		}
+			break;
+		case ALIGNV::MIDDLE:
+		{
+							   startPos.y = mWNPos.y + mWNSize.y*.5f + (mTextSize / (float)gEnv->pRenderer->GetHeight())*.4f;
+		}
+			break;
+		case ALIGNV::BOTTOM:
+		{
+							   startPos.y = mWNPos.y + mWNSize.y - GetTextBottomGap();
+		}
+			break;
+		}
+		mUIObject->SetTextStartNPos(startPos);
 	}
 }
 
 void WinBase::OnPosChanged()
 {
-	mUIObject->SetNPos(mWNPos);
+	if (mUIObject)
+		mUIObject->SetNPos(mWNPos);
 	AlignText();
+
+	if (mParent)
+		mParent->OnChildPosSizeChanged(this);
 }
 
 void WinBase::OnSizeChanged()
 {
-	mUIObject->SetNSize(mWNSize);
-
-	if (!mFixedTextSize)
+	if (mUIObject)
 	{
-		const RECT& region = mUIObject->GetRegion();
-		mTextSize = (float)(region.bottom - region.top);
-		AlignText();
-		mUIObject->SetTextSize(mTextSize);
+		mUIObject->SetNSize(mWNSize);
+
+		if (!mFixedTextSize)
+		{
+			const RECT& region = mUIObject->GetRegion();
+			mTextSize = (float)(region.bottom - region.top);
+			AlignText();
+			mUIObject->SetTextSize(mTextSize);
+		}
 	}
+
+	if (mParent)
+		mParent->OnChildPosSizeChanged(this);
 }
 
 void WinBase::SetTextColor(const Color& c)
@@ -386,83 +451,118 @@ const wchar_t* WinBase::GetText() const
 	return mTextw.c_str();
 }
 
-bool WinBase::SetProperty(Property prop, const char* val)
+IUIAnimation* WinBase::GetUIAnimation()
 {
-	if (prop == PROPERTY_BACK_COLOR) // for buttons handle themselves.
+	if (!mAnimation)
 	{
-		Color color;
-		color = StringConverter::parseVec4(val);
-		mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
-
-		return true;
+		mAnimation = FB_NEW(UIAnimation);
 	}
-	if (prop == PROPERTY_TEXT_SIZE)
-	{
-		mTextSize = StringConverter::parseReal(val, 20.0f);
-		mUIObject->SetTextSize(mTextSize);
-		return true;
-	}
+	return mAnimation;		
+}
 
-	if (prop==PROPERTY_FIXED_TEXT_SIZE)
+bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	assert(val);
+	switch(prop)
 	{
-		mFixedTextSize = stricmp("true", val)==0;
-		return true;
-	}
-
-	if (prop==PROPERTY_TEXT_ALIGN)
-	{
-		if (stricmp("left", val)==0)
+	case UIProperty::BACK_COLOR:
 		{
-			mTextAlignH = ALIGNH::LEFT;
+									if (mUIObject)
+									{
+										Color color;
+										color = StringConverter::parseVec4(val);
+										mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
+										return true;
+									}
+									break;
+
 		}
-		else if (stricmp("right", val)==0)
+
+	case UIProperty::TEXT_SIZE:
 		{
-			mTextAlignH = ALIGNH::RIGHT;
+								   if (mUIObject)
+								   {
+									   mTextSize = StringConverter::parseReal(val, 20.0f);
+									   mUIObject->SetTextSize(mTextSize);
+									   return true;
+								   }
+								   break;
 		}
-		else // center
+
+	case UIProperty::FIXED_TEXT_SIZE:
 		{
-			mTextAlignH = ALIGNH::CENTER;
+										 mFixedTextSize = stricmp("true", val) == 0;
+										 return true;
 		}
-		return true;
-	}
 
-	if (prop==PROPERTY_MATCH_SIZE)
-	{
-		mMatchSize = stricmp("true", val)==0;
-		return true;
-	}
-
-	if (prop==PROPERTY_NO_BACKGROUND)
-	{
-		if (stricmp("true", val)==0)
+	case UIProperty::TEXT_ALIGN:
 		{
-			if (mUIObject)
-				mUIObject->SetNoDrawBackground(true);
+								   mTextAlignH = ALIGNH::ConvertToEnum(val);
+									return true;
 		}
-		else
+	case UIProperty::TEXT_VALIGN:
+	{
+									mTextAlignV = ALIGNV::ConvertToEnum(val);
+								   return true;
+	}
+	case UIProperty::MATCH_SIZE:
 		{
-			if (mUIObject)
-				mUIObject->SetNoDrawBackground(false);
+									mMatchSize = stricmp("true", val) == 0;
+									return true;
 		}
-		return true;
-	}
-
-	if (prop==PROPERTY_TEXT_COLOR)
-	{
-		mTextColor = StringConverter::parseVec4(val);
-		return true;
-	}
-
-	if (prop==PROPERTY_TEXT_COLOR_HOVER)
-	{
-		mTextColorHover = StringConverter::parseVec4(val);
-		return true;
-	}
-
-	if (prop==PROPERTY_TEXT_COLOR_DOWN)
-	{
-		mTextColorDown = StringConverter::parseVec4(val);
-		return true;
+	case UIProperty::NO_BACKGROUND:
+		{
+									   if (stricmp("true", val) == 0)
+									   {
+										   if (mUIObject)
+											   mUIObject->SetNoDrawBackground(true);
+									   }
+									   else
+									   {
+										   if (mUIObject)
+											   mUIObject->SetNoDrawBackground(false);
+									   }
+									   return true;
+		}
+	case UIProperty::TEXT_COLOR:
+		{
+									mTextColor = StringConverter::parseVec4(val);
+									return true;
+		}
+	case UIProperty::TEXT_COLOR_HOVER:
+		{
+										  mTextColorHover = StringConverter::parseVec4(val);
+										  return true;
+		}
+	case UIProperty::TEXT_COLOR_DOWN:
+		{
+										 mTextColorDown = StringConverter::parseVec4(val);
+										 return true;
+		}
+		case UIProperty::ALIGNH:
+		{
+								   ALIGNH::Enum align = ALIGNH::ConvertToEnum(val);
+								   SetAlign(align, mAlignV);
+								   return true;
+		}
+		case UIProperty::ALIGNV:
+		{
+								   ALIGNV::Enum align = ALIGNV::ConvertToEnum(val);
+								   SetAlign(mAlignH, align);
+								   return true;
+		}
+		case UIProperty::TEXT:
+		{
+								 assert(val);
+								 SetText(AnsiToWide(val, strlen(val)));
+								 return true;
+		}
+		case UIProperty::ALPHA:
+		{
+								  if (mUIObject)
+									  mUIObject->SetAlphaBlending(true);
+								  return true;
+		}
 	}
 
 	assert(0 && "Not processed property found");
@@ -474,6 +574,13 @@ void WinBase::SetNPosOffset(const Vec2& offset)
 	mWNPosOffset = offset;
 	if (mUIObject)
 		mUIObject->SetNPosOffset(offset);
+}
+
+void WinBase::SetAnimNPosOffset(const Vec2& offset)
+{
+	mWNAnimPosOffset = offset;
+	if (mUIObject)
+		mUIObject->SetAnimNPosOffset(offset);
 }
 
 void WinBase::SetScissorRect(bool use, const RECT& rect)
@@ -490,6 +597,278 @@ const RECT& WinBase::GetRegion() const
 
 	assert(0);
 	return r;
+}
+
+void WinBase::PosAnimationTo(const Vec2& destNPos, float speed)
+{
+	if (destNPos != mNPos)
+	{
+		mAnimationEnabled = true;
+		mDestNPos = destNPos;
+		mAnimationSpeed = speed;
+	}
+}
+
+void WinBase::OnStartUpdate(float elapsedTime)
+{
+	// Static Animation.
+	if (mAnimationEnabled)
+	{
+		Vec2 to = mDestNPos - mNPos;
+		float length = to.Normalize();
+		float delta = mAnimationSpeed*elapsedTime;
+		float movement;
+		if (length > delta)
+		{
+			movement = delta;
+		}
+		else
+		{
+			movement = length;
+			mAnimationEnabled = false;
+		}			
+		SetNPos(mNPos + to*movement);
+	}
+
+	// Key Frame Animation
+	if (mAnimation && mUIObject)
+	{
+		mAnimation->Update(elapsedTime);
+		SetAnimNPosOffset(mAnimation->GetCurrentPos());
+	}
+}
+
+void WinBase::SetAlphaBlending(bool set)
+{
+	if (mUIObject)
+		mUIObject->SetAlphaBlending(set);
+}
+
+float WinBase::PixelToLocalNWidth(int pixel) const
+{
+	return pixel / ((float)gEnv->pRenderer->GetWidth() * mWNSize.x);
+}
+float WinBase::PixelToLocalNHeight(int pixel) const
+{
+	return pixel / ((float)gEnv->pRenderer->GetHeight() * mWNSize.y);
+}
+
+Vec2 WinBase::PixelToLocalNSize(const Vec2I& pixel) const
+{
+	return Vec2(PixelToLocalNWidth(pixel.x), PixelToLocalNWidth(pixel.y));
+}
+
+float WinBase::PixelToLocalNPosX(int pixel) const
+{
+	return pixel / (float)gEnv->pRenderer->GetWidth() * mWNSize.x;
+}
+float WinBase::PixelToLocalNPosY(int pixel) const
+{
+	return pixel / (float)gEnv->pRenderer->GetHeight() * mWNSize.y;
+}
+
+Vec2 WinBase::PixelToLocalNPos(const Vec2I& pixel) const
+{
+	return Vec2(PixelToLocalNPosX(pixel.x), PixelToLocalNPosX(pixel.y));
+}
+
+float WinBase::GetTextWidthLocal() const
+{
+	IFont* pFont = gEnv->pRenderer->GetFont();
+	if (mTextw.empty())
+		return 0.f;
+
+	pFont->SetHeight(mTextSize);
+	int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+		(const char*)mTextw.c_str(), mTextw.size() * 2);
+	pFont->SetBackToOrigHeight();
+	if (mParent)
+		return mParent->PixelToLocalNWidth(width);
+
+	return width / (float)gEnv->pRenderer->GetWidth();
+}
+
+float WinBase::GetTextEndWLocal() const
+{
+	if (mUIObject)
+	{
+		Vec2 startPos = mUIObject->GetTextStarNPos();
+		
+		if (mParent)
+			startPos = mParent->ConvertWorldPosToParentCoord(startPos);
+
+		return startPos.x + GetTextWidthLocal();
+	}
+
+	return 0.f;
+}
+
+bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
+{
+	assert(pelem);
+	Vec2 npos(0, 0);
+	const char* sz = pelem->Attribute("npos");
+	if (sz)
+		npos = StringConverter::parseVec2(sz);
+
+	// positions
+	sz = pelem->Attribute("pos");
+	if (sz)
+	{
+		Vec2I pos = StringConverter::parseVec2I(sz);
+		if (mParent)
+		{
+			npos = mParent->PixelToLocalNPos(pos);
+		}
+		else
+		{
+			npos = Vec2(pos.x / (float)gEnv->pRenderer->GetWidth(), pos.y / (float)gEnv->pRenderer->GetHeight());
+		}
+	}		
+
+	sz = pelem->Attribute("nposX");
+	if (sz)
+		npos.x = StringConverter::parseReal(sz);
+
+	sz = pelem->Attribute("nposY");
+	if (sz)
+		npos.y = StringConverter::parseReal(sz);
+
+	sz = pelem->Attribute("posX");
+	if (sz)
+	{
+		int x = StringConverter::parseInt(sz);
+		if (mParent)
+			npos.x = mParent->PixelToLocalNPosX(x);
+		else
+			npos.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+	}
+
+	sz = pelem->Attribute("posY");
+	if (sz)
+	{
+		int y = StringConverter::parseInt(sz);
+		if (mParent)
+			npos.y = mParent->PixelToLocalNPosY(y);
+		else
+			npos.y = y / (float)gEnv->pRenderer->GetHeight();
+	}
+
+	//size
+	Vec2 nsize(1.0f, 1.0f);
+	sz = pelem->Attribute("nsize");
+	if (sz)
+	{
+		nsize = StringConverter::parseVec2(sz);
+	}
+
+	sz = pelem->Attribute("nsizeX");
+	if (sz)
+	{
+		if (stricmp(sz, "fill") == 0)
+		{
+			nsize.x = 1.0f - npos.x;
+		}
+		else
+		{
+			nsize.x = StringConverter::parseReal(sz);
+		}
+	}
+
+	sz = pelem->Attribute("nsizeY");
+	if (sz)
+	{
+		if (stricmp(sz, "fill") == 0)
+		{
+			nsize.y = 1.0f - npos.y;
+		}
+		else
+		{
+			nsize.y = StringConverter::parseReal(sz);
+		}
+	}
+
+	sz = pelem->Attribute("sizeX");
+	if (sz)
+	{
+		int x = StringConverter::parseInt(sz);
+		if (mParent)
+		{
+			nsize.x = mParent->PixelToLocalNWidth(x);
+		}
+		else
+		{
+			nsize.x = x / (float)gEnv->pRenderer->GetWidth();
+		}
+	}
+
+	sz = pelem->Attribute("sizeY");
+	if (sz)
+	{
+		int y = StringConverter::parseInt(sz);
+		if (mParent)
+		{
+			nsize.y = mParent->PixelToLocalNHeight(y);
+		}
+		else
+		{
+			nsize.y = y / (float)gEnv->pRenderer->GetHeight();
+		}
+	}
+
+	float aspectRatio = 0.f;
+	sz = pelem->Attribute("aspectRatio");
+	if (sz)
+	{
+		aspectRatio = StringConverter::parseReal(sz);
+		Vec2 worldSize = nsize;
+		if (mParent)
+		{
+			float width = nsize.x;
+			worldSize = mParent->ConvertChildSizeToWorldCoord(Vec2(width, width));
+		}
+		float iWidth = gEnv->pRenderer->GetWidth() * worldSize.x;
+		float iHeight = iWidth / aspectRatio;
+		float height = iHeight / (gEnv->pRenderer->GetHeight() * mWNSize.y);
+		nsize.y = height;
+	}
+
+	SetNSize(nsize);
+	SetNPos(npos);
+	sz = pelem->Attribute("name");
+	if (sz)
+		SetName(sz);
+
+	//ALIGNH::Enum alignh = ALIGNH::LEFT;
+	//ALIGNV::Enum alignv = ALIGNV::TOP;
+	//sz =pelem->Attribute("AlignH");
+	//if (sz)
+	//{
+	//	alignh = ALIGNH::ConvertToEnum(sz);
+	//}
+
+	//sz = pelem->Attribute("AlignV");
+	//if (sz)
+	//{
+	//	alignv = ALIGNV::ConvertToEnum(sz);
+	//}
+	//SetAlign(alignh, alignv);
+
+	for (int i = 0; i < UIProperty::COUNT; ++i)
+	{
+		sz = pelem->Attribute(UIProperty::ConvertToString((UIProperty::Enum)i));
+		if (sz)
+		{
+			SetProperty((UIProperty::Enum)i, sz);
+		}
+	}
+	return true;
+}
+
+float WinBase::GetTextBottomGap() const
+{
+	float yGap = 2.0f / (float)gEnv->pRenderer->GetHeight();
+	return yGap;
 }
 
 }

@@ -1,0 +1,1 @@
+font="es/fonts/nanum_pen_bin.fnt"

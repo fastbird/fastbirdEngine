@@ -24,6 +24,13 @@ Transformation::~Transformation ()
 {
 }
 
+Transformation::Transformation(const Quat& q)
+:Transformation()
+{
+	SetRotation(q);
+
+}
+
 //----------------------------------------------------------------------------
 void Transformation::MakeIdentity ()
 {
@@ -104,6 +111,31 @@ void Transformation::SetRotation (const Quat& r)
 	r.ToRotationMatrix(mMat);
 	mIdentity = false;
 	mRSSeperated = true;
+}
+
+void Transformation::SetDir(const Vec3& dir)
+{
+	Vec3 forward = dir;
+	Vec3 right;
+	if (forward == Vec3::UNIT_Z || forward == -Vec3::UNIT_Z)
+	{
+		right = Vec3::UNIT_X;
+	}
+	else
+	{
+		right = forward.Cross(Vec3::UNIT_Z);
+	}
+	Vec3 up = right.Cross(forward);
+
+
+	right.Normalize();
+	up.Normalize();
+
+	Mat33 rot;
+	rot.SetColumn(0, right);
+	rot.SetColumn(1, forward);
+	rot.SetColumn(2, up);
+	SetRotation(rot);
 }
 
 //----------------------------------------------------------------------------
@@ -489,8 +521,10 @@ void Transformation::Inverse (Transformation& rkInverse) const
     }
 
     rkInverse.mT = -(rkInverse.mMat*mT);
+	if (!mRSSeperated || !mUniformScale || mS.x != 1.0f || mS.y != 1.0f || mS.z != 1.0f)
+		rkInverse.mRSSeperated = false;
     rkInverse.mIdentity = false;
-    rkInverse.mRSSeperated = false;
+    
     rkInverse.mUniformScale = false;
 }
 

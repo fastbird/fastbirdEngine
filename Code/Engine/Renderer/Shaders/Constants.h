@@ -18,6 +18,7 @@ cbuffer FRAME_CONSTANTS
 	float4 gDirectionalLightSpecular;
 	float3 gCameraPos;
 	float gTime;
+	float4 gMousePos; // x, y : current pos   z, w: down pos
 };
 
 cbuffer OBJECT_CONSTANTS
@@ -60,11 +61,21 @@ cbuffer RARE_CONSTANTS
 	float gTangentTheta;
 	float gScreenRatio;
 	float2 gEmpty;
+	float4 gFogColor;
+};
+
+cbuffer BIG_BUFFER
+#ifndef CPP
+	: register (b5)
+#endif
+{
+	float4 gSampleOffsets[15];
+	float4 gSampleWeights[15];
 };
 
 cbuffer IMMUTABLE_CONSTANTS
 #ifndef CPP
-	: register (b5)
+	: register (b6)
 #endif
 {
 	float2 gHammersley[256]; // reference http://www.cse.cuhk.edu.hk/~ttwong/papers/udpoint/udpoint.pdf

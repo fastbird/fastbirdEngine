@@ -16,7 +16,7 @@ SamplerState gDiffuseSampler : register(s0);
 //--------------------------------------------------------------------------------------
 struct a2v
 {
-	float4 Position : POSITION;
+	float3 Position : POSITION;
 	float4 Color	: COLOR;
 #ifdef DIFFUSE_TEXTURE
 	float2 UV		: TEXCOORD;
@@ -35,7 +35,7 @@ v2p ui_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
-	OUTPUT.Position = INPUT.Position;
+	OUTPUT.Position = float4(INPUT.Position, 1.0);
 	OUTPUT.Position.x += gWorld[0][3];
 	OUTPUT.Position.y += gWorld[1][3];
 #ifdef DIFFUSE_TEXTURE

@@ -15,6 +15,7 @@ namespace fastbird
 		// IRasterizerState Interfacec
 		//--------------------------------------------------------------------
 		virtual void Bind();
+		virtual void SetDebugName(const char* name);
 
 		//--------------------------------------------------------------------
 		// OWN Interfacec
@@ -37,6 +38,7 @@ namespace fastbird
 		// IBlendState Interfacec
 		//--------------------------------------------------------------------
 		virtual void Bind();
+		virtual void SetDebugName(const char* name);
 
 		//--------------------------------------------------------------------
 		// OWN Interfacec
@@ -61,6 +63,7 @@ namespace fastbird
 		// IDepthStencilState Interfacec
 		//--------------------------------------------------------------------
 		virtual void Bind(unsigned stencilRef);
+		virtual void SetDebugName(const char* name);
 
 		//--------------------------------------------------------------------
 		// OWN Interfacec

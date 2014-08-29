@@ -15,7 +15,7 @@ public:
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::TextField; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
-	virtual void OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 	virtual void SetText(const wchar_t* szText);
 
 	virtual void OnFocusLost();
@@ -30,7 +30,6 @@ public:
 
 protected:
 	const static float LEFT_GAP;
-	const static float BOTTOM_GAP;
 	virtual void OnPosChanged();
 	virtual void OnSizeChanged();
 	void MoveCursor(int move);

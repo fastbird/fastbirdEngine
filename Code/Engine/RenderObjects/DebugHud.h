@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Foundation/Object.h>
+#include <Engine/Renderer/RendererStructs.h>
 #include <CommonLib/Math/Vec2I.h>
 #include <CommonLib/Math/Vec3.h>
 #include <CommonLib/Color.h>

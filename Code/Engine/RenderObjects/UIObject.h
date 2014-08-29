@@ -18,17 +18,21 @@ namespace fastbird
 		virtual void SetColors(DWORD colors[], DWORD num);
 
 		virtual void SetNSize(const Vec2& nsize); // in normalized space (0.0f ~ 1.0f)
-		virtual void SetNPos(const Vec2& npos);
-		virtual void SetNPosOffset(const Vec2& nposOffset);
+		virtual void SetNPos(const Vec2& npos);// in normalized space 0.0f~1.0f
+		virtual void SetNPosOffset(const Vec2& nposOffset);// in normalized space 0.0f~1.0f
+		virtual void SetAnimNPosOffset(const Vec2& nposOffset); // in normalized space 0.0f~1.0f
 		virtual void SetAlpha(float alpha);
 		virtual void SetText(const wchar_t* s);
 		virtual void SetTextStartNPos(const Vec2& npos);
+		virtual const Vec2& GetTextStarNPos() const { return mTextNPos; }
+
 		virtual void SetTextColor(const Color& c);
 		virtual void SetTextSize(float size);
 		virtual const RECT& GetRegion() const;
 		virtual void SetDebugString(const char* string);
 		virtual void SetNoDrawBackground(bool flag);
 		virtual void SetUseScissor(bool use, const RECT& rect);
+		virtual void SetAlphaBlending(bool set);
 
 		//-------------------------------------------------------------------------
 		// IObject interfaces
@@ -37,13 +41,14 @@ namespace fastbird
 		virtual void Render();		
 		virtual void PostRender();
 
-		virtual void SetMaterial(const char* name);
-		virtual IMaterial* GetMaterial() const { return mMaterial; }
+		virtual void SetMaterial(const char* name, int pass = 0);
+		virtual IMaterial* GetMaterial(int pass =0) const { return mMaterial; }
 
 		//-------------------------------------------------------------------------
 		// Own
 		//-------------------------------------------------------------------------
 		void UpdateRegion();
+		static void ClearSharedRS();
 
 	private:
 		void PrepareVBs();
@@ -58,6 +63,8 @@ namespace fastbird
 		Vec2 mNDCPos; // ndc pos
 		Vec2 mNDCOffset;
 		Vec2 mNOffset;
+		Vec2 mAnimNDCOffset;
+		Vec2 mAnimNOffset;
 		Vec2 mTextNPos;
 		Color mTextColor;
 		float mTextSize;
@@ -76,5 +83,6 @@ namespace fastbird
 		bool mScissor;
 		RECT mScissorRect;
 		bool mOut;
+		bool mAlphaBlending;
 	};
 }

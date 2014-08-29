@@ -8,6 +8,8 @@ namespace fastbird
 	public:
 		virtual ~IRasterizerState() {}
 		virtual void Bind() = 0;
+
+		virtual void SetDebugName(const char* name) = 0;
 	};
 
 	//------------------------------------------------------------------------
@@ -16,6 +18,7 @@ namespace fastbird
 	public:
 		virtual ~IBlendState() {}
 		virtual void Bind() = 0;
+		virtual void SetDebugName(const char* name) = 0;
 	};
 
 	//------------------------------------------------------------------------
@@ -24,5 +27,6 @@ namespace fastbird
 	public:
 		virtual ~IDepthStencilState() {}
 		virtual void Bind(unsigned stencilRef) = 0;
+		virtual void SetDebugName(const char* name) = 0;
 	};
 }

@@ -21,7 +21,7 @@ ITerrain* Terrain::sTerrain = 0;
 
 ITerrain* ITerrain::CreateTerrainInstance(int numVertX, int numVertY, float distance, const char* heightmapFile)
 {
-	Terrain* pTerrain = new Terrain;
+	Terrain* pTerrain = FB_NEW(Terrain);
 	pTerrain->Init(numVertX, numVertY, distance, heightmapFile);
 	return pTerrain;
 }
@@ -83,7 +83,7 @@ void Terrain::Init(int numVertX, int numVertY, float distance,
 		{
 			for (int idx=0; idx<mNumPatches.x; idx++)
 			{
-				TerrainPatch* pNewPatch = new TerrainPatch();
+				TerrainPatch* pNewPatch = FB_NEW(TerrainPatch);
 				mPatches.push_back(pNewPatch);
 				pNewPatch->Build(idx, idy, numVertX, distance, pImage, this);
 				gFBEnv->pEngine->GetScene()->AttachObject(pNewPatch);

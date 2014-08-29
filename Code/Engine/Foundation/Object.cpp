@@ -1,11 +1,18 @@
-#include <Engine/StdAfx.h>
+// not using precompiled header.
+// this file will be compiled in the engine project and the game project for inheritance.
+#include <CommonLib/Config.h>
+
+#include <CommonLib/CommonLib.h>
+#include <assert.h>
+#include <vector>
+#include <CommonLib/Math/fbMath.h>
 #include <Engine/Foundation/Object.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IRenderer.h>
 #include <Engine/IScene.h>
 #include <Engine/IVertexBuffer.h>
 #include <Engine/IIndexBuffer.h>
-#include <Engine/IInputLayout.h>
+#include <Engine/IEngine.h>
 
 using namespace fastbird;
 
@@ -62,19 +69,23 @@ void Object::OnDetachedFromScene(IScene* pScene)
 }
 
 //----------------------------------------------------------------------------
-void Object::SetMaterial(const char* name)
+void Object::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 {
 	assert(0 && "Need to implement in the inherited class");
 }
 
-void Object::SetMaterial(IMaterial* pMat)
+void Object::SetMaterial(IMaterial* pMat, int pass/* = RENDER_PASS::PASS_NORMAL*/)
 {
 	assert(0 && "Need to implement in the inherited class");
 }
 
-IMaterial* Object::GetMaterial() const
+IMaterial* Object::GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
 {
-	assert(0 && "Need to implement in the inherited class");
+	//"Need to implement in the inherited class"
+	//or
+	// no material
+	assert(0);
+	// Even you don't have material, implementing this in the inherited class
 	return 0;
 }
 
@@ -207,6 +218,10 @@ void Object::DetachFromScene()
 
 bool Object::IsAttached(IScene* pScene) const
 {
+	if (!pScene)
+	{
+		return !mScenes.empty();
+	}
 	FB_FOREACH(it, mScenes)
 	{
 		if (pScene==(*it))
@@ -215,4 +230,24 @@ bool Object::IsAttached(IScene* pScene) const
 		}
 	}
 	return false;
+}
+
+//---------------------------------------------------------------------------
+void Object::RegisterEventListener(IObjectEventListener* listener)
+{
+	assert(std::find(mEventListener.begin(), mEventListener.end(), listener) == mEventListener.end());
+	mEventListener.push_back(listener);
+}
+
+//---------------------------------------------------------------------------
+void Object::RemoveEventListener(IObjectEventListener* listener)
+{
+	mEventListener.erase(std::remove(mEventListener.begin(), mEventListener.end(), listener), mEventListener.end());
+}
+
+void Object::ClearRenderStates()
+{
+	mRasterizerState = 0;
+	mDepthStencilState = 0;
+	mBlendState = 0;
 }

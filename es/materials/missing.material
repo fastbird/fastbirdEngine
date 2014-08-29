@@ -7,7 +7,7 @@
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>
 	<Textures>
-		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/Textures/hull.dds</Texture>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">es/textures/missingmaterial.dds</Texture>
 	</Textures>
 	<MaterialParameters>
 	</MaterialParameters>

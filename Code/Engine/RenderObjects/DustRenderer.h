@@ -13,13 +13,17 @@ namespace fastbird
 			const Color& cmin, const Color& cmax,
 			float normalizeDist);
 		virtual const Vec3& GetMin() const { return mMin; }
+		virtual IMaterial* GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
+		{
+			return mMaterial;
+		}
 
 
 		// IObject
 		virtual void PreRender();
 		virtual void Render();		
 		virtual void PostRender();
-		virtual void SetMaterial(const char* name);
+		virtual void SetMaterial(const char* name, int pass = 0);
 
 	private:
 		Vec3 mMin;

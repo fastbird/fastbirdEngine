@@ -67,7 +67,7 @@ v2p module_VertexShader( in a2v INPUT )
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 float4 module_PixelShader( in v2p INPUT ) : SV_Target
-{	
+{
 	// process normal map.
 	float3 diffuseT = gDiffuseTexture.Sample(gDiffuseSampler, INPUT.UV).xyz;
 	float3 normalT = gNormalTexture.Sample(gNormalSampler, INPUT.UV).xyz;
@@ -113,6 +113,7 @@ float4 module_PixelShader( in v2p INPUT ) : SV_Target
 	
 	float2 ss = smoothstep(0.97, 1.0, uv2);
 	float3 finalColor = lerp( shadedColor, edgeLitColor * edgeLitPower, ss.x + ss.y);
-	
-    return float4( finalColor, 1.0f );    // Yellow, with Alpha = 1
+	float2 screenUV = GetScreenUV(INPUT.Position.xy);
+	float3 foggedColor = GetFoggedColor(screenUV, finalColor, INPUT.WorldPos );
+    return float4( foggedColor, 1.0f );    // Yellow, with Alpha = 1
 }

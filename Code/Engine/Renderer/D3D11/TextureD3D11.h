@@ -35,6 +35,7 @@ namespace fastbird
 		virtual void CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ,
 			UINT srcSubresource, Box3D* srcBox);
 		virtual void SaveToFile(const char* filename);
+		virtual void SetDebugName(const char*);
 
 		void SetSize(const Vec2I& size);
 
@@ -55,6 +56,7 @@ namespace fastbird
 		ID3D11DepthStencilView* GetDepthStencilView(int idx) const;
 		size_t NumDSViews() const { return mDSViews.size(); }
 		virtual void GenerateMips();
+		void OnReloaded();
 
 	private:
 		ID3D11Texture2D* mTexture;
@@ -71,6 +73,5 @@ namespace fastbird
 		PIXEL_FORMAT mPixelFormat;
 		int mSlot;
 		BINDING_SHADER mBindingShader;
-		SmartPtr<TextureD3D11> mAdamTexture;
 	};
 }

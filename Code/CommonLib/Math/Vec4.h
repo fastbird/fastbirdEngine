@@ -29,6 +29,29 @@ namespace fastbird
 			return Vec4(x * scalar, y * scalar, z * scalar, w * scalar);
 		}
 
+		inline Vec4& operator*= (float scalar)
+		{
+			x *= scalar;
+			y *= scalar;
+			z *= scalar;
+			w *= scalar;
+			return *this;
+		}
+
+		inline Vec4& operator*= (const Vec4& r)
+		{
+			x *= r.x;
+			y *= r.y;
+			z *= r.z;
+			w *= r.w;
+			return *this;
+		}
+
+		inline Vec4 operator* (const Vec4& r) const
+		{
+			return Vec4(x*r.x, y*r.y, z*r.z, w*r.w);
+		}
+
 		inline Vec4 operator+ (const Vec4& r) const
 		{
 			return Vec4(x + r.x, y + r.y, z + r.z, w + r.w);
@@ -37,6 +60,18 @@ namespace fastbird
 		bool operator== (const Vec4& other) const
 		{
 			return (IsEqual(x, other.x) && IsEqual(y, other.y) && IsEqual(z, other.z) && IsEqual(w, other.w));
+		}
+
+		inline void SetXYZ(const Vec3& v)
+		{
+			x = v.x;
+			y = v.y;
+			z = v.z;
+		}
+
+		inline Vec3 ToVec3() const
+		{
+			return Vec3(x, y, z);
 		}
 
 	public:

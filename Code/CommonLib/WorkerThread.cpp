@@ -21,34 +21,32 @@ WorkerThread::WorkerThread(TaskScheduler* scheduler)
 
 WorkerThread::~WorkerThread()
 {
-	SAFE_DELETE(mTasksEvent);
+	DeleteSyncEvent(mTasksEvent);
 }
 
 bool WorkerThread::Run()
 {
-    // Wait for the task trigger event
-    mTasksEvent->Wait();
+	mTasksEvent->Wait();
 
     // Loop executing ready tasks
-    while(mCurrentTask)
+	while (mCurrentTask)
     {
         // Execute current task
-        mCurrentTask->Trigger(mScheduler);
+		mCurrentTask->Trigger(mScheduler);
 
         // Try to get another task
-        mCurrentTask = mScheduler->GetNextReadyTask(this);
+		mCurrentTask = mScheduler->GetNextReadyTask(this);
     }
-
-    // Run a scheduler slice
-    mScheduler->SchedulerSlice();
+	mScheduler->AddIdleWorker(this);
+	mScheduler->SchedulerSlice();
 
 	return !*mForcedExit;
 }
 
 void WorkerThread::SetTask(Task* t)
 {
-    mCurrentTask = t;
-    mTasksEvent->Trigger();
+	mCurrentTask = t;
+	mTasksEvent->Trigger();
 }
 
 }

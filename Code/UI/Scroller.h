@@ -10,7 +10,7 @@ public:
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::Scroller; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
-	virtual void OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 
 	// Own
 	void SetMaxOffset(const Vec2& maxOffset) { mMaxOffset = maxOffset;}

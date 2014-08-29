@@ -24,9 +24,9 @@ extern "C"
 	//-------------------------------------------------------------------------
 	CLASS_DECLSPEC_ENGINE void _cdecl Destroy_fastbird_Engine()
 	{
-		gFBEnv->mExiting = true;
+		gFBEnv->mExiting = true;		
 		if (gFBEnv)
-			delete gFBEnv->pEngine;
+			fastbird::IEngine::DeleteInstance(gFBEnv->pEngine);
 	}
 
 	//-------------------------------------------------------------------------

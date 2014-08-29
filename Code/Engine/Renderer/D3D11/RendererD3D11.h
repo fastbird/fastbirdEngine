@@ -25,12 +25,17 @@ namespace fastbird
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
 		virtual void Clear();
+		virtual void Clear(float r, float g, float b, float a);// only color
+		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
 		virtual void UpdateObjectConstantsBuffer(void* pData);
 		virtual void UpdateMaterialConstantsBuffer(void* pData);
 		virtual void UpdateRareConstantsBuffer();
 		virtual void* MapMaterialParameterBuffer();
 		virtual void UnmapMaterialParameterBuffer();
+		virtual void* MapBigBuffer();
+		virtual void UnmapBigBuffer();
+		virtual unsigned GetMultiSampleCount() const;
 
 		virtual IRenderToTexture* CreateRenderToTexture(bool everyframe);
 		virtual void DeleteRenderToTexture(IRenderToTexture*);
@@ -41,6 +46,7 @@ namespace fastbird
 			IVertexBuffer* pVertexBuffers[], unsigned int strides[], unsigned int offsets[]);
 		virtual void SetIndexBuffer(IIndexBuffer* pIndexBuffer);
 		virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot);
+		virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot);
 		virtual void GenerateMips(ITexture* pTexture);
 		virtual IVertexBuffer* CreateVertexBuffer(void* data, unsigned stride, unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		virtual IIndexBuffer* CreateIndexBuffer(void* data, unsigned int numIndices, INDEXBUFFER_FORMAT format);
@@ -53,6 +59,9 @@ namespace fastbird
 
 		virtual void SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, 
 			ITexture* pDepthStencil, size_t dsIndex);
+		virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num);
+		virtual void SetGlowRenderTarget();
+		virtual void UnSetGlowRenderTarget();
 		virtual void RestoreRenderTarget();
 		void OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView);
 		void OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView);
@@ -67,7 +76,12 @@ namespace fastbird
 		virtual IInputLayout* GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			IShader* shader);
 
-		virtual void SetShader(IShader* pShader);
+		virtual void SetShaders(IShader* pShader);
+		virtual void SetVSShader(IShader* pShader);
+		virtual void SetPSShader(IShader* pShader);
+		virtual void SetGSShader(IShader* pShader);
+		virtual void SetDSShader(IShader* pShader);
+		virtual void SetHSShader(IShader* pShader);
 		virtual void SetInputLayout(IInputLayout* pInputLayout);
 		virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt);
 		virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation);
@@ -98,6 +112,9 @@ namespace fastbird
 		virtual void SetDepthStencilState(IDepthStencilState* pDepthStencilState, unsigned stencilRef);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+		virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
+			DWORD color, IMaterial* pMat);
+		virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside);
 
 	private:
 		IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
@@ -119,6 +136,7 @@ namespace fastbird
 		ID3D11Buffer*			m_pMaterialConstantsBuffer;
 		ID3D11Buffer*			m_pMaterialParametersBuffer;
 		ID3D11Buffer*			m_pRareConstantsBuffer;
+		ID3D11Buffer*			m_pBigBuffer;
 		ID3D11Buffer*			m_pImmutableConstantsBuffer;
 		ID3D11RasterizerState*	m_pWireframeRasterizeState;
 		ID3DX11ThreadPump*		m_pThreadPump;
@@ -141,8 +159,10 @@ namespace fastbird
 		DEPTH_STENCIL_MAP mDepthStencilMap;
 
 		std::vector<IDXGISwapChain*> mSwapChains;
-		std::vector<ID3D11RenderTargetView*> mRenderTargetViews;
-		std::vector<ID3D11RenderTargetView*> mCurrentRTViews;
+		typedef std::vector<ID3D11RenderTargetView*> RTViews;
+		RTViews mRenderTargetViews;
+		RTViews mCurrentRTViews;
+		RTViews mRTViewsBeforeGlow;
 		std::vector<ID3D11DepthStencilView*> mDepthStencilViews;
 		ID3D11DepthStencilView* mCurrentDSView;
 		std::vector<D3D11_VIEWPORT> mViewports;

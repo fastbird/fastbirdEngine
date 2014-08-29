@@ -11,6 +11,9 @@
 #include <UI/FileSelector.h>
 #include <UI/Scroller.h>
 #include <UI/RadioBox.h>
+#include <UI/HexagonalContextMenu.h>
+#include <UI/CardScroller.h>
+#include <UI/VerticalGauge.h>
 
 namespace fastbird
 {
@@ -20,7 +23,7 @@ IUIManager* IUIManager::mUIManager = 0;
 void IUIManager::InitializeUIManager()
 {
 	assert(!mUIManager);
-	mUIManager = new UIManager;
+	mUIManager = FB_NEW(UIManager);
 	WinBase::InitMouseCursor();
 }
 
@@ -28,7 +31,11 @@ void IUIManager::FinalizeUIManager()
 {
 	WinBase::FinalizeMouseCursor();
 	assert(mUIManager);
-	SAFE_DELETE(mUIManager);
+	FB_SAFE_DEL(mUIManager);
+
+#ifdef USING_FB_MEMORY_MANAGER
+	FBReportMemoryForModule();
+#endif
 }
 
 IUIManager& IUIManager::GetUIManager()
@@ -42,6 +49,7 @@ UIManager::UIManager()
 	: mInputListenerEnable(true)
 	, mNeedToRegisterUIObject(false)
 	, mFocusWnd(0)
+	, mMouseIn(false)
 {
 	gEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
@@ -62,17 +70,17 @@ void UIManager::Shutdown()
 	WINDOWS::iterator it = mWindows.begin(), itEnd = mWindows.end();
 	for (; it!=itEnd; it++)
 	{
-		delete (*it);
+		FB_SAFE_DEL(*it);
 	}
 	mWindows.clear();
 }
 
 //---------------------------------------------------------------------------
-void UIManager::Update()
+void UIManager::Update(float elapsedTime)
 {
 	for each(auto wnd in mWindows)
 	{
-		wnd->OnStartUpdate();
+		wnd->OnStartUpdate(elapsedTime);
 	}
 	if (mNeedToRegisterUIObject)
 	{
@@ -89,6 +97,55 @@ void UIManager::Update()
 		gEnv->pEngine->RegisterUIs(uiObjects);
 		//uiObjects is invalidated.
 	}
+}
+
+//---------------------------------------------------------------------------
+bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname)
+{
+	tinyxml2::XMLDocument doc;
+	int err = doc.LoadFile(filepath);
+	if (err)
+	{
+		Error("parsing ui file(%s) failed.", filepath);
+		if (doc.GetErrorStr1())
+			Error(doc.GetErrorStr1());
+		if (doc.GetErrorStr2())
+			Error(doc.GetErrorStr2());
+		return false;
+	}
+
+	tinyxml2::XMLElement* pRoot = doc.RootElement();
+	if (!pRoot)
+	{
+		assert(0);
+		return false;
+	}
+	if (pRoot->Attribute("name"))
+		uiname = pRoot->Attribute("name");
+	
+	tinyxml2::XMLElement* pComp = pRoot->FirstChildElement("component");
+	while (pComp)
+	{
+		const char* sz = pComp->Attribute("type");
+		if (!sz)
+		{
+			Error("Component doesn't have type attribute. ignored");
+			continue;
+		}
+
+		ComponentType::Enum type = ComponentType::ConverToEnum(sz);
+
+		IWinBase* p = AddWindow(0.0f, 0.0f, 1.0f, 1.0f, type);
+		if (p)
+		{
+			windows.push_back(p);
+			p->ParseXML(pComp);
+		}
+
+		pComp = pComp->NextSiblingElement("component");
+	}
+
+	return true;
 }
 
 //---------------------------------------------------------------------------
@@ -123,8 +180,8 @@ IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height
 void UIManager::DeleteWindow(IWinBase* pWnd)
 {
 	OnDeleteWinBase(pWnd);
-	delete pWnd;
 	mWindows.erase(std::remove(mWindows.begin(), mWindows.end(), pWnd), mWindows.end());
+	FB_SAFE_DEL(pWnd);
 	
 }
 
@@ -172,42 +229,60 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	switch(type)
 	{
 	case ComponentType::Window:
-		pWnd = new Wnd();
+		pWnd = FB_NEW(Wnd);
 		break;
 	case ComponentType::TextField:
-		pWnd = new TextField();
+		pWnd = FB_NEW(TextField);
 		break;
 	case ComponentType::StaticText:
-		pWnd = new StaticText();
+		pWnd = FB_NEW(StaticText);
 		break;
 	case ComponentType::Button:
-		pWnd = new Button();
+		pWnd = FB_NEW(Button);
 		break;
 	case ComponentType::ImageBox:
-		pWnd = new ImageBox();
+		pWnd = FB_NEW(ImageBox);
 		break;
 	case ComponentType::CheckBox:
-		pWnd = new CheckBox();
+		pWnd = FB_NEW(CheckBox);
 		break;
 	case ComponentType::ListBox:
-		pWnd = new ListBox();
+		pWnd = FB_NEW(ListBox);
 		break;
 	case ComponentType::ListItem:
-		pWnd = new ListItem();
+		pWnd = FB_NEW(ListItem);
 		break;
 	case ComponentType::FileSelector:
-		pWnd = new FileSelector;
+		pWnd = FB_NEW(FileSelector);
 		break;
 	case ComponentType::Scroller:
-		pWnd = new Scroller;
+		pWnd = FB_NEW(Scroller);
 		break;
 	case ComponentType::RadioBox:
-		pWnd = new RadioBox;
+		pWnd = FB_NEW(RadioBox);
+		break;
+	case ComponentType::Hexagonal:
+		pWnd = FB_NEW(HexagonalContextMenu);
+		break;
+	case ComponentType::CardScroller:
+		pWnd = FB_NEW(CardScroller);
+		break;
+	case ComponentType::CardItem:
+		pWnd = FB_NEW(CardItem);
+		break;
+	case ComponentType::VerticalGauge:
+		pWnd = FB_NEW(VerticalGauge);
 		break;
 	default:
 		assert(0 && "Unknown component");
 	}
 	return pWnd;
+}
+
+//---------------------------------------------------------------------------
+void UIManager::DeleteComponent(IWinBase* com)
+{
+	FB_DELETE(com);
 }
 
 //---------------------------------------------------------------------------
@@ -231,11 +306,14 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 	}
 
+	mMouseIn = false;
 	WINDOWS::iterator it = mWindows.begin(),itEnd = mWindows.end();
 	for (; it!=itEnd; it++)
 	{
 		if ((*it)->GetVisible())
-			(*it)->OnInputFromHandler(pMouse, pKeyboard);
+		{
+			mMouseIn = (*it)->OnInputFromHandler(pMouse, pKeyboard) || mMouseIn;
+		}
 
 		if (!pMouse->IsValid() && !pKeyboard->IsValid())
 			break;
@@ -253,6 +331,11 @@ bool UIManager::IsEnabledInputLIstener() const
 HCURSOR UIManager::GetMouseCursorOver() const
 {
 	return WinBase::GetMouseCursorOver();
+}
+
+void UIManager::SetMouseCursorOver()
+{
+	SetCursor(WinBase::GetMouseCursorOver());
 }
 
 void UIManager::DisplayMsg(const std::string& msg, ...)
@@ -273,6 +356,5 @@ void UIManager::DisplayMsg(const std::string& msg, ...)
 		}
 	}
 }
-
 } // namespace fastbird
 

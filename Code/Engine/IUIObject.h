@@ -8,7 +8,8 @@ namespace fastbird
 	class CLASS_DECLSPEC_ENGINE IUIObject : public Object
 	{
 	public:
-		static IUIObject* CreateUIObject();
+		static IUIObject* CreateUIObject(bool usingSmartPtr);
+		void Delete();
 
 		IUIObject(): mTypeString(0) {}
 		virtual ~IUIObject(){}
@@ -23,15 +24,18 @@ namespace fastbird
 		virtual void SetNSize(const Vec2& size) = 0; // in normalized space 0.0f~1.0f
 		virtual void SetNPos(const Vec2& npos) = 0; // in normalized space 0.0f~1.0f
 		virtual void SetNPosOffset(const Vec2& nposOffset) = 0; // in normalized space 0.0f~1.0f
+		virtual void SetAnimNPosOffset(const Vec2& nposOffset) = 0;// in normalized space 0.0f~1.0f
 		virtual void SetAlpha(float alpha) = 0;
 		virtual void SetText(const wchar_t* s) = 0;
 		virtual void SetTextStartNPos(const Vec2& npos) = 0;
+		virtual const Vec2& GetTextStarNPos() const = 0;
 		virtual void SetTextColor(const Color& c) = 0;
 		virtual void SetTextSize(float size) = 0;
 		virtual const RECT& GetRegion() const = 0;
 		virtual void SetDebugString(const char* string) = 0;
 		virtual void SetNoDrawBackground(bool flag) = 0;
 		virtual void SetUseScissor(bool use, const RECT& rect) = 0;
+		virtual void SetAlphaBlending(bool set) = 0;
 
 	public:
 		// debug purpose

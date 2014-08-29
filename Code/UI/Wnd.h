@@ -16,7 +16,7 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v) ;
 	
 	// own
-	virtual void OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 };
 
 }

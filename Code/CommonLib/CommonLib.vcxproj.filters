@@ -4,11 +4,11 @@
     <Filter Include="MathGeom">
       <UniqueIdentifier>{7996773d-44a6-428e-95ef-0dc919642bc2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Async">
-      <UniqueIdentifier>{4d76d5cf-2681-45d5-8ed2-ede5468f975f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Collision">
       <UniqueIdentifier>{0577d87e-315f-445b-8020-06ab49343e19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Threading">
+      <UniqueIdentifier>{4d76d5cf-2681-45d5-8ed2-ede5468f975f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -73,17 +73,17 @@
       <Filter>MathGeom</Filter>
     </ClInclude>
     <ClInclude Include="Task.h">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClInclude>
     <ClInclude Include="threads.h">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClInclude>
     <ClInclude Include="System.h" />
     <ClInclude Include="TaskScheduler.h">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClInclude>
     <ClInclude Include="WorkerThread.h">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClInclude>
     <ClInclude Include="tinydir.h" />
     <ClInclude Include="MurmurHash.h" />
@@ -107,6 +107,17 @@
     <ClInclude Include="Math\BVaabb.h">
       <Filter>MathGeom</Filter>
     </ClInclude>
+    <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="AsyncObjects.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="LockFreeQueue.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="SpinLock.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -150,16 +161,16 @@
       <Filter>MathGeom</Filter>
     </ClCompile>
     <ClCompile Include="Task.cpp">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClCompile>
     <ClCompile Include="TaskScheduler.cpp">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClCompile>
     <ClCompile Include="WorkerThread.cpp">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClCompile>
     <ClCompile Include="threads.cpp">
-      <Filter>Async</Filter>
+      <Filter>Threading</Filter>
     </ClCompile>
     <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="Collision\GeomCollisions.cpp">
@@ -178,5 +189,16 @@
     <ClCompile Include="Math\BVaabb.cpp">
       <Filter>MathGeom</Filter>
     </ClCompile>
+    <ClCompile Include="PerlinNoise.cpp" />
+    <ClCompile Include="AsyncObjects.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="LockFreeQueue.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="SpinLock.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryManager.cpp" />
   </ItemGroup>
 </Project>

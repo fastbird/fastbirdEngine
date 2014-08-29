@@ -10,5 +10,7 @@ namespace fastbird
 		float& min, Vec3& normal,
 		float pseudo_min, float pseudo_max);
 
+	float GetTimeToExitNDCSquare(const Vec2& pos, const Vec2& dir);
+
 		
 }

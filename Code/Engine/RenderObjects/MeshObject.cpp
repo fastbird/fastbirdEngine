@@ -1,6 +1,5 @@
 #include <Engine/StdAfx.h>
 #include <Engine/RenderObjects/MeshObject.h>
-#include <Engine/Renderer/D3DEventMarker.h>
 #include <Engine/IRenderer.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ICamera.h>
@@ -8,15 +7,19 @@
 
 namespace fastbird
 {
+
+	SmartPtr<IMaterial> MeshObject::mHighlightMaterial;
+
 	//----------------------------------------------------------------------------
 	IMeshObject* IMeshObject::CreateMeshObject()
 	{
-		return new MeshObject;
+		return FB_NEW(MeshObject);
 	}
 
 	//----------------------------------------------------------------------------
 	MeshObject::MeshObject()
 		: mAuxCloned(0)
+		, mRenderHighlight(false)
 	{
 		mTopology = PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		if (gFBEnv && gFBEnv->pRenderer && gFBEnv->pRenderer->GetCamera())
@@ -40,11 +43,18 @@ namespace fastbird
 	}
 
 	//----------------------------------------------------------------------------
+	void MeshObject::ClearHighlightMesh()
+	{
+		mHighlightMaterial = 0;
+	}
+
+	//----------------------------------------------------------------------------
 	void MeshObject::PreRender()
 	{
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
 		mTransformation.GetHomogeneous(mObjectConstants.gWorld);
+		mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
 	}
 
@@ -55,13 +65,82 @@ namespace fastbird
 			return;
 
 		D3DEventMarker mark("MeshObject");
+		IRenderer* pRenderer = gFBEnv->pRenderer;
 
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
-			gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
-		gFBEnv->pRenderer->SetPrimitiveTopology(mTopology);
+		pRenderer->SetPrimitiveTopology(mTopology);
 		BindRenderStates();
 
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_DEPTH)
+		{
+			gFBEnv->pRenderer->SetPositionInputLayout();
+			FB_FOREACH(it, mMaterialGroups)
+			{
+				if (!it->mMaterial || !it->mVBPos)
+					continue;
+				bool materialReady = false;
+				if (it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH))
+				{
+					materialReady = true;
+				}
+				else if (!(mObjFlag & OF_NO_DEPTH_PASS))
+				{
+					gFBEnv->pRenderer->SetDepthWriteShader();
+					materialReady = true;
+				}
+				if (materialReady)
+				{
+					IVertexBuffer* buffers[1] = { it->mVBPos };
+					unsigned int strides[1] = { it->mVBPos->GetStride() };
+					unsigned int offsets[1] = { 0 };
+					pRenderer->SetVertexBuffer(0, 1, buffers, strides, offsets);
+					if (it->mIndexBuffer) {
+						pRenderer->SetIndexBuffer(it->mIndexBuffer);
+						pRenderer->DrawIndexed(it->mIndexBuffer->GetNumIndices(), 0, 0);
+					}
+					else {
+						pRenderer->Draw(it->mVBPos->GetNumVertices(), 0);
+					}
+				}				
+			}
+			return;
+		}
+		// PASS_GODRAY_OCC_PRE
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
+		{
+			gFBEnv->pRenderer->SetPositionInputLayout();
+			FB_FOREACH(it, mMaterialGroups)
+			{
+				if (!it->mMaterial || !it->mVBPos)
+					continue;
+
+				if (it->mMaterial->GetBindingShaders() & BINDING_SHADER_GS) {
+					gFBEnv->pRenderer->SetOccPreGSShader();
+				}
+				else {
+					gFBEnv->pRenderer->SetOccPreShader();
+				}
+				it->mMaterial->BindMaterialParams();
+
+				IVertexBuffer* buffers[1] = { it->mVBPos };
+				unsigned int strides[1] = { it->mVBPos->GetStride()};
+				unsigned int offsets[1] = { 0 };
+				pRenderer->SetVertexBuffer(0, 1, buffers, strides, offsets);
+				if (it->mIndexBuffer) {
+					pRenderer->SetIndexBuffer(it->mIndexBuffer);
+					pRenderer->DrawIndexed(it->mIndexBuffer->GetNumIndices(), 0, 0);
+				}
+				else {
+					pRenderer->Draw(it->mVBPos->GetNumVertices(), 0);
+				}
+			}
+
+			return;
+		}
+
+		// NORMAL PASS
 		bool includeInputLayout = true;
 		if (mInputLayoutOverride)
 		{
@@ -71,12 +150,12 @@ namespace fastbird
 
 		FB_FOREACH(it, mMaterialGroups)
 		{		
-			if (!it->mMaterial)
+			if (!it->mMaterial || !it->mVBPos)
 				continue;
+
 			it->mMaterial->Bind(includeInputLayout);
 			const unsigned int numBuffers = 5;
-			if (!it->mVBPos)
-				continue;
+			
 			IVertexBuffer* buffers[numBuffers] = {it->mVBPos, it->mVBNormal, it->mVBUV, it->mVBColor, it->mVBTangent};
 			unsigned int strides[numBuffers] = {it->mVBPos->GetStride(), 
 				it->mVBNormal ? it->mVBNormal->GetStride() : 0,
@@ -84,16 +163,58 @@ namespace fastbird
 				it->mVBColor ? it->mVBColor->GetStride() : 0,
 				it->mVBTangent ? it->mVBTangent->GetStride() : 0};
 			unsigned int offsets[numBuffers] = {0, 0, 0, 0, 0};
-			gFBEnv->pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
+			pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
 			if (it->mIndexBuffer)
 			{
-				gFBEnv->pRenderer->SetIndexBuffer(it->mIndexBuffer);
-				gFBEnv->pRenderer->DrawIndexed(it->mIndexBuffer->GetNumIndices(), 0, 0);
+				pRenderer->SetIndexBuffer(it->mIndexBuffer);
+				pRenderer->DrawIndexed(it->mIndexBuffer->GetNumIndices(), 0, 0);
 			}
 			else
 			{
-				gFBEnv->pRenderer->Draw(it->mVBPos->GetNumVertices(), 0);			
+				pRenderer->Draw(it->mVBPos->GetNumVertices(), 0);			
 			}
+		}
+
+		if (mRenderHighlight)
+		{
+			if (!mHighlightMaterial)
+				mHighlightMaterial = IMaterial::CreateMaterial("es/materials/MeshHighlight.material");
+			
+			if (!mHighlightRasterizeState)
+			{
+				RASTERIZER_DESC desc;
+				desc.CullMode = CULL_MODE_FRONT;
+				desc.FillMode = FILL_MODE_WIREFRAME;
+				mHighlightRasterizeState = pRenderer->CreateRasterizerState(desc);
+			}
+				
+			mHighlightRasterizeState->Bind();
+			mHighlightMaterial->Bind(true);
+			FB_FOREACH(it, mMaterialGroups)
+			{
+				const unsigned int numBuffers = 5;
+				if (!it->mVBPos)
+					continue;
+				IVertexBuffer* buffers[numBuffers] = { it->mVBPos, it->mVBNormal, it->mVBUV};
+				unsigned int strides[numBuffers] = { it->mVBPos->GetStride(),
+					it->mVBNormal ? it->mVBNormal->GetStride() : 0,
+					it->mVBUV ? it->mVBUV->GetStride() : 0,
+					it->mVBColor ? it->mVBColor->GetStride() : 0,
+					it->mVBTangent ? it->mVBTangent->GetStride() : 0 };
+				unsigned int offsets[numBuffers] = { 0, 0, 0, 0, 0 };
+				pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
+				if (it->mIndexBuffer)
+				{
+					pRenderer->SetIndexBuffer(it->mIndexBuffer);
+					pRenderer->DrawIndexed(it->mIndexBuffer->GetNumIndices(), 0, 0);
+				}
+				else
+				{
+					pRenderer->Draw(it->mVBPos->GetNumVertices(), 0);
+				}
+			}
+			mRenderHighlight = false;
+			mRasterizerState->Bind();
 		}
 	}
 
@@ -105,7 +226,7 @@ namespace fastbird
 	}
 
 	//----------------------------------------------------------------------------
-	void MeshObject::SetMaterial(const char* name)
+	void MeshObject::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 	{
 		CreateMaterialGroupFor(0);
 		IMaterial* pMat = fastbird::IMaterial::CreateMaterial(name);
@@ -114,10 +235,19 @@ namespace fastbird
 		mMaterialGroups[0].mMaterial = pMat;
 	}
 
-	void MeshObject::SetMaterial(IMaterial* pMat)
+	void MeshObject::SetMaterial(IMaterial* pMat, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 	{
 		CreateMaterialGroupFor(0);
 		mMaterialGroups[0].mMaterial = pMat;
+	}
+
+
+	IMaterial* MeshObject::GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
+	{
+		if (!mMaterialGroups.empty())
+			return mMaterialGroups[0].mMaterial;
+
+		return 0;
 	}
 
 	//----------------------------------------------------------------------------
@@ -155,6 +285,12 @@ namespace fastbird
 		}
 		cloned->mAuxCloned = mAuxCloned ? mAuxCloned : (AUXILIARIES*)&mAuxil;
 		return cloned;
+	}
+
+	//----------------------------------------------------------------------------
+	void MeshObject::Delete()
+	{
+		FB_DELETE(this);
 	}
 
 	//----------------------------------------------------------------------------
@@ -338,50 +474,48 @@ namespace fastbird
 	}
 
 	//----------------------------------------------------------------------------
-	void MeshObject::GenerateTangent(UINT* indices, size_t num)
+	void MeshObject::GenerateTangent(int matGroupIdx, UINT* indices, size_t num)
 	{
 		assert(mModifying);
-
-		FB_FOREACH(it, mMaterialGroups)
+		assert(matGroupIdx < (int)mMaterialGroups.size());
+		MaterialGroup& group = mMaterialGroups[matGroupIdx];
+		if (group.mUVs.empty())
+			return;
+		group.mTangents.assign(group.mPositions.size(), Vec3(1, 0, 0));
+		if (num)
 		{
-			if (it->mUVs.empty())
-				continue;
-			it->mTangents.assign(it->mPositions.size(), Vec3(1, 0, 0));
-			if (num)
+			for (size_t i=0; i<num; i+=3)
 			{
-				for (size_t i=0; i<num; i+=3)
-				{
-					Vec3 p1 = it->mPositions[indices[i]];
-					Vec3 p2 = it->mPositions[indices[i+1]];
-					Vec3 p3 = it->mPositions[indices[i+2]];
-					Vec2 uv1 = it->mUVs[indices[i]];
-					Vec2 uv2 = it->mUVs[indices[i+1]];
-					Vec2 uv3 = it->mUVs[indices[i+2]];
-					Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
-						uv1, uv2, uv3);
-					it->mTangents[indices[i]] = tan;
-					it->mTangents[indices[i+1]] = tan;
-					it->mTangents[indices[i+2]] = tan;
-				}
+				Vec3 p1 = group.mPositions[indices[i]];
+				Vec3 p2 = group.mPositions[indices[i+1]];
+				Vec3 p3 = group.mPositions[indices[i+2]];
+				Vec2 uv1 = group.mUVs[indices[i]];
+				Vec2 uv2 = group.mUVs[indices[i+1]];
+				Vec2 uv3 = group.mUVs[indices[i+2]];
+				Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
+					uv1, uv2, uv3);
+				group.mTangents[indices[i]] = tan;
+				group.mTangents[indices[i+1]] = tan;
+				group.mTangents[indices[i+2]] = tan;
 			}
-			else
+		}
+		else
+		{
+			size_t nump = group.mPositions.size();
+			for (size_t i=0; i<nump; i+=3)
 			{
-				size_t nump = it->mPositions.size();
-				for (size_t i=0; i<nump; i+=3)
-				{
-					Vec3 p1 = it->mPositions[i];
-					Vec3 p2 = it->mPositions[i+1];
-					Vec3 p3 = it->mPositions[i+2];
-					Vec2 uv1 = it->mUVs[i];
-					Vec2 uv2 = it->mUVs[i+1];
-					Vec2 uv3 = it->mUVs[i+2];
-					Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
-						uv1, uv2, uv3);
-					it->mTangents[i] = tan;
-					it->mTangents[i+1] = tan;
-					it->mTangents[i+2] = tan;
-				}				
-			}
+				Vec3 p1 = group.mPositions[i];
+				Vec3 p2 = group.mPositions[i+1];
+				Vec3 p3 = group.mPositions[i+2];
+				Vec2 uv1 = group.mUVs[i];
+				Vec2 uv2 = group.mUVs[i+1];
+				Vec2 uv3 = group.mUVs[i+2];
+				Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
+					uv1, uv2, uv3);
+				group.mTangents[i] = tan;
+				group.mTangents[i+1] = tan;
+				group.mTangents[i+2] = tan;
+			}				
 		}
 	}
 
@@ -447,7 +581,8 @@ namespace fastbird
 		}
 		mBoundingVolume->EndComputeFromData();
 		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() +  mTransformation.GetTranslation());
-		mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius());
+		const Vec3& s = mTransformation.GetScale();
+		mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius() * std::max(std::max(s.x, s.y), s.z));
 
 		if (!keepMeshData)
 			ClearMeshData();
@@ -468,4 +603,10 @@ namespace fastbird
 	void MeshObject::SetInstanceVB(IVertexBuffer* pBuffer)
 	{
 	}
+
+	void MeshObject::SetEnableHighlight(bool enable)
+	{
+		mRenderHighlight = enable;
+	}
+
 }

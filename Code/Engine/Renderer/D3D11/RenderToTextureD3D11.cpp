@@ -5,10 +5,12 @@
 namespace fastbird
 {
 
-void RenderToTextureD3D11::SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap)
+void RenderToTextureD3D11::SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap)
 {
 	int type;
 	type = srv ? TEXTURE_TYPE_RENDER_TARGET_SRV : TEXTURE_TYPE_RENDER_TARGET;
+	if (miplevel)
+		type |= TEXTURE_TYPE_MIPS;
 	if (cubeMap)
 		type |= TEXTURE_TYPE_CUBE_MAP;
 	mRenderTargetTexture = gFBEnv->pRenderer->CreateTexture(0, width, height, format,

@@ -51,6 +51,7 @@
       <PreprocessorDefinitions>_DEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)/include;</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -68,6 +69,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)/include;</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

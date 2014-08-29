@@ -10,7 +10,7 @@ namespace fastbird
 
 	VertexBufferD3D11* VertexBufferD3D11::CreateInstance(unsigned int stride, unsigned int numVertices)
 	{
-		VertexBufferD3D11* pVertexBuffer = new VertexBufferD3D11(stride, numVertices);
+		VertexBufferD3D11* pVertexBuffer = FB_NEW(VertexBufferD3D11)(stride, numVertices);
 		return pVertexBuffer;
 	}
 

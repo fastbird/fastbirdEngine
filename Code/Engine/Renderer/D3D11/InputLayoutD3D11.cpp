@@ -9,7 +9,7 @@ using namespace fastbird;
 //----------------------------------------------------------------------------
 InputLayoutD3D11* InputLayoutD3D11::CreateInstance()
 {
-	return new InputLayoutD3D11();
+	return FB_NEW(InputLayoutD3D11);
 }
 
 //----------------------------------------------------------------------------
@@ -35,4 +35,10 @@ void InputLayoutD3D11::SetHardwareInputLayout(ID3D11InputLayout* pLayout)
 void InputLayoutD3D11::Bind()
 {
 	gFBEnv->pEngine->GetRenderer()->SetInputLayout(this);
+}
+
+void InputLayoutD3D11::SetDebugName(const char* name)
+{
+	if (m_pInputLayout)
+		m_pInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
 }

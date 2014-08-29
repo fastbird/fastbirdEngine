@@ -1,0 +1,199 @@
+How to Material
+
+
+Material file format
+
+Let's open one example .material file. es/materials/missing.material would be
+good to examine. This material is also used when the user specified material is
+missing. The folder name es means essential and it is for assets for engine internal.
+You may want to save your material files to data/materials or objects/yourmodel/ folder
+possibly.
+
+missing.material
+
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/Mesh.hlsl</ShaderFile>
+	<Shaders>VS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 0, 0, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">es/textures/missingmaterial.dds</Texture>
+	</Textures>
+	<MaterialParameters>
+	</MaterialParameters>
+	<ShaderDefines>
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>
+
+
+A material is defined in XML format. There are not that many elements here.
+Let's check it out one by one.
+
+*  <ShaderFile> : You define here the .hlsl file you want to use. the path
+is relative to the execution file. Default engine shaders exist in
+code/engine/renderer/shaders/ . And you may want to keep your custom shaders in the foler
+data/shaders.
+
+* <MaterialConstants> :  Shader constatns data is defined here.
+These data can be accessed in the shader using the following constant buffer.
+
+partial text from code/engine/renderer/shaders/constants.h
+
+cbuffer MATERIAL_CONSTANTS
+	#ifndef CPP
+		: register (b2)
+	#endif
+{
+	float4 gAmbientColor;
+	float4 gDiffuseColor;
+	float4 gSpecularColor;
+	float4 gEmissiveColor;
+};
+
+* <Textures> : Defines textures. slot is the register number in the shader.
+In this example it is using 0 slot. You can access this texture using following
+texture objects and sampler state object in the shader.
+
+example of code/engine/renderer/shaders/mesh.hlsl
+
+Texture2D  gDiffuseTexture : register(t0);
+SamplerState gDiffuseSampler : register(s0);
+
+* <MaterialParameters> : You can define additional shader constants here. In this
+example shader, there is no material parameters but if you want to define, write like this.
+
+<MaterialParameters>
+		<param comment="partSize, uvStepSize, radius, empty">2.0f, 0.25, 0.8, 0</param>
+		<param comment="x, y, z, w">2.5f, 1.25, 0.3, 0.5</param>
+</MaterialParameters>
+
+<param> can be defined up to five. These data can be accessed in the shader through
+the following constatns buffer
+
+cbuffer MATERIAL_PARAMETERS
+#ifndef CPP
+	: register (b3)
+#endif
+{
+	float4 gMaterialParam[5];
+};
+
+* <ShaderDefines> : You can customize shader behavior using #ifdef compile preprocessor.
+for example you define
+
+<ShaderDefines>
+		<Define name="ENV_TEXTURE" val="1"></Define>
+		<Define name="PRE_MULTIPLIED_ALPHA" val="1"></Define>
+</ShaderDefines>
+
+then you can use the preprocessor
+
+#ifdef ENV_TEXTURE
+...
+#else
+...
+#endif
+
+in the shader. (also for PRE_MULTIPLIED_ALPHA)
+
+There is no limitation on numbers of <Define> in the engine.
+
+* <Shaders> : defines which shader functions the .hlsl file has. if this element is not defined in
+the material xml, it works same as <Shaders>VS|PS</Shaders> is defined. (VertexShader and PixelShader)
+
+* <InputLayout> : Defines InputLayout which should match the input of vertex shaders.
+most attributes are defined in DirectX sdk. For the format attributes, you can use
+FLOAT4, FLOAT3, UBYTE4, FLOAT2, INT4. The engine usually use the different slot number
+for differenct inputs. For example, POSITION usually bound to slot 0 and NORMAL
+bound to slot1, and uv to slot2.
+
+
+Shader
+
+Now we are figuring out how to write shaders in the fastbird-engine.
+
+Currently the engine only support DirectX so the extension of the shaders is .hlsl
+
+If you are writing your own mesh shader and you decided its file name as 'mymesh.hlsl',
+then your shader file should define at least two functions mymesh_VertexShader and
+mymesh_PixelShader to use it in the material. 'mymesh' is the same with .hlsl file name. and '_VertexShader',
+'_PixelShader' is predefined strings in the engine.
+
+If you define <Shaders>VS|GS|PS</Shaders> in the material, you also need to define
+mymesh_GeometryShader function.
+
+Let's create a simple shader which applys white color on a mesh.
+
+
+#include "Constants.h"
+struct a2v
+{
+	float4 Position : POSITION;
+};
+
+struct v2p 
+{
+	float4 Position   : SV_Position;
+};
+
+v2p mymesh_VertexShader( in a2v INPUT )
+{
+    v2p OUTPUT;
+
+	OUTPUT.Position = mul( gWorldViewProj, INPUT.Position );
+	return OUTPUT;
+}
+
+float4 mymesh_PixelShader( in v2p INPUT ) : SV_Target
+{	
+	// Diffuse Light
+	return float4(1.0, 1.0, 1.0, 1.0);
+}
+
+Constants.h file defines serveral ConstantsBuffers. This include needs for gWorldViewProj variable.
+The include file location is engine/renderer/shaders/constants.h. Engine usually search include files
+at the same folder of the .hlsl exists and if the file is not found, it searches engine/renderer/shaders/ folder.
+
+a2v struct define the InputLayout. For this a2v input, InputLayout in the material
+is defined like this.
+
+<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+</InputLayout>
+
+
+
+The last of contents is just hlsl codes.
+
+Material and shaders can be hot reloaded when they are modified in the run-time.
+If you modify your shader or material, this will be applied to the game running.
+This feature is essential for fast iteration.
+
+
+How to use the material in the engine
+
+In engine you use IObject::SetMaterial() to set a material to the object.
+for example,
+
+IMeshObject gMeshObject = 0;
+gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
+if (gMeshObject)
+{
+	gMeshObject->AttachToScene();
+	gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+}
+
+But you can also define the material in the dae file in the 3d authoring tool.
+like the below screen shot.
+
+materialdae.jpg
+
+You can compile and check this material system. Source codes are available at GitHub((https://github.com/fastbird/fastbirdEngine)

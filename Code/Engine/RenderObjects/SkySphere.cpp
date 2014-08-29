@@ -1,51 +1,129 @@
 #include <Engine/StdAfx.h>
-#include <Engine/RenderObjects/SkySphere.h>
+#include <Engine/IRenderToTexture.h>
 #include <Engine/ICamera.h>
+#include <Engine/RenderObjects/SkySphere.h>
+
 #include <CommonLib/Math/GeomUtils.h>
 
 namespace fastbird
 {
 
-ISkySphere* ISkySphere::CreateSkySphere()
+fastbird::SmartPtr<fastbird::IRenderToTexture> SkySphere::mRT;
+
+ISkySphere* ISkySphere::CreateSkySphere(bool usingSmartPointer)
 {
-	return new SkySphere;
+	ISkySphere* newsky = FB_NEW(SkySphere);
+	if (!usingSmartPointer)
+	{
+		newsky->AddRef();		
+	}		
+	return newsky;
+}
+
+void ISkySphere::Delete() // only when not using smart ptr.
+{
+	this->Release();
 }
 
 SkySphere::SkySphere()
+: mCurInterpolationTime(0)
+, mInterpolating(false)
+, mUseAlphaBlend(false)
+, mAlpha(1.0f)
 {
-	//GenerateSphereMesh();
-	SetMaterial("data/materials/skysphere.material");
+	BLEND_DESC bdesc;
+	SetBlendState(bdesc);
+	bdesc.RenderTarget[0].BlendEnable = true;
+	bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+	bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+	mAlphaBlend = gFBEnv->pRenderer->CreateBlendState(bdesc);
 	SetRasterizerState(RASTERIZER_DESC());
 	DEPTH_STENCIL_DESC desc;
 	desc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
 	SetDepthStencilState(desc);
+	assert(mRT && "Call SkySphere::CreateSharedEnvRT first!");
 }
 
 SkySphere::~SkySphere()
 {
+	// no scene is referencing this object since scenes are using smart pointer to hole the sky.
+	mScenes.clear();
 }
 
-void SkySphere::SetMaterial(const char* name)
+//static 
+void SkySphere::CreateSharedEnvRT()
+{
+	if (!mRT)
+	{
+		mRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
+		mRT->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
+	}
+}
+//static 
+void SkySphere::DeleteSharedEnvRT()
+{
+	mRT = 0;
+}
+
+void SkySphere::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 {
 	IMaterial* pMat = IMaterial::CreateMaterial(name);
 	if (pMat)
+	{
+		if (pass == RENDER_PASS::PASS_NORMAL)
+			mMaterial = pMat;
+		else if (pass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
+			mMaterialOCC = pMat;
+		else
+			assert(0);
+	}
+		
+}
+
+void SkySphere::SetMaterial(IMaterial* pMat, int pass /*= RENDER_PASS::PASS_NORMAL*/)
+{
+	if (pass == RENDER_PASS::PASS_NORMAL)
 		mMaterial = pMat;
+	else if (pass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
+		mMaterialOCC = pMat;
+	else
+		assert(0);
 }
 
-void SkySphere::SetMaterial(IMaterial* pMat)
+IMaterial* SkySphere::GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
 {
-	mMaterial = pMat;
-}
+	if (pass == RENDER_PASS::PASS_NORMAL)
+		return mMaterial;
+	else if (pass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
+		return mMaterialOCC;
+	else
+		assert(0);
 
-IMaterial* SkySphere::GetMaterial() const
-{
-	return mMaterial;
+	return 0;
 }
 
 void SkySphere::PreRender()
 {
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
+
+	if (mInterpolating)
+	{
+		mCurInterpolationTime += gFBEnv->pTimer->GetDeltaTime();
+		float normTime = mCurInterpolationTime / mInterpolationTime;
+		if (normTime > 1.0f)
+		{
+			normTime = 1.0f;
+			mInterpolating = false;
+			//if (!mAlphaBlend)
+				//gFBEnv->pRenderer->UpdateEnvMapInNextFrame(this);
+		}
+			
+		for (int i = 0; i < 4; i++)
+		{
+			mMaterial->SetMaterialParameters(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
+		}		
+	}
 }
 
 void SkySphere::Render()
@@ -59,11 +137,24 @@ void SkySphere::Render()
 		return;
 	}
 
-	mMaterial->Bind(true);
-	BindRenderStates();
-	gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	int num = gFBEnv->pRenderer->BindFullscreenQuadUV_VB(true);
-	gFBEnv->pRenderer->Draw(num, 0);
+	if (mMaterialOCC && gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
+	{
+		D3DEventMarker mark("SkySphere_OCC");
+		mMaterialOCC->Bind(true);
+		BindRenderStates();
+		int num = gFBEnv->pRenderer->BindFullscreenQuadUV_VB(true);
+		gFBEnv->pRenderer->Draw(num, 0);
+	}
+	else if (gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL)
+	{
+		D3DEventMarker mark("SkySphere");
+		mMaterial->Bind(true);
+		BindRenderStates();
+		if (mUseAlphaBlend)
+			mAlphaBlend->Bind();		
+		int num = gFBEnv->pRenderer->BindFullscreenQuadUV_VB(true);
+		gFBEnv->pRenderer->Draw(num, 0);
+	}
 }
 
 void SkySphere::PostRender()
@@ -88,4 +179,68 @@ void SkySphere::GenerateSphereMesh()
 	assert(mVB && mIB);
 }
 
+void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
+{
+	if (!mRT)
+		return;
+	ITexture* pTexture = mRT->GetRenderTargetTexture();
+	mRT->GetScene()->AttachSkySphere(this);
+	mRT->GetCamera()->SetPos(origin);
+	mRT->GetCamera()->SetFOV(HALF_PI);
+	mRT->GetCamera()->SetAspectRatio(1.0f);
+	Vec3 dirs[] = {
+		Vec3(1, 0, 0), Vec3(-1, 0, 0),
+		Vec3(0, 0, 1), Vec3(0, 0, -1),
+		Vec3(0, 1, 0), Vec3(0, -1, 0),
+	};
+	for (int i = 0; i < 6; i++)
+	{
+		mRT->GetCamera()->SetDir(dirs[i]);
+		mRT->Render(i);
+	}
+
+	pTexture->GenerateMips();
+	gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
+	mRT->GetScene()->DetachSkySphere();
+}
+
+void SkySphere::SetInterpolationData(unsigned index, const Vec4& data)
+{
+	assert(index < 4);
+	mMaterialParamDest[index] = data;
+}
+
+void SkySphere::PrepareInterpolation(float time)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		mMaterialParamCur[i] = mMaterial->GetMaterialParameters(i);
+	}
+
+	mInterpolationTime = time;
+	mCurInterpolationTime = 0;
+	mInterpolating = true;
+}
+
+void SkySphere::DetachFromScene()
+{
+	if (mScenes.empty())
+		return;
+	if (mUseAlphaBlend)
+	{
+		mScenes[0]->DetachSkySphereBlend();
+	}
+	else
+	{
+		mScenes[0]->DetachSkySphere();
+	}
+		
+}
+
+void SkySphere::SetAlpha(float alpha)
+{
+	Vec4 param = mMaterial->GetMaterialParameters(3);
+	mAlpha = param.w = alpha;
+	mMaterial->SetMaterialParameters(3, param);
+}
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <Engine/IRenderer.h>
+#include <Engine/IConsole.h>
 
 namespace fastbird
 {
@@ -8,15 +9,22 @@ class ILight;
 class DebugHud;
 class IFont;
 class RenderToTexture;
-
-class Renderer : public IRenderer
+class CloudManager;
+#define FB_NUM_TONEMAP_TEXTURES  5 
+#define FB_NUM_LUMINANCE_TEXTURES 3
+#define FB_NUM_BLOOM_TEXTURES 2
+class Renderer : public IRenderer, public ICVarListener
 {
 public:
 	Renderer();
 	virtual ~Renderer();
+	virtual void Deinit();
+	void CleanDepthWriteResources();
+	void CleanGlowResources();
+	void CleanHDRResources();
+	void CleanGodRayResources();
 
 	bool OnPrepared();
-	void OnDeinit();
 	
 	virtual void ProcessRenderToTexture();
 
@@ -69,10 +77,93 @@ public:
 	virtual IMaterial* GetMissingMaterial();
 
 	virtual void SetDirectionalLight(ILight* pLight);
+	virtual ILight* GetDirectionalLight() const;
 
 	virtual int BindFullscreenQuadUV_VB(bool farSide);
 
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
+
+
+	//-------------------------------------------------------------------------
+	// Render States
+	virtual void RestoreRasterizerState();
+	virtual void RestoreBlendState();
+	virtual void RestoreDepthStencilState();
+	virtual void LockDepthStencilState();
+	virtual void UnlockDepthStencilState();
+
+	// blend
+	virtual void SetAlphaBlendState();
+	virtual void SetAdditiveBlendState();
+	virtual void SetMaxBlendState();
+	virtual void SetRedAlphaMask();	
+	virtual void SetGreenAlphaMask();
+	virtual void SetGreenAlphaMaskMax();
+	virtual void SetGreenAlphaMaskAddAddBlend();
+	virtual void SetRedAlphaMaskAddMinusBlend();
+	virtual void SetGreenAlphaMaskAddMinusBlend();
+	virtual void SetRedAlphaMaskAddAddBlend();
+	virtual void SetGreenMask();
+	virtual void SetBlueMask();
+
+
+	void LockBlendState();
+	void UnlockBlendState();
+
+	// depth
+	virtual void SetNoDepthWriteLessEqual();
+	virtual void SetLessEqualDepth();
+
+	// raster
+	virtual void SetFrontFaceCullRS();
+
+	virtual void SetDepthWriteShader();
+	
+	
+
+	virtual void SetPositionInputLayout();
+	virtual void SetOccPreShader();
+	virtual void SetOccPreGSShader();
+
+	virtual void InitCloud(unsigned numThreads, unsigned numCloud, CloudProperties* clouds);
+	virtual void CleanCloud();
+	void UpdateCloud(float dt);
+
+	// ICVarListener
+	virtual bool OnChangeCVar(CVar* pCVar);
+	virtual void UpdateEnvMapInNextFrame(ISkySphere* sky);
+	
+	void Update(float dt);
+	void UpdateLights(float dt);
+
+	void SetHDRTarget();
+	void MeasureLuminanceOfHDRTarget();
+	void Bloom();
+	void ToneMapping();
+	bool GetSampleOffsets_Bloom(DWORD dwTexSize,
+		float afTexCoordOffset[15],
+		Vec4* avColorWeight,
+		float fDeviation, float fMultiplier);
+
+	ITexture* FindRenderTarget(const Vec2I& size);
+
+	void SetDepthRenderTarget(bool clear);
+	void UnsetDepthRenderTarget();
+
+	void SetGodRayRenderTarget();
+	void GodRay();
+	void BlendGodRay();
+	
+	virtual void SetGlowRenderTarget();
+	void BlendGlow();
+
+	void SetDepthTexture(bool set);
+	void SetCloudVolumeTarget();
+	void SetCloudVolumeTexture(bool set);
+	virtual void SetCloudRendering(bool rendering);
+
+	void BindNoiseMap();
+
 
 
 protected:
@@ -87,6 +178,18 @@ protected:
 	SmartPtr<IFont> mFont;
 	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
 	SmartPtr<IMaterial> mMissingMaterial;
+	SmartPtr<IRasterizerState> mDefaultRasterizerState;
+	SmartPtr<IRasterizerState> mFrontFaceCullRS;
+	SmartPtr<IBlendState> mDefaultBlendState;
+	SmartPtr<IBlendState> mAdditiveBlendState;
+	SmartPtr<IBlendState> mAlphaBlendState;
+	SmartPtr<IBlendState> mMaxBlendState;
+	
+	SmartPtr<IDepthStencilState> mDefaultDepthStencilState;
+	SmartPtr<IDepthStencilState> mNoDepthStencilState;
+	SmartPtr<IDepthStencilState> mNoDepthWriteLessEqualState;
+	SmartPtr<IDepthStencilState> mLessEqualDepthState;
+	bool mLockDepthStencil;
 	SmartPtr<ITexture> mEnvironmentTexture;
 	std::vector< SmartPtr<RenderToTexture> > mRenderToTextures;
 
@@ -118,6 +221,85 @@ protected:
 
 	typedef VectorMap< std::string, SmartPtr<IMaterial> > MaterialCache;
 	MaterialCache mMaterialCache;
+	SmartPtr<IInputLayout> mQuadInputLayout;
+	SmartPtr<IShader> mFullscreenQuadVS;
+	SmartPtr<IShader> mCopyPS;
+	SmartPtr<IShader> mCopyPSMS;
+
+	// DepthPass Resources
+	SmartPtr<ITexture> mDepthTarget;
+	SmartPtr<ITexture> mTempDepthBuffer; // for depth writing and clouds
+	SmartPtr<IShader> mDepthWriteShader;
+	SmartPtr<IShader> mCloudDepthWriteShader;
+	SmartPtr<IBlendState> mMinBlendState;
+
+	// HDR resources.
+	SmartPtr<ITexture> mHDRTarget;
+	SmartPtr<ITexture> mToneMap[FB_NUM_TONEMAP_TEXTURES];
+	SmartPtr<ITexture> mLuminanceMap[FB_NUM_LUMINANCE_TEXTURES];
+	int mLuminanceIndex;	
+	SmartPtr<IShader> mDownScale2x2PS;
+	SmartPtr<IShader> mDownScale3x3PS;
+	SmartPtr<IShader> mToneMappingPS;
+	SmartPtr<IShader> mLuminanceAvgPS;	
+	SmartPtr<ITexture> mBrightPassTexture;
+	SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
+	SmartPtr<IShader> mBrightPassPS;
+	SmartPtr<IShader> mBloomPS;
+	
+	// GodRay resources.
+	SmartPtr<ITexture> mGodRayTarget[2]; // half resolution; could be shared.
+	SmartPtr<IShader> mOccPrePassShader;
+	SmartPtr<IShader> mOccPrePassGSShader;
+	SmartPtr<IShader> mGodRayPS;
+	SmartPtr<ITexture> mNoMSDepthStencil;
+	SmartPtr<IInputLayout> mPositionInputLayout;
+	// for bloom
+	bool mGaussianDistCalculated; // should recalculate when the screen resolution changed
+	Vec4 mGaussianDistOffsetX[15];
+	Vec4 mGaussianDistWeightX[15];
+	Vec4 mGaussianDistOffsetY[15];
+	Vec4 mGaussianDistWeightY[15];
+
+	// Glow
+	SmartPtr<ITexture> mGlowTarget;
+	SmartPtr<ITexture> mGlowTexture[2];
+	SmartPtr<IShader> mGlowPS;
+
+	// for glow
+	bool mGaussianDistGlowCalculated; // should recalculate when the screen resolution changed
+	Vec4 mGaussianDistGlowOffsetX[15];
+	Vec4 mGaussianDistGlowWeightX[15];
+	Vec4 mGaussianDistGlowOffsetY[15];
+	Vec4 mGaussianDistGlowWeightY[15];
+
+	// for Cloud Volumes;
+	SmartPtr<ITexture> mCloudVolumeDepth;
+	SmartPtr<IBlendState> mRedAlphaMaskBlend;
+	
+	SmartPtr<IBlendState> mGreenAlphaMaskBlend; 
+	SmartPtr<IBlendState> mGreenAlphaMaskMaxBlend;
+	
+	SmartPtr<IBlendState> mRedAlphaMaskAddMinusBlend;
+	SmartPtr<IBlendState> mGreenAlphaMaskAddAddBlend;
+
+	SmartPtr<IBlendState> mRedAlphaMaskAddAddBlend;
+	SmartPtr<IBlendState> mGreenAlphaMaskAddMinusBlend;
+	
+
+	SmartPtr<IBlendState> mGreenMaskBlend;
+	SmartPtr<IBlendState> mBlueMaskBlend;
+	SmartPtr<IRasterizerState> mRSCloudFar;
+	SmartPtr<IRasterizerState> mRSCloudNear;
+	bool mCloudRendering;
+
+	SmartPtr<ITexture> mNoiseMap;
+
+	ISkySphere* mNextEnvUpdateSkySphere;
+
+	CloudManager* mCloudManager;
+	bool mLockBlendState;
+	
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

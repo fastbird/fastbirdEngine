@@ -45,6 +45,7 @@ namespace fastbird
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
+		mButtonsDownPrev = 0;
 		mButtonsClicked = 0;
 		mButtonsDoubleClicked = 0;
 		GetCurrentMousePos(mAbsX, mAbsY);
@@ -74,7 +75,7 @@ namespace fastbird
 			GetCurrentMousePos(mAbsX, mAbsY);
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
-
+		mButtonsDownPrev = mButtonsDown;
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_LEFT_BUTTON_DOWN)
 		{
 			if ((mButtonsDown & MOUSE_BUTTON_LEFT)==0)
@@ -226,14 +227,9 @@ namespace fastbird
 		mLButtonDoubleClicked = false;
 	}
 
-	//-------------------------------------------------------------------------
-	bool Mouse::IsValid() const
-	{
-		return mValid;
-	}
-
 	void Mouse::Invalidate()
 	{
+		mLastClickTime = 0;
 		mValid = false;
 	}
 
@@ -284,6 +280,11 @@ namespace fastbird
 	// LButton
 	//-------------------------------------------------------------------------
 
+	bool Mouse::IsLButtonDownPrev() const
+	{
+		return (mButtonsDownPrev&MOUSE_BUTTON_LEFT) != 0;
+	}
+
 	bool Mouse::IsLButtonDown(float* time) const
 	{
 		if (time)
@@ -303,6 +304,11 @@ namespace fastbird
 	bool Mouse::IsLButtonPressed() const
 	{
 		return (mButtonsPressed&MOUSE_BUTTON_LEFT) != 0;
+	}
+
+	bool Mouse::IsMButtonDown() const
+	{
+		return (mButtonsDown&MOUSE_BUTTON_MIDDLE) != 0;
 	}
 
 	//-------------------------------------------------------------------------

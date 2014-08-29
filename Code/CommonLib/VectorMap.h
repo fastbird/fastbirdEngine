@@ -16,6 +16,8 @@ namespace fastbird
 		typedef std::vector< _Val_type > VectorMapType;
 		typedef typename VectorMapType::iterator iterator;
 		typedef typename VectorMapType::const_iterator const_iterator;
+		typedef typename VectorMapType::reverse_iterator reverse_iterator;
+		typedef typename VectorMapType::const_reverse_iterator const_reverse_iterator;
 		typedef typename _Val_type::first_type PairFirstType;
 
 		//--------------------------------------------------------------------
@@ -149,24 +151,42 @@ namespace fastbird
 			return mVector.begin();
 		}
 
-		//--------------------------------------------------------------------
 		inline const_iterator begin() const
 		{
 			const_iterator it = mVector.begin();
 			return it;
 		}
 
-		//--------------------------------------------------------------------
 		inline iterator end() 
 		{
 			return mVector.end();
 		}	
 
-		//--------------------------------------------------------------------
 		inline const_iterator end() const
 		{
 			const_iterator it = mVector.end();
 			return it;
+		}
+
+		//--------------------------------------------------------------------
+		inline reverse_iterator rbegin()
+		{
+			return mVector.rbegin();
+		}
+
+		inline const_reverse_iterator rbegin() const
+		{
+			return mVector.rbegin();
+		}
+
+		inline reverse_iterator rend()
+		{
+			return mVector.rend();
+		}
+
+		inline const_reverse_iterator rend() const
+		{
+			return mVector.rend();
 		}
 
 		//--------------------------------------------------------------------

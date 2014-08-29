@@ -21,12 +21,12 @@ namespace fastbird
 		virtual void EndComputeFromData();
 		virtual void TransformBy(const Transformation& transform,
 			BoundingVolume* result);
-		virtual int WhichSide(const Vec3& min, const Vec3& max) const;
+		virtual int WhichSide(const Plane3& plane) const;
 		virtual bool TestIntersection(const Ray3& ray) const;
 		virtual bool TestIntersection(BoundingVolume* pBV) const;
 
 		virtual void Merge(const BoundingVolume* pBV);
-		virtual void Merge(const Vec3& pos);
+		virtual void Merge(const Vec3& worldPos);
 		virtual BoundingVolume& operator= (const BoundingVolume& other);
 
 		virtual fastbird::Vec3 GetSurfaceTo(const Vec3& target, Vec3& normal);
@@ -41,5 +41,6 @@ namespace fastbird
 	private:
 		AABB mAABB;
 		Vec3 mCenter;
+		float mRadius;
 	};
 }

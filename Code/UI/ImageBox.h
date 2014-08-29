@@ -1,11 +1,11 @@
 #pragma once
 
-#include <UI/WinBase.h>
+#include <UI/Container.h>
 
 namespace fastbird
 {
 
-class ImageBox : public WinBase
+class ImageBox : public Container
 {
 public:
 	ImageBox();
@@ -16,7 +16,7 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 
 	// ImageBox;
-	virtual void SetImageFile(const char* file);
+	virtual void SetTexture(const char* file);
 	virtual void SetTexture(ITexture* pTexture);
 	virtual void SetUseHighlight(bool use) { mUseHighlight = use; }
 	// or
@@ -25,6 +25,7 @@ public:
 	virtual void ChangeRegion(const char* region);
 	virtual TextureAtlasRegion* GetTextureAtlasRegion() const { return mAtlasRegion; }
 	virtual void Highlight(bool enable);
+	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 
 	void OnMouseHover(void* arg);
 	void OnMouseOut(void* arg);

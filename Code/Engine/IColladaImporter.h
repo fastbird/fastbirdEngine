@@ -7,6 +7,7 @@ namespace fastbird
 	{
 	public:
 		static IColladaImporter* CreateColladaImporter();
+		static void DeleteColladaImporter(IColladaImporter*);
 
 		virtual ~IColladaImporter() {}
 		// mergeMaterialGroups is used by voxelizer and modules.

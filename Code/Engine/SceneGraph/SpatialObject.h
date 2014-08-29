@@ -18,7 +18,9 @@ namespace fastbird
 		virtual float GetDistToCam() const;
 		virtual void SetPos(const Vec3& pos);
 		virtual const Vec3& GetPos() const;
-		virtual void SetRot(const Quat& rot);		
+		virtual void SetRot(const Quat& rot);
+		virtual void SetScale(const Vec3& scale); // use uniform only.
+		virtual void SetDir(const Vec3& dir);
 		virtual const Quat& GetRot() const;
 		virtual void SetTransform(const Transformation& t);
 		virtual void GetTransform(Mat44& outMat) const { return mTransformation.GetHomogeneous(outMat); }
@@ -30,9 +32,15 @@ namespace fastbird
 		Vec3 GetForward() { return mTransformation.GetForward(); }
 		Vec3 GetUp() { return mTransformation.GetUp();}
 
+		void CameraTargetingYou(ICamera* pCam) { mCameraTargeting = pCam; }
+		const Vec3& GetPrevPos() const { return mPrevPos; }
+
 	protected:
 		Transformation mTransformation;
+		Vec3 mPrevPos;
 		float mDistToCam;
+		bool mTransformChanged;
+		ICamera* mCameraTargeting;
 
 	};
 }

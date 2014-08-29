@@ -11,23 +11,22 @@ Task::Task(bool _AutoDestroy, bool _WaitEvent, volatile long* _ExecCounter)
 	, mAutoDestroy(_AutoDestroy)
 	, mIsDependency(false)
 	, mIsHashed(false)
-	, mIsAdded(false)
 	, mExecCounter(_ExecCounter)
 	, mSyncCounter(0)
 	, mHashNext(NULL)
-	, mWaitEvent(0)
+	, mMyHash(-1)
 {
     assert(!_WaitEvent || !_AutoDestroy);
 
     static volatile DWORD UniqueTaskID = 0;
     mTaskID = InterlockedIncrement((DWORD*)&UniqueTaskID);
 
-    mWaitEvent = _WaitEvent ? CreateEvent(0, FALSE, FALSE, 0) : NULL;
+	mWaitEvent = _WaitEvent ? CreateEvent(0, TRUE, FALSE, 0) : INVALID_HANDLE_VALUE;
 }
 
 Task::~Task()
 {
-    if(mWaitEvent)
+	if (mWaitEvent != INVALID_HANDLE_VALUE)
     {
         CloseHandle(mWaitEvent);
     }
@@ -40,11 +39,10 @@ void Task::OnExecuted()
         InterlockedDecrement((DWORD*)mExecCounter);
     }
 
-    if(mWaitEvent)
+    if(mWaitEvent!=INVALID_HANDLE_VALUE)
     {
 		SetEvent(mWaitEvent);
     }
-	mIsAdded = false;
 }
 
 void Task::Trigger(TaskScheduler* pScheduler)
@@ -59,28 +57,29 @@ void Task::Trigger(TaskScheduler* pScheduler)
 
         if(mAutoDestroy)
         {
-            delete this;
+			FB_DELETE(this);
         }
     }
     else
     {
-		VERIFY(pScheduler->mPendingTasksQueue.Enqueue(this));
+		pScheduler->AddPendingTask(this);
+		pScheduler->SchedulerSlice();
     }
 }
 
 void Task::Sync()
 {
-	if (mIsAdded)
+	if (mWaitEvent != INVALID_HANDLE_VALUE)
 		WaitForSingleObject(mWaitEvent, INFINITE);
 }
 
 void Task::Reset()
 {
 	Sync();
-	mIsAdded = false;
 	mScheduled = false;
 	mExecuted = false;
-	ResetEvent(mWaitEvent);
+	if (mWaitEvent != INVALID_HANDLE_VALUE)
+		ResetEvent(mWaitEvent);
 }
 
 }
