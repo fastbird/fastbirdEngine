@@ -46,10 +46,11 @@ Jungwan Byun (jungwan82 at naver.com)
 * Blog: http://blog.naver.com/jungwan82/
 
 
-Special Thanks to
+Acknowledgements
 ------------------
-I learend graphics/engine programming from these people.
+I learend graphics/engine programming from these people and organization.<br>
+Many thanks to...
+
 * Angel, David, Jinho, Jordi, Junhwan, Sunggyun @ Blueside
 * David @ XLGames
-
-Thank you guys. :)
+* Crytek
