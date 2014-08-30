@@ -45,6 +45,6 @@ Jungwan Byun (jungwan82 at naver.com)
 Special Thanks to
 ------------------
 I learend graphics/engine programming from these people.
-Angel, David, Jinho, Jordi, Junhwan, Sunggyun @ Blueside
-David @ XLGames
+* Angel, David, Jinho, Jordi, Junhwan, Sunggyun @ Blueside
+* David @ XLGames
 Thank you guys. :)
