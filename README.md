@@ -52,5 +52,4 @@ I learend graphics/engine programming from these people and organization.<br>
 Many thanks to...
 
 * Angel, David, Jinho, Jordi, Junhwan, Sunggyun @ Blueside
-* David @ XLGames
-* Crytek
+* David, CryEngine @ XLGames
