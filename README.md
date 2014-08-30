@@ -5,10 +5,14 @@ Open source game engine.
 Compilation
 ---------------
 You need these libraries to compile the source code. You can find the helper .bat files setting environment variables for these paths in the code/ folder.
-* FreeImage 3.15.4 : Copy code/_FREEIMAGE(3.15.4)_DIR.bat file to your FreeImage directory and run. This will create $(FREEIMAGE_DIR) environment variable and the variable is used in the project setting.
-* Lua 5.2.3 : Copy code/_LUA_DIR(5.2.3).bat file to your Lua directory and run. This will create $(LUA_DIR) environment variable.
-* Zlib 1.2.8 : Copy code/_ZLIB(1.2.8)_HOME.bat file to your zlib directory and run. This will create $(ZLIB_HOME) environment variable.
-* OpenCollada : Copy code/_OpenCOLLADA_HOME.bat file to your opencolldada directory and run. This will create $(OpenCOLLADA_HOME) environment variable.
+* FreeImage 3.15.4
+  * Copy code/_FREEIMAGE(3.15.4)_DIR.bat file to your FreeImage directory and run. This will create $(FREEIMAGE_DIR) environment variable and the variable is used in the project setting.
+* Lua 5.2.3 
+  * Copy code/_LUA_DIR(5.2.3).bat file to your Lua directory and run. This will create $(LUA_DIR) environment variable.
+* Zlib 1.2.8 
+  * Copy code/_ZLIB(1.2.8)_HOME.bat file to your zlib directory and run. This will create $(ZLIB_HOME) environment variable.
+* OpenCollada 
+  * Copy code/_OpenCOLLADA_HOME.bat file to your opencolldada directory and run. This will create $(OpenCOLLADA_HOME) environment variable.
  
 The project is developing in Visual Studio 2013 express edition.
  
