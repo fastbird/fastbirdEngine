@@ -11,6 +11,7 @@
 
 using namespace fastbird;
 
+//---------------------------------------------------------------------------
 IMaterial* IMaterial::CreateMaterial(const char* file)
 {
 	if (gFBEnv && gFBEnv->pRenderer)
@@ -106,6 +107,13 @@ Material::~Material()
 	}
 }
 
+//---------------------------------------------------------------------------
+//// only need if you don't use shared ptr
+void Material::Delete()
+{
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 // IMaterial Interfaces
 //----------------------------------------------------------------------------
@@ -146,11 +154,22 @@ bool Material::LoadFromFile(const char* filepath)
 		return false;
 	}
 
+	return LoadFromXml(pRoot);
+
+	
+}
+
+bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
+{
 	const char* sz = pRoot->Attribute("transparent");
 	if (sz)
 	{
 		mTransparent = StringConverter::parseBool(sz);
 	}
+
+	sz = pRoot->Attribute("pass");
+	if (sz)
+		mRenderPass = (RENDER_PASS)ConvertRenderPass(sz);
 
 	tinyxml2::XMLElement* pMaterialConstants = pRoot->FirstChildElement("MaterialConstants");
 	if (pMaterialConstants)
@@ -159,28 +178,28 @@ bool Material::LoadFromFile(const char* filepath)
 		if (pAmbientElem)
 		{
 			const char* szAmbient = pAmbientElem->GetText();
-			Vec4 ambient(szAmbient);			
+			Vec4 ambient(szAmbient);
 			SetAmbientColor(ambient);
 		}
 		tinyxml2::XMLElement* pDiffuseElem = pMaterialConstants->FirstChildElement("DiffuseColor_Alpha");
 		if (pDiffuseElem)
 		{
 			const char* szDiffuse = pDiffuseElem->GetText();
-			Vec4 diffuse(szDiffuse);			
+			Vec4 diffuse(szDiffuse);
 			SetDiffuseColor(diffuse);
 		}
 		tinyxml2::XMLElement* pSpecularElem = pMaterialConstants->FirstChildElement("SpecularColor_Shine");
 		if (pSpecularElem)
 		{
 			const char* szSpecular = pSpecularElem->GetText();
-			Vec4 specular(szSpecular);			
+			Vec4 specular(szSpecular);
 			SetSpecularColor(specular);
 		}
 		tinyxml2::XMLElement* pEmissiveElem = pMaterialConstants->FirstChildElement("EmissiveColor_Strength");
 		if (pEmissiveElem)
 		{
 			const char* szEmissive = pEmissiveElem->GetText();
-			Vec4 emissive(szEmissive);			
+			Vec4 emissive(szEmissive);
 			SetEmissiveColor(emissive);
 		}
 	}
@@ -190,7 +209,7 @@ bool Material::LoadFromFile(const char* filepath)
 	if (pMaterialParameters)
 	{
 		tinyxml2::XMLElement* pElem = pMaterialParameters->FirstChildElement();
-		int i=0;
+		int i = 0;
 		while (pElem)
 		{
 			const char* szVector = pElem->GetText();
@@ -203,13 +222,13 @@ bool Material::LoadFromFile(const char* filepath)
 		}
 	}
 
-	tinyxml2::XMLElement* pDefines= pRoot->FirstChildElement("ShaderDefines");
+	tinyxml2::XMLElement* pDefines = pRoot->FirstChildElement("ShaderDefines");
 	mShaderDefines.clear();
 	if (pDefines)
 	{
 		tinyxml2::XMLElement* pElem = pDefines->FirstChildElement();
-		int i=0;
-		while(pElem)
+		int i = 0;
+		while (pElem)
 		{
 			mShaderDefines.push_back(ShaderDefine());
 			const char* pname = pElem->Attribute("name");
@@ -222,7 +241,7 @@ bool Material::LoadFromFile(const char* filepath)
 			pElem = pElem->NextSiblingElement();
 		}
 	}
-	
+
 	tinyxml2::XMLElement* pTexturesElem = pRoot->FirstChildElement("Textures");
 	if (pTexturesElem)
 	{
@@ -316,8 +335,8 @@ bool Material::LoadFromFile(const char* filepath)
 	if (pInputLayoutElem)
 	{
 		tinyxml2::XMLElement* pElem = pInputLayoutElem->FirstChildElement();
-		int i=0;
-		while(pElem)
+		int i = 0;
+		while (pElem)
 		{
 			mInputElementDescs.push_back(INPUT_ELEMENT_DESC());
 			const char* pbuffer = pElem->Attribute("semantic");
@@ -350,56 +369,12 @@ bool Material::LoadFromFile(const char* filepath)
 	{
 		Material* pMat = FB_NEW(Material);
 		mSubMaterials.push_back(pMat);
-		pMat->LoadSubMaterial(subMat);
+		pMat->LoadFromXml(subMat);
 
 		subMat = subMat->NextSiblingElement("Material");
 	}
 
 	return true;
-}
-
-void Material::LoadSubMaterial(tinyxml2::XMLElement* subMat)
-{
-	const char* sz = subMat->Attribute("pass");
-	assert(sz && "pass should be exists");
-	if (sz)
-		mRenderPass = (RENDER_PASS)ConvertRenderPass(sz);
-
-	mShaders = BINDING_SHADER_VS | BINDING_SHADER_PS;
-	tinyxml2::XMLElement* pShaders = subMat->FirstChildElement("Shaders");
-	if (pShaders)
-	{
-		const char* shaders = pShaders->GetText();
-		if (shaders)
-		{
-			mShaders = 0;
-			std::string strShaders = shaders;
-			ToLowerCase(strShaders);
-			if (strShaders.find("vs") != std::string::npos){
-				mShaders |= BINDING_SHADER_VS;
-			}
-			if (strShaders.find("hs") != std::string::npos){
-				mShaders |= BINDING_SHADER_HS;
-			}
-			if (strShaders.find("ds") != std::string::npos){
-				mShaders |= BINDING_SHADER_DS;
-			}
-			if (strShaders.find("gs") != std::string::npos){
-				mShaders |= BINDING_SHADER_GS;
-			}
-			if (strShaders.find("ps") != std::string::npos){
-				mShaders |= BINDING_SHADER_PS;
-			}
-		}
-	}
-	tinyxml2::XMLElement* pShaderFileElem = subMat->FirstChildElement("ShaderFile");
-	if (pShaderFileElem){
-		const char* shaderFile = pShaderFileElem->GetText();
-		if (shaderFile){
-			mShader = gFBEnv->pEngine->GetRenderer()->CreateShader(shaderFile, mShaders, mShaderDefines);
-			mShaderFile = mShader->GetName();
-		}
-	}
 }
 
 void Material::RemoveInstance(Material* pInstance)
@@ -419,7 +394,10 @@ void Material::ReloadMaterial(const char* name)
 		if (strcmp(mat->GetName(), filepath.c_str()) == 0)
 		{
 			// not reloading instances.
-			mat->RegisterReloading();
+			if (mat->GetAdam())
+				mat->GetAdam()->RegisterReloading();
+			else
+				mat->RegisterReloading();
 			return;
 		}
 	}
@@ -564,7 +542,7 @@ void Material::SetTexture(const char* filepath, BINDING_SHADER shader, int slot,
 	if (same)
 	{
 		assert(pTexture);
-		pTexture->SetSamplerDesc(samplerDesc);
+		//pTexture->SetSamplerDesc(samplerDesc);
 		return;
 	}
 
@@ -573,7 +551,7 @@ void Material::SetTexture(const char* filepath, BINDING_SHADER shader, int slot,
 		pTexture = gFBEnv->pEngine->GetRenderer()->CreateTexture(filepath);
 		pTexture->SetSlot(slot);
 		pTexture->SetShaderStage(shader);
-		pTexture->SetSamplerDesc(samplerDesc);
+		//pTexture->SetSamplerDesc(samplerDesc);
 		pTexture->SetType(TEXTURE_TYPE_DEFAULT);
 		mTextures.push_back(pTexture);
 	}
@@ -593,7 +571,7 @@ void Material::SetTexture(ITexture* pTexture, BINDING_SHADER shader,  int slot,
 	{
 		pTexture->SetSlot(slot);
 		pTexture->SetShaderStage(shader);
-		pTexture->SetSamplerDesc(samplerDesc);
+		//pTexture->SetSamplerDesc(samplerDesc);
 		pTexture->SetType(TEXTURE_TYPE_DEFAULT);
 		mTextures.push_back(pTexture);
 	}
@@ -618,7 +596,7 @@ void Material::SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slo
 		pTexture = CreateColorRampTexture(cr);
 		pTexture->SetSlot(slot);
 		pTexture->SetShaderStage(shader);
-		pTexture->SetSamplerDesc(samplerDesc);
+		//pTexture->SetSamplerDesc(samplerDesc);
 		pTexture->SetType(TEXTURE_TYPE_COLOR_RAMP);
 		mTextures.push_back(pTexture);
 	}
@@ -643,7 +621,6 @@ void Material::RefreshColorRampTexture(int slot, BINDING_SHADER shader)
 	FindTextureIn(shader, slot, &pTexture);
 	assert(pTexture!=0 && pTexture->GetType() == TEXTURE_TYPE_COLOR_RAMP);
 
-	SAMPLER_DESC desc = pTexture->GetSamplerDesc();
 	ColorRamp cr = mColorRampMap[pTexture];
 	
 	MapData data = pTexture->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
@@ -878,11 +855,11 @@ IMaterial* Material::GetSubPassMaterial(RENDER_PASS p) const
 }
 
 //------------------------------------------------------
-bool Material::BindSubPass(RENDER_PASS p)
+bool Material::BindSubPass(RENDER_PASS p, bool includeInputLayout)
 {
 	IMaterial* pmat = GetSubPassMaterial(p);
 	if (pmat){
-		pmat->Bind(false);
+		pmat->Bind(includeInputLayout);
 		BindMaterialParams(); // use parent material param
 		return true;
 	}

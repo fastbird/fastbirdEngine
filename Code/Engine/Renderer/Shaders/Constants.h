@@ -1,4 +1,6 @@
 #include "ShaderCommon.h"
+#ifndef __SHADER_CONSTANTS_H_
+#define __SHADER_CONSTANTS_H_
 #ifdef CPP
 #pragma once
 namespace fastbird {
@@ -13,12 +15,14 @@ cbuffer FRAME_CONSTANTS
 	float4x4 gInvView;
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
+	float4x4 gLightViewProj;
 	float4 gDirectionalLightDir_Intensity;
 	float4 gDirectionalLightDiffuse;
 	float4 gDirectionalLightSpecular;
 	float3 gCameraPos;
 	float gTime;
 	float4 gMousePos; // x, y : current pos   z, w: down pos
+	float4 gDeltaTime;
 };
 
 cbuffer OBJECT_CONSTANTS
@@ -62,6 +66,7 @@ cbuffer RARE_CONSTANTS
 	float gScreenRatio;
 	float2 gEmpty;
 	float4 gFogColor;
+	float4 gMiddleGray_Star_Bloom_Empty;
 };
 
 cbuffer BIG_BUFFER
@@ -69,8 +74,8 @@ cbuffer BIG_BUFFER
 	: register (b5)
 #endif
 {
-	float4 gSampleOffsets[15];
-	float4 gSampleWeights[15];
+	float4 gSampleOffsets[16];
+	float4 gSampleWeights[16];
 };
 
 cbuffer IMMUTABLE_CONSTANTS
@@ -84,3 +89,5 @@ cbuffer IMMUTABLE_CONSTANTS
 #ifdef CPP
 }
 #endif
+
+#endif //__SHADER_CONSTANTS_H_

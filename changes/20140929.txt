@@ -1,0 +1,52 @@
+* Engine
+** Anamorphic Lens Flare
+** Introduced shadow map.
+** Supporting manual collision shapes - narrow phase of collision check.
+** Supporting dynamic vertex buffer manipulation for MeshObject
+** Added feature for handling user inputs to manipulate the render target's camera.
+** ParticleEmitters now can emit geometry particles
+** Particle color interpolation
+** Particle UV Flow, Length control, aligning velocity to the emitter direction
+** inter-frame particle position interpolation for fast moving emitters
+** Added curve importers for pathes. - using .obj format
+** SamplerStates are now independent to textures - can be shared in the different shaders.
+** Added engine commands - e_NoMeshLoad, r_UI, r_HDRMiddleGray, r_BloomPower, r_StarPower, r_Shadow
+** Rewrote luminance calculation shader and added GaussianBlur5x5.hlsl, MergeTextures2PS.hlsl
+** Supporting AlphaBlending UIs
+** Fixed font vertical aligning bug
+** Using fullscreen triangle instead of fullscreen quad.
+** Fixed submaterial bugs.
+** Added feature for supporting mark rendering.
+** IEngine::DeleteMeshObject name changed to IEngine::ReleaseMeshObject to keep consistency
+ 
+
+* UI
+** Hot-reloaing from the game level.
+** Added NumericUpDown component.
+** Added Drop-Down Component.
+** Added multi-column featrue for list box.
+** Added title bar for windows.
+** Window movement by dragging.
+** Wnd components now can have 9 images to decorate its borders.(via USE_WND_FRAME UIProperty)
+** Every UI components can have 8 images to decorate its border. (via USE_BORDER UIProperty)
+** Added popup dialog support
+** Handling absolute/relative coordinates conversion for size changes
+** Fixed event handling bug - culled UIs don't process input events anymore.
+** Fixed focus test ordering bug.
+** Progressbar color interpolation
+** Polished vertical scrollbars - showing total length of contents and current pos
+** Polished tooltip positioning - to prevent being culled by screen size.
+** Scissor culling for scrolling elements
+** Now one can specify minus values for position. (then ScreenWidth+(minus value))
+** Supporting offsetting. useful for the situation when you want to offset npos(like 0.5f) by pixelpos.
+** Supporting button's background image and boundary color.
+** Supporting minus value for position. (then ScreenWidth+(minus value))
+** Supporting offsetting. useful for the situation when you want to offset npos(like 0.5f) by pixelpos.
+** Added properties
+*** BACKGROUND_IMAGE, BACKGROUND_IMAGE_HOVER
+*** NO_MOUSE_EVENT
+*** BACK_COLOR_DOWN, FRAME_IMAGE, EDGE_COLOR, EDGE_COLOR_OVER, USE_WND_FRAME, USE_BORDER.
+*** BACKGROUND_IMAGE_NOATLAS, BACKGROUND_IMAGE_HOVER_NOATLAS
+*** Added SCISSOR_STOP_HERE property to select appropriate scissor rect for children
+*** Added additional ordering option. UIProperty::SPECIAL_ORDER
+*** Added Header columns to ListBoxes. - UIProperty::LISTBOX_COL_HEADERS

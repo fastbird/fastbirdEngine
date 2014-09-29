@@ -19,7 +19,11 @@ namespace fastbird
 		virtual ITexture* GetRenderTargetTexture() = 0;
 		virtual ITexture* GetDepthStencilTexture() = 0;
 		virtual void Render(size_t face = 0) = 0;
-		virtual void SetEveryFrame(bool everyframe) = 0;
-		virtual bool IsEveryFrame() const = 0;
+		// for every frame render
+		virtual void SetEnable(bool enable) = 0;
+		virtual bool GetEnable() const = 0;
+
+		// simple camera operation
+		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard) = 0;
 	};
 }

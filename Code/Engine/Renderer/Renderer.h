@@ -1,6 +1,7 @@
 #pragma once
 #include <Engine/IRenderer.h>
 #include <Engine/IConsole.h>
+#include <Engine/Renderer/StarDef.h>
 
 namespace fastbird
 {
@@ -10,9 +11,11 @@ class DebugHud;
 class IFont;
 class RenderToTexture;
 class CloudManager;
-#define FB_NUM_TONEMAP_TEXTURES  5 
+#define FB_NUM_TONEMAP_TEXTURES  4
 #define FB_NUM_LUMINANCE_TEXTURES 3
-#define FB_NUM_BLOOM_TEXTURES 2
+#define FB_NUM_BLOOM_TEXTURES 3
+#define FB_NUM_STAR_TEXTURES     12 
+#define FB_MAX_SAMPLES           16      // Maximum number of texture grabs
 class Renderer : public IRenderer, public ICVarListener
 {
 public:
@@ -32,6 +35,8 @@ public:
 	virtual Vec2 ToNdcPos(const Vec2I& screenPos) const;
 	virtual unsigned GetWidth() const { return mWidth; }
 	virtual unsigned GetHeight() const { return mHeight; }
+	virtual unsigned GetCropWidth() const { return mCropWidth; }
+	virtual unsigned GetCropHeight() const { return mCropHeight; }
 	//virtual void SetWireframe(bool enable); // see RendererD3D11
 	virtual bool GetWireframe() const { return mForcedWireframe; }
 	virtual void SetClearColor(float r, float g, float b, float a=1.f);
@@ -79,8 +84,6 @@ public:
 	virtual void SetDirectionalLight(ILight* pLight);
 	virtual ILight* GetDirectionalLight() const;
 
-	virtual int BindFullscreenQuadUV_VB(bool farSide);
-
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
 
 
@@ -113,9 +116,13 @@ public:
 	// depth
 	virtual void SetNoDepthWriteLessEqual();
 	virtual void SetLessEqualDepth();
+	virtual void SetNoDepthStencil();
 
 	// raster
 	virtual void SetFrontFaceCullRS();
+
+	// sampler
+	virtual void SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot);
 
 	virtual void SetDepthWriteShader();
 	
@@ -136,14 +143,20 @@ public:
 	void Update(float dt);
 	void UpdateLights(float dt);
 
-	void SetHDRTarget();
+	virtual void SetHDRTarget();
 	void MeasureLuminanceOfHDRTarget();
+	void BrightPass();
+	void BrightPassToStarSource();
+	void StarSourceToBloomSource();
 	void Bloom();
+	void RenderStarGlare();
 	void ToneMapping();
 	bool GetSampleOffsets_Bloom(DWORD dwTexSize,
 		float afTexCoordOffset[15],
 		Vec4* avColorWeight,
 		float fDeviation, float fMultiplier);
+	void GetSampleOffsets_GaussBlur5x5(DWORD texWidth, DWORD texHeight, Vec4** avTexCoordOffset, Vec4** avSampleWeight, float fMultiplier);
+	void GetSampleOffsets_DownScale2x2(DWORD texWidth, DWORD texHeight, Vec4* avTexCoordOffset);
 
 	ITexture* FindRenderTarget(const Vec2I& size);
 
@@ -157,12 +170,23 @@ public:
 	virtual void SetGlowRenderTarget();
 	void BlendGlow();
 
-	void SetDepthTexture(bool set);
+	void BindDepthTexture(bool set);
 	void SetCloudVolumeTarget();
 	void SetCloudVolumeTexture(bool set);
 	virtual void SetCloudRendering(bool rendering);
 
 	void BindNoiseMap();
+
+	// shadow
+	void PrepareShadowMapRendering();
+	void EndShadowMapRendering();
+	void BindShadowMap(bool bind);
+	virtual void SetShadowMapShader();
+
+	virtual void SetSilouetteShader();
+	virtual void SetSamllSilouetteBuffer();
+	virtual void SetBigSilouetteBuffer();
+	virtual void DrawSilouette();
 
 
 
@@ -170,10 +194,11 @@ protected:
 	unsigned				mWidth;
 	unsigned				mHeight;
 
+	unsigned mCropWidth;
+	unsigned mCropHeight;
+
 	SmartPtr<ILight>		mDirectionalLight;
 	SmartPtr<ILight>		mDirectionalLightOverride;
-	SmartPtr<IVertexBuffer>	mVBQuadUV_Far;
-	SmartPtr<IVertexBuffer>	mVBQuadUV_Near;
 	SmartPtr<DebugHud>		mDebugHud;
 	SmartPtr<IFont> mFont;
 	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
@@ -190,8 +215,13 @@ protected:
 	SmartPtr<IDepthStencilState> mNoDepthWriteLessEqualState;
 	SmartPtr<IDepthStencilState> mLessEqualDepthState;
 	bool mLockDepthStencil;
+
+	// just temporal holder
+	// dont need to delete. it will be deleted in the inherited class.
+	ISamplerState* mDefaultSamplers[SAMPLERS::NUM];
+
 	SmartPtr<ITexture> mEnvironmentTexture;
-	std::vector< SmartPtr<RenderToTexture> > mRenderToTextures;
+	std::vector< RenderToTexture* > mRenderToTextures;
 
 	Color mClearColor;
 	float mDepthClear;
@@ -221,14 +251,18 @@ protected:
 
 	typedef VectorMap< std::string, SmartPtr<IMaterial> > MaterialCache;
 	MaterialCache mMaterialCache;
-	SmartPtr<IInputLayout> mQuadInputLayout;
-	SmartPtr<IShader> mFullscreenQuadVS;
+	SmartPtr<IShader> mFullscreenQuadVSNear;
+	SmartPtr<IShader> mFullscreenQuadVSFar;
+
+	SmartPtr<ITexture> mTempDepthBufferHalf; // for depth writing and clouds
+	SmartPtr<ITexture> mTempDepthBuffer;
+
+	// linear sampler
 	SmartPtr<IShader> mCopyPS;
 	SmartPtr<IShader> mCopyPSMS;
 
 	// DepthPass Resources
 	SmartPtr<ITexture> mDepthTarget;
-	SmartPtr<ITexture> mTempDepthBuffer; // for depth writing and clouds
 	SmartPtr<IShader> mDepthWriteShader;
 	SmartPtr<IShader> mCloudDepthWriteShader;
 	SmartPtr<IBlendState> mMinBlendState;
@@ -238,14 +272,38 @@ protected:
 	SmartPtr<ITexture> mToneMap[FB_NUM_TONEMAP_TEXTURES];
 	SmartPtr<ITexture> mLuminanceMap[FB_NUM_LUMINANCE_TEXTURES];
 	int mLuminanceIndex;	
-	SmartPtr<IShader> mDownScale2x2PS;
+	SmartPtr<IShader> mDownScale2x2LumPS;
+	SmartPtr<IShader> mSampleLumInitialShader;
+	SmartPtr<IShader> mSampleLumIterativeShader;
+	SmartPtr<IShader> mSampleLumFinalShader;
+	SmartPtr<IShader> mCalcAdaptedLumShader;
 	SmartPtr<IShader> mDownScale3x3PS;
 	SmartPtr<IShader> mToneMappingPS;
 	SmartPtr<IShader> mLuminanceAvgPS;	
 	SmartPtr<ITexture> mBrightPassTexture;
+	SmartPtr<ITexture> mBloomSourceTex;
+	SmartPtr<IShader> mDownScale2x2PS;
 	SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
 	SmartPtr<IShader> mBrightPassPS;
 	SmartPtr<IShader> mBloomPS;
+
+	// 1/4
+
+	// x, y,    offset, weight;
+	VectorMap< std::pair<DWORD, DWORD>, std::pair<std::vector<Vec4>, std::vector<Vec4> > > mGauss5x5;
+
+	Vec4 mGaussianOffsetsDownScale2x2[4];
+	bool mGaussianDownScale2x2Calculated;
+
+	// Star
+	StarDef mStarDef;
+	SmartPtr<ITexture> mStarSourceTex;
+	SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
+	SmartPtr<IShader> mBlur5x5;
+	SmartPtr<IShader> mStarGlareShader;
+	SmartPtr<IShader> mMergeTexture2;
+	float m_fChromaticAberration;
+	float m_fStarInclination;
 	
 	// GodRay resources.
 	SmartPtr<ITexture> mGodRayTarget[2]; // half resolution; could be shared.
@@ -299,7 +357,19 @@ protected:
 
 	CloudManager* mCloudManager;
 	bool mLockBlendState;
-	
+
+	// shadow
+	SmartPtr<ITexture> mShadowMap;
+	SmartPtr<IShader> mShadowMapShader;	
+	ICamera* mCameraBackup;
+
+	SmartPtr<ITexture> mSmallSilouetteBuffer;
+	SmartPtr<ITexture> mBigSilouetteBuffer;
+	SmartPtr<IShader> mSilouetteShader;	
+
+	float mMiddleGray;
+	float mStarPower;
+	float mBloomPower;
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

@@ -1,0 +1,256 @@
+How to UI
+
+In this document, we will discuss about fastbird engine's UI system
+
+Creating UIs in the program code.
+
+This code is a simple OK/Close dialog.
+
+	bool WelcomeUI::Initialize()
+	{
+		// Create an window, size of 30%, 10% of the full screen size. left top position is 0.5, 0.5 which is center of the screen.
+		Wnd* window = (Wnd*)IUIManager::GetUIManager().AddWindow(0.5f, 0.5f, 0.3f, 0.1f, ComponentType::Window);
+		// If you don't specify alignment option, the window will be aligned to the position at the left top of the window.
+		// If you give the value "center" for horizontal alignment, the center of window will be aligned to the position
+		window->SetProperty(UIProperty::ALIGNH, "center");
+		window->SetProperty(UIProperty::ALIGNV, "middle");
+		
+		// Create StaticText component. Pos and Size is relative to the parent window we created above.
+		// If you give 1, 1 for its size, then the size is equal to the parent window size.
+		StaticText* text = (StaticText*)window->AddChild(0.01f, 0.2f, 0.99f, 0.50f, ComponentType::StaticText);
+		text->SetText(L"Welcome to fastbird engine!");
+		// center alignment.
+		text->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		text->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+		
+		Button* btnOK = (Button*)window->AddChild(0.5f, 0.85f, 0.3f, 0.1f, ComponentType::Button);
+		// right alignment
+		btnOK->SetProperty(UIProperty::ALIGNH, "right");
+		// offsetting x position for -4 to make a gap between OK and Close buttons.
+		btnOK->SetInitialOffset(Vec2I(-4, 0))
+		// Registering events. Now if the user clicks the button, ConfirmUI::OnOKClicked() will be called.
+		btnOK->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+			std::bind(&ConfirmUI::OnOKClicked, this, std::placeholders::_1));
+		btnOK->SetText(L"OK");
+		btnOK->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		btnOK->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+			
+		Button* btnClose = (Button*)window->AddChild(0.5f, 0.85f, 0.3f, 0.1f, ComponentType::Button);
+		btnClose->SetInitialOffset(Vec2I(4, 0));
+		btnClose->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+			std::bind(&ConfirmUI::OnCloseClicked, this, std::placeholders::_1));
+		btnClose->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		btnClose->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+	}
+	
+Now, you have a window box displaying a static text "Welcome to fastbird engine!" and two buttons. If you want to know all supported component types and UIProperties, refer to the bottom of this document.
+
+
+Creating UIs with .ui file format.
+
+If you use .ui file to create an UI, it is very convinient since the UI can be hot reloaded whenever you modifies the .ui file. The above ui can be defined in .ui file like below.
+
+WelcomeUI.ui
+
+<UI name="WelcomeUI">
+	<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
+		<component name="_text" type="StaticText" npos="0.01, 0.2" nsize="0.99, 0.5" TEXT="Welcome to fastbird engine!" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		<component name="OKBtn" type="Button" npos="0.5, 0.85" offset="4, 0" nsize="0.3, 0.1" TEXT="OK" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		<component name="CloseBtn" type="Button" npos="0.5, 0.85" offset="-4, 0" nsize="0.3, 0.1" TEXT="Close" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+	</component>
+</UI>
+
+After you created WelcomUI.ui, you need to modify WelcomeUI::Initialize() to parse the .ui file.
+
+	bool WelcomeUI::Initialize()
+	{
+		IUIManager& um = IUIManager::GetUIManager();
+		mUIFilename = "data/ui/WelcomeUI.ui";
+		std::vector<IWinBase*> wnds;
+		bool success = um.ParseUI(mUIFilename.c_str(), wnds, mUIName);
+		assert(success);
+		if (success)
+		{
+			// The main window is in the wnds[0]
+			mWnd = (Wnd*)wnds[0]; 
+			
+			// Find OK/Close btn and register the event functions.
+			Button* btnOK = (Button*)mWnd->GetChild("OKBtn");
+			assert(btnOK);
+			btnOK->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+				std::bind(&ConfirmUI::OnOKClicked, this, std::placeholders::_1));
+				
+			Button* btnClose = (Button*)mWnd->GetChild("OKClose");
+			assert(btnClose);
+			btnClose->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+				std::bind(&ConfirmUI::OnCloseClicked, this, std::placeholders::_1));		
+			
+		}
+	}
+	
+Hot reloading feature is not only dependent to engine but also game layer. You may check the EngineApp project(main.cpp file, search with RegisterFileChangeListener) to see how you can register file modification notice from the engine, and how to hot reload uis.
+
+
+
+Detailed explanation on position and size
+
+You can specify the position and size in percentage value or in pixel unit. The following sentences specifying positions in percentage value. The position is relative to its parent compoonent.
+
+	npos="0.1, 0.1"
+	nposX="0.1" nposY="0.1"
+
+If you want specify the pos in pixel unit, use the following sentence. The pixel value itself is absolute, but will be positioned relative to its parent component like when you using percent value.
+
+	pos="10, 10"
+	posX="10" posY="10"
+
+You can mix two method when you want to specify X value with percentage, and Y value in pixel unit.
+
+	nposX="0.1" posY="10"
+	
+If you give minus value when you using pixel value, the final position is calculated from the right side of the parent component. For example, if you use the following sentence and the screen resolution is 1600, then the final result value for X is 1500.
+
+	posX="-100"
+
+If you want to give position offset values, use the following sentence. offsets are always in the pixel unit. You can specify only neccessary attributes(X or Y).
+
+	offset="-10, 4"
+	offsetX"-10"
+	offsetY="-4"
+
+
+Sizes also can be defined with percentage value or in pixel unit similar to positions.
+
+	nsize="1.0, 1.0"
+	nsizeX="1.0"
+	nsizeY="1.0"
+	size="600, 400"
+	nsizeX="600"
+	nsizeY="400"
+	
+If you specify "fill", the component will occupy whole remained areas of the parent component.
+
+	nsizeX="fill"
+	nsizeY="fill"
+
+You can use sizeMode attributes to modify final size.
+
+	sizeMod="-10, 0"
+	sizeModX="-10"
+	sizeModY="0"
+	
+
+You can use aspectRatio attribues when you don't want to specify Y size explicitly. For example, the following indicates the size of 64, 32.
+
+	sizeX="64"
+	aspectRatio="2"
+
+
+
+UI Animation
+
+Currently the ui system supports position, textColor and backColor animations. You can define animation tags insides of the component in which you want to use the defined animation. The following is for back color animation.
+
+	<Animation id="1" name="EnemyArrived" length="1" loop="false" >
+		<BackColor>
+			<key time="0" color="0, 0, 0, 0.7"/>
+			<key time="0.3" color="1, 0, 0, 0.7"/>
+			<key time="0.5" color="0, 0, 0, 0.7"/>
+			<key time="0.7" color="1, 0, 0, 0.7"/>
+			<key time="1.0" color="0, 0, 0, 0.7"/>
+		</BackColor>
+	</Animation>
+	<Animation id="2" name="EnemyCleared" length="3" loop="false" >
+		<BackColor>
+			<key time="0" color="0, 0, 0, 0.7"/>
+			<key time="0.5" color="0.3, 0.5, 0, 0.7"/>
+			<key time="1.0" color="0, 0, 0, 0.7"/>
+		</BackColor>
+	</Animation>
+
+	
+To use this animation, you code like below in the code.
+
+	void WaveUI::OnEnemyArrived()
+	{
+		IUIAnimation* pAnim = mIncomingFrame->GetUIAnimation("EnemyArrived");
+		pAnim->SetActivated(true);
+	}
+
+	void WaveUI::OnEnemyCleared()
+	{
+		IUIAnimation* pAnim = mIncomingFrame->GetUIAnimation("EnemyCleared");
+		pAnim->SetActivated(true);
+	}
+
+
+
+Supported UI components(Refer to UI/ComponentType.h)
+
+* Window
+* Title (Internal only)
+* Button
+* CheckBox
+* RadioBox
+* ListBox
+* ListItem
+* TextField
+* Grid
+* StaticText
+* ImageBox
+* FileSelector
+* Scroller
+* Hexagonal
+* CardScroller
+* CardItem
+* VerticalGauge
+* HorizontalGauge
+* NumericUpDown
+* DropDown
+
+
+UIProperty List(Refer to UI/UIProperty.h)
+
+You can use following properties when you define an UI in the .ui file.
+
+* BACK_COLOR : "0, 0, 0, 1" for opaque black.
+* BACK_COLOR_OVER
+* BACK_COLOR_DOWN
+* TEXT_ALIGN : "left", "center", "right". The default value is "left"
+* TEXT_VALIGN : "top", "middle", "bottom". The default value is "top"
+* TEXT_SIZE
+* TEXT_COLOR
+* TEXT_COLOR_HOVER
+* TEXT_COLOR_DOWN
+* FIXED_TEXT_SIZE : Basically the text size is dependent to height of StaticText component. But if you want your text to have fixed size. Use this property.
+* MATCH_SIZE : "true", "false" : If ture, the StaticText component's x size matches to text length.
+* NO_BACKGROUND: "true", "false"
+* ALIGNH: "left", "center", "right". The default value is "left"
+* ALIGNV: "top", "middle", "bottom". The default value is "top"
+* TEXT
+* TEXTUREATLAS : Specify .xml file which defines a texture atlas. Refer to  Data/textures/gameui.xml or es/textures/ui.xml file.
+* BACKGROUND_IMAGE : Specify region name of the texture atlas.
+* BACKGROUND_IMAGE_HOVER
+* BACKGROUND_IMAGE_NOATLAS : If you don't want to use a texture atlas, specify the image file path. for example, "data/texture/mytexture.dds"
+* BACKGROUND_IMAGE_HOVER_NOATLAS
+* FRAME_IMAGE : Frame image for Button UI. Its a region name of a texture atlas.
+* TOOLTIP
+* PROGRESSBAR : If you want to have a progress bar in the Button UI, specify "true".
+* GAUGE_COLOR : Color of progressbar.
+* GAUGE_COLOR_EMPTY
+* GAUGE_BLINK_COLOR
+* GAUGE_BLINK_SPEED
+* NO_MOUSE_EVENT : If you don't want the component handle the mouse event, specify as "true"
+* SCROLLERH : The horizontal scrollbar is currently not implemented.
+* SCROLLERV : "true", if you want to have vertical scroll bar.
+* USE_SCISSOR : "true", if you want to clip the components with parent scissor region.
+* LISTBOX_COL : Number of columns of ListBox.
+* LISTBOX_COL_SIZES : Column sizes of ListBox. If you have three columns, you can specify like "0.3, 0.3, 0.4"
+* LISTBOX_COL_HEADERS: If you want to have column headers on you ListBox, specify like "No,Name,Cost" for three columns.
+* EDGE_COLOR : If a Button doesn't have a FRAME_IMAGE property, edge will be rendered. Specify the color of the edge.
+* EDGE_COLOR_OVER
+* USE_WND_FRAME : "true" If you want to have decorated windows and titlebar. Predefined images in es/textures/ui.xml에 미리 준비되어 있습니다.
+* TITLEBAR : "true", if you want your window to have title bar.
+* USE_BORDER : "true", for border decoration. can be used any ui components like buttons, static text.
+* SCISSOR_STOP_HERE : Basically a component searches its adam UI component to find its scissor region, but if you want to use middle parents region specify this property at the middle parent component.
+* SPECIAL_ORDER : Higher will be rendered at top. For dropboxes.

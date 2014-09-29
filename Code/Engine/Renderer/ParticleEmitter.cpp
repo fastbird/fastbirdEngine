@@ -2,6 +2,7 @@
 #include <Engine/Renderer/ParticleEmitter.h>
 #include <Engine/Renderer/ParticleManager.h>
 #include <Engine/ICamera.h>
+#include <Engine/IMeshObject.h>
 #include <Engine/RenderObjects/ParticleRenderObject.h>
 #include <CommonLib/Math/BVaabb.h>
 
@@ -27,6 +28,7 @@ ParticleEmitter::ParticleEmitter()
 	, mAdam(0)
 	, mManualEmitter(false)
 	, mEmitterColor(1, 1, 1)
+	, mLength(0.0f)
 {
 	mObjFlag |= OF_IGNORE_ME;
 }
@@ -95,6 +97,21 @@ bool ParticleEmitter::Load(const char* filepath)
 		if (sz)
 			pt.mTexturePath = sz;
 
+		sz = pPT->Attribute("geometry");
+		if (sz)
+		{
+			pt.mGeometryPath = sz;
+			assert(pt.mTexturePath.empty());
+			if (!pt.mGeometryPath.empty())
+			{
+				pt.mMeshObject = gFBEnv->pEngine->GetMeshObject(pt.mGeometryPath.c_str());
+			}
+		}
+
+		sz = pPT->Attribute("startAfter");
+		if (sz)
+			pt.mStartAfter = StringConverter::parseReal(sz);
+
 		sz = pPT->Attribute("emitPerSec");
 		if (sz)
 			pt.mEmitPerSec = StringConverter::parseReal(sz);
@@ -106,6 +123,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("maxParticle");
 		if (sz)
 			pt.mMaxParticle = StringConverter::parseUnsignedInt(sz);
+
+		sz = pPT->Attribute("deleteWhenFull");
+		if (sz)
+			pt.mDeleteWhenFull = StringConverter::parseBool(sz);
 
 		sz = pPT->Attribute("cross");
 		if (sz)
@@ -123,6 +144,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("glow");
 		if (sz)
 			glow = StringConverter::parseReal(sz);
+
+		sz = pPT->Attribute("posOffset");
+		if (sz)
+			pt.mPosOffset = StringConverter::parseVec3(sz);
 
 		sz = pPT->Attribute("lifeTimeMinMax");
 		if (sz)
@@ -151,6 +176,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("rangeRadius");
 		if (sz)
 			pt.mRangeRadius = StringConverter::parseReal(sz);
+
+		sz = pPT->Attribute("posInterpolation");
+		if (sz)
+			pt.mPosInterpolation = StringConverter::parseBool(sz);
 
 		sz = pPT->Attribute("sizeMinMax");
 		if (sz)
@@ -250,6 +279,11 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("color");
 		if (sz)
 			pt.mColor = StringConverter::parseColor(sz);
+		pt.mColorEnd = pt.mColor;
+
+		sz = pPT->Attribute("colorEnd");
+		if (sz)
+			pt.mColorEnd = StringConverter::parseColor(sz);
 
 		sz = pPT->Attribute("uvAnimColRow");
 		if (sz)
@@ -272,72 +306,82 @@ bool ParticleEmitter::Load(const char* filepath)
 			}
 		}
 
-		ParticleRenderObject* pro = ParticleRenderObject::GetRenderObject(pt.mTexturePath.c_str());
-		assert(pro);
-		pro->GetMaterial()->SetMaterialParameters(0, Vec4(glow, 0, 0, 0));
-		pro->GetMaterial()->RemoveShaderDefine("_INV_COLOR_BLEND");
-		pro->GetMaterial()->RemoveShaderDefine("_PRE_MULTIPLIED_ALPHA");
-		BLEND_DESC desc;
-		switch (pt.mBlendMode)
+		sz = pPT->Attribute("uvFlow");
+		if (sz)
 		{
-		case ParticleBlendMode::Additive:
-		{
-											desc.RenderTarget[0].BlendEnable = true;
-											desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-											desc.RenderTarget[0].SrcBlend = BLEND_ONE;
-											desc.RenderTarget[0].DestBlend = BLEND_ONE;
-		}
-			break;
-		case ParticleBlendMode::AlphaBlend:
-		{
-											 // desc.AlphaToCoverageEnable = true;
-											  desc.RenderTarget[0].BlendEnable = true;
-											  desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-											  desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-											  desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-
-		}
-			break;
-		case ParticleBlendMode::InvColorBlend:
-		{
-												 BLEND_DESC desc;
-												 desc.RenderTarget[0].BlendEnable = true;
-												 desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-												 desc.RenderTarget[0].SrcBlend = BLEND_INV_DEST_COLOR;
-												 desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-												 pro->GetMaterial()->AddShaderDefine("_INV_COLOR_BLEND", "1");
-		}
-			break;
-		case ParticleBlendMode::Replace:
-		{
-										  // desc.AlphaToCoverageEnable = true;
-										   desc.RenderTarget[0].BlendEnable = true;
-										   desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-										   desc.RenderTarget[0].SrcBlend = BLEND_ONE;
-										   desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-										   pro->GetMaterial()->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
-		}
-			break;
-		default:
-			assert(0);
-		}
-		if (pt.mPreMultiAlpha)
-		{
-			pro->GetMaterial()->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
-		}
-		pro->SetBlendState(desc);
-		if (glow == 0.f)
-		{
-			pro->GetMaterial()->AddShaderDefine("_NO_GLOW", "1");
-			pro->SetGlow(false);
-		}
-		else
-		{
-			pro->GetMaterial()->RemoveShaderDefine("_NO_GLOW");
-			pro->SetGlow(true);
+			pt.mUVFlow = StringConverter::parseVec2(sz);
 		}
 
-		pro->GetMaterial()->ApplyShaderDefines();
+		if (!pt.mTexturePath.empty())
+		{
+			ParticleRenderObject* pro = ParticleRenderObject::GetRenderObject(pt.mTexturePath.c_str());
+			assert(pro);
+			pro->GetMaterial()->SetMaterialParameters(0, Vec4(glow, 0, 0, 0));
+			pro->GetMaterial()->RemoveShaderDefine("_INV_COLOR_BLEND");
+			pro->GetMaterial()->RemoveShaderDefine("_PRE_MULTIPLIED_ALPHA");
+			BLEND_DESC desc;
+			switch (pt.mBlendMode)
+			{
+			case ParticleBlendMode::Additive:
+			{
+												desc.RenderTarget[0].BlendEnable = true;
+												desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+												desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+												desc.RenderTarget[0].DestBlend = BLEND_ONE;
+			}
+				break;
+			case ParticleBlendMode::AlphaBlend:
+			{
+												  // desc.AlphaToCoverageEnable = true;
+												  desc.RenderTarget[0].BlendEnable = true;
+												  desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+												  desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+												  desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+
+			}
+				break;
+			case ParticleBlendMode::InvColorBlend:
+			{
+													 BLEND_DESC desc;
+													 desc.RenderTarget[0].BlendEnable = true;
+													 desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+													 desc.RenderTarget[0].SrcBlend = BLEND_INV_DEST_COLOR;
+													 desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+													 pro->GetMaterial()->AddShaderDefine("_INV_COLOR_BLEND", "1");
+			}
+				break;
+			case ParticleBlendMode::Replace:
+			{
+											   // desc.AlphaToCoverageEnable = true;
+											   desc.RenderTarget[0].BlendEnable = true;
+											   desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+											   desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+											   desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+											   pro->GetMaterial()->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
+			}
+				break;
+			default:
+				assert(0);
+			}
+			if (pt.mPreMultiAlpha)
+			{
+				pro->GetMaterial()->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
+			}
+			pro->SetBlendState(desc);
+			if (glow == 0.f)
+			{
+				pro->GetMaterial()->AddShaderDefine("_NO_GLOW", "1");
+				pro->SetGlow(false);
+			}
+			else
+			{
+				pro->GetMaterial()->RemoveShaderDefine("_NO_GLOW");
+				pro->SetGlow(true);
+			}
+
+			pro->GetMaterial()->ApplyShaderDefines();
+		}
+		
 		pPT = pPT->NextSiblingElement();
 	}
 
@@ -472,6 +516,8 @@ bool ParticleEmitter::Update(float dt)
 					{
 						p.mLifeTime = 0.0f; // mark dead.
 						p.mCurLifeTime = 0.0f;
+						if (p.mMeshObject)
+							p.mMeshObject->DetachFromScene();
 						continue;
 					}
 				}
@@ -500,7 +546,6 @@ bool ParticleEmitter::Update(float dt)
 				{
 					p.mPosWorld = p.mPos;
 				}
-				mBoundingVolumeWorld->Merge(p.mPosWorld);
 
 				//change rot speed
 				if (!p.IsInfinite())
@@ -538,6 +583,10 @@ bool ParticleEmitter::Update(float dt)
 				if (p.mSize.y < 0.0f)
 					p.mSize.y = 0.0f;
 
+				Vec3 toSidePos = GetForward() * p.mSize.x;
+				mBoundingVolumeWorld->Merge(p.mPosWorld - pt->mPivot.x * toSidePos);
+				mBoundingVolumeWorld->Merge(p.mPosWorld + (1.0f - pt->mPivot.x) * toSidePos);
+
 				// update alpha
 				if (!p.IsInfinite())
 				{
@@ -547,6 +596,12 @@ bool ParticleEmitter::Update(float dt)
 						p.mAlpha = (1.0f - normTime) / (1.0f - pt->mFadeInOut.y);
 					else
 						p.mAlpha = 1.0f;
+
+					// update color
+					if (pt->mColor != pt->mColorEnd)
+					{
+						p.mColor = Lerp(pt->mColor, pt->mColorEnd, normTime) * mEmitterColor;
+					}
 					
 				}
 
@@ -592,9 +647,11 @@ void ParticleEmitter::UpdateEmit(float dt)
 	FB_FOREACH(itPT, (*mClonedTemplates) )
 	{
 		const ParticleTemplate& pt = *itPT;
+		if (pt.mStartAfter > mCurLifeTime)
+			continue;
 
 		unsigned alives = mAliveParticles[&pt];
-		if (alives > pt.mMaxParticle)
+		if (alives > pt.mMaxParticle && !pt.mDeleteWhenFull)
 		{
 			mNextEmits[&pt] = 0;
 			continue;
@@ -605,9 +662,22 @@ void ParticleEmitter::UpdateEmit(float dt)
 		float integral;
 		nextEmit = modf(nextEmit, &integral);
 		int num = (int)integral;
+		auto itFind = mLastEmitPos.Find(&pt);
+		Particle* p = 0;
 		for (int i=0; i<num; i++)
 		{
-			Emit(pt);
+			p = Emit(pt);
+			if (itFind != mLastEmitPos.end())
+			{
+				Vec3 toNew = p->mPos - itFind->second;
+				float length = toNew.Normalize();
+				p->mPos = itFind->second + toNew * length*((i + 1) / (float)num);
+			}
+		}
+
+		if (pt.mPosInterpolation && p)
+		{
+			mLastEmitPos[&pt] = p->mPos;
 		}
 	}
 }
@@ -623,26 +693,31 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 	{
 		PARTICLES* particles = (it->second);
 		const ParticleTemplate* pt = it->first;
-		ParticleRenderObject* pro = ParticleRenderObject::GetRenderObject(pt->mTexturePath.c_str());
-		if (pt->mAlign)
+		
+		ParticleRenderObject* pro = 0;
+		if (!pt->mTexturePath.empty())
+			pro = ParticleRenderObject::GetRenderObject(pt->mTexturePath.c_str());
+
+		if (pro && pt->mAlign)
 		{
 			pro->SetDoubleSided(true);
 		}
-		assert(pro);
 		unsigned& aliveParticle = mAliveParticles[pt];
 		aliveParticle = 0;
 		PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
-		for (; itParticle!=itEndParticle; ++itParticle)
+		for (; itParticle != itEndParticle; ++itParticle)
 		{
 			if (itParticle->IsAlive())
 				aliveParticle++;
 		}
 
-		if (aliveParticle>0)
+		if (aliveParticle > 0)
 		{
-			ParticleRenderObject::Vertex* dest = pro->Map(pt->mCross ? aliveParticle * 2 : aliveParticle);
+			ParticleRenderObject::Vertex* dest = 0;
+			if (pro)
+				dest = pro->Map(pt->mCross ? aliveParticle * 2 : aliveParticle);
 			PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
-			for (; itParticle!=itEndParticle; ++itParticle)
+			for (; itParticle != itEndParticle; ++itParticle)
 			{
 				Particle& p = *itParticle;
 				if (p.IsAlive())
@@ -666,7 +741,7 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 									udirBackup = udir;
 									vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
 									vdirBackup = vdir;
-								}									
+								}
 								else
 								{
 									// crossed additional plane
@@ -675,29 +750,40 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 								}
 							}
 						}
-						dest->mPos = p.mPosWorld;
-						dest->mUDirection_Intensity = Vec4(udir.x, udir.y, udir.z, p.mIntensity);
-						dest->mVDirection = vdir;
 						Vec2 size = p.mSize;
-						if (pt->mStretchMax>0.f)
+						if (pt->mStretchMax > 0.f)
 						{
 							size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (GetPos() - GetPrevPos()).Length() / dt*0.1f - mDistToCam*.1f));
 						}
-						dest->mPivot_Size = Vec4(pt->mPivot.x, pt->mPivot.y, size.x, size.y);
-						dest->mRot_Alpha_uv = Vec4(p.mRot, p.mAlpha, p.mUVIndex.x, p.mUVIndex.y);
-						dest->mUVStep = p.mUVStep;
-						dest->mColor = p.mColor;
-						dest++;
+						if (dest)
+						{
+							dest->mPos = p.mPosWorld;
+							dest->mUDirection_Intensity = Vec4(udir.x, udir.y, udir.z, p.mIntensity);
+							dest->mVDirection = vdir;
+							dest->mPivot_Size = Vec4(pt->mPivot.x, pt->mPivot.y, size.x, size.y);
+							dest->mRot_Alpha_uv = Vec4(p.mRot, p.mAlpha,
+								p.mUVIndex.x - pt->mUVFlow.x * p.mCurLifeTime, p.mUVIndex.y - pt->mUVFlow.y * p.mCurLifeTime);
+							dest->mUVStep = p.mUVStep;
+							dest->mColor = p.mColor;
+							dest++;
+						}
+						else // geometry
+						{
+							p.mMeshObject->SetPos(p.mPosWorld);
+							p.mMeshObject->SetDir(GetForward());
+						}
+							
 					}
 				}
 			}
-			pro->Unmap();
+			if (pro)
+				pro->Unmap();
 		}
 	}
 }
 
 //-----------------------------------------------------------------------------
-size_t ParticleEmitter::Emit(const ParticleTemplate& pt)
+IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 {
 	PARTICLES& particles = *(mParticles[&pt]);
 	size_t addedPos = particles.push_back(Particle());
@@ -767,8 +853,30 @@ size_t ParticleEmitter::Emit(const ParticleTemplate& pt)
 	}
 		break;
 	}
+	float angle = pt.mDefaultDirection.AngleBetween(GetForward());
+	Vec3 posOffset = pt.mPosOffset;
+	if (pt.mPosOffset != Vec3::ZERO && pt.mEmitTo == ParticleEmitTo::WorldSpace)
+	{
+		if (angle > 0.01f)
+		{
+			Vec3 axis = pt.mDefaultDirection.Cross(GetForward());
+			axis.Normalize();
+			Quat matchRot(angle, axis);
+			posOffset = matchRot * posOffset;
+		}
+	}
+	p.mPos += posOffset;
 
-	p.mVelDir = Random(pt.mVelocityDirMin, pt.mVelocityDirMax).NormalizeCopy();
+	Vec3 velDir = Random(pt.mVelocityDirMin, pt.mVelocityDirMax).NormalizeCopy();	
+	if (angle > 0.01f)
+	{
+		Vec3 axis = pt.mDefaultDirection.Cross(GetForward());
+		axis.Normalize();
+		Quat matchRot(angle, axis);
+		velDir = matchRot * velDir;
+	}
+
+	p.mVelDir = velDir;
 	p.mVelocity = Random(pt.mVelocityMinMax.x, pt.mVelocityMinMax.y);
 	if (pt.mAlign == ParticleAlign::Billboard)
 	{
@@ -797,6 +905,10 @@ size_t ParticleEmitter::Emit(const ParticleTemplate& pt)
 	float size = Random(pt.mSizeMinMax.x, pt.mSizeMinMax.y);
 	float ratio = Random(pt.mSizeRatioMinMax.x, pt.mSizeRatioMinMax.y);
 	p.mSize = Vec2(size * ratio, size);
+	if (mLength != 0 && pt.mAlign == ParticleAlign::Direction)
+	{
+		p.mSize.x = p.mSize.x * (mLength / size);
+	}
 
 	float scalevel = Random(pt.mScaleVelMinMax.x, pt.mScaleVelMinMax.y);
 	float svratio = Random(pt.mScaleVelRatio.x, pt.mScaleVelRatio.y);
@@ -805,11 +917,19 @@ size_t ParticleEmitter::Emit(const ParticleTemplate& pt)
 	p.mRotSpeed = Random(pt.mRotSpeedMinMax.x, pt.mRotSpeedMinMax.y);
 	p.mIntensity = Random(pt.mIntensityMinMax.x, pt.mIntensityMinMax.y);
 	p.mColor = pt.mColor * mEmitterColor;
-	return addedPos;
+	if (!pt.mGeometryPath.empty())
+	{
+		if (!p.mMeshObject)
+			p.mMeshObject = (IMeshObject*)pt.mMeshObject->Clone();
+		p.mMeshObject->AttachToScene();
+		p.mMeshObject->SetPos(p.mPosWorld);
+		p.mMeshObject->SetDir(GetForward());
+	}
+	return &p;
 }
 
 //-----------------------------------------------------------------------------
-size_t ParticleEmitter::Emit(unsigned templateIdx)
+IParticleEmitter::Particle* ParticleEmitter::Emit(unsigned templateIdx)
 {
 	assert(templateIdx < mClonedTemplates->size());
 	const ParticleTemplate& pt = (*mClonedTemplates)[templateIdx];
@@ -835,6 +955,32 @@ void ParticleEmitter::SetBufferSize(unsigned size)
 	{
 		mParticles[&(*it)]->Init(size);
 	}
+}
+
+void ParticleEmitter::SetLength(float len)
+{
+	if (mLength == len)
+		return;
+	mLength = len;
+	FB_FOREACH(it, mParticles)
+	{
+		PARTICLES* particles = (it->second);
+		const ParticleTemplate* pt = it->first;
+		if (pt->mAlign == ParticleAlign::Direction)
+		{
+			float size = Random(pt->mSizeMinMax.x, pt->mSizeMinMax.y);
+			float ratio = Random(pt->mSizeRatioMinMax.x, pt->mSizeRatioMinMax.y);
+			PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
+			for (; itParticle != itEndParticle; ++itParticle)
+			{				
+				itParticle->mSize = Vec2(size * ratio, size);
+				if (mLength != 0)
+				{
+					itParticle->mSize.x = itParticle->mSize.x * (mLength / size);
+				}
+			}
+		}
+	}	
 }
 
 ////-----------------------------------------------------------------------------

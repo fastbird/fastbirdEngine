@@ -41,6 +41,9 @@ namespace fastbird
 
 		// do not call directly. use FB_SET_DEVICE_DEBUG_NAME define.
 		virtual void SetDebugName(const char*) = 0;
+
+		// for game. in the engine use smartptr instead of this.
+		virtual void Delete() = 0;
 	};
 }
 

@@ -83,13 +83,8 @@ void RendererD3D11::Deinit()
 	mRasterizerMap.clear();
 	mBlendMap.clear();
 	mDepthStencilMap.clear();
-	{
-		auto it = mSamplerMap.begin(), itEnd = mSamplerMap.end();
-		for (; it != itEnd; it++)
-		{
-			SAFE_RELEASE(it->second);
-		}
-	}	
+	mSamplerMap.clear();
+
 	m_pImmediateContext->ClearState();
 	SAFE_RELEASE(m_pWireframeRasterizeState);
 	SAFE_RELEASE(m_pMaterialParametersBuffer);
@@ -166,7 +161,7 @@ bool RendererD3D11::Init(int threadPool)
 
 	UINT createDeviceFlags = 0;
 #ifdef _DEBUG
-		//createDeviceFlags = D3D11_CREATE_DEVICE_DEBUG;
+		createDeviceFlags = D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	D3D_DRIVER_TYPE driverTypes[] = 
@@ -204,7 +199,7 @@ bool RendererD3D11::Init(int threadPool)
 	
 	unsigned msQuality = 0;	
 	unsigned msCount = 1;
-	hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, msCount, &msQuality);
+	hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R32G32B32A32_FLOAT, msCount, &msQuality);
 	if (SUCCEEDED(hr))
 	{
 		hr = m_pDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R32G32B32A32_FLOAT, msCount, &msQuality);
@@ -255,6 +250,8 @@ bool RendererD3D11::Init(int threadPool)
 	mFrameConstants.gView.MakeIdentity();
 	mFrameConstants.gInvView.MakeIdentity();
 	mFrameConstants.gViewProj.MakeIdentity();
+	mFrameConstants.gInvViewProj.MakeIdentity();
+	mFrameConstants.gLightViewProj.MakeIdentity();
 	mFrameConstants.gDirectionalLightDir_Intensity = Vec4(1.f, -.5f, .5f, 1.f);
 	mFrameConstants.gDirectionalLightDiffuse = Vec4(1.f, 1.f, 1.f, 1.f);
 	mFrameConstants.gDirectionalLightSpecular = Vec4(1.f, 1.f, 1.f, 1.f);
@@ -470,6 +467,8 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 	{
 		mWidth = width;
 		mHeight = height;
+		mCropWidth = width - width % 8;
+		mCropHeight = height - height % 8;
 		m_pSwapChain = pSwapChain;
 		m_pRenderTargetView = pRenderTargetView;
 		m_pDepthStencilView = pDepthStencilView;
@@ -534,6 +533,10 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 		mFrameConstants.gInvView = mCamera->GetInvViewMat();
 		mFrameConstants.gViewProj = mCamera->GetViewProjMat();
 		mFrameConstants.gInvViewProj = mCamera->GetInvViewProjMat();
+		ILight* pLight = GetDirectionalLight();
+		ICamera* pLightCam = pLight ? pLight->GetCamera() : 0;
+		if (pLightCam)
+			mFrameConstants.gLightViewProj = pLightCam->GetViewProjMat();
 	}
 	else
 	{
@@ -545,6 +548,7 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 	mFrameConstants.gDirectionalLightSpecular = float4(pLight->GetSpecular(), 1.0f);
 	mFrameConstants.gCameraPos = mCamera->GetPos();
 	mFrameConstants.gTime = gFBEnv->pTimer->GetTime();
+	mFrameConstants.gDeltaTime.x = gFBEnv->pTimer->GetDeltaTime();
 	long x, y;
 	gFBEnv->pEngine->GetMousePos(x, y);
 	mFrameConstants.gMousePos.x = (float)x;
@@ -566,7 +570,16 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 
 void RendererD3D11::ClearState()
 {
+	// do not use if possible.
 	m_pImmediateContext->ClearState();
+
+	for (int i = 0; i < SAMPLERS::NUM; ++i)
+	{
+		assert(mDefaultSamplers[i] != 0);
+		__super::SetSamplerState((SAMPLERS::Enum)i, BINDING_SHADER_PS, i);
+	}
+
+	__super::SetSamplerState(SAMPLERS::POINT, BINDING_SHADER_VS, SAMPLERS::POINT);
 }
 
 //----------------------------------------------------------------------------
@@ -613,6 +626,7 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	pRareConstants->gScreenSize.y = (float)mHeight;
 	pRareConstants->gTangentTheta = tan(mCamera->GetFOV()/2.0f);
 	pRareConstants->gScreenRatio = mWidth / (float)mHeight;
+	pRareConstants->gMiddleGray_Star_Bloom_Empty = Vec4(mMiddleGray, mStarPower, mBloomPower, 0);
 	pRareConstants->gFogColor = gFBEnv->pEngine->GetScene()->GetFogColor().GetVec4();
 	m_pImmediateContext->Unmap(m_pRareConstantsBuffer, 0);
 	m_pImmediateContext->VSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
@@ -660,13 +674,20 @@ unsigned RendererD3D11::GetMultiSampleCount() const
 //----------------------------------------------------------------------------
 IRenderToTexture* RendererD3D11::CreateRenderToTexture(bool everyframe)
 {
-	mRenderToTextures.push_back(FB_NEW(RenderToTextureD3D11));
-	mRenderToTextures.back()->SetEveryFrame(everyframe);
-	return mRenderToTextures.back();
+	if (everyframe)
+	{
+		mRenderToTextures.push_back(FB_NEW(RenderToTextureD3D11));
+		return mRenderToTextures.back();
+	}
+	else
+	{
+		return FB_NEW(RenderToTextureD3D11);
+	}
 }
 
 void RendererD3D11::DeleteRenderToTexture(IRenderToTexture* removeRT)
 {
+	FB_DELETE(removeRT);
 	mRenderToTextures.erase(
 		std::remove(mRenderToTextures.begin(), mRenderToTextures.end(), removeRT),
 		mRenderToTextures.end());		
@@ -707,6 +728,14 @@ void RendererD3D11::Present()
 void RendererD3D11::SetVertexBuffer(unsigned int startSlot, unsigned int numBuffers,
 	IVertexBuffer* pVertexBuffers[], unsigned int strides[], unsigned int offsets[])
 {
+	if (numBuffers == 0 && pVertexBuffers == 0)
+	{
+		ID3D11Buffer* pHardwareBuffers[1] = { 0 };
+		unsigned strides[1] = { 0 };
+		unsigned offsets[1] = { 0 };
+		m_pImmediateContext->IASetVertexBuffers(0, 1, pHardwareBuffers, strides, offsets);
+		return;
+	}
 	ID3D11Buffer* pHardwareBuffers[32]={0};
 	for (int i=0; i<(int)numBuffers; i++)
 	{
@@ -733,16 +762,13 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTexture);
 	
 	ID3D11ShaderResourceView* pSRV = pTextureD3D11 ? pTextureD3D11->GetHardwareResourceView() : 0;
-	ID3D11SamplerState* pSamplerState = pTextureD3D11 ? pTextureD3D11->GetSamplerState() : 0;
 	switch(shaderType)
 	{
 	case BINDING_SHADER_VS:
 		m_pImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
-		m_pImmediateContext->VSSetSamplers(slot, 1, &pSamplerState);
 		break;
 	case BINDING_SHADER_PS:
 		m_pImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
-		m_pImmediateContext->PSSetSamplers(slot, 1, &pSamplerState);
 		break;
 	default:
 		assert(0);
@@ -753,7 +779,6 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 void RendererD3D11::SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot)
 {
 	std::vector<ID3D11ShaderResourceView*> rvs;
-	std::vector<ID3D11SamplerState*> samplers;
 	rvs.reserve(num);
 	for (int i = 0; i < num; i++)
 	{
@@ -761,12 +786,10 @@ void RendererD3D11::SetTextures(ITexture* pTextures[], int num, BINDING_SHADER s
 		if (pTextureD3D11)
 		{
 			rvs.push_back(pTextureD3D11->GetHardwareResourceView());
-			samplers.push_back(pTextureD3D11->GetSamplerState());
 		}
 		else
 		{
 			rvs.push_back(0);
-			samplers.push_back(0);
 		}
 	}
 
@@ -774,11 +797,9 @@ void RendererD3D11::SetTextures(ITexture* pTextures[], int num, BINDING_SHADER s
 	{
 	case BINDING_SHADER_VS:
 		m_pImmediateContext->VSSetShaderResources(startSlot, num, &rvs[0]);
-		m_pImmediateContext->VSSetSamplers(startSlot, num, &samplers[0]);
 		break;
 	case BINDING_SHADER_PS:
 		m_pImmediateContext->PSSetShaderResources(startSlot, num, &rvs[0]);
-		m_pImmediateContext->PSSetSamplers(startSlot, num, &samplers[0]);
 		break;
 	default:
 		assert(0);
@@ -1297,6 +1318,7 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 
 	if (type & TEXTURE_TYPE_DEPTH_STENCIL_SRV)
 	{
+		assert(format == PIXEL_FORMAT_D32_FLOAT);
 		if (format != PIXEL_FORMAT_R32_TYPELESS)
 		{
 			Log("Forcing shader bindable depth buffer format to PIXEL_FORMAT_R32_TYPELESS");
@@ -1838,6 +1860,12 @@ void RendererD3D11::SetInputLayout(IInputLayout* pInputLayout)
 {
 	if (pInputLayout == mBindedInputLayout)
 		return;
+	if (!pInputLayout)
+	{
+		m_pImmediateContext->IASetInputLayout(0);
+		mBindedInputLayout = 0;
+		return;
+	}
 
 	InputLayoutD3D11* pInputLayoutD3D11 = static_cast<InputLayoutD3D11*>(pInputLayout);
 	ID3D11InputLayout* pLayout = pInputLayoutD3D11->GetHardwareInputLayout();
@@ -2034,31 +2062,6 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 }
 
 //----------------------------------------------------------------------------
-void RendererD3D11::SetTextureSamplerState(ITexture* pTexture, const SAMPLER_DESC& desc)
-{
-	TextureD3D11* pD3D11Texture = static_cast<TextureD3D11*>(pTexture);
-	auto find = mSamplerMap.find(desc);
-	if (find == mSamplerMap.end())
-	{
-		ID3D11SamplerState* pSamplerState = 0;
-		D3D11_SAMPLER_DESC d3d11desc;
-		ConvertStructD3D11(d3d11desc, desc);
-		HRESULT hr = m_pDevice->CreateSamplerState(&d3d11desc, &pSamplerState);
-		if (FAILED(hr))
-		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create sampler state!");
-			assert(0);
-		}
-		mSamplerMap[desc] = pSamplerState;
-		pSamplerState->AddRef();
-		pD3D11Texture->SetSamplerState(pSamplerState);
-		return;
-	}
-	find->second->AddRef();
-	pD3D11Texture->SetSamplerState(find->second);
-}
-
-//----------------------------------------------------------------------------
 IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& desc)
 {
 	size_t numRS = 0;
@@ -2144,7 +2147,7 @@ IDepthStencilState* RendererD3D11::CreateDepthStencilState( const DEPTH_STENCIL_
 		}
 		pDSSD3D11 = FB_NEW(DepthStencilStateD3D11);
 		mDepthStencilMap[desc] = pDSSD3D11;
-		pDSSD3D11->SetHardwareBlendState(pHardwareState);
+		pDSSD3D11->SetHardwareDSState(pHardwareState);
 		char buff[255];
 		sprintf_s(buff, "DepthStencilState(%u)", numDepthStencilStates++);
 		FB_SET_DEVICE_DEBUG_NAME(pDSSD3D11, buff);
@@ -2154,6 +2157,37 @@ IDepthStencilState* RendererD3D11::CreateDepthStencilState( const DEPTH_STENCIL_
 		pDSSD3D11 = find->second;
 	}
 	return pDSSD3D11;
+}
+
+//----------------------------------------------------------------------------
+ISamplerState* RendererD3D11::CreateSamplerState(const SAMPLER_DESC& desc)
+{
+	static size_t numSamplerStates = 0;
+	SamplerStateD3D11* pSSD3D11 = 0;
+	auto find = mSamplerMap.find(desc);
+	if (find == mSamplerMap.end())
+	{
+		ID3D11SamplerState* pSamplerState = 0;
+		D3D11_SAMPLER_DESC d3d11desc;
+		ConvertStructD3D11(d3d11desc, desc);
+		HRESULT hr = m_pDevice->CreateSamplerState(&d3d11desc, &pSamplerState);
+		if (FAILED(hr))
+		{
+			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create sampler state!");
+			assert(0);
+		}
+		pSSD3D11 = FB_NEW(SamplerStateD3D11);
+		mSamplerMap[desc] = pSSD3D11;
+		pSSD3D11->SetHardwareSamplerState(pSamplerState);
+		char buff[255];
+		sprintf_s(buff, "SamplerState(%u)", numSamplerStates++);
+		FB_SET_DEVICE_DEBUG_NAME(pSSD3D11, buff);
+	}
+	else
+	{
+		pSSD3D11 = find->second;
+	}
+	return pSSD3D11;
 }
 
 //----------------------------------------------------------------------------
@@ -2183,8 +2217,27 @@ void RendererD3D11::SetDepthStencilState(IDepthStencilState* pDepthStencilState,
 	if (mLockDepthStencil)
 		return;
 	DepthStencilStateD3D11* pDSSD11 = (DepthStencilStateD3D11*)pDepthStencilState;
-	m_pImmediateContext->OMSetDepthStencilState(pDSSD11->GetHardwareBlendState(),
+	m_pImmediateContext->OMSetDepthStencilState(pDSSD11->GetHardwareDSState(),
 		stencilRef);
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot)
+{
+	SamplerStateD3D11* pSamplerStateD3D11 = (SamplerStateD3D11*)pSamplerState;
+	ID3D11SamplerState* pSS = pSamplerStateD3D11->GetHardwareSamplerState();
+	switch (shader)
+	{
+	case BINDING_SHADER_VS:
+		m_pImmediateContext->VSSetSamplers(slot, 1, &pSS);
+		break;
+	case BINDING_SHADER_PS:
+		m_pImmediateContext->PSSetSamplers(slot, 1, &pSS);
+		break;
+	default:
+		assert(0);
+	}
+	
 }
 
 void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color)
@@ -2229,13 +2282,21 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 void RendererD3D11::DrawFullscreenQuad(IShader* pixelShader, bool farside)
 {
 	// vertex buffer
-	mQuadInputLayout->Bind();
-	BindFullscreenQuadUV_VB(farside);
-	mFullscreenQuadVS->BindVS();
-	pixelShader->BindPS();
+	
+	if (farside)
+		mFullscreenQuadVSFar->BindVS();
+	else
+		mFullscreenQuadVSNear->BindVS();
+	
+	if (pixelShader)
+		pixelShader->BindPS();
 
+	SetInputLayout(0);
+	SetGSShader(0);
 	// draw
-	Draw(4, 0);
+	// using full screen triangle : http://blog.naver.com/jungwan82/220108100698
+	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Draw(3, 0);
 }
 
 void RendererD3D11::DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 

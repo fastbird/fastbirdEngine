@@ -1,4 +1,5 @@
 #include <CommonLib/StdAfx.h>
+#include <CommonLib/Math/fbMath.h>
 #include "Vec2.h"
 namespace fastbird
 {
@@ -10,7 +11,7 @@ namespace fastbird
 	{
 		if (x < other.x)
 			return true;
-		else if (x==other.x)
+		else if (IsEqual(x, other.x, EPSILON))
 			return y<other.y;
 
 		return false;

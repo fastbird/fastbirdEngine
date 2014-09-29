@@ -1,0 +1,31 @@
+== 2014-06-05 ==
+* The matter faster than light. : neutrino. => not true. can create neutrino laser cannon. invisible long range. neutrino is not reactant to light.
+* dark matter: dark matter constitue 84.5% of the total matter in the universe. Tt could be the unlimited energy source.
+* massive compact halo object (MACHO) : invisible planets which contains a lot of resources. Hard to find. if player found, he will get many parts.
+* gravitational lensing: Huge gravity can make lights bending. can interfere enemy sight.
+
+== 2014-06-15 ==
+* Drama
+* Escape or love.
+* Betrayal and belief
+* military academy for fighers
+
+[[File:parts.gif]]
+
+== 2014-06-23 Cross platform libraries ==
+* http://www.monogame.net : A library for creating cross platform games using C#.
+* http://libgdx.badlogicgames.com/ : Libgdx is a Java game development framework that provides a unified API that works across all supported platforms
+
+
+== 2014-06-24 tinydir ==
+* https://github.com/cxong/tinydir : Wrapper for handling file and directory. I like this one. very simple and neat.
+
+
+== 2014-06-25 tools ==
+* Substance Designer : material layering tool.
+* Substance Painter : 3d painting app to create textures. has texturepack.
+* Substance YEBIS : YEBIS 2 is a multi-platform postprocess-effect library that can be easily integrated into any already existing rendering engine.
+
+
+== 2014-06-27 dae importer and voxelizer ui ==
+[[File:dae2voxel_ui.gif]]

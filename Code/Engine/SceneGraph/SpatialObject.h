@@ -4,6 +4,7 @@
 
 #include <Engine/Foundation/Object.h>
 #include <CommonLib/Math/Transformation.h>
+#include <CommonLib/CollisionShape.h>
 
 namespace fastbird
 {
@@ -32,15 +33,23 @@ namespace fastbird
 		Vec3 GetForward() { return mTransformation.GetForward(); }
 		Vec3 GetUp() { return mTransformation.GetUp();}
 
-		void CameraTargetingYou(ICamera* pCam) { mCameraTargeting = pCam; }
 		const Vec3& GetPrevPos() const { return mPrevPos; }
+
+		// own
+		virtual unsigned GetNumCollisionShapes() const { return 0; }
+		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { assert(0); return 0; }
+
+	private:
+		friend class Camera;
+		void AddCameraTargetingMe(ICamera* pCam);
+		void RemoveCameraTargetingMe(ICamera* pCam);
 
 	protected:
 		Transformation mTransformation;
 		Vec3 mPrevPos;
 		float mDistToCam;
 		bool mTransformChanged;
-		ICamera* mCameraTargeting;
+		std::vector<ICamera*> mCameraTargetingMe;
 
 	};
 }

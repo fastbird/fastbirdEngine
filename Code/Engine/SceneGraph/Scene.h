@@ -31,7 +31,7 @@ namespace fastbird
 		virtual ISkySphere* GetSkySphere() const {return mSkySphere;}
 		virtual void SetSkipSpatialObjects(bool skip);
 
-		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject);
+		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false);
 		virtual void ClearEverySpatialObject();
 
 		virtual void PreRender();

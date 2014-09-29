@@ -192,7 +192,9 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 	static FontVertex vertices[MAX_BATCH];
 
 	int page = -1;
-	y -= mScale * float(mBase);
+	y -= mScale * float(mFontHeight);
+	float starty = y;
+	y += mScale * mBase;
 	unsigned int batchingVertices = 0;
 	for( int n = 0; n < count; )
 	{
@@ -233,7 +235,7 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		}
 
 		float left = x+ox;
-		float top = y+oy;
+		float top = starty+oy;
 		float right = left + w;
 		float bottom = top + h;
 
@@ -305,7 +307,7 @@ void Font::Write(float x, float y, float z, unsigned int color,
 //----------------------------------------------------------------------------
 void Font::SetHeight(float h)
 {
-	mScale = h / float(mBase);
+	mScale = h / float(mFontHeight);
 }
 
 void Font::SetBackToOrigHeight()
@@ -316,7 +318,7 @@ void Font::SetBackToOrigHeight()
 //----------------------------------------------------------------------------
 float Font::GetHeight() const
 {
-	return mScale * mBase;
+	return mScale * mFontHeight;
 }
 
 //----------------------------------------------------------------------------
@@ -514,7 +516,7 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 	font->mPages[id] = gFBEnv->pEngine->GetRenderer()->CreateTexture(str.c_str());
 	font->mPages[id]->SetShaderStage(BINDING_SHADER_PS);
 	font->mPages[id]->SetSlot(0);
-	font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
+	//font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 
 	//font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 	

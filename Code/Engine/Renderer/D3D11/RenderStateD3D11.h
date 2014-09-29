@@ -68,10 +68,32 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		// OWN Interfacec
 		//--------------------------------------------------------------------
-		void SetHardwareBlendState(ID3D11DepthStencilState* pDepthStencilState);
-		ID3D11DepthStencilState* GetHardwareBlendState() const { return mDepthStencilState; }
+		void SetHardwareDSState(ID3D11DepthStencilState* pDepthStencilState);
+		ID3D11DepthStencilState* GetHardwareDSState() const { return mDepthStencilState; }
 
 	private:
 		ID3D11DepthStencilState* mDepthStencilState;
+	};
+
+	class SamplerStateD3D11 : public ISamplerState
+	{
+	public:
+		SamplerStateD3D11();
+		virtual ~SamplerStateD3D11();
+
+		//--------------------------------------------------------------------
+		// ISamplerState Interfacec
+		//--------------------------------------------------------------------
+		virtual void Bind(BINDING_SHADER shader, int slot);
+		virtual void SetDebugName(const char* name);
+
+		//--------------------------------------------------------------------
+		// OWN Interfacec
+		//--------------------------------------------------------------------
+		void SetHardwareSamplerState(ID3D11SamplerState* pSamplerState);
+		ID3D11SamplerState* GetHardwareSamplerState() const { return mSamplerState; }
+
+	private:
+		ID3D11SamplerState* mSamplerState;
 	};
 }

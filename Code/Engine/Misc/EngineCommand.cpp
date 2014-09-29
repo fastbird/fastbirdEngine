@@ -20,6 +20,15 @@ EngineCommand::EngineCommand()
 	MouseSens = gFBEnv->pScriptSystem->GetRealVariable("MouseSens", 0.03f);
 	REGISTER_CVAR(MouseSens, MouseSens, CVAR_CATEGORY_CLIENT, "MouseSensitivity");
 
+	UI_Debug = gFBEnv->pScriptSystem->GetIntVariable("UI_Debug", 0);
+	REGISTER_CVAR(UI_Debug, UI_Debug, CVAR_CATEGORY_CLIENT, "UI debug");
+
+	e_NoMeshLoad = gFBEnv->pScriptSystem->GetIntVariable("e_NoMeshLoad", 0);
+	REGISTER_CVAR(e_NoMeshLoad, e_NoMeshLoad, CVAR_CATEGORY_CLIENT, "NoMeshLoad");
+	
+	e_profile = gFBEnv->pScriptSystem->GetIntVariable("e_profile", 0);
+	REGISTER_CVAR(e_profile, e_profile, CVAR_CATEGORY_CLIENT, "enable profiler");
+
 	r_noObjectConstants = gFBEnv->pScriptSystem->GetIntVariable("r_noObjectConstants", 0);
 	REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
 
@@ -31,6 +40,15 @@ EngineCommand::EngineCommand()
 
 	r_HDR = gFBEnv->pScriptSystem->GetIntVariable("r_HDR", 1);
 	REGISTER_CVAR(r_HDR, r_HDR, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
+
+	r_HDRMiddleGray = gFBEnv->pScriptSystem->GetRealVariable("r_HDRMiddleGray", 0.5f);
+	REGISTER_CVAR(r_HDRMiddleGray, r_HDRMiddleGray, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
+
+	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.1f);
+	REGISTER_CVAR(r_BloomPower, r_BloomPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
+
+	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.2f);
+	REGISTER_CVAR(r_StarPower, r_StarPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
 	r_GodRay = gFBEnv->pScriptSystem->GetIntVariable("r_GodRay", 1);
 	REGISTER_CVAR(r_GodRay, r_GodRay, CVAR_CATEGORY_CLIENT, "enable GodRay rendering");
@@ -53,11 +71,12 @@ EngineCommand::EngineCommand()
 	r_Glow = gFBEnv->pScriptSystem->GetIntVariable("r_Glow", 1);
 	REGISTER_CVAR(r_Glow, r_Glow, CVAR_CATEGORY_CLIENT, "Glow");
 
-	UI_Debug = gFBEnv->pScriptSystem->GetIntVariable("UI_Debug", 0);
-	REGISTER_CVAR(UI_Debug, UI_Debug, CVAR_CATEGORY_CLIENT, "UI debug");
 
-	e_profile = gFBEnv->pScriptSystem->GetIntVariable("e_profile", 1);
-	REGISTER_CVAR(e_profile, e_profile, CVAR_CATEGORY_CLIENT, "enable profiler");
+	r_UI = gFBEnv->pScriptSystem->GetIntVariable("r_UI", 1);
+	REGISTER_CVAR(r_UI, r_UI, CVAR_CATEGORY_CLIENT, "UI Rendering");
+
+	r_Shadow = gFBEnv->pScriptSystem->GetIntVariable("r_Shadow", 1);
+	REGISTER_CVAR(r_Shadow, r_Shadow, CVAR_CATEGORY_CLIENT, "enable shadow");
 
 	REGISTER_CVAR(MoveEditParticle, 0, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
 

@@ -234,6 +234,11 @@ WCHAR* AnsiToWide(const char* source, int size)
 	return wideBuffer;
 }
 
+WCHAR* AnsiToWide(const char* source)
+{
+	return AnsiToWide(source, strlen(source));
+}
+
 // return data is temporary data. save it to other memory if you need
 WCHAR* UTF8ToWide(const unsigned char* source)
 {

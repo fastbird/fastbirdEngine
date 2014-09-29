@@ -109,8 +109,39 @@ void DepthStencilStateD3D11::SetDebugName(const char* name)
 }
 
 //----------------------------------------------------------------------------
-void DepthStencilStateD3D11::SetHardwareBlendState(ID3D11DepthStencilState* pDepthStencilState)
+void DepthStencilStateD3D11::SetHardwareDSState(ID3D11DepthStencilState* pDepthStencilState)
 {
 	SAFE_RELEASE(mDepthStencilState);
 	mDepthStencilState = pDepthStencilState;
+}
+
+//----------------------------------------------------------------------------
+// Sampler STATE
+//----------------------------------------------------------------------------
+
+SamplerStateD3D11::SamplerStateD3D11()
+:mSamplerState(0)
+{
+
+}
+SamplerStateD3D11::~SamplerStateD3D11()
+{
+	SAFE_RELEASE(mSamplerState);
+}
+
+void SamplerStateD3D11::Bind(BINDING_SHADER shader, int slot)
+{
+	gFBEnv->pEngine->GetRenderer()->SetSamplerState(this, shader, slot);
+}
+
+void SamplerStateD3D11::SetDebugName(const char* name)
+{
+	if (mSamplerState)
+		mSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+}
+
+void SamplerStateD3D11::SetHardwareSamplerState(ID3D11SamplerState* pSamplerState)
+{
+	SAFE_RELEASE(mSamplerState);
+	mSamplerState = pSamplerState;
 }

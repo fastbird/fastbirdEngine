@@ -118,6 +118,15 @@
       <Filter>Threading</Filter>
     </ClInclude>
     <ClInclude Include="MemoryManager.h" />
+    <ClInclude Include="CollisionShape.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="ColShape.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="Curve.h" />
+    <ClInclude Include="CurveImporter.h" />
+    <ClInclude Include="CurveManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -200,5 +209,11 @@
       <Filter>Threading</Filter>
     </ClCompile>
     <ClCompile Include="MemoryManager.cpp" />
+    <ClCompile Include="CollisionShape.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="Curve.cpp" />
+    <ClCompile Include="CurveImporter.cpp" />
+    <ClCompile Include="CurveManager.cpp" />
   </ItemGroup>
 </Project>

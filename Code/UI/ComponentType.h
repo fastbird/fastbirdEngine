@@ -23,6 +23,11 @@ namespace fastbird
 			CardScroller,
 			CardItem,
 			VerticalGauge,
+			HorizontalGauge,
+			NumericUpDown,
+			DropDown,
+
+			NUM
 		};
 		static const char* strings[] = 
 		{
@@ -43,11 +48,14 @@ namespace fastbird
 			"CardScroller",
 			"CardItem",
 			"VerticalGauge",
+			"HorizontalGauge",
+			"NumericUpDown",
+			"DropDown",
 		};
 		
 		inline const char* ConvertToString(ComponentType::Enum e)
 		{
-			assert(e >= Window && e <= VerticalGauge);
+			assert(e >= Window && e < NUM);
 			return strings[e];
 		}
 
@@ -87,6 +95,13 @@ namespace fastbird
 				return CardItem;
 			if (stricmp(sz, "VerticalGauge") == 0)
 				return VerticalGauge;
+			if (stricmp(sz, "HorizontalGauge") == 0)
+				return HorizontalGauge;
+			if (stricmp(sz, "NumericUpDown") == 0)
+				return NumericUpDown;
+			if (stricmp(sz, "DropDown") == 0)
+				return DropDown;
+
 			
 			assert(0);
 			return Window;

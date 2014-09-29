@@ -100,6 +100,11 @@ void BVaabb::AddComputeData(const Vec3* pVertices, size_t numVertices)
 	}
 }
 
+void BVaabb::AddComputeData(const Vec3& vert)
+{
+	mAABB.Merge(vert);
+}
+
 void BVaabb::EndComputeFromData()
 {
 	mCenter = mAABB.GetCenter();
@@ -152,6 +157,7 @@ void BVaabb::SetAABB(const AABB& aabb)
 {
 	mAABB = aabb;
 	mCenter = mAABB.GetCenter();
+	mRadius = (mAABB.GetMax() - mAABB.GetMin()).Length() * .5f;
 }
 
 BoundingVolume& BVaabb::operator= (const BoundingVolume& other)

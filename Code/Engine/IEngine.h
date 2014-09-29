@@ -45,6 +45,7 @@ namespace fastbird
 	class IMeshGroup;
 	class IParticleEmitter;
 	class IFileChangeListener;
+	class IObject;
 
 	class CLASS_DECLSPEC_ENGINE IEngine : public ReferenceCounter
 	{
@@ -114,7 +115,7 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
-		virtual void DeleteMeshObject(IMeshObject* p) = 0;
+		virtual void ReleaseMeshObject(IMeshObject* p) = 0;
 		virtual void DeleteMeshGroup(IMeshGroup* p) = 0;
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr) = 0;
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr) = 0;
@@ -132,6 +133,9 @@ namespace fastbird
 
 		virtual void RegisterFileChangeListener(IFileChangeListener* listener) = 0;
 		virtual void RemoveFileChangeListener(IFileChangeListener* listener) = 0;
+
+		virtual void AddMarkObject(IObject* mark) = 0;
+		virtual void RemoveMarkObject(IObject* mark) = 0;
 
 #ifdef _FBENGINE_FOR_WINDOWS_
 		// return processed

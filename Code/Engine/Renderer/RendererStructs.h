@@ -291,6 +291,7 @@ namespace fastbird
 
 	struct MapData
 	{
+		MapData() : pData(0){}
 		void* pData;
 		unsigned RowPitch;
 		unsigned DepthPitch;
@@ -394,22 +395,7 @@ namespace fastbird
 
 		bool operator<(const POSITION_NORMAL_TEXCOORD_V& other) const
 		{
-			if (p < other.p)
-			{
-				return true;
-			}
-			else if (p==other.p)
-			{
-				if (n<other.n)
-				{
-					return true;
-				}
-				else if (n==other.n)
-				{
-					return uv<other.uv;
-				}
-			}
-			return false;
+			return memcmp(this, &other, sizeof(POSITION_NORMAL_TEXCOORD_V)) < 0;
 		}
 		fastbird::Vec3 p;	// 12
 		fastbird::Vec3 n;	// 12

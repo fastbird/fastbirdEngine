@@ -22,12 +22,15 @@ public:
 	virtual void SetGaugeColor(const Color& color);
 	virtual void SetBlinkColor(const Color& color);
 
+	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+
 private:
 	float mPercentage;
 	float mMaximum;
 	Color mGaugeColor;
 	Color mBlinkColor;
 	bool mBlink;
+	float mBlinkSpeed;
 
 
 };

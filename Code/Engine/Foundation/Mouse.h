@@ -45,6 +45,8 @@ namespace fastbird
 		virtual void LockMousePos(bool lock);
 		virtual void OnKillFocus();
 		virtual void OnSetFocus();
+
+		virtual const Ray3& GetWorldRay();
 		
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
@@ -67,6 +69,9 @@ namespace fastbird
 		long mAbsXPrev;
 		long mAbsY;
 		long mAbsYPrev;
+
+		float mNPosX;
+		float mNPosY;
 
 		// this is good to use camera rotation.
 		long mLastX;
@@ -91,6 +96,9 @@ namespace fastbird
 		float mLastUpTime;
 		Vec2I mLastClickPos;
 		float mLastClickTime;
+
+		Ray3 mWorldRay;
+		bool mWorldRayCalculated;
 	};
 }
 

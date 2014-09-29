@@ -27,8 +27,7 @@ bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		return false;
 
 	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
-	Vec2 npos = mouse->GetNPos();
-	if (mouse->IsValid() && mParent->IsIn(npos))
+	if (mouse->IsValid() && mParent->IsIn(mouse))
 	{
 		long wheel = mouse->GetWheel();
 		if (wheel)

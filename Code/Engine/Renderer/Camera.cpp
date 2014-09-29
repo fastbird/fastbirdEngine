@@ -42,6 +42,11 @@ Camera::Camera()
 
 Camera::~Camera()
 {
+	if (mTarget)
+	{
+		mTarget->RemoveCameraTargetingMe(this);
+		mTarget = 0;
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -112,7 +117,7 @@ void Camera::GetNearFar(float& n, float& f) const
 //----------------------------------------------------------------------------
 void Camera::ProcessInputData()
 {
-	if (!mProcessInput || !mCurrentCamera)
+	if (!mProcessInput || !mCurrentCamera || !mTarget)
 		return;
 	if (mUserParams.Changed() || mPrevTargetPos != mTarget->GetPos())
 	{
@@ -214,6 +219,21 @@ void Camera::Update()
 		mInvViewProjMat = mViewProjMat.Inverse();
 
 		UpdateFrustum();
+
+		if (viewChanged)
+		{
+			for each (ICameraListener* var in mCamListener)
+			{
+				var->OnViewMatChanged();
+			}
+		}
+		if (projChanged)
+		{
+			for each (ICameraListener* var in mCamListener)
+			{
+				var->OnProjMatChanged();
+			}
+		}
 	}
 }
 
@@ -340,11 +360,15 @@ void Camera::PostRender()
 //----------------------------------------------------------------------------
 void Camera::SetTarget(SpatialObject* pObj)
 {
+	if (mTarget == pObj)
+		return;
+
 	if (mTarget)
-		mTarget->CameraTargetingYou(0);
+		mTarget->RemoveCameraTargetingMe(this);
+
 	mTarget = pObj;
 	if (mTarget)
-		mTarget->CameraTargetingYou(this);
+		mTarget->AddCameraTargetingMe(this);
 }
 
 //---------------------------------------------------------------------------
@@ -402,4 +426,20 @@ void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pK
 void Camera::SetEnalbeInput(bool enable)
 {
 	mProcessInput = enable;
+}
+
+void Camera::SetInitialDistToTarget(float dist)
+{
+	mInternalParams.dist = dist;
+}
+
+void Camera::RegisterCamListener(ICameraListener* p)
+{
+	assert(std::find(mCamListener.begin(), mCamListener.end(), p) == mCamListener.end());
+	mCamListener.push_back(p);
+}
+
+void Camera::UnregisterCamListener(ICameraListener* p)
+{
+	mCamListener.erase(std::remove(mCamListener.begin(), mCamListener.end(), p), mCamListener.end());
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <Engine/IColladaImporter.h>
+#include <CommonLib/ColShape.h>
 #include <COLLADAFWIWriter.h>
 namespace COLLADAFW
 {
@@ -145,5 +146,8 @@ namespace fastbird
 		std::vector< MATERIALS_PRIMITIVES > mMaterials; // materials per mesh
 
 		AUXILIARIES mAuxil;
+		
+		typedef std::vector< std::pair<ColShape::Enum, Transformation > > COLLISION_SHAPES;
+		COLLISION_SHAPES mCollisions;
 	};
 }

@@ -1,12 +1,11 @@
-#include "StdAfx.h"
-#include "InputHandler.h"
-#include "CameraMan.h"
-#include "QuickSortTask.h"
+#include <EngineApp/StdAfx.h>
+#include <EngineApp/InputHandler.h>
+#include <EngineApp/CameraMan.h>
+#include <EngineApp/QuickSortTask.h>
+#include <EngineApp/UI.h>
 #include <Engine/IVoxelizer.h>
 #include <Engine/IRenderToTexture.h>
 #include <Engine/IParticleEmitter.h>
-#include <CommonLib/threads.h>
-#include <CommonLib/Profiler.h>
 using namespace fastbird;
 
 #define RUN_PARALLEL_EXAMPLE 0
@@ -16,15 +15,33 @@ CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
 TaskScheduler* gTaskSchedular = 0;
 IMeshObject* gMeshObject = 0;
+UIs* gUI = 0;
 #define NUM_PARTICLES 50
 IParticleEmitter* gParticleEmitter[NUM_PARTICLES] = { 0 };
 std::vector< IMeshObject* > gVoxels;
+
+class FileChangeListener : public IFileChangeListener
+{
+public:
+	virtual void OnFileChanged(const char* file)
+	{
+		std::string extension = GetExtension(file);
+		if (stricmp(extension.c_str(), "ui") == 0)
+		{
+			gUI->OnUIFileChanged(file);
+		}
+	}
+};
+
+FileChangeListener gFileChangeListener;
 
 //-----------------------------------------------------------------------------
 void UpdateFrame()
 {
 	gEnv->pTimer->Tick();
-	float elapsedTime = gpTimer->GetDeltaTime();
+	float dt = gEnv->pTimer->GetDeltaTime();
+	gUI->Update(dt);
+	IUIManager::GetUIManager().Update(dt);
 	for (int i = 0; i < NUM_PARTICLES; ++i)
 	{
 		if (gParticleEmitter[i])
@@ -33,10 +50,11 @@ void UpdateFrame()
 				gParticleEmitter[i]->Active(true);
 		}
 	}
-	gEnv->pRenderer->DrawText(Vec2I(100, 200), "Press CTRL to lock the camera rotation.", Color(1, 1, 1, 1));
+	gEnv->pRenderer->DrawText(Vec2I(100, 50), "Press CTRL to lock the camera rotation.", Color(1, 1, 1, 1));
+	gEnv->pRenderer->DrawText(Vec2I(100, 80), "Press L to open example UI.", Color(1, 1, 1, 1));
 	gEnv->pEngine->UpdateInput();
-	gCameraMan->Update(elapsedTime);
-	gEnv->pEngine->UpdateFrame(elapsedTime);
+	gCameraMan->Update(dt);
+	gEnv->pEngine->UpdateFrame(dt);
 }
 
 //-----------------------------------------------------------------------------
@@ -89,10 +107,23 @@ LRESULT CALLBACK WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		gInputHandler = FB_NEW(InputHandler)();
 		gCameraMan = FB_NEW(CameraMan)(gEnv->pRenderer->GetCamera());
 		gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
+		gEnv->pEngine->RegisterFileChangeListener(&gFileChangeListener);
+		gEnv->pConsole->ProcessCommand("r_HDRMiddleGray 0.7");
 
 		gTaskSchedular = FB_NEW(TaskScheduler)(6);
 	}
 
+void InitGame()
+{
+	IUIManager::InitializeUIManager();
+	gUI = FB_NEW(UIs);
+}
+
+void DeinitGame()
+{
+	FB_DELETE(gUI);
+	IUIManager::FinalizeUIManager();
+}
 //-----------------------------------------------------------------------------
 int main()
 {
@@ -109,6 +140,9 @@ int main()
 	InitEngine();
 
 	//----------------------------------------------------------------------------
+	InitGame();
+
+	//----------------------------------------------------------------------------
 	// 2. How to create sky -  see Data/Materials/skybox.material
 	//----------------------------------------------------------------------------
 	gEnv->pEngine->CreateSkyBox();
@@ -123,6 +157,7 @@ int main()
 		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
 	}
 	
+	gUI->SetVisible(true, UIS_FLEET_UI);
 
 	//----------------------------------------------------------------------------
 	// 4. How to use voxelizer (Need to include <Engine/IVoxelizer.h>)
@@ -141,7 +176,7 @@ int main()
 		m->AttachToScene();
 	}
 	IVoxelizer::DeleteVoxelizer(voxelizer);
-	gEnv->pEngine->DeleteMeshObject(voxelObject);
+	gEnv->pEngine->ReleaseMeshObject(voxelObject);
 	voxelObject = 0;
 
 	//----------------------------------------------------------------------------
@@ -236,10 +271,10 @@ int main()
 
 	gTaskSchedular->Finalize();
 
-	gEnv->pEngine->DeleteMeshObject(gMeshObject);
+	gEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	for each (IMeshObject* var in gVoxels)
 	{
-		gEnv->pEngine->DeleteMeshObject(var);
+		gEnv->pEngine->ReleaseMeshObject(var);
 	}
 	for (int i = 0; i < NUM_PARTICLES; ++i)
 		gEnv->pEngine->ReleaseParticleEmitter(gParticleEmitter[i]);
@@ -247,6 +282,8 @@ int main()
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
 	FB_SAFE_DEL(gTaskSchedular);
+
+	DeinitGame();
 
 	if (gEnv)
 	{

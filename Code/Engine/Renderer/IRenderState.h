@@ -29,4 +29,14 @@ namespace fastbird
 		virtual void Bind(unsigned stencilRef) = 0;
 		virtual void SetDebugName(const char* name) = 0;
 	};
+
+
+	//------------------------------------------------------------------------
+	class ISamplerState : public ReferenceCounter
+	{
+	public:
+		virtual ~ISamplerState() {}
+		virtual void Bind(BINDING_SHADER shader, int slot) = 0;
+		virtual void SetDebugName(const char* name) = 0;
+	};
 }

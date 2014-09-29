@@ -22,6 +22,8 @@
 #include <CommonLib/tinydir.h>
 #include <CommonLib/Timer.h>
 #include <CommonLib/tinyxml2.h>
+#include <CommonLib/StringUtils.h>
+#include <CommonLib/Profiler.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>

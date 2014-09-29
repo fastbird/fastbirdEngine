@@ -90,7 +90,6 @@ namespace fastbird
 		mTerrain=0;
 		mSkyBox=0;
 
-		mCameras.clear();
 		FreeImage_DeInitialise();
 		std::cerr.rdbuf(mStdErrorStream);
 		mErrorStream.close();
@@ -102,6 +101,7 @@ namespace fastbird
 		mMeshObjects.clear();
 		mMeshGroups.clear();
 		mRenderer = 0;
+		mCameras.clear();
 		mConsole = 0;
 		FB_SAFE_DEL(gFBEnv->pTimer);
 		FB_SAFE_DEL(mINI);
@@ -405,7 +405,7 @@ namespace fastbird
 			{
 				for (auto it = mChangedFiles.begin(); it != mChangedFiles.end(); )
 				{
-					bool shader = CheckExtension(it->c_str(), "hlsl");
+					bool shader = CheckExtension(it->c_str(), "hlsl") || CheckExtension(it->c_str(), "h");
 					bool material = CheckExtension(it->c_str(), "material");
 					bool texture = CheckExtension(it->c_str(), "png") || CheckExtension(it->c_str(), "dds");
 					bool particle = CheckExtension(it->c_str(), "particle");
@@ -468,8 +468,7 @@ namespace fastbird
 	{
 		if (!mRenderer)
 			return;
-
-		mRenderer->SetDepthTexture(false);
+		mRenderer->BindDepthTexture(false);
 		mRenderer->SetCloudVolumeTexture(false);
 
 		static OBJECT_CONSTANTS objectConstants;
@@ -477,6 +476,7 @@ namespace fastbird
 		objectConstants.gWorldViewProj = mRenderer->GetCamera()->GetViewProjMat();
 		mRenderer->UpdateObjectConstantsBuffer(&objectConstants);
 		mRenderer->InitFrameProfiler(dt);
+		mRenderer->BindShadowMap(false);
 		// Handle RenderTargets
 		mRenderer->ProcessRenderToTexture();
 
@@ -496,6 +496,15 @@ namespace fastbird
 		{
 			mRenderer->RestoreBlendState();
 			mRenderer->RestoreDepthStencilState();
+
+			// shadow pass
+			{
+				D3DEventMarker mark("Shadow pass");
+				mRenderer->BindShadowMap(false);
+				mRenderer->PrepareShadowMapRendering();
+				scene->Render();
+				mRenderer->EndShadowMapRendering();
+			}
 			// depth pass
 			{
 				D3DEventMarker mark("Depth pass");				
@@ -503,7 +512,7 @@ namespace fastbird
 				gFBEnv->mRenderPass = RENDER_PASS::PASS_DEPTH;
 				scene->Render();
 				mRenderer->UnsetDepthRenderTarget();
-				mRenderer->SetDepthTexture(true);
+				mRenderer->BindDepthTexture(true);
 			}
 
 			// cloud pass -- also depth pass
@@ -515,7 +524,7 @@ namespace fastbird
 				mRenderer->RestoreRenderTarget();
 				mRenderer->SetCloudVolumeTexture(true);
 				mRenderer->RestoreViewports();
-				mRenderer->BindNoiseMap();
+				//mRenderer->BindNoiseMap();
 				gFBEnv->mRenderPass = RENDER_PASS::PASS_NORMAL;
 			}
 
@@ -535,12 +544,19 @@ namespace fastbird
 			{
 				// Set HDR RenderTarget
 				mRenderer->SetHDRTarget();
-				mRenderer->SetDepthTexture(true);
+				mRenderer->BindDepthTexture(true);
 				mRenderer->SetCloudVolumeTexture(true);
 				mRenderer->Clear();
 			}
 			// RENDER
-			scene->Render();
+			{
+				// Bind Shadow map
+				mRenderer->BindShadowMap(true);
+				gFBEnv->mSilouetteRendered = false;
+				scene->Render();
+				if (gFBEnv->mSilouetteRendered)
+					mRenderer->DrawSilouette();
+			}
 
 			// POST_PROCESS
 			if (mConsole->GetEngineCommand()->r_Glow)
@@ -551,12 +567,18 @@ namespace fastbird
 			{
 				mRenderer->RestoreRenderTarget();
 				mRenderer->MeasureLuminanceOfHDRTarget();
+
+				mRenderer->BrightPass();
+				mRenderer->BrightPassToStarSource();
+				mRenderer->StarSourceToBloomSource();
 				mRenderer->Bloom();
+				mRenderer->RenderStarGlare();
 				mRenderer->ToneMapping();
 			}
 		}
 
 		// RenderOthers
+		RenderMarks();
 		RenderUI();
 		RenderDebugHud();
 
@@ -655,6 +677,10 @@ namespace fastbird
 		assert(daeFilePath);
 		std::string filepath = daeFilePath;
 		ToLowerCase(filepath);
+		if (gFBEnv->pConsole->GetEngineCommand()->e_NoMeshLoad)
+		{
+			filepath = "es/objects/defaultCube.dae";
+		}
 		if (!reload)
 		{
 			auto it = mMeshObjects.find(filepath);
@@ -662,7 +688,7 @@ namespace fastbird
 				return (IMeshObject*)it->second->Clone();
 		}
 		SmartPtr<IColladaImporter> pColladaImporter = IColladaImporter::CreateColladaImporter();
-		pColladaImporter->ImportCollada(daeFilePath, desc.yzSwap, desc.oppositeCull, desc.useIndexBuffer, 
+		pColladaImporter->ImportCollada(filepath.c_str(), desc.yzSwap, desc.oppositeCull, desc.useIndexBuffer,
 			desc.mergeMaterialGroups, desc.keepMeshData, desc.generateTangent, false);
 		IMeshObject* pMeshObject = pColladaImporter->GetMeshObject();
 		
@@ -673,7 +699,7 @@ namespace fastbird
 		}
 		else
 		{
-			Log("Mesh %s is not found!", daeFilePath);
+			Log("Mesh %s is not found!", filepath.c_str());
 			return 0;
 		}
 	}
@@ -700,7 +726,7 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	void Engine::DeleteMeshObject(IMeshObject* p)
+	void Engine::ReleaseMeshObject(IMeshObject* p)
 	{
 		if (!p)
 			return;
@@ -930,9 +956,23 @@ namespace fastbird
 #endif
 
 	//----------------------------------------------------------------------------
+	void Engine::RenderMarks()
+	{
+		mRenderer->SetNoDepthStencil();
+		D3DEventMarker mark("Render Marks");
+		FB_FOREACH(it, mMarkObjects)
+		{
+			(*it)->PreRender();
+			(*it)->Render();
+			(*it)->PostRender();
+		}
+	}
+
+	//----------------------------------------------------------------------------
 	void Engine::RenderUI()
 	{
-		UI_OBJECTS::reverse_iterator it = mUIObjectsToRender.rbegin(), itEnd = mUIObjectsToRender.rend();
+		D3DEventMarker mark("RenderUI");
+		UI_OBJECTS::iterator it = mUIObjectsToRender.begin(), itEnd = mUIObjectsToRender.end();
 		for (; it!=itEnd; it++)
 		{
 			(*it)->PreRender(); // temporary :)
@@ -951,7 +991,7 @@ namespace fastbird
 	{
 		wchar_t msg[255];
 		int x = 1100;
-		int y=20;
+		int y=34;
 		int yStep = 18;
 		IFont* pFont = mRenderer->GetFont();
 		if (pFont)
@@ -1134,6 +1174,19 @@ namespace fastbird
 	{
 		mFileChangeListeners.erase(std::remove(mFileChangeListeners.begin(), mFileChangeListeners.end(), listener),
 			mFileChangeListeners.end());
+	}
+
+	//------------------------------------------------------------------------
+	void Engine::AddMarkObject(IObject* mark)
+	{
+		assert(std::find(mMarkObjects.begin(), mMarkObjects.end(), mark) == mMarkObjects.end());
+		mMarkObjects.push_back(mark);
+	}
+
+	//------------------------------------------------------------------------
+	void Engine::RemoveMarkObject(IObject* mark)
+	{
+		mMarkObjects.erase(std::remove(mMarkObjects.begin(), mMarkObjects.end(), mark), mMarkObjects.end());
 	}
 
 

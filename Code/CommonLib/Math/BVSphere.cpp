@@ -66,6 +66,13 @@ void BVSphere::AddComputeData(const Vec3* pVertices, size_t numVertices)
 }
 
 //----------------------------------------------------------------------------
+void BVSphere::AddComputeData(const Vec3& vert)
+{
+	mVertices.push_back(vert);
+}
+
+
+//----------------------------------------------------------------------------
 void BVSphere::EndComputeFromData()
 {
 	if (mVertices.empty())

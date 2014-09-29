@@ -8,6 +8,7 @@ namespace fastbird
 VerticalGauge::VerticalGauge()
 :mPercentage(0), mMaximum(1.f)
 , mBlink(false)
+, mBlinkSpeed(3.f)
 {
 	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UIVerticalGauge.material");
@@ -32,7 +33,6 @@ VerticalGauge::VerticalGauge()
 
 VerticalGauge::~VerticalGauge()
 {
-
 }
 
 void VerticalGauge::GatherVisit(std::vector<IUIObject*>& v)
@@ -44,7 +44,7 @@ void VerticalGauge::OnStartUpdate(float elapsedTime)
 	if (mBlink)
 	{
 		IMaterial* mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameters(3, Vec4(sin(gEnv->pTimer->GetTime()*3.0f)*.5f+.5f, 0, 0, 0));
+		mat->SetMaterialParameters(3, Vec4(sin(gEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
 	}
 }
 
@@ -84,6 +84,30 @@ void VerticalGauge::SetBlinkColor(const Color& color)
 	mBlinkColor = color;
 	IMaterial* mat = mUIObject->GetMaterial();
 	mat->SetMaterialParameters(2, color.GetVec4());
+}
+
+bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	if (prop == UIProperty::GAUGE_COLOR)
+	{
+		SetGaugeColor(StringConverter::parseColor(val));
+		return true;
+	}
+
+	if (prop == UIProperty::GAUGE_BLINK_COLOR)
+	{
+		SetBlinkColor(StringConverter::parseColor(val));
+
+		return true;
+	}
+
+	if (prop == UIProperty::GAUGE_BLINK_SPEED)
+	{
+		mBlinkSpeed = StringConverter::parseReal(val);
+		return true;
+	}
+
+	return __super::SetProperty(prop, val);
 }
 
 }

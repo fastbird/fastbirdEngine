@@ -28,9 +28,15 @@ void EventHandler::UnregisterEventFunc(EVENT e, FunctionID id)
 	mFuncMap.erase(mFuncMap.find(id));
 }
 
+void EventHandler::UnregisterAllEventFunc()
+{
+	mFuncMap.clear();
+	mEventFuncMap.clear();
+}
+
 bool EventHandler::OnEvent(EVENT e)
 {
-	if (mDisabledEvent.find(e) != mDisabledEvent.end())
+	if (mDisabledEvent.find(e) != mDisabledEvent.end() || !mEventEnable)
 		return false;
 
 	auto it = mEventFuncMap.find(e);
@@ -51,5 +57,12 @@ void EventHandler::DisableEvent(EVENT e)
 	mDisabledEvent.insert(e);
 }
 
+void EventHandler::DisableAllEvent()
+{
+	for (int i = 0; i < EVENT_NUM; ++i)
+	{
+		mDisabledEvent.insert((EVENT)i);
+	}
+}
 
 }

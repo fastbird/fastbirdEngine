@@ -7,6 +7,7 @@
 namespace fastbird
 {
 	class IWinBase;
+	class IUIObject;
 	class UIManager : public IUIManager
 	{
 		friend class IUIManager;
@@ -36,12 +37,23 @@ namespace fastbird
 		virtual void DisplayMsg(const std::string& msg, ...);
 		virtual bool IsMouseInUI() const { return mMouseIn; }		
 
+		virtual void SetTooltipString(const std::wstring& ts);
+		virtual void SetTooltipPos(const Vec2& npos);
+		virtual void CleanTooltip();
+
+		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func);
+		virtual int GetPopUpResult() const{
+			return mPopupResult;
+		}
+
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
 
 	private:
 		virtual IWinBase* CreateComponent(ComponentType::Enum type);
 		virtual void DeleteComponent(IWinBase* com);
+		void OnPopupYes(void* arg);
+		void OnPopupNo(void* arg);
 
 	private:
 		bool mInputListenerEnable;
@@ -51,6 +63,12 @@ namespace fastbird
 		 IWinBase* mFocusWnd;
 		 bool mNeedToRegisterUIObject;
 		 bool mMouseIn;
+		 IUIObject* mTooltipUI;
+		 std::wstring mTooltipText;
+
+		 IWinBase* mPopup;
+		 std::function< void(void*) > mPopupCallback;
+		 int mPopupResult;
 	
 	};
 }

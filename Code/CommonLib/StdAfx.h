@@ -1,6 +1,7 @@
 #include <CommonLib/Config.h>
 
 #include <CommonLib/CommonLib.h>
+#include <CommonLib/Math/fbMath.h>
 
 #include <assert.h>
 #include <string>

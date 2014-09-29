@@ -22,7 +22,9 @@ namespace fastbird
 		virtual void SetColors(DWORD colors[], DWORD num) = 0;
 
 		virtual void SetNSize(const Vec2& size) = 0; // in normalized space 0.0f~1.0f
+		virtual const Vec2& GetNSize() const = 0;
 		virtual void SetNPos(const Vec2& npos) = 0; // in normalized space 0.0f~1.0f
+		virtual const Vec2& GetNPos() const = 0;
 		virtual void SetNPosOffset(const Vec2& nposOffset) = 0; // in normalized space 0.0f~1.0f
 		virtual void SetAnimNPosOffset(const Vec2& nposOffset) = 0;// in normalized space 0.0f~1.0f
 		virtual void SetAlpha(float alpha) = 0;
@@ -34,8 +36,13 @@ namespace fastbird
 		virtual const RECT& GetRegion() const = 0;
 		virtual void SetDebugString(const char* string) = 0;
 		virtual void SetNoDrawBackground(bool flag) = 0;
+		virtual bool GetNoDrawBackground() const = 0;
 		virtual void SetUseScissor(bool use, const RECT& rect) = 0;
 		virtual void SetAlphaBlending(bool set) = 0;
+		virtual bool GetAlphaBlending() const = 0;
+
+		virtual void SetSpecialOrder(int order) = 0;
+		virtual int GetSpecialOrder() const = 0;
 
 	public:
 		// debug purpose

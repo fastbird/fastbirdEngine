@@ -13,6 +13,17 @@ namespace fastbird
 
 		virtual ~IMeshObject(){}
 
+		enum BUFFER_TYPE
+		{
+			BUFFER_TYPE_POSITION,
+			BUFFER_TYPE_NORMAL,
+			BUFFER_TYPE_UV,
+			BUFFER_TYPE_COLOR,
+			BUFFER_TYPE_TANGENT,
+
+			BUFFER_TYPE_NUM
+		};
+
 		virtual IObject* Clone() const{assert(0); return 0;}
 		virtual void SetMaterialFor(int matGroupIdx, IMaterial* pMat) = 0;
 		virtual bool LoadOgreMesh(const char* filename) = 0;
@@ -39,6 +50,12 @@ namespace fastbird
 		virtual void SetInstanceVB(IVertexBuffer* pBuffer) = 0;
 		virtual const AUXILIARIES& GetAuxiliaries() const = 0;
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) = 0;
+		virtual void AddCollisionShape(COL_SHAPE& data) = 0;
+		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes) = 0;
+
+		virtual void SetUseDynamicVB(BUFFER_TYPE type, bool useDynamicVB) = 0;
+		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
+		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
 
 	private:
 		friend class Engine;

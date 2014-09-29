@@ -1,0 +1,255 @@
+How to UI
+
+이 문서에서는 fastbird engine의 UI 시스템에 대해 설명합니다.
+
+프로그램에서 UI 만들기
+
+아래는 간단한 확인창 UI 입니다.
+
+	bool WelcomeUI::Initialize()
+	{
+		// 전체 화면의 0.5, 0.5 위치(중앙)에 화면 크기의 30%, 10%로 윈도우를 생성
+		Wnd* window = (Wnd*)IUIManager::GetUIManager().AddWindow(0.5f, 0.5f, 0.3f, 0.1f, ComponentType::Window);
+		// 정렬 옵션을 주지않으면 윈도우의 좌측 상단의 화면의 중앙에 맞추어짐.
+		// 수평 정렬을 center로 수직 정렬을 middle로 설정해주면 윈도우의 중앙이 화면 중에에 맞추어짐.
+		window->SetProperty(UIProperty::ALIGNH, "center");
+		window->SetProperty(UIProperty::ALIGNV, "middle");
+		
+		// Static text 컴포넌트를 생성. 좌표 및 크기는 부모윈도우에 상대적. 즉 크기를 1, 1로 주면 부모 윈도우 크기와 같다.
+		StaticText* text = (StaticText*)window->AddChild(0.01f, 0.2f, 0.99f, 0.50f, ComponentType::StaticText);
+		text->SetText(L"Welcome to fastbird engine!");
+		// 중앙 정렬
+		text->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		text->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+		
+		Button* btnOK = (Button*)window->AddChild(0.5f, 0.85f, 0.3f, 0.1f, ComponentType::Button);
+		// 위치를 우측에 맞춥니다.
+		btnOK->SetProperty(UIProperty::ALIGNH, "right");
+		// 4만큼 왼쪽으로 이동해서 close button하고 간격을 만듭니다.
+		btnOK->SetInitialOffset(Vec2I(-4, 0))
+		// 이벤트 등록. 이제 이 버튼을 누르면 ConfirmUI::OnOKClicked()가 호출됩니다.
+		btnOK->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+			std::bind(&ConfirmUI::OnOKClicked, this, std::placeholders::_1));
+		btnOK->SetText(L"OK");
+		btnOK->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		btnOK->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+			
+		Button* btnClose = (Button*)window->AddChild(0.5f, 0.85f, 0.3f, 0.1f, ComponentType::Button);
+		btnClose->SetInitialOffset(Vec2I(4, 0));
+		btnClose->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+			std::bind(&ConfirmUI::OnCloseClicked, this, std::placeholders::_1));
+		btnClose->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		btnClose->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+	}
+	
+위와 같이 코딩하면  'Welcome to fastbird engine!' 라는 텍스트를 중앙에 보여주고 OK와 Close 버튼을 보여주는 창이 완성됩니다. 지원하는 모든 ComponentType과 UIProperty들은 이 문서의 끝부분에 정리되어 있습니다.
+
+
+UI 파일을 사용하기
+
+UI를 파일에 정의해서 사용하면 UI Hot-reloading기능을 사용할 수가 있어서 매우 편리합니다. 아래는 ui파일을 읽어들이면 위와 동일한 창이 만들어 집니다.
+
+WelcomeUI.ui 파일
+
+<UI name="WelcomeUI">
+	<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
+		<component name="_text" type="StaticText" npos="0.01, 0.2" nsize="0.99, 0.5" TEXT="Welcome to fastbird engine!" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		<component name="OKBtn" type="Button" npos="0.5, 0.85" offset="4, 0" nsize="0.3, 0.1" TEXT="OK" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		<component name="CloseBtn" type="Button" npos="0.5, 0.85" offset="-4, 0" nsize="0.3, 0.1" TEXT="Close" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+	</component>
+</UI>
+
+파일이 정의되면 이제 WelcomeUI::Initialize() 함수에서 읽어드립니다.
+
+	bool WelcomeUI::Initialize()
+	{
+		IUIManager& um = IUIManager::GetUIManager();
+		mUIFilename = "data/ui/WelcomeUI.ui";
+		std::vector<IWinBase*> wnds;
+		bool success = um.ParseUI(mUIFilename.c_str(), wnds, mUIName);
+		assert(success);
+		if (success)
+		{
+			// 매인 윈도우 입니다.
+			mWnd = (Wnd*)wnds[0]; 
+			
+			// OK와 Close 버튼을 찾아서 이벤트 함수를 등록해 줍니다.
+			Button* btnOK = (Button*)mWnd->GetChild("OKBtn");
+			assert(btnOK);
+			btnOK->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+				std::bind(&ConfirmUI::OnOKClicked, this, std::placeholders::_1));
+				
+			Button* btnClose = (Button*)mWnd->GetChild("OKClose");
+			assert(btnClose);
+			btnClose->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICKED, 
+				std::bind(&ConfirmUI::OnCloseClicked, this, std::placeholders::_1));		
+			
+		}
+	}
+	
+게임단에 UI 핫 리로딩 기능이 들어있어서(EngineApp 프로젝트 참고) .ui 파일이 수정되면 바로 그 내용이 화면에 적용됩니다. 핫리로딩 기능은 엔진에 File Modification Notifier를 등록해서 변경이 감지될 때 게임단에서 리로딩이 됩니다. 자세한 코드는 EngineApp 프로젝트의 main.cpp와 UI.cpp파일을 참고해주세요 (RegisterFileChangeListener로 검색)
+
+
+
+위치와 크기에 대해 자세히 알아보기
+
+위치와 크기는 percentage나 pixel단위로 입력할 수 있습니다. percentage로 위치를 입력할 때는 아래와 같은 구문을 같고 부모 영역에 상대적입니다.
+
+	npos="0.1, 0.1"
+	nposX="0.1" nposY="0.1"
+
+pixel 단위로 위치를 입력할 때는 아래와 같은 구문을 같고 부모와 상관없이 절대값입니다. 크기가 절대값이라는 이야기고 실제 포지셔닝은 부모위치를 기중으로 상대적입니다.
+
+	pos="10, 10"
+	posX="10" posY="10"
+
+X를 percentage로 입력하고 Y는 pixel로 입력하고 싶은 경우 아래와 같은 구문을 같습니다.
+
+	nposX="0.1" posY="10"
+	
+pixel로 입력할 때 -값을 주게 되면 화면 크기값에 해당 값을 뺀 값이 결과값이 됩니다. 예를 들어서 아래와 같은 경우 화면 크기가 1600이라면 1500이 결과값이 됩니다.
+
+	posX="-100"
+
+기준점을 기준으로 offset을 주고 싶은 경우에는 아래와 같은 구문을 사용합니다. offset은 항상 pixel로 지정하고 X나 Y 필요한 항목만 입력하면 됩니다.
+
+	offset="-10, 4"
+	offsetX"-10"
+	offsetY="-4"
+
+
+크기도 위치와 비슷하게 percentage와 pixel로 입력할 수 있습니다.
+
+	nsize="1.0, 1.0"
+	nsizeX="1.0"
+	nsizeY="1.0"
+	size="600, 400"
+	nsizeX="600"
+	nsizeY="400"
+	
+크기를 지정할때 "fill"을 사용하면 나머지 영역을 모두 차지합니다.
+
+	nsizeX="fill"
+	nsizeY="fill"
+
+포지션을 지정할 때  offset을 사용할 수 있는데 크기를 지정할 때는 sizeMod를 사용합니다. pixel로 입력합니다.
+
+	sizeMod="-10, 0"
+	sizeModX="-10"
+	sizeModY="0"
+	
+
+사이즈를 지정할 때 x값만 지정하고 추가로 aspectRatio를 지정하는 방법을 사용할 수있습니다. 예를 들어서 아래와 같은 경우에 64, 32 사이즈가 됩니다.
+
+	sizeX="64"
+	aspectRatio="2"
+
+
+
+UI 에니메이션
+
+현재 Position과 TextColor 그리고 BackColor 에니메이션이 지원됩니다. 에니메이션을 사용할 Component의 내부에 아래 구문을 추가합니다. 배경 색상 에니메이션의 예제입니다.
+
+	<Animation id="1" name="EnemyArrived" length="1" loop="false" >
+		<BackColor>
+			<key time="0" color="0, 0, 0, 0.7"/>
+			<key time="0.3" color="1, 0, 0, 0.7"/>
+			<key time="0.5" color="0, 0, 0, 0.7"/>
+			<key time="0.7" color="1, 0, 0, 0.7"/>
+			<key time="1.0" color="0, 0, 0, 0.7"/>
+		</BackColor>
+	</Animation>
+	<Animation id="2" name="EnemyCleared" length="3" loop="false" >
+		<BackColor>
+			<key time="0" color="0, 0, 0, 0.7"/>
+			<key time="0.5" color="0.3, 0.5, 0, 0.7"/>
+			<key time="1.0" color="0, 0, 0, 0.7"/>
+		</BackColor>
+	</Animation>
+
+	
+사용하기 위해서는 프로그램 코드를 아래와 같이 작성합니다.
+
+	void WaveUI::OnEnemyArrived()
+	{
+		IUIAnimation* pAnim = mIncomingFrame->GetUIAnimation("EnemyArrived");
+		pAnim->SetActivated(true);
+	}
+
+	void WaveUI::OnEnemyCleared()
+	{
+		IUIAnimation* pAnim = mIncomingFrame->GetUIAnimation("EnemyCleared");
+		pAnim->SetActivated(true);
+	}
+
+
+
+지원되는 컴포넌트 리스트(UI/ComponentType.h 파일 참고)
+
+* Window
+* Title (Internal only)
+* Button
+* CheckBox
+* RadioBox
+* ListBox
+* ListItem
+* TextField
+* Grid
+* StaticText
+* ImageBox
+* FileSelector
+* Scroller
+* Hexagonal
+* CardScroller
+* CardItem
+* VerticalGauge
+* HorizontalGauge
+* NumericUpDown
+* DropDown
+
+
+전체 속성 리스트(UI/UIProperty.h 파일 참고)
+
+.ui 파일을 만들때 아래와 같은 속성들을 사용합니다.
+
+* BACK_COLOR : "0, 0, 0, 1" 과 같이 정의합니다.
+* BACK_COLOR_OVER
+* BACK_COLOR_DOWN
+* TEXT_ALIGN : "left", "center", "right" 을 지정할 수 있습니다. 기본값은 "left"
+* TEXT_VALIGN : "top", "middle", "bottom" 을 지정할 수 있습니다. 기본값은 "top"
+* TEXT_SIZE
+* TEXT_COLOR
+* TEXT_COLOR_HOVER
+* TEXT_COLOR_DOWN
+* FIXED_TEXT_SIZE : 기본적으로 텍스트 크기는 StaticText 컴포넌트의 높이값을 따라 커지게 됩니다. 독립적인 크기를 쓰고싶을 때 이 속성을 지정합니다.
+* MATCH_SIZE : "true", "false" : ture로 지정하면 StaticText사이즈가 텍스트 길이에 맞추어 집니다.
+* NO_BACKGROUND: "true", "false"
+* ALIGNH: "left", "center", "right" 을 지정할 수 있습니다. 기본값은 "left"
+* ALIGNV: "top", "middle", "bottom" 을 지정할 수 있습니다. 기본값은 "top"
+* TEXT
+* TEXTUREATLAS : texture atlas를 정의하는 .xml파일을 지정합니다. Data/textures/gameui.xml 이나 es/textures/ui.xml 파일을 참고하세요.
+* BACKGROUND_IMAGE : 텍스쳐 아틀라스에 정의되어 있는 구역 이름입니다.
+* BACKGROUND_IMAGE_HOVER
+* BACKGROUND_IMAGE_NOATLAS : 텍스쳐 아틀라스를 사용하지 않고 별개의 텍스쳐 파일을 사용할 때 경로를 입력합니다. 실행파일에 상대경로입니다. 예 data/texture/mytexture.dds
+* BACKGROUND_IMAGE_HOVER_NOATLAS
+* FRAME_IMAGE : Button UI의 프레임 이미지를 지정합니다. 아틀라스 구역이름입니다.
+* TOOLTIP : 툴팁 텍스트입니다.
+* PROGRESSBAR : Button UI 내부에 ProgressBar를 포함시키고 싶을 때 "true"로 지정합니다.
+* GAUGE_COLOR : 프로그레스바 컬러
+* GAUGE_COLOR_EMPTY : 0이되었을 때 컬러
+* GAUGE_BLINK_COLOR : 깜빡일 때 컬러
+* GAUGE_BLINK_SPEED : 깜빡이는 속도
+* NO_MOUSE_EVENT : 마우스 이벤트를 처리하고 싶지 않을 때 "true"로 지정합니다.
+* SCROLLERH : 수평 스크롤바가 필요할 때 "true"로 지정합니다. - 미구현
+* SCROLLERV : 수직 스크롤바가 필요할 때 "true"로 지정합니다.
+* USE_SCISSOR : 부모 영역에 맞추어서 클립핑을 하고 싶을 때 "true"로 지정합니다.
+* LISTBOX_COL : 리스트박스의 컬럼 개수를 지정합니다.
+* LISTBOX_COL_SIZES : 각 컬럼의 사이즈를 지정합니다. 3개일 경우 "0.3, 0.3, 0.4"와 같이 지정할 수 있습니다.
+* LISTBOX_COL_HEADERS: 컬럼 헤더가 필요하면 지정합니다. 3개일 경우 "No,Name,Cost"와 같이 지정할 수 있습니다.
+* EDGE_COLOR : 버튼이 프레임을 가지지 않을 때 주위에 엣지가 렌더링되는데 그 색상을 지정합니다.
+* EDGE_COLOR_OVER
+* USE_WND_FRAME : 윈도우의 가장자리와 타이틀바를 9개의 이미지로 장식할 때 "true"로 지정합니다. 이미지는 es/textures/ui.xml에 미리 준비되어 있습니다.
+* TITLEBAR : 윈도우의 타이틀바를 표시할지의 여부입니다.
+* USE_BORDER : 모든 컴포넌트에 사용할 수 있고 "true"로 지정하면 8개의 이미지로 UI의 가장자리를 장식해줍니다.
+* SCISSOR_STOP_HERE : Scissor 영역을 찾을 때 최상의 부모까지 검색하게 되는데, 중간 부모의 영역을 사용하고 싶을 때 중간 부모 컴포넌트에 "true"로 지정합니다.
+* SPECIAL_ORDER : 높을 수록 위로 렌더링 됩니다. 드롭다운 버튼에 쓰입니다.

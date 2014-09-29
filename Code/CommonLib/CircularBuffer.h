@@ -90,7 +90,7 @@ public:
 			mEnd = mVector.begin();
 			if (mBegin==mEnd)
 			{
-				Log("Particle circular buffer is too small. some will be deleted.");
+				//Log("Particle circular buffer is too small. some will be deleted.");
 				++mBegin;
 				if (mBegin == mVector.end())
 				{

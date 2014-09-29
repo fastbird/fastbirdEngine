@@ -15,7 +15,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::Hexagonal; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void SetNPos(const fastbird::Vec2& pos); // normalized pos (0.0~1.0)
-	virtual bool IsIn(const Vec2& mouseNormpos);
+	virtual bool IsIn(IMouse* mouse);
 
 	//own
 	// index : 0~5

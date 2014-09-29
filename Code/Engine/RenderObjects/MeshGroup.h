@@ -1,5 +1,6 @@
 #pragma once
 #include <Engine/IMeshGroup.h>
+#include <CommonLib/ColShape.h>
 namespace fastbird
 {
 	class MeshGroup : public IMeshGroup
@@ -30,6 +31,7 @@ namespace fastbird
 		virtual const AUXILIARIES* GetAuxiliaries(size_t idx) const;
 		virtual void SetAuxiliaries(size_t idx, const AUXILIARIES& aux);
 		virtual void AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v);
+		virtual void AddCollisionShape(size_t idx, std::pair<ColShape::Enum, Transformation>& data);
 		virtual void UpdateTransform(bool force = false);
 
 		struct Hierarchy

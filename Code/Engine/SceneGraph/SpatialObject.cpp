@@ -8,7 +8,6 @@ using namespace fastbird;
 //----------------------------------------------------------------------------
 SpatialObject::SpatialObject()
 	:mDistToCam(-1.f)
-	, mCameraTargeting(0)
 	, mPrevPos(0, 0, 0)
 {
 }
@@ -17,8 +16,11 @@ SpatialObject::SpatialObject()
 SpatialObject::~SpatialObject()
 {
 	mDestructing = true;
-	if (mCameraTargeting)
-		mCameraTargeting->SetTarget(0);
+	while (!mCameraTargetingMe.empty())
+	{
+		mCameraTargetingMe[0]->SetTarget(0);
+	}
+
 	for each(auto scene in mScenes)
 	{
 		scene->DetachObject(this);
@@ -61,6 +63,7 @@ void SpatialObject::SetScale(const Vec3& scale)
 }
 
 //----------------------------------------------------------------------------
+// dir should be already normalized.
 void SpatialObject::SetDir(const Vec3& dir)
 {
 	mTransformation.SetDir(dir);
@@ -111,4 +114,19 @@ void SpatialObject::AttachToScene()
 void SpatialObject::DetachFromScene()
 {
 	gFBEnv->pEngine->GetScene()->DetachObject(this);
+}
+
+void SpatialObject::AddCameraTargetingMe(ICamera* pCam)
+{
+	auto it = std::find(mCameraTargetingMe.begin(), mCameraTargetingMe.end(), pCam);
+	if (it != mCameraTargetingMe.end())
+		return;
+	mCameraTargetingMe.push_back(pCam);
+}
+
+void SpatialObject::RemoveCameraTargetingMe(ICamera* pCam)
+{
+	auto it = std::find(mCameraTargetingMe.begin(), mCameraTargetingMe.end(), pCam);
+	if (it != mCameraTargetingMe.end())
+		mCameraTargetingMe.erase(it);
 }

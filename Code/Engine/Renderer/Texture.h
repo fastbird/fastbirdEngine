@@ -20,8 +20,9 @@ namespace fastbird
 		virtual void SetType(TEXTURE_TYPE type);
 		virtual TEXTURE_TYPE GetType() const { return mType; }
 
-		virtual void SetSamplerDesc(const SAMPLER_DESC& samplerDesc);
+		/*virtual void SetSamplerDesc(const SAMPLER_DESC& samplerDesc);
 		virtual const SAMPLER_DESC& GetSamplerDesc() const { return mSamplerDesc; }
+		virtual ISamplerState* GetSamplerState() const { return mSamplerState; }*/
 
 		virtual MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag);
 		virtual void Unmap(UINT subResource);
@@ -31,14 +32,17 @@ namespace fastbird
 
 		size_t GetTextureID() const { return mTextureID; }
 
+
+
 	protected:
 		std::string mName;
 		TEXTURE_TYPE mType;
 
 	protected:
 		static std::vector<Texture*> mTextures;
-		SAMPLER_DESC mSamplerDesc;
 		SmartPtr<Texture> mAdamTexture;
 		size_t mTextureID;
+		/*SAMPLER_DESC mSamplerDesc;
+		SmartPtr<ISamplerState> mSamplerState;*/
 	};
 }

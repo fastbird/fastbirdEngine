@@ -8,6 +8,14 @@
 namespace fastbird
 {
 	class BoundingVolume;
+
+	class ICameraListener
+	{
+	public:
+		virtual void OnViewMatChanged() = 0;
+		virtual void OnProjMatChanged() = 0;
+	};
+
 	class ICamera : public SpatialObject
 	{
 	public:
@@ -56,9 +64,13 @@ namespace fastbird
 		virtual void SetCurrent(bool cur) = 0;
 		virtual void SetCameraIndex(size_t idx) = 0;
 		virtual void SetEnalbeInput(bool enable) = 0;
+		virtual void SetInitialDistToTarget(float dist) = 0;
 
 		// internal use only
 		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard) = 0;
+
+		virtual void RegisterCamListener(ICameraListener* p) = 0;
+		virtual void UnregisterCamListener(ICameraListener* p) = 0;
 	};
 }
 

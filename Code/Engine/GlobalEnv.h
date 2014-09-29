@@ -22,6 +22,7 @@ namespace fastbird
 			pTimer = 0;
 			mRenderPass = 0;
 			mGodRayInScreen = false;
+			mSilouetteRendered = false;
 		}
 		IEngine* pEngine;
 		IRenderer* pRenderer;
@@ -31,8 +32,9 @@ namespace fastbird
 		unsigned mFrameCounter;
 		bool mExiting;
 		Timer* pTimer;
-		int mRenderPass; // IRenderer::PASS
+		int mRenderPass; // enum RENDER_PASS
 		bool mGodRayInScreen;
+		bool mSilouetteRendered;
 	};
 }
 

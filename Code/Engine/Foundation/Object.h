@@ -38,6 +38,7 @@ namespace fastbird
 		virtual void SetObjFlag(unsigned flag);
 		virtual unsigned GetObjFlag() const;
 		virtual void ModifyObjFlag(unsigned flag, bool enable);
+		virtual bool HasObjFlag(unsigned flag);
 		virtual void SetShow(bool show);
 		virtual bool GetShow() const;
 		virtual void SetGameType(int type);
@@ -55,6 +56,8 @@ namespace fastbird
 
 		// own
 		void BindRenderStates(unsigned stencilRef=0);
+
+		// need to move to SpatialObject
 		BoundingVolume* GetBoundingVolume() const { return mBoundingVolume; }
 		BoundingVolume* GetBoundingVolumeWorld() const { return mBoundingVolumeWorld; }
 
@@ -80,6 +83,7 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		// The following classes are already instanciated in Object constructor
 		//--------------------------------------------------------------------
+		// need to move to SpatialObject
 		SmartPtr<BoundingVolume> mBoundingVolume;
 		SmartPtr<BoundingVolume> mBoundingVolumeWorld;
 

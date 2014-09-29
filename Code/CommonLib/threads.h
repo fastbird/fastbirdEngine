@@ -1,9 +1,6 @@
 #pragma once
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/Math/fbMath.h>
-#include <atomic>
-#include <thread>
-#include <mutex>
 
 namespace fastbird
 {

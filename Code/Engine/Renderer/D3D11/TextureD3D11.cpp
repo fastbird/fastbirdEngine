@@ -15,11 +15,16 @@ TextureD3D11* TextureD3D11::CreateInstance()
 	return pTexture;
 }
 
+void TextureD3D11::Delete()
+{
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 TextureD3D11::TextureD3D11()
 	: mTexture(0)
 	, mSRView(0)
-	, mSamplerState(0)
+	//, mSamplerState(0)
 	, mSlot(0)
 	, mSRViewParent(0)
 	, mBindingShader(BINDING_SHADER_PS)
@@ -48,7 +53,7 @@ TextureD3D11::~TextureD3D11()
 		}
 	}
 
-	SAFE_RELEASE(mSamplerState);
+	//SAFE_RELEASE(mSamplerState);
 	SAFE_RELEASE(mSRView);	
 	SAFE_RELEASE(mTexture);	
 }
@@ -65,6 +70,18 @@ bool TextureD3D11::IsReady() const
 Vec2I TextureD3D11::GetSize() const
 {
 	return Vec2I(mImageInfo.Width, mImageInfo.Height);
+}
+
+//----------------------------------------------------------------------------
+unsigned TextureD3D11::GetWidth() const
+{
+	return mImageInfo.Width;
+}
+
+//----------------------------------------------------------------------------
+unsigned TextureD3D11::GetHeight() const
+{
+	return mImageInfo.Height;
 }
 
 //----------------------------------------------------------------------------
@@ -97,13 +114,6 @@ void TextureD3D11::SetShaderStage(BINDING_SHADER shader)
 }
 
 //----------------------------------------------------------------------------
-void TextureD3D11::SetSamplerDesc(const SAMPLER_DESC& desc)
-{
-	__super::SetSamplerDesc(desc);
-	gFBEnv->pRenderer->SetTextureSamplerState((ITexture*)this, desc);
-}
-
-//----------------------------------------------------------------------------
 // OWN
 //----------------------------------------------------------------------------
 ID3D11Texture2D* TextureD3D11::GetHardwareTexture() const
@@ -121,12 +131,6 @@ ID3D11ShaderResourceView* TextureD3D11::GetHardwareResourceView()
 		mSRViewParent = 0;
 	}
 	return mSRView;
-}
-
-//----------------------------------------------------------------------------
-ID3D11SamplerState* TextureD3D11::GetSamplerState() const
-{
-	return mSamplerState;
 }
 
 //----------------------------------------------------------------------------
@@ -176,13 +180,6 @@ void TextureD3D11::ClearDepthStencilViews()
 	mDSViews.clear();
 }
 
-//----------------------------------------------------------------------------
-void TextureD3D11::SetSamplerState(ID3D11SamplerState* pSamplerState)
-{
-	SAFE_RELEASE(mSamplerState);
-	mSamplerState = pSamplerState;
-}
-
 void TextureD3D11::SetSize(const Vec2I& size)
 {
 	mImageInfo.Width = size.x;
@@ -210,11 +207,12 @@ ITexture* TextureD3D11::Clone() const
 		assert(pT);
 		pNewTexture->mSRViewParent = (ID3D11ShaderResourceView**)&pT->mSRView;
 	}
-	pNewTexture->mSamplerState = mSamplerState; if (mSamplerState) mSamplerState->AddRef();
+	/*pNewTexture->mSamplerState = mSamplerState; if (mSamplerState) mSamplerState->AddRef();
+	pNewTexture->mSamplerDesc = mSamplerDesc;*/
 	pNewTexture->mPixelFormat = mPixelFormat;
 	pNewTexture->mName = mName;
 	pNewTexture->mType = mType;
-	pNewTexture->mSamplerDesc = mSamplerDesc;
+	
 	pNewTexture->mHr = mHr;
 	pNewTexture->mImageInfo = mImageInfo;
 	pNewTexture->mLoadInfo = mLoadInfo;

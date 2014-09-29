@@ -16,6 +16,9 @@ namespace fastbird
 			: x(xyz.x), y(xyz.y), z(xyz.z), w(_w)
 		{
 		}
+		Vec4(const Vec3& xyz)
+			:x(xyz.x), y(xyz.y), z(xyz.z), w(1.f)
+		{}
 
 		Vec4(const char* s);
 
@@ -44,6 +47,15 @@ namespace fastbird
 			y *= r.y;
 			z *= r.z;
 			w *= r.w;
+			return *this;
+		}
+
+		inline Vec4& operator/=(float scalar)
+		{
+			x /= scalar;
+			y /= scalar;
+			z /= scalar;
+			w /= scalar;
 			return *this;
 		}
 

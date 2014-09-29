@@ -1,14 +1,15 @@
 #include <Engine/StdAfx.h>
 #include <Engine/ILight.h>
+#include <Engine/ICamera.h>
 #include <CommonLib/Math/Vec3.h>
-
 namespace fastbird
 {
 	//------------------------------------------------------------------------
-	class DirectionalLight : public ILight
+	class DirectionalLight : public ILight, public ICameraListener
 	{
 	public:
 		DirectionalLight();
+		virtual ~DirectionalLight();
 
 		//--------------------------------------------------------------------
 		// ILight Interfaces
@@ -45,6 +46,13 @@ namespace fastbird
 		virtual void Render();
 		virtual void PostRender();
 
+		virtual ICamera* GetCamera() const { return mLightCamera; }
+
+		void SetUpCamera();
+
+		virtual void OnViewMatChanged();
+		virtual void OnProjMatChanged();
+
 	private:
 		Vec3 mDirection;
 		Vec3 mDiffuse;
@@ -60,6 +68,8 @@ namespace fastbird
 		Vec3 mInterpolDiffuse[2];
 		float mInterpolTime[2];
 		bool mInterpolating;
+
+		ICamera* mLightCamera;
 
 	};
 }

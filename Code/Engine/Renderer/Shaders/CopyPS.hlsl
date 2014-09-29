@@ -1,9 +1,9 @@
+#include "ShaderCommon.h"
 #ifdef _MULTI_SAMPLE
 Texture2DMS<float4> gSrcTexture : register(t0);
 #else
 Texture2D gSrcTexture : register(t0);
 #endif
-SamplerState gSrcSampler : register(s0);
 
 
 //---------------------------------------------------------------------------
@@ -23,9 +23,17 @@ float4 copyps_PixelShader(QuadVS_Output Input
 
 ) : SV_TARGET
 {
+	//Load Function
+	//void Load(in int2 coord,in int sampleindex,in int2 offset);
+
 #ifdef _MULTI_SAMPLE
 	return gSrcTexture.Load(Input.Pos.xy, sampleIndex);
 #else
-	return gSrcTexture.Sample(gSrcSampler, Input.Tex);
+
+	#ifdef _POINT_SAMPLER
+	return gSrcTexture.Sample(gPointSampler, Input.Tex);
+	#else //POINT_SAMPLER
+	return gSrcTexture.Sample(gLinearSampler, Input.Tex);
+	#endif //POINT_SAMPLER
 #endif
 }

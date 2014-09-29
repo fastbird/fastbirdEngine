@@ -38,9 +38,9 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	sd.AddressV = TEXTURE_ADDRESS_BORDER;
 	sd.AddressW = TEXTURE_ADDRESS_BORDER;
 	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
-	const RECT& r = mUIObject->GetRegion();
-	float width = (float)(r.right - r.left);
-	float height = (float)(r.bottom - r.top);
+	Vec2I size = pTexture->GetSize();
+	float width = (float)size.x;
+	float height = (float)size.y;
 	float imgRatio = width / height;
 	const RECT& uiRect = mUIObject->GetRegion();
 	float uiRatio = (uiRect.right - uiRect.left) /
@@ -57,7 +57,7 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	}
 	else
 	{
-		float halfu = (imgRatio - uiRatio)* .5f;
+		float halfu = (uiRatio/imgRatio) * .5f;
 		Vec2 texcoords[4] = {
 			Vec2(0.5f - halfu, 1.f),
 			Vec2(0.5f - halfu, 0.f),
@@ -119,6 +119,7 @@ void ImageBox::ChangeRegion(const char* region)
 
 void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 {
+	/*__super::GatherVisitAlpha(v);*/
 	v.push_back(mUIObject);
 	__super::GatherVisit(v);
 }
@@ -140,7 +141,6 @@ void ImageBox::Highlight(bool enable)
 
 void ImageBox::OnMouseHover(void* arg)
 {
-	SetCursor(WinBase::mCursorOver);
 }
 
 void ImageBox::OnMouseOut(void* arg)

@@ -22,7 +22,6 @@ namespace fastbird
 
 		// Create default bounding volume which is a sphere
 		static BoundingVolume* Create(BVType type = BV_SPHERE);
-		void Delete();
 
 		BoundingVolume() : mAlwaysPass(false) {}
 		virtual ~BoundingVolume(){}
@@ -36,6 +35,7 @@ namespace fastbird
 		virtual void ComputeFromData(const Vec3* pVertices, size_t numVertices) = 0;
 		virtual void StartComputeFromData() = 0;
 		virtual void AddComputeData(const Vec3* pVertices, size_t numVertices) = 0;
+		virtual void AddComputeData(const Vec3& vert) = 0;
 		virtual void EndComputeFromData() = 0;
 		virtual void TransformBy(const Transformation& transform,
 			BoundingVolume* result) = 0;

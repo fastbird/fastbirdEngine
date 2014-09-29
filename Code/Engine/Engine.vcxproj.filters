@@ -49,9 +49,6 @@
     <None Include="Documents\terrain.txt">
       <Filter>Document</Filter>
     </None>
-    <None Include="Renderer\Shaders\CommonFunctions.hlsl">
-      <Filter>Renderer\Shaders</Filter>
-    </None>
     <None Include="Renderer\Shaders\Constants.h">
       <Filter>Renderer\Shaders</Filter>
     </None>
@@ -146,6 +143,25 @@
       <Filter>Renderer\Shaders</Filter>
     </None>
     <None Include="Renderer\Shaders\CopyPS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\CommonDefines.h" />
+    <None Include="Renderer\Shaders\CommonFunctions.h" />
+    <None Include="Renderer\Shaders\CommonLighting.h" />
+    <None Include="Renderer\Shaders\DownScale2x2.hlsl" />
+    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl" />
+    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl" />
+    <None Include="Renderer\Shaders\StarGlare.hlsl" />
+    <None Include="Renderer\Shaders\CalculateAdaptedLum.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumFinal.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumInitial.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumIterative.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -367,6 +383,9 @@
     <ClInclude Include="Renderer\VolumetricCloud.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\StarDef.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -528,6 +547,9 @@
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\VolumetricCloud.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\StarDef.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
   </ItemGroup>

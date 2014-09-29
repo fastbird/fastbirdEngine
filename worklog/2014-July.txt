@@ -1,0 +1,305 @@
+Dev log : [[Main Page|2014-07]] | [[201406|2014-06]] | [[201405|2014-05]] | [[201404|2014-04]] | [[Old_engine_log]] | [[DevLog|Write]] | [[Neat stuff]]
+== 2014-07-02 voxelizer ==
+[[File:first_voxel.gif]]
+
+The first voxelized model. 256*256*256 voxel space.
+
+* Reference for voxelizing technique : Andreas Kolb, Lars John. Volumetric Model Repair for Virtual Reality Applications, EUROGRAPHICS 2001
+* Rendering is too slow. drawing 994,800 vertices, 27,714 draw calls at framerate '4'. T.T
+* bottleneck candidates
+** vertex buffers are all unique. need to share.
+** use indices
+** consider instance rendering
+** do not calc combined world-view-proj matrix on the cpu
+** do not map constants buffers to update data dynamically. not sure.
+** combine to one geom?
+** need robust lod system for rendering thousands of voxel models.
+** create a dedicated render object for voxel models. Currently it is using ten-thousands of normal mesh objects.
+** profile culling speed.
+
+== 2014-07-04 ==
+* bottleneck candidates
+** vertex buffers are all unique. need to share. -> doesn't help much.
+** use indices -> doesn't help much because almost all vertices are unique, doesn't save the transferring size of vertex buffer.
+** consider instance rendering
+** do not calc combined world-view-proj matrix on the cpu -> doesn't help much. this is unexpected.
+** do not map constants buffers to update data dynamically. not sure.
+** combine to one geom?
+** need robust lod system for rendering thousands of voxel models.
+** create a dedicated render object for voxel models. Currently it is using ten-thousands of normal mesh objects.
+** profile culling speed. 
+* Every object with a different material has to be drawn in a separate drawcall. Each drawcall adds some overhead / slowdown to the engine. At any given point of view in the level, there should never be more than 2000 drawcalls. - from crytek man page.
+* current draw call is 20,000. each draw call comsumes 40 microseconds. 40 microseconds * 20,000 = 800 milliseconds. crazy.
+* instancing.... or merge..... if I merge the voxels into one mesh, it may be hard to show destruction effect like voxels aparting from its hull.
+* need to research other voxel based games. 
+
+== 2014-07-05 ==
+[[File:Voxel_optimized.gif]]
+
+merged voxels for the framerate.
+
+* Merging could be the best solution for moving voxels in a group.
+* If I use instancing, I have to calculate every world matrix for every voxels that could cause serious performance penalty.
+* attaching and detaching a voxel from the merged mesh is a problem in this method.
+* picking also a problem. if the voxels have no movement, it might ok but moving massive voxels... terrible.
+* may need to divide a parts group. octree.... sub group. then number of draw calls could increase but might acceptable.
+* before making a decision, decrease the voxel space from 256*256*256 to 128*128*128.
+
+== 2014-07-06 Movie ==
+<html> <iframe width="600" height="360" src="http://www.youtube.com/embed/iGc-Zl8obWE" frameborder="0" allowfullscreen></iframe></html>
+
+GPU Accelerated Voxelizer. 
+
+== 2014-07-08 work log ==
+* Engine
+** added feature to support sub meshes(material groups)
+** fixed keyboard input bug which was propergated for all input handlers
+** Re-structured object classes. Now vertex buffer, index buffer, materials
+** should manually declared in the inherited classes.
+** Dust and far-sizde Star rendering. 
+* Game
+** Controlling Initiator
+** Added a database for ships. 
+
+== 2014-07-09 work log ==
+* Rendering modules using geometry shader.
+* Mouse capturing while camera is rotating.
+* Camera offsetting in third person mode.(while the right mouse button down)
+* Added mouse move mode while both mouse button down.
+* Name changed. compound ship -> modular ship
+* Added console variables.
+* Added a feature loading initial modular ships from xml.
+* Add some columns into module cms and part cms. 
+* +1072, -426
+[[File:Geometry_shader.jpg]]
+
+A modular ship rendered with geometry shader.
+Star and dust are rendered.
+
+== 2914-07-13 Edge rendering ==
+
+* Rendering with tangent space
+* Created NormalMap, SpecularMap, AO map for modules.
+* Module edge rendering and glow.
+* +836, -266
+
+== 2014-07-14 Picking & Detachable modules ==
+
+* Ray-AABB collision
+* Picking
+* Boundary rendering.
+* Detaching modules.
+* Flock simulation for detached modules
+* Added Module Holding UI
+* Highlighitng ImageBox UI
+* +1925, -243
+
+
+== 2014-07-15 Ataching Module & Mesh Group ==
+* Attaching modules
+* Help Mesh Renderer
+* Added MeshGroup class.
+* Tweaked flock simulation for modules.
+* Added shortcut keys for HoldingModuleUI
+* fixed imagebox highlight bug.
+* parsing scene information and building MeshGroup.
+* +961, -222
+
+== 2014-07-16 Physically-based rendering ==
+
+* Physically based rendering.
+** Cook-Torrance microfacet specular shading model.
+** Reflections from environment map needs to be cared more.
+* fixed bugs on mesh group feature.
+* Handling missing materials.
+* Changing camera target by user inputs. (ctrl+click)
+* function to merge sphere bounding volumes.
+* Adding hammersley point set
+* +1171, -181
+[[File:physically_based_rendering1.jpg]]<br>
+The weapon is rendered with the physically-based shading model. Reflection needs to be tweaked more.
+Model is created by SONGKRO at blendswap.com
+
+== 2014-07-17 SkySphere ==
+
+* Rendering SkySphere
+** using Cylindrical projection explained http://paulbourke.net/geometry/transformationprojection/
+** but artifacts stretching v direction is found, let's try other method.
+* Fixed reflection bug. - reflect() function implementation was wrong.
+* +348, -29
+
+== 2014-07-20 Procedural space environment and PBR ==
+
+* Procedural space environment rendering
+* changed pbr method from spec+gross to metallic+roughness.
+* +350 -84
+
+[[File:pbr_w.jpg]]<br>
+changed pbr from specular+gross to metallic+roughness which is mainly supported by Substance Painter.
+
+[[File:pbr_e.jpg]]<br>
+New mesh. Environment is too dark or too bright. Currently it is a perfect mirror.
+Since the environment map is procedurally generated, need to generate again in the object space when it rendered. This might be ok if there are not many overdraws and I can generate burrry environment map in the same pass.
+May be I need to capture the procedural images and create a paranomic texture.
+
+* contributors
+** not stated contributors already commented in the previous dev log.
+** Procedural space environment: 'Star Nest' originally developed by Pablo Roman Andrioli. You can find the original cool space screen effects at https://www.shadertoy.com/view/4dfGDM
+** space ship by speedypro at blendswap.com
+[[File:preview_73855.jpg]]
+
+== 2014-07-21 Cube Map test ==
+
+* Bug on cube environment mapping is very annoy.
+
+[[File:cubemap0.jpg]]<br>
+incorrect cube mapping.
+
+[[File:cubemap1.jpg]]<br>
+fixed.
+
+* I had changed coordinates system from the d3d left handed to opengl right handed at the initial stage of development. This causes the cube map problem.
+* I solved this problem by changing the order of faces to ( x, -x, z, -z, y, -y) and negative reflect.yz.
+
+* references
+** http://www.3dcpptutorials.sk/index.php?id=24
+** Cubic Environment Mapping in the d3d document(http://msdn.microsoft.com/en-us/library/windows/desktop/bb204881%28v=vs.85%29.aspx)
+** http://www.opengl.org/registry/doc/glspec21.20061201.pdf  3.86
+
+== 2014-07-21 enemy squad ==
+
+* Engine
+** cube environment mapping
+** calculate environment distribution
+** cache for MeshObject and MeshGroup
+** clone mesh group.
+
+* Game
+** Waves Manager.
+** fixed picking bug
+** adding flock simul for enemy squad.
+
+* +1749, -249
+
+== 2014-07-22 Movement AI for enemy ships. ==
+
+* Movement AI for Enemy ships.
+* Added MessageDispatcher
+** all interaction between units will use message system. This might be a good choice for update whole units in serveral threads every frame.
+* Added SpatialGameObject class handling transformations and bounding volumes.
+* +965, - 184
+
+== 2014-07-23 Flock Simulation ==
+
+* Flock simulation for enemy ships
+
+[[File:flock_done.jpg]]<br>
+Enemy squad attacking the modular ship.
+
+[[File:flock_debug.jpg]]<br>
+Debug mode for flock simulation
+
+
+* Engine
+** added circular buffer
+** adding particle system
+** fixed line debug draw bugs.
+
+* Game
+** Added SpatialGameObject. now all spatial objects inherited from it.
+** Tweaked flock simulation for enemy squad(FlockDebug console command added)
+** removed ModuleManager. ModularShip(unit) absorbed the functions.
+** name chnaged. Initiator -> CommandModule
+
+* +2275, -1688
+
+== 2014-07-26 particle system ==
+
+* added ParticleSystem
+* added AABB Bounding Volume for particle emitters
+* +1610, -545
+
+== 2014-07-27 Weapon System ==
+
+* fixed Particle Renderer bugs.
+* Adding weapon system
+* +757, -174
+
+== 2014-07-28 Weapons free. ==
+
+'''Engine'''
+* Convert to VS 2013.
+* Define transformations in dae file.(like weapon positions)
+* Stop function for particle emitters
+* Adding Laser Renderer
+
+[[File:define_pos.jpg]]<br>
+defining hot spots.
+
+'''Game'''
+* Added ammo manager.
+* change name 'UnitClient' -> 'ModelClient' for generalization.
+* Attach weapon managers to ships.
+* Added the spatial object hierarchy structure.
+* added ParticleMap database.
+* Missile, Bullet inherited from ammo. Laser will be handled seperately.
+* Bullet collisions.
+
+* +1566, -254
+
+== 2014-07-29 2014 July released! ==
+
+https://github.com/fastbird/fastbirdEngine/releases/tag/v0.1-2014-July
+
+== 2014-07-29 Visible Weapon attaching / rendering. ==
+
+'''Engine'''
+* fixed schedular bug. (never finish a task in release mode)
+* fixed infinite wait problem on schedular
+* fixed mesh group transformation bug.
+* Cleaning for release. (2014-July)
+
+'''Game'''
+* Adding Yaw-Pitch tracking weapons
+* Added Engine App example.
+* Visible weapons attaching / rendering.
+
+* +1049, -406
+
+== 2014-07-30 Yaw-Pitch-seperated weapons. ==
+
+* Added yaw_pitch-seperated weapon type - _PART_YAW, _PART_PITCH is the key string.
+* Iterating camera targets - [, ] : for friendly, comma(,) and period(.) : for enemy
+* Improved flock simulation for fighters.
+* +835, -238
+
+== 2014-07-31 Hexagonal Context Menu. ==
+
+Adding Hexagonal context menu rendering in the screen space using geometry distance method.<br>
+I prototyped it at the shadertoy. ( https://www.shadertoy.com/view/MsfSDj )<br>
+[[File:hexaprototype.jpg|hexaprototype.jpg]]<br>
+The result of prototyping hexagonal context menu rendering.
+
+And actually built in the engine.
+
+[[File:hexa_context.jpg]]<br>
+Hexagonal context menu in the engine.
+
+need to work for outlines and background color variation.
+Using geometric distance method could be good choise for me in lack of artistic support.
+
+
+* Engine
+** Added hexagonal context menu rendering
+** Fixed file change monitor
+* Game
+** added hexagonal context menu
+** Added construction arrow and face marker for indicating selected face.
+** Vertical speed control
+** New method for building a modular ship.
+***  (Dropped the feature attaching stock modules to the command module)
+***  (Stock module is just conceptional. not visual.)
+**Cleaned module / ship creation codes.
+**Module types are changed. Engine is dropped. Residence and combat modules are added.
+
+* +1070, -282

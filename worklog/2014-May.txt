@@ -1,0 +1,29 @@
+== 2014-05-04 ==
+* to process a lot of request, need to implement cell system. Imitate the CellPhone system.
+* Interative console needed. seperated windows parsing lua is uncomfortable. embeded graphical implementation is needed. let's analyze 'readline' library.
+
+[[File:core_part.gif]]
+
+== 2014-05-09 ==
+* Shield has HP. When does any part protected by the shield hit decreases the shield's HP. 'Damage0' field is shield recharge rate.
+* When shields destroyed, any linked part which doesn't have any alternative path to Core will detached from the CompoundShip.
+* Shield has visible range looks like a sphere.
+* Power doesn't have range, just has capacity. 'Damage0' field is Power recharge rate
+* Any action - fire, recharge, engine - consumes power.
+* Power priority - shield oriented, Weapon oriented, Engine oriented. 
+* Parse CSVs and build type enumerations for parts, components -- when convert the csvs into binary
+
+== 2014-05-11 ==
+* Graceful shutdown : shutdown() - mark send, recieve ended. closesocket() - release all resources, if shutdown is not call, perform shutdown.
+* when client closes call shutdown(s, SD_SEND) then server will receive FD_CLOSE. this is enough for me.
+* when server closes the process is the same. this measn actually I don't need to call shutdown. because closesocket will implicitly perform the shutdown process.
+* When client gets FD_CLOSE, show the login ui, and clear the players.
+* Make sure the part data should reset in next login. CameraMan target. LocalPlayerID
+
+
+== 2014-05-18 ==
+* What's the best number of threads for worker and network. Network thread also handles game logics to respond user packets.
+* Update thread workload should be minimized.
+* Network thread : 4(50%), WorkerThread : 3(35%), MainThread : 1(15%). or
+* Network thread : 6, WorkerThread : 2, MainThread 1. total 9.
+* What's the good practice to compress the packet. Maybe not may packets need to be compressed. maybe only parts data.

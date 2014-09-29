@@ -6,7 +6,7 @@
 // Constant Buffer
 //----------------------------------------------------------------------------
 #include "Constants.h"
-#include "CommonFunctions.hlsl"
+#include "CommonFunctions.h"
 
 //----------------------------------------------------------------------------
 // Textures

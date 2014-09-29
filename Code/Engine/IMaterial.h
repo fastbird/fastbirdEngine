@@ -11,10 +11,14 @@ namespace fastbird
 	class IMaterial : public ReferenceCounter
 	{
 	public:
-		static IMaterial* CreateMaterial(const char* file);
+		static IMaterial* CreateMaterial(const char* file);		
+
 		static void ReloadMaterial(const char* file);
 		static void ReloadShader(const char* shader);
 		virtual ~IMaterial(){}
+
+		// only need if you don't use shared ptr
+		virtual void Delete() = 0;
 
 		struct ShaderDefine
 		{
@@ -91,7 +95,7 @@ namespace fastbird
 		virtual bool IsRelatedShader(const char* shaderFile) = 0;
 
 		virtual void Bind(bool inputLayout) = 0;
-		virtual bool BindSubPass(RENDER_PASS p) = 0;
+		virtual bool BindSubPass(RENDER_PASS p, bool includeInputLayout) = 0;
 		virtual void BindMaterialParams() = 0;
 		virtual void RegisterReloading() = 0;
 		virtual bool IsTransparent() const = 0;

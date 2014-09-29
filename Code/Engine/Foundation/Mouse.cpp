@@ -3,6 +3,7 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>
+#include <Engine/ICamera.h>
 #include <CommonLib/Timer.h>
 #include <CommonLib/Debug.h>
 
@@ -42,6 +43,9 @@ namespace fastbird
 		, mLastClickTime(0)
 		, mLastClickPos(0, 0)
 		, mLockMouse(false)
+		, mNPosX(0)
+		, mNPosY(0)
+		, mWorldRayCalculated(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -49,6 +53,9 @@ namespace fastbird
 		mButtonsClicked = 0;
 		mButtonsDoubleClicked = 0;
 		GetCurrentMousePos(mAbsX, mAbsY);
+		mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
+		mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+
 		mAbsXPrev = mAbsX;
 		mAbsYPrev = mAbsY;
 		mLastX = 0;
@@ -72,7 +79,13 @@ namespace fastbird
 						mouseEvent.ulExtraInformation);*/
 
 		if (!mLockMouse)
+		{
 			GetCurrentMousePos(mAbsX, mAbsY);
+
+			mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
+			mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+		}
+			
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
 		mButtonsDownPrev = mButtonsDown;
@@ -208,6 +221,7 @@ namespace fastbird
 
 	void Mouse::EndFrame()
 	{
+		mWorldRayCalculated = false;
 		mButtonsClicked = 0;
 		mButtonsPressed = 0;
 		mLastX = 0;
@@ -260,8 +274,8 @@ namespace fastbird
 
 	void Mouse::GetNPos(float &x, float &y) const
 	{
-		x = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
-		y = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+		x = mNPosX;
+		y = mNPosY;
 	}
 
 	void Mouse::GetDragStart(long &x, long &y) const
@@ -398,8 +412,11 @@ namespace fastbird
 	void Mouse::OnSetFocus()
 	{
 		GetCurrentMousePos(mAbsX, mAbsY);
+		mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
+		mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
 		mAbsXPrev = mAbsX;
 		mAbsYPrev = mAbsY;
+
 		LockMousePos(false);
 	}
 
@@ -408,5 +425,24 @@ namespace fastbird
 		LockMousePos(false);
 		mButtonsDown = 0;
 		EndFrame();
+	}
+
+	const Ray3& Mouse::GetWorldRay()
+	{
+		if (!mWorldRayCalculated)
+		{
+			ICamera* pCam = gFBEnv->pRenderer->GetCamera();
+			if (pCam)
+			{
+				mWorldRayCalculated = true;
+				mWorldRay = pCam->ScreenPosToRay(mAbsX, mAbsY);
+			}		
+			else
+			{
+				Log("World ray cannot be calculated.");
+			}
+		}
+
+		return mWorldRay;
 	}
 }

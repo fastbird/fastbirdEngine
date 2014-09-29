@@ -48,8 +48,10 @@ namespace fastbird
 			, mRotAccel(0.872f, 0.1f), mRotDeaccel(0, 0.1f)
 			, mFadeInOut(0.1f, 0.9f)
 			, mUVAnimColRow(1, 1), mUVAnimFramesPerSec(0), mUV_INV_FPS(1.f)
-			, mDefaultDirection(0, 1, 0), mCross(false), mColor(1, 1, 1)
-			, mBlendMode(), mGlow(1.f), mPreMultiAlpha(false)
+			, mDefaultDirection(0, 1, 0), mCross(false), mColor(1, 1, 1), mColorEnd(1, 1, 1)
+			, mBlendMode(), mGlow(1.f), mPreMultiAlpha(false), mUVFlow(0, 0), mPosOffset(0, 0, 0)
+			, mPosInterpolation(false), mDeleteWhenFull(true)
+			, mStartAfter(0)
 
 			{
 			}
@@ -59,9 +61,13 @@ namespace fastbird
 			bool IsAlignDirection() const { return mAlign == ParticleAlign::Direction; }
 
 			std::string mTexturePath;
+			std::string mGeometryPath;
+			SmartPtr<IMeshObject> mMeshObject;
+			float mStartAfter;
 			float mEmitPerSec;
 			unsigned mInitialParticles;
 			unsigned mMaxParticle;
+			bool mDeleteWhenFull;
 			bool mPreMultiAlpha;
 			ParticleBlendMode::Enum mBlendMode;
 			ParticleAlign::Enum mAlign;			
@@ -71,6 +77,7 @@ namespace fastbird
 			Vec2 mLifeMinMax;
 			Vec3 mDefaultDirection;
 			float mRangeRadius;
+			Vec3 mPosOffset;
 			Vec2 mSizeMinMax;
 			Vec2 mSizeRatioMinMax;
 			Vec2 mPivot;
@@ -91,17 +98,21 @@ namespace fastbird
 			Vec2 mIntensityMinMax;
 			Vec2I mUVAnimColRow;
 			Color mColor;
+			Color mColorEnd;
 			float mUVAnimFramesPerSec;
 			float mUV_INV_FPS;
 			float mStretchMax;
 			bool mCross;
+			bool mPosInterpolation;
+			Vec2 mUVFlow;
 		};
 
-		virtual size_t Emit(unsigned templateIdx);
-		size_t Emit(const ParticleTemplate& pTemplate);
+		virtual Particle* Emit(unsigned templateIdx);
+		Particle* Emit(const ParticleTemplate& pTemplate);
 		virtual Particle& GetParticle(unsigned templateIdx, unsigned particleIdx);
 		virtual void SetBufferSize(unsigned size);
 		//virtual void Sort();
+		virtual void SetLength(float length);
 
 	private:
 		ParticleEmitter* mAdam;
@@ -112,6 +123,10 @@ namespace fastbird
 		// internal
 		typedef VectorMap<const ParticleTemplate*, float> NEXT_EMITS;
 		NEXT_EMITS mNextEmits;
+
+		// pos interpolation
+		typedef VectorMap<const ParticleTemplate*, Vec3> LAST_EMIT_POS;
+		LAST_EMIT_POS mLastEmitPos;
 
 		typedef CircularBuffer<Particle> PARTICLES;
 		typedef VectorMap<const ParticleTemplate*, PARTICLES*> PARTICLESS;
@@ -134,5 +149,6 @@ namespace fastbird
 
 		bool mManualEmitter;
 		Color mEmitterColor;
+		float mLength;
 	};
 }

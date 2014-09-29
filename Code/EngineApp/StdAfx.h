@@ -12,6 +12,7 @@ extern "C" {
 #include <assert.h>
 #include <string>
 #include <vector>
+#include <list>
 #include <limits>
 #include <set>
 #include <thread>
@@ -31,6 +32,8 @@ extern "C" {
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/tinyxml2.h>
 #include <CommonLib/Math/Transformation.h>
+#include <CommonLib/threads.h>
+#include <CommonLib/Profiler.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>
@@ -45,3 +48,7 @@ extern fastbird::GlobalEnv* gEnv;
 #include <Engine/IConsole.h>
 #include <Engine/IMeshObject.h>
 #include <Engine/IInputListener.h>
+#include <Engine/IRenderToTexture.h>
+#include <Engine/ILight.h>
+
+#include <UI/IUIManager.h>
