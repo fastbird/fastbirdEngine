@@ -70,6 +70,9 @@ namespace fastbird
 		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
 		virtual void SetCameraIndex(size_t idx) {mCamIndex = idx;}
 		virtual void SetEnalbeInput(bool enable);
+		virtual void SetInitialDistToTarget(float dist);
+		virtual void RegisterCamListener(ICameraListener* p);
+		virtual void UnregisterCamListener(ICameraListener* p);
 
 	protected:
 		void UpdateFrustum();
@@ -133,8 +136,8 @@ namespace fastbird
 		bool mCurrentCamera;
 		bool mProcessInput;
 		Vec3 mPrevTargetPos;
-
 		FB_READ_WRITE_CS mCamPosRWCS;
+		std::vector<ICameraListener*> mCamListener;
 	};
 }
 

@@ -23,6 +23,7 @@ namespace fastbird
 			OF_QUERYABLE = 0x2,
 			OF_IGNORE_ME = 0x4, // in scene
 			OF_NO_DEPTH_PASS = 0x8,
+			OF_HIGHLIGHT_DEDI = 0x10,
 		};
 		virtual ~IObject() {}
 		
@@ -43,6 +44,7 @@ namespace fastbird
 		virtual void SetObjFlag(unsigned flag) = 0;
 		virtual unsigned GetObjFlag() const = 0;
 		virtual void ModifyObjFlag(unsigned flag, bool enable) = 0;
+		virtual bool HasObjFlag(unsigned flag) = 0;
 		virtual void SetShow(bool show) = 0;
 		virtual bool GetShow() const = 0;
 		virtual void SetGameType(int type) = 0;

@@ -11,10 +11,6 @@ Texture2D  gDiffuseTexture : register(t0);
 Texture2D  gPatternTexture : register(t1);
 Texture2D  gRampTexture : register(t2);
 
-SamplerState gDiffuseSampler : register(s0);
-SamplerState gPatternSampler : register(s1);
-SamplerState gRampSampler : register(s2);
-
 // dirtColor = gMaterialParam[0].rgb;
 // grassColor = gMaterialParam[1].rgb;
 // rockColor = gMaterialParam[2].rgb;
@@ -77,9 +73,9 @@ float4 terrain_PixelShader( in v2p INPUT ) : SV_Target
 	uv.y = 1.f - uv.y;
 	float2 categoryUV = uv * 0.0009765625f;
 	float2 detailUV = uv * 0.04f;
-	float texCategory = gDiffuseTexture.Sample(gDiffuseSampler, categoryUV);
-	float3 weights = gRampTexture.Sample(gRampSampler, float2(texCategory, .5f)).xyz;
-	float4 patterns = gPatternTexture.Sample(gPatternSampler, detailUV);
+	float texCategory = gDiffuseTexture.Sample(gLinearSampler, categoryUV);
+	float3 weights = gRampTexture.Sample(gLinearSampler, float2(texCategory, .5f)).xyz;
+	float4 patterns = gPatternTexture.Sample(gLinearSampler, detailUV);
 	float3 finalDirt = patterns.x * weights.x * dirtColor;
 	float3 finalGrass = patterns.y * weights.y * grassColor;
 	float3 finalRock = patterns.z * weights.z * rockColor;

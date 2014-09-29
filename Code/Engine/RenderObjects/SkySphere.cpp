@@ -137,23 +137,24 @@ void SkySphere::Render()
 		return;
 	}
 
+	gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gFBEnv->pRenderer->SetInputLayout(0);
+	gFBEnv->pRenderer->SetVertexBuffer(0, 0, 0, 0, 0);
 	if (mMaterialOCC && gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE)
 	{
 		D3DEventMarker mark("SkySphere_OCC");
-		mMaterialOCC->Bind(true);
+		mMaterialOCC->Bind(false);
 		BindRenderStates();
-		int num = gFBEnv->pRenderer->BindFullscreenQuadUV_VB(true);
-		gFBEnv->pRenderer->Draw(num, 0);
+		gFBEnv->pRenderer->Draw(3, 0);
 	}
 	else if (gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL)
 	{
 		D3DEventMarker mark("SkySphere");
-		mMaterial->Bind(true);
+		mMaterial->Bind(false);
 		BindRenderStates();
 		if (mUseAlphaBlend)
-			mAlphaBlend->Bind();		
-		int num = gFBEnv->pRenderer->BindFullscreenQuadUV_VB(true);
-		gFBEnv->pRenderer->Draw(num, 0);
+			mAlphaBlend->Bind();
+		gFBEnv->pRenderer->Draw(3, 0);
 	}
 }
 

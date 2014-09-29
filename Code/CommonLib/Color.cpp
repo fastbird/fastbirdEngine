@@ -11,5 +11,6 @@ const Color Color::Silver(0.8f, 0.8f, 0.8f);
 const Color Color::Green(0, 1, 0);
 const Color Color::Yellow(1, 1, 0);
 const Color Color::Blue(0, 0, 1);
+const Color Color::SkyBlue(0, 0.5f, 1);
 const Color Color::Zero(0, 0, 0, 0);
 }

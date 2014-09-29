@@ -11,7 +11,6 @@
 // Textures
 //----------------------------------------------------------------------------
 TextureCube  gSkyCubeMap : register(t0);
-SamplerState gSkyCubeSampler : register(s0);
 
 
 //----------------------------------------------------------------------------
@@ -42,5 +41,5 @@ v2p skybox_VertexShader(in a2v INPUT)
 //----------------------------------------------------------------------------
 float4 skybox_PixelShader(in v2p INPUT) : SV_Target
 {
-	return gSkyCubeMap.Sample(gSkyCubeSampler, INPUT.uvw);
+	return gSkyCubeMap.Sample(gAnisotropicSampler, INPUT.uvw);
 }

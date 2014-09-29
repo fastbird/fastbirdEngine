@@ -1,8 +1,10 @@
 #pragma once
 #include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/IMeshObject.h>
 #include <CommonLib/CircularBuffer.h>
 namespace fastbird
 {
+	class IMeshObject;
 	class IParticleEmitter : public SpatialObject
 	{
 	public:
@@ -13,6 +15,7 @@ namespace fastbird
 			, mCurLifeTime(0.0f)
 			, mAlpha(0.0f)
 			, mIntensity(1.0f)
+			, mMeshObject(0)
 			{
 			}
 			bool IsAvailable() const
@@ -47,6 +50,7 @@ namespace fastbird
 			float mAlpha;
 			float mIntensity;
 			DWORD mColor;
+			SmartPtr<IMeshObject> mMeshObject;
 		};
 
 		virtual IObject* Clone() const{assert(0); return 0;}
@@ -61,10 +65,10 @@ namespace fastbird
 		virtual void SetEmitterColor(const Color& c) = 0;
 
 		// only for manual control particles - for clouds.
-		virtual size_t Emit(unsigned templateIdx) = 0;
+		virtual Particle* Emit(unsigned templateIdx) = 0;
 		virtual Particle& GetParticle(unsigned templateIdx, unsigned index) = 0;
 		virtual void SetBufferSize(unsigned size) = 0;
-		
+		virtual void SetLength(float length) = 0;
 		//virtual void Sort() = 0;
 		
 	private:

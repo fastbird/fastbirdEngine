@@ -15,8 +15,8 @@ struct QuadVS_Output
 float luminanceavgps_PixelShader(QuadVS_Output Input) : SV_TARGET
 {
 	 float lum = gSrcLumTexture0.Load(int3(0, 0, 0)).r*0.005 +
-				 gSrcLumTexture1.Load(int3(0, 0, 0)).r*0.005 +
-				 gSrcLumTexture2.Load(int3(0, 0, 0)).r*0.99;
+		gSrcLumTexture1.Load(int3(0, 0, 0)).r*0.005 +
+		gSrcLumTexture2.Load(int3(0, 0, 0)).r*0.99;
 				 
 	return lum;
 

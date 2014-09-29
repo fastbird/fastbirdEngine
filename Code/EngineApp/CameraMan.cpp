@@ -1,5 +1,5 @@
-#include "StdAfx.h"
-#include "CameraMan.h"
+#include <EngineApp/StdAfx.h>
+#include <EngineApp/CameraMan.h>
 
 using namespace fastbird;
 //---------------------------------------------------------------------------

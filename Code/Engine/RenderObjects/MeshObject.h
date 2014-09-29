@@ -57,6 +57,15 @@ namespace fastbird
 
 		virtual const AUXILIARIES& GetAuxiliaries() const { return mAuxCloned ? *mAuxCloned : mAuxil; }
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) {mAuxil = aux; }
+		virtual void AddCollisionShape(COL_SHAPE& data);
+		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes);
+		virtual unsigned GetNumCollisionShapes() const { return mCollisionsCloned ? mCollisionsCloned->size() : 0; }
+		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
+		void DeleteCollisionShapes();
+		virtual void SetUseDynamicVB(BUFFER_TYPE type,  bool useDynamicVB);
+		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx);
+		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx);
+
 		struct MaterialGroup
 		{
 			SmartPtr<IMaterial> mMaterial;
@@ -78,6 +87,7 @@ namespace fastbird
 		void CreateMaterialGroupFor(int matGroupIdx);
 		friend class Engine;
 		virtual void Delete();
+		void RenderMaterialGroup(MaterialGroup* it, bool onlyPos);
 
 	private:
 		// OBJECT
@@ -96,5 +106,11 @@ namespace fastbird
 		bool mRenderHighlight;
 		SmartPtr<IRasterizerState> mHighlightRasterizeState;
 		static SmartPtr<IMaterial> mHighlightMaterial;
+
+		typedef std::vector< CollisionShape* > COLLISION_SHAPES;
+		COLLISION_SHAPES mCollisions;
+		COLLISION_SHAPES* mCollisionsCloned;
+
+		bool mUseDynamicVB[BUFFER_TYPE_NUM];
 	};
 }

@@ -5,7 +5,6 @@ Texture2DMS<float4> gFrameTexture : register(t0);
 #else
 Texture2D gFrameTexture : register(t0);
 #endif 
-SamplerState gFrameSampler : register(s0);
 
 //---------------------------------------------------------------------------
 struct QuadVS_Output
@@ -39,7 +38,7 @@ float4 godrayps_PixelShader(QuadVS_Output Input
 	// Store initial sample.  
 	float3 color = gFrameTexture.Load(int2(Input.Pos.xy), sampleIndex);
 #else
-	float3 color = gFrameTexture.Sample(gFrameSampler, Input.Tex);
+	float3 color = gFrameTexture.Sample(gLinearSampler, Input.Tex);
 #endif
 	// Set up illumination decay factor.  
 	half illuminationDecay = 1.0f;
@@ -52,7 +51,7 @@ float4 godrayps_PixelShader(QuadVS_Output Input
 		// Retrieve sample at new location.  
 		float3 smp = gFrameTexture.Load(int2(texCoord.xy * gScreenSize), sampleIndex);
 #else
-		float3 smp = gFrameTexture.Sample(gFrameSampler, texCoord);
+		float3 smp = gFrameTexture.Sample(gLinearSampler, texCoord);
 #endif
 		// Apply sample attenuation scale/decay factors.  
 		smp *= illuminationDecay * Weight;

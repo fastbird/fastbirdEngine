@@ -55,13 +55,13 @@ namespace fastbird
 		{
 			return true;
 		}
-		else if (x==other.x)
+		else if (IsEqual(x, other.x, EPSILON))
 		{
 			if (y<other.y)
 			{
 				return true;
 			}
-			else if (y==other.y)
+			else if (IsEqual(y, other.y, EPSILON))
 			{
 				return z < other.z;
 			}

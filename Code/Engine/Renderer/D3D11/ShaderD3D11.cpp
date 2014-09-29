@@ -12,6 +12,11 @@ ShaderD3D11* ShaderD3D11::CreateInstance(const char* name)
 	return pShader;
 }
 
+void ShaderD3D11::Delete()
+{
+	FB_DELETE(this);
+}
+
 ShaderD3D11::ShaderD3D11( const char* name )
 	: m_pVertexShader(0), m_pGeometryShader(0), m_pHullShader(0)
 	, m_pDomainShader(0), m_pPixelShader(0)

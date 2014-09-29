@@ -9,12 +9,5 @@
 #include <map>
 #include <set>
 
-#pragma comment(lib, "lua.lib")
-
-extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
-}
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/Timer.h>

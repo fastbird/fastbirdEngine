@@ -7,23 +7,34 @@ namespace fastbird
 	class Container : public WinBase
 	{
 	public:
-		Container() : mScroller(0){}
+		Container() : mScrollerV(0)
+			, mUseScrollerH(0), mUseScrollerV(0), mBottomChild(0), mLastContentWNEnd(0.f)
+			, mWndContentUI(0){}
 		virtual ~Container();
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
 		virtual void RemoveChild(IWinBase* child);
-		virtual IWinBase* GetChild(const char* name);
+		virtual void RemoveAllEvents(bool includeChildren);
+		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false);
+		virtual IWinBase* GetChild(unsigned idx);
+		virtual unsigned GetNumChildren() const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
-		virtual IWinBase* FocusTest(Vec2 normalizedMousePos);
+		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual void OnChildPosSizeChanged(WinBase* child);
+		virtual void SetVisible(bool visible);
+		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
 		virtual void SetNPosOffset(const Vec2& offset);
 		virtual void SetAnimNPosOffset(const Vec2& offset);
 
+		virtual bool SetProperty(UIProperty::Enum, const char*);
+
 		void OnClickRadio(RadioBox* pRadio);
+
+		virtual void RefreshScissorRects();
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
 		
@@ -32,6 +43,7 @@ namespace fastbird
 
 	protected:
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
+		/*virtual void GatherVisitAlpha(std::vector<IUIObject*>& v);*/
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
 		Vec2 ConvertChildSizeToWorldCoord(const fastbird::Vec2& size) const;
@@ -43,7 +55,12 @@ namespace fastbird
 		typedef std::list<IWinBase*> COMPONENTS;
 		COMPONENTS mChildren;
 		COMPONENTS mPendingDelete;
-		Scroller* mScroller;
+		Scroller* mScrollerV;
+		bool mUseScrollerH;
+		bool mUseScrollerV;
+		IWinBase* mBottomChild;
+		float mLastContentWNEnd;
+		IWinBase* mWndContentUI;
 
 	};
 }

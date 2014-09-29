@@ -11,7 +11,6 @@
 // Textures
 //----------------------------------------------------------------------------
 Texture2D  gFontTexture : register(t0);
-SamplerState gSampler : register(s0);
 //{
 	//Filter = MIN_MAG_MIP_POINT;
 //};
@@ -54,7 +53,7 @@ v2p font_VertexShader( in a2v IN )
 //--------------------------------------------------------------------------------------
 float4 font_PixelShader( in v2p IN ) : SV_Target
 {
-	float4 color = gFontTexture.Sample(gSampler, IN.uv);
+	float4 color = gFontTexture.Sample(gLinearSampler, IN.uv);
 	if (color.a<0.1f)
 		discard;
 	if( dot(vector<int, 4>(1,1,1,1), IN.channel) )

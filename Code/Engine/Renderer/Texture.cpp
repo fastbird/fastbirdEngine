@@ -59,12 +59,14 @@ void Texture::SetType(TEXTURE_TYPE type)
 	mType = type;
 }
 
-//----------------------------------------------------------------------------
-void Texture::SetSamplerDesc(const SAMPLER_DESC& samplerDesc)
-{
-	mSamplerDesc = samplerDesc;
-}
+////----------------------------------------------------------------------------
+//void Texture::SetSamplerDesc(const SAMPLER_DESC& samplerDesc)
+//{
+//	mSamplerDesc = samplerDesc;
+//	mSamplerState = gFBEnv->pRenderer->CreateSamplerState(samplerDesc);
+//}
 
+//----------------------------------------------------------------------------
 MapData Texture::Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag)
 {
 	return gFBEnv->pRenderer->MapTexture(this, subResource, type, flag);

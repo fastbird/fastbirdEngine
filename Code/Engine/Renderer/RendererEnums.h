@@ -511,6 +511,8 @@ namespace fastbird
 		PASS_GODRAY_OCC_PRE, // for GodRay - occlusion pre pass
 		PASS_GLOW,
 		PASS_DEPTH,
+		PASS_SHADOW,
+		PASS_SILOUETTE,
 	};
 
 	inline RENDER_PASS ConvertRenderPass(const char* str)
@@ -523,9 +525,25 @@ namespace fastbird
 			return PASS_GLOW;
 		else if (stricmp(str, "DEPTH") == 0)
 			return PASS_DEPTH;
+		else if (stricmp(str, "SHADOW") == 0)
+			return PASS_SHADOW;
 		else{
 			assert(0);
 			return PASS_NORMAL;
 		}
+	}
+
+	namespace SAMPLERS
+	{
+		enum Enum{
+			POINT,
+			LINEAR,
+			ANISOTROPIC,
+			SHADOW,
+			POINT_WRAP,
+			LINEAR_WRAP,
+
+			NUM
+		};
 	}
 }

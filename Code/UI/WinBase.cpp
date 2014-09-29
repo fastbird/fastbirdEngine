@@ -3,6 +3,7 @@
 #include <UI/IUIManager.h>
 #include <UI/Container.h>
 #include <UI/UIAnimation.h>
+#include <UI/ImageBox.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -11,39 +12,63 @@ const float WinBase::LEFT_GAP = 0.001f;
 HCURSOR WinBase::mCursorOver = 0;
 
 WinBase::WinBase()
-	: mVisible(true)
-	, mAlignH(ALIGNH::LEFT)
-	, mAlignV(ALIGNV::TOP)
-	, mParent(0)
-	, mNPosAligned(0, 0)
-	, mMouseIn(false)
-	, mMouseInPrev(false)
-	, mNext(0)
-	, mPrev(0)
-	, mTextColor(1.f, 1.f, 1.f, 1.f)
-	, mTextColorHover(1.f, 1.0f, 0.f, 1.f)
-	, mTextColorDown(1.0f, 0.5f, 0.0f, 1.f)
-	, mTextAlignH(ALIGNH::LEFT)
-	, mTextAlignV(ALIGNV::BOTTOM)
-	, mMatchSize(false)
-	, mSize(10, 10)
-	, mTextSize(30.0f)
-	, mFixedTextSize(false)
-	, mWNPosOffset(0, 0)
-	, mMouseDragStartInHere(false)
-	, mDestNPos(0, 0)
-	, mAnimationEnabled(false)
-	, mAnimationSpeed(0.f)
-	, mAspectRatio(0)
-	, mNPos(0, 0), mWNPos(0, 0)
-	, mAnimation(0)
-	, mUIObject(0)
+: mVisible(true)
+, mAlignH(ALIGNH::LEFT)
+, mAlignV(ALIGNV::TOP)
+, mParent(0)
+, mNPosAligned(0, 0)
+, mMouseIn(false)
+, mMouseInPrev(false)
+, mNext(0)
+, mPrev(0)
+, mTextColor(1.f, 1.f, 1.f, 1.f)
+, mTextColorHover(1.f, 1.0f, 1.f, 1.f)
+, mTextColorDown(1.0f, 1.0f, 1.0f, 1.f)
+, mTextAlignH(ALIGNH::LEFT)
+, mTextAlignV(ALIGNV::MIDDLE)
+, mMatchSize(false)
+, mSize(10, 10)
+, mTextSize(30.0f)
+, mFixedTextSize(false)
+, mWNPosOffset(0, 0)
+, mMouseDragStartInHere(false)
+, mDestNPos(0, 0)
+, mSimplePosAnimEnabled(false)
+, mAnimationSpeed(0.f)
+, mAspectRatio(1.0)
+, mNPos(0, 0), mWNPos(0, 0)
+, mUIObject(0)
+, mNoMouseEvent(false)
+, mUseScissor(true)
+, mUseAbsoluteXPos(false)
+, mUseAbsoluteYPos(false)
+, mUseAbsoluteXSize(false)
+, mUseAbsoluteYSize(false)
+, mAbsTempLock(false)
+, mAbsOffset(0, 0)
+, mWNAnimPosOffset(0, 0)
+, mSizeMod(0, 0)
+, mManualParent(0)
+, mCustomContent(0)
+, mLockTextSizeChange(false)
+, mStopScissorParent(false)
+, mSpecialOrder(0)
+, mTextWidth(0)
 {
 }
 
 WinBase::~WinBase()
 {
-	FB_SAFE_DEL(mAnimation);
+	FB_FOREACH(it, mAnimations)
+	{
+		FB_SAFE_DEL(it->second);
+	}
+
+	for each (ImageBox* ib in mBorders)
+	{
+		IUIManager::GetUIManager().DeleteComponent(ib);
+	}
+	
 	FB_RELEASE(mUIObject);
 }
 
@@ -62,15 +87,128 @@ const char* WinBase::GetName() const
 void WinBase::SetSize(const fastbird::Vec2I& size)
 {
 	mSize = size;
-	// internal calculation done always in normalized space
-	SetNSize(ConvertToNormalized(size));
+	mUseAbsoluteXSize = true;
+	mUseAbsoluteYSize = true;
+	
+	if (mSize.x < 0)
+		mSize.x = gEnv->pRenderer->GetWidth() + mSize.x;
+
+	if (mSize.y < 0)
+		mSize.y = gEnv->pRenderer->GetHeight() + mSize.y;
+
+	if (mParent)
+	{
+		mNSize = mParent->PixelToLocalNSize(mSize);
+	}
+	else
+	{
+		mNSize = Vec2(mSize.x / (float)gEnv->pRenderer->GetWidth(), mSize.y / (float)gEnv->pRenderer->GetHeight());
+	}
+	UpdateWorldSize(true);
+	UpdateAlignedPos();
+	OnSizeChanged();
+}
+
+//---------------------------------------------------------------------------
+void WinBase::SetSizeModificator(const Vec2I& sizemod)
+{
+	Vec2 nsizeMod;
+	mSizeMod = sizemod;
+	if(mParent)
+	{
+		nsizeMod = mParent->PixelToLocalNSize(mSizeMod);
+	}
+	else
+	{
+		nsizeMod = Vec2(mSizeMod.x / (float)gEnv->pRenderer->GetWidth(), mSizeMod.y / (float)gEnv->pRenderer->GetHeight());
+	}
+	SetNSize(mNSize + nsizeMod);
+}
+
+void WinBase::SetSizeX(int x)
+{
+	mUseAbsoluteXSize = true;
+	mSize.x = x;
+	if (mSize.x < 0)
+		mSize.x = gEnv->pRenderer->GetWidth() + mSize.x;
+
+	if (mParent)
+	{
+		mNSize.x = mParent->PixelToLocalNWidth(mSize.x);
+	}
+	else
+	{
+		mNSize.x = mSize.x / (float)gEnv->pRenderer->GetWidth();
+	}
+	UpdateWorldSize(true);
+	UpdateAlignedPos();
+	OnSizeChanged();
+}
+void WinBase::SetSizeY(int y)
+{
+	mUseAbsoluteYSize = true;
+	mSize.y = y;
+	if (mSize.y < 0)
+		mSize.y = gEnv->pRenderer->GetHeight() + mSize.y;
+
+	if (mParent)
+	{
+		mNSize.y = mParent->PixelToLocalNHeight(mSize.y);
+	}
+	else
+	{
+		mNSize.y = mSize.y / (float)gEnv->pRenderer->GetHeight();
+	}
+	UpdateWorldSize(true);
+	OnSizeChanged();
 }
 
 void WinBase::SetNSize(const fastbird::Vec2& size) // normalized size (0.0~1.0)
 {
+	if (!mAbsTempLock)
+	{
+		mUseAbsoluteXSize = false;
+		mUseAbsoluteYSize = false;
+	}
 	mNSize = size;
-	mSize = ConvertToScreen(size);
-	UpdateWorldSize();
+	if (mParent)
+	{
+		mSize = mParent->LocalNSizeToPixel(size);
+	}
+	else
+	{
+		mSize = Vec2I((int)(mNSize.x * gEnv->pRenderer->GetWidth()), (int)(mNSize.y*gEnv->pRenderer->GetHeight()));
+	}
+	
+	UpdateWorldSize(true);
+	UpdateAlignedPos();
+	OnSizeChanged();
+}
+
+void WinBase::SetNSizeX(float x) // normalized size (0.0~1.0)
+{
+	mUseAbsoluteXSize = false;
+	mNSize.x = x;
+	if (mParent)
+		mSize.x = mParent->LocalNWidthToPixel(x);
+	else
+		mSize.x = (int)(x * gEnv->pRenderer->GetWidth());
+
+	UpdateWorldSize(true);
+	UpdateAlignedPos();
+	OnSizeChanged();
+}
+
+void WinBase::SetNSizeY(float y) // normalized size (0.0~1.0)
+{
+	mUseAbsoluteYSize = false;
+	mNSize.y = y;
+	if (mParent)
+		mSize.y = mParent->LocalNHeightToPixel(y);
+	else
+		mSize.y = (int)(y * gEnv->pRenderer->GetHeight());
+
+	UpdateWorldSize(true);
 	UpdateAlignedPos();
 	OnSizeChanged();
 }
@@ -93,8 +231,20 @@ void WinBase::SetWNSize(const fastbird::Vec2& size)
 }
 
 // world coordinate
-void WinBase::UpdateWorldSize()
+void WinBase::UpdateWorldSize(bool settingSize)
 {
+	if (!settingSize)
+	{
+		if (mUseAbsoluteXSize)
+		{
+			SetSizeX(mSize.x);
+		}
+		if (mUseAbsoluteYSize)
+		{
+			SetSizeY(mSize.y);
+		}
+	}
+	
 	mWNSize = mNSize;
 	if (mParent)
 		mWNSize = mParent->ConvertChildSizeToWorldCoord(mWNSize);
@@ -103,20 +253,168 @@ void WinBase::UpdateWorldSize()
 //---------------------------------------------------------------------------
 void WinBase::SetPos(const fastbird::Vec2I& pos)
 {
+	mUseAbsoluteXPos = true;
+	mUseAbsoluteYPos = true;
 	mPos = pos;
-	// internal calculation done always in normalized space
-	SetNPos(ConvertToNormalized(pos));
+	if (mPos.x < 0)
+		mPos.x = gEnv->pRenderer->GetWidth() + mPos.x;
+	if (mPos.y < 0)
+		mPos.y = gEnv->pRenderer->GetHeight() + mPos.y;
+	if (mParent)
+	{
+		mNPos = mParent->PixelToLocalNPos(mPos);
+	}
+	else
+	{
+		mNPos = Vec2(mPos.x / (float)gEnv->pRenderer->GetWidth(), mPos.y / (float)gEnv->pRenderer->GetHeight());
+	}
+	UpdateWorldPos(true);
 }
+
+void WinBase::SetPosX(int x)
+{
+	mUseAbsoluteXPos = true;
+	mPos.x = x;
+	if (mPos.x < 0)
+	{
+		if (mParent)
+			mPos.x = mParent->GetSize().x + mPos.x;
+		else
+			mPos.x = gEnv->pRenderer->GetWidth() + mPos.x;
+	}
+	if (mParent)
+	{
+		mNPos.x = mParent->PixelToLocalNPosX(mPos.x);
+	}
+	else
+	{
+		mNPos.x = mPos.x / (float)gEnv->pRenderer->GetWidth();
+	}
+	UpdateWorldPos(true);
+}
+
+void WinBase::SetPosY(int y)
+{
+	mUseAbsoluteYPos = true;
+	mPos.y = y;
+	if (mPos.y < 0)
+	{
+		if (mParent)
+			mPos.y = mParent->GetSize().y + mPos.y;
+		else
+			mPos.y = gEnv->pRenderer->GetHeight() + mPos.y;
+	}
+	if (mParent)
+	{
+		mNPos.y = mParent->PixelToLocalNPosY(mPos.y);
+	}
+	else
+	{
+		mNPos.y = mPos.y / (float)gEnv->pRenderer->GetHeight();
+	}
+	UpdateWorldPos(true);
+}
+
+void WinBase::SetInitialOffset(Vec2I offset)
+{
+	Vec2 noffset;
+	mAbsOffset = offset;
+	if (mParent)
+	{
+		noffset = mParent->PixelToLocalNPos(offset);
+	}
+	else
+	{
+		noffset = Vec2(offset.x / (float)gEnv->pRenderer->GetWidth(), offset.y / (float)gEnv->pRenderer->GetHeight());
+	}
+	mAbsTempLock = true;
+	SetNPos(mNPos + noffset);
+	mAbsTempLock = false;
+}
+
 
 void WinBase::SetNPos(const fastbird::Vec2& pos) // normalized pos (0.0~1.0)
 {	
+	if (!mAbsTempLock)
+	{
+		mUseAbsoluteXPos = false;
+		mUseAbsoluteYPos = false;
+	}
+
 	mNPos = pos;
-	mPos = ConvertToScreen(pos);
-	UpdateWorldPos();
+	if (mParent)
+		mPos = mParent->LocalNSizeToPixel(pos);
+	else
+		mPos = Vec2I((int)(mNPos.x * gEnv->pRenderer->GetWidth()), (int)(mNPos.y * gEnv->pRenderer->GetHeight()));
+	UpdateWorldPos(true);
 }
 
-void WinBase::UpdateWorldPos()
+void WinBase::SetNPosX(float x)
 {
+	mUseAbsoluteXPos = false;
+	mNPos.x = x;
+	if (mParent)
+	{
+		mPos.x = mParent->LocalNWidthToPixel(x);
+	}
+	else
+	{
+		mPos.x = (int)(x * gEnv->pRenderer->GetWidth());
+	}
+	
+	UpdateWorldPos(true);
+
+}
+void WinBase::SetNPosY(float y)
+{
+	mUseAbsoluteYPos = false;
+	mNPos.y = y;
+	if (mParent)
+	{
+		mPos.y = mParent->LocalNHeightToPixel(y);
+	}
+	else
+	{
+		mPos.y = (int)(y*gEnv->pRenderer->GetHeight());
+	}
+	
+	UpdateWorldPos(true);
+}
+
+void WinBase::UpdateWorldPos(bool settingPos)
+{
+	if (!settingPos)
+	{
+		// not setting position.
+		// maybe resolution is changed or parent pos changed.
+		if (mUseAbsoluteXPos)
+		{
+			SetPosX(mPos.x);
+		}
+		if (mUseAbsoluteYPos)
+		{
+			SetPosY(mPos.y);
+		}
+		Vec2 noffset(0, 0);
+		if (mAbsOffset != Vec2I::ZERO)
+		{
+			if (mParent)
+			{
+				noffset = mParent->PixelToLocalNPos(mAbsOffset);
+			}
+			else
+			{
+				noffset = Vec2(mAbsOffset.x / (float)gEnv->pRenderer->GetWidth(), mAbsOffset.y / (float)gEnv->pRenderer->GetHeight());
+			}
+		}
+
+		mAbsTempLock = true;
+		SetNPos(mNPos + noffset);
+		mAbsTempLock = false;
+		return;
+	}
+	
+
 	UpdateAlignedPos();
 	// mNPos and mPos has updated value.
 	mWNPos = mNPosAligned;
@@ -129,16 +427,15 @@ void WinBase::UpdateWorldPos()
 //---------------------------------------------------------------------------
 fastbird::Vec2I WinBase::ConvertToScreen(const fastbird::Vec2 npos) const
 {
-	Vec3 ndc( npos.x*2.f - 1.f,	npos.y*2.f - 1.f, 0.f);
-	return gEnv->pRenderer->ToSreenPos(ndc);
+	Vec2I screenPos = { (int)(npos.x * gEnv->pRenderer->GetWidth()), (int)((npos.y) * gEnv->pRenderer->GetHeight()) };
+
+	return screenPos;
 }
 
 
 fastbird::Vec2 WinBase::ConvertToNormalized(const fastbird::Vec2I pos) const
 {
-	Vec2 ndc = gEnv->pRenderer->ToNdcPos(pos);
-	// convert to normalized space
-	Vec2 npos((ndc.x + 1.f) * .5f, (-ndc.y + 1.f) * .5f);
+	Vec2 npos = { pos.x / (float)gEnv->pRenderer->GetWidth(), pos.y / (float)gEnv->pRenderer->GetHeight() };
 	return npos;
 }
 
@@ -147,7 +444,7 @@ void WinBase::SetAlign(ALIGNH::Enum h, ALIGNV::Enum v)
 {
 	mAlignH = h;
 	mAlignV = v;
-	UpdateWorldPos();
+	UpdateWorldPos(true);
 }
 
 void WinBase::UpdateAlignedPos()
@@ -193,12 +490,27 @@ void WinBase::SetParent(Container* parent)
 	mParent = parent;
 }
 
-//---------------------------------------------------------------------------
-bool WinBase::IsIn(const Vec2& mouseNormpos)
+void WinBase::SetManualParent(WinBase* parent)
 {
+	mManualParent = parent;
+}
+//---------------------------------------------------------------------------
+bool WinBase::IsIn(IMouse* mouse)
+{
+	assert(mouse);
+	Vec2 mouseNormpos = mouse->GetNPos();
+	long x, y;
+	mouse->GetPos(x, y);
 	float wx = mWNPos.x + mWNPosOffset.x;
 	float wy = mWNPos.y + mWNPosOffset.y;
-	return !(mouseNormpos.x < wx ||
+	bool inScissor = true;
+	if (mUseScissor)
+	{
+		const RECT& rect = GetScissorRegion();
+		inScissor = !(x < rect.left || x > rect.right || y < rect.top || y > rect.bottom);
+
+	}
+	return inScissor && !(mouseNormpos.x < wx ||
 		mouseNormpos.x > wx + mWNSize.x ||
 		mouseNormpos.y < wy ||
 		mouseNormpos.y > wy + mWNSize.y);
@@ -210,18 +522,20 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	if (!mVisible)
 		return false;
 	mMouseIn = false;
-	if (mouse->IsValid())
+	if (mouse->IsValid() && !mNoMouseEvent)
 	{
 		// hit test
 		
 		Vec2 mousepos = mouse->GetNPos();
-		mMouseIn = IsIn(mousepos);
+		mMouseIn = mMouseDragStartInHere || IsIn(mouse);
 
 		if (mouse->IsValid())
 		{
 			if (mMouseIn)
 			{
-				if (mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
+				if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
+					|| (mMouseDragStartInHere && mouse->IsLButtonDown())
+					)
 				{
 					mMouseDragStartInHere = true;
 				}
@@ -231,26 +545,43 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 				if (mouse->IsLButtonDown() && mMouseDragStartInHere)
 				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
-						mouse->Invalidate();
+					long x,  y;
+					mouse->GetDeltaXY(x, y);
+					if (x != 0 || y != 0)
+					{
+						if (OnEvent(IEventHandler::EVENT_MOUSE_DRAG))
+							mouse->Invalidate();
+					}
+					else
+					{
+						if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
+							mouse->Invalidate();
+					}
 				}
 				else if (mMouseInPrev)
 				{
 					OnEvent(IEventHandler::EVENT_MOUSE_HOVER);
+					ToolTipEvent(IEventHandler::EVENT_MOUSE_HOVER, mousepos);
 				}
 				else if (mMouseIn)
 				{
 					OnEvent(IEventHandler::EVENT_MOUSE_IN);
+					ToolTipEvent(IEventHandler::EVENT_MOUSE_IN, mousepos);
 				}
 
 				if (mouse->IsLButtonClicked())
 				{
-					if (OnEvent(EVENT_MOUSE_CLICK))
+					if (OnEvent(EVENT_MOUSE_LEFT_CLICK))
 						mouse->Invalidate();
 				}
 				else if (mouse->IsLButtonDoubleClicked())
 				{
-					if (OnEvent(EVENT_MOUSE_DOUBLE_CLICK))
+					if (OnEvent(EVENT_MOUSE_LEFT_DOUBLE_CLICK))
+						mouse->Invalidate();
+				}
+				else if (mouse->IsRButtonClicked())
+				{
+					if (OnEvent(EVENT_MOUSE_RIGHT_CLICK))
 						mouse->Invalidate();
 				}
 			}
@@ -258,8 +589,8 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			{
 				if (mMouseInPrev)
 				{
-					mouse->Invalidate();
 					OnEvent(IEventHandler::EVENT_MOUSE_OUT);
+					ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
 				}
 			}
 			
@@ -289,10 +620,10 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	return mMouseIn;
 }
 
-IWinBase* WinBase::FocusTest(Vec2 normalizedMousePos)
+IWinBase* WinBase::FocusTest(IMouse* mouse)
 {
 	IWinBase* ret = 0;
-	IsIn(normalizedMousePos) ? ret = this : ret = 0;
+	IsIn(mouse) ? ret = this : ret = 0;
 	return ret;
 }
 
@@ -342,18 +673,15 @@ HCURSOR WinBase::GetMouseCursorOver()
 
 void WinBase::AlignText()
 {
-	IFont* pFont = gEnv->pRenderer->GetFont();
 	if (mTextw.empty())
 		return;
-
-	pFont->SetHeight(mTextSize);
-	int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
-		(const char*)mTextw.c_str(), mTextw.size()*2);
-	pFont->SetBackToOrigHeight();
-	float nwidth = ConvertToNormalized(Vec2I(width, width)).x;
-	if (mMatchSize && width !=0)
+	
+	float nwidth = ConvertToNormalized(Vec2I(mTextWidth, mTextWidth)).x;
+	if (mMatchSize && mTextWidth != 0 && !mLockTextSizeChange)
 	{ 
-		SetSize(Vec2I((int)(width+LEFT_GAP*2.f), mSize.y));
+		mLockTextSizeChange = true;
+		SetSize(Vec2I((int)(mTextWidth + LEFT_GAP*2.f), mSize.y));
+		mLockTextSizeChange = false;
 	}
 	if (mUIObject)
 	{
@@ -383,12 +711,12 @@ void WinBase::AlignText()
 		{
 		case ALIGNV::TOP:
 		{
-							startPos.y = mWNPos.y + (mTextSize / (float)gEnv->pRenderer->GetHeight());
+							startPos.y = mWNPos.y +(mTextSize / (float)gEnv->pRenderer->GetHeight());
 		}
 			break;
 		case ALIGNV::MIDDLE:
 		{
-							   startPos.y = mWNPos.y + mWNSize.y*.5f + (mTextSize / (float)gEnv->pRenderer->GetHeight())*.4f;
+							   startPos.y = mWNPos.y + mWNSize.y*.5f + (mTextSize*.5f / (float)gEnv->pRenderer->GetHeight());
 		}
 			break;
 		case ALIGNV::BOTTOM:
@@ -409,6 +737,16 @@ void WinBase::OnPosChanged()
 
 	if (mParent)
 		mParent->OnChildPosSizeChanged(this);
+	RefreshBorder();
+}
+
+void WinBase::CalcTextWidth()
+{
+	IFont* pFont = gEnv->pRenderer->GetFont();
+	pFont->SetHeight(mTextSize);
+	mTextWidth = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+		(const char*)mTextw.c_str(), mTextw.size() * 2);
+	pFont->SetBackToOrigHeight();
 }
 
 void WinBase::OnSizeChanged()
@@ -421,13 +759,15 @@ void WinBase::OnSizeChanged()
 		{
 			const RECT& region = mUIObject->GetRegion();
 			mTextSize = (float)(region.bottom - region.top);
+			CalcTextWidth();
 			AlignText();
 			mUIObject->SetTextSize(mTextSize);
 		}
 	}
 
-	if (mParent)
-		mParent->OnChildPosSizeChanged(this);
+	// we need this for alignment
+	UpdateWorldPos(true);
+	RefreshBorder();
 }
 
 void WinBase::SetTextColor(const Color& c)
@@ -443,6 +783,8 @@ void WinBase::SetText(const wchar_t* szText)
 	if (mUIObject)
 		mUIObject->SetText(szText);
 
+	CalcTextWidth();
+
 	AlignText();
 }
 
@@ -451,13 +793,15 @@ const wchar_t* WinBase::GetText() const
 	return mTextw.c_str();
 }
 
-IUIAnimation* WinBase::GetUIAnimation()
+IUIAnimation* WinBase::GetUIAnimation(const char* name)
 {
-	if (!mAnimation)
+	auto itfind = mAnimations.Find(name);
+	if (itfind == mAnimations.end())
 	{
-		mAnimation = FB_NEW(UIAnimation);
+		mAnimations[name] = FB_NEW(UIAnimation);
+		mAnimations[name]->SetName(name);
 	}
-	return mAnimation;		
+	return mAnimations[name];
 }
 
 bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
@@ -483,6 +827,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 								   if (mUIObject)
 								   {
 									   mTextSize = StringConverter::parseReal(val, 20.0f);
+									   CalcTextWidth();
 									   mUIObject->SetTextSize(mTextSize);
 									   return true;
 								   }
@@ -498,11 +843,13 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT_ALIGN:
 		{
 								   mTextAlignH = ALIGNH::ConvertToEnum(val);
+								   AlignText();
 									return true;
 		}
 	case UIProperty::TEXT_VALIGN:
 	{
 									mTextAlignV = ALIGNV::ConvertToEnum(val);
+									AlignText();
 								   return true;
 	}
 	case UIProperty::MATCH_SIZE:
@@ -559,9 +906,55 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 		case UIProperty::ALPHA:
 		{
+								  bool b = StringConverter::parseBool(val);
 								  if (mUIObject)
-									  mUIObject->SetAlphaBlending(true);
+									  mUIObject->SetAlphaBlending(b);
+								  IUIManager::GetUIManager().DirtyRenderList();
 								  return true;
+		}
+
+		case UIProperty::TOOLTIP:
+		{
+									assert(val);
+									mTooltipText = AnsiToWide(val, strlen(val));
+									return true;
+		}
+
+		case UIProperty::NO_MOUSE_EVENT:
+		{
+										   mNoMouseEvent = StringConverter::parseBool(val);
+										   return true;
+		}
+
+		case UIProperty::USE_SCISSOR:
+		{
+										mUseScissor = StringConverter::parseBool(val);
+										if (!mUseScissor)
+										{
+											mUIObject->SetUseScissor(false, RECT());
+										}
+										else if (mParent && mUIObject)
+											mUIObject->SetUseScissor(mUseScissor, mParent->GetRegion());
+										return true;
+		}
+
+		case UIProperty::USE_BORDER:
+		{
+									   bool use = StringConverter::parseBool(val);
+									   SetUseBorder(use);
+									   return true;
+		}
+
+		case UIProperty::SCISSOR_STOP_HERE:
+		{
+											  mStopScissorParent = StringConverter::parseBool(val);
+											  return true;
+		}
+		case UIProperty::SPECIAL_ORDER:
+		{
+										  mSpecialOrder = StringConverter::parseInt(val);
+										  mUIObject->SetSpecialOrder(mSpecialOrder);
+										return true;
 		}
 	}
 
@@ -569,11 +962,138 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	return false;
 }
 
+void WinBase::SetUseBorder(bool use)
+{
+	if (use && mBorders.empty())
+	{
+		ImageBox* T = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(T);
+		T->SetManualParent(this);
+		T->SetSizeY(3);
+		T->SetTextureAtlasRegion("es/textures/ui.xml", "Box_T");		
+
+		ImageBox* L = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(L);
+		L->SetManualParent(this);
+		L->SetSizeX(3);		
+		L->SetTextureAtlasRegion("es/textures/ui.xml", "Box_L");		
+
+		ImageBox* R = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(R);
+		R->SetManualParent(this);
+		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		R->SetSizeX(3);		
+		R->SetTextureAtlasRegion("es/textures/ui.xml", "Box_R");
+		
+
+		ImageBox* B = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(B);
+		B->SetManualParent(this);
+		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		B->SetSizeY(3);
+		B->SetTextureAtlasRegion("es/textures/ui.xml", "Box_B");
+
+		ImageBox* LT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(LT);
+		LT->SetManualParent(this);
+		LT->SetSize(Vec2I(6, 6));
+		LT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LT");		
+
+		ImageBox* RT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(RT);
+		RT->SetManualParent(this);
+		RT->SetSize(Vec2I(6, 6));
+		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		RT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RT");		
+
+		ImageBox* LB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);;
+		mBorders.push_back(LB);
+		LB->SetManualParent(this);
+		LB->SetSize(Vec2I(5, 5));
+		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		LB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LB");
+
+		ImageBox* RB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		mBorders.push_back(RB);
+		RB->SetManualParent(this);
+		RB->SetSize(Vec2I(6, 6));
+		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
+		RB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RB");
+		
+		RefreshBorder();
+		IUIManager::GetUIManager().DirtyRenderList();
+	}
+	else if (!use && !mBorders.empty())
+	{
+		for each (ImageBox* ib in mBorders)
+		{
+			IUIManager::GetUIManager().DeleteComponent(ib);
+		}
+		mBorders.clear();
+		IUIManager::GetUIManager().DirtyRenderList();
+	}
+}
+void WinBase::RefreshBorder()
+{
+	if (mBorders.empty())
+		return;
+
+	enum ORDER{
+		ORDER_T,
+		ORDER_L,
+		ORDER_R,
+		ORDER_B,
+		ORDER_LT,
+		ORDER_RT,
+		ORDER_LB,
+		ORDER_RB,
+		
+		ORDER_NUM
+	};
+
+	assert(mBorders.size() == ORDER_NUM);
+
+	mBorders[ORDER_T]->SetNSizeX(mWNSize.x);
+	mBorders[ORDER_T]->SetWNPos(mWNPos);
+
+	mBorders[ORDER_L]->SetNSizeY(mWNSize.y);
+	mBorders[ORDER_L]->SetWNPos(mWNPos);
+
+	mBorders[ORDER_R]->SetNSizeY(mWNSize.y);
+	Vec2 wnpos = mWNPos;
+	wnpos.x += mWNSize.x;
+	mBorders[ORDER_R]->SetWNPos(wnpos);
+
+	mBorders[ORDER_B]->SetNSizeX(mWNSize.x);
+	wnpos = mWNPos;
+	wnpos.y += mWNSize.y;
+	mBorders[ORDER_B]->SetWNPos(wnpos);
+
+	mBorders[ORDER_LT]->SetWNPos(mWNPos);
+
+	wnpos = mWNPos;
+	wnpos.x += mWNSize.x;
+	mBorders[ORDER_RT]->SetWNPos(wnpos);
+
+	wnpos = mWNPos;
+	wnpos.y += mWNSize.y;
+	mBorders[ORDER_LB]->SetWNPos(wnpos);
+
+	wnpos = mWNPos + mWNSize;
+	mBorders[ORDER_RB]->SetWNPos(wnpos);
+}
+
 void WinBase::SetNPosOffset(const Vec2& offset)
 {
 	mWNPosOffset = offset;
 	if (mUIObject)
 		mUIObject->SetNPosOffset(offset);
+	RefreshScissorRects();
+
+	for each (IWinBase* var in mBorders)
+	{
+		var->SetNPosOffset(offset);
+	}
 }
 
 void WinBase::SetAnimNPosOffset(const Vec2& offset)
@@ -581,12 +1101,16 @@ void WinBase::SetAnimNPosOffset(const Vec2& offset)
 	mWNAnimPosOffset = offset;
 	if (mUIObject)
 		mUIObject->SetAnimNPosOffset(offset);
+	RefreshScissorRects();
 }
 
 void WinBase::SetScissorRect(bool use, const RECT& rect)
 {
+	mUseScissor = use;
 	if (mUIObject)
+	{
 		mUIObject->SetUseScissor(use, rect);
+	}
 }
 
 const RECT& WinBase::GetRegion() const
@@ -603,7 +1127,7 @@ void WinBase::PosAnimationTo(const Vec2& destNPos, float speed)
 {
 	if (destNPos != mNPos)
 	{
-		mAnimationEnabled = true;
+		mSimplePosAnimEnabled = true;
 		mDestNPos = destNPos;
 		mAnimationSpeed = speed;
 	}
@@ -612,7 +1136,7 @@ void WinBase::PosAnimationTo(const Vec2& destNPos, float speed)
 void WinBase::OnStartUpdate(float elapsedTime)
 {
 	// Static Animation.
-	if (mAnimationEnabled)
+	if (mSimplePosAnimEnabled)
 	{
 		Vec2 to = mDestNPos - mNPos;
 		float length = to.Normalize();
@@ -625,16 +1149,25 @@ void WinBase::OnStartUpdate(float elapsedTime)
 		else
 		{
 			movement = length;
-			mAnimationEnabled = false;
-		}			
+			mSimplePosAnimEnabled = false;
+		}
 		SetNPos(mNPos + to*movement);
 	}
 
 	// Key Frame Animation
-	if (mAnimation && mUIObject)
+	FB_FOREACH(it, mAnimations)
 	{
-		mAnimation->Update(elapsedTime);
-		SetAnimNPosOffset(mAnimation->GetCurrentPos());
+		if (it->second->IsActivated())
+		{
+			IUIAnimation* anim = it->second;
+			anim->Update(elapsedTime);
+			if (anim->HasPosAnim())
+				SetAnimNPosOffset(anim->GetCurrentPos());
+			if (anim->HasBackColorAnim())
+				SetProperty(UIProperty::BACK_COLOR, StringConverter::toString(anim->GetCurrentBackColor()).c_str());
+			if (anim->HasTextColorAnim())
+				SetProperty(UIProperty::TEXT_COLOR, StringConverter::toString(anim->GetCurrentTextColor()).c_str());
+		}
 	}
 }
 
@@ -643,6 +1176,14 @@ void WinBase::SetAlphaBlending(bool set)
 	if (mUIObject)
 		mUIObject->SetAlphaBlending(set);
 }
+
+//bool WinBase::GetAlphaBlending() const
+//{
+//	if (mUIObject)
+//		return mUIObject->GetAlphaBlending();
+//
+//	return false;
+//}
 
 float WinBase::PixelToLocalNWidth(int pixel) const
 {
@@ -655,37 +1196,59 @@ float WinBase::PixelToLocalNHeight(int pixel) const
 
 Vec2 WinBase::PixelToLocalNSize(const Vec2I& pixel) const
 {
-	return Vec2(PixelToLocalNWidth(pixel.x), PixelToLocalNWidth(pixel.y));
+	return Vec2(PixelToLocalNWidth(pixel.x), PixelToLocalNHeight(pixel.y));
+}
+
+int WinBase::LocalNWidthToPixel(float nwidth) const
+{
+	return (int)(nwidth * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
+}
+int WinBase::LocalNHeightToPixel(float nheight) const
+{
+	return (int)(nheight * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
+}
+Vec2I WinBase::LocalNSizeToPixel(const Vec2& nsize) const
+{
+	return Vec2I(LocalNWidthToPixel(nsize.x), LocalNHeightToPixel(nsize.y));
 }
 
 float WinBase::PixelToLocalNPosX(int pixel) const
 {
-	return pixel / (float)gEnv->pRenderer->GetWidth() * mWNSize.x;
+	return (float)pixel / ((float)gEnv->pRenderer->GetWidth() * mWNSize.x);
 }
 float WinBase::PixelToLocalNPosY(int pixel) const
 {
-	return pixel / (float)gEnv->pRenderer->GetHeight() * mWNSize.y;
+	return (float)pixel / ((float)gEnv->pRenderer->GetHeight() * mWNSize.y);
 }
 
 Vec2 WinBase::PixelToLocalNPos(const Vec2I& pixel) const
 {
-	return Vec2(PixelToLocalNPosX(pixel.x), PixelToLocalNPosX(pixel.y));
+	return Vec2(PixelToLocalNPosX(pixel.x), PixelToLocalNPosY(pixel.y));
 }
+
+int WinBase::LocalNPosXToPixel(float nposx) const
+{
+	return (int)(nposx * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
+}
+int WinBase::LocalNPosYToPixel(float nposy) const
+{
+	return (int)(nposy * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
+}
+Vec2I WinBase::LocalNPosToPixel(const Vec2& npos) const
+{
+	return Vec2I(LocalNPosXToPixel(npos.x), LocalNPosYToPixel(npos.y));
+}
+
 
 float WinBase::GetTextWidthLocal() const
 {
-	IFont* pFont = gEnv->pRenderer->GetFont();
 	if (mTextw.empty())
 		return 0.f;
 
-	pFont->SetHeight(mTextSize);
-	int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
-		(const char*)mTextw.c_str(), mTextw.size() * 2);
-	pFont->SetBackToOrigHeight();
 	if (mParent)
-		return mParent->PixelToLocalNWidth(width);
+		return mParent->PixelToLocalNWidth(mTextWidth);
 
-	return width / (float)gEnv->pRenderer->GetWidth();
+	return mTextWidth / (float)gEnv->pRenderer->GetWidth();
 }
 
 float WinBase::GetTextEndWLocal() const
@@ -706,138 +1269,226 @@ float WinBase::GetTextEndWLocal() const
 bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 {
 	assert(pelem);
-	Vec2 npos(0, 0);
-	const char* sz = pelem->Attribute("npos");
+
+	const char* sz = pelem->Attribute("name");
 	if (sz)
-		npos = StringConverter::parseVec2(sz);
+		SetName(sz);
+
+	sz = pelem->Attribute("npos");
+	if (sz)
+	{
+		Vec2 npos = StringConverter::parseVec2(sz);
+		SetNPos(npos);
+	}
 
 	// positions
 	sz = pelem->Attribute("pos");
 	if (sz)
 	{
 		Vec2I pos = StringConverter::parseVec2I(sz);
-		if (mParent)
-		{
-			npos = mParent->PixelToLocalNPos(pos);
-		}
-		else
-		{
-			npos = Vec2(pos.x / (float)gEnv->pRenderer->GetWidth(), pos.y / (float)gEnv->pRenderer->GetHeight());
-		}
+		SetPos(pos);
 	}		
 
 	sz = pelem->Attribute("nposX");
 	if (sz)
-		npos.x = StringConverter::parseReal(sz);
+		SetNPosX(StringConverter::parseReal(sz));
 
 	sz = pelem->Attribute("nposY");
 	if (sz)
-		npos.y = StringConverter::parseReal(sz);
+		SetNPosY(StringConverter::parseReal(sz));
 
 	sz = pelem->Attribute("posX");
 	if (sz)
 	{
 		int x = StringConverter::parseInt(sz);
-		if (mParent)
-			npos.x = mParent->PixelToLocalNPosX(x);
-		else
-			npos.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+		SetPosX(x);
 	}
 
 	sz = pelem->Attribute("posY");
 	if (sz)
 	{
 		int y = StringConverter::parseInt(sz);
-		if (mParent)
-			npos.y = mParent->PixelToLocalNPosY(y);
-		else
-			npos.y = y / (float)gEnv->pRenderer->GetHeight();
+		SetPosY(y);
 	}
 
+
+	Vec2 noffset(0, 0);
+	sz = pelem->Attribute("offset");
+	{
+		if (sz)
+		{
+			Vec2I offset = StringConverter::parseVec2I(sz);
+			mAbsOffset = offset;
+			if (mParent)
+			{
+				noffset = mParent->PixelToLocalNPos(offset);
+			}
+			else
+			{
+				noffset = Vec2(offset.x / (float)gEnv->pRenderer->GetWidth(), offset.y / (float)gEnv->pRenderer->GetHeight());
+			}
+		}
+	}
+	sz = pelem->Attribute("offsetX");
+	if (sz)
+	{
+		int x = StringConverter::parseInt(sz);
+		mAbsOffset.x = x;
+		if (mParent)
+			noffset.x = mParent->PixelToLocalNPosX(x);
+		else
+			noffset.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+	}
+
+	sz = pelem->Attribute("offsetY");
+	if (sz)
+	{
+		int y = StringConverter::parseInt(sz);
+		mAbsOffset.y = y;
+		if (mParent)
+			noffset.y = mParent->PixelToLocalNPosY(y);
+		else
+			noffset.y = y / (float)gEnv->pRenderer->GetHeight();
+	}
+	mNPos += noffset;
+
 	//size
-	Vec2 nsize(1.0f, 1.0f);
+	
 	sz = pelem->Attribute("nsize");
 	if (sz)
 	{
-		nsize = StringConverter::parseVec2(sz);
+		Vec2 nsize = StringConverter::parseVec2(sz);
+		SetNSize(nsize);
+	}
+
+	sz = pelem->Attribute("size");
+	if (sz)
+	{
+		Vec2I v = StringConverter::parseVec2I(sz);
+		SetSize(v);
 	}
 
 	sz = pelem->Attribute("nsizeX");
 	if (sz)
 	{
+		float x;
 		if (stricmp(sz, "fill") == 0)
 		{
-			nsize.x = 1.0f - npos.x;
+			x = 1.0f - mNPos.x;
 		}
 		else
 		{
-			nsize.x = StringConverter::parseReal(sz);
+			x = StringConverter::parseReal(sz);
 		}
+		SetNSizeX(x);
 	}
 
 	sz = pelem->Attribute("nsizeY");
 	if (sz)
 	{
+		float y;
 		if (stricmp(sz, "fill") == 0)
 		{
-			nsize.y = 1.0f - npos.y;
+			y = 1.0f - mNPos.y;
 		}
 		else
 		{
-			nsize.y = StringConverter::parseReal(sz);
+			y = StringConverter::parseReal(sz);
 		}
+		SetNSizeY(y);
 	}
 
 	sz = pelem->Attribute("sizeX");
 	if (sz)
-	{
+	{		
 		int x = StringConverter::parseInt(sz);
-		if (mParent)
-		{
-			nsize.x = mParent->PixelToLocalNWidth(x);
-		}
-		else
-		{
-			nsize.x = x / (float)gEnv->pRenderer->GetWidth();
-		}
+		SetSizeX(x);
 	}
 
 	sz = pelem->Attribute("sizeY");
 	if (sz)
 	{
 		int y = StringConverter::parseInt(sz);
-		if (mParent)
-		{
-			nsize.y = mParent->PixelToLocalNHeight(y);
-		}
-		else
-		{
-			nsize.y = y / (float)gEnv->pRenderer->GetHeight();
-		}
+		SetSizeY(y);
 	}
 
-	float aspectRatio = 0.f;
+	float mAspectRatio = 1.f;
 	sz = pelem->Attribute("aspectRatio");
 	if (sz)
 	{
-		aspectRatio = StringConverter::parseReal(sz);
-		Vec2 worldSize = nsize;
+		mAspectRatio = StringConverter::parseReal(sz);
+		float sizex;
+		if (mUseAbsoluteXSize)
+		{
+			if (mParent)
+				sizex = mParent->PixelToLocalNWidth(mSize.x);
+			else
+				sizex = mSize.x / (float)gEnv->pRenderer->GetWidth();
+		}
+		else
+		{
+			sizex = mNSize.x;
+		}
+		Vec2 worldSize;
+
 		if (mParent)
 		{
-			float width = nsize.x;
-			worldSize = mParent->ConvertChildSizeToWorldCoord(Vec2(width, width));
+			worldSize = mParent->ConvertChildSizeToWorldCoord(Vec2(sizex, sizex));
 		}
 		float iWidth = gEnv->pRenderer->GetWidth() * worldSize.x;
-		float iHeight = iWidth / aspectRatio;
-		float height = iHeight / (gEnv->pRenderer->GetHeight() * mWNSize.y);
-		nsize.y = height;
+		float iHeight = iWidth / mAspectRatio;
+		float height = iHeight / (gEnv->pRenderer->GetHeight()*mWNSize.y);
+		/*if (mParent)
+			height = mParent->PixelToLocalNHeight((int)iHeight);
+		else
+			height = */
+		mNSize.y = height;
 	}
 
-	SetNSize(nsize);
-	SetNPos(npos);
-	sz = pelem->Attribute("name");
+	// size mod
+	Vec2 nsizeMod(0, 0);
+	sz = pelem->Attribute("sizeMod");
+	{
+		if (sz)
+		{
+			mSizeMod = StringConverter::parseVec2I(sz);
+			if (mParent)
+			{
+				nsizeMod = mParent->PixelToLocalNSize(mSizeMod);
+			}
+			else
+			{
+				nsizeMod = Vec2(mSizeMod.x / (float)gEnv->pRenderer->GetWidth(), mSizeMod.y / (float)gEnv->pRenderer->GetHeight());
+			}
+		}
+	}
+	sz = pelem->Attribute("sizeModX");
 	if (sz)
-		SetName(sz);
+	{
+		int x = StringConverter::parseInt(sz);
+		mSizeMod.x = x;
+		if (mParent)
+			nsizeMod.x = mParent->PixelToLocalNWidth(x);
+		else
+			nsizeMod.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+	}
+
+	sz = pelem->Attribute("sizeModY");
+	if (sz)
+	{
+		int y = StringConverter::parseInt(sz);
+		mSizeMod.y = y;
+		if (mParent)
+			nsizeMod.y = mParent->PixelToLocalNHeight(y);
+		else
+			nsizeMod.y = y / (float)gEnv->pRenderer->GetHeight();
+	}
+	mNSize += nsizeMod;
+
+	mAbsTempLock = true;
+	SetNSize(mNSize);
+	SetNPos(mNPos);
+	mAbsTempLock = false;
 
 	//ALIGNH::Enum alignh = ALIGNH::LEFT;
 	//ALIGNV::Enum alignv = ALIGNV::TOP;
@@ -862,6 +1513,26 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 			SetProperty((UIProperty::Enum)i, sz);
 		}
 	}
+
+	tinyxml2::XMLElement* pElem = pelem->FirstChildElement("Animation");
+	while (pElem)
+	{
+		// this will create mAnimation
+		IUIAnimation* pAnim = FB_NEW(UIAnimation);
+		pAnim->LoadFromXML(pElem);
+		std::string name = pAnim->GetName();
+		if (mAnimations.Find(name) != mAnimations.end())
+		{
+			FB_DELETE(pAnim);
+		}
+		else
+		{
+			mAnimations[pAnim->GetName()] = pAnim;
+		}
+		pElem = pElem->NextSiblingElement("Animation");
+	}
+
+
 	return true;
 }
 
@@ -869,6 +1540,103 @@ float WinBase::GetTextBottomGap() const
 {
 	float yGap = 2.0f / (float)gEnv->pRenderer->GetHeight();
 	return yGap;
+}
+
+
+void WinBase::ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos)
+{
+	if (mTooltipText.empty())
+		return;
+
+	switch (evt)
+	{
+	case IEventHandler::EVENT_MOUSE_IN:
+	{
+										  IUIManager::GetUIManager().SetTooltipString(mTooltipText);
+
+										  IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+	}
+		break;
+
+	case IEventHandler::EVENT_MOUSE_HOVER:
+		IUIManager::GetUIManager().SetTooltipString(mTooltipText);
+		IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+		break;
+
+	case IEventHandler::EVENT_MOUSE_OUT:
+		IUIManager::GetUIManager().SetTooltipString(std::wstring());
+		break;
+	}
+}
+
+void WinBase::RefreshScissorRects()
+{
+	if (mUseScissor && mUIObject)
+	{
+		if (mParent && mParent->HasUIObject())
+			mUIObject->SetUseScissor(true, mParent->GetScissorRegion());
+		else if (mManualParent && mManualParent->HasUIObject())
+			mUIObject->SetUseScissor(true, mManualParent->GetScissorRegion());
+	}
+}
+
+const RECT& WinBase::GetScissorRegion()
+{
+	if (mStopScissorParent)
+		return mUIObject->GetRegion();
+
+	if (mUseScissor && (mParent||mManualParent))
+	{
+		if (mParent)
+			return mParent->GetScissorRegion();
+		else if (mManualParent)
+			return mManualParent->GetScissorRegion();
+	}
+	if (mParent)
+		return mParent->GetRegion();
+	else if (mManualParent)
+		return mManualParent->GetRegion();
+	else
+	{
+		assert(mUIObject);
+		return mUIObject->GetRegion();
+	}
+}
+
+void WinBase::SetEnable(bool enable)
+{
+	mEnable = enable;
+	IEventHandler* pevent = dynamic_cast<IEventHandler*>(this);
+	if (pevent)
+		pevent->SetEnableEvent(enable);
+
+	if (mUIObject)
+	{
+		mUIObject->SetTextColor(mTextColor * .5f);
+	}
+}
+
+bool WinBase::GetEnable(bool enable) const
+{
+	return mEnable;
+}
+
+void WinBase::RemoveAllEvents(bool includeChildren)
+{
+	EventHandler* eventHandler = dynamic_cast<EventHandler*>(this);
+	assert(eventHandler);
+	eventHandler->UnregisterAllEventFunc();
+}
+
+void WinBase::GatherVisit(std::vector<IUIObject*>& v)
+{
+	if (!mBorders.empty())
+	{
+		for each (IWinBase* var in mBorders)
+		{
+			var->GatherVisit(v);
+		}
+	}
 }
 
 }

@@ -345,7 +345,7 @@ Ray3 Transformation::ApplyInverse(const Ray3& r) const
             float fInvScale = 1.0f/GetUniformScale();
 			kDiff = r.GetOrigin() - mT;
 			newray.SetOrigin(fInvScale*(kDiff*mMat)); // transposed
-			newray.SetDir(r.GetDir() * mMat);
+			newray.SetDir((r.GetDir() * mMat).NormalizeCopy());
         }
         else
         {
@@ -360,7 +360,7 @@ Ray3 Transformation::ApplyInverse(const Ray3& r) const
         Mat33 kInverse = mMat.Inverse();
 		kDiff = r.GetOrigin() - mT;
 		newray.SetOrigin(kInverse*kDiff);
-		newray.SetDir(r.GetDir() * kInverse); // transposed
+		newray.SetDir((kInverse * r.GetDir()).NormalizeCopy()); // transposed
     }
 
 	return newray;

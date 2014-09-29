@@ -51,7 +51,7 @@ namespace fastbird
 		virtual IVertexBuffer* CreateVertexBuffer(void* data, unsigned stride, unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		virtual IIndexBuffer* CreateIndexBuffer(void* data, unsigned int numIndices, INDEXBUFFER_FORMAT format);
 		virtual IShader* CreateShader(const char* filepath, int shaders,
-			const IMaterial::SHADER_DEFINES& defines, IShader* pReloadingShader=0);
+			const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0);
 		virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize);
 		virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0);
 		virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
@@ -100,16 +100,16 @@ namespace fastbird
 
 		virtual void SaveTextureToFile(ITexture* texture, const char* filename);
 
-		virtual void SetTextureSamplerState(ITexture* pTexture, const SAMPLER_DESC& desc);
-
 		virtual IRasterizerState* CreateRasterizerState(const RASTERIZER_DESC& desc);
 		virtual IBlendState* CreateBlendState(const BLEND_DESC& desc);
 		virtual IDepthStencilState* CreateDepthStencilState( const DEPTH_STENCIL_DESC& desc );
+		virtual ISamplerState* CreateSamplerState(const SAMPLER_DESC& desc);
 
 		// internal
 		virtual void SetRasterizerState(IRasterizerState* pRasterizerState);
 		virtual void SetBlendState(IBlendState* pBlendState);
 		virtual void SetDepthStencilState(IDepthStencilState* pDepthStencilState, unsigned stencilRef);
+		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
 		virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
@@ -149,7 +149,7 @@ namespace fastbird
 
 		FRAME_CONSTANTS			mFrameConstants;
 		
-		std::map<SAMPLER_DESC, ID3D11SamplerState*> mSamplerMap;
+		
 
 		typedef std::map<RASTERIZER_DESC, SmartPtr<RasterizerStateD3D11> > RASTERIZER_MAP;
 		RASTERIZER_MAP mRasterizerMap;
@@ -157,6 +157,8 @@ namespace fastbird
 		BLEND_MAP mBlendMap;
 		typedef std::map<DEPTH_STENCIL_DESC, SmartPtr<DepthStencilStateD3D11> > DEPTH_STENCIL_MAP;
 		DEPTH_STENCIL_MAP mDepthStencilMap;
+		typedef std::map<SAMPLER_DESC, SmartPtr<SamplerStateD3D11> > SAMPLER_MAP;
+		SAMPLER_MAP mSamplerMap;
 
 		std::vector<IDXGISwapChain*> mSwapChains;
 		typedef std::vector<ID3D11RenderTargetView*> RTViews;

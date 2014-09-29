@@ -12,12 +12,18 @@ public:
 
 	float WheelSens;
 	float MouseSens;
+	int MoveEditParticle;
 	int UI_Debug;
+	int e_profile;
+	int e_NoMeshLoad;
+	int r_UI;
 	int r_noObjectConstants;
 	int r_noParticleDraw;
-	int e_profile;
 	int r_particleProfile;
 	int r_HDR;
+	float r_HDRMiddleGray;
+	float r_BloomPower;
+	float r_StarPower;
 	int r_GodRay;
 	float r_GodRayWeight;
 	float r_GodRayDecay;
@@ -25,7 +31,7 @@ public:
 	float r_GodRayExposure;
 	int r_Glow;
 	int r_ReportDeviceObjectLeak;
-	int MoveEditParticle;
+	int r_Shadow;
 
 private:
 	std::vector<CVar*> mCVars;

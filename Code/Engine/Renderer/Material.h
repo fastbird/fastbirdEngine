@@ -19,10 +19,14 @@ namespace fastbird
 		explicit Material(const Material& mat);
 		virtual ~Material();
 
+		// only need if you don't use shared ptr
+		virtual void Delete();
+
 		//--------------------------------------------------------------------
 		// IMaterial Interfaces
 		//--------------------------------------------------------------------
 		virtual bool LoadFromFile(const char* filepath);
+		bool LoadFromXml(tinyxml2::XMLElement* pRoot);
 		virtual const char* GetName() const { return mName.c_str(); }
 
 		virtual IMaterial* Clone();
@@ -70,7 +74,7 @@ namespace fastbird
 
 		virtual void Bind(bool inputLayout);
 		IMaterial* GetSubPassMaterial(RENDER_PASS p) const;
-		virtual bool BindSubPass(RENDER_PASS p);
+		virtual bool BindSubPass(RENDER_PASS p, bool includeInputLayout);
 		virtual void BindMaterialParams();
 		virtual void RegisterReloading();
 

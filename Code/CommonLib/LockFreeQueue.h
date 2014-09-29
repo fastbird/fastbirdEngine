@@ -16,6 +16,7 @@ namespace fastbird
 			, mBuffer(0)
 			, mReadIndex(0)
 			, mWriteIndex(0)
+			, mInitialized(false)
 		{}
 
 		~LockFreeQueue()
@@ -28,18 +29,28 @@ namespace fastbird
 
 		void Init(int _Size)
 		{
+			assert(!mInitialized);
 			mSize = fastbird::GetNextPowerOfTwo(_Size);
 			size_t bufferSize = sizeof(type*) * mSize;
 			mBuffer = (type**)malloc(bufferSize);
 			assert(mBuffer);
 			memset(mBuffer, 0, bufferSize);
+			mInitialized = true;
 		}
+
+		bool IsInitialized() const { return mInitialized; }
 		bool HasElement() const { return mReadIndex != mWriteIndex; }
 		bool Enqueue(type* Elem)
 		{
 			LOCK_CRITICAL_SECTION lock(mLock);
 			assert(Elem);
-			assert(mBuffer[mWriteIndex] == 0);
+			if (mBuffer[mWriteIndex] != 0)
+			{
+				assert(0);
+				return false;
+			}
+				
+
 			mBuffer[mWriteIndex] = Elem;
 			++mWriteIndex;
 			if (mWriteIndex >= mSize)
@@ -77,6 +88,12 @@ namespace fastbird
 			}	
 		}
 
+		type* SeeCur()
+		{
+			LOCK_CRITICAL_SECTION lock(mLock);
+			return mBuffer[mReadIndex];
+		}
+
 	private:
 
 		int mSize;
@@ -84,6 +101,7 @@ namespace fastbird
 		long mReadIndex;
 		long mWriteIndex;
 		FB_CRITICAL_SECTION mLock;
+		bool mInitialized;
 	};
 
 

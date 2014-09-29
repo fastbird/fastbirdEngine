@@ -206,6 +206,16 @@
     <ClInclude Include="Renderer\CloudManager.h" />
     <ClInclude Include="Renderer\CloudParticle.h" />
     <ClInclude Include="Renderer\CloudSimulation.h" />
+    <None Include="Renderer\Shaders\CommonDefines.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Renderer\Shaders\CommonFunctions.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Renderer\Shaders\CommonLighting.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </None>
+    <ClInclude Include="Renderer\StarDef.h" />
     <ClInclude Include="Renderer\VolumetricCloud.h" />
     <ClInclude Include="Renderer\D3D11\ConvertEnumD3D11.h" />
     <ClInclude Include="Renderer\D3D11\IndexBufferD3D11.h" />
@@ -288,6 +298,7 @@
     <ClCompile Include="Renderer\CloudManager.cpp" />
     <ClCompile Include="Renderer\CloudParticle.cpp" />
     <ClCompile Include="Renderer\CloudSimulation.cpp" />
+    <ClCompile Include="Renderer\StarDef.cpp" />
     <ClCompile Include="Renderer\VolumetricCloud.cpp" />
     <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp" />
     <ClCompile Include="Renderer\D3D11\InputLayoutD3D11.cpp" />
@@ -338,10 +349,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Renderer\Shaders\CommonFunctions.hlsl">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </None>
     <None Include="Renderer\Shaders\dust.hlsl">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -471,6 +478,44 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Renderer\Shaders\CopyPS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Renderer\Shaders\DownScale2x2.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Renderer\Shaders\StarGlare.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Renderer\Shaders\CalculateAdaptedLum.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumFinal.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumInitial.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Renderer\Shaders\SampleLumIterative.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
     </None>

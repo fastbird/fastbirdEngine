@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Renderer/Light.h>
+#include <Engine/Renderer/Camera.h>
 #include <Engine/IEngine.h>
 
 using namespace fastbird;
@@ -26,7 +27,20 @@ DirectionalLight::DirectionalLight()
 , mPhi(0)
 , mInterpolating(false)
 {
+	mLightCamera = FB_NEW(Camera);
+	mLightCamera->SetOrthogonal(true);
+	mLightCamera->SetWidth(80.0f);
+	mLightCamera->SetHeight(80.0f);
+	mLightCamera->SetNearFar(1.0f, 200.0f);
+	gFBEnv->pEngine->GetCamera(0)->RegisterCamListener(this);
+}
 
+//----------------------------------------------------------------------------
+DirectionalLight::~DirectionalLight()
+{
+	if (gFBEnv->pEngine->GetCamera(0))
+		gFBEnv->pEngine->GetCamera(0)->UnregisterCamListener(this);
+	FB_DELETE(mLightCamera);
 }
 
 //----------------------------------------------------------------------------
@@ -38,6 +52,8 @@ void DirectionalLight::SetPosition(const Vec3& pos)
 	mTheta = acos(mDirection.z);
 	mPhi = atan2(mDirection.y, mDirection.x);
 	mPhi += mPhi < 0 ? TWO_PI : 0;
+
+	SetUpCamera();
 }
 
 //----------------------------------------------------------------------------
@@ -70,6 +86,7 @@ void DirectionalLight::AddTheta(float radian)
 	}
 
 	mDirection = SphericalToCartesian(mTheta, mPhi);
+	SetUpCamera();
 
 }
 
@@ -85,6 +102,7 @@ void DirectionalLight::AddPhi(float radian)
 	}
 
 	mDirection = SphericalToCartesian(mTheta, mPhi);
+	SetUpCamera();
 }
 
 //----------------------------------------------------------------------------
@@ -169,6 +187,24 @@ void DirectionalLight::Render()
 
 //---------------------------------------------------------------------------
 void DirectionalLight::PostRender()
+{
+
+
+}
+
+void DirectionalLight::SetUpCamera()
+{
+	ICamera* pCam = gFBEnv->pEngine->GetCamera(0);
+	assert(pCam);
+	mLightCamera->SetPos(pCam->GetPos() + mDirection * 100.0f);
+	mLightCamera->SetDir(-mDirection);
+}
+
+void DirectionalLight::OnViewMatChanged()
+{
+	SetUpCamera();
+}
+void DirectionalLight::OnProjMatChanged()
 {
 
 }

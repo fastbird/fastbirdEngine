@@ -12,9 +12,6 @@ namespace fastbird
 	class ICardData
 	{
 	public:
-		ICardData();
-		virtual ~ICardData();
-
 		virtual bool operator< (const ICardData& other) = 0;
 	};
 
@@ -26,13 +23,11 @@ namespace fastbird
 		virtual ~CardItem();
 
 		// IWinBase
-		virtual ComponentType::Enum GetType() const { return ComponentType::CardScroller; }
+		virtual ComponentType::Enum GetType() const { return ComponentType::CardItem; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 
 		virtual void OnStartUpdate(float elapsedTime);
 
-		// will not have owner ship of the pointer.
-		// before you delete the pointer, make sure this variable is null.
 		virtual void SetCardData(ICardData* data) { mCardData = data; }
 		
 		bool operator< (const CardItem& other) const;
@@ -40,9 +35,6 @@ namespace fastbird
 
 	private:
 		ICardData* mCardData; // custom class;
-		ImageBox* mBackground;
-		ImageBox* mFrame;
-		StaticText* mType_Name;
 	};
 
 	//------------------------------------------------------------------------
@@ -57,7 +49,12 @@ namespace fastbird
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual void Sort();
 		virtual void SetCardSize_Offset(const Vec2& x_ratio, int offset);
+		virtual void SetCardSize(const Vec2I& size);
+		virtual void SetCardSizeNX(float nx);
+		virtual void SetCardSizeY(int y);
+		virtual void SetCardOffset(int offset);
 		virtual IWinBase* AddCard();
+		virtual void DeleteCard(IWinBase* card);
 		virtual void ArrangeSlots();
 
 	private:
@@ -67,7 +64,8 @@ namespace fastbird
 		{
 			float mNYPos;
 			bool mOccupied;
-
+			IWinBase* mCard;
+			bool operator< (const Slot& other) const;
 		};
 		std::vector<Slot> mSlots;
 		int mNextEmptySlot;

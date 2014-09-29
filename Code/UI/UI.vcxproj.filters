@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="UIManager.h">
-      <Filter>Manager</Filter>
-    </ClInclude>
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="TextField.h">
       <Filter>Components</Filter>
@@ -12,9 +9,6 @@
     <ClInclude Include="ITitleBar.h" />
     <ClInclude Include="IUIManager.h" />
     <ClInclude Include="Wnd.h">
-      <Filter>Components</Filter>
-    </ClInclude>
-    <ClInclude Include="ComponentType.h">
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="WinBase.h">
@@ -72,22 +66,27 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="UIProperty.h" />
+    <ClInclude Include="HorizontalGauge.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="NumericUpDown.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentType.h" />
+    <ClInclude Include="UIManager.h" />
+    <ClInclude Include="DropDown.h">
+      <Filter>Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
       <UniqueIdentifier>{681a5695-95b3-473f-9665-543f9a716444}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Manager">
-      <UniqueIdentifier>{c4c330da-1175-4bf0-88cf-e4fd7c557501}</UniqueIdentifier>
     </Filter>
     <Filter Include="Animation">
       <UniqueIdentifier>{435c2949-5ad0-4113-9a3b-0fdbe1009562}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="UIManager.cpp">
-      <Filter>Manager</Filter>
-    </ClCompile>
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="TextField.cpp">
@@ -140,6 +139,16 @@
       <Filter>Animation</Filter>
     </ClCompile>
     <ClCompile Include="VerticalGauge.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="HorizontalGauge.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="NumericUpDown.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="DropDown.cpp">
       <Filter>Components</Filter>
     </ClCompile>
   </ItemGroup>

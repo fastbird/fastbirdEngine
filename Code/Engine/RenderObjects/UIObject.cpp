@@ -49,6 +49,7 @@ UIObject::UIObject()
 	, mAlphaBlending(false)
 	, mAnimNDCOffset(0, 0)
 	, mAnimNOffset(0, 0)
+	, mSpecialOrder(0)
 {
 	mObjectConstants.gWorld.MakeIdentity();
 	mObjectConstants.gWorldViewProj.MakeIdentity();
@@ -56,8 +57,16 @@ UIObject::UIObject()
 	mOwnerUI = 0;
 	mTextColor = Color::White;
 
-	SetBlendState(BLEND_DESC());
-	SetDepthStencilState(DEPTH_STENCIL_DESC());
+	BLEND_DESC bdesc;
+	bdesc.RenderTarget[0].BlendEnable = true;
+	bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+	bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+	bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+	SetBlendState(bdesc);
+	DEPTH_STENCIL_DESC desc;
+	desc.DepthEnable = false;
+	desc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+	SetDepthStencilState(desc);
 }
 UIObject::~UIObject()
 {
@@ -137,9 +146,6 @@ void UIObject::SetTexCoord(Vec2 coord[], DWORD num)
 	if (coord)
 		mTexcoords.assign(coord, coord+num);
 
-	Vec2 step = coord[2] - coord[1];
-	Vec4 val(step.x, step.y, coord[1].x, coord[1].y);
-	mMaterial->SetMaterialParameters(0, val);
 	mDirty = true;
 }
 
@@ -157,6 +163,14 @@ void UIObject::UpdateRegion()
 	mRegion.top = (LONG)((mNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight());
 	mRegion.right = mRegion.left + (LONG)(mNSize.x * gFBEnv->pRenderer->GetWidth());
 	mRegion.bottom = mRegion.top + (LONG)(mNSize.y * gFBEnv->pRenderer->GetHeight());
+
+	// ratio
+	Vec4 val((mRegion.right - mRegion.left) / (float)(mRegion.bottom - mRegion.top), 
+		// width, height
+		(float)(mRegion.right - mRegion.left), (float)(mRegion.bottom - mRegion.top), 
+		// empty
+		0);
+	mMaterial->SetMaterialParameters(0, val);
 }
 
 void UIObject::SetAlpha(float alpha)
@@ -186,9 +200,6 @@ void UIObject::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORM
 		RASTERIZER_DESC desc;
 		mRasterizerStateShared = gFBEnv->pRenderer->CreateRasterizerState(desc);
 	}
-	DEPTH_STENCIL_DESC desc;
-	desc.DepthEnable = true;
-	SetDepthStencilState(desc);
 
 	if (mVBTexCoord)
 	{
@@ -222,6 +233,8 @@ void UIObject::PreRender()
 
 void UIObject::Render()
 {
+	if (gFBEnv->pConsole->GetEngineCommand()->r_UI == 0)
+		return;
 	D3DEventMarker mark(mDebugString.c_str());
 
 	if (mObjFlag & IObject::OF_HIDE)
@@ -255,7 +268,7 @@ void UIObject::Render()
 		gFBEnv->pRenderer->SetScissorRects(&mScissorRect, 1);
 	}
 
-	if (!mText.empty())
+	/*if (!mText.empty() && !mAlphaBlending)
 	{
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		if (pFont)
@@ -270,7 +283,7 @@ void UIObject::Render()
 				0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
 			pFont->SetBackToOrigHeight();
 		}
-	}
+	}*/
 
 	if (!mNoDrawBackground)
 	{
@@ -289,6 +302,25 @@ void UIObject::Render()
 		gFBEnv->pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
 		gFBEnv->pRenderer->Draw(mVertexBuffer->GetNumVertices(), 0);
 	}
+
+	if (!mText.empty())
+	{
+		IFont* pFont = gFBEnv->pRenderer->GetFont();
+		if (pFont)
+		{
+			gFBEnv->pRenderer->SetAlphaBlendState();
+			pFont->PrepareRenderResources();
+			pFont->SetDefaultConstants();
+			pFont->SetRenderStates(false, mScissor);
+			pFont->SetHeight(mTextSize);
+			pFont->Write(
+				(mTextNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth(),
+				(mTextNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight(),
+				0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
+			pFont->SetBackToOrigHeight();
+		}
+	}
+
 	if (mScissor)
 	{
 		gFBEnv->pRenderer->RestoreScissorRects();
@@ -369,10 +401,15 @@ void UIObject::SetUseScissor(bool use, const RECT& rect)
 			mRasterizerState = gFBEnv->pRenderer->CreateRasterizerState(rd);
 		}
 	}
+	else
+	{
+		mRasterizerState = 0;
+	}
 }
 
 void UIObject::SetAlphaBlending(bool set)
 {
+	/*
 	mAlphaBlending = set;
 	if (set)
 	{
@@ -392,6 +429,11 @@ void UIObject::SetAlphaBlending(bool set)
 		SetBlendState(BLEND_DESC());
 		SetDepthStencilState(DEPTH_STENCIL_DESC());
 	}
-	
+	*/
+}
+
+bool UIObject::GetAlphaBlending() const
+{
+	return mAlphaBlending;
 }
 }

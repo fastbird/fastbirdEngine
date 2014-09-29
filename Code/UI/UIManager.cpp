@@ -14,6 +14,10 @@
 #include <UI/HexagonalContextMenu.h>
 #include <UI/CardScroller.h>
 #include <UI/VerticalGauge.h>
+#include <UI/HorizontalGauge.h>
+#include <UI/NumericUpDown.h>
+#include <UI/DropDown.h>
+#include <Engine/IUIObject.h>
 
 namespace fastbird
 {
@@ -25,6 +29,7 @@ void IUIManager::InitializeUIManager()
 	assert(!mUIManager);
 	mUIManager = FB_NEW(UIManager);
 	WinBase::InitMouseCursor();
+	
 }
 
 void IUIManager::FinalizeUIManager()
@@ -50,15 +55,26 @@ UIManager::UIManager()
 	, mNeedToRegisterUIObject(false)
 	, mFocusWnd(0)
 	, mMouseIn(false)
+	, mPopup(0)
+	, mPopupCallback(std::function< void(void*) >())
+	, mPopupResult(0)
 {
+	gpTimer = gEnv->pTimer;
 	gEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
-	
+	mTooltipUI = IUIObject::CreateUIObject(false);
+	mTooltipUI->mOwnerUI = 0;
+	mTooltipUI->mTypeString = "TooltipUI";	
+	mTooltipUI->SetAlphaBlending(true);
+	mTooltipUI->GetMaterial()->SetDiffuseColor(Vec4(0, 0, 0, 0.7f));
+	mTooltipUI->SetTextColor(Color(1, 1, 1, 1));
 }
 
 UIManager::~UIManager()
 {
+	DeleteWindow(mPopup);
+	mTooltipUI->Delete();
 	assert(mWindows.empty());
 	gEnv->pEngine->RemoveInputListener(this);
 	KeyboardCursor::FinalizeKeyboardCursor();
@@ -86,13 +102,28 @@ void UIManager::Update(float elapsedTime)
 	{
 		mNeedToRegisterUIObject = false;
 		std::vector<IUIObject*> uiObjects;
-		uiObjects.reserve(50);
+		uiObjects.reserve(100);
+
 		WINDOWS::iterator it = mWindows.begin(), itEnd = mWindows.end();
+		size_t start = 0;
 		for (; it!=itEnd; it++)
 		{
 			if ((*it)->GetVisible())
 				(*it)->GatherVisit(uiObjects);
+
+			std::sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
+				return a->GetSpecialOrder() < b->GetSpecialOrder();
+			});
+			start = uiObjects.size();
 		}
+		
+
+		if (!mTooltipText.empty())
+			uiObjects.push_back(mTooltipUI);
+
+		if (mPopup&& mPopup->GetVisible())
+			mPopup->GatherVisit(uiObjects);
+
 		// rendering order : reverse.
 		gEnv->pEngine->RegisterUIs(uiObjects);
 		//uiObjects is invalidated.
@@ -135,7 +166,7 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 
 		ComponentType::Enum type = ComponentType::ConverToEnum(sz);
 
-		IWinBase* p = AddWindow(0.0f, 0.0f, 1.0f, 1.0f, type);
+		IWinBase* p = AddWindow(0.0f, 0.0f, 0.01f, 0.01f, type);
 		if (p)
 		{
 			windows.push_back(p);
@@ -188,11 +219,11 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 // deleting component or wnd
 void UIManager::OnDeleteWinBase(IWinBase* winbase)
 {
+	if (!winbase)
+		return;
 	mNeedToRegisterUIObject = true;
-	if (winbase==mFocusWnd)
-	{
+	if (winbase->GetFocus(true))
 		mFocusWnd = 0;
-	}
 }
 
 void UIManager::SetFocusUI(IWinBase* ui)
@@ -207,7 +238,7 @@ void UIManager::SetFocusUI(IWinBase* ui)
 	WINDOWS::iterator f = std::find(mWindows.begin(), mWindows.end(), ui);
 	if (f!=mWindows.end())
 	{
-		mWindows.splice(mWindows.begin(), mWindows, f);
+		mWindows.splice(mWindows.end(), mWindows, f);
 	}
 	mNeedToRegisterUIObject = true;
 }
@@ -273,6 +304,15 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::VerticalGauge:
 		pWnd = FB_NEW(VerticalGauge);
 		break;
+	case ComponentType::HorizontalGauge:
+		pWnd = FB_NEW(HorizontalGauge);
+		break;
+	case ComponentType::NumericUpDown:
+		pWnd = FB_NEW(NumericUpDown);
+		break;
+	case ComponentType::DropDown:
+		pWnd = FB_NEW(DropDown);
+		break;
 	default:
 		assert(0 && "Unknown component");
 	}
@@ -293,12 +333,12 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked())
 	{
-		WINDOWS::iterator it = mWindows.begin(), itEnd = mWindows.end();
+		auto it = mWindows.rbegin(), itEnd = mWindows.rend();
 		IWinBase* focusWnd = 0;
 		Vec2 mousepos = pMouse->GetNPos();
 		for (; it!=itEnd && !focusWnd; it++)
 		{
-			focusWnd = (*it)->FocusTest(mousepos);
+			focusWnd = (*it)->FocusTest(pMouse);
 		}
 		if (mFocusWnd!=focusWnd)
 		{
@@ -307,7 +347,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	}
 
 	mMouseIn = false;
-	WINDOWS::iterator it = mWindows.begin(),itEnd = mWindows.end();
+	WINDOWS::reverse_iterator it = mWindows.rbegin(),itEnd = mWindows.rend();
 	for (; it!=itEnd; it++)
 	{
 		if ((*it)->GetVisible())
@@ -356,5 +396,105 @@ void UIManager::DisplayMsg(const std::string& msg, ...)
 		}
 	}
 }
+
+static float gTooltipFontSize = 26;
+void UIManager::SetTooltipString(const std::wstring& ts)
+{
+	if (mTooltipText == ts)
+		return;
+	mTooltipText = ts;
+	mTooltipUI->SetText(mTooltipText.c_str());
+	mNeedToRegisterUIObject = true;
+	
+	if (!mTooltipText.empty())
+	{
+		IFont* pFont = gEnv->pRenderer->GetFont();
+		pFont->SetHeight(gTooltipFontSize);
+		int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+			(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
+		pFont->SetBackToOrigHeight();
+
+		Vec2 nsize = { (width + 4) / (float)gEnv->pRenderer->GetWidth(),
+			gTooltipFontSize / (float)gEnv->pRenderer->GetHeight() };
+
+		mTooltipUI->SetNSize(nsize);
+		mTooltipUI->SetTextSize(gTooltipFontSize);
+	}
+}
+
+void UIManager::SetTooltipPos(const Vec2& npos)
+{
+	Vec2 backPos = npos;
+	if (backPos.y < 0.07f)
+	{
+		backPos.y = npos.y + gTooltipFontSize * 2.0f / (float)gEnv->pRenderer->GetHeight();
+	}
+	const Vec2& nSize = mTooltipUI->GetNSize();
+	if (backPos.x + nSize.x>1.0f)
+	{
+		backPos.x -= backPos.x + nSize.x - 1.0f;
+	}
+	mTooltipUI->SetTextStartNPos(backPos);
+	backPos.y -= gTooltipFontSize / (float)gEnv->pRenderer->GetHeight();
+	mTooltipUI->SetNPos(backPos);
+}
+
+void UIManager::CleanTooltip()
+{
+	if (!mTooltipText.empty())
+	{
+		mTooltipText.clear();
+		mNeedToRegisterUIObject = true;
+	}
+}
+
+void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func)
+{
+	if (!mPopup)
+	{
+		mPopup = CreateComponent(ComponentType::Window);
+		mPopup->SetNPos(Vec2(0.5f, 0.5f));
+		mPopup->SetNSize(Vec2(0.3f, 0.1f));
+		mPopup->SetProperty(UIProperty::ALIGNH, "center");
+		mPopup->SetProperty(UIProperty::ALIGNV, "middel");
+		mPopup->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		mPopup->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+		mPopup->SetText(msg);
+
+		WinBase* yes = (WinBase*)mPopup->AddChild(0.49f, 0.99f, 0.25f, 0.1f, ComponentType::Button);
+		yes->SetName("yes");
+		yes->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
+		yes->SetText(L"Yes");
+		yes->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+			std::bind(&UIManager::OnPopupYes, this, std::placeholders::_1));
+
+		WinBase* no = (WinBase*)mPopup->AddChild(0.51f, 0.99f, 0.25f, 0.1f, ComponentType::Button);
+		no->SetName("no");
+		no->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		no->SetText(L"No");
+		no->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+			std::bind(&UIManager::OnPopupNo, this, std::placeholders::_1));
+	}
+	
+	mPopupCallback = func;
+	mPopup->SetVisible(true);
+}
+
+void UIManager::OnPopupYes(void* arg)
+{
+	assert(mPopup);
+	mPopupResult = 1;
+	mPopup->SetVisible(false);
+	mPopupCallback(this);
+}
+
+void UIManager::OnPopupNo(void* arg)
+{
+	assert(mPopup);
+	mPopupResult = 0;
+	mPopup->SetVisible(false);
+	mPopupCallback(this);
+}
+
 } // namespace fastbird
 

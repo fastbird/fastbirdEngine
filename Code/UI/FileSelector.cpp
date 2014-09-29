@@ -37,7 +37,7 @@ FileSelector::FileSelector()
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
 		mDriveButtons.back()->SetText(AnsiToWide(drives[i].c_str(), drives[i].size()));
-		mDriveButtons.back()->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
+		mDriveButtons.back()->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 			std::bind(&FileSelector::OnDriveClick, this, std::placeholders::_1));
 		xpos+= 0.082f;
 	}
@@ -48,21 +48,21 @@ FileSelector::FileSelector()
 	mListBox = static_cast<ListBox*>(
 		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox) );
 	mListBox->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
-	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK, 
+	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
 		std::bind(&FileSelector::OnListClick, this, std::placeholders::_1));
-	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOUBLE_CLICK, 
+	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK, 
 		std::bind(&FileSelector::OnListDoubleClick, this, std::placeholders::_1));
 	
 	mOKButton = static_cast<Button*>(
 		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
-	mOKButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK, 
+	mOKButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
 		std::bind(&FileSelector::OnOK, this, std::placeholders::_1));
 	mOKButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mOKButton->SetText(L"OK");
 
 	mCancelButton = static_cast<Button*>(
 		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
-	mCancelButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
+	mCancelButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnCancel, this, std::placeholders::_1));
 	mCancelButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mCancelButton->SetText(L"Cancel");	

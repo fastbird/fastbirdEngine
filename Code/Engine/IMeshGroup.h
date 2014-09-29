@@ -21,6 +21,7 @@ namespace fastbird
 		virtual const AUXILIARIES* GetAuxiliaries(size_t idx) const = 0;
 		virtual void SetAuxiliaries(size_t idx, const AUXILIARIES& aux) = 0;
 		virtual void AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v) = 0;
+		virtual void AddCollisionShape(size_t idx, std::pair<ColShape::Enum, Transformation>& data) = 0;
 
 		virtual void UpdateTransform(bool force = false) = 0;
 

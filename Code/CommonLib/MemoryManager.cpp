@@ -55,8 +55,8 @@ namespace fastbird
 		auto it = GetMemAllocLines().find(ptr);
 		assert(it != GetMemAllocLines().end());
 		if (file &&  it->second.mFile != file)
-		{			
-			if (strstr(file, "smartptr.h") == 0 && strstr(file, "SmartPtr.h")==0)
+		{
+			if (strstr(file, "smartptr.h") == 0 && strstr(file, "SmartPtr.h") == 0)
 			{
 				Log("Memory(%s, %d, %s) is not deleted in the file where it was allocated. deallocated = (%s, %d)",
 					it->second.mFile.c_str(), it->second.mLine, it->second.mFunc.c_str(), file, line);
@@ -92,7 +92,7 @@ namespace fastbird
 		for (; it != itEnd; ++it)
 		{
 			char buffer[500];
-			sprintf_s(buffer, "memory not released = %s(%d)\n", it->second.mFile.c_str(), it->second.mLine);
+			sprintf_s(buffer, "%s(%d) : memory not released \n", it->second.mFile.c_str(), it->second.mLine);
 			OutputDebugString(buffer);
 		}
 	}

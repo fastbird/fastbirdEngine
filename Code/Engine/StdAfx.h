@@ -68,6 +68,7 @@ extern "C" {
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/Profiler.h>
+#include <CommonLib/CollisionShape.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>

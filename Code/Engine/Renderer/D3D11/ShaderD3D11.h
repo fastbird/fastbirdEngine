@@ -12,6 +12,9 @@ namespace fastbird
 	{
 	public:
 		static ShaderD3D11* CreateInstance(const char* name);
+		virtual void Delete();
+
+		virtual ~ShaderD3D11();
 		
 		void SetVertexShader(ID3D11VertexShader* pVertexShader);
 		void SetVertexShaderBytecode(ID3DBlob* pVertexShaderBytecode);
@@ -38,7 +41,6 @@ namespace fastbird
 
 	protected:
 		ShaderD3D11( const char* name );
-		virtual ~ShaderD3D11();
 
 	private:
 		ID3D11VertexShader* m_pVertexShader;

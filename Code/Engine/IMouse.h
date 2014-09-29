@@ -89,6 +89,8 @@ namespace fastbird
 		virtual void LockMousePos(bool lock) = 0;
 		virtual void OnKillFocus() = 0;
 		virtual void OnSetFocus() = 0;
+
+		virtual const Ray3& GetWorldRay() = 0;
 	};
 }
 

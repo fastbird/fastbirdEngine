@@ -59,7 +59,7 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
-		virtual void DeleteMeshObject(IMeshObject* p);
+		virtual void ReleaseMeshObject(IMeshObject* p);
 		virtual void DeleteMeshGroup(IMeshGroup* p);
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr);
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr);
@@ -77,6 +77,9 @@ namespace fastbird
 
 		virtual void RegisterUIs(std::vector<IUIObject*>& uiobj);
 		virtual void UnregisterUIs();
+
+		virtual void AddMarkObject(IObject* mark);
+		virtual void RemoveMarkObject(IObject* mark);
 
 		virtual std::string GetConfigStringValue(const char* section, const char* name);
 		virtual int GetConfigIntValue(const char* section, const char* name);
@@ -97,6 +100,7 @@ namespace fastbird
 
 		void PreRender(float dt);
 		void Render(float dt);
+		void RenderMarks();
 		void RenderUI();
 		void RenderDebugHud();
 
@@ -155,6 +159,8 @@ namespace fastbird
 		std::set<std::string> mChangedFiles;
 		float mLastChangedTime;
 		std::vector<IFileChangeListener*> mFileChangeListeners;
+
+		std::vector<IObject*> mMarkObjects;
 
 		bool mExiting;
 

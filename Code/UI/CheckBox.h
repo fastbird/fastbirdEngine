@@ -1,13 +1,13 @@
 #pragma once
 
-#include <UI/Wnd.h>
+#include <UI/Container.h>
 #include <UI/ICheckbox.h>
 namespace fastbird
 {
 class IUIObject;
 class ImageBox;
 class StaticText;
-class CheckBox : public Wnd, public ICheckbox
+class CheckBox : public Container, public ICheckbox
 {
 public:
 	CheckBox();
@@ -17,6 +17,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::CheckBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void SetText(const wchar_t* szText);
+	virtual void OnSizeChanged();
 
 	// ICheckBox
 	virtual void SetCheck(bool check);

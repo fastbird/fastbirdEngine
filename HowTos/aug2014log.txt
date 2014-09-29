@@ -1,19 +1,26 @@
 fastbird engine 2014-Aug released!
 
 changes
-* HDR rendering - bright pass and tone mapping
-* Godrays rendering - occlusion pre pass
-* Glow rendering
-* Volumetic Cloud / fog rendering
-* Sky/Light interpolation
-* Independent use of shaders from materials
-* Materials now can have sub-materials for sub passes.
-* rewrote threading codes - Threads, SyncObjects, CriticalSections, Tasks and Scheduler
-* Improved the memory manager - now using FB_NEW/FB_DELETE for memory alloc/deallocation.
-** all memory alloc/dealloc pairs happen in the same module(every case) and the same cpp(the most case) file.
-* Improved ParticleSystem
-* Added perlin noise function
-* Added editor project - currently have the feature packing uv textures, generating perlin noise textures.
-* UI alphablending
-* Fixed index buffer bug on collada inporter
-* 
+* Engine
+** HDR rendering - bright pass and tone mapping
+** Godrays rendering - occlusion pre pass
+** Glow rendering
+** Volumetic Cloud / fog rendering
+** Added seperated depth pass
+** Sky/Light interpolation
+** Mesh highlighting.
+** Independent use of shaders from materials
+** Materials now can have sub-materials for sub passes.
+** rewrote threading codes - Threads, SyncObjects, CriticalSections, Tasks and Scheduler
+** Improved the memory manager - now using FB_NEW/FB_DELETE for memory alloc/deallocation.
+*** all memory alloc/dealloc pairs happen in the same module(every case) and the same cpp(the most case) file.
+** Improved ParticleSystem
+** Added perlin noise function
+** Added editor project - currently have the feature packing uv textures, generating perlin noise textures.
+** Fixed index buffer bug on collada importer
+
+* UI
+** UI alphablending
+** Added hexagonal context ui
+** Added vertical gauge
+** UI canbe defined in the file - supporting hot reloading.

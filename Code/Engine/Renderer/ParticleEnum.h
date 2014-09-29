@@ -17,7 +17,7 @@ namespace fastbird
 			"Direction",
 		};
 
-		inline std::string ConvertToString(Enum a)
+		inline const char* ConvertToString(Enum a)
 		{
 			assert(a>=0 && a<NUM);
 			return strings[a];
@@ -52,7 +52,7 @@ namespace fastbird
 			"WorldSpace",
 		};
 
-		inline std::string ConvertToString(Enum a)
+		inline const char* ConvertToString(Enum a)
 		{
 			assert(a>=0 && a<NUM);
 			return strings[a];
@@ -93,7 +93,7 @@ namespace fastbird
 			"Hemisphere",
 		};
 
-		inline std::string ConvertToString(Enum a)
+		inline const char* ConvertToString(Enum a)
 		{
 			assert(a>=0 && a<NUM);
 			return strings[a];
@@ -121,10 +121,11 @@ namespace fastbird
 
 	namespace ParticleBlendMode
 	{
-		enum Enum{ Additive, AlphaBlend, InvColorBlend, Replace, NUM };
-		static const char* strings[] ={ "Additive", "AlphaBlend", "InvColorBlend", "Replace" };
-		inline std::string ConvertToString(Enum a){
+		enum Enum{ Additive, AlphaBlend, InvColorBlend, Replace, NoBlend, NUM };
+		static const char* strings[] ={ "Additive", "AlphaBlend", "InvColorBlend", "Replace", "NoBlend" };
+		inline const char* ConvertToString(Enum a){
 			assert(a >= 0 && a < NUM);
+			return strings[a];
 		}
 		inline Enum ConvertToEnum(const char* str){
 			if (_stricmp(str, "Additive") == 0)
@@ -135,6 +136,8 @@ namespace fastbird
 				return InvColorBlend;
 			if (_stricmp(str, "Replace") == 0)
 				return Replace;
+			if (_stricmp(str, "NoBlend") == 0)
+				return NoBlend;
 			else{
 				assert(0);
 				return NUM;

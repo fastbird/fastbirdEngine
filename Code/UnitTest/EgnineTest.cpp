@@ -7,6 +7,5 @@ TEST(Engine, Voxelizing)
 	IVoxelizer* pVox = IVoxelizer::CreateVoxelizer();
 	bool successful = pVox->RunVoxelizer("D:/Blender/scifi/Battlestar_Pegasus/pegasus.dae", 64,
 		false, false);
-	IVoxelizer::DeleteVoxelizer(pVox);
 	EXPECT_TRUE(successful);
 }

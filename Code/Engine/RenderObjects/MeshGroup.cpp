@@ -70,6 +70,7 @@ void MeshGroup::AddMeshRotation(size_t idx, const Quat& rot)
 	assert(idx < mLocalTransforms.size());
 	mLocalTransforms[idx].AddRotation(rot);
 	mChanges[idx] = true;
+	mTransformChanged = true;
 }
 
 const Quat& MeshGroup::GetMeshRotation(size_t idx) const
@@ -83,6 +84,7 @@ void MeshGroup::SetMeshRotation(size_t idx, const Quat& rot)
 	assert(idx < mLocalTransforms.size());
 	mLocalTransforms[idx].SetRotation(rot);
 	mChanges[idx] = true;
+	mTransformChanged = true;
 }
 
 const Vec3& MeshGroup::GetMeshOffset(size_t idx) const
@@ -168,6 +170,11 @@ void MeshGroup::AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v)
 {
 	assert(!mAuxCloned);
 	mAuxil[idx].push_back(v);
+}
+
+void MeshGroup::AddCollisionShape(size_t idx, std::pair<ColShape::Enum, Transformation>& data)
+{
+	mMeshObjects[idx].first->AddCollisionShape(data);
 }
 
 void MeshGroup::UpdateTransform(bool force)

@@ -107,7 +107,6 @@ void particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> strea
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 Texture2D gDiffuseTexture : register(t0);
-SamplerState gDiffuseSampler : register(s0);
 
 #if !defined(_NO_GLOW)
 struct PS_OUT
@@ -128,8 +127,9 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	#else
 	PS_OUT output;
 	#endif
-	float4 diffuse = gDiffuseTexture.Sample(gDiffuseSampler, INPUT.UV_Intensity_Alpha.xy);
+	float4 diffuse = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV_Intensity_Alpha.xy);
 	diffuse.xyz *= INPUT.mColor * INPUT.UV_Intensity_Alpha.z;
+	diffuse.w *= INPUT.UV_Intensity_Alpha.z;
 	diffuse.w *= INPUT.UV_Intensity_Alpha.w;	
 	
 #if defined(_INV_COLOR_BLEND) || defined(_PRE_MULTIPLIED_ALPHA)

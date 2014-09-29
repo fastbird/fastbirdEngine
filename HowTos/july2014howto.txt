@@ -1,0 +1,267 @@
+### 1. How to initialize the engine
+
+Check the following function.
+
+	//-----------------------------------------------------------------------------
+	void InitEngine()
+	{
+		fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
+		gEnv = gFBEnv;
+		pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
+		pEngine->InitEngine(fastbird::IEngine::D3D11);
+		pEngine->InitSwapChain(gEnv->pEngine->GetWindowHandle(), 1600, 900);
+		gpTimer = gEnv->pTimer;
+
+		if (gEnv->pRenderer)
+		{
+			gEnv->pRenderer->SetClearColor(0, 0, 0, 1);
+		}
+		gInputHandler = new InputHandler();
+		gCameraMan = new CameraMan(gEnv->pRenderer->GetCamera());
+		gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
+
+		gTaskSchedular = new TaskScheduler(8);
+	}
+
+### 2. How to create sky
+
+Call the function IEngine::CreateSkyBox() - currently using 'data/materials/skybox.material' check the file.
+
+	gEnv->pEngine->CreateSkyBox();
+
+### 3. How to load a collada model and material.
+
+You can load a .dae file by calling IEngine::GetMeshObject() function. You need to attach it to scene to see in your camera. You may as well set the material via IObject::SetMaterial().
+
+	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
+	gMeshObject->AttachToScene();
+	gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+
+![loaded a dae file.](http://jungwan.net/imgs/load_dae.jpg)
+
+Dae model loaded into the engine.
+
+
+### 4. How to use voxelizer
+
+First off, you need to create a voxelizer instance by calling IVoxelizer::CreateVoxelizer() static function. Then call IVoxelizer::RunVoxelizer() function to voxelize the collada mesh. It generates the positions of voxels that covers entire hull of the source model. You can retreive this positions by calling IVoxelizer::GetHulls(). This returns just the array of Vec3. Then you can use these positions to diplay your voxels.
+
+	SmartPtr<IVoxelizer> voxelizer = IVoxelizer::CreateVoxelizer();
+	bool ret = voxelizer->RunVoxelizer("data/objects/etc/spaceship.dae", 64, false, true);
+	assert(ret);
+	SmartPtr<IMeshObject> voxelObject = gEnv->pEngine->GetMeshObject("data/objects/etc/cube.dae");
+	const IVoxelizer::HULLS& h = voxelizer->GetHulls();
+	Vec3 offset(30, 0, 0);
+	for each(auto v in h)
+	{
+		gVoxels.push_back((IMeshObject*)voxelObject->Clone());
+		IMeshObject* m = gVoxels.back();
+		m->SetPos(offset + v*2.0f);
+		m->AttachToScene();
+	}
+	voxelizer = 0;
+	voxelObject = 0;
+
+![voxelizer](http://jungwan.net/imgs/voxel_example.jpg)
+
+Voxelized model.
+
+
+### 5. How to use render to texture system.
+
+RenderToTexture feature is encapulated in the class IRenderToTexture. You can instanciate it by calling IRenderer::CreateRenderToTexture() function. Then you need to set up the scene, camera, render targets and depth buffer if you need. After you set these information just call IRenderToTexture::Render() to render the scene in to a texture. You can retreive these textures by calling IRenderToTexture::GetRenderTargetTexture() or IRenderToTexture::GetDepthStencilTexture() and you can bind these texture as a shader resources. In the following example, just saving in to a .png file.
+
+	SmartPtr<IRenderToTexture> rtt = gEnv->pRenderer->CreateRenderToTexture(false);
+	rtt->GetScene()->AttachObject(gMeshObject);
+	ICamera* pRTTCam = rtt->GetCamera();
+	pRTTCam->SetPos(Vec3(-5, 0, 0));
+	pRTTCam->SetDir(Vec3(1, 0, 0));
+	rtt->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false);
+	rtt->Render();
+	rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
+	rtt = 0;
+
+### 6. How to profile the performance
+
+You can profile any parts of codes, via Profile structure. The following example demonstrate how use these auxiliary structure. It shows the time spent to generate the huge number of integer data.
+
+	int numInts = INT_MAX/100;
+	int* pInts = new int[numInts];
+	{
+		//------------------------------------------------------------------------
+		// 7. how to profile (Need to include <CommonLib/Profiler.h>)
+		//------------------------------------------------------------------------
+		Profiler pro("RandomGeneration");
+		DWORD random = 0;
+		for (int i = 0; i < numInts; i++)
+		{
+			pInts[i] = random & 0x7fffffff;
+			random = random * 196314165 + 907633515;
+		}
+	}
+
+
+### 7. How to do parallel computing
+
+You can use task scheduler to make idle cores to become busy. To achieve this, you need to decalre a task inherited from fastbird::Task class. The following example illustrate how the heavy calculation devided into serveral sub tasks and can be computed without interfering each other. I referenced gpg 8 ' Efficient and Scalable Multicore Programming'
+
+The following declares the quick sort task
+
+	using namespace fastbird;
+	class QuickSortTask : public Task
+	{
+		int* Data;
+		int Start;
+		int End;
+
+		static FORCEINLINE void swap(int *a, int *b)
+		{
+			int t = *a;
+			*a = *b;
+			*b = t;
+		}
+
+		static void qsort(int* Data, int Start, int End)
+		{
+			if (End > Start + 1)
+			{
+				int piv = Data[Start], l = Start + 1, r = End;
+				while (l < r)
+				{
+					if (Data[l] <= piv)
+						l++;
+					else
+						swap(&Data[l], &Data[--r]);
+				}
+
+				swap(&Data[--l], &Data[Start]);
+
+				qsort(Data, Start, l);
+				qsort(Data, r, End);
+			}
+		}
+
+	public:
+		QuickSortTask(int* _Data, int _Start, int _End, volatile long* ExecCounter)
+			: Task(!!ExecCounter, !ExecCounter, ExecCounter),
+			Data(_Data),
+			Start(_Start),
+			End(_End)
+		{
+			if (ExecCounter)
+			{
+				InterlockedIncrement(ExecCounter);
+			}
+		}
+
+		~QuickSortTask()
+		{}
+
+		void Execute(TaskScheduler* Parent)
+		{
+			if ((End - Start) < 65536)
+			{
+				// handle in one thread
+				qsort(Data, Start, End);
+			}
+			else
+			{
+				int piv = Data[Start], l = Start + 1, r = End;
+
+				// group values with pivot. left is for smaller or equal to pivot, right side is for bigger.
+				while (l < r)
+				{
+					if (Data[l] <= piv)
+						l++;
+					else
+						swap(&Data[l], &Data[--r]);
+				}
+
+				swap(&Data[--l], &Data[Start]);
+
+				// left side is available for sort.
+				if (l > Start + 1)
+				{
+					QuickSortTask* SubTask0 = new QuickSortTask(Data, Start, l, mExecCounter ? mExecCounter : &mSyncCounter);
+
+					if (Parent)
+					{
+						// Parallel version
+						Parent->AddTask(SubTask0);
+					}
+					else
+					{
+						// Serial version
+						SubTask0->Execute(NULL);
+					}
+				}
+
+				if (End > r + 1)
+				{
+					QuickSortTask* SubTask1 = new QuickSortTask(Data, r, End, mExecCounter ? mExecCounter : &mSyncCounter);
+
+					if (Parent)
+					{
+						// Parallel version
+						Parent->AddTask(SubTask1);
+					}
+					else
+					{
+						// Serial version
+						SubTask1->Execute(NULL);
+					}
+				}
+			}
+		}
+	};
+
+
+The following code block shows how to use schedular for consuming declared tasks and also the performance difference between sigle threaded and multi threade.
+
+	int numInts = INT_MAX/100;
+	int* pInts = new int[numInts];
+	{
+		Profiler pro("RandomGeneration");
+		DWORD random = 0;
+		for (int i = 0; i < numInts; i++)
+		{
+			pInts[i] = random & 0x7fffffff;
+			random = random * 196314165 + 907633515;
+		}
+	}
+	QuickSortTask* pQuickSort = new QuickSortTask(pInts, 0, numInts, 0);
+	// single threaded
+	{
+		Profiler pro("QuickSort_SingleThread.");
+		pQuickSort->Execute(0);
+	}
+	for (int i = 0; i<numInts - 1; i++)
+	{
+		assert(pInts[i] <= pInts[i + 1]);
+	}
+	delete pQuickSort;
+	
+	DWORD random = 0;
+	for (int i = 0; i < numInts; i++)
+	{
+		pInts[i] = random & 0x7fffffff;
+		random = random * 196314165 + 907633515;
+	}
+	// multi threaded.
+	pQuickSort = new QuickSortTask(pInts, 0, numInts, 0);
+	gTaskSchedular->AddTask(pQuickSort);
+	{
+		Profiler pro("QuickSort_MultiThread.");
+		pQuickSort->Sync(); // wait to finish
+	}
+	for (int i = 0; i<numInts - 1; i++)
+	{
+		assert(pInts[i] <= pInts[i + 1]);
+	}
+	delete pQuickSort;
+
+	delete[] pInts;
+
+![multi threaded computing.](http://jungwan.net/imgs/multithread.gif)
+
+How fast

@@ -4,4 +4,25 @@
 	<region ID="3"	name="checkbox_checked" x="64" y="0" width="32" height="32"/>
 	<region ID="4"	name="radiobox_unchecked" x="96" y="0" width="32" height="32"/>
 	<region ID="5"	name="radiobox_checked" x="128" y="0" width="32" height="32"/>
+	<region ID="6"	name="dropdown" x="160" y="0" width="24" height="24"/>
+	<region ID="7"	name="dropdown_hover" x="184" y="0" width="24" height="24"/>
+	
+	<region ID="31" name="Pane_LT" x="32" y="272" width="40" height="44"/>
+	<region ID="32" name="Pane_T" x="72" y="272" width="12" height="16"/>
+	<region ID="33" name="Pane_MT" x="84" y="272" width="302" height="44"/>
+	<region ID="34" name="Pane_RT" x="388" y="272" width="40" height="44"/>
+	<region ID="35" name="Pane_L" x="32" y="316" width="16" height="4"/>
+	<region ID="36" name="Pane_R" x="412" y="316" width="16" height="4"/>
+	<region ID="37" name="Pane_LB" x="32" y="344" width="40" height="44"/>
+	<region ID="38" name="Pane_B" x="76" y="368" width="4" height="20"/>
+	<region ID="39" name="Pane_RB" x="384" y="344" width="40" height="44"/>
+	
+	<region ID="40" name="Box_LT" x="448" y="344" width="6" height="6"/>
+	<region ID="41" name="Box_T" x="456" y="344" width="4" height="3"/>
+	<region ID="42" name="Box_RT" x="460" y="344" width="6" height="6"/>
+	<region ID="43" name="Box_L" x="448" y="352" width="3" height="4"/>
+	<region ID="44" name="Box_R" x="460" y="352" width="3" height="4"/>
+	<region ID="45" name="Box_LB" x="448" y="356" width="5" height="5"/>
+	<region ID="46" name="Box_B" x="456" y="358" width="4" height="3"/>
+	<region ID="47" name="Box_RB" x="460" y="356" width="6" height="6"/>
 </TextureAtlas>

@@ -11,7 +11,12 @@ namespace fastbird
 		virtual ~EventHandler();
 		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION);
 		virtual void UnregisterEventFunc(EVENT e, FunctionID slot);
+		virtual void UnregisterAllEventFunc();
 		virtual void DisableEvent(EVENT e);
+		virtual void DisableAllEvent();
+
+		virtual void SetEnableEvent(bool enable){ mEventEnable = enable; }
+		virtual bool GetEnableEvent() const { return mEventEnable; }
 
 	protected:
 		bool OnEvent(EVENT e);
@@ -23,5 +28,6 @@ namespace fastbird
 		EVENT_FUNC_MAP mEventFuncMap;
 
 		std::set<EVENT> mDisabledEvent;
+		bool mEventEnable;
 	};
 }

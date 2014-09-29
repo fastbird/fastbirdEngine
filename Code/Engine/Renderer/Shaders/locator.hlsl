@@ -10,7 +10,6 @@
 //
 //Texture2D  gDiffuseTexture : register(t0);
 //
-//SamplerState gDiffuseSampler : register(s0);
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader

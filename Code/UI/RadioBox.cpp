@@ -13,12 +13,12 @@ RadioBox::RadioBox()
 	mRadioImageBox = static_cast<ImageBox*>(
 		AddChild(0.f, 0.f, 0.05f, 1.0f, ComponentType::ImageBox));
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
-	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
+	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnClicked, this, std::placeholders::_1));
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
 	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_CLICK,
+	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnClicked, this, std::placeholders::_1));
 
 	mUIObject->mOwnerUI = this;
@@ -63,7 +63,7 @@ void RadioBox::OnClicked(void* arg)
 	if (mParent)
 		mParent->OnClickRadio(this);
 
-	OnEvent(IEventHandler::EVENT_MOUSE_CLICK);
+	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void RadioBox::UpdateImage()

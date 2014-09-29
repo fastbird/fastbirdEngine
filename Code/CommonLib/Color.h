@@ -16,6 +16,7 @@ namespace fastbird
 		const static Color Green;
 		const static Color Yellow;
 		const static Color Blue;
+		const static Color SkyBlue;
 		const static Color Zero;
 
 		Color(){}

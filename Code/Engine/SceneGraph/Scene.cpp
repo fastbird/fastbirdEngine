@@ -189,7 +189,7 @@ void Scene::SetSkipSpatialObjects(bool skip)
 }
 
 //----------------------------------------------------------------------------
-IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject)
+IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow/* = false*/)
 {
 	if (mSkipSpatialObjects)
 		return IScene::OBJECTS();
@@ -209,8 +209,36 @@ IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject
 			}
 		}
 	}
+	if (!narrow)
+	{
+		return objects;
+	}
 
-	return objects;
+	OBJECTS objects2;
+	for each (IObject* var in objects)
+	{
+		SpatialObject* pObj = (SpatialObject*)var;
+		unsigned num = pObj->GetNumCollisionShapes();
+		if (num == 0)
+		{
+			objects2.push_back(pObj);
+		}
+		else
+		{
+			for (unsigned i = 0; i < num; ++i)
+			{
+				const CollisionShape* cs = pObj->GetCollisionShape(i);
+				Ray3::IResult ret = cs->intersects(ray, pObj->GetTransform());
+				if (ret.first)
+				{
+					objects2.push_back(pObj);
+					continue;
+				}
+			}
+		}
+		
+	}
+	return objects2;
 }
 
 //----------------------------------------------------------------------------

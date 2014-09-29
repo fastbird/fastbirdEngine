@@ -166,6 +166,11 @@ void Object::ModifyObjFlag(unsigned flag, bool enable)
 	}
 }
 
+bool Object::HasObjFlag(unsigned flag)
+{
+	return (mObjFlag & flag) != 0;
+}
+
 //----------------------------------------------------------------------------
 void Object::SetShow(bool show)
 {

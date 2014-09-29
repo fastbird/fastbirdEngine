@@ -53,6 +53,7 @@ namespace fastbird
 	{
 		if (!mVisible)
 			return;
+		/*__super::GatherVisitAlpha(v);*/
 		v.push_back(mUIObject);
 		__super::GatherVisit(v);
 	}
@@ -93,13 +94,15 @@ namespace fastbird
 		mHexaStaticTexts[index]->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 		mHexaStaticTexts[index]->SetProperty(UIProperty::TEXT_ALIGN, "center");
 		mHexaStaticTexts[index]->SetProperty(UIProperty::TEXT_COLOR, "0.86667, 1.0, 0.1843, 1");
+		mHexaStaticTexts[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 		mHexaStaticTexts[index]->SetText(text);
-		mHexaStaticTexts[index]->DisableEvent(IEventHandler::EVENT_MOUSE_CLICK);
+		mHexaStaticTexts[index]->DisableEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
 	}
 
 	void HexagonalContextMenu::SetHexaImageIcon(unsigned index, const char* atlas, const char* region)
 	{
 		mHexaImages[index] = (ImageBox*)AddChild(mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.2f, 0.2f, ComponentType::ImageBox);
+		mHexaImages[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 	}
 
 	void HexagonalContextMenu::ClearHexa()
@@ -143,23 +146,23 @@ namespace fastbird
 			param[1] = Vec4(mHexaEnabled[4] ? 1.0f : 0.0f, mHexaEnabled[5] ? 1.0f : 0.0f,
 				mWNSize.x, mWNSize.y);
 			param[2] = Vec4(mWNPos.x, mWNPos.y, 0.0f, 0.0f);
-			for (int i = 0; i < 3; ++i)
-				mat->SetMaterialParameters(i, param[i]);
+			for (int i = 1; i < 4; ++i)
+				mat->SetMaterialParameters(i, param[i-1]);
 		}
 	}
 
-	bool HexagonalContextMenu::IsIn(const Vec2& mouseNormpos)
+	bool HexagonalContextMenu::IsIn(IMouse* mouse)
 	{
-		Vec2 mouse = (mouseNormpos - mWNPos) / mWNSize;
-		mouse = mouse*2.0f - 1.0f;
-		mouse.y = -mouse.y;
+		Vec2 localMousePos = (mouse->GetNPos() - mWNPos) / mWNSize;
+		localMousePos = localMousePos*2.0f - 1.0f;
+		localMousePos.y = -localMousePos.y;
 		mMouseInHexaIdx = -1;
 		for (int i = 0; i<6; ++i)
 		{
 			if (!mHexaEnabled[i])
 				continue;
 			// world means just entire Hexagonal Area.
-			Vec2 worldMouse = mHexaOrigins[i] - mouse;
+			Vec2 worldMouse = mHexaOrigins[i] - localMousePos;
 			worldMouse = Abs(worldMouse);
 			float m = std::max(worldMouse.x + worldMouse.y*0.57735f, worldMouse.y*1.1547f) - 0.2f;
 			

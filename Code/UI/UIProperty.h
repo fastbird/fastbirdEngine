@@ -7,6 +7,7 @@ namespace fastbird
 		{
 			BACK_COLOR, // vec4
 			BACK_COLOR_OVER,	// vec4
+			BACK_COLOR_DOWN,
 			TEXT_ALIGN,		// left, center, right
 			TEXT_VALIGN,	// top, middle, bottom
 			TEXT_SIZE,			// be sure set fixed text size also if you need.
@@ -22,6 +23,31 @@ namespace fastbird
 			TEXTUREATLAS,
 			REGION,
 			ALPHA,
+			BACKGROUND_IMAGE,
+			BACKGROUND_IMAGE_HOVER,
+			BACKGROUND_IMAGE_NOATLAS,
+			BACKGROUND_IMAGE_HOVER_NOATLAS,
+			FRAME_IMAGE,
+			TOOLTIP,
+			PROGRESSBAR,
+			GAUGE_COLOR,
+			GAUGE_COLOR_EMPTY,
+			GAUGE_BLINK_COLOR,
+			GAUGE_BLINK_SPEED,
+			NO_MOUSE_EVENT,
+			SCROLLERH,
+			SCROLLERV,
+			USE_SCISSOR,
+			LISTBOX_COL,
+			LISTBOX_COL_SIZES,
+			LISTBOX_COL_HEADERS,
+			EDGE_COLOR,
+			EDGE_COLOR_OVER,
+			USE_WND_FRAME,
+			TITLEBAR,
+			USE_BORDER,
+			SCISSOR_STOP_HERE,
+			SPECIAL_ORDER, // higher will render top
 
 			COUNT
 		};
@@ -29,6 +55,7 @@ namespace fastbird
 		static const char* strings[] = {
 			"BACK_COLOR", // vec4
 			"BACK_COLOR_OVER",	// vec4
+			"BACK_COLOR_DOWN", // vec4
 			"TEXT_ALIGN",		// left, center, right
 			"TEXT_VALIGN", 
 			"TEXT_SIZE",			// be sure set fixed text size also if you need.
@@ -44,6 +71,31 @@ namespace fastbird
 			"TEXTUREATLAS",
 			"REGION",
 			"ALPHA",
+			"BACKGROUND_IMAGE",
+			"BACKGROUND_IMAGE_HOVER",
+			"BACKGROUND_IMAGE_NOATLAS",
+			"BACKGROUND_IMAGE_HOVER_NOATLAS",
+			"FRAME_IMAGE",
+			"TOOLTIP",
+			"PROGRESSBAR",
+			"GAUGE_COLOR",
+			"GAUGE_COLOR_EMPTY",
+			"GAUGE_BLINK_COLOR",
+			"GAUGE_BLINK_SPEED",
+			"NO_MOUSE_EVENT",
+			"SCROLLERH",
+			"SCROLLERV",
+			"USE_SCISSOR",
+			"LISTBOX_COL",
+			"LISTBOX_COL_SIZES",
+			"LISTBOX_COL_HEADERS",
+			"EDGE_COLOR",
+			"EDGE_COLOR_OVER",
+			"USE_WND_FRAME", // with title bar
+			"TITLEBAR",
+			"USE_BORDER",
+			"SCISSOR_STOP_HERE",
+			"SPECIAL_ORDER",
 		};
 
 		inline const char* ConvertToString(Enum e)
@@ -58,6 +110,8 @@ namespace fastbird
 				return BACK_COLOR;
 			if (stricmp(sz, "BACK_COLOR_OVER") == 0)
 				return BACK_COLOR_OVER;
+			if (stricmp(sz, "BACK_COLOR_DOWN") == 0)
+				return BACK_COLOR_DOWN;
 			if (stricmp(sz, "TEXT_ALIGN") == 0)
 				return TEXT_ALIGN;
 			if (stricmp(sz, "TEXT_VALIGN") == 0)
@@ -88,6 +142,56 @@ namespace fastbird
 				return REGION;
 			if (stricmp(sz, "ALPHA") == 0)
 				return ALPHA;
+			if (stricmp(sz, "BACKGROUND_IMAGE") == 0)
+				return BACKGROUND_IMAGE;
+			if (stricmp(sz, "BACKGROUND_IMAGE_HOVER") == 0)
+				return BACKGROUND_IMAGE_HOVER;
+			if (stricmp(sz, "BACKGROUND_IMAGE_NOATLAS") == 0)
+				return BACKGROUND_IMAGE_NOATLAS;
+			if (stricmp(sz, "BACKGROUND_IMAGE_HOVER_NOATLAS") == 0)
+				return BACKGROUND_IMAGE_HOVER_NOATLAS;
+			if (stricmp(sz, "FRAME_IMAGE") == 0)
+				return FRAME_IMAGE;
+			if (stricmp(sz, "TOOLTIP") == 0)
+				return TOOLTIP;
+			if (stricmp(sz, "PROGRESSBAR") == 0)
+				return PROGRESSBAR;
+			if (stricmp(sz, "GAUGE_COLOR") == 0)
+				return GAUGE_COLOR;
+			if (stricmp(sz, "GAUGE_COLOR_EMPTY") == 0)
+				return GAUGE_COLOR_EMPTY;
+			if (stricmp(sz, "GAUGE_BLINK_COLOR") == 0)
+				return GAUGE_BLINK_COLOR;
+			if (stricmp(sz, "GAUGE_BLINK_SPEED") == 0)
+				return GAUGE_BLINK_SPEED;
+			if (stricmp(sz, "NO_MOUSE_EVENT") == 0)
+				return NO_MOUSE_EVENT;
+			if (stricmp(sz, "SCROLLERH") == 0)
+				return SCROLLERH;
+			if (stricmp(sz, "SCROLLERV") == 0)
+				return SCROLLERV;
+			if (stricmp(sz, "USE_SCISSOR") == 0)
+				return USE_SCISSOR;
+			if (stricmp(sz, "LISTBOX_COL") == 0)
+				return LISTBOX_COL;
+			if (stricmp(sz, "LISTBOX_COL_SIZES") == 0)
+				return LISTBOX_COL_SIZES;
+			if (stricmp(sz, "LISTBOX_COL_HEADERS") == 0)
+				return LISTBOX_COL_HEADERS;
+			if (stricmp(sz, "EDGE_COLOR") == 0)
+				return EDGE_COLOR;
+			if (stricmp(sz, "EDGE_COLOR_OVER") == 0)
+				return EDGE_COLOR_OVER;
+			if (stricmp(sz, "USE_WND_FRAME") == 0)
+				return USE_WND_FRAME;
+			if (stricmp(sz, "TITLEBAR") == 0)
+				return TITLEBAR;
+			if (stricmp(sz, "USE_BORDER") == 0)
+				return USE_BORDER;
+			if (stricmp(sz, "SCISSOR_STOP_HERE") == 0)
+				return SCISSOR_STOP_HERE;
+			if (stricmp(sz, "SPECIAL_ORDER") == 0)
+				return SPECIAL_ORDER;
 			else
 			{
 				assert(0);

@@ -12,7 +12,8 @@ namespace fastbird
 	public:
 		//--------------------------------------------------------------------
 		static TextureD3D11* CreateInstance();
-
+		// for game. in the engine use smartptr instead of this.
+		virtual void Delete();
 		//--------------------------------------------------------------------
 		TextureD3D11();
 		virtual ~TextureD3D11();
@@ -22,8 +23,9 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		virtual bool IsReady() const;
 		virtual Vec2I GetSize() const;
+		virtual unsigned GetWidth() const;
+		virtual unsigned GetHeight() const;
 		virtual PIXEL_FORMAT GetFormat() const;
-		virtual void SetSamplerDesc(const SAMPLER_DESC& desc);
 		virtual void Bind();
 		virtual void Unbind();
 
@@ -43,8 +45,6 @@ namespace fastbird
 		friend class RendererD3D11;
 		ID3D11Texture2D* GetHardwareTexture() const;
 		ID3D11ShaderResourceView* GetHardwareResourceView();
-		ID3D11SamplerState* GetSamplerState() const;
-		void SetSamplerState(ID3D11SamplerState* pSamplerState);
 		void SetHardwareTexture(ID3D11Texture2D* pTexture);
 		void SetHardwareResourceView(ID3D11ShaderResourceView* pResourceView);
 		void AddRenderTargetView(ID3D11RenderTargetView* pRenderTargetView);
@@ -69,7 +69,7 @@ namespace fastbird
 		std::vector<ID3D11RenderTargetView*> mRTViews;
 		std::vector<ID3D11DepthStencilView*> mDSViews;
 
-		ID3D11SamplerState* mSamplerState;
+		/*ID3D11SamplerState* mSamplerState;*/
 		PIXEL_FORMAT mPixelFormat;
 		int mSlot;
 		BINDING_SHADER mBindingShader;

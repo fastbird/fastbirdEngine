@@ -64,6 +64,11 @@ namespace fastbird
 			return x == v.x && y == v.y;
 		}
 
+		bool operator!=(const Vec2I& v) const
+		{
+			return !operator==(v);
+		}
+
 		static const Vec2I ZERO;
 	};
 }

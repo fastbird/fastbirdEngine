@@ -1,6 +1,5 @@
 #pragma once
-#include <thread>
-#include <mutex>
+
 namespace fastbird
 {
 

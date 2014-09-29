@@ -32,6 +32,15 @@ namespace fastbird
 		virtual void SetMouseCursorOver() = 0;
 		virtual bool IsMouseInUI() const = 0;
 		virtual void DisplayMsg(const std::string& msg, ...) = 0;
+		virtual void SetTooltipString(const std::wstring& ts) = 0;
+		virtual void SetTooltipPos(const Vec2& npos) = 0;
+		virtual void CleanTooltip() = 0;
+		enum POPUP_TYPE
+		{
+			POPUP_TYPE_YES_NO
+		};
+		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func)=0;
+		virtual int GetPopUpResult() const = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;
@@ -40,6 +49,9 @@ namespace fastbird
 		static IUIManager* mUIManager;
 
 		friend class Container;
+		friend class WinBase;
+		friend class Wnd;
+		friend class DropDown;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
 		virtual void DeleteComponent(IWinBase* com) = 0;
 	};

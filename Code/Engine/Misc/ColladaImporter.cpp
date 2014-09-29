@@ -76,7 +76,10 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 	if (!mUseMeshGroup)
 	{
 		if (!mMeshObjects.empty())
+		{
 			mMeshObjects[0]->SetAuxiliaries(mAuxil);
+			mMeshObjects[0]->SetCollisionShapes(mCollisions);
+		}
 		else
 		{
 			Error("Importing MeshObject %s is failed!", filepath);
@@ -108,6 +111,27 @@ bool ColladaImporter::writeScene ( const COLLADAFW::Scene* scene )
 	return true;
 }
 
+ColShape::Enum GetColShape(const char* str)
+{
+	int len = strlen(str);
+	assert(len > 5);
+	int start = 5;
+	int end = start;
+	for (int i = start; i < len; ++i)
+	{
+		if (str[i] == '_')
+		{
+			end = i;
+			break;
+		}
+	}
+	if (start == end)
+		end = len;
+
+	std::string typestring(str, start, end-start);
+	return ColShape::ConvertToEnum(typestring.c_str());
+}
+
 void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 {
 	using namespace COLLADAFW;
@@ -116,18 +140,41 @@ void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 	COLLADABU::Math::Matrix4 mat = node->getTransformationMatrix();
 	const TransformationPointerArray& ta = node->getTransformations();
 	COLLADABU::Math::Vector3 scale = mat.getScale();
+	COLLADABU::Math::Matrix3 mat3;
+	mat.extract3x3Matrix(mat3);
+	Mat33 fbMat33((float)mat3[0][0], (float)mat3[0][1], (float)mat3[0][2],
+		(float)mat3[1][0], (float)mat3[1][1], (float)mat3[1][2],
+		(float)mat3[2][0], (float)mat3[2][1], (float)mat3[2][2]);
+
 	COLLADABU::Math::Quaternion rot = mat.extractQuaternion();
 	COLLADABU::Math::Vector3 trans = mat.getTrans();
 		
 	Transformation transform;
-	transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
-	transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
+	//transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
+	//transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
+	transform.SetMatrix(fbMat33);
 	transform.SetTranslation(Vec3((float)trans.x, (float)trans.y, (float)trans.z));
 
 	if (name.find("_POS") == 0)
 	{
+		assert(parent != -1);
 		mMeshGroup->AddAuxiliary(parent, AUXILIARIES::value_type(name, transform));
 	}
+	else if (name.find("_COL") == 0)
+	{
+		ColShape::Enum shape = GetColShape(name.c_str());
+		if (mUseMeshGroup)
+		{
+			assert(parent != -1);
+			mMeshGroup->AddCollisionShape(parent, std::make_pair(shape, transform));
+		}
+		else
+		{
+			mCollisions.push_back(std::make_pair(shape, transform));
+		}
+	}
+	if (parent == -1)
+		return;
 		
 	const InstanceGeometryPointerArray& ga = node->getInstanceGeometries();
 	size_t gaCount = ga.getCount();
@@ -223,16 +270,19 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 			{
 				mAuxil.push_back(AUXILIARIES::value_type(name, transform));
 			}
+			else if (name.find("_COL") == 0)
+			{
+				ColShape::Enum shape = GetColShape(name.c_str());
+				mCollisions.push_back(std::make_pair(shape, transform));
+			}
 		}
 
-		if (idx != -1 && mUseMeshGroup)
+		
+		const NodePointerArray& na = node[i]->getChildNodes();
+		size_t naCount = na.getCount();
+		for (size_t n = 0; n< naCount; n++)
 		{
-			const NodePointerArray& na = node[i]->getChildNodes();
-			size_t naCount = na.getCount();
-			for (size_t n = 0; n< naCount; n++)
-			{
-				WriteChildNode(na[n], idx);
-			}
+			WriteChildNode(na[n], idx);
 		}
 
 

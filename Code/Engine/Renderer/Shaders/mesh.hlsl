@@ -8,7 +8,6 @@
 #include "Constants.h"
 
 Texture2D  gDiffuseTexture : register(t0);
-SamplerState gDiffuseSampler : register(s0);
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -59,7 +58,7 @@ float4 mesh_PixelShader( in v2p INPUT ) : SV_Target
 	diffuse.xyz += gAmbientColor.xyz;
 
 #ifdef DIFFUSE_TEXTURE
-	diffuse *= gDiffuseTexture.Sample(gDiffuseSampler, INPUT.UV).xyz;
+	diffuse *= gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz;
 #endif
 	
 	// Specular Light

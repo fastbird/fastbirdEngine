@@ -38,6 +38,7 @@ class Vec3;
 class IRasterizerState;
 class IBlendState;
 class IDepthStencilState;
+class ISamplerState;
 class IFont;
 class IRenderToTexture;
 class ILight;
@@ -73,6 +74,7 @@ public:
 	virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil) = 0;
 	virtual void Clear() = 0;
 	virtual void Clear(float r, float g, float b, float a) = 0;// only color
+	// do not use if possible.
 	virtual void ClearState() = 0;
 	virtual void SetCamera(ICamera* pCamera) = 0;
 	virtual ICamera* GetCamera() const = 0;
@@ -122,7 +124,7 @@ public:
 	virtual IIndexBuffer* CreateIndexBuffer(void* data, unsigned int numIndices, 
 		INDEXBUFFER_FORMAT format) = 0;
 	virtual IShader* CreateShader(const char* filepath, int shaders,
-		const IMaterial::SHADER_DEFINES& defines, IShader* pReloadingShader=0) = 0;
+		const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0) = 0;
 	virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize) = 0;
 	virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0) = 0;
 	virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
@@ -132,6 +134,7 @@ public:
 		ITexture* pDepthStencil, size_t dsIndex) = 0;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num) = 0;
 	virtual void RestoreRenderTarget() = 0;
+	virtual void SetHDRTarget() = 0;
 	// internal use
 	// after called:
 	// 0 : current rendertarget
@@ -147,8 +150,6 @@ public:
 	// to restore directionalLight call this function with null light.
 	virtual void SetDirectionalLight(ILight* pLight) = 0;
 	virtual ILight* GetDirectionalLight() const = 0;
-	// returning number of vertices.
-	virtual int BindFullscreenQuadUV_VB(bool farSide) = 0;
 	virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside) = 0;
 
 	virtual IMaterial* CreateMaterial(const char* file) = 0;
@@ -168,16 +169,16 @@ public:
 	virtual IInputLayout* GetInputLayout(DEFAULT_INPUTS::Enum e,
 		IShader* shader) = 0;
 
-	virtual void SetTextureSamplerState(ITexture* pTexture, const SAMPLER_DESC& desc) = 0;
-
 	virtual IRasterizerState* CreateRasterizerState(const RASTERIZER_DESC& desc) =0;
 	virtual IBlendState* CreateBlendState(const BLEND_DESC& desc) = 0;
 	virtual IDepthStencilState* CreateDepthStencilState( const DEPTH_STENCIL_DESC& desc ) = 0;
+	virtual ISamplerState* CreateSamplerState(const SAMPLER_DESC& desc) = 0;
 
 	// internal
 	virtual void SetRasterizerState(IRasterizerState* pRasterizerState) = 0;
 	virtual void SetBlendState(IBlendState* pBlendState) = 0;
 	virtual void SetDepthStencilState(IDepthStencilState* pDepthStencilState, unsigned stencilRef) = 0;
+	virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot) = 0;
 
 	virtual void InitFrameProfiler(float dt) = 0;
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const = 0;
@@ -236,9 +237,13 @@ public:
 	// depth
 	virtual void SetNoDepthWriteLessEqual() = 0;
 	virtual void SetLessEqualDepth() = 0;
+	virtual void SetNoDepthStencil() = 0;
 
 	// raster
 	virtual void SetFrontFaceCullRS() = 0;
+
+	// sampler
+	virtual void SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot) = 0;
 
 	virtual void SetDepthWriteShader() = 0;
 	virtual void SetOccPreShader() = 0;
@@ -251,7 +256,14 @@ public:
 	virtual void CleanCloud() = 0;
 
 	virtual void SetCloudRendering(bool rendering) = 0;
-	
+	virtual void SetShadowMapShader() = 0;
+
+	virtual void SetSilouetteShader() = 0;
+
+	// internal only
+	virtual void SetSamllSilouetteBuffer() = 0;
+	virtual void SetBigSilouetteBuffer() = 0;
+	virtual void DrawSilouette() = 0;
 };
 
 }

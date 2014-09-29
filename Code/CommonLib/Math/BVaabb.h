@@ -18,6 +18,7 @@ namespace fastbird
 		virtual void ComputeFromData(const Vec3* pVertices, size_t numVertices);
 		virtual void StartComputeFromData();
 		virtual void AddComputeData(const Vec3* pVertices, size_t numVertices);
+		virtual void AddComputeData(const Vec3& vert);
 		virtual void EndComputeFromData();
 		virtual void TransformBy(const Transformation& transform,
 			BoundingVolume* result);

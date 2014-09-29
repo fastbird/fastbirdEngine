@@ -152,6 +152,7 @@ void ParticleRenderObject::Render()
 	}
 	if (num)
 	{
+		num = std::min(num, (UINT)MAX_SHARED_VERTICES);
 		pRenderer->Draw(num, start);
 		++mNumDrawCalls;
 		mNumDrawPrimitives += num;
@@ -185,7 +186,8 @@ ParticleRenderObject::Vertex* ParticleRenderObject::Map(UINT numVertices)
 	{
 		if (!mBatches.empty())
 		{
-			assert(mBatches[0].first > numVertices);
+			if (mBatches[0].first <= numVertices)
+				Log("MAX_SHARED_VERTICES exceeded!");
 		}
 		mNextMap = 0;
 	}

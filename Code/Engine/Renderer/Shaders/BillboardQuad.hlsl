@@ -86,7 +86,6 @@ void billboardquad_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> 
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 Texture2D gDiffuseTexture : register(t0);
-SamplerState gDiffuseSampler : register(s0);
 float4 billboardquad_PixelShader(in g2p INPUT) : SV_Target
 {
 	return float4(1, 1, 1, 1);

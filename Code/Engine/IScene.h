@@ -38,7 +38,8 @@ namespace fastbird
 		virtual bool GetSkyRendering() const = 0;
 		virtual ISkySphere* GetSkySphere() const = 0;
 
-		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject) = 0;
+		// narrow : do narrow phase collision check
+		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false) = 0;
 		virtual void SetSkipSpatialObjects(bool skip) = 0;
 
 		virtual void ClearEverySpatialObject() = 0;

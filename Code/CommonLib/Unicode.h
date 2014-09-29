@@ -29,6 +29,7 @@ namespace fastbird
 	
 	// return data is temporary data. save it to other memory if you need
 	WCHAR* AnsiToWide(const char* source, int size);
+	WCHAR* AnsiToWide(const char* source);
 
 	// return data is temporary data. save it to other memory if you need
 	WCHAR* UTF8ToWide(const unsigned char* source);

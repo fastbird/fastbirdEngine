@@ -6,21 +6,15 @@
 // Constant Buffer
 //--------------------------------------------------------------------------------------
 #include "Constants.h"
-#include "CommonFunctions.hlsl"
+#include "CommonFunctions.h"
+#include "CommonLighting.h"
 
 Texture2D  gDiffuseTexture : register(t0);
-SamplerState gDiffuseSampler : register(s0);
-
 #ifdef NORMAL_TEXTURE
 Texture2D  gNormalTexture : register(t1);
-SamplerState gNormalSampler : register(s1);
 #endif //NORMAL_TEXTURE
-
 Texture2D  gMetallicTexture : register(t2);  // rgb : specular color, a : roughness
-SamplerState gMetallicSampler : register(s2);
-
 Texture2D	gRoughnessTexture : register(t3);
-SamplerState gRoughnessSampler : register(s3);
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -41,6 +35,7 @@ struct v2p
 	float3 Binormal : TEXCOORD2;
 	float2 UV		: TEXCOORD3;
 	float3 WorldPos : TEXCOORD4;
+	float4 LightPos : TEXCOORD5;
 };
 
 v2p meshpbr_VertexShader( in a2v INPUT )
@@ -52,7 +47,9 @@ v2p meshpbr_VertexShader( in a2v INPUT )
 	OUTPUT.UV = INPUT.UV;
 	OUTPUT.Tangent = mul((float3x3)gWorld, INPUT.Tangent);
 	OUTPUT.Binormal= cross(OUTPUT.Tangent, OUTPUT.Normal);
-	OUTPUT.WorldPos = mul(gWorld, INPUT.Position).xyz;
+	float3 worldPos = mul(gWorld, INPUT.Position).xyz;
+	OUTPUT.WorldPos = worldPos;
+	OUTPUT.LightPos = mul(gLightViewProj, float4(worldPos, 1.0));
 
 	return OUTPUT;
 }
@@ -64,11 +61,11 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 {
 	INPUT.UV.y = 1.0 - INPUT.UV.y;
 	// process normal map.
-	float3 baseColor = gDiffuseTexture.Sample(gDiffuseSampler, INPUT.UV).xyz;
-	float metallic = gMetallicTexture.Sample(gMetallicSampler, INPUT.UV).r;	
-	float roughness = gRoughnessTexture.Sample(gRoughnessSampler, INPUT.UV).r;
+	float3 baseColor = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz;
+	float metallic = gMetallicTexture.Sample(gLinearSampler, INPUT.UV).r;	
+	float roughness = gRoughnessTexture.Sample(gLinearSampler, INPUT.UV).r;
 #ifdef NORMAL_TEXTURE
-	float3 normalT = gNormalTexture.Sample(gNormalSampler, INPUT.UV).xyz;
+	float3 normalT = gNormalTexture.Sample(gPointSampler, INPUT.UV).xyz;
 #endif //NORMAL_TEXTURE
 	
 	float3 normal = INPUT.Normal;
@@ -97,6 +94,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float ndh = max(abs(dot(normal, h)), 1e-8);
 	float vdh = max( 1e-8, abs(dot(toViewDir, h)) );
 	float ndv = max( 1e-8, abs(dot( normal, toViewDir)) );
+	float invShadow = GetShadow(INPUT.LightPos);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(ndl, vdh, ndh, ndv, specColor, roughness));
 	float3 envContrib = {0, 0, 0};
 	
@@ -114,7 +112,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 		vec3 Sd = ImportanceSampleLambert(hamOffset,ltangent,lbitangent,normal);
 		float pdfD = ProbabilityLambert(Sd, normal);
 		float lodD = ComputeLOD(Sd, pdfD);
-		envContrib +=gEnvTexture.SampleLevel(gEnvSampler, Sd, lodD).rgb * diffColor;
+		envContrib +=gEnvTexture.SampleLevel(gAnisotropicSampler, Sd, lodD).rgb * diffColor;
 		vec3 Hn = ImportanceSampleGGX(hamOffset,ltangent,lbitangent,normal,roughness);
 		
 		float3 Ln = normalize(-(toViewDir - 2 * Hn * dot(toViewDir, Hn)));
@@ -132,7 +130,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 		float ndh = max( 1e-8, abs(dot(normal, Hn)) );
 		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
 			ProbabilityGGX(ndh, vdh, roughness));
-		envContrib += gEnvTexture.SampleLevel(gEnvSampler, Ln, lodS).rgb
+		envContrib += gEnvTexture.SampleLevel(gAnisotropicSampler, Ln, lodS).rgb
 			 * CookTorranceContrib(
 				vdh, ndh, ndl, ndv,
 				specColor,
@@ -148,6 +146,6 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 		CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness);
 #endif
 	float2 screenUV = GetScreenUV(INPUT.Position.xy);
-	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib, INPUT.WorldPos );
-	return float4(foggedColor, 1.0);
+	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib, normalize(INPUT.WorldPos) );
+	return float4(foggedColor * invShadow, 1.0);
 }
