@@ -48,7 +48,7 @@ namespace fastbird
 		virtual void Merge(const Vec3& pos) = 0;
 		virtual BoundingVolume& operator= (const BoundingVolume& other) = 0;
 
-		virtual fastbird::Vec3 GetSurfaceTo(const Vec3& target, Vec3& normal) = 0;
+		virtual fastbird::Vec3 GetSurfaceFrom(const Vec3& src, Vec3& normal) = 0;
 		virtual void Invalidate() = 0;
 
 		void SetAlwaysPass(bool p) { mAlwaysPass = p; }

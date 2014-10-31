@@ -1,5 +1,5 @@
 #pragma once
-
+#include <CommonLib/luawrapperutil.hpp>
 namespace fastbird
 {
 	class Vec2
@@ -153,3 +153,42 @@ namespace fastbird
 
 	};
 }
+
+// luawapper util
+template<>
+struct luaU_Impl<fastbird::Vec2>
+{
+	static fastbird::Vec2 luaU_check(lua_State* L, int index)
+	{
+		luaL_checktype(L, index, LUA_TTABLE);
+		fastbird::Vec2 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static fastbird::Vec2 luaU_to(lua_State* L, int index)
+	{
+		fastbird::Vec2 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static void luaU_push(lua_State* L, const fastbird::Vec2& val)
+	{
+		lua_createtable(L, 2, 0);
+		lua_pushnumber(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushnumber(L, val.y);
+		lua_rawseti(L, -2, 2);
+	}
+};

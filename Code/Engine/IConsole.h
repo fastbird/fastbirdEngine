@@ -16,6 +16,7 @@
 
 namespace fastbird
 {
+	class StdOutRedirect;
 	enum CVAR_CATEGORY
 	{
 		CVAR_CATEGORY_SERVER,
@@ -167,10 +168,12 @@ namespace fastbird
 		virtual void Log(const char* szFmt, ...) = 0;
 		virtual void ProcessCommand(const char* command) = 0;
 		virtual void ToggleOpen() = 0;
+		virtual void Update() = 0;
 		virtual void Render() = 0;
 		virtual void AddListener(ICVarListener* pListener) = 0;
 		virtual void RemoveListener(ICVarListener* pListener) = 0;
 		virtual EngineCommand* GetEngineCommand() = 0;
+		virtual void RegisterStdout(StdOutRedirect* p) = 0;
 	};
 
 }

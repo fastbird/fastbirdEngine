@@ -170,13 +170,13 @@ BoundingVolume& BVaabb::operator= (const BoundingVolume& other)
 	return *this;
 }
 
-Vec3 BVaabb::GetSurfaceTo(const Vec3& target, Vec3& normal)
+Vec3 BVaabb::GetSurfaceFrom(const Vec3& src, Vec3& normal)
 {
-	Vec3 dir = mCenter - target;
+	Vec3 dir = mCenter - src;
 	dir.Normalize();
-	Ray3 ray(target, dir);
+	Ray3 ray(src, dir);
 	Ray3::IResult ret = ray.intersects(mAABB, normal);
-	return -dir * ret.second;
+	return dir * ret.second;
 }
 
 void BVaabb::Expand(float e)

@@ -83,7 +83,7 @@
       <AssemblyDebug>true</AssemblyDebug>
       <ShowProgress>NotSet</ShowProgress>
       <AdditionalLibraryDirectories>$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Debug</AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
+      <AdditionalDependencies>lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
@@ -183,6 +183,7 @@
     <ClInclude Include="IRenderer.h" />
     <ClInclude Include="IRenderToTexture.h" />
     <ClInclude Include="IScene.h" />
+    <ClInclude Include="ISceneListener.h" />
     <ClInclude Include="ISceneManager.h" />
     <ClInclude Include="IScript.h" />
     <ClInclude Include="IScriptSystem.h" />
@@ -336,6 +337,7 @@
     <ClCompile Include="RenderObjects\UIObject.cpp" />
     <ClCompile Include="SceneGraph\Scene.cpp" />
     <ClCompile Include="SceneGraph\SpatialObject.cpp" />
+    <ClCompile Include="ScriptSystem\LuaExports.cpp" />
     <ClCompile Include="ScriptSystem\ScriptSystem.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,0 +1,121 @@
+#pragma once
+#include <CommonLib/VectorMap.h>
+#include <CommonLib/LuaUtils.h>
+namespace fastbird
+{
+	class LuaObject;
+	//-----------------------------------------------------------------------------
+	class LuaTableIterator
+	{
+		lua_State* mL;
+	public:
+
+		LuaTableIterator(const LuaObject& table);
+		~LuaTableIterator();
+		typedef std::pair<LuaObject, LuaObject> KeyValue;
+		bool GetNext(KeyValue& outKeyValue);
+	};
+
+	//-----------------------------------------------------------------------------
+	class LuaSequenceIterator
+	{
+		lua_State* mL;
+		size_t mLen;
+		size_t mCurIdx;
+
+	public :
+		LuaSequenceIterator(const LuaObject& sequence);
+		~LuaSequenceIterator();
+		bool GetNext(LuaObject& out);
+
+	};
+
+	//-----------------------------------------------------------------------------
+	class LuaObject
+	{
+		int mRef;
+		lua_State* mL;
+		int mType;
+		std::string mName;
+		LuaObject* mSelf;
+		static fastbird::VectorMap<int, unsigned> mUsedCount;
+
+		static void AddUsedCount(int ref);
+		static bool ReleaseUsedCount(int ref);
+
+	public:
+		LuaObject();
+		LuaObject(lua_State* L);
+		// index will not be popped.
+		LuaObject(lua_State* L, int index, bool pop = false);
+		LuaObject(lua_State* L, const char* globalName);
+		LuaObject(const LuaObject& other);
+		LuaObject& operator=(const LuaObject& other);
+		~LuaObject();
+
+		void SetSelf(const LuaObject& other);
+		void FindFunction(lua_State* L, const char* functName);
+
+		lua_State* GetLuaState() const { return mL; }
+
+		void NewTable(lua_State* L);
+
+		void SetGlobalName(lua_State* L, const char* globalName);
+		const char* GetGlobalName() const { return mName.c_str(); }
+		bool IsFunction() const;
+		bool IsMethod() const; // A method is also a function.
+		bool IsTable() const;
+		bool IsString() const;
+		bool IsNumber() const;
+		bool IsBool() const;
+		bool IsValid(bool nilIsValid = false) const;
+		LuaObject GetField(const char* fieldName) const;
+		LuaTableIterator GetTableIterator() const;
+		LuaSequenceIterator GetSequenceIterator() const;
+
+		LuaObject SetFieldTable(const char* fieldName);
+		void SetField(const char* fieldName, double num);
+		void SetField(const char* fieldName, int num);
+		void SetField(const char* fieldName, unsigned num);
+		void SetField(const char* fieldName, const char* str);
+		void SetField(const char* fieldName, const Vec3& v);
+		void SetField(const char* fieldName, const Vec3I& v);
+
+		LuaObject SetSeqTable(int n);
+		LuaObject GetSeqTable(int n);
+		void SetSeq(int n, const char* str);
+		void SetSeq(int n, unsigned num);
+
+		double GetNumberAt(int index) const;
+		std::string GetString(std::string& def = std::string()) const;		
+		float GetFloat(float def = 0.f) const;
+		int GetInt(int def = 0) const;
+		unsigned GetUnsigned(unsigned def = 0) const;
+		unsigned GetUnsignedFromString(unsigned def = 0) const;
+		bool GetBoolWithDef(bool def = false) const;
+		Vec3 GetVec3(const Vec3& def = Vec3::ZERO) const;
+		Vec4 GetVec4(const Vec4& def = Vec4::ZERO) const;
+		Vec3I GetVec3I(const Vec3I& def = Vec3I(0, 0, 0)) const;
+		Vec2 GetVec2(const Vec2& def = Vec2(0, 0)) const;
+		Vec2I GetVec2I(const Vec2I& def = Vec2I(0, 0)) const;
+		Quat GetQuat(const Quat& def = Quat())const;
+
+		std::string GetString(bool& success) const;
+		float GetFloat(bool& success) const;
+		int GetInt(bool& success) const;
+		unsigned GetUnsigned(bool& success) const;
+		unsigned GetUnsignedFromString(bool& success) const;
+		bool GetBool(bool& success) const;
+		Vec3 GetVec3(bool& success) const;
+		Vec4 GetVec4(bool& success) const;
+		Vec3I GetVec3I(bool& success) const;
+		Vec2 GetVec2(bool& success) const;
+		Vec2I GetVec2I(bool& success) const;
+		Quat GetQuat(bool& success)const;
+
+		void PushToStack() const;
+
+	private:
+		void CheckType();
+	};
+}

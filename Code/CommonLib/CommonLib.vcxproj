@@ -64,7 +64,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_COMMON_LIB_;_DEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(TBB_HOME)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(SolutionDir)</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -88,6 +88,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(SolutionDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -112,6 +113,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(SolutionDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -140,8 +142,12 @@
     <ClInclude Include="CurveImporter.h" />
     <ClInclude Include="CurveManager.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Hammersley.h" />
     <ClInclude Include="LockFreeQueue.h" />
+    <ClInclude Include="LuaObject.h" />
+    <ClInclude Include="luawrapper.hpp" />
+    <ClInclude Include="luawrapperutil.hpp" />
     <ClInclude Include="Math\BVaabb.h" />
     <ClInclude Include="Math\GeomUtils.h" />
     <ClInclude Include="Math\MathDefines.h" />
@@ -150,6 +156,7 @@
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="SpinLock.h" />
+    <ClInclude Include="StdOutRedirect.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="threads.h" />
     <ClInclude Include="INIReader.h" />
@@ -193,9 +200,12 @@
     <ClCompile Include="CurveImporter.cpp" />
     <ClCompile Include="CurveManager.cpp" />
     <ClCompile Include="Debug.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Hammersley.cpp" />
     <ClCompile Include="INIReader.cpp" />
     <ClCompile Include="LockFreeQueue.cpp" />
+    <ClCompile Include="LuaObject.cpp" />
+    <ClCompile Include="LuaUtils.cpp" />
     <ClCompile Include="Math\BVSphere.cpp" />
     <ClCompile Include="Math\BVaabb.cpp" />
     <ClCompile Include="Math\GeomUtils.cpp" />
@@ -215,6 +225,7 @@
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="SpinLock.cpp" />
+    <ClCompile Include="StdOutRedirect.cpp" />
     <ClCompile Include="TaskScheduler.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

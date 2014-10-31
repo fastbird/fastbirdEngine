@@ -6,6 +6,7 @@
 #include <Engine/IVoxelizer.h>
 #include <Engine/IRenderToTexture.h>
 #include <Engine/IParticleEmitter.h>
+#include <UI/ImageBox.h>
 using namespace fastbird;
 
 #define RUN_PARALLEL_EXAMPLE 0
@@ -15,20 +16,25 @@ CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
 TaskScheduler* gTaskSchedular = 0;
 IMeshObject* gMeshObject = 0;
-UIs* gUI = 0;
+//UIs* gUI = 0;
 #define NUM_PARTICLES 50
 IParticleEmitter* gParticleEmitter[NUM_PARTICLES] = { 0 };
 std::vector< IMeshObject* > gVoxels;
+lua_State* gL = 0;
+IRenderToTexture* gPortrait = 0;
 
+
+void RegisterCLuaFunctions();
 class FileChangeListener : public IFileChangeListener
 {
 public:
 	virtual void OnFileChanged(const char* file)
 	{
-		std::string extension = GetExtension(file);
+		std::string extension = GetFileExtension(file);
 		if (stricmp(extension.c_str(), "ui") == 0)
 		{
-			gUI->OnUIFileChanged(file);
+			//gUI->OnUIFileChanged(file);
+			IUIManager::GetUIManager().OnUIFileChanged(file);
 		}
 	}
 };
@@ -40,7 +46,7 @@ void UpdateFrame()
 {
 	gEnv->pTimer->Tick();
 	float dt = gEnv->pTimer->GetDeltaTime();
-	gUI->Update(dt);
+	//gUI->Update(dt);
 	IUIManager::GetUIManager().Update(dt);
 	for (int i = 0; i < NUM_PARTICLES; ++i)
 	{
@@ -109,20 +115,42 @@ LRESULT CALLBACK WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
 		gEnv->pEngine->RegisterFileChangeListener(&gFileChangeListener);
 		gEnv->pConsole->ProcessCommand("r_HDRMiddleGray 0.7");
-
+		gL = gEnv->pScriptSystem->GetLuaState();
 		gTaskSchedular = FB_NEW(TaskScheduler)(6);
 	}
 
 void InitGame()
 {
-	IUIManager::InitializeUIManager();
-	gUI = FB_NEW(UIs);
+	IUIManager::InitializeUIManager(gL);
+	//gUI = FB_NEW(UIs); -- now don't need to have ui system in cpp project.
+
+	//-----------------------------------------------------------------------
+	// start lua.
+	RegisterCLuaFunctions();
+	bool success = gEnv->pScriptSystem->RunScript("data/scripts/Startup.lua");
+	assert(success);
+	LuaObject startUp(gL, "Startup");
+	assert(startUp.IsFunction());
+	startUp.PushToStack();
+	LUA_PCALL(gL, 0, 0);
 }
 
 void DeinitGame()
 {
-	FB_DELETE(gUI);
+	//FB_DELETE(gUI);
 	IUIManager::FinalizeUIManager();
+}
+
+void CreateBox()
+{
+	if (gMeshObject)
+		return;
+	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
+	if (gMeshObject)
+	{
+		gMeshObject->AttachToScene();
+		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+	}
 }
 //-----------------------------------------------------------------------------
 int main()
@@ -150,14 +178,12 @@ int main()
 	//----------------------------------------------------------------------------
 	// 3. How to load model file and material.
 	//----------------------------------------------------------------------------
-	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
-	if (gMeshObject)
+	if (!gMeshObject)
 	{
-		gMeshObject->AttachToScene();
-		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
+		CreateBox();
 	}
 	
-	gUI->SetVisible(true, UIS_FLEET_UI);
+	//gUI->SetVisible(true, UIS_FLEET_UI);
 
 	//----------------------------------------------------------------------------
 	// 4. How to use voxelizer (Need to include <Engine/IVoxelizer.h>)
@@ -278,6 +304,10 @@ int main()
 	}
 	for (int i = 0; i < NUM_PARTICLES; ++i)
 		gEnv->pEngine->ReleaseParticleEmitter(gParticleEmitter[i]);
+
+	if (gPortrait)
+		gEnv->pRenderer->DeleteRenderToTexture(gPortrait);
+
 	gVoxels.clear();
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
@@ -293,6 +323,54 @@ int main()
 #ifdef USING_FB_MEMORY_MANAGER
 	FBReportMemoryForModule();
 #endif
+}
+
+int PreparePortrait(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compname = luaL_checkstring(L, 2);
+	auto comp = IUIManager::GetUIManager().FindComp(uiname, compname);
+	ImageBox* imageBox = dynamic_cast<ImageBox*>(comp);
+	if (imageBox)
+	{
+		if (!gPortrait)
+		{
+			gPortrait = gEnv->pRenderer->CreateRenderToTexture(true);
+			gPortrait->SetEnable(false);
+
+			const Vec2I& size = imageBox->GetSize();
+			gPortrait->SetColorTextureDesc(size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false);
+			gPortrait->SetDepthStencilDesc(size.x, size.y, PIXEL_FORMAT_D32_FLOAT, false, false);
+			ICamera* cam = gPortrait->GetCamera();
+			cam->SetNearFar(0.01f, 100.0f);
+			float theta = cam->GetFOV()*.5f;
+			float tanTheta = tan(theta);
+
+			Vec3 lightDir = gEnv->pRenderer->GetDirectionalLight()->GetPosition();
+			if (!gMeshObject)
+				CreateBox();
+			IMeshObject* pMeshObject = gMeshObject;
+			assert(pMeshObject);
+			float renderTargetCamDist = pMeshObject->GetBoundingVolume()->GetRadius() / tanTheta + 0.01f;
+			renderTargetCamDist *= 1.05f;
+			cam->SetPos(gMeshObject->GetPos() + lightDir * renderTargetCamDist);
+			cam->SetDir(-lightDir);
+			cam->SetTarget(pMeshObject);
+			cam->SetEnalbeInput(true);
+			cam->SetInitialDistToTarget(renderTargetCamDist);
+			gPortrait->GetLight()->SetDiffuse(Vec3(1, 1, 1));
+			gPortrait->GetLight()->SetPosition(lightDir);
+			gPortrait->GetScene()->AttachObject(pMeshObject);
+			imageBox->SetTexture(gPortrait->GetRenderTargetTexture());
+			gPortrait->SetEnable(true);
+		}
+	}
+	return 0;
+}
+
+void RegisterCLuaFunctions()
+{
+	LUA_SETCFUNCTION(gL, PreparePortrait);
 }
 
 //---------------------------------------------------------------------------

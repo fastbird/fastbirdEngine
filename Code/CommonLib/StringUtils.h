@@ -8,11 +8,15 @@ namespace fastbird
 
 	char* StripRight(char* s);
 	char* StripLeft(char* s);
+	std::string StripBoth(const char* s);
 	void StripExtension(char* s);
+	std::string StripExtension(const char* s);
+	const char* FindLastOf(const char* s, char ch);
 	std::string GetFileName(const char* s);
+	std::string GetFileNameWithoutExtension(const char* s);
 	std::string GetDirectoryPath(const char* s);
 	const char* StripPath(const char* s);
-	const char* GetExtension(const char* s);
+	const char* GetFileExtension(const char* s);
 	bool CheckExtension(const char* filename, const char* extension);
 	void StepToDigit(char** ppch);
 	// if outPath is zero, you have to free the returned pointer.
@@ -25,9 +29,11 @@ namespace fastbird
 		unsigned int maxSplits = 0, bool preserveDelims = false);
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
 	void ToLowerCase( std::string& str );
+	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase( std::string& str );
 	bool IsNumeric(const char* str);
 
+	//-----------------------------------------------------------------
 	class StringConverter
     {
     public:
@@ -206,4 +212,49 @@ namespace fastbird
         /** Checks the std::string is a valid number value. */
         static bool isNumber(const std::string& val);
     };
+
+
+	//-----------------------------------------------------------------
+	class HashedString
+	{
+		// note: mIdent is stored as a void* not an int, so that in
+		// the debugger it will show up as hex-values instead of
+		// integer values. This is a bit more representative of what
+		// we're doing here and makes it easy to allow external code
+		// to assign event types as desired.
+
+		void *             mIdent;
+		std::string		   mIdentStr;
+
+	public:
+		explicit HashedString(char const * const pIdentString)
+			: mIdent(hash_name(pIdentString))
+			, mIdentStr(pIdentString)
+		{
+		}
+
+		unsigned long getHashValue(void) const
+		{
+			return reinterpret_cast<unsigned long>(mIdent);
+		}
+
+		const std::string & getStr() const
+		{
+			return mIdentStr;
+		}
+
+		static void* hash_name(char const *  pIdentStr);
+
+		bool operator< (HashedString const & o) const
+		{
+			bool r = (getHashValue() < o.getHashValue());
+			return r;
+		}
+
+		bool operator== (HashedString const & o) const
+		{
+			bool r = (getHashValue() == o.getHashValue());
+			return r;
+		}
+	};
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <CommonLib/AsyncObjects.h>
 
 namespace fastbird
 {
@@ -16,8 +17,10 @@ namespace fastbird
 	// system, where each waiting thread of the same priority is likely to waste its 
 	// quantum (allocated time where a thread can run) spinning until the thread that 
 	// holds the lock is finally finished.
-	template<bool Wait, bool Sleep> class SpinLock
+	template<bool Wait, bool Sleep> 
+	class SpinLock
 	{
+	protected:
 		std::atomic<long> mLockSem;
 
 	public:
@@ -47,7 +50,7 @@ namespace fastbird
 				{
 					if (Sleep)
 					{
-						SwitchThread();
+						std::this_thread::yield(); // SwitchThread
 					}
 				}
 			} while (Wait);

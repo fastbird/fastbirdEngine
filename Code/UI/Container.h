@@ -8,13 +8,15 @@ namespace fastbird
 	{
 	public:
 		Container() : mScrollerV(0)
-			, mUseScrollerH(0), mUseScrollerV(0), mBottomChild(0), mLastContentWNEnd(0.f)
+			, mUseScrollerH(0), mUseScrollerV(0), mChildrenPosSizeChanged(false)
 			, mWndContentUI(0){}
 		virtual ~Container();
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
-		virtual void RemoveChild(IWinBase* child);
+		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable);
+		virtual void RemoveChild(IWinBase* child, bool immediately = false);
+		virtual void RemoveAllChild(bool immediately = false);
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false);
 		virtual IWinBase* GetChild(unsigned idx);
@@ -23,7 +25,7 @@ namespace fastbird
 		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void OnStartUpdate(float elapsedTime);
-		virtual void OnChildPosSizeChanged(WinBase* child);
+		virtual void RefreshVScrollbar();
 		virtual void SetVisible(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
@@ -37,6 +39,8 @@ namespace fastbird
 		virtual void RefreshScissorRects();
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+
+		void SetChildrenPosSizeChanged() { mChildrenPosSizeChanged = true; }
 		
 	private:
 		friend class WinBase;
@@ -58,9 +62,8 @@ namespace fastbird
 		Scroller* mScrollerV;
 		bool mUseScrollerH;
 		bool mUseScrollerV;
-		IWinBase* mBottomChild;
-		float mLastContentWNEnd;
 		IWinBase* mWndContentUI;
+		bool mChildrenPosSizeChanged;
 
 	};
 }

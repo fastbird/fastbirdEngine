@@ -29,6 +29,7 @@ public:
 
 	void OnMouseHover(void* arg);
 	void OnMouseOut(void* arg);
+	void SetKeepImageRatio(bool keep);
 
 
 private:
@@ -37,6 +38,7 @@ private:
 	TextureAtlasRegion* mAtlasRegion;
 	SmartPtr<ITexture> mTexture;
 	bool mUseHighlight;
+	bool mKeepImageRatio;
 
 };
 }

@@ -124,6 +124,8 @@ void Button::OnSizeChanged()
 
 void Button::GatherVisit(std::vector<IUIObject*>& v)
 {
+	if (!mVisible)
+		return;
 	assert(mUIObject);
 
 	if (mProgressBar && mInProgress)
@@ -214,13 +216,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 										 if (!mImage)
 										 {
-											 mImage = FB_NEW(ImageBox);
-											 mImage->SetParent(this);
-											 mImage->SetWNPos(mWNPos);
-											 mImage->SetWNSize(mWNSize);
-											 IUIManager::GetUIManager().DirtyRenderList();
+											 mImage = CreateImageBox();
 										 }
-
 										 assert(!mImageAtlas.empty());
 										 mImage->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 										 return true;
@@ -230,11 +227,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 											   if (!mImageOver)
 											   {
-												   mImageOver = FB_NEW(ImageBox);
-												   mImageOver->SetParent(this);
-												   mImageOver->SetWNPos(mWNPos);
-												   mImageOver->SetWNSize(mWNSize);
-												   IUIManager::GetUIManager().DirtyRenderList();
+												   mImageOver = CreateImageBox();
 											   }
 
 											   assert(!mImageAtlas.empty());
@@ -247,14 +240,10 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 										 if (!mImage)
 										 {
-											 mImage = FB_NEW(ImageBox);
-											 mImage->SetParent(this);
-											 mImage->SetWNPos(mWNPos);
-											 mImage->SetWNSize(mWNSize);
-											 IUIManager::GetUIManager().DirtyRenderList();
+											 mImage = CreateImageBox();
 										 }
 
-										 mImage->SetTexture( val);
+										 mImage->SetTexture(val);
 										 return true;
 	}
 
@@ -262,11 +251,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 											   if (!mImageOver)
 											   {
-												   mImageOver = FB_NEW(ImageBox);
-												   mImageOver->SetParent(this);
-												   mImageOver->SetWNPos(mWNPos);
-												   mImageOver->SetWNSize(mWNSize);
-												   IUIManager::GetUIManager().DirtyRenderList();
+												   mImageOver = CreateImageBox();
 											   }
 
 											   
@@ -278,14 +263,20 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 										 if (!mFrameImage)
 										 {
-											 mFrameImage = FB_NEW(ImageBox);
-											 mFrameImage->SetParent(this);
-											 mFrameImage->SetWNPos(mWNPos);
-											 mFrameImage->SetWNSize(mWNSize);
+											 mFrameImage = CreateImageBox();
 										 }
 
 										 assert(!mImageAtlas.empty());
 										 mFrameImage->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										 if (strlen(val) == 0)
+										 {
+											 mFrameImage->SetVisible(false);
+										 }
+										 else
+										 {
+											 mFrameImage->SetVisible(true);
+										 }
+										 
 										 IUIManager::GetUIManager().DirtyRenderList();
 										 return true;
 	}
@@ -348,6 +339,17 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
+ImageBox* Button::CreateImageBox()
+{
+	auto image = FB_NEW(ImageBox);
+	image->SetVisible(true);
+	image->SetParent(this);
+	image->SetWNPos(mWNPos);
+	image->SetWNSize(mWNSize);
+	IUIManager::GetUIManager().DirtyRenderList();
+	return image;
+}
+
 void Button::OnStartUpdate(float elapsedTime)
 {
 	if (mProgressBar)
@@ -356,12 +358,17 @@ void Button::OnStartUpdate(float elapsedTime)
 
 void Button::StartProgress()
 {
+	if (mInProgress)
+		return;
 	mInProgress = true;
 	mNoBackgroundBackup = mUIObject->GetNoDrawBackground();
 	if (mProgressBar)
+	{
 		mProgressBar->SetPercentage(0);
-	mProgressBar->SetVisible(true);
+		mProgressBar->SetVisible(true);
+	}
 
+	IUIManager::GetUIManager().DirtyRenderList();
 }
 
 void Button::SetPercentage(float p) // progress bar
@@ -378,8 +385,12 @@ void Button::Blink(bool blink)
 
 void Button::EndProgress()
 {
+	if (!mInProgress)
+		return;
 	mInProgress = false;
-	mProgressBar->SetVisible(false);
+	if (mProgressBar)
+		mProgressBar->SetVisible(false);
+	IUIManager::GetUIManager().DirtyRenderList();
 }
 
 void Button::SetEnable(bool enable)

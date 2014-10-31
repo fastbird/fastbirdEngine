@@ -1,6 +1,15 @@
 #include <Engine/StdAfx.h>
 #include <Engine/ScriptSystem/ScriptSystem.h>
 #include <Engine/GlobalEnv.h>
+#include <CommonLib/LuaUtils.h>
+
+int FBPrint(lua_State* L)
+{
+	std::string msg = std::string("Lua: ") + luaL_checkstring(L, -1);
+	fastbird::Log(msg.c_str());
+
+	return 0;
+}
 
 namespace fastbird
 {
@@ -11,7 +20,7 @@ ScriptSystem::ScriptSystem()
 	mLuaState = luaL_newstate();
 	luaL_openlibs(mLuaState);
 	assert(mLuaState);
-
+	ExportsDefaultFunctions();
 	RunScript("configEngine.lua");
 }
 
@@ -38,19 +47,6 @@ bool ScriptSystem::RunScript(const char* filename)
 		return false;
 	}
 	return true;
-}
-
-//--------------------------------------------------------------------------
-void ScriptSystem::InitLua()
-{
-	mLuaState = luaL_newstate();
-	luaL_openlibs(mLuaState);
-}
-
-//--------------------------------------------------------------------------
-void ScriptSystem::CloseLua()
-{
-	lua_close(mLuaState);
 }
 
 //--------------------------------------------------------------------------
@@ -123,6 +119,11 @@ float ScriptSystem::GetRealVariable(const char* name, float def)
 		ret = (float)lua_tonumber(mLuaState, -1);
 	lua_pop(mLuaState, 1);
 	return ret;
+}
+
+void ScriptSystem::ExportsDefaultFunctions()
+{
+	LUA_SETCFUNCTION(mLuaState, FBPrint);
 }
 
 }

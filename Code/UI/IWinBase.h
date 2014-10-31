@@ -5,6 +5,7 @@
 #include <UI/UIProperty.h>
 #include <UI/IUIAnimation.h>
 #include <Engine/IUIObject.h>
+#include <CommonLib/LuaObject.h>
 
 namespace fastbird
 {
@@ -22,7 +23,9 @@ namespace fastbird
 		virtual ComponentType::Enum GetType() const = 0;
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type) = 0;
-		virtual void RemoveChild(IWinBase* child) = 0;
+		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable) = 0;
+		virtual void RemoveChild(IWinBase* child, bool immediately=false) = 0;
+		virtual void RemoveAllChild(bool immediately = false) = 0;
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
 		virtual IWinBase* GetChild(unsigned idx) = 0;
 		virtual unsigned GetNumChildren() const = 0;
@@ -100,6 +103,7 @@ namespace fastbird
 		virtual IUIAnimation* GetUIAnimation(const char* name) = 0;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem) = 0;
+		virtual bool ParseLua(const fastbird::LuaObject& compTable) = 0;
 		virtual float GetTextBottomGap() const = 0;
 
 		// You usually controll the ui-layer by changing the order of Adding new UI. Later added ui draw first.
@@ -147,6 +151,8 @@ namespace fastbird
 		virtual void SetContent(void* p) = 0;
 		virtual void* GetContent() const = 0;
 		virtual int GetSpecialOrder() const = 0;
+
+		virtual bool GetInheritVisibleTrue() const =0 ;
 
 	protected:
 		virtual void OnPosChanged() = 0;

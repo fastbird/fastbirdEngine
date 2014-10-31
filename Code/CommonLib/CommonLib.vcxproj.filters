@@ -127,6 +127,11 @@
     <ClInclude Include="Curve.h" />
     <ClInclude Include="CurveImporter.h" />
     <ClInclude Include="CurveManager.h" />
+    <ClInclude Include="luawrapperutil.hpp" />
+    <ClInclude Include="luawrapper.hpp" />
+    <ClInclude Include="LuaObject.h" />
+    <ClInclude Include="StdOutRedirect.h" />
+    <ClInclude Include="FileSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -215,5 +220,9 @@
     <ClCompile Include="Curve.cpp" />
     <ClCompile Include="CurveImporter.cpp" />
     <ClCompile Include="CurveManager.cpp" />
+    <ClCompile Include="LuaObject.cpp" />
+    <ClCompile Include="LuaUtils.cpp" />
+    <ClCompile Include="StdOutRedirect.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
   </ItemGroup>
 </Project>

@@ -106,7 +106,7 @@ void DropDown::OnMouseClick(void* arg)
 			sCurrentDropDown = 0;
 	}
 
-	for each (auto var in mDropDownItems)
+	for (auto var : mDropDownItems)
 	{
 		var->SetVisible(!vis);
 	}
@@ -115,7 +115,7 @@ void DropDown::OnMouseClick(void* arg)
 
 void DropDown::CloseOptions()
 {
-	for each (auto var in mDropDownItems)
+	for (auto var : mDropDownItems)
 	{
 		var->SetVisible(false);
 	}
@@ -123,7 +123,7 @@ void DropDown::CloseOptions()
 
 void DropDown::OnFocusLost()
 {
-	for each (auto var in mDropDownItems)
+	for (auto var : mDropDownItems)
 	{
 		var->SetVisible(false);
 	}
@@ -142,7 +142,7 @@ void DropDown::OnItemSelected(void* arg)
 {
 	size_t index = -1;
 	size_t it = 0;
-	for each (auto var in mDropDownItems)
+	for (auto var : mDropDownItems)
 	{
 		if (var == arg)
 		{
@@ -165,7 +165,10 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 	pDropDownItem->SetText(szString);
 	size_t index = mDropDownItems.size()-1;
 	SetCommonProperty(pDropDownItem, index);
-	
+	if (mDropDownItems.size() == 1)
+	{
+		OnItemSelected(mDropDownItems.back());
+	}
 
 	return index;
 }
@@ -178,6 +181,11 @@ size_t DropDown::AddDropDownItem(IWinBase* item)
 	Button* pDropDownItem = mDropDownItems.back();	
 	size_t index = mDropDownItems.size() - 1;
 	SetCommonProperty(pDropDownItem, index);
+
+	if (mDropDownItems.size() == 1)
+	{
+		OnItemSelected(item);
+	}
 
 	return index;
 }
@@ -226,7 +234,7 @@ bool DropDown::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		{
 			if (mDropDownItems[0]->GetVisible())
 			{
-				for each (auto var in mDropDownItems)
+				for (auto var : mDropDownItems)
 				{
 					var->SetVisible(false);
 				}
@@ -241,7 +249,7 @@ void DropDown::OnParentVisibleChanged(bool show)
 {
 	if (!show)
 	{
-		for each (auto var in mDropDownItems)
+		for (auto var : mDropDownItems)
 		{
 			var->SetVisible(false);
 		}

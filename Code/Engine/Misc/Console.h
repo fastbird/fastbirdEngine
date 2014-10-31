@@ -8,53 +8,7 @@ namespace fastbird
 	class CandidatesData;
 	class Console : public IConsole, public IInputListener
 	{
-	public:
-		Console();
-		virtual ~Console();
-
-		//-------------------------------------------------------------------------
-		// IConsole
-		virtual bool Init();
-		virtual void RegisterCommand(ConsoleCommand* pCom);
-		virtual void UnregisterCommand(ConsoleCommand* pCom);
-		virtual void RegisterVariable(CVar* cvar);
-		virtual void UnregisterVariable(CVar* cvar);
-		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates);
-		virtual void Log(const char* szFmt, ...);
-		virtual void ProcessCommand(const char* command);
-		virtual void ToggleOpen();
-		virtual void Render();
-		virtual EngineCommand* GetEngineCommand() { return mEngineCommand; }
-		virtual void AddListener(ICVarListener* pListener);
-		virtual void RemoveListener(ICVarListener* pListener);
-
-		//-------------------------------------------------------------------------
-		// IInputListener
-		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);
-		virtual void EnableInputListener(bool enable);
-		virtual bool IsEnabledInputLIstener() const;
-
-		void AutoCompletion();
-		bool IsValidCharForInput(unsigned int chr);
-		void OnCVarChanged(CVar* cvar);
-
-	
-	private:
-
-		void Highlighting(bool shiftkey);
-		bool IsHighlighting() const { return mHighlightStart!=-1; }
-		void StartHighlighting()
-		{ 
-			assert(!IsHighlighting()); 
-			mHighlightStart = mCursorPos;
-		}
-		void EndHighlighting() { mHighlightStart = -1; }
-		void EndAutoCompletion();
-
-		void GetNextHistory();
-		void GetPrevHistory();
-
-	private:
+		bool mLuaMode;
 		int mCursorPos;
 		const int mCursorWidth;
 		int mHighlightStart;
@@ -91,6 +45,56 @@ namespace fastbird
 		SmartPtr<EngineCommand> mEngineCommand;
 
 		std::vector<ICVarListener*> mCVarListeners;
+
+		StdOutRedirect* mStdOutRedirect;
+
+	public:
+		Console();
+		virtual ~Console();
+
+		//-------------------------------------------------------------------------
+		// IConsole
+		virtual bool Init();
+		virtual void RegisterCommand(ConsoleCommand* pCom);
+		virtual void UnregisterCommand(ConsoleCommand* pCom);
+		virtual void RegisterVariable(CVar* cvar);
+		virtual void UnregisterVariable(CVar* cvar);
+		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates);
+		virtual void Log(const char* szFmt, ...);
+		virtual void ProcessCommand(const char* command);
+		virtual void ToggleOpen();
+		virtual void Update();
+		virtual void Render();
+		virtual EngineCommand* GetEngineCommand() { return mEngineCommand; }
+		virtual void AddListener(ICVarListener* pListener);
+		virtual void RemoveListener(ICVarListener* pListener);
+
+		//-------------------------------------------------------------------------
+		// IInputListener
+		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);
+		virtual void EnableInputListener(bool enable);
+		virtual bool IsEnabledInputLIstener() const;
+
+		void AutoCompletion();
+		bool IsValidCharForInput(unsigned int chr);
+		void OnCVarChanged(CVar* cvar);
+
+		void RegisterStdout(StdOutRedirect* p);
+	
+	private:
+
+		void Highlighting(bool shiftkey);
+		bool IsHighlighting() const { return mHighlightStart!=-1; }
+		void StartHighlighting()
+		{ 
+			assert(!IsHighlighting()); 
+			mHighlightStart = mCursorPos;
+		}
+		void EndHighlighting() { mHighlightStart = -1; }
+		void EndAutoCompletion();
+
+		void GetNextHistory();
+		void GetPrevHistory();
 
 	};
 }

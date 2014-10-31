@@ -99,7 +99,7 @@ IObject* MeshGroup::Clone() const
 	MeshGroup* cloned = FB_NEW(MeshGroup);
 	SpatialObject::Clone(cloned);
 
-	for each(auto it in mMeshObjects)
+	for (auto it : mMeshObjects)
 	{
 		cloned->mMeshObjects.push_back(MESH_OBJECTS::value_type((IMeshObject*)it.first->Clone(), it.second));
 		cloned->mLocalTransforms.push_back(Transformation::IDENTITY);

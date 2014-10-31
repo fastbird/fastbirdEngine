@@ -386,6 +386,7 @@
     <ClInclude Include="Renderer\StarDef.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="ISceneListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -551,6 +552,9 @@
     </ClCompile>
     <ClCompile Include="Renderer\StarDef.cpp">
       <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptSystem\LuaExports.cpp">
+      <Filter>ScriptSystem</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

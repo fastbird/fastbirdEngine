@@ -169,11 +169,11 @@ BoundingVolume& BVSphere::operator= (const BoundingVolume& other)
 	return *this;
 }
 
-Vec3 BVSphere::GetSurfaceTo(const Vec3& target, Vec3& normal)
+Vec3 BVSphere::GetSurfaceFrom(const Vec3& src, Vec3& normal)
 {
-	Vec3 dir = (target - mCenter);
+	Vec3 dir = mCenter - src;
 	float dist = dir.Normalize();
-	normal = dir;
+	normal = -dir;
 	dist -= mRadius;
 	dir *= dist;
 	return dir;

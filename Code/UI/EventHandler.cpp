@@ -1,6 +1,8 @@
 #include <UI/StdAfx.h>
 #include <UI/EventHandler.h>
 #include <UI/WinBase.h>
+#include <UI/IUIManager.h>
+#include <CommonLib/LuaUtils.h>
 
 namespace fastbird
 {
@@ -34,22 +36,58 @@ void EventHandler::UnregisterAllEventFunc()
 	mEventFuncMap.clear();
 }
 
+void EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
+{
+	std::string funcName = StripBoth(luaFuncName);
+	LuaObject func;
+	func.FindFunction(IUIManager::GetUIManager().GetLuaState(), funcName.c_str());
+	if_assert_pass(func.IsFunction())
+		mLuaFuncMap[e] = func;	
+}
+
+void EventHandler::UnregisterEventLuaFunc(EVENT e)
+{
+	auto it = mLuaFuncMap.find(e);
+	if (it != mLuaFuncMap.end())
+		mLuaFuncMap.erase(it);
+}
+
 bool EventHandler::OnEvent(EVENT e)
 {
 	if (mDisabledEvent.find(e) != mDisabledEvent.end() || !mEventEnable)
 		return false;
 
+	bool processed = false;
 	auto it = mEventFuncMap.find(e);
 	if (it!=mEventFuncMap.end())
 	{
-		for each(auto funcID in it->second)
+		for (auto funcID : it->second)
 		{
 			mFuncMap[funcID](dynamic_cast<WinBase*>(this));
 		}
-		return true;
+		processed = processed || true;
 	}
 
-	return false;
+	// check lua
+	{
+		const auto& it = mLuaFuncMap.find(e);
+		if (it != mLuaFuncMap.end())
+		{
+			assert(it->second.IsFunction());
+
+			lua_State* L = IUIManager::GetUIManager().GetLuaState();
+			it->second.PushToStack();
+			WinBase* pComp = dynamic_cast<WinBase*>(this);
+			lua_pushstring(L, pComp->GetName());
+			LUA_PCALL_RET_FALSE(L, it->second.IsMethod() ? 2 : 1, 0);
+			processed = processed || true;
+		}
+		
+	}
+
+
+
+	return processed;
 }
 
 void EventHandler::DisableEvent(EVENT e)

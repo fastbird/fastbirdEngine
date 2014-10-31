@@ -20,7 +20,8 @@ void ShaderD3D11::Delete()
 ShaderD3D11::ShaderD3D11( const char* name )
 	: m_pVertexShader(0), m_pGeometryShader(0), m_pHullShader(0)
 	, m_pDomainShader(0), m_pPixelShader(0)
-	, m_pVertexShaderBytecode(0)
+	, mVSBytecode(0)
+	, mBytecodeSize(0)
 	, mValid(false)
 	, Shader(name)
 {
@@ -34,7 +35,10 @@ ShaderD3D11::~ShaderD3D11()
 	SAFE_RELEASE(m_pHullShader);
 	SAFE_RELEASE(m_pDomainShader);
 	SAFE_RELEASE(m_pPixelShader);
-	SAFE_RELEASE(m_pVertexShaderBytecode);
+	if (mVSBytecode)
+	{
+		FB_SAFE_ARRDEL(mVSBytecode);
+	}
 }
 
 void ShaderD3D11::SetVertexShader(ID3D11VertexShader* pVertexShader)
@@ -46,8 +50,30 @@ void ShaderD3D11::SetVertexShader(ID3D11VertexShader* pVertexShader)
 
 void ShaderD3D11::SetVertexShaderBytecode(ID3DBlob* pVertexShaderBytecode)
 {
-	SAFE_RELEASE(m_pVertexShaderBytecode);
-	m_pVertexShaderBytecode = pVertexShaderBytecode;
+	if (mVSBytecode)
+	{
+		FB_SAFE_ARRDEL(mVSBytecode);
+	}
+	if (pVertexShaderBytecode)
+	{
+		mBytecodeSize = pVertexShaderBytecode->GetBufferSize();
+		mVSBytecode = FB_ARRNEW(char, mBytecodeSize);
+		memcpy(mVSBytecode, pVertexShaderBytecode->GetBufferPointer(), mBytecodeSize);
+	}
+}
+
+void ShaderD3D11::SetVertexShaderBytecode(void* bytecode, size_t size)
+{
+	if (mVSBytecode)
+	{
+		FB_SAFE_ARRDEL(mVSBytecode);
+	}
+	if (bytecode)
+	{
+		mBytecodeSize = size;
+		mVSBytecode = FB_ARRNEW(char, mBytecodeSize);
+		memcpy(mVSBytecode, bytecode, mBytecodeSize);
+	}
 }
 
 void ShaderD3D11::SetGeometryShader(ID3D11GeometryShader* pGeometryShader)
@@ -108,10 +134,10 @@ void ShaderD3D11::BindHS()
 //----------------------------------------------------------------------------
 void* ShaderD3D11::GetVSByteCode(unsigned& size) const
 {
-	if (m_pVertexShaderBytecode)
+	if (mVSBytecode)
 	{
-		size = m_pVertexShaderBytecode->GetBufferSize();
-		return m_pVertexShaderBytecode->GetBufferPointer();
+		size = mBytecodeSize;
+		return mVSBytecode;
 	}
 
 	size = 0;

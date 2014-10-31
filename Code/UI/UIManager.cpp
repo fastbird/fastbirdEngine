@@ -17,6 +17,10 @@
 #include <UI/HorizontalGauge.h>
 #include <UI/NumericUpDown.h>
 #include <UI/DropDown.h>
+#include <UI/TextBox.h>
+#include <CommonLib/FileSystem.h>
+#include <CommonLib/LuaUtils.h>
+#include <CommonLib/LuaObject.h>
 #include <Engine/IUIObject.h>
 
 namespace fastbird
@@ -24,10 +28,10 @@ namespace fastbird
 
 IUIManager* IUIManager::mUIManager = 0;
 
-void IUIManager::InitializeUIManager()
+void IUIManager::InitializeUIManager(lua_State* L)
 {
 	assert(!mUIManager);
-	mUIManager = FB_NEW(UIManager);
+	mUIManager = FB_NEW(UIManager)(L);
 	WinBase::InitMouseCursor();
 	
 }
@@ -50,7 +54,7 @@ IUIManager& IUIManager::GetUIManager()
 }
 
 //---------------------------------------------------------------------------
-UIManager::UIManager()
+UIManager::UIManager(lua_State* L)
 	: mInputListenerEnable(true)
 	, mNeedToRegisterUIObject(false)
 	, mFocusWnd(0)
@@ -58,6 +62,7 @@ UIManager::UIManager()
 	, mPopup(0)
 	, mPopupCallback(std::function< void(void*) >())
 	, mPopupResult(0)
+	, mL(L)
 {
 	gpTimer = gEnv->pTimer;
 	gEnv->pEngine->AddInputListener(this,
@@ -69,12 +74,21 @@ UIManager::UIManager()
 	mTooltipUI->SetAlphaBlending(true);
 	mTooltipUI->GetMaterial()->SetDiffuseColor(Vec4(0, 0, 0, 0.7f));
 	mTooltipUI->SetTextColor(Color(1, 1, 1, 1));
+	RegisterLuaFuncs();
 }
 
 UIManager::~UIManager()
 {
 	DeleteWindow(mPopup);
 	mTooltipUI->Delete();
+	// delete lua uis
+	for (const auto& it : mLuaUIs)
+	{
+		for (const auto& ui : it.second)
+		{
+			DeleteWindow(ui);
+		}
+	}
 	assert(mWindows.empty());
 	gEnv->pEngine->RemoveInputListener(this);
 	KeyboardCursor::FinalizeKeyboardCursor();
@@ -94,7 +108,7 @@ void UIManager::Shutdown()
 //---------------------------------------------------------------------------
 void UIManager::Update(float elapsedTime)
 {
-	for each(auto wnd in mWindows)
+	for each(auto& wnd in mWindows)
 	{
 		wnd->OnStartUpdate(elapsedTime);
 	}
@@ -131,7 +145,7 @@ void UIManager::Update(float elapsedTime)
 }
 
 //---------------------------------------------------------------------------
-bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname)
+bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI)
 {
 	tinyxml2::XMLDocument doc;
 	int err = doc.LoadFile(filepath);
@@ -153,11 +167,23 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 	}
 	if (pRoot->Attribute("name"))
 		uiname = pRoot->Attribute("name");
-	
+
+	const char* sz = pRoot->Attribute("script");
+	if (sz)
+	{
+		int error = luaL_dofile(mL, sz);
+		if (error)
+		{
+			Log(lua_tostring(mL, -1));
+			assert(0);
+			return false;
+		}
+	}
+
 	tinyxml2::XMLElement* pComp = pRoot->FirstChildElement("component");
 	while (pComp)
 	{
-		const char* sz = pComp->Attribute("type");
+		sz = pComp->Attribute("type");
 		if (!sz)
 		{
 			Error("Component doesn't have type attribute. ignored");
@@ -174,6 +200,15 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 		}
 
 		pComp = pComp->NextSiblingElement("component");
+	}
+	assert(!uiname.empty());
+	if (luaUI && !uiname.empty())
+	{
+		mLuaUIs[uiname].clear();
+		for (const auto& topWindow : windows)
+		{
+			mLuaUIs[uiname].push_back(topWindow);
+		}
 	}
 
 	return true;
@@ -210,6 +245,9 @@ IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height
 
 void UIManager::DeleteWindow(IWinBase* pWnd)
 {
+	if (!pWnd)
+		return;
+	pWnd->SetVisible(false);
 	OnDeleteWinBase(pWnd);
 	mWindows.erase(std::remove(mWindows.begin(), mWindows.end(), pWnd), mWindows.end());
 	FB_SAFE_DEL(pWnd);
@@ -312,6 +350,9 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 		break;
 	case ComponentType::DropDown:
 		pWnd = FB_NEW(DropDown);
+		break;
+	case ComponentType::TextBox:
+		pWnd = FB_NEW(TextBox);
 		break;
 	default:
 		assert(0 && "Unknown component");
@@ -496,5 +537,429 @@ void UIManager::OnPopupNo(void* arg)
 	mPopupCallback(this);
 }
 
-} // namespace fastbird
+//--------------------------------------------------------------------------------
+int ClearListBox(lua_State* L);
+int LoadLuaUI(lua_State* L);
+int SetStaticText(lua_State* L);
+int SetVisibleLuaUI(lua_State* L);
+int SetVisibleComponent(lua_State* L);
+int GetVisibleLuaUI(lua_State* L);
+int RemoveAllChildrenOf(lua_State* L);
+int AddComponent(lua_State* L);
+int BlinkButton(lua_State* L);
+int UpdateButtonProgressBar(lua_State* L);
+int StartButtonProgressBar(lua_State* L);
+int EndButtonProgressBar(lua_State* L);
+int SetTextBoxText(lua_State* L);
+int SetUIBackground(lua_State* L);
+int SetUIProperty(lua_State* L);
+int RemoveUIEventhandler(lua_State* L);
+int GetMousePos(lua_State* L);
+//--------------------------------------------------------------------------------
+void UIManager::RegisterLuaFuncs()
+{
+	LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
+	LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
+	LUA_SETCFUNCTION(mL, SetVisibleComponent);
+	LUA_SETCFUNCTION(mL, LoadLuaUI);
+	LUA_SETCFUNCTION(mL, ClearListBox);
+	LUA_SETCFUNCTION(mL, SetStaticText);
+	LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
+	LUA_SETCFUNCTION(mL, AddComponent);
+	LUA_SETCFUNCTION(mL, BlinkButton);
+	LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
+	LUA_SETCFUNCTION(mL, StartButtonProgressBar);
+	LUA_SETCFUNCTION(mL, EndButtonProgressBar);
+	LUA_SETCFUNCTION(mL, SetTextBoxText);
+	LUA_SETCFUNCTION(mL, SetUIBackground);
+	LUA_SETCFUNCTION(mL, SetUIProperty);
+	LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
+	LUA_SETCFUNCTION(mL, GetMousePos);
+}
 
+IWinBase* UIManager::FindComp(const char* uiname, const char* compName) const
+{
+	auto itFind = mLuaUIs.find(uiname);
+	if (itFind == mLuaUIs.end())
+		return 0;
+
+	for (const auto& comp : itFind->second)
+	{
+		if (strcmp(comp->GetName(), compName) == 0)
+		{
+			return comp;
+		}
+
+		auto ret = comp->GetChild(compName, true);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+void UIManager::SetVisible(const char* uiname, bool visible)
+{
+	auto itFind = mLuaUIs.find(uiname);
+	if (itFind == mLuaUIs.end())
+	{
+		assert(0);
+		return;
+	}
+	for (const auto& comp : itFind->second)
+	{
+		comp->SetVisible(visible);
+	}
+
+
+}
+
+bool UIManager::GetVisible(const char* uiname) const
+{
+	auto itFind = mLuaUIs.find(uiname);
+	if (itFind == mLuaUIs.end())
+	{
+		assert(0);
+		return false;
+	}
+	bool visible = false;
+	for (const auto& comp : itFind->second)
+	{
+		visible = visible || comp->GetVisible();
+	}
+	return visible;
+}
+
+void UIManager::OnUIFileChanged(const char* file)
+{
+	std::string filename = GetFileNameWithoutExtension(file);
+	
+	auto itFind = mLuaUIs.find(filename);
+	if (itFind != mLuaUIs.end())
+	{
+		for (const auto& ui : itFind->second)
+		{
+			DeleteWindow(ui);
+		}
+		mLuaUIs.erase(itFind);
+	}
+	std::vector<IWinBase*> temp;
+	std::string name;
+	UIManager::GetUIManagerStatic()->ParseUI(file, temp, name, true);
+	mLuaUIs[filename] = temp;
+	UIManager::GetUIManagerStatic()->SetVisible(name.c_str(), false);
+	UIManager::GetUIManagerStatic()->SetVisible(name.c_str(), true); // for OnVisible UI Event.
+}
+
+UIManager* UIManager::GetUIManagerStatic()
+{
+	return (UIManager*)&IUIManager::GetUIManager();
+}
+
+int LoadLuaUI(lua_State* L)
+{
+	const char* uiFile = luaL_checkstring(L, 1);
+	std::vector<IWinBase*> temp;
+	std::string name;
+	UIManager::GetUIManagerStatic()->ParseUI(uiFile, temp, name, true);
+	UIManager::GetUIManagerStatic()->SetVisible(name.c_str(), false);
+	return 0;
+}
+
+int ClearListBox(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compoName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+	auto listBox = dynamic_cast<ListBox*>(comp);
+	if (listBox)
+	{
+		listBox->Clear();
+		lua_pushboolean(L, 1);
+	}
+	else
+	{
+		lua_pushboolean(L, 0);
+	}
+	return 1;
+}
+
+int AddListBoxItem(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compoName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+	auto listBox = dynamic_cast<ListBox*>(comp);
+	if (listBox)
+	{
+		unsigned numCols = listBox->GetNumCols();
+		LuaObject seq(L, 3);
+		int row = 0;
+		for (unsigned i = 0; i < numCols; ++i)
+		{
+			if (i == 0)
+			{
+				row = listBox->InsertItem(
+					AnsiToWide(seq.GetSeqTable(i+1).GetString().c_str()));
+			}
+			else
+			{
+				listBox->SetItemString(row, i,
+					AnsiToWide(seq.GetSeqTable(i + 1).GetString().c_str()));
+			}
+		}
+		lua_pushboolean(L, 1);
+	}
+	else
+	{
+		lua_pushboolean(L, 0);
+	}
+	return 1;
+}
+
+int SetStaticText(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compoName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+	auto staticText = dynamic_cast<StaticText*>(comp);
+	if (staticText)
+	{
+		staticText->SetText(AnsiToWide(luaL_checkstring(L, 3)));
+		lua_pushboolean(L, 1);
+	}
+	else
+	{
+		lua_pushboolean(L, 0);
+	}
+	return 1;
+}
+
+int SetVisibleLuaUI(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	luaL_checktype(L, 2, LUA_TBOOLEAN);
+	bool visible = lua_toboolean(L, 2)!=0;
+	UIManager::GetUIManagerStatic()->SetVisible(uiname, visible);
+	return 0;
+}
+
+int GetVisibleLuaUI(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	bool visible = UIManager::GetUIManagerStatic()->GetVisible(uiname);
+	lua_pushboolean(L, visible);
+	return 1;
+}
+
+int SetVisibleComponent(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	luaL_checktype(L, 3, LUA_TBOOLEAN);
+	bool visible = lua_toboolean(L, 3)!=0;
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		comp->SetVisible(visible);
+		return 0;
+	}
+	assert(0);
+	return 0;
+}
+
+int RemoveAllChildrenOf(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		comp->RemoveAllChild(true);
+		lua_pushboolean(L, 1);
+	}
+	else
+	{
+		lua_pushboolean(L, 0);
+	}
+	return 1;
+}
+
+int AddComponent(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	LuaObject compTable(L, 3);
+	if (comp)
+	{
+		auto winbase = comp->AddChild(compTable);
+		if (winbase)
+		{
+			lua_pushboolean(L, 1);
+			return 1;
+		}
+	}
+
+	lua_pushboolean(L, 0);
+	return 1;
+}
+
+int BlinkButton(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	luaL_checktype(L, 3, LUA_TBOOLEAN);
+	bool blink = lua_toboolean(L, 3)!=0;
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto button = dynamic_cast<Button*>(comp);
+		if (button)
+		{
+			button->Blink(blink);
+			lua_pushboolean(L, 1);
+			return 1;
+		}
+	}
+	assert(0);
+	lua_pushboolean(L, 0);
+	return 1;
+}
+
+int UpdateButtonProgressBar(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	float percent = (float)luaL_checknumber(L, 3);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto button = dynamic_cast<Button*>(comp);
+		if (button)
+		{
+			button->SetPercentage(percent);
+			return 0;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+int StartButtonProgressBar(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto button = dynamic_cast<Button*>(comp);
+		if (button)
+		{
+			button->StartProgress();
+			return 0;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+int EndButtonProgressBar(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto button = dynamic_cast<Button*>(comp);
+		if (button)
+		{
+			button->EndProgress();
+			return 0;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+int SetTextBoxText(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	const char* text = luaL_checkstring(L, 3);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto textBox = dynamic_cast<TextBox*>(comp);
+		if (textBox)
+		{
+			textBox->SetText(AnsiToWide(text));
+			return 0;
+		}
+	}
+	assert(0);
+	return 0;
+}
+
+int SetUIBackground(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	const char* image = luaL_checkstring(L, 3);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		comp->SetProperty(UIProperty::BACKGROUND_IMAGE_NOATLAS, image);
+		return 0;
+	}
+	assert(0);
+	return 0;
+}
+
+int SetUIProperty(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	const char* prop = luaL_checkstring(L, 3);
+	const char* val = luaL_checkstring(L, 4);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		comp->SetProperty(UIProperty::ConverToEnum(prop), val);
+		return 0;
+	}
+	assert(0);
+	return 0;
+
+}
+
+int RemoveUIEventhandler(lua_State* L)
+{
+	const char* uiname = luaL_checkstring(L, 1);
+	const char* compName = luaL_checkstring(L, 2);
+	const char* eventName = luaL_checkstring(L, 3);
+	auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+	if (comp)
+	{
+		auto eventHandler = dynamic_cast<EventHandler*>(comp);
+		if (eventHandler)
+		{
+			eventHandler->UnregisterEventLuaFunc(ConvertToEventEnum(eventName));
+			return 0;
+		}
+	}
+	assert(0);
+	return 0;
+
+}
+
+int GetMousePos(lua_State* L)
+{
+	long x, y;
+	gEnv->pEngine->GetMousePos(x, y);
+
+	lua_pushnumber(L, x);
+	lua_pushnumber(L, y);
+	return 2;
+}
+} // namespace fastbird

@@ -12,7 +12,7 @@ CurveManager::CurveManager()
 CurveManager::~CurveManager()
 {
 	// delete all curves;
-	for each (auto it in mCurves)
+	for (auto it : mCurves)
 	{
 		FB_DELETE(it.second);
 	}
@@ -39,6 +39,17 @@ Curve* CurveManager::GetCurve(size_t uniqueId)
 	if (it== mCurves.end())
 		return 0;
 	return it->second;
+}
+
+Curve* CurveManager::GetRandomCurve() const
+{
+	if (mCurves.empty())
+		return 0;
+	auto size = mCurves.size();
+	auto idx = Random(0, (int)size);
+
+	return (mCurves.begin() + idx)->second;
+	
 }
 
 }

@@ -47,6 +47,9 @@ namespace fastbird
 		virtual void SetFogColor(const Color& c);
 		virtual void SetDrawClouds(bool e);
 
+		virtual void AddListener(ISceneListener* listener);
+		virtual void RemoveListener(ISceneListener* listener);
+
 
 	protected:
 		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
@@ -66,6 +69,8 @@ namespace fastbird
 		FB_CRITICAL_SECTION mSpatialObjectsCS;
 
 		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
+
+		std::vector<ISceneListener*> mListeners;
 		Vec3 mWindDir;
 		float mWindVelocity;
 		Vec3 mWindVector;

@@ -4,6 +4,7 @@
 #include <Engine/Misc/EngineCommand.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ScriptSystem/ScriptSystem.h>
+#include <CommonLib/StdOutRedirect.h>
 
 namespace fastbird
 {
@@ -24,6 +25,8 @@ Console::Console()
 	, mHighlightStart(-1)
 	, mACMode(false), mCandiDepth(0), mCandiIndex(0)
 	, mBufferBtmLine(0)
+	, mLuaMode(false)
+	, mStdOutRedirect(0)
 {
 	assert(gFBEnv->pConsole == 0);
 	gFBEnv->pConsole = this;
@@ -32,6 +35,7 @@ Console::Console()
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_CONSOLE, 0);
 
 	mCandiData = FB_NEW(CandidatesData);
+	mEngineCommand = FB_NEW(EngineCommand);
 }
 
 //--------------------------------------------------------------------------
@@ -81,9 +85,7 @@ bool Console::Init()
 
 	mPrompt = AnsiToWide(">", 1);
 	mPromptStart = 2;
-	mInputPosition = Vec2I(14, mHeight - mLineGap);
-
-	mEngineCommand = FB_NEW(EngineCommand);
+	mInputPosition = Vec2I(20, mHeight - mLineGap);
 
 	return true;
 }
@@ -91,7 +93,7 @@ bool Console::Init()
 //--------------------------------------------------------------------------
 void Console::RegisterCommand(ConsoleCommand* pCom)
 {
-	for each(auto c in mCVars)
+	for (const auto& c : mCVars)
 	{
 		if (c->mName == pCom->mName)
 		{
@@ -100,7 +102,7 @@ void Console::RegisterCommand(ConsoleCommand* pCom)
 		}
 	}
 
-	for each(auto c in mCommands)
+	for (const auto& c : mCommands)
 	{
 		if (c->mName == pCom->mName)
 		{
@@ -122,7 +124,7 @@ void Console::UnregisterCommand(ConsoleCommand* pCom)
 void Console::RegisterVariable(CVar* cvar)
 {
 	// check the name;
-	for each(auto c in mCVars)
+	for (const auto& c : mCVars)
 	{
 		if (c->mName == cvar->mName || c == cvar)
 		{
@@ -131,7 +133,7 @@ void Console::RegisterVariable(CVar* cvar)
 		}
 	}
 
-	for each(auto c in mCommands)
+	for (const auto& c : mCommands)
 	{
 		if (c->mName == cvar->mName)
 		{
@@ -221,6 +223,21 @@ void Console::Log(const char* szFmt, ...)
 void Console::ToggleOpen()
 {
 	mOpen = !mOpen;
+}
+
+//--------------------------------------------------------------------------
+void Console::Update()
+{
+	if (mStdOutRedirect)
+	{
+		char buf[1024];
+		int len = mStdOutRedirect->GetBuffer(buf, 1024);
+		if (len)
+		{
+			buf[1023] = 0;
+			Log(buf);
+		}
+	}
 }
 
 //--------------------------------------------------------------------------
@@ -456,6 +473,33 @@ void Console::ProcessCommand(const char* command)
 		Error("Invalid console command");
 		return;
 	}
+
+	if (strcmp("%", command) == 0)
+	{
+		mLuaMode = true;
+		mPrompt = AnsiToWide("%", 1);
+		Log("Start Lua interactive mode.");
+		return;
+	}
+	else if (strcmp(">", command)==0)
+	{
+		mLuaMode = false;
+		mPrompt = AnsiToWide(">", 1);
+		Log("Start Game command mode.");
+		return;
+	}
+
+	mHistory.push_back(command);
+	mHistoryIndex = mHistory.size() - 1;
+
+	if (mLuaMode)
+	{
+		std::string newstring = std::string("  ") + command;
+		Log(newstring.c_str());
+		gFBEnv->pScriptSystem->ExecuteLua(command);
+		
+		return;
+	}
 	StringVector words = StringConverter::parseStringVector(command);
 	if (words.empty())
 		return;
@@ -468,15 +512,13 @@ void Console::ProcessCommand(const char* command)
 
 	//find command
 	{
-		for each(auto c in mCommands)
+		for (const auto& c : mCommands)
 		{
 			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
 				if (c->mFunc)
 				{
 					c->mFunc(words);
-					mHistory.push_back(command);
-					mHistoryIndex = mHistory.size()-1;
 				}
 			}
 		}
@@ -484,7 +526,7 @@ void Console::ProcessCommand(const char* command)
 
 	// find cvar
 	{
-		for each (auto c in mCVars)
+		for (const auto& c : mCVars)
 		{
 			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
@@ -495,8 +537,6 @@ void Console::ProcessCommand(const char* command)
 					OnCVarChanged(c);
 				}
 				this->Log("%s %s", c->mName.c_str(), c->GetData().c_str());
-				mHistory.push_back(command);
-				mHistoryIndex = mHistory.size() - 1;
 			}
 		}
 	}
@@ -635,6 +675,11 @@ void Console::OnCVarChanged(CVar* cvar)
 	{
 		(*it)->OnChangeCVar(cvar);
 	}
+}
+
+void Console::RegisterStdout(StdOutRedirect* p)
+{
+	mStdOutRedirect = p;
 }
 
 }

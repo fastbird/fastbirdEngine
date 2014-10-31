@@ -493,6 +493,12 @@ namespace fastbird
 		mMaterialGroups[matGroupIdx].mUVs.assign(uvs, uvs + numUVs);
 	}
 
+	void MeshObject::SetTriangles(int matGroupIdx, const ModelTriangle* tris, size_t numTri)
+	{
+		CreateMaterialGroupFor(matGroupIdx);
+		mMaterialGroups[matGroupIdx].mTriangles.assign(tris, tris + numTri);
+	}
+
 	void MeshObject::SetColors(int matGroupIdx, const DWORD* colors, size_t numColors)
 	{
 		CreateMaterialGroupFor(matGroupIdx);
@@ -687,6 +693,8 @@ namespace fastbird
 			{
 				it->mVBTangent = 0;
 			}
+
+
 		}
 		mBoundingVolume->EndComputeFromData();
 		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + mTransformation.GetTranslation());
@@ -719,7 +727,7 @@ namespace fastbird
 	}
 
 	//----------------------------------------------------------------------------
-	void MeshObject::AddCollisionShape(std::pair<ColShape::Enum, Transformation>& data)
+	void MeshObject::AddCollisionShape(const COL_SHAPE& data)
 	{
 		CollisionShape* cs = FB_NEW(CollisionShape)(data.first, data.second);
 		mCollisions.push_back(cs);
@@ -728,7 +736,7 @@ namespace fastbird
 	void MeshObject::SetCollisionShapes(std::vector< std::pair<ColShape::Enum, Transformation> >& shapes)
 	{
 		DeleteCollisionShapes();
-		for each (auto var in shapes)
+		for (const auto& var : shapes)
 		{
 			AddCollisionShape(var);
 		}
@@ -736,7 +744,7 @@ namespace fastbird
 
 	void MeshObject::DeleteCollisionShapes()
 	{
-		for each (CollisionShape* cs in mCollisions)
+		for (auto cs : mCollisions)
 		{
 			FB_DELETE(cs);
 		}
@@ -807,6 +815,128 @@ namespace fastbird
 			return mg.mVBTangent->Unmap();
 		}
 		assert(0);
+	}
+
+	bool MeshObject::RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri) const
+	{
+		auto mesh = (MeshObject*)gFBEnv->pEngine->GetMeshArchetype(mName);
+		assert(mesh);
+		const float maxRayDistance = 100000;
+		float tMin = maxRayDistance;
+		const float epsilon = 0.001f;
+		ModelIntersection rayTriIntersection;
+		rayTriIntersection.valid = false;
+
+		for (const auto& mg : mesh->mMaterialGroups)
+		{
+			for (const auto& tri : mg.mTriangles)
+			{
+				float NdotD = tri.faceNormal.Dot(ray.GetDir());
+				if (abs(NdotD) < epsilon)
+				{
+					// ray is parallel or nearly parallel to polygon plane
+					continue;
+				}
+
+				float t = (tri.d - tri.faceNormal.Dot(ray.GetOrigin())) / NdotD;
+				if (t <= 0)
+				{
+					// ray origin is behind the triangle;
+					continue;
+				}
+				if (t >= tMin)
+				{
+					continue;
+				}
+				Vec3 intersectionPoint = ray.GetOrigin() + ray.GetDir() * t;
+				// find the interpolation parameters alpha and beta using 2D projections
+				float alpha;
+				float beta;
+				Vec2 P;    // projection of the intersection onto an axis aligned plane
+				switch (tri.dominantAxis)
+				{
+				case 0:
+					P.x = intersectionPoint.y;
+					P.y = intersectionPoint.z;
+					break;
+				case 1:
+					P.x = intersectionPoint.x;
+					P.y = intersectionPoint.z;
+					break;
+				case 2:
+				default:
+					P.x = intersectionPoint.x;
+					P.y = intersectionPoint.y;
+				}
+				float u0, u1, u2, v0, v1, v2;
+				u0 = P.x - tri.v0Proj.x;
+				v0 = P.y - tri.v0Proj.y;
+				u1 = tri.v1Proj.x - tri.v0Proj.x;
+				u2 = tri.v2Proj.x - tri.v0Proj.x;
+				v1 = tri.v1Proj.y - tri.v0Proj.y;
+				v2 = tri.v2Proj.y - tri.v0Proj.y;
+				if (abs(u1) < epsilon)
+				{
+					beta = u0 / u2;
+					if ((beta >= 0) && (beta <= 1))
+					{
+						alpha = (v0 - beta * v2) / v1;
+						if ((alpha >= 0) && ((alpha + beta) <= 1))
+						{
+							rayTriIntersection.valid = true;
+							rayTriIntersection.alpha = alpha;
+							rayTriIntersection.beta = beta;
+							rayTriIntersection.pTri = &tri;
+							tMin = t;
+						}
+					}
+				}
+				else
+				{
+					beta = (v0*u1 - u0*v1) / (v2*u1 - u2*v1);
+					if ((beta >= 0) && (beta <= 1))
+					{
+						alpha = (u0 - beta * u2) / u1;
+						if ((alpha >= 0) && ((alpha + beta) <= 1))
+						{
+							rayTriIntersection.valid = true;
+							rayTriIntersection.alpha = alpha;
+							rayTriIntersection.beta = beta;
+							rayTriIntersection.pTri = &tri;
+							tMin = t;
+						}
+					}
+				}
+			}
+			if (!rayTriIntersection.valid)
+			{
+				if (outTri)
+					*outTri = NULL;
+				return false;
+			}
+			else
+			{
+				// compute the location using barycentric coordinates
+				const ModelTriangle* pTri = rayTriIntersection.pTri;
+				float alpha = rayTriIntersection.alpha;
+				float beta = rayTriIntersection.beta;
+				location.x = ((1 - (alpha + beta)) * mg.mPositions[pTri->v[0]].x) + 
+					alpha * mg.mPositions[pTri->v[2]].x +
+					beta * mg.mPositions[pTri->v[2]].x;
+				location.y = ((1 - (alpha + beta)) * mg.mPositions[pTri->v[0]].y) +
+					alpha * mg.mPositions[pTri->v[1]].y + 
+					beta * mg.mPositions[pTri->v[2]].y;
+				location.z = ((1 - (alpha + beta)) * mg.mPositions[pTri->v[0]].z) + 
+					alpha * mg.mPositions[pTri->v[1]].z +
+					beta * mg.mPositions[pTri->v[2]].z;
+				if (outTri)
+				{
+					*outTri = pTri;
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

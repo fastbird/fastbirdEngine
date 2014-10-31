@@ -30,7 +30,7 @@
 
 #define FB_DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__
 #define FB_LOG(msg) fastbird::IEngine::Log(FB_DEFAULT_DEBUG_ARG, (msg));
-#define FB_LOG_LAST_ERROR() fastbird::IEngine::LogLastError(__FILE__, __LINE__, __FUNCTION__)
+#define FB_LOG_LAST_ERROR_ENG() fastbird::IEngine::LogLastError(__FILE__, __LINE__, __FUNCTION__)
 namespace fastbird
 {
 	struct GlobalEnv;
@@ -115,8 +115,9 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
+		virtual const IMeshObject* GetMeshArchetype(const std::string& name) const = 0;
 		virtual void ReleaseMeshObject(IMeshObject* p) = 0;
-		virtual void DeleteMeshGroup(IMeshGroup* p) = 0;
+		virtual void ReleaseMeshGroup(IMeshGroup* p) = 0;
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr) = 0;
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr) = 0;
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p) = 0;

@@ -18,6 +18,7 @@ namespace fastbird
 		
 		void SetVertexShader(ID3D11VertexShader* pVertexShader);
 		void SetVertexShaderBytecode(ID3DBlob* pVertexShaderBytecode);
+		void SetVertexShaderBytecode(void* bytecode, size_t size);
 		void SetGeometryShader(ID3D11GeometryShader* pGeometryShader);
 		void SetHullShader(ID3D11HullShader* pHullShader);
 		void SetDomainShader(ID3D11DomainShader* pDomainShader);
@@ -44,12 +45,13 @@ namespace fastbird
 
 	private:
 		ID3D11VertexShader* m_pVertexShader;
-		ID3DBlob* m_pVertexShaderBytecode;
 		ID3D11GeometryShader* m_pGeometryShader;
 		ID3D11HullShader* m_pHullShader;
 		ID3D11DomainShader* m_pDomainShader;
 		ID3D11PixelShader* m_pPixelShader;
 		bool mValid;
+		BinaryData mVSBytecode;
+		size_t mBytecodeSize;
 	};
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 #include <CommonLib/Math/MathDefines.h>
 #include <CommonLib/Math/Vec2.h>
-
+#include <CommonLib/luawrapperutil.hpp>
+#include <sstream>
 namespace fastbird
 {
 	class Mat33;
@@ -269,10 +270,10 @@ namespace fastbird
 	inline bool IsEqual(const Vec3& l, const Vec3& r, float ep = EPSILON)
 	{
 		Vec3 t = l-r;
-		if (abs(t.x) < ep && abs(t.y) < ep && abs(t.z) < ep)
-			return true;
+		if (abs(t.x) >= ep || abs(t.y) >= ep || abs(t.z) >= ep)
+			return false;
 
-		return false;
+		return true;
 	}
 
 	inline Vec3 Sign(const Vec3& v)
@@ -294,3 +295,77 @@ namespace fastbird
 			edge.z > v.z ? 0.0f : 1.0f);
 	}
 }
+
+// serialization
+
+inline std::istream& operator>>(std::istream& stream, fastbird::Vec3& v)
+{
+	stream >> v.x >> v.y >> v.z;
+	return stream;
+}
+
+inline std::ostream& operator<<(std::ostream& stream, const fastbird::Vec3& v)
+{
+	stream << v.x << v.y << v.z;
+	return stream;
+}
+
+// luawapper util
+template<>
+struct luaU_Impl<fastbird::Vec3>
+{
+	static fastbird::Vec3 luaU_check(lua_State* L, int index)
+	{
+		fastbird::LUA_STACK_WATCHER watcher(L);
+		luaL_checktype(L, index, LUA_TTABLE);
+		fastbird::Vec3 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)luaL_checknumber(L, -1);		
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 3);
+		ret.z = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static fastbird::Vec3 luaU_to(lua_State* L, int index)
+	{
+		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::Vec3 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 3);
+		ret.z = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static void luaU_push(lua_State* L, const fastbird::Vec3& val)
+	{
+		lua_createtable(L, 3, 0);
+		lua_pushnumber(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushnumber(L, val.y);
+		lua_rawseti(L, -2, 2);
+		lua_pushnumber(L, val.z);
+		lua_rawseti(L, -2, 3);
+	}
+
+	static void luaU_push(lua_State* L, fastbird::Vec3& val)
+	{
+		lua_createtable(L, 3, 0);
+		lua_pushnumber(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushnumber(L, val.y);
+		lua_rawseti(L, -2, 2);
+		lua_pushnumber(L, val.z);
+		lua_rawseti(L, -2, 3);
+	}
+};

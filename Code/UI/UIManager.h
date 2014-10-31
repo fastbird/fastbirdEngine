@@ -11,16 +11,18 @@ namespace fastbird
 	class UIManager : public IUIManager
 	{
 		friend class IUIManager;
-		UIManager();
+		UIManager(lua_State* L);
 		virtual ~UIManager();	
 
-		public:
+	public:
+		
+		static UIManager* GetUIManagerStatic();
 
 		virtual void Shutdown();
 
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
-		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname);
+		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false);
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type);
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual void DeleteWindow(IWinBase* pWnd);
@@ -46,6 +48,12 @@ namespace fastbird
 			return mPopupResult;
 		}
 
+		virtual lua_State* GetLuaState() const { return mL; }
+		virtual IWinBase* FindComp(const char* uiname, const char* compName) const;
+		void SetVisible(const char* uiname, bool visible);
+		bool GetVisible(const char* uiname) const;
+		virtual void OnUIFileChanged(const char* file);
+
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
 
@@ -54,6 +62,7 @@ namespace fastbird
 		virtual void DeleteComponent(IWinBase* com);
 		void OnPopupYes(void* arg);
 		void OnPopupNo(void* arg);
+		void RegisterLuaFuncs();
 
 	private:
 		bool mInputListenerEnable;
@@ -69,6 +78,10 @@ namespace fastbird
 		 IWinBase* mPopup;
 		 std::function< void(void*) > mPopupCallback;
 		 int mPopupResult;
+
+		 lua_State* mL;
+
+		 std::map<std::string, std::vector<IWinBase*>> mLuaUIs;
 	
 	};
 }

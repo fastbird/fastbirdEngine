@@ -21,7 +21,12 @@ namespace fastbird
 		{
 			return 0;
 		}
-		virtual void RemoveChild(IWinBase* child) {}
+		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable)
+		{
+			return 0;
+		}
+		virtual void RemoveChild(IWinBase* child, bool immediately = false) {}
+		virtual void RemoveAllChild(bool immediately = false) {}
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) { return 0; }
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
 		virtual unsigned GetNumChildren() const { return 0; }
@@ -135,6 +140,7 @@ namespace fastbird
 		virtual float GetTextEndWLocal() const;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		virtual bool ParseLua(const fastbird::LuaObject& compTable);
 		virtual float GetTextBottomGap() const;
 
 		virtual void RefreshScissorRects();
@@ -154,21 +160,21 @@ namespace fastbird
 		void UpdateWorldPos(bool settingPos = false);
 
 		virtual int GetSpecialOrder() const { return mSpecialOrder; }
+		virtual bool GetInheritVisibleTrue() const { return mInheritVisibleTrue; }
 
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
-		virtual void OnChildPosSizeChanged(WinBase* child){}
 		virtual void AlignText();
 		const RECT& GetScissorRegion();
 		void SetUseBorder(bool use);
 		void RefreshBorder();
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
+		virtual void CalcTextWidth(); // virtual for mutiline text
 		
 	private:
 		friend class Container;
 		void ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos);
-		void CalcTextWidth();
 		
 
 	protected:
@@ -248,7 +254,9 @@ namespace fastbird
 		
 		bool mStopScissorParent;
 		int mSpecialOrder;
-		int mTextWidth;
+		unsigned mTextWidth;
+		unsigned mNumTextLines;
+		bool mInheritVisibleTrue;
 
 	};
 }

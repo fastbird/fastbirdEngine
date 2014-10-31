@@ -9,6 +9,7 @@
 #include <Engine/ISkyBox.h>
 #include <Engine/ISkySphere.h>
 #include <Engine/IMeshObject.h>
+#include <Engine/ISceneListener.h>
 
 using namespace fastbird;
 
@@ -215,7 +216,7 @@ IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject
 	}
 
 	OBJECTS objects2;
-	for each (IObject* var in objects)
+	for (auto var : objects)
 	{
 		SpatialObject* pObj = (SpatialObject*)var;
 		unsigned num = pObj->GetNumCollisionShapes();
@@ -356,6 +357,11 @@ void Scene::PreRender()
 //----------------------------------------------------------------------------
 void Scene::Render()
 {
+	for (const auto& l : mListeners)
+	{
+		l->OnBeforeRenderingOpaques();
+	}
+
 	if (!mSkipSpatialObjects)
 	{
 		D3DEventMarker mark("VisibleObjects - Opaque");
@@ -392,6 +398,10 @@ void Scene::Render()
 			
 	}
 
+	for (const auto& l : mListeners)
+	{
+		l->OnBeforeRenderingTransparents();
+	}
 	if (!mSkipSpatialObjects)
 	{
 		{
@@ -455,7 +465,7 @@ void Scene::RenderCloudVolumes()
 	gFBEnv->pRenderer->SetFrontFaceCullRS();
 	gFBEnv->pRenderer->SetNoDepthWriteLessEqual();
 	gFBEnv->pRenderer->SetGreenAlphaMaskAddMinusBlend(); // replace very first far volume face, and next will be added if it is not culled.
-	for each (IMeshObject* var in mCloudVolumes)
+	for (auto var : mCloudVolumes)
 	{
 		var->PreRender();
 		var->Render();
@@ -464,7 +474,7 @@ void Scene::RenderCloudVolumes()
 	// near side	
 	gFBEnv->pRenderer->RestoreRasterizerState();
 	gFBEnv->pRenderer->SetRedAlphaMaskAddAddBlend();
-	for each (IMeshObject* var in mCloudVolumes)
+	for (auto var : mCloudVolumes)
 	{
 		var->Render();
 	}	
@@ -483,4 +493,15 @@ void Scene::SetFogColor(const Color& c)
 void Scene::SetDrawClouds(bool e)
 {
 	mDrawClouds = e;
+}
+
+void Scene::AddListener(ISceneListener* listener)
+{
+	if (ValueNotExistInVector(mListeners, listener))
+		mListeners.push_back(listener);
+}
+
+void Scene::RemoveListener(ISceneListener* listener)
+{
+	DeleteValuesInVector(mListeners, listener);
 }

@@ -43,7 +43,9 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 	assert(filepath);
 	mMeshObjects.clear();
 	mGenerateTangent = generateTangent;
-	Profiler profiler("'Import Collada'");
+	char buf[255];
+	sprintf_s(buf, "Importing Collada (%s)", filepath);
+	Profiler profiler(buf);
 	bool successful = false;
 	mKeepMeshdata = keepMeshData;
 	mUseMeshGroup = meshGroup;
@@ -536,6 +538,66 @@ IIndexBuffer* ColladaImporter::CreateIndexBuffer(UINT* indices, size_t num)
 	return pIndexBuffer;
 }
 
+void AssignProjections(ModelTriangle* pTri, const std::vector<Vec3>& positions)
+{
+	Vec3 N;
+
+	N.x = abs(pTri->faceNormal.x);
+	N.y = abs(pTri->faceNormal.y);
+	N.z = abs(pTri->faceNormal.z);
+
+	if (N.x > N.y)
+	{
+		if (N.x > N.z)
+		{
+			// x is the dominant axis
+			pTri->dominantAxis = 0;
+			pTri->v0Proj.x = positions[pTri->v[0]].y;
+			pTri->v0Proj.y = positions[pTri->v[0]].z;
+			pTri->v1Proj.x = positions[pTri->v[1]].y;
+			pTri->v1Proj.y = positions[pTri->v[1]].z;
+			pTri->v2Proj.x = positions[pTri->v[2]].y;
+			pTri->v2Proj.y = positions[pTri->v[2]].z;
+		}
+		else
+		{
+			// z is the dominant axis
+			pTri->dominantAxis = 2;
+			pTri->v0Proj.x = positions[pTri->v[0]].x;
+			pTri->v0Proj.y = positions[pTri->v[0]].y;
+			pTri->v1Proj.x = positions[pTri->v[1]].x;
+			pTri->v1Proj.y = positions[pTri->v[1]].y;
+			pTri->v2Proj.x = positions[pTri->v[2]].x;
+			pTri->v2Proj.y = positions[pTri->v[2]].y;
+		}
+	}
+	else
+	{
+		if (N.y > N.z)
+		{
+			// y is the dominant axis
+			pTri->dominantAxis = 1;
+			pTri->v0Proj.x = positions[pTri->v[0]].x;
+			pTri->v0Proj.y = positions[pTri->v[0]].z;
+			pTri->v1Proj.x = positions[pTri->v[1]].x;
+			pTri->v1Proj.y = positions[pTri->v[1]].z;
+			pTri->v2Proj.x = positions[pTri->v[2]].x;
+			pTri->v2Proj.y = positions[pTri->v[2]].z;
+		}
+		else
+		{
+			// z is the dominant axis
+			pTri->dominantAxis = 2;
+			pTri->v0Proj.x = positions[pTri->v[0]].x;
+			pTri->v0Proj.y = positions[pTri->v[0]].y;
+			pTri->v1Proj.x = positions[pTri->v[1]].x;
+			pTri->v1Proj.y = positions[pTri->v[1]].y;
+			pTri->v2Proj.x = positions[pTri->v[2]].x;
+			pTri->v2Proj.y = positions[pTri->v[2]].y;
+		}
+	}
+}
+
 //---------------------------------------------------------------------------
 void ColladaImporter::FeedGeometry(size_t mesh)
 {
@@ -567,6 +629,8 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 	uvs.reserve(10000);
 	std::vector<Vec3> tangents;
 	tangents.reserve(10000);
+	std::vector<ModelTriangle> triangles;
+	triangles.reserve(3000);
 
 	size_t nextIdx = 0;
 	INDICES indices;
@@ -588,6 +652,7 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 		{
 			for(size_t i=0; i<numIndices; i+=3)
 			{
+				ModelTriangle tri;
 				for (int k=0; k<3; k++)
 				{
 					size_t pi = posIndices[i+indexOffset[k]]*3;
@@ -620,13 +685,22 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 						// existing
 						indices.push_back(vertToIdx[vert]);
 					}
+					tri.v[k] = indices.back();
 				}
+				assert(0 && "not tested!");
+				Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
+				Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
+				tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
+				tri.d = tri.faceNormal.Dot(positions[tri.v[0]]);
+				AssignProjections(&tri, positions);
+				triangles.push_back(tri);
 			}
 		}
 		else // not using index buffer
 		{
 			for(size_t i=0; i<numIndices; i+=3)
 			{
+				ModelTriangle tri;
 				for (int k=0; k<3; k++)
 				{
 					size_t pi = posIndices[i+indexOffset[k]]*3;
@@ -641,7 +715,15 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 					positions.push_back(Vec3(mPos[mesh][pi], mPos[mesh][pi+elemOffset[1]], mPos[mesh][pi+elemOffset[2]]));
 					normals.push_back(Vec3(mNormals[mesh][ni], mNormals[mesh][ni+elemOffset[1]], mNormals[mesh][ni+elemOffset[2]]));
 					uvs.push_back(uvCoord);
+
+					tri.v[k] = positions.size() - 1;
 				}
+				Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
+				Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
+				tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
+				tri.d = tri.faceNormal.Dot(positions[tri.v[0]]);
+				AssignProjections(&tri, positions);
+				triangles.push_back(tri);
 			}
 		} // mUseIndexBuffer
 
@@ -655,13 +737,16 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 			size_t added = positions.size();
 			assert(added == normals.size());
 			assert(added == uvs.size());
+			assert(added / 3 == triangles.size());
 
 			pMeshObject->SetPositions(pri, &positions[0], added);
 			pMeshObject->SetNormals(pri, &normals[0], added);
 			pMeshObject->SetUVs(pri, &uvs[0], added);
+			pMeshObject->SetTriangles(pri, &triangles[0], triangles.size());
 			positions.clear();
 			normals.clear();
 			uvs.clear();
+			triangles.clear();
 
 			pMeshObject->SetMaterialFor(pri, mMaterials[mesh][pri]);
 
@@ -700,9 +785,11 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 		size_t added = positions.size();
 		assert(added == normals.size());
 		assert(added == uvs.size());
+		assert(added / 3 == triangles.size());
 		pMeshObject->SetPositions(0, &positions[0], added);
 		pMeshObject->SetNormals(0, &normals[0], added);
 		pMeshObject->SetUVs(0, &uvs[0], added);
+		pMeshObject->SetTriangles(0, &triangles[0], triangles.size());
 
 		if (mUseIndexBuffer)
 		{

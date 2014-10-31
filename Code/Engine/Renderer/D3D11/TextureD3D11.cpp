@@ -41,12 +41,12 @@ TextureD3D11::~TextureD3D11()
 	if (gFBEnv && gFBEnv->pRenderer)
 	{
 		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
-		for each(auto v in mRTViews)
+		for (auto v : mRTViews)
 		{
 			pRenderer->OnReleaseRenderTarget(v);
 			SAFE_RELEASE(v);
 		}		
-		for each(auto v in mDSViews)
+		for (auto v : mDSViews)
 		{
 			pRenderer->OnReleaseDepthStencil(v);
 			SAFE_RELEASE(v);
@@ -154,7 +154,7 @@ void TextureD3D11::AddRenderTargetView(ID3D11RenderTargetView* pRenderTargetView
 
 void TextureD3D11::ClearRenderTargetViews()
 {
-	for each(auto v in mRTViews)
+	for (auto v : mRTViews)
 	{
 		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
 		pRenderer->OnReleaseRenderTarget(v);
@@ -170,7 +170,7 @@ void TextureD3D11::AddDepthStencilView(ID3D11DepthStencilView* pDepthStencilView
 
 void TextureD3D11::ClearDepthStencilViews()
 {
-	for each(auto v in mDSViews)
+	for (auto v : mDSViews)
 	{
 		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
 		pRenderer->OnReleaseDepthStencil(v);
@@ -255,7 +255,7 @@ void TextureD3D11::SetDebugName(const char* name)
 		mSRView->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
 	}
 	int i = 0;
-	for each(auto it in mRTViews)
+	for (auto it : mRTViews)
 	{
 		char buff[255];
 		sprintf_s(buff, "%s RTV %d", name, i++);
@@ -263,7 +263,7 @@ void TextureD3D11::SetDebugName(const char* name)
 	}
 
 	i = 0;
-	for each(auto it in mDSViews)
+	for (auto it : mDSViews)
 	{
 		char buff[255];
 		sprintf_s(buff, "%s DSV %d", name, i++);

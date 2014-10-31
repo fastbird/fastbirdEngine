@@ -374,6 +374,18 @@ namespace fastbird
 		return mWheel.top();
 	}
 
+	void Mouse::ClearWheel()
+	{
+		while (!mWheel.empty())
+			mWheel.pop();
+	}
+
+	void Mouse::ClearButton()
+	{
+		mButtonsClicked = 0;
+		mButtonsPressed = 0;
+	}
+
 	unsigned long Mouse::GetNumLinesWheelScroll() const
 	{
 		return mNumLinesWheelScroll;

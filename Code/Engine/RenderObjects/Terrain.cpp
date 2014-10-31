@@ -199,7 +199,7 @@ void Terrain::GenerateNormals(FIBITMAP* pImage, const char* filename)
 	if (imageHandle==INVALID_HANDLE_VALUE)
 	{
 		FB_LOG("Failed to check height map image file time stamp(CreateFile)!");
-		FB_LOG_LAST_ERROR();
+		FB_LOG_LAST_ERROR_ENG();
 	}
 	else
 	{
@@ -208,7 +208,7 @@ void Terrain::GenerateNormals(FIBITMAP* pImage, const char* filename)
 		if (!result)
 		{
 			FB_LOG("Failed to get image file time!");
-			FB_LOG_LAST_ERROR();
+			FB_LOG_LAST_ERROR_ENG();
 		}
 		else
 		{			
@@ -224,7 +224,7 @@ void Terrain::GenerateNormals(FIBITMAP* pImage, const char* filename)
 				if (!result)
 				{
 					FB_LOG("Failed to get normal cache time!");
-					FB_LOG_LAST_ERROR();
+					FB_LOG_LAST_ERROR_ENG();
 				}
 				else
 				{
@@ -335,7 +335,7 @@ void Terrain::GenerateNormals(FIBITMAP* pImage, const char* filename)
 		if (imageHandle==INVALID_HANDLE_VALUE)
 		{
 			FB_LOG("Failed to check height map image file time stamp(CreateFile)!");
-			FB_LOG_LAST_ERROR();
+			FB_LOG_LAST_ERROR_ENG();
 		}
 		else
 		{
@@ -344,7 +344,7 @@ void Terrain::GenerateNormals(FIBITMAP* pImage, const char* filename)
 			if (!result)
 			{
 				FB_LOG("Failed to check height map image file time stamp(GetFileTime)!");
-				FB_LOG_LAST_ERROR();
+				FB_LOG_LAST_ERROR_ENG();
 			}
 			else
 			{

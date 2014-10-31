@@ -601,8 +601,11 @@ bool ParticleEmitter::Update(float dt)
 					if (pt->mColor != pt->mColorEnd)
 					{
 						p.mColor = Lerp(pt->mColor, pt->mColorEnd, normTime) * mEmitterColor;
-					}
-					
+					}					
+				}
+				else
+				{
+					p.mAlpha = 1.0f;
 				}
 
 

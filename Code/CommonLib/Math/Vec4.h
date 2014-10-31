@@ -95,3 +95,73 @@ namespace fastbird
 		static const Vec4 ZERO;
 	};
 }
+
+// luawapper util
+template<>
+struct luaU_Impl<fastbird::Vec4>
+{
+	static fastbird::Vec4 luaU_check(lua_State* L, int index)
+	{
+		fastbird::LUA_STACK_WATCHER watcher(L);
+		luaL_checktype(L, index, LUA_TTABLE);
+		fastbird::Vec4 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 3);
+		ret.z = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 4);
+		ret.w = (float)luaL_checknumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static fastbird::Vec4 luaU_to(lua_State* L, int index)
+	{
+		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::Vec4 ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 3);
+		ret.z = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 4);
+		ret.w = (float)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static void luaU_push(lua_State* L, const fastbird::Vec4& val)
+	{
+		lua_createtable(L, 3, 0);
+		lua_pushnumber(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushnumber(L, val.y);
+		lua_rawseti(L, -2, 2);
+		lua_pushnumber(L, val.z);
+		lua_rawseti(L, -2, 3);
+		lua_pushnumber(L, val.w);
+		lua_rawseti(L, -2, 4);
+	}
+
+	static void luaU_push(lua_State* L, fastbird::Vec4& val)
+	{
+		lua_createtable(L, 3, 0);
+		lua_pushnumber(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushnumber(L, val.y);
+		lua_rawseti(L, -2, 2);
+		lua_pushnumber(L, val.z);
+		lua_rawseti(L, -2, 3);
+		lua_pushnumber(L, val.w);
+		lua_rawseti(L, -2, 4);
+	}
+};

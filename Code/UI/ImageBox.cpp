@@ -8,6 +8,7 @@ ImageBox::ImageBox()
 	: mTextureAtlas(0)
 	, mAtlasRegion(0)
 	, mUseHighlight(false)
+	, mKeepImageRatio(true)
 {
 	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -45,7 +46,7 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	const RECT& uiRect = mUIObject->GetRegion();
 	float uiRatio = (uiRect.right - uiRect.left) /
 		(float)(uiRect.bottom - uiRect.top);
-	if (uiRatio == imgRatio)
+	if (uiRatio == imgRatio || !mKeepImageRatio)
 	{
 		Vec2 texcoords[4] = {
 			Vec2(0.f, 1.f),
@@ -119,7 +120,8 @@ void ImageBox::ChangeRegion(const char* region)
 
 void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 {
-	/*__super::GatherVisitAlpha(v);*/
+	if (!mVisible)
+		return;
 	v.push_back(mUIObject);
 	__super::GatherVisit(v);
 }
@@ -167,9 +169,31 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 							   return true;
 	}
 		break;
+
+	case UIProperty::TEXTURE_FILE:
+	{
+									 SetTexture(val);
+									 return true;
+									 break;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+										 SetKeepImageRatio(StringConverter::parseBool(val, true));
+										 return true;
+	}
 	}
 
 	return __super::SetProperty(prop, val);
+}
+
+void ImageBox::SetKeepImageRatio(bool keep)
+{
+	mKeepImageRatio = keep;
+	if (!mImageFile.empty())
+	{
+		SetTexture(mImageFile.c_str());
+	}
 }
 
 }

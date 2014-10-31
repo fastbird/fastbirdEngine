@@ -37,6 +37,10 @@ public:
 	void OnMouseDown(void* arg);
 
 private:
+
+	ImageBox* CreateImageBox();
+
+private:
 	Color mBackColor;
 	Color mBackColorOver;
 	Color mBackColorDown;

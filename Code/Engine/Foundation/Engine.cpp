@@ -44,6 +44,7 @@ namespace fastbird
 	Engine::Engine()
 		: mSceneOverride(0)
 	{
+		FileSystem::Initialize();
 		mErrorStream.open("error.log");
 		mStdErrorStream = std::cerr.rdbuf(mErrorStream.rdbuf());
 		char timestring[256];
@@ -63,6 +64,9 @@ namespace fastbird
 		mFileMonitorThread = 0;
 		mMonitoringDirectory = INVALID_HANDLE_VALUE;
 		mINI = 0;
+		
+		mScriptSystem = FB_NEW(ScriptSystem);
+		gFBEnv->pScriptSystem = mScriptSystem;
 
 		mConsole = IConsole::CreateConsole();
 		ParticleManager::InitializeParticleManager();
@@ -82,7 +86,7 @@ namespace fastbird
 			DWORD ret = WaitForSingleObject(mFileChangeThreadFinished, 10000);
 			if (ret==WAIT_FAILED)
 			{
-				FB_LOG_LAST_ERROR();
+				FB_LOG_LAST_ERROR_ENG();
 			}
 			CloseHandle(mFileChangeThreadFinished);
 		}
@@ -110,6 +114,7 @@ namespace fastbird
 		mKeyboard = 0;
 		gFBEnv->pEngine=0;	
 		FB_SAFE_DEL(gFBEnv);
+		FileSystem::Finalize();
 #ifdef USING_FB_MEMORY_MANAGER
 		FBReportMemoryForModule();
 #endif
@@ -169,9 +174,6 @@ namespace fastbird
 			assert(0);
 		}
 		int threadPool = mINI->GetInteger("Render", "ThreadPool", 0);
-
-		mScriptSystem = FB_NEW(ScriptSystem);
-		gFBEnv->pScriptSystem = mScriptSystem;
 
 		FreeImage_Initialise();
 		bool successful = true;
@@ -321,8 +323,6 @@ namespace fastbird
 
 	void Engine::UpdateFrame(float dt)
 	{
-		// hot reloading
-		HotReloading();
 
 		FB_FOREACH(it, mCameras)
 		{
@@ -343,6 +343,12 @@ namespace fastbird
 		// Update Particles
 		ParticleManager::GetParticleManager().Update(dt);
 		mRenderer->UpdateCloud(dt);
+
+		// concole;
+
+		if (mConsole)
+			mConsole->Update();
+
 		// Render
 		Render(dt);
 
@@ -355,6 +361,9 @@ namespace fastbird
 		// light update
 		if (mRenderer)
 			mRenderer->Update(dt);
+
+		// hot reloading
+		HotReloading();
 	}
 
 	void Engine::HandleUserInput()
@@ -689,11 +698,12 @@ namespace fastbird
 		}
 		SmartPtr<IColladaImporter> pColladaImporter = IColladaImporter::CreateColladaImporter();
 		pColladaImporter->ImportCollada(filepath.c_str(), desc.yzSwap, desc.oppositeCull, desc.useIndexBuffer,
-			desc.mergeMaterialGroups, desc.keepMeshData, desc.generateTangent, false);
+			desc.mergeMaterialGroups, true, desc.generateTangent, false);
 		IMeshObject* pMeshObject = pColladaImporter->GetMeshObject();
 		
 		if (pMeshObject)
 		{
+			pMeshObject->SetName(filepath.c_str());
 			mMeshObjects[filepath] = pMeshObject;
 			return (IMeshObject*)pMeshObject->Clone();
 		}
@@ -725,6 +735,12 @@ namespace fastbird
 		return (IMeshGroup*)pMeshGroup->Clone();
 	}
 
+	const IMeshObject* Engine::GetMeshArchetype(const std::string& name) const
+	{
+		auto it = mMeshObjects.find(name);
+		assert(it != mMeshObjects.end());
+		return it->second;
+	}
 	//-----------------------------------------------------------------------
 	void Engine::ReleaseMeshObject(IMeshObject* p)
 	{
@@ -734,7 +750,7 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	void Engine::DeleteMeshGroup(IMeshGroup* p)
+	void Engine::ReleaseMeshGroup(IMeshGroup* p)
 	{
 		if (!p)
 			return;
@@ -1091,7 +1107,7 @@ namespace fastbird
 		if (mMonitoringDirectory == INVALID_HANDLE_VALUE)
 		{
 			Log(FB_DEFAULT_DEBUG_ARG, "Cannot open the shader watch directory!");
-			FB_LOG_LAST_ERROR();
+			FB_LOG_LAST_ERROR_ENG();
 			return false;
 		}
 

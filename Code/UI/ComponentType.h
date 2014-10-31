@@ -26,6 +26,7 @@ namespace fastbird
 			HorizontalGauge,
 			NumericUpDown,
 			DropDown,
+			TextBox,
 
 			NUM
 		};
@@ -51,6 +52,7 @@ namespace fastbird
 			"HorizontalGauge",
 			"NumericUpDown",
 			"DropDown",
+			"TextBox",
 		};
 		
 		inline const char* ConvertToString(ComponentType::Enum e)
@@ -101,6 +103,8 @@ namespace fastbird
 				return NumericUpDown;
 			if (stricmp(sz, "DropDown") == 0)
 				return DropDown;
+			if (stricmp(sz, "TextBox") == 0)
+				return TextBox;
 
 			
 			assert(0);

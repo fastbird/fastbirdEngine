@@ -230,6 +230,19 @@ bool Renderer::OnPrepared()
 		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[1]);
 	}
 
+	// POSITION_HDR_COLOR
+	{
+		INPUT_ELEMENT_DESC desc[] =
+		{
+			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
+			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
+		};
+		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[0]);
+		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[1]);
+	}
+
 	// POSITION_NORMAL,
 	{
 		INPUT_ELEMENT_DESC desc[] = 
@@ -323,7 +336,7 @@ bool Renderer::OnPrepared()
 		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[2]);
 	}
 
-	assert(DEFAULT_INPUTS::COUNT == 8);
+	static_assert(DEFAULT_INPUTS::COUNT == 9, "You may not define a new element of mInputLayoutDesc for the new description.");
 
 	//-----------------------------------------------------------------------
 	mDynVBs[DEFAULT_INPUTS::POSITION] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_P), 
@@ -428,7 +441,7 @@ bool Renderer::OnPrepared()
 //----------------------------------------------------------------------------
 void Renderer::ProcessRenderToTexture()
 {
-	for each(RenderToTexture* pRT in mRenderToTextures)
+	for (auto pRT : mRenderToTextures)
 	{
 		pRT->Render();
 	}
@@ -523,6 +536,12 @@ void Renderer::DrawLine(const Vec3& start, const Vec3& end,
 	mDebugHud->DrawLine(start, end, color0, color1);
 }
 
+void Renderer::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
+	const Color& color0, const Color& color1)
+{
+	mDebugHud->DrawLineBeforeAlphaPass(start, end, color0, color1);
+}
+
 void Renderer::DrawLine(const Vec2I& start, const Vec2I& end, 
 	const Color& color0, const Color& color1)
 {
@@ -580,7 +599,7 @@ TextureAtlas* Renderer::GetTextureAtlas(const char* path)
 	std::string filepath(path);
 	ToLowerCase(filepath);
 	TextureAtlas* pTextureAtlas = 0;
-	for each(auto ta in mTextureAtalsCache)
+	for (const auto& ta : mTextureAtalsCache)
 	{
 		if (ta->mPath == filepath)
 		{

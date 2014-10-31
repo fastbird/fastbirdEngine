@@ -31,7 +31,7 @@ Object::Object()
 Object::~Object()
 {
 	mDestructing = true;
-	for each(auto scene in mScenes)
+	for (const auto& scene : mScenes)
 	{
 		scene->DetachObject(this);
 	}

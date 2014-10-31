@@ -21,6 +21,7 @@ public:
 	
 	// own
 	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+	void MouseConsumer(void* arg){}
 
 protected:
 	virtual void OnSizeChanged();
@@ -32,7 +33,7 @@ private:
 	Button* mTitlebar;
 	std::vector<ImageBox*> mFrames;
 	bool mUseFrame;
-	std::string mImageAtlas;
+	ImageBox* mBackgroundImage;
 };
 
 }

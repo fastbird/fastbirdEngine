@@ -21,7 +21,7 @@ SpatialObject::~SpatialObject()
 		mCameraTargetingMe[0]->SetTarget(0);
 	}
 
-	for each(auto scene in mScenes)
+	for (auto scene : mScenes)
 	{
 		scene->DetachObject(this);
 	}

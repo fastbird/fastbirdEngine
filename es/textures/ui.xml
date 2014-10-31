@@ -25,4 +25,6 @@
 	<region ID="45" name="Box_LB" x="448" y="356" width="5" height="5"/>
 	<region ID="46" name="Box_B" x="456" y="358" width="4" height="3"/>
 	<region ID="47" name="Box_RB" x="460" y="356" width="6" height="6"/>
+	
+	<region ID="48" name="ButtonFrame" x="0" y="64" width="64" height="64"/>
 </TextureAtlas>

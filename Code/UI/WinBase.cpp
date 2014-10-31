@@ -12,7 +12,7 @@ const float WinBase::LEFT_GAP = 0.001f;
 HCURSOR WinBase::mCursorOver = 0;
 
 WinBase::WinBase()
-: mVisible(true)
+: mVisible(false)
 , mAlignH(ALIGNH::LEFT)
 , mAlignV(ALIGNV::TOP)
 , mParent(0)
@@ -54,6 +54,8 @@ WinBase::WinBase()
 , mStopScissorParent(false)
 , mSpecialOrder(0)
 , mTextWidth(0)
+, mNumTextLines(1)
+, mInheritVisibleTrue(true)
 {
 }
 
@@ -64,7 +66,7 @@ WinBase::~WinBase()
 		FB_SAFE_DEL(it->second);
 	}
 
-	for each (ImageBox* ib in mBorders)
+	for (auto ib : mBorders)
 	{
 		IUIManager::GetUIManager().DeleteComponent(ib);
 	}
@@ -470,6 +472,10 @@ void WinBase::SetVisible(bool show)
 	if (mVisible == show)
 		return;
 	mVisible = show;
+	if (mVisible)
+		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
+	else
+		OnEvent(IEventHandler::EVENT_ON_HIDE);
 	IUIManager::GetUIManager().DirtyRenderList();
 }
 
@@ -560,12 +566,14 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 				else if (mMouseInPrev)
 				{
-					OnEvent(IEventHandler::EVENT_MOUSE_HOVER);
+					if (OnEvent(IEventHandler::EVENT_MOUSE_HOVER))
+						mouse->Invalidate();
 					ToolTipEvent(IEventHandler::EVENT_MOUSE_HOVER, mousepos);
 				}
 				else if (mMouseIn)
 				{
-					OnEvent(IEventHandler::EVENT_MOUSE_IN);
+					if (OnEvent(IEventHandler::EVENT_MOUSE_IN))
+						mouse->Invalidate();
 					ToolTipEvent(IEventHandler::EVENT_MOUSE_IN, mousepos);
 				}
 
@@ -589,7 +597,8 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			{
 				if (mMouseInPrev)
 				{
-					OnEvent(IEventHandler::EVENT_MOUSE_OUT);
+					if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+						mouse->Invalidate();
 					ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
 				}
 			}
@@ -711,17 +720,21 @@ void WinBase::AlignText()
 		{
 		case ALIGNV::TOP:
 		{
-							startPos.y = mWNPos.y +(mTextSize / (float)gEnv->pRenderer->GetHeight());
+							startPos.y = mWNPos.y + (mTextSize / (float)gEnv->pRenderer->GetHeight());
 		}
 			break;
 		case ALIGNV::MIDDLE:
 		{
-							   startPos.y = mWNPos.y + mWNSize.y*.5f + (mTextSize*.5f / (float)gEnv->pRenderer->GetHeight());
+							   startPos.y = mWNPos.y + mWNSize.y*.5f  + 
+								   (
+									   ((mTextSize * 0.5f) - (mTextSize * (mNumTextLines-1) * 0.5f))
+										/ (float)gEnv->pRenderer->GetHeight()
+								   );
 		}
 			break;
 		case ALIGNV::BOTTOM:
 		{
-							   startPos.y = mWNPos.y + mWNSize.y - GetTextBottomGap();
+							   startPos.y = mWNPos.y + mWNSize.y - GetTextBottomGap();// -mTextSize*(mNumTextLines - 1);
 		}
 			break;
 		}
@@ -734,9 +747,8 @@ void WinBase::OnPosChanged()
 	if (mUIObject)
 		mUIObject->SetNPos(mWNPos);
 	AlignText();
-
 	if (mParent)
-		mParent->OnChildPosSizeChanged(this);
+		mParent->SetChildrenPosSizeChanged();
 	RefreshBorder();
 }
 
@@ -809,6 +821,18 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	assert(val);
 	switch(prop)
 	{
+	case UIProperty::POS:
+	{
+							Vec2I pos = StringConverter::parseVec2I(val);
+							SetPos(pos);
+							return true;
+	}
+	case UIProperty::NPOS:
+	{
+							 Vec2 npos = StringConverter::parseVec2(val);
+							 SetNPos(npos);
+							 return true;
+	}
 	case UIProperty::BACK_COLOR:
 		{
 									if (mUIObject)
@@ -874,6 +898,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT_COLOR:
 		{
 									mTextColor = StringConverter::parseVec4(val);
+									mUIObject->SetTextColor(mTextColor);
 									return true;
 		}
 	case UIProperty::TEXT_COLOR_HOVER:
@@ -956,6 +981,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 										  mUIObject->SetSpecialOrder(mSpecialOrder);
 										return true;
 		}
+
+		case UIProperty::INHERIT_VISIBLE_TRUE:
+		{
+												 mInheritVisibleTrue = StringConverter::parseBool(val);
+												 return true;
+		}
 	}
 
 	assert(0 && "Not processed property found");
@@ -1025,7 +1056,7 @@ void WinBase::SetUseBorder(bool use)
 	}
 	else if (!use && !mBorders.empty())
 	{
-		for each (ImageBox* ib in mBorders)
+		for (auto ib : mBorders)
 		{
 			IUIManager::GetUIManager().DeleteComponent(ib);
 		}
@@ -1090,7 +1121,7 @@ void WinBase::SetNPosOffset(const Vec2& offset)
 		mUIObject->SetNPosOffset(offset);
 	RefreshScissorRects();
 
-	for each (IWinBase* var in mBorders)
+	for (auto var : mBorders)
 	{
 		var->SetNPosOffset(offset);
 	}
@@ -1532,6 +1563,298 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		pElem = pElem->NextSiblingElement("Animation");
 	}
 
+	auto eventsElem = pelem->FirstChildElement("Events");
+	if (eventsElem)
+	{
+		auto eventElem = eventsElem->FirstChildElement();
+		while (eventElem)
+		{
+			IEventHandler::EVENT e = ConvertToEventEnum(eventElem->Name());
+			if (e != IEventHandler::EVENT_NUM)
+			{
+				RegisterEventLuaFunc(e, eventElem->GetText());
+			}
+			
+			eventElem = eventElem->NextSiblingElement();
+		}
+	}
+
+
+	return true;
+}
+
+bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
+{
+	assert(compTable.IsTable());
+	bool success;
+	std::string name = compTable.GetField("name").GetString(success);
+	if (success)
+		SetName(name.c_str());
+
+	auto npos = compTable.GetField("npos").GetVec2(success);
+	if (success)
+		SetNPos(npos);
+
+	// positions
+	auto pos = compTable.GetField("pos").GetVec2I(success);
+	if (success)
+		SetPos(pos);
+
+	auto nPosX = compTable.GetField("nposX").GetFloat(success);
+	if (success)
+		SetNPosX(nPosX);
+
+	auto nPosY = compTable.GetField("nposY").GetFloat(success);
+	if (success)
+		SetNPosY(nPosY);
+
+
+	int x = compTable.GetField("posX").GetInt(success);
+	if (success)
+		SetPosX(x);
+
+	int y = compTable.GetField("posY").GetInt(success);
+	if (success)
+		SetPosY(y);
+
+	Vec2 noffset(0, 0);
+	auto offset = compTable.GetField("offset").GetVec2I(success);
+	if (success)
+	{
+		mAbsOffset = offset;
+		if (mParent)
+		{
+			noffset = mParent->PixelToLocalNPos(offset);
+		}
+		else
+		{
+			noffset = Vec2(offset.x / (float)gEnv->pRenderer->GetWidth(), offset.y / (float)gEnv->pRenderer->GetHeight());
+		}
+	}
+	
+	{
+		int x = compTable.GetField("offsetX").GetInt(success);
+		if (success)
+		{
+			mAbsOffset.x = x;
+			if (mParent)
+				noffset.x = mParent->PixelToLocalNPosX(x);
+			else
+				noffset.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+		}
+
+
+		int y = compTable.GetField("offsetY").GetInt(success);
+		if (success)
+		{
+			mAbsOffset.y = y;
+			if (mParent)
+				noffset.y = mParent->PixelToLocalNPosY(y);
+			else
+				noffset.y = y / (float)gEnv->pRenderer->GetHeight();
+		}
+		mNPos += noffset;
+	}
+
+	//size
+
+	Vec2 nsize = compTable.GetField("nsize").GetVec2(success);
+	if (success)
+	{
+		SetNSize(nsize);
+	}
+
+	Vec2I v = compTable.GetField("size").GetVec2I(success);
+	if (success)
+	{		
+		SetSize(v);
+	}
+
+	{
+		float x = compTable.GetField("nsizeX").GetFloat(success);
+		if (success)
+		{
+			SetNSizeX(x);
+		}
+		else
+		{
+			std::string str = compTable.GetField("nsizeX").GetString(success);
+			if (success && stricmp(str.c_str(), "fill") == 0)
+			{
+				SetNSizeX(1.0f - mNPos.x);
+			}
+		}
+	}
+
+	{
+		float y = compTable.GetField("nsizeY").GetFloat(success);
+		if (success)
+		{
+			SetNSizeY(y);
+		}
+		else
+		{
+			std::string str = compTable.GetField("nsizeY").GetString(success);
+			if (stricmp(str.c_str(), "fill") == 0)
+			{
+				SetNSizeY(1.0f - mNPos.y);
+			}
+		}
+	}
+
+	{
+		int x = compTable.GetField("sizeX").GetInt(success);
+		if (success)
+		{
+			SetSizeX(x);
+		}
+
+		int y = compTable.GetField("sizeY").GetInt(success);
+		if (success)
+		{
+			SetSizeY(y);
+		}
+	}
+	{
+		// rel
+		float fillUntilNX = compTable.GetField("fillUntilNX").GetFloat(success);
+		if (success)
+		{
+			SetNSizeX(fillUntilNX - mNPos.x);
+		}
+
+		float fillUntilNY = compTable.GetField("fillUntilNY").GetFloat(success);
+		if (success)
+		{
+			SetNSizeY(fillUntilNY - mNPos.y);
+		}
+	}
+
+	float mAspectRatio = 1.f;
+	mAspectRatio = compTable.GetField("aspectRatio").GetFloat(success);
+	if (success)
+	{		
+		float sizex;
+		if (mUseAbsoluteXSize)
+		{
+			if (mParent)
+				sizex = mParent->PixelToLocalNWidth(mSize.x);
+			else
+				sizex = mSize.x / (float)gEnv->pRenderer->GetWidth();
+		}
+		else
+		{
+			sizex = mNSize.x;
+		}
+		Vec2 worldSize;
+
+		if (mParent)
+		{
+			worldSize = mParent->ConvertChildSizeToWorldCoord(Vec2(sizex, sizex));
+		}
+		float iWidth = gEnv->pRenderer->GetWidth() * worldSize.x;
+		float iHeight = iWidth / mAspectRatio;
+		float height = iHeight / (gEnv->pRenderer->GetHeight()*mWNSize.y);
+		mNSize.y = height;
+	}
+
+	// size mod
+	Vec2 nsizeMod(0, 0);
+	mSizeMod = compTable.GetField("sizeMod").GetVec2I(success);
+	{
+		if (success)
+		{
+			if (mParent)
+			{
+				nsizeMod = mParent->PixelToLocalNSize(mSizeMod);
+			}
+			else
+			{
+				nsizeMod = Vec2(mSizeMod.x / (float)gEnv->pRenderer->GetWidth(), mSizeMod.y / (float)gEnv->pRenderer->GetHeight());
+			}
+		}
+	}
+
+	{
+		int x = compTable.GetField("sizeModX").GetInt(success);
+		if (success)
+		{
+			mSizeMod.x = x;
+			if (mParent)
+				nsizeMod.x = mParent->PixelToLocalNWidth(x);
+			else
+				nsizeMod.x = (float)x / (float)gEnv->pRenderer->GetWidth();
+		}
+
+		int y = compTable.GetField("sizeModY").GetInt(success);
+		if (success)
+		{
+			mSizeMod.y = y;
+			if (mParent)
+				nsizeMod.y = mParent->PixelToLocalNHeight(y);
+			else
+				nsizeMod.y = y / (float)gEnv->pRenderer->GetHeight();
+		}
+		mNSize += nsizeMod;
+	}
+
+	mAbsTempLock = true;
+	SetNSize(mNSize);
+	SetNPos(mNPos);
+	mAbsTempLock = false;
+
+	for (int i = 0; i < UIProperty::COUNT; ++i)
+	{
+		auto field = compTable.GetField(UIProperty::ConvertToString((UIProperty::Enum)i));
+		if (field.IsValid())
+		{
+			std::string v = field.GetString(success);
+			if (success)
+			{
+				SetProperty((UIProperty::Enum)i, v.c_str());
+			}
+		}
+	}
+
+	auto animTable = compTable.GetField("Animation");
+	if (animTable.IsValid())
+	{
+		auto it = animTable.GetTableIterator();
+		LuaTableIterator::KeyValue data;
+		while (it.GetNext(data))
+		{
+			IUIAnimation* pAnim = FB_NEW(UIAnimation);
+			assert(0 && "not implemented");
+			//pAnim->LoadFromLua(data.second);
+			std::string name = pAnim->GetName();
+			if (mAnimations.Find(name) != mAnimations.end())
+			{
+				FB_DELETE(pAnim);
+			}
+			else
+			{
+				mAnimations[pAnim->GetName()] = pAnim;
+			}
+		}
+	}	
+
+	auto eventsTable = compTable.GetField("Events");
+	if (eventsTable.IsValid())
+	{
+		auto ti = eventsTable.GetTableIterator();
+		LuaTableIterator::KeyValue kv;
+		while (ti.GetNext(kv))
+		{
+			bool s1, s2;
+			std::string eventName = kv.first.GetString(s1);
+			std::string funcName = kv.second.GetString(s2);
+			if (s1 && s2)
+			{
+				IEventHandler::EVENT e = ConvertToEventEnum(eventName.c_str());
+				RegisterEventLuaFunc(e, funcName.c_str());
+			}
+		}
+	}
 
 	return true;
 }
@@ -1630,9 +1953,11 @@ void WinBase::RemoveAllEvents(bool includeChildren)
 
 void WinBase::GatherVisit(std::vector<IUIObject*>& v)
 {
+	if (!mVisible)
+		return;
 	if (!mBorders.empty())
 	{
-		for each (IWinBase* var in mBorders)
+		for (auto var : mBorders)
 		{
 			var->GatherVisit(v);
 		}

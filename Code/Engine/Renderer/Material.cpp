@@ -389,7 +389,7 @@ void Material::ReloadMaterial(const char* name)
 	std::string filepath(name);
 	ToLowerCase(filepath);
 	READ_LOCK rl(mRWCSMaterial);
-	for each(auto mat in mMaterials)
+	for (auto mat : mMaterials)
 	{
 		if (strcmp(mat->GetName(), filepath.c_str()) == 0)
 		{
@@ -411,7 +411,7 @@ void Material::ReloadShader(const char* shader)
 	typedef VectorMap<std::string, std::vector<SHADER_DEFINES>> RELOAD_CACHE;
 	RELOAD_CACHE reloaded;
 	READ_LOCK rl(mRWCSMaterial);
-	for each(auto mat in mMaterials)
+	for (auto mat : mMaterials)
 	{
 		if (mat->IsRelatedShader(shaderPath.c_str()))
 		{
@@ -688,7 +688,7 @@ void Material::AddShaderDefine(const char* name, const char* val)
 {
 	if (name==0 || val==0)
 		return;
-	for each(auto d in mShaderDefines)
+	for (auto& d : mShaderDefines)
 	{
 		if (d.name==name)
 		{
