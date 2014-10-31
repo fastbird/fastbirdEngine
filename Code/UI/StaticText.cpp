@@ -43,13 +43,4 @@ void StaticText::OnSizeChanged()
 	WinBase::OnSizeChanged();
 	AlignText();
 }
-
-bool StaticText::SetProperty(UIProperty::Enum prop, const char* val)
-{
-	__super::SetProperty(prop, val);
-	if (prop== UIProperty::TEXT_COLOR)
-		mUIObject->SetTextColor(mTextColor);
-
-	return true;
-}
 }

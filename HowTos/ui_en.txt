@@ -1,8 +1,8 @@
-How to UI
+# How to UI
 
 In this document, we will discuss about fastbird engine's UI system
 
-Creating UIs in the program code.
+## Creating UIs in the program code.
 
 This code is a simple OK/Close dialog.
 
@@ -43,14 +43,14 @@ This code is a simple OK/Close dialog.
 		btnClose->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 	}
 	
-Now, you have a window box displaying a static text "Welcome to fastbird engine!" and two buttons. If you want to know all supported component types and UIProperties, refer to the bottom of this document.
+Now, you have a window box displaying a static text "Welcome to fastbird engine!" and two buttons. If you want to know all supported component types and UIProperties, please refer to the bottom of this document.
 
 
-Creating UIs with .ui file format.
+## Creating UIs with .ui file format.
 
-If you use .ui file to create an UI, it is very convinient since the UI can be hot reloaded whenever you modifies the .ui file. The above ui can be defined in .ui file like below.
+If you use the .ui file to create UIs, it is very convinient since the UI can be hot reloaded whenever you modifies the .ui file. The above ui can be defined in .ui file like below.
 
-WelcomeUI.ui
+**WelcomeUI.ui**
 
 <UI name="WelcomeUI">
 	<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
@@ -88,13 +88,13 @@ After you created WelcomUI.ui, you need to modify WelcomeUI::Initialize() to par
 		}
 	}
 	
-Hot reloading feature is not only dependent to engine but also game layer. You may check the EngineApp project(main.cpp file, search with RegisterFileChangeListener) to see how you can register file modification notice from the engine, and how to hot reload uis.
+Hot reloading feature is not only dependent to engine but also the game layer. You may check the EngineApp project(main.cpp file, search with RegisterFileChangeListener) to see how you can register file modification notifier to the engine, and how to hot reload UIs from the notification.
 
 
 
-Detailed explanation on position and size
+## Detailed explanation on position and size
 
-You can specify the position and size in percentage value or in pixel unit. The following sentences specifying positions in percentage value. The position is relative to its parent compoonent.
+You can specify the position and size in percentage or in pixel unit. The following sentences specifying **positions** in percentage value. The position is relative to its parent compoonent.
 
 	npos="0.1, 0.1"
 	nposX="0.1" nposY="0.1"
@@ -119,7 +119,7 @@ If you want to give position offset values, use the following sentence. offsets 
 	offsetY="-4"
 
 
-Sizes also can be defined with percentage value or in pixel unit similar to positions.
+**Sizes** also can be defined in percentage or in pixel unit similar to positions.
 
 	nsize="1.0, 1.0"
 	nsizeX="1.0"
@@ -147,9 +147,9 @@ You can use aspectRatio attribues when you don't want to specify Y size explicit
 
 
 
-UI Animation
+## UI Animation
 
-Currently the ui system supports position, textColor and backColor animations. You can define animation tags insides of the component in which you want to use the defined animation. The following is for back color animation.
+Currently the UI System supports position, textColor and backColor animations. You can define animation tags insides of the component in which you want to use the defined animation. The following is for back color animation.
 
 	<Animation id="1" name="EnemyArrived" length="1" loop="false" >
 		<BackColor>
@@ -169,7 +169,7 @@ Currently the ui system supports position, textColor and backColor animations. Y
 	</Animation>
 
 	
-To use this animation, you code like below in the code.
+To use this animation, write the codes like the below.
 
 	void WaveUI::OnEnemyArrived()
 	{
@@ -185,7 +185,7 @@ To use this animation, you code like below in the code.
 
 
 
-Supported UI components(Refer to UI/ComponentType.h)
+## Supported UI components(Refer to UI/ComponentType.h)
 
 * Window
 * Title (Internal only)
@@ -209,7 +209,7 @@ Supported UI components(Refer to UI/ComponentType.h)
 * DropDown
 
 
-UIProperty List(Refer to UI/UIProperty.h)
+## UIProperty List(Refer to UI/UIProperty.h)
 
 You can use following properties when you define an UI in the .ui file.
 
@@ -249,7 +249,7 @@ You can use following properties when you define an UI in the .ui file.
 * LISTBOX_COL_HEADERS: If you want to have column headers on you ListBox, specify like "No,Name,Cost" for three columns.
 * EDGE_COLOR : If a Button doesn't have a FRAME_IMAGE property, edge will be rendered. Specify the color of the edge.
 * EDGE_COLOR_OVER
-* USE_WND_FRAME : "true" If you want to have decorated windows and titlebar. Predefined images in es/textures/ui.xml에 미리 준비되어 있습니다.
+* USE_WND_FRAME : "true" If you want to have decorated windows and titlebar. Predefined images in es/textures/ui.xml
 * TITLEBAR : "true", if you want your window to have title bar.
 * USE_BORDER : "true", for border decoration. can be used any ui components like buttons, static text.
 * SCISSOR_STOP_HERE : Basically a component searches its adam UI component to find its scissor region, but if you want to use middle parents region specify this property at the middle parent component.

@@ -14,3 +14,4 @@ programs
 * StarNest effect(MIT) : Pablo Roman Andrioli(https://www.shadertoy.com/view/4dfGDM)
 * AngelCode Bitmap Font Generator : http://www.angelcode.com/products/bmfont/
 * TinyXml2(zlib) : http://www.grinninglizard.com/tinyxml2docs/index.html
+* LuaWrapper : https://bitbucket.org/alexames/luawrapper/

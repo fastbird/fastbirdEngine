@@ -72,3 +72,42 @@ namespace fastbird
 		static const Vec2I ZERO;
 	};
 }
+
+// luawapper util
+template<>
+struct luaU_Impl<fastbird::Vec2I>
+{
+	static fastbird::Vec2I luaU_check(lua_State* L, int index)
+	{
+		luaL_checktype(L, index, LUA_TTABLE);
+		fastbird::Vec2I ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = luaL_checkint(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = luaL_checkint(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static fastbird::Vec2I luaU_to(lua_State* L, int index)
+	{
+		fastbird::Vec2I ret;
+		lua_rawgeti(L, index, 1);
+		ret.x = lua_tointeger(L, -1);
+		lua_pop(L, 1);
+		lua_rawgeti(L, index, 2);
+		ret.y = lua_tointeger(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	}
+
+	static void luaU_push(lua_State* L, const fastbird::Vec2I& val)
+	{
+		lua_createtable(L, 2, 0);
+		lua_pushinteger(L, val.x);
+		lua_rawseti(L, -2, 1);
+		lua_pushinteger(L, val.y);
+		lua_rawseti(L, -2, 2);
+	}
+};

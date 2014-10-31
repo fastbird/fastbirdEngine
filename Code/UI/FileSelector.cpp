@@ -196,7 +196,7 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 		{
 			if (!mFilter.empty())
 			{
-				const char* szExt = GetExtension(filename.c_str());
+				const char* szExt = GetFileExtension(filename.c_str());
 				if (szExt!=0)
 				{
 					std::string ext(szExt);

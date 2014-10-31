@@ -5,6 +5,8 @@ namespace fastbird
 	{
 		enum Enum
 		{
+			POS,
+			NPOS,
 			BACK_COLOR, // vec4
 			BACK_COLOR_OVER,	// vec4
 			BACK_COLOR_DOWN,
@@ -21,6 +23,8 @@ namespace fastbird
 			ALIGNV,
 			TEXT,
 			TEXTUREATLAS,
+			TEXTURE_FILE,
+			KEEP_IMAGE_RATIO,
 			REGION,
 			ALPHA,
 			BACKGROUND_IMAGE,
@@ -48,11 +52,14 @@ namespace fastbird
 			USE_BORDER,
 			SCISSOR_STOP_HERE,
 			SPECIAL_ORDER, // higher will render top
+			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
 
 			COUNT
 		};
 
 		static const char* strings[] = {
+			"POS",
+			"NPOS",
 			"BACK_COLOR", // vec4
 			"BACK_COLOR_OVER",	// vec4
 			"BACK_COLOR_DOWN", // vec4
@@ -69,6 +76,8 @@ namespace fastbird
 			"ALIGNV",
 			"TEXT",
 			"TEXTUREATLAS",
+			"TEXTURE_FILE",
+			"KEEP_IMAGE_RATIO",
 			"REGION",
 			"ALPHA",
 			"BACKGROUND_IMAGE",
@@ -96,16 +105,21 @@ namespace fastbird
 			"USE_BORDER",
 			"SCISSOR_STOP_HERE",
 			"SPECIAL_ORDER",
+			"INHERIT_VISIBLE_TRUE",
 		};
 
 		inline const char* ConvertToString(Enum e)
 		{
-			assert(e >= BACK_COLOR && e < COUNT);
+			assert(e >= 0 && e < COUNT);
 			return strings[e];
 		}
 
 		inline Enum ConverToEnum(const char* sz)
 		{
+			if (stricmp(sz, "POS") == 0)
+				return POS;
+			if (stricmp(sz, "NPOS") == 0)
+				return NPOS;
 			if (stricmp(sz, "BACK_COLOR") == 0)
 				return BACK_COLOR;
 			if (stricmp(sz, "BACK_COLOR_OVER") == 0)
@@ -138,6 +152,10 @@ namespace fastbird
 				return TEXT;
 			if (stricmp(sz, "TEXTUREATLAS") == 0)
 				return TEXTUREATLAS;
+			if (stricmp(sz, "TEXTURE_FILE") == 0)
+				return TEXTURE_FILE;
+			if (stricmp(sz, "KEEP_IMAGE_RATIO") == 0)
+				return KEEP_IMAGE_RATIO;
 			if (stricmp(sz, "REGION") == 0)
 				return REGION;
 			if (stricmp(sz, "ALPHA") == 0)
@@ -192,7 +210,9 @@ namespace fastbird
 				return SCISSOR_STOP_HERE;
 			if (stricmp(sz, "SPECIAL_ORDER") == 0)
 				return SPECIAL_ORDER;
-			else
+			if (stricmp(sz, "INHERIT_VISIBLE_TRUE") == 0)
+				return INHERIT_VISIBLE_TRUE;
+			
 			{
 				assert(0);
 				return COUNT;

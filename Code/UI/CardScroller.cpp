@@ -76,7 +76,15 @@ IWinBase* CardScroller::AddCard()
 	Slot* pDestSlot = 0;
 	if (mNextEmptySlot!=-1)
 	{
-		posY = mSlots[mNextEmptySlot].mNYPos;
+		if (mNextEmptySlot > 0)
+		{
+			posY = mSlots[mNextEmptySlot].mNYPos = 
+				mSlots[mNextEmptySlot - 1].mNYPos + mHeight + mNYOffset;
+		}
+		else
+		{
+			posY = mSlots[mNextEmptySlot].mNYPos;
+		}
 		mSlots[mNextEmptySlot].mOccupied = true;
 		pDestSlot = &mSlots[mNextEmptySlot];
 		++mNextEmptySlot;
@@ -115,6 +123,7 @@ void CardScroller::DeleteCard(IWinBase* card)
 	{
 		if (mSlots[i].mCard == card)
 		{
+			mSlots[i].mCard->SetContent(0);
 			mSlots[i].mCard = 0;
 			mSlots[i].mOccupied = false;
 			RemoveChild(card);

@@ -12,14 +12,14 @@ namespace fastbird
 	class CLASS_DECLSPEC_UI IUIManager : public IInputListener
 	{
 	public:
-		static void InitializeUIManager();
+		static void InitializeUIManager(lua_State* L);
 		static void FinalizeUIManager();
 		static IUIManager& GetUIManager();
 
 		virtual void Shutdown() = 0;
 		virtual void Update(float elapsedTime) = 0;
 
-		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname) = 0;
+		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false) = 0;
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type) = 0;
 		// in normalized space 0.0f~1.0f
@@ -41,6 +41,9 @@ namespace fastbird
 		};
 		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func)=0;
 		virtual int GetPopUpResult() const = 0;
+		virtual lua_State* GetLuaState() const = 0;
+		virtual void OnUIFileChanged(const char* file) = 0;
+		virtual IWinBase* FindComp(const char* uiname, const char* compName) const = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

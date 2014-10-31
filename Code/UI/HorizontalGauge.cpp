@@ -18,7 +18,7 @@ namespace fastbird
 
 		IMaterial* mat = mUIObject->GetMaterial();
 		mGaugeColor = Color(1, 1, 1, 1);
-		mBlinkColor = Color(1, 0, 0, 1);
+		mBlinkColor = Color(1, 1, 0, 1);
 		mat->SetMaterialParameters(1, mGaugeColor.GetVec4());
 		mat->SetMaterialParameters(2, mBlinkColor.GetVec4());
 		// x is lerp.

@@ -6,6 +6,8 @@ using namespace fastbird;
 
 // 12 : float3, 4 : ubyte4
 const unsigned DebugHud::LINE_STRIDE = 16;
+// 12 : float3, 16 : color
+//const unsigned DebugHud::HDR_LINE_STRIDE = 28;
 const unsigned DebugHud::MAX_LINE_VERTEX = 500;
 
 //----------------------------------------------------------------------------
@@ -26,18 +28,25 @@ DebugHud::DebugHud()
 	
 	mInputLayout = gFBEnv->pRenderer->GetInputLayout(
 		DEFAULT_INPUTS::POSITION_COLOR, mLineShader);
+	/*mHdrInputLayout = gFBEnv->pRenderer->GetInputLayout(
+		DEFAULT_INPUTS::POSITION_HDR_COLOR, mLineShader);*/
 
 	mVertexBuffer = gFBEnv->pRenderer->CreateVertexBuffer(0, LINE_STRIDE, MAX_LINE_VERTEX, 
 		BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+	/*mHdrVertexBuffer = gFBEnv->pRenderer->CreateVertexBuffer(0, HDR_LINE_STRIDE, MAX_LINE_VERTEX,
+		BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);*/
 
 	DEPTH_STENCIL_DESC ddesc;
 	ddesc.DepthEnable = false;
 	SetDepthStencilState(ddesc);
+	gFBEnv->pEngine->GetScene()->AddListener(this);
 }
 
 //----------------------------------------------------------------------------
 DebugHud::~DebugHud()
 {
+	if (gFBEnv->pEngine->GetScene())
+		gFBEnv->pEngine->GetScene()->RemoveListener(this);
 }
 
 //----------------------------------------------------------------------------
@@ -72,6 +81,19 @@ void DebugHud::DrawLine(const Vec3& start, const Vec3& end,
 	mWorldLines.push_back(line);
 }
 
+void DebugHud::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end, const Color& color0,
+	const Color& color1)
+{
+	Line line;
+	line.mStart = start;
+	line.mColor = color0;
+
+	line.mEnd = end;
+	line.mColore = color1;
+
+	mWorldLinesBeforeAlphaPass.push_back(line);
+}
+
 void DebugHud::DrawLine(const Vec2I& start, const Vec2I& end, 
 	const Color& color0, const Color& color1)
 {
@@ -92,10 +114,51 @@ void DebugHud::PreRender()
 		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 }
 
+void DebugHud::OnBeforeRenderingTransparents()
+{
+	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+		return;
+	unsigned lineCount = mWorldLinesBeforeAlphaPass.size();
+	if (lineCount == 0)
+		return;
+
+	D3DEventMarker mark("DebugHud::OnBeforeRenderingTransparents()");
+	PreRender();
+
+	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
+	// object constant buffer
+	mInputLayout->Bind();
+	mLineShader->Bind();
+	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
+	pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);	
+	if (lineCount > 0)
+	{
+		while (lineCount)
+		{
+			MapData mapped = mVertexBuffer->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
+			if (mapped.pData)
+			{
+				unsigned totalVertexCount = lineCount * 2;
+				unsigned numVertex = 0;
+				for (numVertex = 0; numVertex < totalVertexCount && numVertex < MAX_LINE_VERTEX; numVertex += 2)
+				{
+					unsigned base = numVertex*LINE_STRIDE;
+					memcpy((char*)mapped.pData + base, &mWorldLinesBeforeAlphaPass[numVertex / 2], LINE_STRIDE * 2);
+					lineCount--;
+				}
+				mVertexBuffer->Unmap();
+				mVertexBuffer->Bind();
+				pRenderer->Draw(numVertex, 0);
+			}
+		}
+		mWorldLinesBeforeAlphaPass.clear();
+	}
+}
 
 //----------------------------------------------------------------------------
 void DebugHud::Render()
 {
+	D3DEventMarker mark("DebugHud::Render()");
 	PreRender();
 
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();

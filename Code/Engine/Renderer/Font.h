@@ -53,6 +53,7 @@ namespace fastbird
 		virtual float GetHeight() const;
 		virtual void SetBackToOrigHeight();
 		virtual float GetTextWidth(const char *text, int count = -1, float *minY = 0, float *maxY = 0);
+		virtual std::wstring InsertLineFeed(const char *text, int count, unsigned wrapAt, unsigned* outWidth, unsigned* outLines);
 		virtual void PrepareRenderResources();
 		virtual void SetRenderStates(bool depthEnable = false, bool scissorEnable = false);
 		virtual void SetDefaultConstants();

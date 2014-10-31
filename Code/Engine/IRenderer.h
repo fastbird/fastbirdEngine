@@ -194,6 +194,8 @@ public:
 		const Color& color) = 0;
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1) = 0;
+	virtual void DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
+		const Color& color0, const Color& color1) = 0;
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
 		const Color& color, const Color& color1) = 0;
 	virtual void RenderDebugHud() = 0; 

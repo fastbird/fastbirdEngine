@@ -50,6 +50,7 @@ UIObject::UIObject()
 	, mAnimNDCOffset(0, 0)
 	, mAnimNOffset(0, 0)
 	, mSpecialOrder(0)
+	, mMultiline(false)
 {
 	mObjectConstants.gWorld.MakeIdentity();
 	mObjectConstants.gWorldViewProj.MakeIdentity();
@@ -267,23 +268,6 @@ void UIObject::Render()
 	{
 		gFBEnv->pRenderer->SetScissorRects(&mScissorRect, 1);
 	}
-
-	/*if (!mText.empty() && !mAlphaBlending)
-	{
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
-		if (pFont)
-		{
-			pFont->PrepareRenderResources();
-			pFont->SetDefaultConstants();
-			pFont->SetRenderStates(!mAlphaBlending, mScissor);
-			pFont->SetHeight(mTextSize);
-			pFont->Write(
-				(mTextNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth(),
-				(mTextNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight(),
-				0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
-			pFont->SetBackToOrigHeight();
-		}
-	}*/
 
 	if (!mNoDrawBackground)
 	{

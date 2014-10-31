@@ -32,6 +32,8 @@ public:
 	int r_Glow;
 	int r_ReportDeviceObjectLeak;
 	int r_Shadow;
+	int r_UseShaderCache;
+	int r_GenerateShaderCache;
 
 private:
 	std::vector<CVar*> mCVars;

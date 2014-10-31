@@ -59,8 +59,10 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
+
+		virtual const IMeshObject* GetMeshArchetype(const std::string& name) const;
 		virtual void ReleaseMeshObject(IMeshObject* p);
-		virtual void DeleteMeshGroup(IMeshGroup* p);
+		virtual void ReleaseMeshGroup(IMeshGroup* p);
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr);
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr);
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p);

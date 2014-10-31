@@ -31,9 +31,6 @@ TaskScheduler::TaskScheduler(DWORD NumThreads)
     mNumWorkerThreads = (NumThreads == 0) ? GetNumProcessors() : NumThreads;
     assert(mNumWorkerThreads > 0);
 
-    mPendingTasksQueue.Init(MAX_NUM_QUEUE);
-    mReadyTasksQueue.Init(MAX_NUM_QUEUE);
-    mIdleThreadsQueue.Init(mNumWorkerThreads);
 	mWorkerThreads.assign(mNumWorkerThreads, 0);
 
     for(int i=0; i<mNumWorkerThreads; i++)
@@ -76,7 +73,7 @@ void TaskScheduler::SchedulerSlice()
 	if (mSchedulerLock.Lock())
 	{
 		Task* CurTask;
-		while (CurTask = mPendingTasksQueue.Dequeue())
+		while (CurTask = mPendingTasksQueue.Deq())
 		{
 			//Log("Task %d Dequeued from pending", CurTask->mTaskID);
 			if (CurTask->mScheduled)
@@ -226,7 +223,7 @@ Task* TaskScheduler::GetNextReadyTask(WorkerThread* Thread)
 		return 0;
 	LOCK_CRITICAL_SECTION lock(mQueueCS);
 
-    Task* ReadyTask = mReadyTasksQueue.Dequeue();
+    Task* ReadyTask = mReadyTasksQueue.Deq();
     if(ReadyTask)
     {
         return ReadyTask;
@@ -241,7 +238,7 @@ WorkerThread* TaskScheduler::GetNextIdleThread(Task* t)
 		return 0;
 	LOCK_CRITICAL_SECTION lock(mQueueCS);
 
-    return mIdleThreadsQueue.Dequeue();
+    return mIdleThreadsQueue.Deq();
 }
 
 void TaskScheduler::ScheduleTask(Task* t)
@@ -298,7 +295,7 @@ void TaskScheduler::AddIdleWorker(WorkerThread* w)
 	if (mFinalize)
 		return;
 	LOCK_CRITICAL_SECTION lock(mQueueCS);
-	VERIFY(mIdleThreadsQueue.Enqueue(w));
+	mIdleThreadsQueue.Enq(w);
 }
 
 void TaskScheduler::AddReadyTask(Task* t)
@@ -306,7 +303,7 @@ void TaskScheduler::AddReadyTask(Task* t)
 	if (mFinalize)
 		return;
 	LOCK_CRITICAL_SECTION lock(mQueueCS);
-	VERIFY(mReadyTasksQueue.Enqueue(t));
+	mReadyTasksQueue.Enq(t);
 }
 
 void TaskScheduler::AddPendingTask(Task* t)
@@ -314,8 +311,7 @@ void TaskScheduler::AddPendingTask(Task* t)
 	if (mFinalize)
 		return;
 	LOCK_CRITICAL_SECTION lock(mQueueCS);
-	VERIFY(mPendingTasksQueue.Enqueue(t));
-	//Log("Task %d added to pending", t->mTaskID);
+	mPendingTasksQueue.Enq(t);
 }
 
 }

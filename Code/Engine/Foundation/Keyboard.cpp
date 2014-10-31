@@ -70,6 +70,7 @@ namespace fastbird
 		mCurrentChar = 0;
 	}
 
+	//--------------------------------------------------------------------------
 	void Keyboard::Invalidate()
 	{
 		mValid = false;

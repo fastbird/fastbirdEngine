@@ -15,7 +15,6 @@ public:
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::StaticText; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
-	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	
 
 protected:

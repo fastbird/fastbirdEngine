@@ -40,6 +40,8 @@ namespace fastbird
 		virtual bool IsMoved() const;
 
 		virtual long GetWheel() const;
+		virtual void ClearWheel();
+		virtual void ClearButton();
 		virtual unsigned long GetNumLinesWheelScroll() const;
 
 		virtual void LockMousePos(bool lock);

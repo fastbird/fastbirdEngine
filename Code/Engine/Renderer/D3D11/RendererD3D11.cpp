@@ -19,6 +19,7 @@
 #include <Engine/Renderer/D3D11/RenderToTextureD3D11.h>
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/Hammersley.h>
+#include <CommonLib/tinydir.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <d3dcompiler.h>
@@ -94,7 +95,7 @@ void RendererD3D11::Deinit()
 	SAFE_RELEASE(m_pRareConstantsBuffer);
 	SAFE_RELEASE(m_pBigBuffer);
 	SAFE_RELEASE(m_pImmutableConstantsBuffer);
-	for each(auto r in mRenderTargetTextures)
+	for (auto r : mRenderTargetTextures)
 	{
 		SAFE_RELEASE(r);
 	}
@@ -1003,9 +1004,28 @@ HRESULT CompileShaderFromFile(const char* filename, const char* entryPoint,
 IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 	const IMaterial::SHADER_DEFINES& defines,
 	IShader* pReloadingShader/*=0*/)
-{
+{	
 	std::string filepath(path);
 	ToLowerCase(filepath);
+
+	// build cache key
+	std::string cachekey = path;
+	if (!defines.empty())
+	{
+		std::string namevalue;
+		for (const auto& define : defines)
+		{
+			namevalue += define.name;
+			namevalue += define.value;
+		}
+		uLong crc = crc32(0L, Z_NULL, 0);
+		crc = crc32(crc, (const Bytef*)namevalue.c_str(), namevalue.size());
+		char buf[255];
+		sprintf_s(buf, "%u", crc);
+		cachekey += buf;
+	}
+
+
 	ShaderD3D11* pShader;
 	if (pReloadingShader)
 	{
@@ -1014,6 +1034,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 	}
 	else
 	{
+		// memory cache
 		IShader* pShaderFromCache = Shader::FindShader(filepath.c_str(), defines);
 		if (pShaderFromCache)
 			return pShaderFromCache;
@@ -1046,28 +1067,52 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 
 	IncludeProcessor includeProcessor(filepath.c_str(), pShader);
 	HRESULT hr;
+	bool useShaderCache = gFBEnv->pConsole->GetEngineCommand()->r_UseShaderCache!=0;
+	bool generateShaderCache = gFBEnv->pConsole->GetEngineCommand()->r_GenerateShaderCache!=0;
 	// Load VS
 	if (shaders & BINDING_SHADER_VS)
 	{
 		std::string VSName = onlyname;
 		VSName+="_VertexShader";
 		ID3DBlob* pVSBlob = 0;
-		hr = CompileShaderFromFile(filepath.c_str(), VSName.c_str(), "vs_5_0", &pVSBlob,
-			pShaderMacros, &includeProcessor);
-		if (FAILED(hr))
-		{		
-			SAFE_RELEASE(pVSBlob);
-			pShader->SetCompileFailed(true);
-			return pShader;
+		// check vs cache
+		std::string vs_cachekey = cachekey + ".vscache";
+		void* shaderByteCode = 0;
+		bool usingCache = false;
+		std::streamoff length = 0;
+		// use cache
+		if (useShaderCache && FileSystem::CompareLastFileWrite(filepath.c_str(), vs_cachekey.c_str()) == -1)
+		{
+			usingCache = true;
+			auto data = FileSystem::ReadBinaryFile(vs_cachekey.c_str(), length);
+			shaderByteCode = data;
+		}
+		// don't use cache, and make the cache.
+		else
+		{
+			hr = CompileShaderFromFile(filepath.c_str(), VSName.c_str(), "vs_5_0", &pVSBlob,
+				pShaderMacros, &includeProcessor);
+			if (FAILED(hr))
+			{
+				SAFE_RELEASE(pVSBlob);
+				pShader->SetCompileFailed(true);
+				return pShader;
+			}
+			if (generateShaderCache)
+				FileSystem::SaveBinaryFile(vs_cachekey.c_str(), (BinaryData)pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize());
+			shaderByteCode = pVSBlob->GetBufferPointer();
+			length = pVSBlob->GetBufferSize();
 		}
 		// Create VS
 		ID3D11VertexShader* pVertexShader = 0;
-		hr = m_pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), 
-			pVSBlob->GetBufferSize(), 0, &pVertexShader);
+		hr = m_pDevice->CreateVertexShader(shaderByteCode, (size_t)length, 0, &pVertexShader);
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pVSBlob->GetBufferPointer());
-			SAFE_RELEASE(pVSBlob);
+			if (pVSBlob)
+			{
+				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pVSBlob->GetBufferPointer());
+				SAFE_RELEASE(pVSBlob);
+			}
 			pShader->SetCompileFailed(true);
 			return pShader;
 		}
@@ -1079,7 +1124,18 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 			pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 		}
 		pShader->SetVertexShader(pVertexShader);
-		pShader->SetVertexShaderBytecode(pVSBlob); // pVSBlob will be released here
+		if (pVSBlob)
+		{
+			pShader->SetVertexShaderBytecode(pVSBlob); // pVSBlob will be released here
+			SAFE_RELEASE(pVSBlob);
+		}
+		else if (shaderByteCode)
+		{
+			pShader->SetVertexShaderBytecode(shaderByteCode, (size_t)length);
+			FileSystem::FinishBinaryFile((BinaryData)shaderByteCode);
+		}			
+		else
+			assert(0);
 	}
 
 	// Load GS
@@ -1088,22 +1144,47 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		std::string GSName = onlyname;
 		GSName+="_GeometryShader";
 		ID3DBlob* pGSBlob = 0;
-		HRESULT hr = CompileShaderFromFile(filepath.c_str(), GSName.c_str(), "gs_5_0", &pGSBlob,
-			pShaderMacros, &includeProcessor);
-		if (FAILED(hr))
+		// check vs cache
+		std::string gs_cachekey = cachekey + ".gscache";
+		void* shaderByteCode = 0;
+		bool usingCache = false;
+		std::streamoff length = 0;
+		// use cache
+		if (useShaderCache && FileSystem::CompareLastFileWrite(filepath.c_str(), gs_cachekey.c_str()) == -1)
 		{
-			SAFE_RELEASE(pGSBlob);
-			pShader->SetCompileFailed(true);
-			return pShader;
+			usingCache = true;
+			auto data = FileSystem::ReadBinaryFile(gs_cachekey.c_str(), length);
+			shaderByteCode = data;
+		}
+		// don't use cache, and make the cache.
+		else
+		{
+
+			HRESULT hr = CompileShaderFromFile(filepath.c_str(), GSName.c_str(), "gs_5_0", &pGSBlob,
+				pShaderMacros, &includeProcessor);
+			if (FAILED(hr))
+			{
+				SAFE_RELEASE(pGSBlob);
+				pShader->SetCompileFailed(true);
+				return pShader;
+			}
+			if (generateShaderCache)
+				FileSystem::SaveBinaryFile(gs_cachekey.c_str(), (BinaryData)pGSBlob->GetBufferPointer(), pGSBlob->GetBufferSize());
+			shaderByteCode = pGSBlob->GetBufferPointer();
+			length = pGSBlob->GetBufferSize();
 		}
 		// Create GS
 		ID3D11GeometryShader* pGeometryShader = 0;
-		hr = m_pDevice->CreateGeometryShader(pGSBlob->GetBufferPointer(), 
-			pGSBlob->GetBufferSize(), 0, &pGeometryShader);
+		hr = m_pDevice->CreateGeometryShader(shaderByteCode, (size_t)length, 0, &pGeometryShader);
+		if (usingCache)
+			FileSystem::FinishBinaryFile((BinaryData)shaderByteCode);
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pGSBlob->GetBufferPointer());
-			SAFE_RELEASE(pGSBlob);
+			if (pGSBlob)
+			{
+				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pGSBlob->GetBufferPointer());
+				SAFE_RELEASE(pGSBlob);
+			}
 			pShader->SetCompileFailed(true);
 			return pShader;
 		}
@@ -1121,22 +1202,46 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		std::string PSName = onlyname;
 		PSName+="_PixelShader";
 		ID3DBlob* pPSBlob = 0;
-		hr = CompileShaderFromFile(filepath.c_str(), PSName.c_str(), "ps_5_0", &pPSBlob,
-			pShaderMacros, &includeProcessor);
-		if (FAILED(hr))
+		// check vs cache
+		std::string ps_cachekey = cachekey + ".pscache";
+		void* shaderByteCode = 0;
+		bool usingCache = false;
+		std::streamoff length = 0;
+		// use cache
+		if (useShaderCache && FileSystem::CompareLastFileWrite(filepath.c_str(), ps_cachekey.c_str()) == -1)
 		{
-			SAFE_RELEASE(pPSBlob);
-			pShader->SetCompileFailed(true);
-			return pShader;
+			usingCache = true;
+			auto data = FileSystem::ReadBinaryFile(ps_cachekey.c_str(), length);
+			shaderByteCode = data;
+		}
+		// don't use cache, and make the cache.
+		else
+		{
+			hr = CompileShaderFromFile(filepath.c_str(), PSName.c_str(), "ps_5_0", &pPSBlob,
+				pShaderMacros, &includeProcessor);
+			if (FAILED(hr))
+			{
+				SAFE_RELEASE(pPSBlob);
+				pShader->SetCompileFailed(true);
+				return pShader;
+			}
+			if (generateShaderCache)
+				FileSystem::SaveBinaryFile(ps_cachekey.c_str(), (BinaryData)pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize());
+			shaderByteCode = pPSBlob->GetBufferPointer();
+			length = pPSBlob->GetBufferSize();
 		}
 		// Create PS
 		ID3D11PixelShader* pPixelShader = 0;
-		hr = m_pDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), 
-			pPSBlob->GetBufferSize(), 0, &pPixelShader);
+		hr = m_pDevice->CreatePixelShader(shaderByteCode, (size_t)length, 0, &pPixelShader);
+		if (usingCache)
+			FileSystem::FinishBinaryFile((BinaryData)shaderByteCode);
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, pPSBlob->GetBufferPointer());
-			SAFE_RELEASE(pPSBlob);
+			if (pPSBlob)
+			{
+				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pPSBlob->GetBufferPointer());
+				SAFE_RELEASE(pPSBlob);
+			}
 			pShader->SetCompileFailed(true);
 			return pShader;
 		}
@@ -2020,7 +2125,7 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(texture);
 	if (pTextureD3D11)
 	{
-		const char* ext = GetExtension(filename);
+		const char* ext = GetFileExtension(filename);
 		D3DX11_IMAGE_FILE_FORMAT format = D3DX11_IFF_FORCE_DWORD;
 		if (stricmp(ext, "bmp")==0)
 		{

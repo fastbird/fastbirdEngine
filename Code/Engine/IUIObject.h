@@ -44,6 +44,8 @@ namespace fastbird
 		virtual void SetSpecialOrder(int order) = 0;
 		virtual int GetSpecialOrder() const = 0;
 
+		virtual void SetMultiline(bool multiline) = 0;
+
 	public:
 		// debug purpose
 		IWinBase* mOwnerUI;

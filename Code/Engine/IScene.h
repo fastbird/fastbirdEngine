@@ -7,6 +7,7 @@
 
 namespace fastbird
 {
+	class ISceneListener;
     class IObject;
     class SpatialObject;
 	class ISkyBox;
@@ -54,6 +55,9 @@ namespace fastbird
 		virtual const Color& GetFogColor() const = 0;
 		virtual void SetFogColor(const Color& c) = 0;
 		virtual void SetDrawClouds(bool e) = 0;
+
+		virtual void AddListener(ISceneListener* listener) = 0;
+		virtual void RemoveListener(ISceneListener* listener) = 0;
 	};
 }
 

@@ -21,6 +21,22 @@ char* StripLeft(char* s)
 }
 
 //------------------------------------------------------------------------
+std::string StripBoth(const char* s)
+{
+	const char* b = s;
+	const char* e = s + strlen(s);
+	while (b != e && isspace(*b))
+	{
+		b++;
+	}
+	while (e != b && isspace(*(e-1)))
+	{
+		e--;
+	}
+	return std::string(b, e - b);
+}
+
+//------------------------------------------------------------------------
 void StripExtension(char* s)
 {
 	size_t len = strlen(s);
@@ -34,11 +50,58 @@ void StripExtension(char* s)
 	}
 }
 
+std::string StripExtension(const char* s)
+{
+	const char* end = FindLastOf(s, '.');
+	if (end)
+		return std::string(s, end);
+	else
+		return std::string();
+}
+
+const char* FindLastOf(const char* s, char ch)
+{
+	int len = strlen(s);
+	const char* it = s + len - 1;
+	for (; it >= s; --it)
+	{
+		if (*it == ch)
+		{
+			return it;
+		}
+	}
+	return 0;
+}
+
 std::string GetFileName(const char* s)
 {
-	std::string name = s;
-	name.erase(name.begin() + name.find_last_of('.'), name.end());
-	return name;
+	int len = strlen(s);
+	const char* nameStart = FindLastOf(s, '/');
+	if (!nameStart)
+	{
+		nameStart = FindLastOf(s, '\\');
+	}
+	if (nameStart)
+	{
+		return std::string(nameStart + 1, s + len);
+	}
+	return std::string();
+}
+
+std::string GetFileNameWithoutExtension(const char* s)
+{
+	int len = strlen(s);
+	const char* nameStart = FindLastOf(s, '/');
+	if (!nameStart)
+	{
+		nameStart = FindLastOf(s, '\\');
+	}
+	if (nameStart)
+	{
+		const char* dot = FindLastOf(s, '.');
+		return std::string(nameStart + 1, dot);
+	}
+	return std::string();
 }
 
 std::string GetDirectoryPath(const char* s)
@@ -74,7 +137,7 @@ const char* StripPath(const char* s)
 }
 
 //------------------------------------------------------------------------
-const char* GetExtension(const char* s)
+const char* GetFileExtension(const char* s)
 {
 	size_t len = strlen(s);
 	while(--len)
@@ -91,7 +154,7 @@ const char* GetExtension(const char* s)
 //------------------------------------------------------------------------
 bool CheckExtension(const char* filename, const char* extension)
 {
-	const char* szExtension = GetExtension(filename);
+	const char* szExtension = GetFileExtension(filename);
 	if (szExtension==0)
 		return false;
 
@@ -182,7 +245,6 @@ char* UnifyFilepath(char* outPath, const char* szPath)
 	{
 		outPath[pos-1] = 0; // delete last '/'
 	}
-
 	return outPath;
 }
 
@@ -317,6 +379,12 @@ void ToLowerCase( std::string& str )
             str.end(),
             str.begin(),
 			tolower);
+}
+
+void ToLowerCaseFirst(std::string& str)
+{
+	std::transform(
+		str.begin(), str.begin() + 1, str.begin(), tolower);
 }
 
 //-----------------------------------------------------------------------
@@ -800,4 +868,79 @@ bool StringConverter::isNumber(const std::string& val)
 	return !str.fail() && str.eof();
 }
 
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+void * HashedString::hash_name(char const * pIdentStr)
+{
+	// Relatively simple hash of arbitrary text string into a
+	// 32-bit identifier Output value is
+	// input-valid-deterministic, but no guarantees are made
+	// about the uniqueness of the output per-input
+	//
+	// Input value is treated as lower-case to cut down on false
+	// separations cause by human mistypes. Sure, it could be
+	// construed as a programming error to mix up your cases, and
+	// it cuts down on permutations, but in Real World Usage
+	// making this text case-sensitive will likely just lead to
+	// Pain and Suffering.
+	//
+	// This code lossely based upon the adler32 checksum by Mark
+	// Adler and published as part of the zlib compression
+	// library sources.
+
+	// largest prime smaller than 65536
+	unsigned long BASE = 65521L;
+
+	// NMAX is the largest n such that 255n(n+1)/2 +
+	// (n+1)(BASE-1) <= 2^32-1
+	unsigned long NMAX = 5552;
+
+#define DO1(buf,i)  {s1 += tolower(buf[i]); s2 += s1;}
+#define DO2(buf,i)  DO1(buf,i); DO1(buf,i+1);
+#define DO4(buf,i)  DO2(buf,i); DO2(buf,i+2);
+#define DO8(buf,i)  DO4(buf,i); DO4(buf,i+4);
+#define DO16(buf)   DO8(buf,0); DO8(buf,8);
+
+	if (pIdentStr == NULL)
+		return NULL;
+
+	unsigned long s1 = 0;
+	unsigned long s2 = 0;
+
+	for (size_t len = strlen(pIdentStr); len > 0;)
+	{
+		unsigned long k = len < NMAX ? len : NMAX;
+
+		len -= k;
+
+		while (k >= 16)
+		{
+			DO16(pIdentStr);
+			pIdentStr += 16;
+			k -= 16;
+		}
+
+		if (k != 0) do
+		{
+			s1 += tolower(*pIdentStr++);
+			s2 += s1;
+		} while (--k);
+
+		s1 %= BASE;
+		s2 %= BASE;
+	}
+
+#pragma warning(push)
+#pragma warning(disable : 4312)
+
+	return reinterpret_cast<void *>((s2 << 16) | s1);
+
+#pragma warning(pop)
+#undef DO1
+#undef DO2
+#undef DO4
+#undef DO8
+#undef DO16
+}
 }

@@ -1,0 +1,355 @@
+Dev log : [[Main Page|2014-09]] | [[201408|2014-08]] | [[201407|2014-07]] | [[201406|2014-06]] | [[201405|2014-05]] | [[201404|2014-04]] | [[old_log]] | [[DevLog|Write]] | [[Neat stuff]]
+
+== 2014-09-01 UIs ==
+* Game
+** Outline rendering for modular ship.
+** worked on Resource UI.
+** Displying wave time.
+** Added KillAll and SetWaveTime commands.
+* UI
+** Button+ProgressBar UI, Blinking at the completion.
+** Added TextColor and Backcolor interpolation to UIAnimation.
+** Now UI component can have multiple UIAnimation instances.
+** Added Tooltip UI
+** Fixed font vertical alignment bug
+
+* +1298	-164
+
+== 2014-09-02 Laser ==
+
+* Engine
+** Particle UV Flow, Length control, aligning velocity to the emitter direction
+
+* Game
+** Added bomber, frigate and their movement controller.
+** added laser effect
+** adeed frigate explosion effect
+** delayed destruction of ships.
+** Ammo reloading.
+** Densign document- spreading contents through the time and space.
+
+* +1138 -136 +1279(design)
+
+[[File:laser.jpg]]
+
+== 2014-09-03 Missile Cruiser ==
+
+* Engine
+** ParticleEmitter now can emit geometries
+** Particle color interpolation
+** inter-frame particle position interpolation for fast moving emitters
+
+* Game
+** Weapon Debug command added.
+** Added missile cruiser and its movement controller.
+** fixed Yaw-Pitch weaopn's tracking bugs
+** Added 11_cruiser_missile.particle, 12_big_explosion.particle and 13_missile_explosion.particle
+
+* +1197	-241
+
+[[File:missiles.jpg]]<br>
+You have inbound missiles!
+
+== 2014-09-04 Manufacture ==
+
+* Game
+** Manufacturing modules - consuming resources.
+** Added FastConstruction command.
+** Tooltips for objects in the world.
+
+* UI
+** Polishing embeded progress bar.
+** Added NO_MOUSE_EVENT property.
+** Now can input minus value for position. (then the final pos is ScreenWidth+(minus value))
+** offsetting. useful for the situation when you want to offset npos(like 0.5f) by pixelpos(like 100px).
+
+* +1387	-168, no memory leak.
+
+== 2014-09-05 Screenshots ==
+
+[[File:screenshot1_.png]]<br>
+close shot to the modular ship.
+
+[[File:screenshot2_.png]]<br>
+missile cruisers.
+
+[[File:screenshot4_.png]]<br>
+laser frigates.
+
+[[File:screenshot3_.png]]<br>
+Many flaks.
+
+== 2014-09-10 anamorphic lens flare, multiple flocks ==
+
+* Engine
+** Anamorphic Lens Flare
+** Added engine commands: r_HDRMiddleGray, r_BloomPower, r_StarPower, r_UI
+** Rewrote luminance calculation
+** Added GaussianBlur5x5.hlsl, MergeTextures2PS.hlsl.
+
+* Game
+** Added flock manager. now can have multiple flocks.
+** Interaction among flocks. - avoid obstacles, initiate attack.
+** Moving modular ship.
+** Save feature for player flocks.
+** Added formation feature
+** Polished ship movement and movement controllers
+** Friendly fighters construction
+
+* +3359, -958, no memory leak.
+
+
+[[File:anamorphic_lens_flare.jpg]]<br>
+added anamorphic lens flare.
+
+== 2014-09-11 Marks ==
+
+* Engine
+** Added mark render object render pass
+
+* Game
+** Added custom render object - mark
+** Added MarkManager which helps player to recognize small ships location and flock leaders.
+** Improved Ship AI.
+
+* +731, -31, +223(Design), No memory leak.
+
+== 2014-09-12 Crew information ui ==
+
+* Game
+** New CrewListUI
+** Adding CrewInformation UI
+
+* UI
+** Enable/Disabling UIs
+** Polished Vertical Scrollbar - represent total length of contents and current pos
+** Scissor culling for scrolling elements
+** Added NumericUpDown component.
+** Progressbar color interpolation
+
+* +1337	-120
+
+== 2014-09-14 UIs ==
+
+* Game
+** Removed crew classes.
+** Defined stats and skills for crews.
+** Crew Information UI
+** Item List UI
+** Ship List UI / Ship Information UI(working on)
+** CrewGradeTable and ItemListTable added
+** Save crews. ah need to save aboard information.
+
+* UI
+** Added Nemeric up/down ui events
+** Added multi column featrue for list box.
+
+* +2433, -277
+
+Found http://endic.naver.com/category.nhn?sLn=kr&fristId=1010&secondId=2074&thirdId=&pageNo=1&pubLev=all&firstWord=all is very useful for finding out military terms.
+
+== 2014-09-15 Again UIs ==
+
+* Engine
+** Changed ui render order. now, bottom to top order for alpha blended uis.
+** NoMeshLoad command added.
+
+* Game
+** Dismantling ship.
+** Assigning Crews
+** UI polishing
+*** ManageUI
+*** CrewListUI
+*** ShipListUI
+*** ItemListUI
+*** CrewUI
+*** ShipUI
+
+* UI
+** Alpha blending
+** Added title bar for windows.
+** Added popup dialog
+** Working on handling absolute/relative coordinates when resolution or the parent changed
+
+* +1518, -513
+
+== 2014-09-16 Button design. ==
+
+* Worked on UIs
+** Renewed ui layout.
+** Added ui properties: BACK_COLOR_DOWN, FRAME_IMAGE, EDGE_COLOR, EDGE_COLOR_OVER
+** Button designs
+** Added ui atlas regions : ButtonFrame, Research, Manufacture, Iron24, Crystal24 and Human24.
+* Polished explosion effect
+* +404, -266, No memory leak. But some memories are deleted in the file from where the memory is not allocated.
+
+== 2014-09-17 Decorating windows border. ==
+
+* Game
+** Item Assignment
+** Added UnlimitedItems command.
+** Window ui design
+** polished CrewListUI, CrewUI, ItemListUI, ManageUI, ManufactureSubUI,
+NavigationUI, SpecialModulesUI and WaveUI.
+
+*UI
+** Wnd now can have 9 images to decorate its borders.(Added USE_WND_FRAME UIProperty)
+
+* +475	-172
+
+== 2014-09-18 Added crew portraits ==
+
+* Game
+** Closing UIs by esc key sequentially with the visibility history.
+** UI's common border design. - button, progressbar, etc.
+** CrewListUI redesign.
+** Added character portraits.
+
+* UI
+** Fixed scrolling bugs on Frame and Borders
+** Added USE_BORDER, BACKGROUND_IMAGE_NOATLAS and BACKGROUND_IMAGE_HOVER_NOATLAS UI Properties
+** Fixed event handling bug - culled UIs don't process input events anymore.
+** Common border rendering. resides in WinBase so every UIs now can have border images.
+
+* +563, -141
+
+== 2014-09-19 Polishing ship/crew UIs ==
+
+* Game
+** Added UnlimitedResources GameCommand.
+** Added exclusive visiblity concept for UIs
+** Polising CrewUI/ItemListUI/ManageUI/ShipListUI/ShipUI/SpecialModulesUI
+** Added ship portrait - Real time render targets.
+** Now ships can have multiple crews on it.
+
+* UI
+** Fixed checkbox size bug
+** Getting child of children.
+** Fixed material parameter bugs for HexagonalContextMenu
+** Fixed focus test ordering bug.
+** Added SCISSOR_STOP_HERE property to select appropriate scissor rect for children
+
+* +1362, -451
+
+== 2014-09-22 Collision Shapes ==
+
+* Engine
+** added feature for importing collision shapes - narrow phase collision check
+
+[[File:collision_shapes.gif]]<br>
+Collision shapes are defined in Blender and will be imported into the engine. Currently only using for ray collision tests. Need to add obb/obb, obb/sphere collision test algorithm.
+
+* Game
+** Added capacity UI to show ship, lieutenants and generals limits and current count.
+** Polished Crew/Ship UI
+** Giving unique id to the ship to distingtuish the same type of ships in the UI.
+** Added resource Gold.
+** Added capacity property to the ship cms.
+** Stocking constucted ships in the cargo bay
+
+* UI
+** fixed bug that disabled uis was handling input evnets.
+** Polished Numeric UpDown component
+** Polished tooltip positioning - prevent culling by screen size.
+
+* +1051, -130
+
+== 2014-09-23 Fleet Information UI ==
+
+* Game
+** Added Fleet UI.
+** Introduced Population and Patrol concepts.
+** Added System sub ui - Fleet, Item Option and Quit
+** Added Ship launching exception conditions.
+
+* UI
+** Added drop-down UI Component.
+** Added additional ordering option. UIProperty::SPECIAL_ORDER
+
+* +1220, -28
+
+== 2014-09-24 DamageReport UI ==
+
+* Engine
+** Dynamic VertexBuffers for MeshObjects.
+** RenderTarget camera handling codes
+
+* Game
+** Added DamageReportUI - Repair All / Repair Selected.
+** Polished FleetUI
+
+* UI
+** Removing items from ListBox component.
+** Added Header columns - UIProperty::LISTBOX_COL_HEADERS added.
+
+* +1014	-144
+
+== 2014-09-25 Added patrol system ==
+
+* Engine
+** Added curve importer - for patrol path
+
+* Game
+** Added Patrol System.
+** Improved ship movement.
+
+* UI
+** Moving windows by dragging titlebar.
+
+* +979, -160
+
+== 2014-09-28 Target pos estimation ==
+
+* Game
+** Target position estimation for fighters and tracking weapons. - much more interesting battles.
+** Skill redesigned. Now have 17 skills. - need to redesign crew ui also
+** Displaying passengers in the ship ui list
+** More data handling for saving and loading Game. - crews and flocks.
+** Now initial start up game data also use the same game load mechanism.
+** Polished game events such as OnShipCreated/OnShipDeleted
+** ShipListUI now can remove ship cards when ships are removed.
+** Linked Hull/Shield/Power gauges to actual data.
+** Defined scenario-characters which are not random.
+** Portrait for CommandModule.
+** Added design doc : scenario.svg, skills.svg
+
+* UI
+** Fixed Card scroller position bug when the new position is assigned - related to pos offset
+
+* +2101, -951, No memory leak.
+
+== 2014-09-29 new release! ==
+
+fastbird engine 2014-Sep released!
+
+You can download the source code at the repository : https://github.com/fastbird/fastbirdEngine/releases
+
+== 2014-09-29 Applying skills ==
+
+* Engine
+** Fixed RTT leak
+
+* Game
+** Damage calculation considering skill points of crews on booard.
+** Consuming power when firing weapons.
+
+* UI
+** Fixed a dropdown lists is not disappear when another is open.
+
+* +268, -89
+
+== 2014-09-30 Lock free queue ==
+
+* Engine
+** Added LockFreeQueue.
+
+* Game
+** Added game commands - Resurrection and Invincible.
+** Crew ordering
+** Fixed a bug some ships doesn't have bounding boxes.
+** Designing research items and its hierarchy
+** fixed loading bugs
+** Polished ship movement - fixed some cases ships are circled the target forever.
+*** happened when the ship's weapon target is different with ship's target.
+
+* +545, -288, No memory leak.

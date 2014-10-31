@@ -1,10 +1,6 @@
 #include <CommonLib/Config.h>
 
-#include <assert.h>
-#include <process.h>
 #include <string>
-#include <stdio.h>
-#include <stdarg.h>
 #include <vector>
 #include <list>
 #include <stack>
@@ -19,6 +15,10 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <assert.h>
+#include <process.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #pragma comment(lib, "CommonLib.lib")
 #pragma comment(lib, "lua.lib")
@@ -69,6 +69,7 @@ extern "C" {
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/Profiler.h>
 #include <CommonLib/CollisionShape.h>
+#include <CommonLib/FileSystem.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>

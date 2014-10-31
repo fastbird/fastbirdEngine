@@ -12,16 +12,21 @@ namespace fastbird
 Wnd::Wnd()
 :mTitlebar(0)
 , mUseFrame(false)
+, mBackgroundImage(0)
 {
 	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mStopScissorParent = true;
+	mUIObject->SetNoDrawBackground(true);
+	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		std::bind(&Wnd::MouseConsumer, this, std::placeholders::_1));
 }
 
 Wnd::~Wnd()
 {
-	for each (IWinBase* var in mFrames)
+	FB_DELETE(mBackgroundImage);
+	for (auto var : mFrames)
 	{
 		IUIManager::GetUIManager().DeleteComponent(var);
 	}
@@ -35,9 +40,13 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 		return;
 
 	v.push_back(mUIObject);
+	
+	if (mBackgroundImage)
+		mBackgroundImage->GatherVisit(v);
+
 	__super::GatherVisit(v);
 
-	for each (IWinBase* var in mFrames)
+	for (auto var : mFrames)
 	{
 		var->GatherVisit(v);
 	}
@@ -88,14 +97,16 @@ void Wnd::RefreshFrame()
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
 			T->SetManualParent(this);
 			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			mFrames.push_back(T);
+			T->SetVisible(true);
+			mFrames.push_back(T);			
 
 			ImageBox* L = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
 			L->SetSizeX(16);
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
 			L->SetManualParent(this);
 			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			mFrames.push_back(L);
+			L->SetVisible(true);
+			mFrames.push_back(L);			
 
 			ImageBox* R = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
 			R->SetSizeX(16);
@@ -103,6 +114,7 @@ void Wnd::RefreshFrame()
 			R->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_R");
 			R->SetManualParent(this);
 			R->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			R->SetVisible(true);
 			mFrames.push_back(R);
 
 			ImageBox* B = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -111,6 +123,7 @@ void Wnd::RefreshFrame()
 			B->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_B");
 			B->SetManualParent(this);
 			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			B->SetVisible(true);
 			mFrames.push_back(B);
 
 			ImageBox* LT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -118,6 +131,7 @@ void Wnd::RefreshFrame()
 			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
 			LT->SetManualParent(this);
 			LT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+			LT->SetVisible(true);
 			mFrames.push_back(LT);
 
 			ImageBox* RT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -126,6 +140,7 @@ void Wnd::RefreshFrame()
 			RT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RT");
 			RT->SetManualParent(this);
 			RT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+			RT->SetVisible(true);
 			mFrames.push_back(RT);
 
 			ImageBox* MT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -134,6 +149,7 @@ void Wnd::RefreshFrame()
 			MT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_MT");
 			MT->SetManualParent(this);
 			MT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+			MT->SetVisible(true);
 			mFrames.push_back(MT);
 
 			ImageBox* LB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -142,6 +158,7 @@ void Wnd::RefreshFrame()
 			LB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LB");
 			LB->SetManualParent(this);
 			LB->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+			LB->SetVisible(true);
 			mFrames.push_back(LB);
 
 			ImageBox* RB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
@@ -150,6 +167,7 @@ void Wnd::RefreshFrame()
 			RB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RB");
 			RB->SetManualParent(this);
 			RB->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+			RB->SetVisible(true);
 			mFrames.push_back(RB);
 		}
 		enum FRAME_ORDER
@@ -203,7 +221,7 @@ void Wnd::RefreshFrame()
 	{
 		if (!mFrames.empty())
 		{
-			for each (ImageBox* var in mFrames)
+			for (auto var : mFrames)
 			{
 				IUIManager::GetUIManager().DeleteComponent(var);
 			}
@@ -216,11 +234,6 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	switch (prop)
 	{
-	case UIProperty::TEXTUREATLAS:
-	{
-									 mImageAtlas = val;
-									 return true;
-	}
 	case UIProperty::USE_WND_FRAME:
 	{
 									  mUseFrame = StringConverter::parseBool(val);
@@ -263,6 +276,37 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 								 }
 								 return true;
 	}
+	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+	{
+												 if (!mBackgroundImage)
+												 {
+													 mBackgroundImage = FB_NEW(ImageBox);
+													 mBackgroundImage->SetParent(this);
+													 mBackgroundImage->SetWNPos(mWNPos);
+													 mBackgroundImage->SetWNSize(mWNSize);
+													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
+												 }
+												 IUIManager::GetUIManager().DirtyRenderList();
+
+												 mBackgroundImage->SetTexture(val);
+												 return true;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+										 if (!mBackgroundImage)
+										 {
+											 mBackgroundImage = FB_NEW(ImageBox);
+											 mBackgroundImage->SetParent(this);
+											 mBackgroundImage->SetWNPos(mWNPos);
+											 mBackgroundImage->SetWNSize(mWNSize);
+											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
+										 }
+										 IUIManager::GetUIManager().DirtyRenderList();
+										 mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
+										 return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);

@@ -1,8 +1,8 @@
-How to UI
+# How to UI
 
 이 문서에서는 fastbird engine의 UI 시스템에 대해 설명합니다.
 
-프로그램에서 UI 만들기
+## 프로그램 코드에서 UI 만들기
 
 아래는 간단한 확인창 UI 입니다.
 
@@ -42,14 +42,14 @@ How to UI
 		btnClose->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 	}
 	
-위와 같이 코딩하면  'Welcome to fastbird engine!' 라는 텍스트를 중앙에 보여주고 OK와 Close 버튼을 보여주는 창이 완성됩니다. 지원하는 모든 ComponentType과 UIProperty들은 이 문서의 끝부분에 정리되어 있습니다.
+위와 같이 코딩하면  'Welcome to fastbird engine!' 라는 텍스트를 중앙에 보여주고 OK와 Close 버튼이 달려있는 창이 완성됩니다. 지원하는 모든 ComponentType과 UIProperty들은 이 문서의 끝부분에 정리되어 있습니다.
 
 
-UI 파일을 사용하기
+## UI 파일을 사용하기
 
-UI를 파일에 정의해서 사용하면 UI Hot-reloading기능을 사용할 수가 있어서 매우 편리합니다. 아래는 ui파일을 읽어들이면 위와 동일한 창이 만들어 집니다.
+위 예제처럼 UI를 바로 코딩으로 정의할 수도 있지만 파일에 정의하면 UI Hot-reloading기능을 사용할 수가 있어서 매우 편리합니다. 아래 ui파일을 읽어들이면 위와 동일한 창이 만들어 집니다.
 
-WelcomeUI.ui 파일
+**WelcomeUI.ui 파일**
 
 <UI name="WelcomeUI">
 	<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
@@ -59,7 +59,7 @@ WelcomeUI.ui 파일
 	</component>
 </UI>
 
-파일이 정의되면 이제 WelcomeUI::Initialize() 함수에서 읽어드립니다.
+파일을 만든 후에 WelcomeUI::Initialize()를 수정하여 읽어드립니다.
 
 	bool WelcomeUI::Initialize()
 	{
@@ -87,23 +87,23 @@ WelcomeUI.ui 파일
 		}
 	}
 	
-게임단에 UI 핫 리로딩 기능이 들어있어서(EngineApp 프로젝트 참고) .ui 파일이 수정되면 바로 그 내용이 화면에 적용됩니다. 핫리로딩 기능은 엔진에 File Modification Notifier를 등록해서 변경이 감지될 때 게임단에서 리로딩이 됩니다. 자세한 코드는 EngineApp 프로젝트의 main.cpp와 UI.cpp파일을 참고해주세요 (RegisterFileChangeListener로 검색)
+핫리로딩 기능은 .ui 파일이 수정되면 게임에 알려주어 그 내용이 바로 화면에 적용될 수 있게 해줍니다. 이를 위해서는 엔진에 File Modification Notifier를 등록해서 변경을 게임프로젝트로 알려주도록 해야 합니다. 자세한 코드는 EngineApp 프로젝트의 main.cpp와 UI.cpp파일을 참고해주세요 (RegisterFileChangeListener로 검색)
 
 
 
-위치와 크기에 대해 자세히 알아보기
+## 컴포넌트의 위치와 크기
 
-위치와 크기는 percentage나 pixel단위로 입력할 수 있습니다. percentage로 위치를 입력할 때는 아래와 같은 구문을 같고 부모 영역에 상대적입니다.
+위치와 크기는 percentage나 pixel단위로 입력할 수 있습니다. percentage로 **위치**를 입력할 때는 아래와 같은 구문을 사용하고 부모 영역에 상대적입니다.
 
 	npos="0.1, 0.1"
 	nposX="0.1" nposY="0.1"
 
-pixel 단위로 위치를 입력할 때는 아래와 같은 구문을 같고 부모와 상관없이 절대값입니다. 크기가 절대값이라는 이야기고 실제 포지셔닝은 부모위치를 기중으로 상대적입니다.
+pixel 단위로 위치를 입력할 때는 아래와 같은 구문을 사용하고 부모 위치를 기준으로 상대적입니다. 픽셀 크기가 상대적인 것은 아닙니다.
 
 	pos="10, 10"
 	posX="10" posY="10"
 
-X를 percentage로 입력하고 Y는 pixel로 입력하고 싶은 경우 아래와 같은 구문을 같습니다.
+X를 percentage로 입력하고 Y는 pixel로 입력하고 싶은 경우 아래와 같은 구문을 사용합니다.
 
 	nposX="0.1" posY="10"
 	
@@ -118,7 +118,7 @@ pixel로 입력할 때 -값을 주게 되면 화면 크기값에 해당 값을 뺀 값이 결과값이 됩니�
 	offsetY="-4"
 
 
-크기도 위치와 비슷하게 percentage와 pixel로 입력할 수 있습니다.
+**크기**도 위치와 비슷하게 percentage와 pixel로 입력할 수 있습니다.
 
 	nsize="1.0, 1.0"
 	nsizeX="1.0"
@@ -127,26 +127,26 @@ pixel로 입력할 때 -값을 주게 되면 화면 크기값에 해당 값을 뺀 값이 결과값이 됩니�
 	nsizeX="600"
 	nsizeY="400"
 	
-크기를 지정할때 "fill"을 사용하면 나머지 영역을 모두 차지합니다.
+크기를 지정할때 "fill"을 사용하면 이 컴포넌트가 나머지 영역을 모두 차지하게 됩니다.
 
 	nsizeX="fill"
 	nsizeY="fill"
 
-포지션을 지정할 때  offset을 사용할 수 있는데 크기를 지정할 때는 sizeMod를 사용합니다. pixel로 입력합니다.
+크기를 지정할 때는 sizeMod를 사용하여 최종 크기를 조절할 수 있습니다. pixel 단위로 입력합니다.
 
 	sizeMod="-10, 0"
 	sizeModX="-10"
 	sizeModY="0"
 	
 
-사이즈를 지정할 때 x값만 지정하고 추가로 aspectRatio를 지정하는 방법을 사용할 수있습니다. 예를 들어서 아래와 같은 경우에 64, 32 사이즈가 됩니다.
+사이즈를 지정할 때 x값과 aspectRatio를 지정하는 방법을 사용할 수있습니다. 예를 들어서 아래와 같은 경우에 64, 32 사이즈가 됩니다. 부모 컨테이너의 비율에 상관없이 고정 aspect ratio를 사용하고 싶을 때 유용합니다.
 
 	sizeX="64"
 	aspectRatio="2"
 
 
 
-UI 에니메이션
+## UI 에니메이션
 
 현재 Position과 TextColor 그리고 BackColor 에니메이션이 지원됩니다. 에니메이션을 사용할 Component의 내부에 아래 구문을 추가합니다. 배경 색상 에니메이션의 예제입니다.
 
@@ -184,7 +184,7 @@ UI 에니메이션
 
 
 
-지원되는 컴포넌트 리스트(UI/ComponentType.h 파일 참고)
+## 지원되는 컴포넌트 리스트(UI/ComponentType.h 파일 참고)
 
 * Window
 * Title (Internal only)
@@ -208,7 +208,7 @@ UI 에니메이션
 * DropDown
 
 
-전체 속성 리스트(UI/UIProperty.h 파일 참고)
+## 전체 속성 리스트(UI/UIProperty.h 파일 참고)
 
 .ui 파일을 만들때 아래와 같은 속성들을 사용합니다.
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <UI/IEventHandler.h>
+#include <CommonLib/LuaObject.h>
 
 namespace fastbird
 {
@@ -11,6 +12,8 @@ namespace fastbird
 		virtual ~EventHandler();
 		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION);
 		virtual void UnregisterEventFunc(EVENT e, FunctionID slot);
+		virtual void RegisterEventLuaFunc(EVENT e, const char* luaFuncName);
+		virtual void UnregisterEventLuaFunc(EVENT e);
 		virtual void UnregisterAllEventFunc();
 		virtual void DisableEvent(EVENT e);
 		virtual void DisableAllEvent();
@@ -26,6 +29,9 @@ namespace fastbird
 		typedef std::map<EVENT, std::set<FunctionID> > EVENT_FUNC_MAP;
 		FUNC_MAP mFuncMap;
 		EVENT_FUNC_MAP mEventFuncMap;
+
+		typedef std::map<EVENT, fastbird::LuaObject> LUA_EVENT_FUNC_MAP;
+		LUA_EVENT_FUNC_MAP mLuaFuncMap;
 
 		std::set<EVENT> mDisabledEvent;
 		bool mEventEnable;

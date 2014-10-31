@@ -16,7 +16,7 @@ void CandidatesData::AddCandidate(const char* name)
 {
 	std::string candiName = name;
 	ToLowerCase(candiName);
-	for each(const Candidate& c in mCandidates)
+	for (const auto& c : mCandidates)
 	{
 		if (c.mName==candiName)
 		{
@@ -89,7 +89,7 @@ StringVector CandidatesData::GetCandidates(const char* input, int& outDepth)
 
 	if (candidates)
 	{
-		for each(const Candidate& c in *candidates)
+		for (const auto& c : *candidates)
 		{
 			if (strInput.empty() // second words can be empty
 				|| (c.mName.find(strInput) != std::string::npos && c.mName != strInput))
@@ -105,13 +105,13 @@ StringVector CandidatesData::GetCandidates(const char* input, int& outDepth)
 
 void Candidate::AddCandidate(const StringVector& candidates)
 {
-	for each(std::string newCandi in candidates)
+	for (auto newCandi : candidates)
 	{
 		ToLowerCase(newCandi);
 		auto it = mChildren.begin();
 		// check already registered?
 		bool alreadyRegisterd = false;
-		for each(const Candidate& c in mChildren)
+		for (const auto& c : mChildren)
 		{
 			if (c.mName == newCandi)
 			{

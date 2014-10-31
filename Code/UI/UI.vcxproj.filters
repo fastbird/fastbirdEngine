@@ -77,6 +77,9 @@
     <ClInclude Include="DropDown.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="TextBox.h">
+      <Filter>Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -149,6 +152,9 @@
     </ClCompile>
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="DropDown.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="TextBox.cpp">
       <Filter>Components</Filter>
     </ClCompile>
   </ItemGroup>

@@ -321,6 +321,7 @@ namespace fastbird
 	namespace DEFAULT_INPUTS{ enum Enum {
 		POSITION,
 		POSITION_COLOR,
+		POSITION_HDR_COLOR,
 		POSITION_NORMAL,
 		POSITION_TEXCOORD,
 		POSITION_COLOR_TEXCOORD_BLENDINDICES,
@@ -347,6 +348,16 @@ namespace fastbird
 		unsigned int color;
 	};
 	typedef POSITION_COLOR_V V_PC;
+
+	struct POSITION_HDRCOLOR_V
+	{
+		POSITION_HDRCOLOR_V() {}
+		POSITION_HDRCOLOR_V(const fastbird::Vec3& _p, const fastbird::Color& _c)
+			: p(_p), color(_c) {}
+		fastbird::Vec3 p;
+		fastbird::Color color;
+	};
+	typedef POSITION_HDRCOLOR_V V_PhC;
 
 	struct POSITION_NORMAL_V
 	{

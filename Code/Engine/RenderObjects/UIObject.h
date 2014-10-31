@@ -42,6 +42,8 @@ namespace fastbird
 			return mSpecialOrder;
 		}
 
+		virtual void SetMultiline(bool multiline){ mMultiline = multiline; }
+
 		//-------------------------------------------------------------------------
 		// IObject interfaces
 		//-------------------------------------------------------------------------
@@ -87,11 +89,12 @@ namespace fastbird
 		std::vector<Vec2> mTexcoords;
 		SmartPtr<IVertexBuffer> mVBColor;
 		SmartPtr<IVertexBuffer> mVBTexCoord;
+		RECT mScissorRect;
+		int mSpecialOrder;
 		bool mDirty;
 		bool mScissor;
-		RECT mScissorRect;
 		bool mOut;
 		bool mAlphaBlending;
-		int mSpecialOrder;
+		bool mMultiline;
 	};
 }

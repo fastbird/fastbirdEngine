@@ -83,7 +83,7 @@ namespace fastbird
 
 		~TextureAtlas()
 		{
-			for each ( auto c in mRegions)
+			for ( auto& c : mRegions)
 			{
 				FB_SAFE_DEL(c.second);
 			}

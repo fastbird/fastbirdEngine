@@ -117,7 +117,7 @@ void Camera::GetNearFar(float& n, float& f) const
 //----------------------------------------------------------------------------
 void Camera::ProcessInputData()
 {
-	if (!mProcessInput || !mCurrentCamera || !mTarget)
+	if (!mProcessInput || !mCurrentCamera)
 		return;
 	if (mUserParams.Changed() || mPrevTargetPos != mTarget->GetPos())
 	{
@@ -222,14 +222,14 @@ void Camera::Update()
 
 		if (viewChanged)
 		{
-			for each (ICameraListener* var in mCamListener)
+			for (auto var : mCamListener)
 			{
 				var->OnViewMatChanged();
 			}
 		}
 		if (projChanged)
 		{
-			for each (ICameraListener* var in mCamListener)
+			for (auto var : mCamListener)
 			{
 				var->OnProjMatChanged();
 			}

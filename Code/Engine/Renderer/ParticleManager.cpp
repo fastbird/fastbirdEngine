@@ -83,7 +83,7 @@ void ParticleManager::Update(float elapsedTime)
 {
 	ParticleRenderObject::ClearParticles();
 
-	for each(IParticleEmitter* p in mPendingDeletes)
+	for (auto p : mPendingDeletes)
 	{
 		mActiveParticles.erase(
 			std::remove(mActiveParticles.begin(), mActiveParticles.end(), p), 

@@ -84,6 +84,8 @@ namespace fastbird
 		virtual bool IsDragStartIn(const RECT& region) const = 0;
 
 		virtual long GetWheel() const = 0;
+		virtual void ClearWheel() = 0;
+		virtual void ClearButton() = 0;
 		virtual unsigned long GetNumLinesWheelScroll() const = 0;
 
 		virtual void LockMousePos(bool lock) = 0;

@@ -191,14 +191,21 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 {
 	static FontVertex vertices[MAX_BATCH];
 
+	const float initialX = x;
 	int page = -1;
 	y -= mScale * float(mFontHeight);
-	float starty = y;
-	y += mScale * mBase;
 	unsigned int batchingVertices = 0;
 	for( int n = 0; n < count; )
 	{
 		int charId = GetTextChar(text, n, &n);
+		
+		if (charId == L'\n')
+		{
+			y += mScale * mBase;
+			x = initialX;
+			continue;
+		}
+
 		SCharDescr *ch = GetChar(charId);
 		if( ch == 0 ) 
 			ch = &mDefChar;
@@ -235,7 +242,7 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		}
 
 		float left = x+ox;
-		float top = starty+oy;
+		float top = y + oy;
 		float right = left + w;
 		float bottom = top + h;
 
@@ -321,6 +328,67 @@ float Font::GetHeight() const
 	return mScale * mFontHeight;
 }
 
+std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, unsigned* outWidth, unsigned* outLines)
+{
+	if (count < 0)
+		count = GetTextLength(text);
+
+	unsigned lines = 1;
+	unsigned maxX = 0;
+	unsigned curX = 0;
+	std::wstring multilineString;
+	unsigned inputBeforeSpace=0;
+	unsigned lengthAfterSpace = 0;
+	for (int n = 0; n < count;)
+	{
+		int charId = GetTextChar(text, n, &n);
+		if (charId == L'\n')
+		{
+			curX = 0;
+			lengthAfterSpace = 0;
+		}
+		else
+		{
+			SCharDescr *ch = GetChar(charId);
+			if (ch == 0) ch = &mDefChar;
+			unsigned length = (unsigned)(mScale * (ch->xAdv));
+			if (n < count)
+				length += (unsigned)AdjustForKerningPairs(charId, GetTextChar(text, n));
+			curX += length;
+			lengthAfterSpace += length;
+		}
+		
+		if (curX > wrapAt)
+		{
+			multilineString.insert(multilineString.end() - inputBeforeSpace, L'\n');
+			curX = lengthAfterSpace;
+			multilineString.push_back(charId);
+			++lines;
+		}
+		else
+		{
+			if (isspace(charId))
+			{
+				inputBeforeSpace = 0;
+				lengthAfterSpace = 0;
+			}
+			else
+			{
+				++inputBeforeSpace;
+			}
+			multilineString.push_back(charId);
+		}
+		maxX = std::max(maxX, curX);
+		if (outWidth)
+		{
+			*outWidth = maxX;				
+		}
+
+		if (outLines)
+			*outLines = lines;
+	}
+	return multilineString;
+}
 //----------------------------------------------------------------------------
 float Font::GetTextWidth(const char *text, int count, float *outMinY/* = 0*/, float *outMaxY/* = 0*/)
 {

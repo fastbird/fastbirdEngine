@@ -80,17 +80,23 @@ EngineCommand::EngineCommand()
 
 	REGISTER_CVAR(MoveEditParticle, 0, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
 
+	r_UseShaderCache = gFBEnv->pScriptSystem->GetIntVariable("r_UseShaderCache", 1);
+	REGISTER_CVAR(r_UseShaderCache, r_UseShaderCache, CVAR_CATEGORY_CLIENT, "Use shader cache");
+
+	r_GenerateShaderCache = gFBEnv->pScriptSystem->GetIntVariable("r_GenerateShaderCache", 1);
+	REGISTER_CVAR(r_GenerateShaderCache, r_GenerateShaderCache, CVAR_CATEGORY_CLIENT, "generate shader cache");
+
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);
 }
 EngineCommand::~EngineCommand()
 {
-	for each (auto p in mCVars)
+	for (auto p : mCVars)
 	{
 		FB_SAFE_DEL(p);
 	}
 
-	for each (auto p in mCommands)
+	for (auto p : mCommands)
 	{
 		gFBEnv->pConsole->UnregisterCommand(p);
 	}

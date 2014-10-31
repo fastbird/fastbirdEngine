@@ -40,6 +40,7 @@ namespace fastbird
 		virtual void SetPositions(int matGroupIdx, const Vec3* p, size_t numVertices);
 		virtual void SetNormals(int matGroupIdx, const Vec3* n, size_t numNormals);
 		virtual void SetUVs(int matGroupIdx, const Vec2* uvs, size_t numUVs);
+		virtual void SetTriangles(int matGroupIdx, const ModelTriangle* tris, size_t numTri);
 		virtual void SetColors(int matGroupIdx, const DWORD* colors, size_t numColors);
 		virtual void SetTangents(int matGroupIdx, const Vec3* t, size_t numTangents);
 		virtual void SetIndices(int matGroupIdx, const UINT* indices, size_t numIndices);
@@ -57,7 +58,7 @@ namespace fastbird
 
 		virtual const AUXILIARIES& GetAuxiliaries() const { return mAuxCloned ? *mAuxCloned : mAuxil; }
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) {mAuxil = aux; }
-		virtual void AddCollisionShape(COL_SHAPE& data);
+		virtual void AddCollisionShape(const COL_SHAPE& data);
 		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes);
 		virtual unsigned GetNumCollisionShapes() const { return mCollisionsCloned ? mCollisionsCloned->size() : 0; }
 		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
@@ -65,7 +66,8 @@ namespace fastbird
 		virtual void SetUseDynamicVB(BUFFER_TYPE type,  bool useDynamicVB);
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx);
 		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx);
-
+		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri=0) const;
+		
 		struct MaterialGroup
 		{
 			SmartPtr<IMaterial> mMaterial;
@@ -79,6 +81,7 @@ namespace fastbird
 			std::vector<Vec3> mPositions;
 			std::vector<Vec3> mNormals;
 			std::vector<Vec2> mUVs;	
+			std::vector<ModelTriangle> mTriangles;
 			std::vector<DWORD> mColors;
 			std::vector<Vec3> mTangents;
 		};

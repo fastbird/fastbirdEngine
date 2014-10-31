@@ -22,9 +22,9 @@ class TaskScheduler
     Task* mActiveTasksMap[1024];
 
     // Internal queues
-    LockFreeQueue<Task> mPendingTasksQueue;
-    LockFreeQueue<Task> mReadyTasksQueue;
-    LockFreeQueue<WorkerThread> mIdleThreadsQueue;
+    LockFreeQueue<Task*> mPendingTasksQueue;
+    LockFreeQueue<Task*> mReadyTasksQueue;
+    LockFreeQueue<WorkerThread*> mIdleThreadsQueue;
 
 	FB_CRITICAL_SECTION mQueueCS;
 

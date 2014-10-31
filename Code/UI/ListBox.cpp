@@ -223,9 +223,9 @@ void ListBox::OnItemDoubleClicked(void* arg)
 
 void ListBox::Clear()
 {
-	for each(auto items in mItems)
+	for (auto items : mItems)
 	{
-		for each (auto item	 in items)
+		for (auto item : items)
 		{
 			RemoveChild(item);
 		}
@@ -284,6 +284,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			pAddedItem->SetColIndex(i);
 			pAddedItem->SetText(AnsiToWide(strs[i].c_str()));
 		}
+		if (mUseScrollerV)
+		{
+			RemoveChild(mScrollerV, true);
+			mScrollerV = 0;
+		}
 		mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 		Vec2I sizeMod = { 0, -(ROW_HEIGHT + 4) };
 		mWndContentUI->SetSizeModificator(sizeMod);
@@ -292,8 +297,6 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		if (mUseScrollerV)
 		{
-			if (mScrollerV)
-				mPendingDelete.push_back(mScrollerV);
 			mUseScrollerV = false;
 			mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
 		}

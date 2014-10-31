@@ -6,6 +6,10 @@ namespace fastbird
 {
 	class ScriptSystem : public IScriptSystem
 	{
+		lua_State* mLuaState;
+
+		void ExportsDefaultFunctions();
+
 	public:
 		ScriptSystem();
 		virtual ~ScriptSystem();
@@ -17,16 +21,7 @@ namespace fastbird
 		virtual std::string GetStringVariable(const char* name, 
 			const std::string& def);
 		virtual int GetIntVariable(const char* name, int def = 0);
-		virtual float GetRealVariable(const char* name, float def = 0);
-		
-
-	protected:
-		void InitLua();
-		void CloseLua();
-		
-
-	private:
-		lua_State* mLuaState;
+		virtual float GetRealVariable(const char* name, float def = 0);		
 
 	};
 }

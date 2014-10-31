@@ -1,9 +1,12 @@
 #pragma once
 #include <Engine/SceneGraph/SpatialObject.h>
 #include <Engine/Renderer/RendererEnums.h>
+#include <CommonLib/Math/GeomUtils.h>
 
 namespace fastbird
 {
+	
+
 	typedef std::vector< std::pair<std::string, Transformation> > AUXILIARIES;
 	class IMaterial;
 	class CLASS_DECLSPEC_ENGINE IMeshObject : public SpatialObject
@@ -35,6 +38,7 @@ namespace fastbird
 		virtual void SetPositions(int matGroupIdx, const Vec3* p, size_t numVertices) = 0;
 		virtual void SetNormals(int matGroupIdx, const Vec3* n, size_t numNormals) = 0;
 		virtual void SetUVs(int matGroupIdx, const Vec2* uvs, size_t numUVs) = 0;
+		virtual void SetTriangles(int matGroupIdx, const ModelTriangle* tris, size_t numTri) = 0;
 		virtual void SetColors(int matGroupIdx, const DWORD* colors, size_t numColors) = 0;
 		virtual void SetTangents(int matGroupIdx, const Vec3* t, size_t numTangents) = 0;
 		virtual void SetIndices(int matGroupIdx, const UINT* indices, size_t numIndices) = 0;
@@ -50,12 +54,14 @@ namespace fastbird
 		virtual void SetInstanceVB(IVertexBuffer* pBuffer) = 0;
 		virtual const AUXILIARIES& GetAuxiliaries() const = 0;
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) = 0;
-		virtual void AddCollisionShape(COL_SHAPE& data) = 0;
+		virtual void AddCollisionShape(const COL_SHAPE& data) = 0;
 		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes) = 0;
 
 		virtual void SetUseDynamicVB(BUFFER_TYPE type, bool useDynamicVB) = 0;
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
 		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
+
+		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri = 0) const = 0;
 
 	private:
 		friend class Engine;
