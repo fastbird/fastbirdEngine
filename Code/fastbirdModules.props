@@ -6,6 +6,7 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir);$(LUA_DIR)\include</AdditionalIncludeDirectories>
+      <AdditionalOptions>/volatile:iso %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy $(TargetPath) $(SolutionDir)..\</Command>

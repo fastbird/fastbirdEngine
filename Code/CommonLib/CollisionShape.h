@@ -14,6 +14,7 @@ namespace fastbird
 
 		typedef std::pair<bool, float> IResult;
 		IResult intersects(const Ray3& ray, const Transformation& objT) const;
+		bool TestCollision(fastbird::BoundingVolume* pBV, const Transformation& objT) const;
 
 	private:
 		SmartPtr<BoundingVolume> mBV;

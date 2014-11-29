@@ -36,6 +36,9 @@ namespace fastbird
 		// own
 		void GenerateSphereMesh();
 
+	private:
+		void GenerateRadianceCoef(ITexture* pTex);
+		static const int ENV_SIZE = 1024;
 
 	private:
 		SmartPtr<IMaterial> mMaterial;
@@ -52,5 +55,11 @@ namespace fastbird
 		bool mUseAlphaBlend;
 		static fastbird::SmartPtr<fastbird::IRenderToTexture> mRT;
 		float mAlpha;
+
+		static const unsigned NumConsts = 7;
+		Vec4 mIrradConsts[NumConsts];
+
+		Vec4 mIrradCoeff[9];
+
 	};
 }

@@ -34,19 +34,27 @@ namespace fastbird
 		HANDLE file2 = CreateFile(filepath2, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (file2 == INVALID_HANDLE_VALUE)
 		{
+			CloseHandle(file1);
 			return 3;
 		}
+
 		FILETIME writeTime1;
 		if (!GetFileTime(file1, 0, 0, &writeTime1))
 		{
+			CloseHandle(file1);
+			CloseHandle(file2);
 			return 4;
 		}
 		FILETIME writeTime2;
 		if (!GetFileTime(file2, 0, 0, &writeTime2))
 		{
+			CloseHandle(file1);
+			CloseHandle(file2);
 			return 5;
 		}
-
+		
+		CloseHandle(file1);
+		CloseHandle(file2);
 		return CompareFileTime(&writeTime1, &writeTime2);
 
 
@@ -110,4 +118,16 @@ namespace fastbird
 
 		return false;
 	}
+	bool FileSystem::IsFileExisting(const char* filepath)
+	{
+		WIN32_FIND_DATA FindFileData;
+		HANDLE handle = FindFirstFile(filepath, &FindFileData);
+		bool found = handle != INVALID_HANDLE_VALUE;
+		if (found)
+		{
+			FindClose(handle);
+		}
+		return found;
+	}
+
 }

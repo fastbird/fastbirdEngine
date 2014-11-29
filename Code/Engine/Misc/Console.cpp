@@ -489,6 +489,22 @@ void Console::ProcessCommand(const char* command)
 		return;
 	}
 
+	const char* found;
+	if ((found = strchr(command, '%')) && command == found)
+	{
+		mLuaMode = true;
+		mPrompt = AnsiToWide("%", 1);
+		Log("Start Lua interactive mode.");
+		command = command + 1;
+	}
+	else if ((found = strchr(command, '>')) && command == found)
+	{
+		mLuaMode = false;
+		mPrompt = AnsiToWide(">", 1);
+		Log("Start Game command mode.");
+		command = command + 1;
+	}
+
 	mHistory.push_back(command);
 	mHistoryIndex = mHistory.size() - 1;
 

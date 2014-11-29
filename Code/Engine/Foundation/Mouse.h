@@ -18,7 +18,7 @@ namespace fastbird
 
 		virtual void EndFrame();
 		virtual bool IsValid() const { return mValid; }
-		virtual void Invalidate();
+		virtual void Invalidate(bool buttonClicked = false);
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
 		virtual void GetPos(long &x, long &y) const;

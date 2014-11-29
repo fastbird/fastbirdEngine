@@ -1,0 +1,99 @@
+# Lua UI binding.
+
+fastbird-engine 은 2014-Oct 버전부터 UI Lua 스크립팅을 지원합니다. 이 문서를 보기 전에 [[UI-How-to_KOR]] 보고 오시면 좋습니다.
+
+## UI에 사용할 스크립트 파일 지정하기
+
+스크립트 파일을 지정하기 위해서는 아래와 같이 'script' Attribute를 사용합니다.
+
+	<UI name="FleetUI" script="data/ui/FleetUI.lua">
+	<component name="FleetUIMain" type="Window" pos="130, 180" size="600, 540" TITLEBAR="Fleet Information" USE_WND_FRAME="true" NO_BACKGROUND="false" BACK_COLOR="0, 0, 0, 0.7">
+		<Events>
+			<OnVisible>FleetUI:OnVisible()</OnVisible>
+		</Events>
+		<component name="ShipImage" type="ImageBox" pos="0, 0" nsize="1.0, 0.4" BACK_COLOR="1, 1, 1, 1"/>
+		<component name="" type="StaticText" pos="0,0" nsize="1.0, 0.05" TEXT="Click and Drag to rotate the rtt camera"/>
+		.
+		.
+		.
+		(ommitted)
+		
+		
+
+'script' attribute  를 사용하여 사용할 UI파일을 지정할 수 있고, <Events> 태그안에서 이벤트를 루아 함수로 연결 할 수 있습니다. ':'를 사용하는 메소드 함수나 글로벌 함수 모두 가능합니다.
+
+## 이벤트
+현 시점(2014-Oct)에서는 아래와 같은 이벤트들이 지원됩니다.(UI/IEventHandler.h 파일에 정의되어 있습니다.)
+
+* OnVisible
+* OnHide
+* OnMouseIn
+* OnMouseHover
+* OnMouseOut
+* OnMouseLClick
+* OnMouseLDClick
+* OnMouseRClick
+* OnMouseDown
+* OnMouseDrag
+* OnEnter
+* OnFileSelectorSelected
+* OnFileSelectorOk
+* OnFileSelectorCancel
+* OnNumericUp
+* OnNumericDown
+* OnDropDownSelected
+
+## 루아에서 호출할 수 있는 C Function
+
+UI 루아 스크립팅을 지원하기 위해 아래와 같은 C 함수들이 Lua Global Environment에 정의되어 있습니다.
+
+* LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
+UI를 보이게 하거나 감춥니다.   예) SetVisibleLuaUI("FleetUI", true)
+
+* LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
+현재 UI가 보여지는지 확인합니다. 예) local visible = GetVisibleLuaUI("FleetUI");
+
+* LUA_SETCFUNCTION(mL, SetVisibleComponent);
+UI 내부에 있는 개별 컴포넌트의 보여짐 속성을 지정합니다. 예)SetVisibleComponent("FleetUI", "ButtonOK", false);
+
+* LUA_SETCFUNCTION(mL, LoadLuaUI);
+.ui 파일을 로딩합니다. SetVisibleLuaUI() 함수를 부르기 전에 불러야 합니다. 예) LoadLuaUI("data/ui/FleetUI.ui");
+
+* LUA_SETCFUNCTION(mL, ClearListBox);
+리스트 박스의 아이템들을 삭제합니다. 예) ClearListBox("FleetUI", "CrewList");
+
+* LUA_SETCFUNCTION(mL, SetStaticText);
+텍스트를 지정합니다. 예) SetStaticText("FleetUI", "Title", "Fleet - Pegasus");
+
+* LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
+하위 컴포넌트를 모두 삭제합니다. 예) RemoveAllChildrenOf("FleetUI", "BottonWindow");
+
+* LUA_SETCFUNCTION(mL, AddComponent);
+컴포넌트를 추가합니다. 예) AddComponent("FleetUI", "ParentComponent", {type_="Button" TEXT="Close" npos="0.5, 1.0" size="150, 30" ALIGNH="center" ALIGNV="bottom"})
+
+* LUA_SETCFUNCTION(mL, BlinkButton);
+버튼안에 있는 진행바의 깜빡임을 시작하거나 종료합니다. 예) BlinkButton("FleetUI", "Research1Btn", true);
+
+* LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
+진행바에 진행도를 입력합니다. 예) UpdateButtonProgressBar("FleetUI", "Research1Btn", 0.5);
+
+* LUA_SETCFUNCTION(mL, StartButtonProgressBar);
+버튼에 진행바를 만들고(없다면,) 화면에 보여지게 합니다. 예) StartButtonProgressBar("FleetUI", "Research1Btn");
+
+* LUA_SETCFUNCTION(mL, EndButtonProgressBar);
+버튼의 진행바를 감춥니다.  예) EndButtonProgressBar("FleetUI", "Research1Btn");
+
+* LUA_SETCFUNCTION(mL, SetTextBoxText);
+TextBox 컴포넌트에 멀티라인 텍스트를 입력합니다. 예) SetTextBoxText("FleetUI", "DescriptionBox", "Description goes here.");
+
+* LUA_SETCFUNCTION(mL, SetUIBackground);
+'BACKGROUND_IMAGE_NOATLAS' 속성을 설정합니다. 몇몇 컴포넌트의 배경 이미지를 만들어 줍니다. 예) SetUIBackground("FleetUI", "MainWnd", "data/texture/FleetUIBackground.dds");
+
+* LUA_SETCFUNCTION(mL, SetUIProperty);
+컴포넌트의 속성을 설정합니다. UI/UIProperty.h 파일에 지원되는 모든 속성리스트가 있습니다. 예)  SetUIProperty("FleetUI", "MainWnd", "BACKGROUND_IMAGE_NOATLAS", "data/texture/FleetUIBackground.dds") -- this does the exactly same work with the previous example.
+
+* LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
+컴포넌트의 이벤트 리스너를 제거합니다. 예) RemoveUIEventhandler("FleetUI", "RepairBtn", "OnMouseLClick");
+
+* LUA_SETCFUNCTION(mL, GetMousePos);
+마우스 위치를 얻어옵니다. 예) x, y = GetMousePos();

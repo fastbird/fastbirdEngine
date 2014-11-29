@@ -34,6 +34,7 @@ namespace fastbird
 		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false);
 		virtual void ClearEverySpatialObject();
 
+		virtual void MakeVisibleSet();
 		virtual void PreRender();
 		virtual void Render();
 
@@ -53,13 +54,14 @@ namespace fastbird
 
 	protected:
 		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
-		void MakeVisibleSet();
 
 
     private:
         OBJECTS mObjects;
 		SPATIAL_OBJECTS mSpatialObjects;
-		SPATIAL_OBJECTS mVisibleObjects;
+		SPATIAL_OBJECTS mVisibleObjectsMain;
+		SPATIAL_OBJECTS mVisibleObjectsLight;
+		SPATIAL_OBJECTS mPreRenderList; // VisibleObjectsMain + VisibleObjectsLight
 		SPATIAL_OBJECTS mVisibleTransparentObjects;
 		SmartPtr<ISkyBox> mSkyBox;
 		SmartPtr<ISkySphere> mSkySphere;

@@ -11,7 +11,7 @@ namespace fastbird
 
 		virtual IScene* GetScene() const { return mScene;}
 		virtual ICamera* GetCamera() const{ return mCamera; }
-		virtual ILight* GetLight();
+		virtual ILight* GetLight(int idx);
 
 		virtual ITexture* GetRenderTargetTexture() { return mRenderTargetTexture; }
 		virtual ITexture* GetDepthStencilTexture() { return mDepthStencilTexture; }
@@ -29,7 +29,7 @@ namespace fastbird
 		SmartPtr<ITexture> mDepthStencilTexture;
 		SmartPtr<IScene> mScene;
 		SmartPtr<ICamera> mCamera;
-		SmartPtr<ILight> mLight;
+		SmartPtr<ILight> mLight[2];
 		Color mClearColor;
 		float mDepthClear;
 		UINT8 mStencilClear;

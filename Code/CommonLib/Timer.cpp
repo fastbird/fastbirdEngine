@@ -7,6 +7,7 @@ namespace fastbird
 
 	Timer::Timer()
 		: mFrames(0)
+		, mPaused(false)
 	{
 		bool support = QueryPerformanceFrequency(&mFreq)!=0;
 		if(!support)
@@ -23,6 +24,8 @@ namespace fastbird
 
 	void Timer::Tick()
 	{
+		if (mPaused)
+			return;
 		++mFrames;
 		float previousTime = mTime;
 		mTime = GetTickCount() / (TIME_PRECISION)mFreq.QuadPart - mStartTime;
@@ -52,5 +55,16 @@ namespace fastbird
 		LARGE_INTEGER newCount;
 		QueryPerformanceCounter(&newCount);
 		return newCount.QuadPart;
+	}
+
+	void Timer::Pause()
+	{
+		mPaused = true;
+		mDeltaTime = 0.f;
+	}
+
+	void Timer::Resume()
+	{
+		mPaused = false;
 	}
 }

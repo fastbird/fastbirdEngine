@@ -4,6 +4,7 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/ICamera.h>
 #include <Engine/IConsole.h>
+#include <Engine/Animation/Animation.h>
 
 namespace fastbird
 {
@@ -58,9 +59,29 @@ namespace fastbird
 	{
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
-		mTransformation.GetHomogeneous(mObjectConstants.gWorld);
-		mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
-		mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
+		__super::PreRender();
+		
+		if (mTransformChanged)
+		{
+			if (mAnim)
+			{
+				mAnimatedTransformation = mTransformation * mAnim->GetResult();
+				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
+			}
+			else
+			{
+				mTransformation.GetHomogeneous(mObjectConstants.gWorld);
+			}
+			mTransformChanged = false;
+		}
+		else
+		{
+			if (mAnim && mAnim->Changed())
+			{
+				mAnimatedTransformation = mTransformation * mAnim->GetResult();
+				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
+			}
+		}
 	}
 
 	//----------------------------------------------------------------------------
@@ -71,6 +92,10 @@ namespace fastbird
 
 		D3DEventMarker mark("MeshObject");
 		IRenderer* pRenderer = gFBEnv->pRenderer;
+		
+		mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
+		mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
+
 
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
 			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
@@ -939,4 +964,45 @@ namespace fastbird
 		return false;
 	}
 
+	bool MeshObject::CheckNarrowCollision(fastbird::BoundingVolume* pBV) const
+	{
+		unsigned num = GetNumCollisionShapes();
+		if (!num)
+			return true;
+
+		for (unsigned i = 0; i < num; ++i)
+		{
+			const CollisionShape* cs = GetCollisionShape(i);
+			bool collide = cs->TestCollision(pBV, mTransformation);
+			if (collide)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	Ray3::IResult MeshObject::CheckNarrowCollisionRay(const Ray3& ray) const
+	{
+		unsigned num = GetNumCollisionShapes();
+		if (!num)
+			return Ray3::IResult(false, 0.f);
+
+		float minDist = FLT_MAX;
+		bool collided = false;
+		for (unsigned i = 0; i < num; ++i)
+		{
+			const CollisionShape* cs = GetCollisionShape(i);
+			auto result = cs->intersects(ray, mTransformation);
+			if (result.first)
+			{
+				collided = true;
+				if (minDist > result.second)
+					minDist = result.second;
+			}
+		}
+
+		return Ray3::IResult(collided, minDist);
+	}
 }

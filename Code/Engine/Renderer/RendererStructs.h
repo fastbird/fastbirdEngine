@@ -317,10 +317,11 @@ namespace fastbird
 		UINT back;
 	};
 
-	namespace DEFAULT_MATERIALS{ enum Enum {QUAD,BILLBOARDQUAD, COUNT}; }
+	namespace DEFAULT_MATERIALS{ enum Enum {QUAD, QUAD_TEXTURE, BILLBOARDQUAD, COUNT}; }
 	namespace DEFAULT_INPUTS{ enum Enum {
 		POSITION,
 		POSITION_COLOR,
+		POSITION_COLOR_TEXCOORD,
 		POSITION_HDR_COLOR,
 		POSITION_NORMAL,
 		POSITION_TEXCOORD,
@@ -348,6 +349,17 @@ namespace fastbird
 		unsigned int color;
 	};
 	typedef POSITION_COLOR_V V_PC;
+
+	struct POSITION_COLOR_TEXCOORD_V
+	{
+		POSITION_COLOR_TEXCOORD_V() {}
+		POSITION_COLOR_TEXCOORD_V(const fastbird::Vec3& _p, unsigned int _c, Vec2 _tex)
+			: p(_p), color(_c), t(_tex) {}
+		fastbird::Vec3 p;
+		unsigned int color;
+		fastbird::Vec2 t;
+	};
+	typedef POSITION_COLOR_TEXCOORD_V V_PCT;
 
 	struct POSITION_HDRCOLOR_V
 	{

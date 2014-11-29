@@ -83,8 +83,8 @@ public:
 	virtual IMaterial* CreateMaterial(const char* file);
 	virtual IMaterial* GetMissingMaterial();
 
-	virtual void SetDirectionalLight(ILight* pLight);
-	virtual ILight* GetDirectionalLight() const;
+	virtual void SetDirectionalLight(ILight* pLight, int idx);
+	virtual ILight* GetDirectionalLight(int idx) const;
 
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
 
@@ -190,6 +190,9 @@ public:
 	virtual void SetBigSilouetteBuffer();
 	virtual void DrawSilouette();
 
+	void RenderDebugRenderTargets();
+	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName);
+
 
 
 protected:
@@ -199,8 +202,8 @@ protected:
 	unsigned mCropWidth;
 	unsigned mCropHeight;
 
-	SmartPtr<ILight>		mDirectionalLight;
-	SmartPtr<ILight>		mDirectionalLightOverride;
+	SmartPtr<ILight>		mDirectionalLight[2];
+	SmartPtr<ILight>		mDirectionalLightOverride[2];
 	SmartPtr<DebugHud>		mDebugHud;
 	SmartPtr<IFont> mFont;
 	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
@@ -372,6 +375,16 @@ protected:
 	float mMiddleGray;
 	float mStarPower;
 	float mBloomPower;
+
+	struct DebugRenderTarget
+	{
+		Vec2 mPos;
+		Vec2 mSize;
+
+		SmartPtr<ITexture> mTexture;
+	};
+	static const unsigned MaxDebugRenderTargets = 4;
+	DebugRenderTarget mDebugRenderTargets[MaxDebugRenderTargets];
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

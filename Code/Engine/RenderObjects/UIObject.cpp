@@ -14,9 +14,11 @@ SmartPtr<IRasterizerState> UIObject::mRasterizerStateShared;
 
 IUIObject* IUIObject::CreateUIObject(bool usingSmartPtr)
 {
+	static unsigned uinum = 0;
 	IUIObject* p = FB_NEW(UIObject);
 	if (!usingSmartPtr)
 		p->AddRef();
+	//p->SetDebugNumber(uinum++);
 	return p;
 }
 
@@ -160,10 +162,10 @@ void UIObject::SetColors(DWORD colors[], DWORD num)
 
 void UIObject::UpdateRegion()
 {
-	mRegion.left = (LONG)((mNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth());
-	mRegion.top = (LONG)((mNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight());
-	mRegion.right = mRegion.left + (LONG)(mNSize.x * gFBEnv->pRenderer->GetWidth());
-	mRegion.bottom = mRegion.top + (LONG)(mNSize.y * gFBEnv->pRenderer->GetHeight());
+	mRegion.left = Round((mNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth());
+	mRegion.top = Round((mNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight());
+	mRegion.right = mRegion.left + Round(mNSize.x * gFBEnv->pRenderer->GetWidth());
+	mRegion.bottom = mRegion.top + Round(mNSize.y * gFBEnv->pRenderer->GetHeight());
 
 	// ratio
 	Vec4 val((mRegion.right - mRegion.left) / (float)(mRegion.bottom - mRegion.top), 

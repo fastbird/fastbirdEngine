@@ -29,6 +29,8 @@ ParticleEmitter::ParticleEmitter()
 	, mManualEmitter(false)
 	, mEmitterColor(1, 1, 1)
 	, mLength(0.0f)
+	, mRelativeVelocity(0)
+	, mRelativeVelocityDir(Vec3::ZERO)
 {
 	mObjFlag |= OF_IGNORE_ME;
 }
@@ -161,6 +163,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		if (sz)
 			pt.mStretchMax = StringConverter::parseReal(sz);
 
+		sz = pPT->Attribute("useRelativeVelocity");
+		if (sz)
+			pt.mUseRelativeVelocity = StringConverter::parseBool(sz);
+
 		sz = pPT->Attribute("DefaultDirection");
 		if (sz)
 			pt.mDefaultDirection = StringConverter::parseVec3(sz);
@@ -176,6 +182,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("rangeRadius");
 		if (sz)
 			pt.mRangeRadius = StringConverter::parseReal(sz);
+
+		sz = pPT->Attribute("rangeRadiusMin");
+		if (sz)
+			pt.mRangeRadiusMin = StringConverter::parseReal(sz);
 
 		sz = pPT->Attribute("posInterpolation");
 		if (sz)
@@ -426,9 +436,10 @@ IObject* ParticleEmitter::Clone() const
 
 void ParticleEmitter::Active(bool a)
 {
-	if (a && !mInActiveList)
+	if (a && (!mInActiveList || mStop))
 	{
-		ParticleManager::GetParticleManager().AddActiveParticle(this);
+		if (!mInActiveList)
+			ParticleManager::GetParticleManager().AddActiveParticle(this);
 		mInActiveList = true;
 		mStop = false;
 		mStopImmediate = false;
@@ -740,6 +751,7 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 								if (i == 0)
 								{
 									Vec3 worldForward = (mTransformation.GetRotation() * udir);
+									
 									udir = toViewRot * worldForward;
 									udirBackup = udir;
 									vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
@@ -753,10 +765,46 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 								}
 							}
 						}
+						else
+						{
+							Vec3 worldForward;
+							if (pt->IsAlignDirection() && p.mVelocity != 0)
+							{
+								Mat33 toViewRot = pCamera->GetViewMat().To33();
+								if (i == 0)
+								{
+									Vec3 worldForward = p.mVelDir;
+
+									udir = toViewRot * worldForward;
+									udirBackup = udir;
+									vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
+									vdirBackup = vdir;
+								}
+								else
+								{
+									// crossed additional plane
+									udir = udirBackup;
+									vdir = vdirBackup.Cross(udirBackup).NormalizeCopy();
+								}
+							}
+
+							if (pt->mUseRelativeVelocity && !IsEqual(mRelativeVelocity, 0.0f)) // camera relative
+							{
+								worldForward = (mRelativeVelocityDir);
+								Mat33 toViewRot = pCamera->GetViewMat().To33();
+								udir = toViewRot * worldForward;
+								vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
+							}
+						}
 						Vec2 size = p.mSize;
 						if (pt->mStretchMax > 0.f)
 						{
-							size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (GetPos() - GetPrevPos()).Length() / dt*0.1f - mDistToCam*.1f));
+							auto pos = GetPos();
+							auto prevPos = GetPrevPos();
+							if (pos!=prevPos)
+								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (GetPos() - GetPrevPos()).Length() / dt*0.1f - mDistToCam*.1f));
+							if (!IsEqual(mRelativeVelocity, 0.f))
+								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, mRelativeVelocity*3.0f));
 						}
 						if (dest)
 						{
@@ -816,14 +864,10 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		break;
 	case ParticleRangeType::Sphere:
 	{
-									  float r = Random(0.0f, pt.mRangeRadius);
+									  float r = Random(pt.mRangeRadiusMin, pt.mRangeRadius);
 									  float theta = Random(0.0f, PI);
 									  float phi = Random(0.0f, TWO_PI);
-									  float st = sin(theta);
-									  float ct = cos(theta);
-									  float sp = sin(phi);
-									  float cp = cos(phi);
-									  p.mPos = Vec3(r * st * cp, r*st*sp, r*ct);
+									  p.mPos = SphericalToCartesian(r, theta, phi);
 									  if (!pt.IsLocalSpace())
 									  {
 										  p.mPos += mTransformation.GetTranslation();
@@ -871,7 +915,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	p.mPos += posOffset;
 
 	Vec3 velDir = Random(pt.mVelocityDirMin, pt.mVelocityDirMax).NormalizeCopy();	
-	if (angle > 0.01f)
+	if (angle > 0.01f && pt.mEmitTo == ParticleEmitTo::WorldSpace)
 	{
 		Vec3 axis = pt.mDefaultDirection.Cross(GetForward());
 		axis.Normalize();
@@ -1006,4 +1050,13 @@ void ParticleEmitter::SetLength(float len)
 //		end = v.end()-1;
 //	}
 //}
+
+
+void ParticleEmitter::SetRelativeVelocity(const Vec3& dir, float speed)
+{
+	mRelativeVelocityDir = dir;
+	mRelativeVelocity = speed;
+	mRelativeVelocity *= mRelativeVelocity;
+}
+
 }

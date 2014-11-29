@@ -81,7 +81,7 @@ namespace fastbird
 		void SetField(const char* fieldName, const Vec3& v);
 		void SetField(const char* fieldName, const Vec3I& v);
 
-		LuaObject SetSeqTable(int n);
+		LuaObject SetSeqTable(int n) const;
 		LuaObject GetSeqTable(int n);
 		void SetSeq(int n, const char* str);
 		void SetSeq(int n, unsigned num);
@@ -115,7 +115,12 @@ namespace fastbird
 
 		void PushToStack() const;
 
+		void Clear();
+
 	private:
 		void CheckType();
 	};
+
+	fastbird::LuaObject GetLuaVar(lua_State* L, const char* var, const char* file = 0);
+
 }

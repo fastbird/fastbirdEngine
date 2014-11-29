@@ -137,6 +137,7 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 		mImageOver->GatherVisit(v);
 	else if (mImage)
 		mImage->GatherVisit(v);	
+
 	if (mFrameImage)
 		mFrameImage->GatherVisit(v);
 
@@ -345,13 +346,14 @@ ImageBox* Button::CreateImageBox()
 	image->SetVisible(true);
 	image->SetParent(this);
 	image->SetWNPos(mWNPos);
-	image->SetWNSize(mWNSize);
+	image->SetSize(mSize);
 	IUIManager::GetUIManager().DirtyRenderList();
 	return image;
 }
 
 void Button::OnStartUpdate(float elapsedTime)
 {
+	__super::OnStartUpdate(elapsedTime);
 	if (mProgressBar)
 		mProgressBar->OnStartUpdate(elapsedTime);
 }
@@ -374,7 +376,16 @@ void Button::StartProgress()
 void Button::SetPercentage(float p) // progress bar
 {
 	if (mProgressBar)
+	{
+		if (!mInProgress)
+		{
+			mInProgress = true;
+			mProgressBar->SetVisible(true);
+		}
+			
+
 		mProgressBar->SetPercentage(p);
+	}
 }
 
 void Button::Blink(bool blink)
@@ -415,11 +426,7 @@ void Button::SetBackgroundTexture(ITexture* pTexture)
 {
 	if (!mImage)
 	{
-		mImage = FB_NEW(ImageBox);
-		mImage->SetParent(this);
-		mImage->SetWNPos(mWNPos);
-		mImage->SetWNSize(mWNSize);
-		IUIManager::GetUIManager().DirtyRenderList();
+		mImage = CreateImageBox();
 	}
 
 	mImage->SetTexture(pTexture);

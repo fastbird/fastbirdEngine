@@ -253,9 +253,12 @@ bool RendererD3D11::Init(int threadPool)
 	mFrameConstants.gViewProj.MakeIdentity();
 	mFrameConstants.gInvViewProj.MakeIdentity();
 	mFrameConstants.gLightViewProj.MakeIdentity();
-	mFrameConstants.gDirectionalLightDir_Intensity = Vec4(1.f, -.5f, .5f, 1.f);
-	mFrameConstants.gDirectionalLightDiffuse = Vec4(1.f, 1.f, 1.f, 1.f);
-	mFrameConstants.gDirectionalLightSpecular = Vec4(1.f, 1.f, 1.f, 1.f);
+	mFrameConstants.gDirectionalLightDir_Intensity[0] = Vec4(1.f, -.5f, .5f, 1.f);
+	mFrameConstants.gDirectionalLightDir_Intensity[1] = Vec4(-1.f, -.5f, .5f, 0.5f);
+	mFrameConstants.gDirectionalLightDiffuse[0] = Vec4(1.f, 1.f, 1.f, 1.f);
+	mFrameConstants.gDirectionalLightDiffuse[1] = Vec4(0.8f, 0.4f, 0.3f, 1.f);
+	mFrameConstants.gDirectionalLightSpecular[0] = Vec4(1.f, 1.f, 1.f, 1.f);
+	mFrameConstants.gDirectionalLightSpecular[1] = Vec4(0.f, 0.f, 0.f, 0.f);
 	mFrameConstants.gCameraPos = Vec3(0.f, 0.f, 2.0f);
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	hr = m_pImmediateContext->Map(m_pFrameConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 
@@ -320,16 +323,17 @@ bool RendererD3D11::Init(int threadPool)
 	}
 	else
 	{
-		std::vector<Vec2> hammersley;
+		// See UpdateRadConstantsBuffer()
+		/*std::vector<Vec2> hammersley;
 		GenerateHammersley(256, hammersley);
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		HRESULT hr;
 		hr = m_pImmediateContext->Map( m_pImmutableConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 		assert(hr == S_OK);
 		IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
-		memcpy(pConstants, &hammersley[0], sizeof(Vec2) * 256);
-		m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);
-		m_pImmediateContext->PSSetConstantBuffers(5, 1, &m_pImmutableConstantsBuffer);
+		memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2) * 256);
+		m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);*/
+		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 	}
 
 	//------------------------------------------------------------------------
@@ -534,7 +538,7 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 		mFrameConstants.gInvView = mCamera->GetInvViewMat();
 		mFrameConstants.gViewProj = mCamera->GetViewProjMat();
 		mFrameConstants.gInvViewProj = mCamera->GetInvViewProjMat();
-		ILight* pLight = GetDirectionalLight();
+		ILight* pLight = GetDirectionalLight(0);
 		ICamera* pLightCam = pLight ? pLight->GetCamera() : 0;
 		if (pLightCam)
 			mFrameConstants.gLightViewProj = pLightCam->GetViewProjMat();
@@ -543,10 +547,13 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 	{
 		assert(0);
 	}
-	ILight* pLight = mDirectionalLightOverride ? mDirectionalLightOverride : mDirectionalLight;
-	mFrameConstants.gDirectionalLightDir_Intensity = float4(pLight->GetPosition(), pLight->GetIntensity());
-	mFrameConstants.gDirectionalLightDiffuse = float4(pLight->GetDiffuse(), 1.0f);
-	mFrameConstants.gDirectionalLightSpecular = float4(pLight->GetSpecular(), 1.0f);
+	for (int i = 0; i < 2; i++)
+	{
+		ILight* pLight = mDirectionalLightOverride[i] ? mDirectionalLightOverride[i] : mDirectionalLight[i];
+		mFrameConstants.gDirectionalLightDir_Intensity[i] = float4(pLight->GetPosition(), pLight->GetIntensity());
+		mFrameConstants.gDirectionalLightDiffuse[i] = float4(pLight->GetDiffuse(), 1.0f);
+		mFrameConstants.gDirectionalLightSpecular[i] = float4(pLight->GetSpecular(), 1.0f);
+	}
 	mFrameConstants.gCameraPos = mCamera->GetPos();
 	mFrameConstants.gTime = gFBEnv->pTimer->GetTime();
 	mFrameConstants.gDeltaTime.x = gFBEnv->pTimer->GetDeltaTime();
@@ -635,6 +642,23 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	m_pImmediateContext->PSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	--entered;
 }
+
+//----------------------------------------------------------------------------
+void RendererD3D11::UpdateRadConstantsBuffer(void* pData)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	HRESULT hr;
+	hr = m_pImmediateContext->Map(m_pImmutableConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	assert(hr == S_OK);
+	IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
+	memcpy(pConstants->gIrradConstsnts, pData, sizeof(Vec4)* 9);
+	std::vector<Vec2> hammersley;
+	GenerateHammersley(256, hammersley);
+	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* 256);	
+	m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);
+	m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
+}
+
 
 //----------------------------------------------------------------------------
 void* RendererD3D11::MapMaterialParameterBuffer()
@@ -931,14 +955,25 @@ public:
 		fopen_s(&file, filepath.c_str(), "rb");
 		if (file == 0)
 		{
-			filepath = "code/engine/renderer/shaders/";
-			filepath += pFileName;
-			fopen_s(&file, filepath.c_str(), "rb");
-			if (file == 0)
+			const char* paths[] = { "code/engine/renderer/shaders/",
+									"es/shaders/" 
+								};
+			for (int i = 0; i < ARRAYCOUNT(paths); i++)
 			{
-				Error("Failed to open include file %s", filepath.c_str());
+				std::string filepath = paths[i];
+				filepath += pFileName;
+				fopen_s(&file, filepath.c_str(), "rb");
+				if (file)
+				{
+					break;
+				}
+			}
+			if (!file)
+			{
+				Error("Failed to open include file %s", pFileName);
 				return S_OK;
 			}
+			
 		}
 
 		ToLowerCase(filepath);
@@ -1272,6 +1307,12 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 		{
 			return it->second->Clone();
 		}
+	}
+
+	if (!FileSystem::IsFileExisting(file))
+	{
+		Error("File not found while loading a texture! %s", file);
+		return 0;
 	}
 
 	ID3D11ShaderResourceView* pSRView = 0;
@@ -2347,30 +2388,30 @@ void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER
 
 void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color)
 {
-	static OBJECT_CONSTANTS constants = 
-		{ 
-			Mat44(2.f / mWidth, 0, 0, -1.f,
-							0.f, -2.f / mHeight, 0, 1.f,
-							0, 0, 1.f, 0.f,
-							0, 0, 0, 1.f),
-			Mat44()
-		};
+	static OBJECT_CONSTANTS constants =
+	{
+		Mat44(2.f / mWidth, 0, 0, -1.f,
+		0.f, -2.f / mHeight, 0, 1.f,
+		0, 0, 1.f, 0.f,
+		0, 0, 0, 1.f),
+		Mat44()
+	};
 
 	// vertex buffer
 	MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Map(
 		MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
 	DEFAULT_INPUTS::V_PC data[4] = {
-		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x,		(float)pos.y,		0.f), color.Get4Byte()),
-		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x+size.x,	(float)pos.y,		0.f), color.Get4Byte()),
-		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x,		(float)pos.y+size.y,0.f), color.Get4Byte()),
-		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x+size.x,	(float)pos.y+size.y,0.f), color.Get4Byte()),
+		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x, (float)pos.y, 0.f), color.Get4Byte()),
+		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x + size.x, (float)pos.y, 0.f), color.Get4Byte()),
+		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x, (float)pos.y + size.y, 0.f), color.Get4Byte()),
+		DEFAULT_INPUTS::V_PC(Vec3((float)pos.x + size.x, (float)pos.y + size.y, 0.f), color.Get4Byte()),
 	};
 	if (mapped.pData)
 	{
 		memcpy(mapped.pData, data, sizeof(data));
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Unmap();
 	}
-	
+
 
 	UpdateObjectConstantsBuffer(&constants);
 
@@ -2383,6 +2424,48 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 	// draw
 	Draw(4, 0);
 }
+
+void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture)
+{
+	static OBJECT_CONSTANTS constants =
+	{
+		Mat44(2.f / mWidth, 0, 0, -1.f,
+		0.f, -2.f / mHeight, 0, 1.f,
+		0, 0, 1.f, 0.f,
+		0, 0, 0, 1.f),
+		Mat44()
+	};
+
+	// vertex buffer
+	MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Map(
+		MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
+	DEFAULT_INPUTS::V_PCT data[4] = {
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(0, 0)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(1, 0)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(0, 1)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(1, 1)),
+	};
+	if (mapped.pData)
+	{
+		memcpy(mapped.pData, data, sizeof(data));
+		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Unmap();
+	}
+
+
+	UpdateObjectConstantsBuffer(&constants);
+
+	// set primitive topology
+	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	// set material
+	mMaterials[DEFAULT_MATERIALS::QUAD_TEXTURE]->Bind(true);
+	SetTexture(texture, BINDING_SHADER_PS, 0);
+	// set vertex buffer
+	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Bind();
+	// draw
+	Draw(4, 0);
+	
+}
+
 
 void RendererD3D11::DrawFullscreenQuad(IShader* pixelShader, bool farside)
 {
@@ -2424,4 +2507,9 @@ void RendererD3D11::DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, co
 
 
 
+}
+
+unsigned RendererD3D11::GetNumLoadingTexture() const
+{
+	return mCheckTextures.size();
 }

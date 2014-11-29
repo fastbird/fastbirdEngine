@@ -138,3 +138,36 @@ float GetShadow(float4 lightPos)
 	}
 	return 0.5 + c * 0.0555556;
 }
+
+float3 GetIrrad(float4 vNormal)
+{
+	//Ramamoorthi; Hanrahan, An Efficient Representation for Irradiance Environment Maps, 2001
+	float c1 = 0.429043f, c2 = 0.511664f, c3 = 0.743125f,
+		c4 = 0.886227f, c5 = 0.247708f;
+		
+	float4 ret = c1 * gIrradConstsnts[8] * (vNormal.x*vNormal.x - vNormal.y*vNormal.y) + c3 * gIrradConstsnts[6] * vNormal.z*vNormal.z + 
+				c4 * gIrradConstsnts[0] - c5 * gIrradConstsnts[6] 
+				+ 2.0 * c1 * (gIrradConstsnts[4]*(vNormal.x*vNormal.y) + gIrradConstsnts[7] * vNormal.x * vNormal.z + gIrradConstsnts[5] * vNormal.y * vNormal.z)
+				+ 2.0 * c2 * (gIrradConstsnts[3] * vNormal.x + gIrradConstsnts[1] * vNormal.y + gIrradConstsnts[2] * vNormal.z);
+				
+	return ret.rgb;
+				
+	// Sloan, Stupid Spherical Harmonics(SH) Tricks, 2008
+	// float3 x1, x2, x3;
+	// // Linear + constant polynomial terms
+	// x1.r = dot(gIrradConstsnts[0],vNormal);
+	// x1.g = dot(gIrradConstsnts[1],vNormal);
+	// x1.b = dot(gIrradConstsnts[2],vNormal);
+	
+	// // 4 of the quadratic polynomials
+	// float4 vB = vNormal.xyzz * vNormal.yzzx;
+	// x2.r = dot(gIrradConstsnts[3],vB);
+	// x2.g = dot(gIrradConstsnts[4],vB);
+	// x2.b = dot(gIrradConstsnts[5],vB);
+	
+	// // Final quadratic polynomial
+	// float vC = vNormal.x*vNormal.x - vNormal.y*vNormal.y;
+	// x3 = gIrradConstsnts[6].rgb * vC;
+	
+	// return x1+x2+x3;
+}

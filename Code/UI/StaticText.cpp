@@ -19,6 +19,7 @@ StaticText::StaticText()
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 	mUIObject->SetNoDrawBackground(true);
+	mInvalidateMouse = false;
 }
 
 StaticText::~StaticText()

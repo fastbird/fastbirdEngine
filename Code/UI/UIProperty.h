@@ -39,20 +39,25 @@ namespace fastbird
 			GAUGE_BLINK_COLOR,
 			GAUGE_BLINK_SPEED,
 			NO_MOUSE_EVENT,
+			INVALIDATE_MOUSE,
 			SCROLLERH,
 			SCROLLERV,
 			USE_SCISSOR,
 			LISTBOX_COL,
+			LISTBOX_ROW_HEIGHT,
+			LISTBOX_ROW_GAP,
 			LISTBOX_COL_SIZES,
+			LISTBOX_TEXT_SIZES,
+			LISTBOX_COL_ALIGNH,
 			LISTBOX_COL_HEADERS,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
 			TITLEBAR,
 			USE_BORDER,
-			SCISSOR_STOP_HERE,
 			SPECIAL_ORDER, // higher will render top
 			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
+			VISIBLE,
 
 			COUNT
 		};
@@ -92,20 +97,25 @@ namespace fastbird
 			"GAUGE_BLINK_COLOR",
 			"GAUGE_BLINK_SPEED",
 			"NO_MOUSE_EVENT",
+			"INVALIDATE_MOUSE",
 			"SCROLLERH",
 			"SCROLLERV",
 			"USE_SCISSOR",
 			"LISTBOX_COL",
+			"LISTBOX_ROW_HEIGHT",
+			"LISTBOX_ROW_GAP",
 			"LISTBOX_COL_SIZES",
+			"LISTBOX_TEXT_SIZES",
+			"LISTBOX_COL_ALIGNH",
 			"LISTBOX_COL_HEADERS",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
 			"TITLEBAR",
 			"USE_BORDER",
-			"SCISSOR_STOP_HERE",
 			"SPECIAL_ORDER",
 			"INHERIT_VISIBLE_TRUE",
+			"VISIBLE",
 		};
 
 		inline const char* ConvertToString(Enum e)
@@ -184,6 +194,8 @@ namespace fastbird
 				return GAUGE_BLINK_SPEED;
 			if (stricmp(sz, "NO_MOUSE_EVENT") == 0)
 				return NO_MOUSE_EVENT;
+			if (stricmp(sz, "INVALIDATE_MOUSE,") == 0)
+				return INVALIDATE_MOUSE;
 			if (stricmp(sz, "SCROLLERH") == 0)
 				return SCROLLERH;
 			if (stricmp(sz, "SCROLLERV") == 0)
@@ -192,8 +204,16 @@ namespace fastbird
 				return USE_SCISSOR;
 			if (stricmp(sz, "LISTBOX_COL") == 0)
 				return LISTBOX_COL;
+			if (stricmp(sz, "LISTBOX_ROW_HEIGHT") == 0)
+				return LISTBOX_ROW_HEIGHT;
+			if (stricmp(sz, "LISTBOX_ROW_GAP") == 0)
+				return LISTBOX_ROW_GAP;
 			if (stricmp(sz, "LISTBOX_COL_SIZES") == 0)
 				return LISTBOX_COL_SIZES;
+			if (stricmp(sz, "LISTBOX_TEXT_SIZES") == 0)
+				return LISTBOX_TEXT_SIZES;
+			if (stricmp(sz, "LISTBOX_COL_ALIGNH") == 0)
+				return LISTBOX_COL_ALIGNH;
 			if (stricmp(sz, "LISTBOX_COL_HEADERS") == 0)
 				return LISTBOX_COL_HEADERS;
 			if (stricmp(sz, "EDGE_COLOR") == 0)
@@ -206,12 +226,12 @@ namespace fastbird
 				return TITLEBAR;
 			if (stricmp(sz, "USE_BORDER") == 0)
 				return USE_BORDER;
-			if (stricmp(sz, "SCISSOR_STOP_HERE") == 0)
-				return SCISSOR_STOP_HERE;
 			if (stricmp(sz, "SPECIAL_ORDER") == 0)
 				return SPECIAL_ORDER;
 			if (stricmp(sz, "INHERIT_VISIBLE_TRUE") == 0)
 				return INHERIT_VISIBLE_TRUE;
+			if (stricmp(sz, "VISIBLE") == 0)
+				return VISIBLE;
 			
 			{
 				assert(0);

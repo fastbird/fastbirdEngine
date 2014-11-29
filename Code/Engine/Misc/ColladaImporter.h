@@ -1,5 +1,6 @@
 #pragma once
 #include <Engine/IColladaImporter.h>
+#include <Engine/Animation/AnimationData.h>
 #include <CommonLib/ColShape.h>
 #include <COLLADAFWIWriter.h>
 namespace COLLADAFW
@@ -7,6 +8,7 @@ namespace COLLADAFW
 	class Mesh;
 	class MeshVertexData;
 	class Node;
+	class FloatOrDoubleArray;
 }
 namespace fastbird
 {
@@ -112,7 +114,7 @@ namespace fastbird
 	protected:
 		void CopyData(COLLADAFW::Mesh* pColladaMesh);
 		typedef std::vector<float> FLOAT_DATA;
-		void GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::MeshVertexData& src);
+		void GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::FloatOrDoubleArray& src);
 		void FeedGeometry(size_t index);
 		IIndexBuffer* CreateIndexBuffer(UINT* indices, size_t num);
 		void WriteChildNode(const COLLADAFW::Node* node, size_t parent);
@@ -149,5 +151,6 @@ namespace fastbird
 		
 		typedef std::vector< std::pair<ColShape::Enum, Transformation > > COLLISION_SHAPES;
 		COLLISION_SHAPES mCollisions;
+		std::map<std::string, AnimationData> mAnim;
 	};
 }

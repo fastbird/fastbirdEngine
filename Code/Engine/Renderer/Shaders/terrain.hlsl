@@ -48,7 +48,7 @@ v2p terrain_VertexShader( in a2v INPUT )
 	mToTangent[0] = INPUT.Binormal;
 	mToTangent[1] = INPUT.Tangent;
 	mToTangent[2] = INPUT.Normal;
-	float3 lightDir = gDirectionalLightDir_Intensity.xyz;
+	float3 lightDir = gDirectionalLightDir_Intensity[0].xyz;
 	OUTPUT.LightDir = mul( mToTangent, lightDir );
 	float3 viewDir = normalize(gCameraPos.xyz -  INPUT.Pos);
 	OUTPUT.ViewDir = mul( mToTangent, viewDir );*/
@@ -84,13 +84,13 @@ float4 terrain_PixelShader( in v2p INPUT ) : SV_Target
 	const float weightedSpecularIntensity = specularIntensity * (1.f + weights.z*4.0f);
 	
 	// Diffuse Light
-	float intensity = gDirectionalLightDir_Intensity.w;
-	float3 lightDir = gDirectionalLightDir_Intensity.xyz;
+	float intensity = gDirectionalLightDir_Intensity[0].w;
+	float3 lightDir = gDirectionalLightDir_Intensity[0].xyz;
 	float3 normal = normalize(INPUT.Normal);
 	float3 viewDir = normalize(INPUT.ViewDir);
 	float normalDotLight = dot(normal, lightDir);
 	float3 diffuse = intensity * 
-		max(0, normalDotLight) * gDirectionalLightDiffuse.xyz;
+		max(0, normalDotLight) * gDirectionalLightDiffuse[0].xyz;
 	// Specular Light
 	//float3 r = 2.f * normalDotLight * normal - INPUT.LightDir;
 	float3 r = reflect(-lightDir, normal);

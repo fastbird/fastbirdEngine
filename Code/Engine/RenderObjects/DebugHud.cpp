@@ -159,7 +159,7 @@ void DebugHud::OnBeforeRenderingTransparents()
 void DebugHud::Render()
 {
 	D3DEventMarker mark("DebugHud::Render()");
-	PreRender();
+	//PreRender();
 
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 	// object constant buffer

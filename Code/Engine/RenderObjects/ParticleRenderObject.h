@@ -18,7 +18,7 @@ namespace fastbird
 		virtual ~ParticleRenderObject();
 
 		virtual IMaterial* GetMaterial(int pass = 0) const;
-		virtual void PreRender();
+		virtual void PreRender(){}
 		virtual void Render();
 		virtual void PostRender();
 		virtual void SetGlow(bool glow);

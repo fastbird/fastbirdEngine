@@ -61,7 +61,12 @@ namespace fastbird
 		virtual void AddCollisionShape(const COL_SHAPE& data);
 		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes);
 		virtual unsigned GetNumCollisionShapes() const { return mCollisionsCloned ? mCollisionsCloned->size() : 0; }
+		virtual bool HasCollisionShapes() const {
+			return mCollisionsCloned ? !mCollisionsCloned->empty() : false;
+		}
 		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
+		virtual bool CheckNarrowCollision(fastbird::BoundingVolume* pBV) const;
+		virtual Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const;
 		void DeleteCollisionShapes();
 		virtual void SetUseDynamicVB(BUFFER_TYPE type,  bool useDynamicVB);
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx);

@@ -24,6 +24,7 @@ namespace fastbird
 		virtual void SetPos(const Vec3& pos) = 0;
 		virtual const Vec3& GetPos() const = 0;
 		virtual void SetDir(const Vec3& dir) = 0;
+		virtual void SetDirAndRight(const Vec3& dir, const Vec3& right) = 0;
 		virtual const Vec3 GetDir() const = 0;
 		virtual void SetCamTransform(const Vec3& pos, const Quat& rot) = 0;
 		virtual const Mat44& GetViewMat() = 0;
@@ -55,11 +56,10 @@ namespace fastbird
 		virtual Ray3 ScreenPosToRay(long x, long y) = 0;
 
 		virtual void SetYZSwap(bool enable) = 0;
-
-		// you usually don't need to use this function
-		// recommend you to create your own camera manager;
-		// this is for engine internal - particle editor.
+		
+		// need to set target for camera focus.
 		virtual void SetTarget(SpatialObject* pObj) = 0;
+		virtual SpatialObject* GetTarget() const = 0;
 
 		virtual void SetCurrent(bool cur) = 0;
 		virtual void SetCameraIndex(size_t idx) = 0;

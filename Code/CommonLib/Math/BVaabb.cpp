@@ -185,4 +185,9 @@ void BVaabb::Expand(float e)
 	mAABB.SetMin(mAABB.GetMin() - e);
 	
 }
+
+bool BVaabb::Contain(const Vec3& pos) const
+{
+	return mAABB.Contain(pos);
+}
 }

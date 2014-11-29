@@ -101,11 +101,7 @@ LuaObject::LuaObject(lua_State* L)
 
 LuaObject::~LuaObject()
 {
-	if (ReleaseUsedCount(mRef))
-		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
-
-	if (mSelf)
-		FB_SAFE_DEL(mSelf);
+	Clear();
 }
 
 void LuaObject::SetSelf(const LuaObject& other)
@@ -321,7 +317,7 @@ void LuaObject::SetField(const char* fieldName, const Vec3I& v)
 	lua_pop(mL, 1);
 }
 
-LuaObject LuaObject::SetSeqTable(int n)
+LuaObject LuaObject::SetSeqTable(int n) const
 {
 	LUA_STACK_WATCHER w(mL);
 	PushToStack();
@@ -720,6 +716,14 @@ Quat LuaObject::GetQuat(bool& success)const
 	return ret;
 }
 
+void LuaObject::Clear()
+{
+	if (ReleaseUsedCount(mRef))
+		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
+
+	FB_SAFE_DEL(mSelf);
+}
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 LuaTableIterator::LuaTableIterator(const LuaObject& table)
@@ -773,4 +777,40 @@ bool LuaSequenceIterator::GetNext(LuaObject& out)
 	out = LuaObject(mL, -1);
 	lua_pop(mL, 1);
 	return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+fastbird::LuaObject fastbird::GetLuaVar(lua_State* L, const char* var, const char* file)
+{
+	if_assert_fail(var)
+		return LuaObject();
+	auto splitted = Split(var, ".");
+	if (!CheckLuaGlobalExist(L, splitted[0].c_str()))
+	{
+		if (!file)
+		{
+			return LuaObject();
+		}
+
+		if (luaL_dofile(L, file))
+		{
+			Error(lua_tostring(L, -1));
+			Error("Script error! %s", file);
+			lua_pop(L, 1);
+			return LuaObject();
+		}
+	}
+
+	LuaObject ret(L, splitted[0].c_str());
+	if (ret.IsValid())
+	{
+		auto depth = splitted.size();
+		for (size_t i = 1; i < depth; i++)
+		{
+			ret = ret.GetField(splitted[i].c_str());
+			if (!ret.IsValid())
+				break;
+		}
+	}
+	return ret;
 }

@@ -44,6 +44,26 @@ namespace fastbird
 		return !(a & (a-1) );
 	}
 
+	inline int Round(float v)
+	{
+		return (int)(v + 0.5f);
+	}
+
+	inline Vec2I Round(Vec2 v)
+	{
+		return Vec2I(Round(v.x), Round(v.y));
+	}
+
+	inline float log2(float v)
+	{
+		return (float)(log(v) / log(2));
+	}
+
+	inline float sinc(float x) {               /* Supporting sinc function */
+		if (fabs(x) < 1.0e-4) return 1.0;
+		else return(sin(x) / x);
+	}
+
 	inline unsigned long GetNextPowerOfTwo(unsigned long Value)
 	{
 		if(Value)
@@ -80,6 +100,37 @@ namespace fastbird
 	inline T Lerp(const T& a, const T& b, float lp)
 	{
 		return a * (1.0f-lp) + b * lp;
+	}
+
+	inline Quat Slerp(Quat qa, Quat qb, float t) 
+	{
+		float cosHalfTheta = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z;
+		// qa and qb is same.
+		if (abs(cosHalfTheta) >= 1.0)
+		{
+			return qa;
+		}
+		Quat ret;
+		float halfTheta = acos(cosHalfTheta);
+		float sinHalfTheta = sqrt(1.0f - cosHalfTheta*cosHalfTheta);
+		// 180 degree case
+		// not defined.
+		if ((float)fabs(sinHalfTheta) < 0.001f)
+		{ 
+			ret.w = (qa.w * 0.5f + qb.w * 0.5f);
+			ret.x = (qa.x * 0.5f + qb.x * 0.5f);
+			ret.y = (qa.y * 0.5f + qb.y * 0.5f);
+			ret.z = (qa.z * 0.5f + qb.z * 0.5f);
+			return ret;
+		}
+
+		float ratioA = sin((1.0f - t) * halfTheta) / sinHalfTheta;
+		float ratioB = sin(t * halfTheta) / sinHalfTheta;
+		ret.w = (qa.w * ratioA + qb.w * ratioB);
+		ret.x = (qa.x * ratioA + qb.x * ratioB);
+		ret.y = (qa.y * ratioA + qb.y * ratioB);
+		ret.z = (qa.z * ratioA + qb.z * ratioB);
+		return ret;
 	}
 
 	//-------------------------------------------------------------------------

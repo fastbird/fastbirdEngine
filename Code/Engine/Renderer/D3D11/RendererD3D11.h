@@ -31,6 +31,7 @@ namespace fastbird
 		virtual void UpdateObjectConstantsBuffer(void* pData);
 		virtual void UpdateMaterialConstantsBuffer(void* pData);
 		virtual void UpdateRareConstantsBuffer();
+		virtual void UpdateRadConstantsBuffer(void* pData);
 		virtual void* MapMaterialParameterBuffer();
 		virtual void UnmapMaterialParameterBuffer();
 		virtual void* MapBigBuffer();
@@ -112,9 +113,12 @@ namespace fastbird
 		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+		void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture);
 		virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
 			DWORD color, IMaterial* pMat);
 		virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside);
+
+		virtual unsigned GetNumLoadingTexture() const;
 
 	private:
 		IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,

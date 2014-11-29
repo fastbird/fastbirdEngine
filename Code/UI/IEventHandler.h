@@ -26,6 +26,7 @@ namespace fastbird
 			EVENT_DROP_DOWN_SELECTED,
 			EVENT_ON_VISIBLE,
 			EVENT_ON_HIDE,
+			EVENT_ON_LOADED,
 
 			EVENT_NUM
 		};
@@ -112,6 +113,10 @@ namespace fastbird
 		else if (stricmp(sz, "OnDropDownSelected") == 0)
 		{
 			return IEventHandler::EVENT_DROP_DOWN_SELECTED;
+		}
+		else if (stricmp(sz, "EVENT_ON_LOADED") == 0)
+		{
+			return IEventHandler::EVENT_ON_LOADED;
 		}
 		else
 		{

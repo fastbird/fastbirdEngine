@@ -82,6 +82,7 @@ public:
 	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
 	virtual void UpdateMaterialConstantsBuffer(void* pData) = 0;
 	virtual void UpdateRareConstantsBuffer() = 0;
+	virtual void UpdateRadConstantsBuffer(void* pData) = 0;
 	virtual void* MapMaterialParameterBuffer() = 0;
 	virtual void UnmapMaterialParameterBuffer() = 0;
 	virtual void* MapBigBuffer() = 0;
@@ -148,8 +149,8 @@ public:
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
 	virtual void RestoreScissorRects() = 0;
 	// to restore directionalLight call this function with null light.
-	virtual void SetDirectionalLight(ILight* pLight) = 0;
-	virtual ILight* GetDirectionalLight() const = 0;
+	virtual void SetDirectionalLight(ILight* pLight, int idx) = 0;
+	virtual ILight* GetDirectionalLight(int idx) const = 0;
 	virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside) = 0;
 
 	virtual IMaterial* CreateMaterial(const char* file) = 0;
@@ -201,6 +202,7 @@ public:
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
+	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture) = 0;
 	virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
 		DWORD color, IMaterial* pMat) = 0;
 
@@ -266,6 +268,10 @@ public:
 	virtual void SetSamllSilouetteBuffer() = 0;
 	virtual void SetBigSilouetteBuffer() = 0;
 	virtual void DrawSilouette() = 0;
+
+	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName) = 0;
+
+	virtual unsigned GetNumLoadingTexture() const = 0;
 };
 
 }

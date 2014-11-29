@@ -108,7 +108,7 @@ namespace fastbird
 
 			
 			assert(0);
-			return Window;
+			return NUM;
 		}
 	}
 }

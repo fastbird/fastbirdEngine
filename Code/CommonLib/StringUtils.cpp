@@ -23,6 +23,11 @@ char* StripLeft(char* s)
 //------------------------------------------------------------------------
 std::string StripBoth(const char* s)
 {
+	if (s == 0)
+	{
+		assert(0);
+		return std::string();
+	}
 	const char* b = s;
 	const char* e = s + strlen(s);
 	while (b != e && isspace(*b))

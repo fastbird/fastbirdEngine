@@ -26,12 +26,13 @@ DirectionalLight::DirectionalLight()
 : mTheta(0)
 , mPhi(0)
 , mInterpolating(false)
+, mDuplicatedLightCamera(false)
 {
 	mLightCamera = FB_NEW(Camera);
 	mLightCamera->SetOrthogonal(true);
-	mLightCamera->SetWidth(80.0f);
-	mLightCamera->SetHeight(80.0f);
-	mLightCamera->SetNearFar(1.0f, 200.0f);
+	mLightCamera->SetWidth(100.0f);
+	mLightCamera->SetHeight(100.0f);
+	mLightCamera->SetNearFar(1.0f, 400.0f);
 	gFBEnv->pEngine->GetCamera(0)->RegisterCamListener(this);
 }
 
@@ -40,7 +41,8 @@ DirectionalLight::~DirectionalLight()
 {
 	if (gFBEnv->pEngine->GetCamera(0))
 		gFBEnv->pEngine->GetCamera(0)->UnregisterCamListener(this);
-	FB_DELETE(mLightCamera);
+	if (!mDuplicatedLightCamera)
+		FB_DELETE(mLightCamera);
 }
 
 //----------------------------------------------------------------------------
@@ -196,7 +198,15 @@ void DirectionalLight::SetUpCamera()
 {
 	ICamera* pCam = gFBEnv->pEngine->GetCamera(0);
 	assert(pCam);
-	mLightCamera->SetPos(pCam->GetPos() + mDirection * 100.0f);
+	auto target = pCam->GetTarget();
+	if (target)
+	{
+		mLightCamera->SetPos(target->GetPos() + mDirection * 200.0f);
+	}
+	else
+	{
+		mLightCamera->SetPos(pCam->GetPos() + mDirection * 200.0f);
+	}
 	mLightCamera->SetDir(-mDirection);
 }
 
@@ -207,4 +217,30 @@ void DirectionalLight::OnViewMatChanged()
 void DirectionalLight::OnProjMatChanged()
 {
 
+}
+
+void DirectionalLight::CopyLight(ILight* other_)
+{
+	auto other = dynamic_cast<DirectionalLight*>(other_);
+	if (!other)
+		return;
+
+	mDirection = other->mDirection;
+	mDiffuse = other->mDiffuse;
+	mSpecular = other->mSpecular;
+	mTheta = other->mTheta;
+	mPhi = other->mPhi;
+	mIntensity = other->mIntensity;
+	for (int i = 0; i < 2; i++)
+	{
+		mInterpolPhi[i] = other->mInterpolPhi[i];
+		mInterpolTheta[i] = other->mInterpolTheta[i];
+		mInterpolIntensity[i] = other->mInterpolIntensity[i];
+		mInterpolDiffuse[i] = other->mInterpolDiffuse[i];
+		mInterpolTime[i] = other->mInterpolTime[i];
+	}
+	mInterpolating = other->mInterpolating;
+	// temporal.
+	mLightCamera = other->mLightCamera;
+	mDuplicatedLightCamera = true;
 }

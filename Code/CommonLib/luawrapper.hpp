@@ -278,10 +278,10 @@ void luaW_push(lua_State* L, T* obj)
 			//fastbird::Log("LuaWrapper pushing cached one for typeid : %s", typeid(T).name());
             lua_replace(L, -3); // ... obj cache
             lua_pop(L, 1); // ... obj
-			//luaW_Userdata* ud = static_cast<luaW_Userdata*>(lua_touserdata(L, -1));
-			//ud->cast = LuaWrapper<T>::cast;
-			//luaL_getmetatable(L, LuaWrapper<T>::classname); // ... obj mt
-			//lua_setmetatable(L, -2); // ... obj
+			luaW_Userdata* ud = static_cast<luaW_Userdata*>(lua_touserdata(L, -1));
+			ud->cast = LuaWrapper<T>::cast;
+			luaL_getmetatable(L, LuaWrapper<T>::classname); // ... obj mt
+			lua_setmetatable(L, -2); // ... obj
         }
     }
     else

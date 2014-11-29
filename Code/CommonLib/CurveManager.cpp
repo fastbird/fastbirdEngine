@@ -46,7 +46,7 @@ Curve* CurveManager::GetRandomCurve() const
 	if (mCurves.empty())
 		return 0;
 	auto size = mCurves.size();
-	auto idx = Random(0, (int)size);
+	auto idx = Random(0, (int)size-1);
 
 	return (mCurves.begin() + idx)->second;
 	

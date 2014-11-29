@@ -23,6 +23,10 @@ namespace fastbird
 		__int64 GetFreq() const{ return mFreq.QuadPart; }
 		FRAME_PRECISION GetFrame() const { return mFrames; }
 
+		void Pause();
+		void Resume();
+		bool IsPause() const { return mPaused; }
+
 
 	private:
 		LARGE_INTEGER mFreq;
@@ -31,6 +35,7 @@ namespace fastbird
 		TIME_PRECISION mDeltaTime;
 		TIME_PRECISION mTime;
 		FRAME_PRECISION mFrames;
+		bool mPaused;
 	};
 	extern Timer* gpTimer;
 }

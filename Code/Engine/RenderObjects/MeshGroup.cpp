@@ -7,6 +7,7 @@ namespace fastbird
 MeshGroup::MeshGroup()
 	: mAuxCloned(0)
 	, mLastUpdateFrame(0)
+	, mRootAnimated(false)
 {
 }
 
@@ -71,6 +72,8 @@ void MeshGroup::AddMeshRotation(size_t idx, const Quat& rot)
 	mLocalTransforms[idx].AddRotation(rot);
 	mChanges[idx] = true;
 	mTransformChanged = true;
+	if (idx == 0)
+		mRootAnimated = true;
 }
 
 const Quat& MeshGroup::GetMeshRotation(size_t idx) const
@@ -85,6 +88,8 @@ void MeshGroup::SetMeshRotation(size_t idx, const Quat& rot)
 	mLocalTransforms[idx].SetRotation(rot);
 	mChanges[idx] = true;
 	mTransformChanged = true;
+	if (idx == 0)
+		mRootAnimated = true;
 }
 
 const Vec3& MeshGroup::GetMeshOffset(size_t idx) const
@@ -201,8 +206,11 @@ void MeshGroup::UpdateTransform(bool force)
 					}
 					else
 					{
-						// for parents mesh, don't need to  multiply mLocalTransforms[i];
-						transform = mTransformation * mMeshObjects[i].second;
+						if (mRootAnimated)
+							transform = mTransformation * mMeshObjects[i].second * mLocalTransforms[i];
+						else
+							// for parents mesh, don't need to  multiply mLocalTransforms[i];
+							transform = mTransformation * mMeshObjects[i].second;
 					}
 
 					mMeshObjects[i].first->SetTransform(transform);

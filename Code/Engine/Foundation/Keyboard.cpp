@@ -71,7 +71,7 @@ namespace fastbird
 	}
 
 	//--------------------------------------------------------------------------
-	void Keyboard::Invalidate()
+	void Keyboard::Invalidate(bool buttonClicked)
 	{
 		mValid = false;
 	}

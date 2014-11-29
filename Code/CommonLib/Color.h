@@ -19,6 +19,14 @@ namespace fastbird
 		const static Color SkyBlue;
 		const static Color Zero;
 
+		struct RGBA
+		{
+			BYTE r;
+			BYTE g;
+			BYTE b;
+			BYTE a;
+		};
+
 		Color(){}
 		Color(const Vec3& color)
 			: mValue(color, 1.0f)
@@ -38,15 +46,17 @@ namespace fastbird
 		{
 		}
 
+		Color(unsigned int c)
+		{
+			RGBA* rgba = (RGBA*)&c;
+			mValue.x = rgba->r / 255.0f;
+			mValue.y = rgba->g / 255.0f;
+			mValue.z = rgba->b / 255.0f;
+			mValue.w = rgba->a / 255.0f;
+		}
+
 		unsigned int Get4Byte() const
 		{
-			struct RGBA
-			{
-				BYTE r;
-				BYTE g;
-				BYTE b;
-				BYTE a;
-			};
 			RGBA color;
 			color.r = BYTE(mValue.x * 255.f);
 			color.g = BYTE(mValue.y * 255.f);

@@ -70,6 +70,7 @@ namespace fastbird
 		virtual void SetBufferSize(unsigned size) = 0;
 		virtual void SetLength(float length) = 0;
 		//virtual void Sort() = 0;
+		virtual void SetRelativeVelocity(const Vec3& dir, float speed) = 0;
 		
 	private:
 		friend class ParticleManager;

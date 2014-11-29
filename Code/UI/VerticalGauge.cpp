@@ -41,6 +41,7 @@ void VerticalGauge::GatherVisit(std::vector<IUIObject*>& v)
 }
 void VerticalGauge::OnStartUpdate(float elapsedTime)
 {
+	__super::OnStartUpdate(elapsedTime);
 	if (mBlink)
 	{
 		IMaterial* mat = mUIObject->GetMaterial();

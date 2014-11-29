@@ -42,6 +42,15 @@ namespace fastbird
 			mMax += pos;
 		}
 
+		bool Contain(const Vec3&pos) const
+		{
+			if (pos.x < mMin.x || pos.y < mMin.y || pos.z < mMin.z ||
+				pos.x > mMax.x || pos.y > mMax.y || pos.z > mMax.z)
+				return false;
+
+			return true;
+		}
+
 
 	private:
 		Vec3 mMin;

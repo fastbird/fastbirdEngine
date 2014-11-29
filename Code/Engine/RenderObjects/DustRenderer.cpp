@@ -63,12 +63,6 @@ void DustRenderer::InitDustRenderer(const Vec3& min, const Vec3& max, size_t cou
 }
 
 //---------------------------------------------------------------------------
-void DustRenderer::PreRender()
-{
-	if (mObjFlag & IObject::OF_HIDE)
-			return;
-}
-
 void DustRenderer::Render()
 {
 	if ((mObjFlag & IObject::OF_HIDE) || gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)

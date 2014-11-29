@@ -11,7 +11,7 @@ namespace fastbird
 		virtual ~BillboardQuad();
 
 		// IObject
-		virtual void PreRender();
+		virtual void PreRender(float dt);
 		virtual void Render();
 		virtual void PostRender();
 		virtual void SetMaterial(IMaterial* mat, int pass = 0);

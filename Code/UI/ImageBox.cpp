@@ -9,6 +9,7 @@ ImageBox::ImageBox()
 	, mAtlasRegion(0)
 	, mUseHighlight(false)
 	, mKeepImageRatio(true)
+	, mFrameImage(0)
 {
 	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -25,23 +26,10 @@ ImageBox::~ImageBox()
 {
 }
 
-void ImageBox::SetTexture(const char* file)
+void ImageBox::CalcUV(const Vec2I& textureSize)
 {
-	mImageFile = file;
-	ITexture* pTexture = gEnv->pRenderer->CreateTexture(file);
-	SetTexture(pTexture);
-}
-
-void ImageBox::SetTexture(ITexture* pTexture)
-{
-	SAMPLER_DESC sd;
-	sd.AddressU = TEXTURE_ADDRESS_BORDER;
-	sd.AddressV = TEXTURE_ADDRESS_BORDER;
-	sd.AddressW = TEXTURE_ADDRESS_BORDER;
-	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
-	Vec2I size = pTexture->GetSize();
-	float width = (float)size.x;
-	float height = (float)size.y;
+	float width = (float)textureSize.x;
+	float height = (float)textureSize.y;
 	float imgRatio = width / height;
 	const RECT& uiRect = mUIObject->GetRegion();
 	float uiRatio = (uiRect.right - uiRect.left) /
@@ -58,7 +46,7 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	}
 	else
 	{
-		float halfu = (uiRatio/imgRatio) * .5f;
+		float halfu = (uiRatio / imgRatio) * .5f;
 		Vec2 texcoords[4] = {
 			Vec2(0.5f - halfu, 1.f),
 			Vec2(0.5f - halfu, 0.f),
@@ -67,6 +55,27 @@ void ImageBox::SetTexture(ITexture* pTexture)
 		};
 		mUIObject->SetTexCoord(texcoords, 4);
 	}
+}
+
+void ImageBox::SetTexture(const char* file)
+{
+	if (!file || strlen(file) == 0)
+		return;
+	mImageFile = file;
+	ITexture* pTexture = gEnv->pRenderer->CreateTexture(file);
+	SetTexture(pTexture);
+}
+
+void ImageBox::SetTexture(ITexture* pTexture)
+{
+	if (!pTexture)
+		return;
+	SAMPLER_DESC sd;
+	sd.AddressU = TEXTURE_ADDRESS_BORDER;
+	sd.AddressV = TEXTURE_ADDRESS_BORDER;
+	sd.AddressW = TEXTURE_ADDRESS_BORDER;
+	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
+	CalcUV(pTexture->GetSize());
 }
 
 void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
@@ -126,6 +135,17 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 	__super::GatherVisit(v);
 }
 
+void ImageBox::OnSizeChanged()
+{
+	__super::OnSizeChanged();
+	if (!mAtlasRegion)
+	{
+		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
+		if (texture)
+			CalcUV(texture->GetSize());
+	}
+}
+
 void ImageBox::Highlight(bool enable)
 {
 	if (!mUseHighlight)
@@ -133,7 +153,7 @@ void ImageBox::Highlight(bool enable)
 
 	if (enable)
 	{
-		mUIObject->GetMaterial()->SetEmissiveColor(1, 1, 1, 1);
+		mUIObject->GetMaterial()->SetEmissiveColor(0.15f, 0.95f, 0.9f, 1);
 	}
 	else
 	{
@@ -155,16 +175,16 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::TEXTUREATLAS:
 	{
-									 mImageFile = val;
+									 mTextureAtlasFile = val;
 									 return true;
 	}
 		break;
 
 	case UIProperty::REGION:
 	{
-							   if (!mImageFile.empty())
+							   if (!mTextureAtlasFile.empty())
 							   {
-								   SetTextureAtlasRegion(mImageFile.c_str(), val);
+								   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
 							   }
 							   return true;
 	}
@@ -174,13 +194,32 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 									 SetTexture(val);
 									 return true;
-									 break;
 	}
 
 	case UIProperty::KEEP_IMAGE_RATIO:
 	{
 										 SetKeepImageRatio(StringConverter::parseBool(val, true));
 										 return true;
+	}
+	case UIProperty::FRAME_IMAGE:
+	{
+									if (!mFrameImage)
+									{
+										mFrameImage = CreateImageBox();
+									}
+									if_assert_pass(!mTextureAtlasFile.empty())
+									{
+										mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+										if (strlen(val) == 0)
+										{
+											mFrameImage->SetVisible(false);
+										}
+										else
+										{
+											mFrameImage->SetVisible(true);
+										}
+									}
+									return true;
 	}
 	}
 
@@ -190,10 +229,19 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 void ImageBox::SetKeepImageRatio(bool keep)
 {
 	mKeepImageRatio = keep;
-	if (!mImageFile.empty())
+	if (!mAtlasRegion)
 	{
-		SetTexture(mImageFile.c_str());
+		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
+		if (texture)
+			CalcUV(texture->GetSize());
 	}
 }
+
+ImageBox* ImageBox::CreateImageBox()
+{
+	auto image = (ImageBox*)AddChild(0, 0, 1.0f, 1.0f, ComponentType::ImageBox);
+	return image;
+}
+
 
 }

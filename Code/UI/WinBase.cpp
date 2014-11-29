@@ -10,6 +10,7 @@ namespace fastbird
 {
 const float WinBase::LEFT_GAP = 0.001f;
 HCURSOR WinBase::mCursorOver = 0;
+const float WinBase::NotDefined = 12345.6f;
 
 WinBase::WinBase()
 : mVisible(false)
@@ -31,12 +32,13 @@ WinBase::WinBase()
 , mTextSize(30.0f)
 , mFixedTextSize(false)
 , mWNPosOffset(0, 0)
+, mNPosOffset(0, 0)
 , mMouseDragStartInHere(false)
 , mDestNPos(0, 0)
 , mSimplePosAnimEnabled(false)
 , mAnimationSpeed(0.f)
 , mAspectRatio(1.0)
-, mNPos(0, 0), mWNPos(0, 0)
+, mNPos(0, 0)
 , mUIObject(0)
 , mNoMouseEvent(false)
 , mUseScissor(true)
@@ -56,6 +58,9 @@ WinBase::WinBase()
 , mTextWidth(0)
 , mNumTextLines(1)
 , mInheritVisibleTrue(true)
+, mInvalidateMouse(true)
+, mNSize(NotDefined, NotDefined)
+, mWNPos(NotDefined, NotDefined)
 {
 }
 
@@ -83,6 +88,11 @@ void WinBase::SetName(const char* name)
 const char* WinBase::GetName() const
 {
 	return mName.c_str();
+}
+
+void WinBase::ClearName()
+{
+	mName.clear();
 }
 
 //---------------------------------------------------------------------------
@@ -175,11 +185,11 @@ void WinBase::SetNSize(const fastbird::Vec2& size) // normalized size (0.0~1.0)
 	mNSize = size;
 	if (mParent)
 	{
-		mSize = mParent->LocalNSizeToPixel(size);
+		mSize = mParent->LocalNSizeToPixel(mNSize);
 	}
 	else
 	{
-		mSize = Vec2I((int)(mNSize.x * gEnv->pRenderer->GetWidth()), (int)(mNSize.y*gEnv->pRenderer->GetHeight()));
+		mSize = Vec2I(Round(mNSize.x * gEnv->pRenderer->GetWidth()), Round(mNSize.y*gEnv->pRenderer->GetHeight()));
 	}
 	
 	UpdateWorldSize(true);
@@ -194,7 +204,7 @@ void WinBase::SetNSizeX(float x) // normalized size (0.0~1.0)
 	if (mParent)
 		mSize.x = mParent->LocalNWidthToPixel(x);
 	else
-		mSize.x = (int)(x * gEnv->pRenderer->GetWidth());
+		mSize.x = Round(x * gEnv->pRenderer->GetWidth());
 
 	UpdateWorldSize(true);
 	UpdateAlignedPos();
@@ -203,12 +213,15 @@ void WinBase::SetNSizeX(float x) // normalized size (0.0~1.0)
 
 void WinBase::SetNSizeY(float y) // normalized size (0.0~1.0)
 {
+	if (mNSize.y == y)
+		return;
+
 	mUseAbsoluteYSize = false;
 	mNSize.y = y;
 	if (mParent)
 		mSize.y = mParent->LocalNHeightToPixel(y);
 	else
-		mSize.y = (int)(y * gEnv->pRenderer->GetHeight());
+		mSize.y = Round(y * gEnv->pRenderer->GetHeight());
 
 	UpdateWorldSize(true);
 	UpdateAlignedPos();
@@ -244,6 +257,15 @@ void WinBase::UpdateWorldSize(bool settingSize)
 		if (mUseAbsoluteYSize)
 		{
 			SetSizeY(mSize.y);
+		}
+
+		if (mParent)
+		{
+			mSize = mParent->LocalNSizeToPixel(mNSize);
+		}
+		else
+		{
+			mSize = Vec2I(Round(mNSize.x * gEnv->pRenderer->GetWidth()), Round(mNSize.y*gEnv->pRenderer->GetHeight()));
 		}
 	}
 	
@@ -423,6 +445,14 @@ void WinBase::UpdateWorldPos(bool settingPos)
 	if (mParent)
 		mWNPos = mParent->ConvertChildPosToWorldCoord(mNPosAligned);
 
+	/*if (GetType() != ComponentType::Scroller)
+	{
+		if (mParent && mParent->HasVScroll())
+		{
+			mWNPosOffset = mParent->GetScrollOffset();
+		}
+	}*/
+
 	OnPosChanged();
 }
 
@@ -472,10 +502,20 @@ void WinBase::SetVisible(bool show)
 	if (mVisible == show)
 		return;
 	mVisible = show;
+
+	if (!mBorders.empty())
+	{
+		for (auto var : mBorders)
+		{
+			var->SetVisible(show);
+		}
+	}
+
 	if (mVisible)
 		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
 	else
 		OnEvent(IEventHandler::EVENT_ON_HIDE);
+
 	IUIManager::GetUIManager().DirtyRenderList();
 }
 
@@ -527,85 +567,91 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mVisible)
 		return false;
+
+	if (mNoMouseEvent)
+	{
+		return false;
+	}
+
 	mMouseIn = false;
+	Vec2 mousepos = mouse->GetNPos();
 	if (mouse->IsValid() && !mNoMouseEvent)
 	{
 		// hit test
-		
-		Vec2 mousepos = mouse->GetNPos();
 		mMouseIn = mMouseDragStartInHere || IsIn(mouse);
-
-		if (mouse->IsValid())
+		if (mMouseIn)
 		{
-			if (mMouseIn)
+			if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
+				|| (mMouseDragStartInHere && mouse->IsLButtonDown())
+				)
 			{
-				if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
-					|| (mMouseDragStartInHere && mouse->IsLButtonDown())
-					)
-				{
-					mMouseDragStartInHere = true;
-				}
-				else
-				{
-					mMouseDragStartInHere = false;
-				}
-				if (mouse->IsLButtonDown() && mMouseDragStartInHere)
-				{
-					long x,  y;
-					mouse->GetDeltaXY(x, y);
-					if (x != 0 || y != 0)
-					{
-						if (OnEvent(IEventHandler::EVENT_MOUSE_DRAG))
-							mouse->Invalidate();
-					}
-					else
-					{
-						if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
-							mouse->Invalidate();
-					}
-				}
-				else if (mMouseInPrev)
-				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_HOVER))
-						mouse->Invalidate();
-					ToolTipEvent(IEventHandler::EVENT_MOUSE_HOVER, mousepos);
-				}
-				else if (mMouseIn)
-				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_IN))
-						mouse->Invalidate();
-					ToolTipEvent(IEventHandler::EVENT_MOUSE_IN, mousepos);
-				}
-
-				if (mouse->IsLButtonClicked())
-				{
-					if (OnEvent(EVENT_MOUSE_LEFT_CLICK))
-						mouse->Invalidate();
-				}
-				else if (mouse->IsLButtonDoubleClicked())
-				{
-					if (OnEvent(EVENT_MOUSE_LEFT_DOUBLE_CLICK))
-						mouse->Invalidate();
-				}
-				else if (mouse->IsRButtonClicked())
-				{
-					if (OnEvent(EVENT_MOUSE_RIGHT_CLICK))
-						mouse->Invalidate();
-				}
+				mMouseDragStartInHere = true;
 			}
 			else
 			{
-				if (mMouseInPrev)
+				mMouseDragStartInHere = false;
+			}
+			if (mouse->IsLButtonDown() && mMouseDragStartInHere)
+			{
+				long x,  y;
+				mouse->GetDeltaXY(x, y);
+				if (x != 0 || y != 0)
 				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+					if (OnEvent(IEventHandler::EVENT_MOUSE_DRAG))
 						mouse->Invalidate();
-					ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
+				}
+				else
+				{
+					if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
+						mouse->Invalidate();
 				}
 			}
-			
+			else if (mMouseInPrev)
+			{
+				if (OnEvent(IEventHandler::EVENT_MOUSE_HOVER))
+					mouse->Invalidate();
+				ToolTipEvent(IEventHandler::EVENT_MOUSE_HOVER, mousepos);
+			}
+			else if (mMouseIn)
+			{
+				if (OnEvent(IEventHandler::EVENT_MOUSE_IN))
+					mouse->Invalidate();
+				ToolTipEvent(IEventHandler::EVENT_MOUSE_IN, mousepos);
+			}
 
-			mMouseInPrev = mMouseIn;
+			if (mouse->IsLButtonClicked())
+			{
+				if (OnEvent(EVENT_MOUSE_LEFT_CLICK))
+					mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
+			}
+			else if (mouse->IsLButtonDoubleClicked())
+			{
+				if (OnEvent(EVENT_MOUSE_LEFT_DOUBLE_CLICK))
+					mouse->Invalidate();
+			}
+			else if (mouse->IsRButtonClicked())
+			{
+				if (OnEvent(EVENT_MOUSE_RIGHT_CLICK))
+					mouse->Invalidate();
+			}
+			if (mInvalidateMouse)
+				mouse->Invalidate();
+		}		
+		else if (mMouseInPrev)
+		{
+			if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+				mouse->Invalidate();
+			ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
 		}
+
+		mMouseInPrev = mMouseIn;
+	}
+	else if (mMouseInPrev)
+	{
+		if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+			mouse->Invalidate();
+		ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
+		mMouseInPrev = false;
 	}
 
 	if (!GetFocus())
@@ -689,29 +735,30 @@ void WinBase::AlignText()
 	if (mMatchSize && mTextWidth != 0 && !mLockTextSizeChange)
 	{ 
 		mLockTextSizeChange = true;
-		SetSize(Vec2I((int)(mTextWidth + LEFT_GAP*2.f), mSize.y));
+		SetSize(Vec2I((int)(mTextWidth + 4), mSize.y));
 		mLockTextSizeChange = false;
+		RefreshScissorRects();
 	}
 	if (mUIObject)
 	{
-		Vec2 startPos = mWNPos;
+		Vec2 startPos = GetFinalPos();
 		switch(mTextAlignH)
 		{
 		case ALIGNH::LEFT:
 			{
-							 startPos.x = mWNPos.x + LEFT_GAP;				
+							 startPos.x += LEFT_GAP;				
 			}
 			break;
 
 		case ALIGNH::CENTER:
 			{
-							   startPos.x = mWNPos.x + mWNSize.x*.5f - nwidth*.5f;
+							   startPos.x += mWNSize.x*.5f - nwidth*.5f;
 			}
 			break;
 
 		case ALIGNH::RIGHT:
 			{
-							  startPos.x = mWNPos.x + mWNSize.x - nwidth;
+							  startPos.x += mWNSize.x - nwidth;
 			}
 			break;
 		}
@@ -720,12 +767,12 @@ void WinBase::AlignText()
 		{
 		case ALIGNV::TOP:
 		{
-							startPos.y = mWNPos.y + (mTextSize / (float)gEnv->pRenderer->GetHeight());
+							startPos.y += (mTextSize / (float)gEnv->pRenderer->GetHeight());
 		}
 			break;
 		case ALIGNV::MIDDLE:
 		{
-							   startPos.y = mWNPos.y + mWNSize.y*.5f  + 
+							   startPos.y += mWNSize.y*.5f  + 
 								   (
 									   ((mTextSize * 0.5f) - (mTextSize * (mNumTextLines-1) * 0.5f))
 										/ (float)gEnv->pRenderer->GetHeight()
@@ -734,7 +781,7 @@ void WinBase::AlignText()
 			break;
 		case ALIGNV::BOTTOM:
 		{
-							   startPos.y = mWNPos.y + mWNSize.y - GetTextBottomGap();// -mTextSize*(mNumTextLines - 1);
+							   startPos.y += mWNSize.y - GetTextBottomGap();// -mTextSize*(mNumTextLines - 1);
 		}
 			break;
 		}
@@ -744,12 +791,20 @@ void WinBase::AlignText()
 
 void WinBase::OnPosChanged()
 {
+	if (mWNPos.x == NotDefined || mWNPos.y == NotDefined)
+		return;
 	if (mUIObject)
-		mUIObject->SetNPos(mWNPos);
+	{
+		mUIObject->SetNPos(GetFinalPos());
+	}
 	AlignText();
 	if (mParent)
-		mParent->SetChildrenPosSizeChanged();
+	{
+		mParent->SetChildrenPosSizeChanged();		
+	}
+		
 	RefreshBorder();
+	RefreshScissorRects();
 }
 
 void WinBase::CalcTextWidth()
@@ -763,9 +818,14 @@ void WinBase::CalcTextWidth()
 
 void WinBase::OnSizeChanged()
 {
+	if (mNSize.x == NotDefined || mNSize.y == NotDefined)
+		return;
 	if (mUIObject)
 	{
 		mUIObject->SetNSize(mWNSize);
+		const auto& region = mUIObject->GetRegion();
+		assert(region.right - region.left == mSize.x);
+		assert(region.bottom - region.top == mSize.y);
 
 		if (!mFixedTextSize)
 		{
@@ -853,6 +913,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 									   mTextSize = StringConverter::parseReal(val, 20.0f);
 									   CalcTextWidth();
 									   mUIObject->SetTextSize(mTextSize);
+									   mFixedTextSize = true;
 									   return true;
 								   }
 								   break;
@@ -970,11 +1031,6 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 									   return true;
 		}
 
-		case UIProperty::SCISSOR_STOP_HERE:
-		{
-											  mStopScissorParent = StringConverter::parseBool(val);
-											  return true;
-		}
 		case UIProperty::SPECIAL_ORDER:
 		{
 										  mSpecialOrder = StringConverter::parseInt(val);
@@ -984,8 +1040,14 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 		case UIProperty::INHERIT_VISIBLE_TRUE:
 		{
-												 mInheritVisibleTrue = StringConverter::parseBool(val);
-												 return true;
+									mInheritVisibleTrue = StringConverter::parseBool(val);
+									return true;
+		}
+
+		case UIProperty::VISIBLE:
+		{
+									SetVisible(StringConverter::parseBool(val));
+									return true;
 		}
 	}
 
@@ -1084,47 +1146,53 @@ void WinBase::RefreshBorder()
 
 	assert(mBorders.size() == ORDER_NUM);
 
+	const Vec2 finalPos = GetFinalPos();
 	mBorders[ORDER_T]->SetNSizeX(mWNSize.x);
-	mBorders[ORDER_T]->SetWNPos(mWNPos);
+	mBorders[ORDER_T]->SetWNPos(finalPos);
 
 	mBorders[ORDER_L]->SetNSizeY(mWNSize.y);
-	mBorders[ORDER_L]->SetWNPos(mWNPos);
+	mBorders[ORDER_L]->SetWNPos(finalPos);
 
 	mBorders[ORDER_R]->SetNSizeY(mWNSize.y);
-	Vec2 wnpos = mWNPos;
+	Vec2 wnpos = finalPos;
 	wnpos.x += mWNSize.x;
 	mBorders[ORDER_R]->SetWNPos(wnpos);
 
 	mBorders[ORDER_B]->SetNSizeX(mWNSize.x);
-	wnpos = mWNPos;
+	wnpos = finalPos;
 	wnpos.y += mWNSize.y;
 	mBorders[ORDER_B]->SetWNPos(wnpos);
 
-	mBorders[ORDER_LT]->SetWNPos(mWNPos);
+	mBorders[ORDER_LT]->SetWNPos(finalPos);
 
-	wnpos = mWNPos;
+	wnpos = finalPos;
 	wnpos.x += mWNSize.x;
 	mBorders[ORDER_RT]->SetWNPos(wnpos);
 
-	wnpos = mWNPos;
+	wnpos = finalPos;
 	wnpos.y += mWNSize.y;
 	mBorders[ORDER_LB]->SetWNPos(wnpos);
 
-	wnpos = mWNPos + mWNSize;
+	wnpos = finalPos + mWNSize;
 	mBorders[ORDER_RB]->SetWNPos(wnpos);
 }
 
 void WinBase::SetNPosOffset(const Vec2& offset)
 {
+	assert(GetType() != ComponentType::Scroller);
 	mWNPosOffset = offset;
-	if (mUIObject)
-		mUIObject->SetNPosOffset(offset);
-	RefreshScissorRects();
+	mNPosOffset = offset;
+	if (mParent)
+		mNPosOffset = mParent->ConvertWorldSizeToParentCoord(offset);
+	OnPosChanged();
+	//if (mUIObject)
+		//mUIObject->SetNPosOffset(offset);
+	//RefreshScissorRects();
 
-	for (auto var : mBorders)
+	/*for (auto var : mBorders)
 	{
 		var->SetNPosOffset(offset);
-	}
+	}*/
 }
 
 void WinBase::SetAnimNPosOffset(const Vec2& offset)
@@ -1232,11 +1300,11 @@ Vec2 WinBase::PixelToLocalNSize(const Vec2I& pixel) const
 
 int WinBase::LocalNWidthToPixel(float nwidth) const
 {
-	return (int)(nwidth * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
+	return Round(nwidth * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
 }
 int WinBase::LocalNHeightToPixel(float nheight) const
 {
-	return (int)(nheight * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
+	return Round(nheight * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
 }
 Vec2I WinBase::LocalNSizeToPixel(const Vec2& nsize) const
 {
@@ -1259,11 +1327,11 @@ Vec2 WinBase::PixelToLocalNPos(const Vec2I& pixel) const
 
 int WinBase::LocalNPosXToPixel(float nposx) const
 {
-	return (int)(nposx * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
+	return Round(nposx * ((float)gEnv->pRenderer->GetWidth() * mWNSize.x));
 }
 int WinBase::LocalNPosYToPixel(float nposy) const
 {
-	return (int)(nposy * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
+	return Round(nposy * ((float)gEnv->pRenderer->GetHeight() * mWNSize.y));
 }
 Vec2I WinBase::LocalNPosToPixel(const Vec2& npos) const
 {
@@ -1896,34 +1964,49 @@ void WinBase::RefreshScissorRects()
 {
 	if (mUseScissor && mUIObject)
 	{
-		if (mParent && mParent->HasUIObject())
-			mUIObject->SetUseScissor(true, mParent->GetScissorRegion());
-		else if (mManualParent && mManualParent->HasUIObject())
-			mUIObject->SetUseScissor(true, mManualParent->GetScissorRegion());
+		mUIObject->SetUseScissor(true, GetScissorRegion());
 	}
 }
 
-const RECT& WinBase::GetScissorRegion()
+RECT WinBase::GetScissorRegion()
 {
-	if (mStopScissorParent)
-		return mUIObject->GetRegion();
-
-	if (mUseScissor && (mParent||mManualParent))
+	if (mUseScissor)
 	{
 		if (mParent)
-			return mParent->GetScissorRegion();
-		else if (mManualParent)
-			return mManualParent->GetScissorRegion();
+		{
+			RECT scissor = mParent->GetRegion();
+			mParent->GetScissorIntersection(scissor);
+			return scissor;
+		}
+		if (mManualParent)
+		{
+			RECT scissor = mManualParent->GetRegion();
+			mManualParent->GetScissorIntersection(scissor);
+			return scissor;
+		}
+	}
+
+	return mUIObject->GetRegion();
+}
+
+void WinBase::GetScissorIntersection(RECT& scissor)
+{
+	if (mUIObject)
+	{
+		const auto& parentRegion = mUIObject->GetRegion();
+		if (scissor.left < parentRegion.left)
+			scissor.left = parentRegion.left;
+		if (scissor.right > parentRegion.right)
+			scissor.right = parentRegion.right;
+		if (scissor.top < parentRegion.top)
+			scissor.top = parentRegion.top;
+		if (scissor.bottom > parentRegion.bottom)
+			scissor.bottom = parentRegion.bottom;
 	}
 	if (mParent)
-		return mParent->GetRegion();
-	else if (mManualParent)
-		return mManualParent->GetRegion();
-	else
-	{
-		assert(mUIObject);
-		return mUIObject->GetRegion();
-	}
+		mParent->GetScissorIntersection(scissor);
+	if (mManualParent)
+		mManualParent->GetScissorIntersection(scissor);
 }
 
 void WinBase::SetEnable(bool enable)

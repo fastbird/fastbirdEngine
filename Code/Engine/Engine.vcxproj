@@ -152,6 +152,8 @@
     <None Include="Documents\terrain.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation\Animation.h" />
+    <ClInclude Include="Animation\AnimationData.h" />
     <ClInclude Include="DllMain.h" />
     <ClInclude Include="IEngineEventListener.h" />
     <ClInclude Include="Foundation\Engine.h" />
@@ -272,6 +274,8 @@
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Animation\Animation.cpp" />
+    <ClCompile Include="Animation\AnimationData.cpp" />
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="Foundation\Engine.cpp" />
     <ClCompile Include="Foundation\Keyboard.cpp" />

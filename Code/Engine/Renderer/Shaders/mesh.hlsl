@@ -50,11 +50,15 @@ v2p mesh_VertexShader( in a2v INPUT )
 float4 mesh_PixelShader( in v2p INPUT ) : SV_Target
 {	
 	// Diffuse Light
-	float intensity = gDirectionalLightDir_Intensity.w;
-	float3 lightDir = gDirectionalLightDir_Intensity.xyz;
-	float normalDotLight = dot(INPUT.Normal, lightDir);
-	float3 diffuse = (intensity * 
-		max(0, normalDotLight) * gDirectionalLightDiffuse.xyz);
+	float3 diffuse = 0;
+	for (int i=0; i<2; i++)
+	{
+		float intensity = gDirectionalLightDir_Intensity[i].w;
+		float3 lightDir = gDirectionalLightDir_Intensity[i].xyz;
+		float normalDotLight = dot(INPUT.Normal, lightDir);
+		diffuse += (intensity * 
+		max(0, normalDotLight) * gDirectionalLightDiffuse[i].xyz);
+	}
 	diffuse.xyz += gAmbientColor.xyz;
 
 #ifdef DIFFUSE_TEXTURE

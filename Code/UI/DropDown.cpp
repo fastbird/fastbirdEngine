@@ -169,6 +169,7 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 	{
 		OnItemSelected(mDropDownItems.back());
 	}
+	
 
 	return index;
 }
@@ -181,7 +182,6 @@ size_t DropDown::AddDropDownItem(IWinBase* item)
 	Button* pDropDownItem = mDropDownItems.back();	
 	size_t index = mDropDownItems.size() - 1;
 	SetCommonProperty(pDropDownItem, index);
-
 	if (mDropDownItems.size() == 1)
 	{
 		OnItemSelected(item);

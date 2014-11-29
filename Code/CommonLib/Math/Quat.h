@@ -35,6 +35,22 @@ namespace fastbird
 			FromAxes(xAxis, yAxis, zAxis);
 		}
 
+		Quat(const Vec3& euler) {
+			float sx = sin(euler.x*.5f);
+			float sy = sin(euler.y*.5f);
+			float sz = sin(euler.z*.5f);
+
+			float cx = cos(euler.x*.5f);
+			float cy = cos(euler.y*.5f);
+			float cz = cos(euler.z*.5f);			
+
+			// xyz order
+			this->w = cx * cy * cz + sx * sy * sz;
+			this->x = sx * cy * cz - cx * sy * sz;
+			this->y = cx * sy * cz + sx * cy * sz;
+			this->z = cx * cy * sz - sx * sy * cz;
+		}
+
 		void Swap(Quat& other)
 		{
 			std::swap(w, other.w);

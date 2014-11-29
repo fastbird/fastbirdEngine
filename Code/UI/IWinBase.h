@@ -54,11 +54,13 @@ namespace fastbird
 		virtual const Vec2& GetNPos() const = 0;
 		virtual const Vec2I& GetPos() const = 0;
 		virtual const Vec2& GetWNPos() const = 0;
+		virtual Vec2 GetFinalPos() const = 0;
 		virtual const Vec2& GetWNSize() const = 0;
 		virtual const Vec2& GetNSize() const = 0;
 		virtual const Vec2I& GetSize() const = 0;
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
+		virtual void ClearName() = 0;
 		virtual void SetVisible(bool show) = 0;
 		virtual void OnParentVisibleChanged(bool visible) = 0;
 		virtual bool GetVisible() const = 0;
@@ -89,6 +91,7 @@ namespace fastbird
 
 		virtual void Scrolled() = 0;
 		virtual void SetNPosOffset(const Vec2& offset) = 0;
+		virtual const Vec2& GetNPosOffset() const = 0;
 		virtual void SetAnimNPosOffset(const Vec2& offset) = 0;
 		virtual void SetScissorRect(bool use, const RECT& rect) = 0;
 		virtual const RECT& GetRegion() const = 0;
@@ -153,6 +156,11 @@ namespace fastbird
 		virtual int GetSpecialOrder() const = 0;
 
 		virtual bool GetInheritVisibleTrue() const =0 ;
+
+		virtual void SetScriptPath(const char* path) = 0;
+		virtual const char* GetScriptPath() const = 0;
+		virtual void SetUIFilePath(const char* path) = 0;
+		virtual const char* GetUIFilePath() const = 0;
 
 	protected:
 		virtual void OnPosChanged() = 0;
