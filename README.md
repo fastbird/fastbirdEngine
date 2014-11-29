@@ -38,7 +38,7 @@ How-tos
 * Lua Scripting HOW-TO : https://github.com/fastbird/fastbirdEngine/wiki/UI-Lua-Scripting---How-to
  
 * Texture manipulation reference : https://github.com/fastbird/fastbirdEngine/wiki/Texture-manipulation-reference
-* 
+
 
 Development Log
 ------------------
