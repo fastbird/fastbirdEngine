@@ -40,16 +40,16 @@ float4 helpmesh_PixelShader( in v2p INPUT ) : SV_Target
 {	
 	// Diffuse Light
 	/*
-	float intensity = gDirectionalLightDir_Intensity.w;
-	float3 lightDir = gDirectionalLightDir_Intensity.xyz;
+	float intensity = gDirectionalLightDir_Intensity[0].w;
+	float3 lightDir = gDirectionalLightDir_Intensity[0].xyz;
 	float normalDotLight = dot(INPUT.Normal, lightDir);
 	float3 diffuse = (intensity * 
-		max(0, normalDotLight) * gDirectionalLightDiffuse.xyz);
+		max(0, normalDotLight) * gDirectionalLightDiffuse[0].xyz);
 	diffuse.xyz += gAmbientColor.xyz;
 	*/
 
-	float intensity = gDirectionalLightDir_Intensity.w;
-	float3 lightDir = gDirectionalLightDir_Intensity.xyz;
+	float intensity = gDirectionalLightDir_Intensity[0].w;
+	float3 lightDir = gDirectionalLightDir_Intensity[0].xyz;
 	float normalDotLight = dot(INPUT.Normal, lightDir);
 	float3 diffuse;
 	float3 toCam = normalize(gCameraPos - INPUT.WorldPos);

@@ -16,9 +16,9 @@ cbuffer FRAME_CONSTANTS
 	float4x4 gViewProj;
 	float4x4 gInvViewProj;
 	float4x4 gLightViewProj;
-	float4 gDirectionalLightDir_Intensity;
-	float4 gDirectionalLightDiffuse;
-	float4 gDirectionalLightSpecular;
+	float4 gDirectionalLightDir_Intensity[2];
+	float4 gDirectionalLightDiffuse[2];
+	float4 gDirectionalLightSpecular[2];
 	float3 gCameraPos;
 	float gTime;
 	float4 gMousePos; // x, y : current pos   z, w: down pos
@@ -83,6 +83,7 @@ cbuffer IMMUTABLE_CONSTANTS
 	: register (b6)
 #endif
 {
+	float4 gIrradConstsnts[9];
 	float2 gHammersley[256]; // reference http://www.cse.cuhk.edu.hk/~ttwong/papers/udpoint/udpoint.pdf
 };
 

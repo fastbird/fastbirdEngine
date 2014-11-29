@@ -123,10 +123,6 @@ void SkyBox::Init()
 	assert(mMaterial);
 }
 
-void SkyBox::PreRender()
-{
-}
-
 void SkyBox::Render()
 {
 	D3DEventMarker devent("Rendering Sky");
@@ -135,8 +131,4 @@ void SkyBox::Render()
 	mVertexBuffer->Bind();
 	gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gFBEnv->pRenderer->Draw(mVertexBuffer->GetNumVertices(), 0);
-}
-
-void SkyBox::PostRender()
-{
 }

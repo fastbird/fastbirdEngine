@@ -108,10 +108,6 @@ IMaterial* ParticleRenderObject::GetMaterial(int pass) const
 	return 0;
 }
 
-void ParticleRenderObject::PreRender()
-{
-}
-
 void ParticleRenderObject::Render()
 {
 	D3DEventMarker mark("ParticleRenderObject");

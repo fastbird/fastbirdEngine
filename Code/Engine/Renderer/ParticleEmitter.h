@@ -38,7 +38,7 @@ namespace fastbird
 			, mAlign(ParticleAlign::Billboard)
 			, mEmitTo(ParticleEmitTo::LocalSpace)
 			, mStretchMax(0.f)
-			, mRangeType(ParticleRangeType::Sphere), mRangeRadius(1.0f)
+			, mRangeType(ParticleRangeType::Sphere), mRangeRadius(1.0f), mRangeRadiusMin(0.f)
 			, mSizeMinMax(1.0f, 1.0f), mSizeRatioMinMax(1.0f, 1.0f), mPivot(0.5f, 0.5f)
 			, mScaleVelMinMax(0.f, 0.f), mScaleVelRatio(1.f, 1.f)
 			, mScaleAccel(0.1f, 0.1f), mScaleDeaccel(0.0f, .01f)
@@ -51,7 +51,7 @@ namespace fastbird
 			, mDefaultDirection(0, 1, 0), mCross(false), mColor(1, 1, 1), mColorEnd(1, 1, 1)
 			, mBlendMode(), mGlow(1.f), mPreMultiAlpha(false), mUVFlow(0, 0), mPosOffset(0, 0, 0)
 			, mPosInterpolation(false), mDeleteWhenFull(true)
-			, mStartAfter(0)
+			, mStartAfter(0), mUseRelativeVelocity(false)
 
 			{
 			}
@@ -77,6 +77,7 @@ namespace fastbird
 			Vec2 mLifeMinMax;
 			Vec3 mDefaultDirection;
 			float mRangeRadius;
+			float mRangeRadiusMin;
 			Vec3 mPosOffset;
 			Vec2 mSizeMinMax;
 			Vec2 mSizeRatioMinMax;
@@ -105,6 +106,7 @@ namespace fastbird
 			bool mCross;
 			bool mPosInterpolation;
 			Vec2 mUVFlow;
+			bool mUseRelativeVelocity;
 		};
 
 		virtual Particle* Emit(unsigned templateIdx);
@@ -113,6 +115,8 @@ namespace fastbird
 		virtual void SetBufferSize(unsigned size);
 		//virtual void Sort();
 		virtual void SetLength(float length);
+
+		virtual void SetRelativeVelocity(const Vec3& dir, float speed);
 
 	private:
 		ParticleEmitter* mAdam;
@@ -150,5 +154,7 @@ namespace fastbird
 		bool mManualEmitter;
 		Color mEmitterColor;
 		float mLength;
+		Vec3 mRelativeVelocityDir;
+		float mRelativeVelocity;
 	};
 }

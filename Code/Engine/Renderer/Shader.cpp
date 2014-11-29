@@ -41,6 +41,7 @@ Shader::~Shader()
 //----------------------------------------------------------------------------
 void Shader::ReloadShader(const char* filepath)
 {
+	Profiler profile("Reloading Shaders");
 	std::string path = filepath;
 	ToLowerCase(path);
 	auto it = mShaders.begin(), itEnd = mShaders.end();

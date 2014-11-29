@@ -45,6 +45,7 @@ namespace fastbird
 
 		virtual void ClearEverySpatialObject() = 0;
 
+		virtual void MakeVisibleSet() = 0;
 		virtual void PreRender() = 0;
 		virtual void Render() = 0;
 

@@ -37,8 +37,11 @@ void RenderToTexture::Render(size_t face)
 	gFBEnv->pRenderer->SetRenderTarget(rt, rtIndex, 1, mDepthStencilTexture, face);
 	gFBEnv->pRenderer->Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
 		mDepthClear, mStencilClear);
-	if (mLight)
-		gFBEnv->pRenderer->SetDirectionalLight(mLight);
+	for (int i = 0; i < 2; i++)
+	{
+		if (mLight[i])
+			gFBEnv->pRenderer->SetDirectionalLight(mLight[i], i);
+	}
 	gFBEnv->pRenderer->SetCamera(mCamera);
 	mCamera->ProcessInputData();
 	const Vec2I& resol = mRenderTargetTexture->GetSize();
@@ -53,22 +56,26 @@ void RenderToTexture::Render(size_t face)
 	gFBEnv->pRenderer->RestoreViewports();
 	gFBEnv->pRenderer->SetCamera(gFBEnv->pEngine->GetCamera(0));
 	
-	if (mLight)
-		gFBEnv->pRenderer->SetDirectionalLight(0);
+	for (int i = 0; i < 2; i++)
+	{
+		if (mLight[i])
+			gFBEnv->pRenderer->SetDirectionalLight(0, i);
+	}
+	
 }
 
-ILight* RenderToTexture::GetLight()
+ILight* RenderToTexture::GetLight(int idx)
 {
-	if (!mLight)
+	if (!mLight[idx])
 	{
-		mLight = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-		mLight->SetPosition(Vec3(1, 1, 1));
-		mLight->SetDiffuse(Vec3(1, 1, 1));
-		mLight->SetSpecular(Vec3(1, 1, 1));
-		mLight->SetIntensity(1.0f);
+		mLight[idx] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
+		mLight[idx]->SetPosition(Vec3(1, 1, 1));
+		mLight[idx]->SetDiffuse(Vec3(1, 1, 1));
+		mLight[idx]->SetSpecular(Vec3(1, 1, 1));
+		mLight[idx]->SetIntensity(1.0f);
 	}
 
-	return mLight;
+	return mLight[idx];
 }
 
 void RenderToTexture::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)

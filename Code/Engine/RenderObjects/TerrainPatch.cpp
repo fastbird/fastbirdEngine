@@ -32,8 +32,16 @@ TerrainPatch::~TerrainPatch()
 //----------------------------------------------------------------------------
 void TerrainPatch::PreRender()
 {
+	mLastUpdatedFrame = gFBEnv->mFrameCounter;
+}
+
+//----------------------------------------------------------------------------
+void TerrainPatch::Render()
+{
+	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
+
 	ICamera* pCamera = gFBEnv->pEngine->GetRenderer()->GetCamera();
-	float sqDist =  (pCamera->GetPos() - mBoundingVolume->GetCenter()).LengthSQ();
+	float sqDist = (pCamera->GetPos() - mBoundingVolume->GetCenter()).LengthSQ();
 	if (sqDist < 10000.0f) // 100m
 	{
 		mLOD = 0;
@@ -55,13 +63,6 @@ void TerrainPatch::PreRender()
 		mLOD = 4;
 	}
 
-	mLastUpdatedFrame = gFBEnv->mFrameCounter;
-}
-
-//----------------------------------------------------------------------------
-void TerrainPatch::Render()
-{
-	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 
 	int lodFlag=0;
 	if (mUpPatch)

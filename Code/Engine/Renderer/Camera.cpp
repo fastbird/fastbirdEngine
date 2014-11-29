@@ -81,6 +81,12 @@ void Camera::SetDir(const Vec3& dir)
 	mViewPropertyChanged = true;
 }
 
+void Camera::SetDirAndRight(const Vec3& dir, const Vec3& right)
+{
+	SpatialObject::SetDirAndRight(dir, right);
+	mViewPropertyChanged = true;
+}
+
 void Camera::SetCamTransform(const Vec3& pos, const Quat& rot)
 {
 	mTransformation.SetTranslation(pos);

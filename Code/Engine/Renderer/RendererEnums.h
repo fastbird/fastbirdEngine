@@ -542,6 +542,7 @@ namespace fastbird
 			SHADOW,
 			POINT_WRAP,
 			LINEAR_WRAP,
+			BLACK_BORDER,
 
 			NUM
 		};

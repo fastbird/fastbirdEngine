@@ -183,3 +183,8 @@ void BVSphere::Invalidate()
 {
 	assert(0 && "No meaning for sphere.");
 }
+
+bool BVSphere::Contain(const Vec3& pos) const
+{
+	return (mCenter - pos).Length() < mRadius;
+}

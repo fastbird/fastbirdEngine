@@ -410,7 +410,7 @@ namespace fastbird
 	{
 		if (!mChangedFiles.empty())
 		{
-			if (gFBEnv->pTimer->GetTime() - mLastChangedTime > 0.5f)
+			if (gFBEnv->pTimer->IsPause() || gFBEnv->pTimer->GetTime() - mLastChangedTime > 0.5f)
 			{
 				for (auto it = mChangedFiles.begin(); it != mChangedFiles.end(); )
 				{
@@ -590,6 +590,7 @@ namespace fastbird
 		RenderMarks();
 		RenderUI();
 		RenderDebugHud();
+		mRenderer->RenderDebugRenderTargets();
 
 		if (mConsole)
 			mConsole->Render();

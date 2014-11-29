@@ -150,9 +150,9 @@ float PerlinNoise2D(float x, float y)
 float4 skysphere_PixelShader(in v2p INPUT) : SV_Target
 {
 	float3 dir =normalize(INPUT.WorldDir);
-	float3 starColor = StarNest(dir, gCameraPos);
-	float3 star = gDirectionalLightDir_Intensity.xyz;
-	float3 color= gDirectionalLightDiffuse.xyz * gDirectionalLightDir_Intensity.w;
+	float3 starColor = {0, 0, 0};
+	float3 star = gDirectionalLightDir_Intensity[0].xyz;
+	float3 color= gDirectionalLightDiffuse[0].xyz * gDirectionalLightDir_Intensity[0].w;
 	float d = pow(saturate(dot(star, dir)-0.6), 5) * 2;
 	float3 starColor += color * d;
 	

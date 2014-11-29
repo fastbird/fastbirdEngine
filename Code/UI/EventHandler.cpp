@@ -38,6 +38,11 @@ void EventHandler::UnregisterAllEventFunc()
 
 void EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
 {
+	if (luaFuncName == 0)
+	{
+		Error("Cannot register null function!");
+		return;
+	}
 	std::string funcName = StripBoth(luaFuncName);
 	LuaObject func;
 	func.FindFunction(IUIManager::GetUIManager().GetLuaState(), funcName.c_str());

@@ -577,6 +577,19 @@ void Material::SetTexture(ITexture* pTexture, BINDING_SHADER shader,  int slot,
 	}
 }
 
+ITexture* Material::GetTexture(BINDING_SHADER shader, int slot)
+{
+	auto it = mTextures.begin(), itEnd = mTextures.end();
+	for (; it != itEnd; it++)
+	{
+		if ((*it)->GetSlot() == slot && (*it)->GetShaderStage() == shader)
+		{
+			return  (*it);
+		}
+	}
+	return 0;
+}
+
 void Material::SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slot, 
 			const SAMPLER_DESC& samplerDesc)
 {

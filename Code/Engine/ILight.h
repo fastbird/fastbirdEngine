@@ -48,5 +48,7 @@ namespace fastbird
 		virtual float GetPhi() const = 0;
 
 		virtual ICamera* GetCamera() const = 0;
+
+		virtual void CopyLight(ILight* other) = 0;
 	};
 }

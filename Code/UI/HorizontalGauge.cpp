@@ -44,6 +44,7 @@ namespace fastbird
 	}
 	void HorizontalGauge::OnStartUpdate(float elapsedTime)
 	{
+		__super::OnStartUpdate(elapsedTime);
 		if (mBlink)
 		{
 			IMaterial* mat = mUIObject->GetMaterial();

@@ -20,7 +20,7 @@ namespace fastbird
 
 
 		// IObject
-		virtual void PreRender();
+		virtual void PreRender(){}
 		virtual void Render();		
 		virtual void PostRender();
 		virtual void SetMaterial(const char* name, int pass = 0);

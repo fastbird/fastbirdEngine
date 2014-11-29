@@ -43,6 +43,7 @@ namespace fastbird
 		virtual int WhichSide(const Vec3& min, const Vec3& max) const { assert(0); return -1;}
 		virtual bool TestIntersection(const Ray3& ray) const = 0;
 		virtual bool TestIntersection(BoundingVolume* pBV) const = 0;
+		virtual bool Contain(const Vec3& pos) const = 0;
 
 		virtual void Merge(const BoundingVolume* pBV) = 0;
 		virtual void Merge(const Vec3& pos) = 0;

@@ -10,6 +10,7 @@
 #include <Engine/ISkySphere.h>
 #include <Engine/IMeshObject.h>
 #include <Engine/ISceneListener.h>
+#include <Engine/ILight.h>
 
 using namespace fastbird;
 
@@ -24,7 +25,9 @@ Scene::Scene()
 , mSkipSpatialObjects(false)
 , mDrawClouds(true)
 {
-	mVisibleObjects.reserve(1000);
+	mVisibleObjectsMain.reserve(1000);
+	mVisibleObjectsLight.reserve(1000);
+	mPreRenderList.reserve(1000);
 	mVisibleTransparentObjects.reserve(1000);
 	mSkyBox = 0;
 
@@ -196,8 +199,8 @@ IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject
 		return IScene::OBJECTS();
 	OBJECTS objects;
 	// find object from visible list;
-	SPATIAL_OBJECTS::iterator it = mVisibleObjects.begin(),
-		itEnd = mVisibleObjects.end();
+	SPATIAL_OBJECTS::iterator it = mVisibleObjectsMain.begin(),
+		itEnd = mVisibleObjectsMain.end();
 	for (; it!=itEnd && objects.size() < limitObject; it++)
 	{
 		SpatialObject* pObj = (*it);
@@ -247,51 +250,62 @@ void Scene::MakeVisibleSet()
 {
 	if (mSkipSpatialObjects)
 		return;
-	mVisibleObjects.clear();
+	mVisibleObjectsMain.clear();
+	mVisibleObjectsLight.clear();
 	mVisibleTransparentObjects.clear();
+	mPreRenderList.clear();
+	auto mainCam = gFBEnv->pRenderer->GetCamera();
+	auto lightCamera = gFBEnv->pRenderer->GetDirectionalLight(0)->GetCamera();
 	auto it = mSpatialObjects.begin(), itEnd = mSpatialObjects.end();
 	for (; it!=itEnd; it++)
 	{
 		if ((*it)->GetObjFlag() & IObject::OF_IGNORE_ME)
 			continue;
-		if ( gFBEnv->pRenderer->GetCamera()->IsCulled((*it)->GetBoundingVolumeWorld()) )
-			continue;
-		IMaterial* pmat = (*it)->GetMaterial();
-		if (pmat && pmat->IsTransparent())
+		bool inserted = false;
+		if (!mainCam->IsCulled((*it)->GetBoundingVolumeWorld()))
 		{
-			mVisibleTransparentObjects.push_back(*it);
+			IMaterial* pmat = (*it)->GetMaterial();
+			if (pmat && pmat->IsTransparent())
+			{
+				mVisibleTransparentObjects.push_back(*it);
+			}
+			else
+			{
+				mVisibleObjectsMain.push_back(*it);
+			}
+			inserted = true;
 		}
-		else
+		
+		if (!lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
 		{
-			mVisibleObjects.push_back(*it);
+			mVisibleObjectsLight.push_back((*it));
+			inserted = true;
 		}
+		if (inserted)
+			mPreRenderList.push_back((*it));
 		
 	}
 
 	const fastbird::Vec3& camPos = gFBEnv->pRenderer->GetCamera()->GetPos();
-	std::for_each(mVisibleObjects.begin(), mVisibleObjects.end(),
-		[&](SpatialObject* obj)
-		{
-			const Vec3& objPos = obj->GetPos();
-			float dist = (camPos - objPos).Length();
-			obj->SetDistToCam(dist);
-		}
-	);
-
-	std::for_each(mVisibleTransparentObjects.begin(), mVisibleTransparentObjects.end(),
-		[&](SpatialObject* obj)
+	for (const auto& obj : mPreRenderList)
 	{
 		const Vec3& objPos = obj->GetPos();
 		float dist = (camPos - objPos).Length();
 		obj->SetDistToCam(dist);
 	}
-	);
 
-	std::sort(mVisibleObjects.begin(), mVisibleObjects.end(), 
+	std::sort(mVisibleObjectsMain.begin(), mVisibleObjectsMain.end(), 
 				[](SpatialObject* a, SpatialObject* b) -> bool
 				{
 					return a->GetDistToCam() < b->GetDistToCam();
 				}
+			);
+
+	std::sort(mVisibleObjectsLight.begin(), mVisibleObjectsLight.end(),
+				[](SpatialObject* a, SpatialObject* b) -> bool
+			{
+				return a->GetDistToCam() < b->GetDistToCam();
+			}
 			);
 
 	std::sort(mVisibleTransparentObjects.begin(), mVisibleTransparentObjects.end(),
@@ -308,18 +322,10 @@ void Scene::PreRender()
 	if (!mSkipSpatialObjects)
 	{
 		MakeVisibleSet();
-		auto it = mVisibleObjects.begin(), itEnd = mVisibleObjects.end();
+		auto it = mPreRenderList.begin(), itEnd = mPreRenderList.end();
 		for (; it != itEnd; it++)
 		{
 			(*it)->PreRender();
-		}
-
-		{
-			auto it = mVisibleTransparentObjects.begin(), itEnd = mVisibleTransparentObjects.end();
-			for (; it != itEnd; it++)
-			{
-				(*it)->PreRender();
-			}
 		}
 	}
 	if (mSkyRendering)
@@ -357,22 +363,32 @@ void Scene::PreRender()
 //----------------------------------------------------------------------------
 void Scene::Render()
 {
-	for (const auto& l : mListeners)
-	{
-		l->OnBeforeRenderingOpaques();
-	}
 
 	if (!mSkipSpatialObjects)
 	{
 		D3DEventMarker mark("VisibleObjects - Opaque");
-		auto it = mVisibleObjects.begin(), itEnd = mVisibleObjects.end();
-		for (; it != itEnd; it++)
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW)
 		{
-			(*it)->Render();
+			for (auto& obj : mVisibleObjectsLight)
+			{
+				obj->Render();
+			}
+		}
+		else
+		{
+			for (const auto& l : mListeners)
+			{
+				l->OnBeforeRenderingOpaques();
+			}
+
+			for (auto& obj : mVisibleObjectsMain)
+			{
+				obj->Render();
+			}
 		}
 	}
 
-	if (mSkyRendering)
+	if (mSkyRendering && gFBEnv->mRenderPass != RENDER_PASS::PASS_SHADOW)
 	{
 		D3DEventMarker mark("SkyRendering");
 		if (mSkyBox)
@@ -398,30 +414,32 @@ void Scene::Render()
 			
 	}
 
-	for (const auto& l : mListeners)
+	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_SHADOW)
 	{
-		l->OnBeforeRenderingTransparents();
-	}
-	if (!mSkipSpatialObjects)
-	{
+		for (const auto& l : mListeners)
 		{
-			D3DEventMarker mark("VisibleObjects - Transparent");
-			auto it = mVisibleTransparentObjects.begin(), itEnd = mVisibleTransparentObjects.end();
-			for (; it != itEnd; it++)
+			l->OnBeforeRenderingTransparents();
+		}
+		if (!mSkipSpatialObjects)
+		{
+			{
+				D3DEventMarker mark("VisibleObjects - Transparent");
+				auto it = mVisibleTransparentObjects.begin(), itEnd = mVisibleTransparentObjects.end();
+				for (; it != itEnd; it++)
+				{
+					(*it)->Render();
+				}
+			}
+		}
+
+		{
+			D3DEventMarker mark("Non-Spatial objects");
+			FB_FOREACH(it, mObjects)
 			{
 				(*it)->Render();
 			}
 		}
 	}	
-
-	{
-		D3DEventMarker mark("Non-Spatial objects");
-		FB_FOREACH(it, mObjects)
-		{
-			(*it)->Render();
-		}
-	}
-	
 }
 
 void Scene::ClearEverySpatialObject()

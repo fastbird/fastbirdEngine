@@ -387,6 +387,12 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="ISceneListener.h" />
+    <ClInclude Include="Animation\Animation.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\AnimationData.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -555,6 +561,12 @@
     </ClCompile>
     <ClCompile Include="ScriptSystem\LuaExports.cpp">
       <Filter>ScriptSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Animation.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\AnimationData.cpp">
+      <Filter>Animation</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

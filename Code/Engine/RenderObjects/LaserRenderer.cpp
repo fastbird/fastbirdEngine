@@ -25,10 +25,6 @@ namespace fastbird
 		mBoundingVolumeWorld->Merge(to);
 	}
 
-	void LaserRenderer::PreRender()
-	{
-
-	}
 	void LaserRenderer::Render()
 	{
 		if (mLasers.empty())

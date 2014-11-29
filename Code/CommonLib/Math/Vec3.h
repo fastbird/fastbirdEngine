@@ -171,9 +171,14 @@ namespace fastbird
 			return *this;
 		}
 
-		inline bool operator >= (const Vec3& other)
+		inline bool operator >= (const Vec3& other) const
 		{
 			return x >= other.x && y >= other.y && z >= other.z;
+		}
+
+		inline bool operator <= (const Vec3& other) const
+		{
+			return x <= other.x && y <= other.y && z <= other.z;
 		}
 
 		inline void KeepGreater(const Vec3& other)

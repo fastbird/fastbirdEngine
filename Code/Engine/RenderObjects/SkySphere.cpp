@@ -56,7 +56,7 @@ void SkySphere::CreateSharedEnvRT()
 	if (!mRT)
 	{
 		mRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
-		mRT->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
+		mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
 	}
 }
 //static 
@@ -201,8 +201,206 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 	}
 
 	pTexture->GenerateMips();
+	//pTexture->SaveToFile("environment.dds");
+	GenerateRadianceCoef(pTexture);
 	gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
+	gFBEnv->pRenderer->UpdateRadConstantsBuffer(mIrradCoeff);
 	mRT->GetScene()->DetachSkySphere();
+}
+
+static Vec3 NormalFromCubePixelCoord(int face, int w, int h, float halfWidth)
+{
+	Vec3 n;
+	switch (face)
+	{
+	case 0:
+		n.x = halfWidth;
+		n.y = halfWidth - w;
+		n.z = halfWidth - h;
+		break;
+	case 1:
+		n.x = -halfWidth;
+		n.y = w - halfWidth;
+		n.z = halfWidth - h;
+		break;
+	case 2: // up
+		n.x = w - halfWidth;
+		n.y = h - halfWidth;
+		n.z = halfWidth;
+		break;
+	case 3: // down
+		n.x = w - halfWidth;
+		n.y = halfWidth - h;
+		n.z = -halfWidth;
+		break;
+	case 4: // front
+		n.x = w - halfWidth;
+		n.y = halfWidth;
+		n.z = halfWidth - h;
+		break;
+	case 5: // back
+		n.x = halfWidth - w;
+		n.y = -halfWidth;
+		n.z = halfWidth - h;
+		break;
+	}
+	return n.NormalizeCopy();
+}
+void SkySphere::GenerateRadianceCoef(ITexture* pTex)
+{
+	int maxLod = (int)log2((float)ENV_SIZE);
+	
+	const float basisCoef[5] = { 0.282095f,
+		0.488603f,
+		1.092548f,
+		0.315392f,
+		0.546274f };
+
+	const int usingLod = 2; // if ENV_SIZE == 1024, we are using 256 size.
+	const int width = (int)(ENV_SIZE / pow(2, usingLod));
+	float halfWidth = width / 2.f;
+	SmartPtr<ITexture> pStaging = gFBEnv->pRenderer->CreateTexture(0, width, width, PIXEL_FORMAT_R8G8B8A8_UNORM,
+		BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_CUBE_MAP);
+	for (int i = 0; i < 6; i++)
+	{
+		unsigned subResource = i * (maxLod+1) + usingLod;
+		pTex->CopyToStaging(pStaging, i, 0, 0, 0, subResource, 0);
+	}
+	pStaging->SaveToFile("envSub.dds");
+
+	// prefiltering
+	float lightCoef[3][9];
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 9; j++)
+		{
+			lightCoef[i][j] = 0;
+		}
+	}
+
+	for (int i = 0; i < 6; i++)
+	{
+		unsigned subResource = i;
+		MapData data = pStaging->Map(subResource, MAP_TYPE_READ, MAP_FLAG_NONE);
+		if (data.pData)
+		{
+			DWORD* colors = (DWORD*)data.pData;
+			DWORD* row, *pixel;
+			for (int h = 0; h < width; h++)
+			{
+				row = colors + width * h;
+				for (int w = 0; w < width; w++)
+				{
+					
+					Vec3 n = NormalFromCubePixelCoord(i, w, h, halfWidth);
+					
+					pixel = row + w;
+					Color::RGBA* rgba256 = (Color::RGBA*)pixel;
+					Vec3 rgb(rgba256->r / 255.0f, rgba256->g / 255.0f, rgba256->b / 255.0f);
+					// 00
+					lightCoef[0][0] += rgb.x * basisCoef[0];
+					lightCoef[1][0] += rgb.y * basisCoef[0];
+					lightCoef[2][0] += rgb.z * basisCoef[0];
+
+					// 1-1
+					float yC = (basisCoef[1] * n.y);
+					lightCoef[0][1] += rgb.x * yC;
+					lightCoef[1][1] += rgb.y * yC;
+					lightCoef[2][1] += rgb.z * yC;
+
+					// 10
+					yC = (basisCoef[1] * n.z);
+					lightCoef[0][2] += rgb.x * yC;
+					lightCoef[1][2] += rgb.y * yC;
+					lightCoef[2][2] += rgb.z * yC;
+
+					// 11
+					yC = (basisCoef[1] * n.x);
+					lightCoef[0][3] += rgb.x * yC;
+					lightCoef[1][3] += rgb.y * yC;
+					lightCoef[2][3] += rgb.z * yC;
+
+					// 2-2
+					yC = (basisCoef[2] * n.x*n.y);
+					lightCoef[0][4] += rgb.x * yC;
+					lightCoef[1][4] += rgb.y * yC;
+					lightCoef[2][4] += rgb.z * yC;
+
+					// 2-1
+					yC = (basisCoef[2] * n.y*n.z);
+					lightCoef[0][5] += rgb.x * yC;
+					lightCoef[1][5] += rgb.y * yC;
+					lightCoef[2][5] += rgb.z * yC;
+
+					// 20
+					yC = (basisCoef[3] * (3.0f*n.z*n.z - 1.f));
+					lightCoef[0][6] += rgb.x * yC;
+					lightCoef[1][6] += rgb.y * yC;
+					lightCoef[2][6] += rgb.z * yC;
+
+					// 21
+					yC = (basisCoef[2] * (n.x*n.z));
+					lightCoef[0][7] += rgb.x * yC;
+					lightCoef[1][7] += rgb.y * yC;
+					lightCoef[2][7] += rgb.z * yC;
+
+					// 22
+					yC = (basisCoef[4] * (n.x*n.x - n.y*n.y));
+					lightCoef[0][8] += rgb.x * yC;
+					lightCoef[1][8] += rgb.y * yC;
+					lightCoef[2][8] += rgb.z * yC;
+				}
+			}
+		}
+		pStaging->Unmap(subResource);
+	}
+
+	float avg = 1.0f / (width*width * 6);	
+	for (int i = 0; i < 9; i++)
+	{
+		lightCoef[0][i] *= avg;
+		lightCoef[1][i] *= avg;
+		lightCoef[2][i] *= avg;		
+		mIrradCoeff[i] = Vec4(lightCoef[0][i], lightCoef[1][i], lightCoef[2][i], 1);
+	}
+
+	//const float sqrtPi = sqrtf(PI);
+	//const float fC[5] = { 1.f / (2.f*sqrtPi),
+	//	sqrt(3.0f) / (3.f*sqrtPi),
+	//	sqrt(15.f) / (8.f*sqrtPi),
+	//	sqrt(5.f) / (16.0f*sqrtPi),
+	//	0.5f * (sqrt(15.f) / (8.f*sqrtPi)),
+	//};
+
+	//Vec4 vLightYCoeff[3];
+	//for (int ic = 0; ic < 3; ic++)
+	//{
+	//	vLightYCoeff[ic].x = -fC[1] * lightCoef[ic][3];
+	//	vLightYCoeff[ic].y = -fC[1] * lightCoef[ic][1];
+	//	vLightYCoeff[ic].z = fC[1] * lightCoef[ic][2];
+	//	vLightYCoeff[ic].w = fC[0] * lightCoef[ic][0] - fC[3] * lightCoef[ic][6];
+	//}
+
+	//mIrradConsts[0] = vLightYCoeff[0]; // Ar
+	//mIrradConsts[1] = vLightYCoeff[1]; // Ag
+	//mIrradConsts[2] = vLightYCoeff[2]; // Ab
+
+	//for (int ic = 0; ic < 3; ic++)
+	//{
+	//	vLightYCoeff[ic].x = fC[2] * lightCoef[ic][4];
+	//	vLightYCoeff[ic].y = -fC[2] * lightCoef[ic][5];
+	//	vLightYCoeff[ic].z = 3.0f * fC[3] * lightCoef[ic][6];
+	//	vLightYCoeff[ic].w = -fC[2] * lightCoef[ic][7];
+	//}
+
+	//mIrradConsts[3] = vLightYCoeff[0]; // Br
+	//mIrradConsts[4] = vLightYCoeff[1]; // Bg
+	//mIrradConsts[5] = vLightYCoeff[2]; // Bb
+
+	//mIrradConsts[6].x = fC[4] * lightCoef[0][8];
+	//mIrradConsts[6].y = fC[4] * lightCoef[1][8];
+	//mIrradConsts[6].z = fC[4] * lightCoef[2][8];
+	//mIrradConsts[6].w = 1.0f;
 }
 
 void SkySphere::SetInterpolationData(unsigned index, const Vec4& data)

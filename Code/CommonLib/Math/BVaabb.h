@@ -37,6 +37,7 @@ namespace fastbird
 		const AABB& GetAABB() const { return mAABB; }
 
 		void Expand(float e);
+		virtual bool Contain(const Vec3& pos) const;
 	
 
 	private:

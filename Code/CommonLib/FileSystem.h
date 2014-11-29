@@ -17,5 +17,7 @@ namespace fastbird
 		static void FinishBinaryFile(BinaryData data);
 		static void SaveBinaryFile(const char* filepath, BinaryData data, size_t length);
 		static bool TestSecurity(const char* filepath);
+
+		static bool IsFileExisting(const char* filepath);
 	};
 }

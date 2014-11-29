@@ -7,11 +7,14 @@
 #include <Engine/IScriptSystem.h>
 namespace fastbird
 {
-void EditParticle(StringVector& arg);
+static void EditParticle(StringVector& arg);
 static void Run(StringVector& arg);
+static void DebugRenderTarget(StringVector& arg);
+static void SetFov(StringVector& arg);
 static ConsoleCommand ccSpawnParticle("EditParticle", EditParticle, "EditParticle");
 static ConsoleCommand ccRun("Run", Run, "Run command");
-
+static ConsoleCommand ccDebugRenderTarget("DebugRenderTarget", DebugRenderTarget, "DebugRenderTarget");
+static ConsoleCommand ccSetFov("SetFov", SetFov, "SetFov");
 EngineCommand::EngineCommand()
 {
 	WheelSens = gFBEnv->pScriptSystem->GetRealVariable("WheelSens", 0.01f);
@@ -71,7 +74,6 @@ EngineCommand::EngineCommand()
 	r_Glow = gFBEnv->pScriptSystem->GetIntVariable("r_Glow", 1);
 	REGISTER_CVAR(r_Glow, r_Glow, CVAR_CATEGORY_CLIENT, "Glow");
 
-
 	r_UI = gFBEnv->pScriptSystem->GetIntVariable("r_UI", 1);
 	REGISTER_CVAR(r_UI, r_UI, CVAR_CATEGORY_CLIENT, "UI Rendering");
 
@@ -88,6 +90,8 @@ EngineCommand::EngineCommand()
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);
+	REGISTER_CC(&ccDebugRenderTarget);
+	REGISTER_CC(&ccSetFov);
 }
 EngineCommand::~EngineCommand()
 {
@@ -126,6 +130,22 @@ void Run(StringVector& arg)
 		}
 	}
 	
+}
+
+void DebugRenderTarget(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+
+	gFBEnv->pRenderer->SetDebugRenderTarget(StringConverter::parseUnsignedInt(arg[1]),
+		arg.size() == 3 ? arg[2].c_str() : "");
+}
+
+void SetFov(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+	gFBEnv->pEngine->GetCamera(0)->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
 }
 
 }

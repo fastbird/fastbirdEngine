@@ -22,6 +22,7 @@ namespace fastbird
 		virtual bool GetEnableEvent() const { return mEventEnable; }
 
 	protected:
+		friend class UIManager;
 		bool OnEvent(EVENT e);
 
 	protected:

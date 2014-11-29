@@ -54,6 +54,14 @@ namespace fastbird
 	
 	StarDef::InitializeStatic();
 	mStarDef.Initialize(STLT_VERTICAL);	
+
+	float y = 0.0f;
+	for (int i = 0; i < MaxDebugRenderTargets; i++)
+	{
+		mDebugRenderTargets[i].mPos = Vec2(0, y);
+		mDebugRenderTargets[i].mSize = Vec2(0.25, 0.24f);
+		y += 0.25f;
+	}
 }
 Renderer::~Renderer()
 {
@@ -97,7 +105,6 @@ void Renderer::Deinit()
 	// All release operation should be done here.
 	MeshObject::ClearHighlightMesh();
 	SkySphere::DeleteSharedEnvRT();
-	mDirectionalLight = 0;
 	CleanDepthWriteResources();
 	CleanGlowResources();
 	CleanHDRResources();
@@ -107,8 +114,10 @@ void Renderer::Deinit()
 	mFullscreenQuadVSNear = 0;
 	mCopyPS = 0;
 	mCopyPSMS = 0;
-	mDirectionalLight = 0;
-	mDirectionalLightOverride = 0;
+	mDirectionalLight[0] = 0;
+	mDirectionalLight[1] = 0;
+	mDirectionalLightOverride[0] = 0;
+	mDirectionalLightOverride[1] = 0;
 	mDebugHud = 0;
 	mFont = 0;
 	mMissingMaterial = 0;
@@ -200,14 +209,25 @@ void Renderer::CleanGodRayResources()
 bool Renderer::OnPrepared()
 {
 	// Light
-	mDirectionalLight = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-	mDirectionalLight->SetPosition(Vec3(-3, 1, -1));
-	mDirectionalLight->SetDiffuse(Vec3(1, 1, 1));
-	mDirectionalLight->SetSpecular(Vec3(1, 1, 1));
-	mDirectionalLight->SetIntensity(1.0f);
+	for (int i = 0; i < 2; ++i)
+	{
+		mDirectionalLight[i] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
+		mDirectionalLight[i]->SetIntensity(1.0f);
+	}
+
+	mDirectionalLight[0]->SetPosition(Vec3(-3, 1, 1));
+	mDirectionalLight[0]->SetDiffuse(Vec3(1, 1, 1));
+	mDirectionalLight[0]->SetSpecular(Vec3(1, 1, 1));
+
+	mDirectionalLight[1]->SetPosition(Vec3(3, 1, -1));
+	mDirectionalLight[1]->SetDiffuse(Vec3(0.8f, 0.4f, 0.1f));
+	mDirectionalLight[1]->SetSpecular(Vec3(0, 0, 0));
+
 
 	mMaterials[DEFAULT_MATERIALS::QUAD] = fastbird::IMaterial::CreateMaterial(
 		"es/materials/quad.material");
+	mMaterials[DEFAULT_MATERIALS::QUAD_TEXTURE] = fastbird::IMaterial::CreateMaterial(
+		"es/materials/QuadWithTexture.material");
 	mMaterials[DEFAULT_MATERIALS::BILLBOARDQUAD] = fastbird::IMaterial::CreateMaterial(
 		"es/materials/billboardQuad.material");
 
@@ -228,6 +248,22 @@ bool Renderer::OnPrepared()
 		};
 		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[0]);
 		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[1]);
+	}
+
+	// POSITION_COLOR_TEXCOORD
+	{
+		INPUT_ELEMENT_DESC desc[] =
+		{
+			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12,
+			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 16,
+			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+		};
+		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[0]);
+		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[1]);
+		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[2]);
 	}
 
 	// POSITION_HDR_COLOR
@@ -336,12 +372,12 @@ bool Renderer::OnPrepared()
 		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[2]);
 	}
 
-	static_assert(DEFAULT_INPUTS::COUNT == 9, "You may not define a new element of mInputLayoutDesc for the new description.");
-
 	//-----------------------------------------------------------------------
 	mDynVBs[DEFAULT_INPUTS::POSITION] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_P), 
 		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PC), 
+		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PCT),
 		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 	mDynVBs[DEFAULT_INPUTS::POSITION_NORMAL] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PN), 
 		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
@@ -354,6 +390,9 @@ bool Renderer::OnPrepared()
 		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 	mDynVBs[DEFAULT_INPUTS::POSITION_VEC4_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PV4C),
 		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+
+	//-----------------------------------------------------------------------
+	static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
 
 	mFont = FB_NEW(Font);
 	std::string fontName = gFBEnv->pEngine->GetConfigStringValue("ETC", "Font");
@@ -405,7 +444,12 @@ bool Renderer::OnPrepared()
 	mDefaultSamplers[SAMPLERS::ANISOTROPIC] = CreateSamplerState(sdesc);
 
 	sdesc.Filter = TEXTURE_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-	sdesc.ComparisonFunc = COMPARISON_LESS_EQUAL;
+	sdesc.AddressU = TEXTURE_ADDRESS_BORDER;
+	sdesc.AddressV = TEXTURE_ADDRESS_BORDER;
+	sdesc.AddressW = TEXTURE_ADDRESS_BORDER;
+	for (int i = 0; i < 4; i++)
+		sdesc.BorderColor[i] = 1.0f;
+	sdesc.ComparisonFunc = COMPARISON_LESS;
 	mDefaultSamplers[SAMPLERS::SHADOW] = CreateSamplerState(sdesc);
 
 	sdesc.ComparisonFunc = COMPARISON_ALWAYS;
@@ -416,6 +460,16 @@ bool Renderer::OnPrepared()
 	mDefaultSamplers[SAMPLERS::POINT_WRAP] = CreateSamplerState(sdesc);
 	sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
 	mDefaultSamplers[SAMPLERS::LINEAR_WRAP] = CreateSamplerState(sdesc);
+
+	SAMPLER_DESC sdesc_border;
+	sdesc_border.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+	sdesc_border.AddressU = TEXTURE_ADDRESS_BORDER;
+	sdesc_border.AddressV = TEXTURE_ADDRESS_BORDER;
+	sdesc_border.AddressW = TEXTURE_ADDRESS_BORDER;
+	for (int i = 0; i < 4; i++)
+		sdesc_border.BorderColor[i] = 0;
+	mDefaultSamplers[SAMPLERS::BLACK_BORDER] = CreateSamplerState(sdesc_border);
+
 	
 
 	for (int i = 0; i < SAMPLERS::NUM; ++i)
@@ -736,14 +790,14 @@ IMaterial* Renderer::GetMissingMaterial()
 	
 }
 
-void Renderer::SetDirectionalLight(ILight* pLight)
+void Renderer::SetDirectionalLight(ILight* pLight, int idx)
 {
-	mDirectionalLightOverride = pLight;
+	mDirectionalLightOverride[idx] = pLight;
 }
 
-ILight* Renderer::GetDirectionalLight() const
+ILight* Renderer::GetDirectionalLight(int idx) const
 {
-	return mDirectionalLightOverride ? mDirectionalLightOverride : mDirectionalLight;
+	return mDirectionalLightOverride[idx] ? mDirectionalLightOverride[idx] : mDirectionalLight[idx];
 }
 
 void Renderer::SetEnvironmentTexture(ITexture* pTexture)
@@ -1849,7 +1903,8 @@ void Renderer::Update(float dt)
 
 void Renderer::UpdateLights(float dt)
 {
-	mDirectionalLight->Update(dt);
+	for (int i = 0; i < 2; i++)
+		mDirectionalLight[i]->Update(dt);
 }
 
 ITexture* Renderer::FindRenderTarget(const Vec2I& size)
@@ -1926,7 +1981,7 @@ void Renderer::SetGodRayRenderTarget()
 
 void Renderer::GodRay()
 {
-	ILight* pLight = GetDirectionalLight();
+	ILight* pLight = GetDirectionalLight(0);
 	assert(pLight);
 	Vec4 lightPos(GetCamera()->GetPos() + pLight->GetPosition(), 1.f);
 	lightPos = GetCamera()->GetViewProjMat() * lightPos; // only x,y nee
@@ -2257,7 +2312,7 @@ void Renderer::PrepareShadowMapRendering()
 	Viewport vp = { 0, 0, 2048, 2048, 0.f, 1.f };
 	SetViewports(&vp, 1);
 	mCameraBackup = GetCamera();
-	SetCamera(GetDirectionalLight()->GetCamera());
+	SetCamera(GetDirectionalLight(0)->GetCamera());
 	Clear(0, 0, 0, 0, 1.0f, 0);
 }
 
@@ -2352,6 +2407,29 @@ void Renderer::DrawSilouette()
 	SetTextures(ts, 2, BINDING_SHADER_PS, 0);
 	
 	DrawFullscreenQuad(mSilouetteShader, false);
+}
+
+
+void Renderer::RenderDebugRenderTargets()
+{
+	for (int i = 0; i < MaxDebugRenderTargets; i++)
+	{
+		if (mDebugRenderTargets[i].mTexture)
+		{
+			Vec2 pixelPos = mDebugRenderTargets[i].mPos * Vec2((float)mWidth, (float)mHeight);
+			Vec2 pixelSize = mDebugRenderTargets[i].mSize * Vec2((float)mWidth, (float)mHeight);
+			DrawQuadWithTexture(Round(pixelPos), Round(pixelSize), Color(1, 1, 1, 1),
+				mDebugRenderTargets[i].mTexture);
+		}
+	}
+}
+void Renderer::SetDebugRenderTarget(unsigned idx, const char* textureName)
+{
+	assert(idx < MaxDebugRenderTargets);
+	if (stricmp(textureName, "Shadow") == 0)
+		mDebugRenderTargets[idx].mTexture = mShadowMap;
+	else
+		mDebugRenderTargets[idx].mTexture = 0;
 }
 
 }

@@ -144,53 +144,14 @@ float3 fixNormalSample(float3 v)
 	return res;
 }
 
-
-// Star Nest originally developed by Pablo Roman Andrioli
-// This content is under the MIT License.
-static const float tile = 0.85;
-/*static const int volsteps=6;
-static const int iterations=15;
-static const float formuparam=0.634;
-static const float brightness = 0.000005;
-static const float distFading=0.53;
-static const float stepsize = 0.30;
-static const float saturation=0.95;*/
-float3 StarNest(float3 dir, float3 cameraPos)
+float mod(float x, float y)
 {
-	float volsteps = gMaterialParam[2].x;
-	float iterations = gMaterialParam[2].y;
-	float formuparam = gMaterialParam[2].z;
-	float brightness = gMaterialParam[2].w;
-	float distFading = gMaterialParam[3].x;
-	float stepsize = gMaterialParam[3].y;
-	float saturation = gMaterialParam[3].z;
-	float3 finalColor = 0;
+  return x - y * floor(x/y);
+}
 
-	float s = 0.0;
-	float fade = 1.0;
-	float3 v = {0, 0, 0};
-	for (int r=0; r<volsteps; r++)
-	{
-		float3 p = cameraPos*0.0001 + s * dir * .5f;
-		p =abs( tile - fmod(p, (tile*2)) );
-		float pa=0, a=0;
-		for (int i=0; i<iterations; i++)
-		{
-			p= abs(p) / dot(p,p) - formuparam;
-			float lp = length(p);
-			a += abs(lp-pa);
-			pa=lp;
-		}
-		a*=a*a;
-		v+=float3(s, s*s, s*s*s*s) * a * brightness * fade;
-		fade *= distFading;
-		s+=stepsize;
-	}
-	v=lerp(length(v),v,saturation); //color adjust
-	finalColor += v;
-
-	return finalColor;
-
+float3 mod(float3 x, float3 y)
+{
+  return x - y * floor(x/y);
 }
 
 float3 GetFoggedColor(float2 uv, float3 incidentColor, float3 worldPos)

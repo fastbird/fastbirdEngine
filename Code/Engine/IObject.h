@@ -14,6 +14,7 @@ namespace fastbird
 	class IMaterial;
 	class IInputLayout;
 	class IVertexBuffer;
+	class Animation;
 	class IObject : public ReferenceCounter
 	{
 	public:
@@ -72,6 +73,7 @@ namespace fastbird
 		virtual void Render() = 0;		
 		virtual void PostRender() = 0;
 		virtual void SetEnableHighlight(bool highlight) {}
+		const Animation* GetAnimation() const { return 0; }
 	};
 }
 

@@ -55,9 +55,9 @@ namespace fastbird
 		assert(b);
 
 		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
-		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight()->GetIntensity();
-		mLightColor = gFBEnv->pRenderer->GetDirectionalLight()->GetDiffuse() * mLightIntensity;
-		mLightDir = gFBEnv->pRenderer->GetDirectionalLight()->GetPosition();
+		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
+		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
+		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPosition();
 		mCamPos = gFBEnv->pRenderer->GetCamera()->GetPos();
 		m_ParticlePool.m_vWindVelocity = mWind;
 
@@ -108,9 +108,9 @@ namespace fastbird
 	void VolumetricCloud::PrepareRender()
 	{
 		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
-		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight()->GetIntensity();
-		mLightColor = gFBEnv->pRenderer->GetDirectionalLight()->GetDiffuse() * mLightIntensity;
-		mLightDir = gFBEnv->pRenderer->GetDirectionalLight()->GetPos();
+		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
+		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
+		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPos();
 		mCamPos = gFBEnv->pRenderer->GetCamera()->GetPos();
 		m_ParticlePool.m_vWindVelocity = mWind;
 		// copy to emitter

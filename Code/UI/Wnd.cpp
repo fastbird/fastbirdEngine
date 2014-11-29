@@ -17,7 +17,6 @@ Wnd::Wnd()
 	mUIObject = IUIObject::CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mStopScissorParent = true;
 	mUIObject->SetNoDrawBackground(true);
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
 		std::bind(&Wnd::MouseConsumer, this, std::placeholders::_1));
@@ -86,7 +85,7 @@ void Wnd::RefreshFrame()
 	if (mTitlebar)
 	{
 		mTitlebar->SetNSizeX(mWNSize.x);
-		mTitlebar->SetNPos(mWNPos);
+		mTitlebar->SetNPos(GetFinalPos());
 	}
 	if (mUseFrame)
 	{
@@ -97,6 +96,7 @@ void Wnd::RefreshFrame()
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
 			T->SetManualParent(this);
 			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			T->SetVisible(true);
 			mFrames.push_back(T);			
 
@@ -105,6 +105,7 @@ void Wnd::RefreshFrame()
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
 			L->SetManualParent(this);
 			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			L->SetVisible(true);
 			mFrames.push_back(L);			
 
@@ -114,6 +115,7 @@ void Wnd::RefreshFrame()
 			R->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_R");
 			R->SetManualParent(this);
 			R->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			R->SetVisible(true);
 			mFrames.push_back(R);
 
@@ -123,6 +125,7 @@ void Wnd::RefreshFrame()
 			B->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_B");
 			B->SetManualParent(this);
 			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");
+			B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			B->SetVisible(true);
 			mFrames.push_back(B);
 
@@ -185,36 +188,37 @@ void Wnd::RefreshFrame()
 			FRAME_RB,
 		};
 		mFrames[FRAME_T]->SetNSizeX(mWNSize.x);
-		mFrames[FRAME_T]->SetWNPos(mWNPos);
+		const Vec2 finalPos = GetFinalPos();
+		mFrames[FRAME_T]->SetWNPos(finalPos);
 
 		mFrames[FRAME_L]->SetNSizeY(mWNSize.y);
-		mFrames[FRAME_L]->SetWNPos(mWNPos);
+		mFrames[FRAME_L]->SetWNPos(finalPos);
 
 		mFrames[FRAME_R]->SetNSizeY(mWNSize.y);
-		Vec2 wnpos = mWNPos;
+		Vec2 wnpos = finalPos;
 		wnpos.x += mWNSize.x;
 		mFrames[FRAME_R]->SetWNPos(wnpos);
 
 		mFrames[FRAME_B]->SetNSizeX(mWNSize.x);
-		wnpos = mWNPos;
+		wnpos = finalPos;
 		wnpos.y += mWNSize.y;
 		mFrames[FRAME_B]->SetWNPos(wnpos);
 
-		mFrames[FRAME_LT]->SetWNPos(mWNPos);
+		mFrames[FRAME_LT]->SetWNPos(finalPos);
 
-		wnpos = mWNPos;
+		wnpos = finalPos;
 		wnpos.x += mWNSize.x;
 		mFrames[FRAME_RT]->SetWNPos(wnpos);
 
-		wnpos = mWNPos;
+		wnpos = finalPos;
 		wnpos.x += mWNSize.x*.5f;
 		mFrames[FRAME_MT]->SetWNPos(wnpos);
 
-		wnpos = mWNPos;
+		wnpos = finalPos;
 		wnpos.y += mWNSize.y;
 		mFrames[FRAME_LB]->SetWNPos(wnpos);
 
-		wnpos = mWNPos + mWNSize;
+		wnpos = finalPos + mWNSize;
 		mFrames[FRAME_RB]->SetWNPos(wnpos);
 	}
 	else
@@ -243,12 +247,13 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TITLEBAR:
 	{
 								 mTitlebar = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+								 mTitlebar->SetVisible(mVisible);
 								 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
 									 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
 								 mTitlebar->SetManualParent(this);
 								 mTitlebar->SetNSizeX(mWNSize.x);
 								 mTitlebar->SetSizeY(44);
-								 mTitlebar->SetNPos(mWNPos);
+								 mTitlebar->SetNPos(GetFinalPos());
 								 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
 								 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 								 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
@@ -257,6 +262,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 								 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
 								 mTitlebar->SetText(AnsiToWide(val, strlen(val)));
 								 mTitlebar->SetName("_@TitleBar");
+								 assert(!mWndContentUI);
 								 mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 								 Vec2I sizeMod = {
 									 mUseFrame ? -26 : 0,
@@ -282,7 +288,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 												 {
 													 mBackgroundImage = FB_NEW(ImageBox);
 													 mBackgroundImage->SetParent(this);
-													 mBackgroundImage->SetWNPos(mWNPos);
+													 mBackgroundImage->SetWNPos(GetFinalPos());
 													 mBackgroundImage->SetWNSize(mWNSize);
 													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 												 }
@@ -298,7 +304,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 										 {
 											 mBackgroundImage = FB_NEW(ImageBox);
 											 mBackgroundImage->SetParent(this);
-											 mBackgroundImage->SetWNPos(mWNPos);
+											 mBackgroundImage->SetWNPos(GetFinalPos());
 											 mBackgroundImage->SetWNSize(mWNSize);
 											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 										 }
@@ -326,6 +332,8 @@ void Wnd::SetVisible(bool show)
 {
 	__super::SetVisible(show);
 	IUIManager::GetUIManager().SetFocusUI(this);
+	if (mTitlebar)
+		mTitlebar->SetVisible(show);
 }
 
 }

@@ -45,10 +45,12 @@ namespace fastbird
 		virtual int GetSpecialOrder() const = 0;
 
 		virtual void SetMultiline(bool multiline) = 0;
+		//virtual void SetDebugNumber(unsigned num) { mDebugNumber = num; }
 
 	public:
 		// debug purpose
 		IWinBase* mOwnerUI;
 		const char* mTypeString;
+		//unsigned mDebugNumber;
 	};
 }

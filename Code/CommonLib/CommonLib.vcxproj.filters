@@ -132,6 +132,7 @@
     <ClInclude Include="LuaObject.h" />
     <ClInclude Include="StdOutRedirect.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="IteratorWrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">

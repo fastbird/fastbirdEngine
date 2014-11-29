@@ -138,6 +138,20 @@ void Transformation::SetDir(const Vec3& dir)
 	SetRotation(rot);
 }
 
+void Transformation::SetDirAndRight(const Vec3& dir, const Vec3& right)
+{
+	Vec3 forward = dir;
+	Vec3 up = right.Cross(forward);
+
+	up.Normalize();
+
+	Mat33 rot;
+	rot.SetColumn(0, right);
+	rot.SetColumn(1, forward);
+	rot.SetColumn(2, up);
+	SetRotation(rot);
+}
+
 //----------------------------------------------------------------------------
 void Transformation::AddRotation (const Quat& addR)
 {

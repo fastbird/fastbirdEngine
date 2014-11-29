@@ -74,28 +74,42 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	{
 		normalT = fixNormalSample(normalT);
 	    float3 normalMapWS = normalT.x*INPUT.Tangent + normalT.y*INPUT.Binormal;
-		normal = normalize(normal + normalMapWS);
+		normal = normal + normalMapWS;
 	}  
 #endif //NORMAL_TEXTURE
+	normal = normalize(normal);
 
 	// shading	
-	float3 lightColor = gDirectionalLightDiffuse.xyz * gDirectionalLightDir_Intensity.w;
-	float3 toLightDir = gDirectionalLightDir_Intensity.xyz;
+	float3 lightColor = gDirectionalLightDiffuse[0].xyz * gDirectionalLightDir_Intensity[0].w;
+	float3 lightColor2 = gDirectionalLightDiffuse[1].xyz * gDirectionalLightDir_Intensity[1].w;
+	float3 toLightDir = gDirectionalLightDir_Intensity[0].xyz;
+	float3 toLightDir2 = gDirectionalLightDir_Intensity[0].xyz;
 	float3 toViewDir = normalize(gCameraPos - INPUT.WorldPos);
 
 	const float3 dielectricColor = float3(0.04, 0.04, 0.04);
 	const float minRoughness = 1e-4;
 	roughness = max(minRoughness, roughness);
-	float3 diffColor = baseColor * (1.0 - metallic*.9);
+	float3 diffColor = baseColor * (1.1 - metallic);
 	float3 specColor = lerp(dielectricColor, baseColor, metallic);	
+	float3 specColor2 = specColor * gDirectionalLightSpecular[1];
+	specColor *= gDirectionalLightSpecular[0];
 
-	float ndl = max(dot(normal, toLightDir), 1e-8);
+	float dotNL = dot(normal, toLightDir);
+	float ndl = max(dotNL, 1e-8);
+	float ndl2 = max(-dotNL, 1e-8);//max(dot(normal, toLightDir2), 1e-8);
 	float3 h = (toViewDir + toLightDir) * .5f;
+	float3 h2 = (toViewDir - toLightDir) * .5f;
 	float ndh = max(abs(dot(normal, h)), 1e-8);
+	float ndh2 = max(abs(dot(normal, h2)), 1e-8);
 	float vdh = max( 1e-8, abs(dot(toViewDir, h)) );
+	float vdh2 = max( 1e-8, abs(dot(toViewDir, h2)) );
 	float ndv = max( 1e-8, abs(dot( normal, toViewDir)) );
 	float invShadow = GetShadow(INPUT.LightPos);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(ndl, vdh, ndh, ndv, specColor, roughness));
+	shadedColor +=  (ndl2 * lightColor2 * (diffColor + CookTorrance(ndl2, vdh2, ndh2, ndv, specColor2, roughness)));
+	float3 irrad = GetIrrad(float4(normal, 1.0f));
+	shadedColor+=irrad;
+	
 	float3 envContrib = {0, 0, 0};
 	
 	// need to work further.
@@ -121,9 +135,9 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 		float ndl = dot(normal, Ln);
 
 		// Horizon fading trick from http://marmosetco.tumblr.com/post/81245981087
-		const float horizonFade = 1.3;
-		float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
-		horiz *= horiz;
+		// const float horizonFade = 0.3;
+		// float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
+		// horiz *= horiz;
 		ndl = max( 1e-8, abs(ndl) );
 
 		float vdh = max( 1e-8, abs(dot(toViewDir, Hn)) );
@@ -134,16 +148,10 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 			 * CookTorranceContrib(
 				vdh, ndh, ndl, ndv,
 				specColor,
-				roughness) * horiz;
+				roughness); // * horiz;
 	}
 
 	envContrib /= ENV_SAMPLES;
-#else
-	float3 reflect = normalize(-(toViewDir - 2 * normal * dot(toViewDir, normal)));
-	reflect.yz = reflect.zy;
-	float3 starColor = StarNest(reflect, float3(gWorld[0][3], gWorld[1][3], gWorld[2][3]));
-	envContrib += starColor * 
-		CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness);
 #endif
 	float2 screenUV = GetScreenUV(INPUT.Position.xy);
 	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib, normalize(INPUT.WorldPos) );

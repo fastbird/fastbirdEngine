@@ -144,6 +144,7 @@
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Hammersley.h" />
+    <ClInclude Include="IteratorWrapper.h" />
     <ClInclude Include="LockFreeQueue.h" />
     <ClInclude Include="LuaObject.h" />
     <ClInclude Include="luawrapper.hpp" />

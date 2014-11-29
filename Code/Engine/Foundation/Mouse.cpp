@@ -241,9 +241,10 @@ namespace fastbird
 		mLButtonDoubleClicked = false;
 	}
 
-	void Mouse::Invalidate()
+	void Mouse::Invalidate(bool buttonClicked)
 	{
-		mLastClickTime = 0;
+		if (buttonClicked)
+			mLastClickTime = 0;
 		mValid = false;
 	}
 

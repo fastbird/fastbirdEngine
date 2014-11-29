@@ -15,7 +15,7 @@ namespace fastbird
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil) = 0;
 		virtual IScene* GetScene() const = 0;
 		virtual ICamera* GetCamera() const = 0;
-		virtual ILight* GetLight() = 0;
+		virtual ILight* GetLight(int idx) = 0;
 		virtual ITexture* GetRenderTargetTexture() = 0;
 		virtual ITexture* GetDepthStencilTexture() = 0;
 		virtual void Render(size_t face = 0) = 0;

@@ -2,13 +2,17 @@
 #include <Engine/SceneGraph/SpatialObject.h>
 #include <Engine/IScene.h>
 #include <Engine/ICamera.h>
-
+#include <Engine/Animation/Animation.h>
 using namespace fastbird;
 
 //----------------------------------------------------------------------------
 SpatialObject::SpatialObject()
 	:mDistToCam(-1.f)
 	, mPrevPos(0, 0, 0)
+	, mAnimData(0)
+	, mAnimOwner(false)
+	, mTransformChanged(true)
+	, mAnim(0)
 {
 }
 
@@ -25,6 +29,11 @@ SpatialObject::~SpatialObject()
 	{
 		scene->DetachObject(this);
 	}
+	if (mAnimData && mAnimOwner)
+		FB_DELETE(mAnimData);
+
+	if (mAnim)
+		FB_DELETE(mAnim);
 }
 
 //----------------------------------------------------------------------------
@@ -35,6 +44,12 @@ void SpatialObject::Clone(IObject* cloned) const
 	object->mTransformation = mTransformation;
 	object->mTransformation.SetTranslation(mTransformation.GetTranslation()+Vec3(1.f, 0, 0));
 	object->mDistToCam = mDistToCam;
+	object->mAnimData = mAnimData;
+	if (mAnimData)
+	{
+		object->mAnim = FB_NEW(Animation);
+		object->mAnim->SetAnimationData(mAnimData);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -67,6 +82,12 @@ void SpatialObject::SetScale(const Vec3& scale)
 void SpatialObject::SetDir(const Vec3& dir)
 {
 	mTransformation.SetDir(dir);
+	mTransformChanged = true;
+}
+
+void SpatialObject::SetDirAndRight(const Vec3& dir, const Vec3& right)
+{
+	mTransformation.SetDirAndRight(dir, right);
 	mTransformChanged = true;
 }
 
@@ -129,4 +150,21 @@ void SpatialObject::RemoveCameraTargetingMe(ICamera* pCam)
 	auto it = std::find(mCameraTargetingMe.begin(), mCameraTargetingMe.end(), pCam);
 	if (it != mCameraTargetingMe.end())
 		mCameraTargetingMe.erase(it);
+}
+
+void SpatialObject::SetAnimationData(const AnimationData& anim, const char* actionFile)
+{
+	if (mAnimData && mAnimOwner)
+		FB_DELETE(mAnimData);
+	mAnimData = FB_NEW(AnimationData);
+	*mAnimData = anim;
+	mAnimOwner = true;
+
+	mAnimData->ParseAction(actionFile);
+}
+
+void SpatialObject::PreRender()
+{
+	if (mAnim)
+		mAnim->Update(gpTimer->GetDeltaTime());
 }

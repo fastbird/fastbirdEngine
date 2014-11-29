@@ -33,6 +33,7 @@ namespace fastbird
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual void SetName(const char* name);		
 		virtual const char* GetName() const;
+		virtual void ClearName();
 		virtual void SetSize(const fastbird::Vec2I& size);
 		virtual void SetSizeX(int x);
 		virtual void SetSizeY(int y);
@@ -54,6 +55,7 @@ namespace fastbird
 		virtual void SetSizeModificator(const Vec2I& sizemod);
 
 		virtual const Vec2& GetWNPos() const { return mWNPos;}
+		virtual Vec2 GetFinalPos() const { return mWNPos + mWNPosOffset; }
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
 		virtual const Vec2& GetWNSize() const { return mWNSize;}
@@ -92,6 +94,7 @@ namespace fastbird
 
 		virtual void Scrolled(){}
 		virtual void SetNPosOffset(const Vec2& offset);
+		virtual const Vec2& GetNPosOffset() const { return mWNPosOffset; }
 		virtual void SetAnimNPosOffset(const Vec2& offset);
 		virtual void SetScissorRect(bool use, const RECT& rect);
 		virtual const RECT& GetRegion() const;
@@ -161,12 +164,18 @@ namespace fastbird
 
 		virtual int GetSpecialOrder() const { return mSpecialOrder; }
 		virtual bool GetInheritVisibleTrue() const { return mInheritVisibleTrue; }
+		virtual void SetScriptPath(const char* path) { assert(path);  mScriptPath = path; }
+		virtual const char* GetScriptPath() const { return mScriptPath.c_str(); }
+
+		virtual void SetUIFilePath(const char* path) { assert(path); mUIPath = path; }
+		virtual const char* GetUIFilePath() const { return mUIPath.c_str(); }
 
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
 		virtual void AlignText();
-		const RECT& GetScissorRegion();
+		RECT GetScissorRegion();
+		void GetScissorIntersection(RECT& region);
 		void SetUseBorder(bool use);
 		void RefreshBorder();
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
@@ -179,9 +188,12 @@ namespace fastbird
 
 	protected:
 		static const float WinBase::LEFT_GAP;
+		static const float NotDefined;
 
 		bool mVisible;
 		std::string mName;
+		std::string mScriptPath;
+		std::string mUIPath;
 		ALIGNH::Enum mAlignH;
 		ALIGNV::Enum mAlignV;
 		// local
@@ -205,6 +217,7 @@ namespace fastbird
 		Vec2 mWNSize; // worldSize aligned.
 		Vec2 mWNPos; // worldPos;
 		Vec2 mWNPosOffset; // scrollbar offset
+		Vec2 mNPosOffset;
 		Vec2 mWNAnimPosOffset; // animation offset
 		Container* mParent;
 		WinBase* mManualParent;
@@ -257,6 +270,7 @@ namespace fastbird
 		unsigned mTextWidth;
 		unsigned mNumTextLines;
 		bool mInheritVisibleTrue;
+		bool mInvalidateMouse;
 
 	};
 }

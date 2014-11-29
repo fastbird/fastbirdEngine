@@ -141,7 +141,9 @@ void ParticleManager::Update(float elapsedTime)
 void ParticleManager::AddActiveParticle(IParticleEmitter* pEmitter)
 {
 	LOCK_CRITICAL_SECTION lock(mActivePCS);
-	mActiveParticles.push_back(pEmitter);	
+	mActiveParticles.push_back(pEmitter);
+
+	DeleteValuesInVector(mPendingDeletes, pEmitter);
 }
 
 void ParticleManager::RemoveDeactiveParticle(IParticleEmitter* pEmitter)

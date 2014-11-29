@@ -97,6 +97,10 @@ namespace fastbird
 
 		void AddRegion(TextureAtlasRegion* pRegion)
 		{
+			if (mRegions.Find(pRegion->mName) != mRegions.end())
+			{
+				assert(0);
+			}
 			mRegions.Insert(std::make_pair(pRegion->mName, pRegion));
 		}
 

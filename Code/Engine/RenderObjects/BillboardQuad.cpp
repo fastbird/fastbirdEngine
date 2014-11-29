@@ -35,7 +35,7 @@ namespace fastbird
 		mOffset = offset;
 	}
 
-	void BillboardQuad::PreRender()
+	void BillboardQuad::PreRender(float dt)
 	{
 
 	}

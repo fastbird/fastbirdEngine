@@ -63,6 +63,8 @@ namespace fastbird
 		void OnPopupYes(void* arg);
 		void OnPopupNo(void* arg);
 		void RegisterLuaFuncs();
+		const char* FindUIFilenameWithLua(const char* luafilepath);
+		const char* FindUINameWithLua(const char* luafilepath);
 
 	private:
 		bool mInputListenerEnable;

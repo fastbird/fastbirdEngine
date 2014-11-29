@@ -35,6 +35,7 @@ namespace fastbird
 		virtual void SetPos(const Vec3& pos);
 		virtual const Vec3& GetPos() const;
 		virtual void SetDir(const Vec3& dir);
+		virtual void SetDirAndRight(const Vec3& dir, const Vec3& right);
 		virtual void SetRot(const Quat& rot);
 		virtual const Quat& GetRot() const { return mTransformation.GetRotation(); }
 		virtual void SetCamTransform(const Vec3& pos, const Quat& rot);
@@ -66,6 +67,7 @@ namespace fastbird
 		virtual Ray3 ScreenPosToRay(long x, long y);
 		virtual void SetYZSwap(bool enable){mYZSwap = enable; mProjPropertyChanged = true; }
 		virtual void SetTarget(SpatialObject* pObj);
+		virtual SpatialObject* GetTarget() const { return mTarget; }
 		virtual void SetCurrent(bool cur) { mCurrentCamera = cur; }
 		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
 		virtual void SetCameraIndex(size_t idx) {mCamIndex = idx;}

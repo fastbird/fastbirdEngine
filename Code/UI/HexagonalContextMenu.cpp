@@ -153,26 +153,35 @@ namespace fastbird
 
 	bool HexagonalContextMenu::IsIn(IMouse* mouse)
 	{
-		Vec2 localMousePos = (mouse->GetNPos() - mWNPos) / mWNSize;
-		localMousePos = localMousePos*2.0f - 1.0f;
-		localMousePos.y = -localMousePos.y;
+		bool isIn = __super::IsIn(mouse);
+
 		mMouseInHexaIdx = -1;
-		for (int i = 0; i<6; ++i)
+		if (isIn)
 		{
-			if (!mHexaEnabled[i])
-				continue;
-			// world means just entire Hexagonal Area.
-			Vec2 worldMouse = mHexaOrigins[i] - localMousePos;
-			worldMouse = Abs(worldMouse);
-			float m = std::max(worldMouse.x + worldMouse.y*0.57735f, worldMouse.y*1.1547f) - 0.2f;
+			Vec2 localMousePos = (mouse->GetNPos() - mWNPos) / mWNSize;
+			localMousePos = localMousePos*2.0f - 1.0f;
+			localMousePos.y = -localMousePos.y;
 			
-			if (m<=0.1)
+
+			for (int i = 0; i<6; ++i)
 			{
-				mMouseInHexaIdx = i;
-				break;
+				if (!mHexaEnabled[i])
+					continue;
+				// world means just entire Hexagonal Area.
+				Vec2 worldMouse = mHexaOrigins[i] - localMousePos;
+				worldMouse = Abs(worldMouse);
+				float m = std::max(worldMouse.x + worldMouse.y*0.57735f, worldMouse.y*1.1547f) - 0.2f;
+
+				if (m <= 0.1)
+				{
+					mMouseInHexaIdx = i;
+					break;
+				}
 			}
+			return mMouseInHexaIdx != -1;
 		}
-		return mMouseInHexaIdx != -1;
+		return false;
+		
 	}
 
 	//-----------------------------------------------------------------------

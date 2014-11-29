@@ -53,6 +53,8 @@ namespace fastbird
 		virtual void OnViewMatChanged();
 		virtual void OnProjMatChanged();
 
+		virtual void CopyLight(ILight* other);
+
 	private:
 		Vec3 mDirection;
 		Vec3 mDiffuse;
@@ -70,6 +72,7 @@ namespace fastbird
 		bool mInterpolating;
 
 		ICamera* mLightCamera;
+		bool mDuplicatedLightCamera;
 
 	};
 }

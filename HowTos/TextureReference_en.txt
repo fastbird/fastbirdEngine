@@ -1,0 +1,238 @@
+# Texture manipulation reference
+
+## Load a texture file from a disk.
+
+	ITexture* IRenderer::CreateTexture(const char* file, 
+		ITexture* pReloadingTexture /*=0*/)
+
+Use this function to load a texture file from a disk. `file` is the texture path.
+`pReloadingTexture` usually used in internal hot-reloading process. Usually specify 0.
+
+This function returns ITexture*, You can store it in a smart pointer, SmartPtr\<ITexture*\>, to prevent memory leak. After a texture is loaded, it is stored in the memory cache and the following requests with the same path returns the stored cache quickly.
+
+**Example)** 
+
+	SmartPtr<ITexture> pLoadedTexture = gFBEnv->pRenderer->CreateTexture(
+		"data/textures/mytexture.dds");
+
+
+## Texture generation in run-time.
+
+	ITexture* IRenderer::CreateTexture(void* data, int width, int height, 
+		PIXEL_FORMAT format, BUFFER_USAGE usage, 
+		int buffer_cpu_access, int type)
+	
+This function is used to generate a texture in RunTime.
+
+* `data` Texture data pointer.
+
+* `width`, `height` : Size of the texture.
+
+* `format` : Format of the texture. It is equal to DXGI formats. Usually one use `PIXEL_FORMAT_R8G8B8A8_UNORM` for ordinary image texture. All supported formats is defined in the RenderEnums.h - `enum PIXEL_FORMAT`
+
+* `usage` :  The following usage are supported.
+ * `BUFFER_USAGE_DEFAULT` : When a resource is required read and write access by the GPU. Common usage.
+ * `BUFFER_USAGE_IMMUTABLE` : for resources created with initial data and not required modification. only readable by the GPU.
+ * `BUFFER_USAGE_DYNAMIC` : a resource is required write access by the CPU and read access by the GPU. Use this flag when you need to modify the data one or more per frame.
+ * `BUFFER_USAGE_STAGING` : a resource manipulated in the CPU. Create a buffer with this flag when you want to copy data from the textures that doesn't have the CPU access right. For example, ITexture::CopyToStaging() function uses this flag to copy data from the textures which have `BUFFER_USAGE_DEFAULT` flag.
+
+* `buffer_cpu_access` : Combinatino of `enum BUFFER_CPU_ACCESS_FLAG`. If `BUFFER_CPU_ACCESS_WRITE` is specified you can modify the texture data with ITexture::Map(). Need to specify `BUFFER_USAGE_DYNAMIC` or `BUFFER_USAGE_STAGING` in this case. If you specify `BUFFER_CPU_ACCESS_READ`, need `BUFFER_USAGE_STAGING` flag for `usage`.
+
+* `type` : Combinatino of the following enum.
+    
+		enum TEXTURE_TYPE
+		{
+			TEXTURE_TYPE_DEFAULT=0x1,
+			TEXTURE_TYPE_COLOR_RAMP=0x2,
+			TEXTURE_TYPE_RENDER_TARGET=0x4,
+			TEXTURE_TYPE_RENDER_TARGET_SRV=0x8,
+			TEXTURE_TYPE_DEPTH_STENCIL=0x10,
+			TEXTURE_TYPE_DEPTH_STENCIL_SRV=0x20, //PIXEL_FORMAT_R32_TYPELESS
+			TEXTURE_TYPE_CUBE_MAP=0x40,
+			TEXTURE_TYPE_MULTISAMPLE = 0x80,
+			TEXTURE_TYPE_MIPS = 0x100,
+			TEXTURE_TYPE_COUNT
+		};
+
+ * `TEXTURE_TYPE_DEFAULT` : Normal textures can be bound into shaders.
+ * `TEXTURE_TYPE_COLOR_RAMP` : 1 dimensional texture which contains the range of color data. Refer to ColorRamp::GenerateColorRampTextureData().
+ * `TEXTURE_TYPE_RENDER_TARGET` : A texture which is a render target but not bindable to shaders.
+ * `TEXTURE_TYPE_RENDER_TARGET_SRV` : A texture which is a render target and can be bound to shaders.
+ * `TEXTURE_TYPE_DEPTH_STENCIL` :  A texture which is a depth-stencil target but not bindable to shaders.
+ * `TEXTURE_TYPE_DEPTH_STENCIL_SRV` : A texture which is a depth-stencil target and can be bound to shaders. In this case you need to specify `PIXEL_FORMAT_R32_TYPELESS` for it `format`. Shader resource will be created with `PIXEL_FORMAT_R32_FLOAT` automatically.
+ * `TEXTURE_TYPE_CUBE_MAP` : For a cubemap which is 2d texture array with 6 elements.
+ * `TEXTURE_TYPE_MIPS` : Generate mipmap for a texture which is a shader bindable render target
+ 
+This function returns ITexture* and you can save the pointer in the SmartPtr\<ITexture\> to prevent leak.
+
+
+## RenderToTexture Utility class
+
+IRenderToTexture class helps one to render the part of scene into a texture easily. To create an instance
+
+	IRenderToTexture* IRenderer::CreateRenderToTexture(bool everyframe)
+
+use this function. After you are done with it, call IRenderer::DeleteRenderToTexture(IRendertoTexture* p) to release it. The followings are two examples of IRenderToTexture usage.
+
+### Rendering an object into a texture using RTT.
+
+	// Create RTT
+	auto rtt = gEnv->pRenderer->CreateRenderToTexture(false);
+
+	// Setting the camera
+	ICamera* cam = rtt->GetCamera();
+	cam->SetNearFar(0.01f, 100.0f);	
+	Vec3 pos() // camera pos
+	Vec3 dir() // camera dir
+	cam->SetPos(pos);
+	cam->SetDir(dir);
+
+	// Setting the scene.
+	IMeshObject* pMeshObject = GetMeshObject();
+	assert(pMeshObject);
+	// every objects can be attached into several scenes.
+	rtt->GetScene()->AttachObject(pMeshObject);
+
+	// Setting the render targets
+	Vec2I size(128, 128);
+	rtt->SetColorTextureDesc(size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, 
+		true, false, false);
+	rtt->SetDepthStencilDesc(size.x, size.y, PIXEL_FORMAT_D16_UNORM, false, 
+		false);
+
+	rtt->Render();
+
+	SmartPtr<ITexture> pResultTexture = rtt->GetRenderTargetTexture();
+	// this will release every relevant resource like the scene and camera.
+	gEnv->pRenderer->DeleteRenderToTexture(rtt);
+
+	// return the result texture. can be bound to shaders.
+	return pResultTexture; 
+
+
+### Dynamic environment map generation with RTT
+
+The following example shows how to generate an environment map with RTT.
+	
+	void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
+	{
+		if (!mRT)
+		{
+			mRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
+			// SetColorTextureDesc definition : 
+			// IRenderToTexture::SetColorTextureDesc(width, height, format, 
+			// 			IsShaderResource, NeedTogenerateMipmap, IsCubemap)
+			mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, 
+				PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
+		}
+		
+		ITexture* pTexture = mRT->GetRenderTargetTexture();
+		// Attach skysphere.
+		mRT->GetScene()->AttachSkySphere(this);
+		
+		// Setting the camera.
+		mRT->GetCamera()->SetPos(origin);
+		mRT->GetCamera()->SetFOV(HALF_PI);
+		mRT->GetCamera()->SetAspectRatio(1.0f);
+		Vec3 dirs[] = {
+			Vec3(1, 0, 0), Vec3(-1, 0, 0),
+			Vec3(0, 0, 1), Vec3(0, 0, -1),
+			Vec3(0, 1, 0), Vec3(0, -1, 0),
+		};
+		
+		// Render each side of the cube map.
+		for (int i = 0; i < 6; i++)
+		{
+			mRT->GetCamera()->SetDir(dirs[i]);
+			mRT->Render(i);
+		}
+
+		// Generate mipmaps.
+		pTexture->GenerateMips();
+		// Uncomment this to see the result.
+		// pTexture->SaveToFile("environment.dds");
+		gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
+		mRT->GetScene()->DetachSkySphere();
+	}
+
+
+## How to read the texture data which has Default Usage flag.
+
+If you want to read third lod data from the cube texture generated in the above example, code
+
+	const int usingLod = 2; // if ENV_SIZE == 1024, we are using 256 size.
+	// width will be 256, if the most detailed lod's size is 1024.
+	const int width = (int)(ENV_SIZE / pow(2, usingLod)); 
+	// Need to specify `BUFFER_USAGE_STAGING` to create a staging texture.
+	SmartPtr<ITexture> pStaging = gFBEnv->pRenderer->CreateTexture(0, width, 
+		width, PIXEL_FORMAT_R8G8B8A8_UNORM,	BUFFER_USAGE_STAGING, 
+		BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_CUBE_MAP);
+	for (int i = 0; i < 6; i++)
+	{
+		// calculate the subResource index.
+		unsigned subResource = i * (maxLod+1) + usingLod;
+		pTex->CopyToStaging(pStaging, i, 0, 0, 0, subResource, 0);
+	}
+	pStaging->SaveToFile("envSub.dds");
+
+
+ITexture::CopyToStaging defined like this.
+
+	void ITexture::CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstX, 
+		UINT dstY, UINT dstZ, UINT srcSubresource, Box3D* srcBox)
+			
+* `dst` : target staging texture.
+* `dstSubresource` : target destination sub resource index.
+* `dstX`, `dstY`, `dstZ` : destination pixel position.
+* `srcSubresource` : Source subresource. In the above example, the source texture is a cube map which is an array texture contining 6 elements. The order of sub resources are
+
+    if the number of mip levels is 11
+
+		0 : LOD0(most detailed) of the first texture
+		1 : LOD1 of the first texture
+		2 : LOD2 of the first texture
+		.
+		.
+
+
+		11 : LOD0 of the first texture
+		12 : LOD1 of the first texture
+		13 : LOD2 of the first texture
+
+We can calculate the indices what we want to reference with the following equation.
+
+	// the value maxLod is 10. So need to plus 1.
+	// since we have 11 mip levels.
+	unsigned subResource = i * (maxLod+1) + usingLod; 
+			
+			
+## How to map dynamic or staging texture
+
+One can map a dynamic or staging texture with ITexture::Map() function.
+
+	//--------------------------------------------------------------------------
+	void Material::RefreshColorRampTexture(int slot, BINDING_SHADER shader)
+	{
+		ITexture* pTexture = 0;
+		FindTextureIn(shader, slot, &pTexture);
+		assert(pTexture!=0 && pTexture->GetType() == TEXTURE_TYPE_COLOR_RAMP);
+
+		ColorRamp cr = mColorRampMap[pTexture];
+		
+		// call ITexture::Map()
+		MapData data = pTexture->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (data.pData)
+		{
+			// bar position is already updated. generate ramp texture data.
+			cr.GenerateColorRampTextureData(128);
+			
+			// Wirte the data into the pointer retrieved.
+			unsigned int *pixels = (unsigned int*)data.pData; 
+			for(unsigned x = 0; x < 128; x++) 
+			{
+				pixels[127-x] = cr[x].Get4Byte();
+			}
+			pTexture->Unmap(0); // Need to call Unmap.
+		}
+		mColorRampMap[pTexture] = cr;
+	}

@@ -1,5 +1,5 @@
-#include <EngineApp/StdAfx.h>
-#include <EngineApp/CameraMan.h>
+#include "StdAfx.h"
+#include "CameraMan.h"
 
 using namespace fastbird;
 //---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ void CameraMan::Update(float elapsedTime)
 		
 		sprintf_s(buffer, "Cam matrix[0] = %s", StringConverter::toString(row0, 10, 4).c_str());
 		int x = 1100;
-		int y = 180;
+		int y = 150;
 		
 		int yStep = 16;
 		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);

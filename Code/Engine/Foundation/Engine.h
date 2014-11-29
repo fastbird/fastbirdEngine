@@ -164,9 +164,7 @@ namespace fastbird
 
 		std::vector<IObject*> mMarkObjects;
 
-		bool mExiting;
-
-		
+		bool mExiting;		
 	};
 };
 

@@ -33,6 +33,7 @@ namespace fastbird
 		virtual BoundingVolume& operator= (const BoundingVolume& other);
 		virtual fastbird::Vec3 GetSurfaceFrom(const Vec3& src, Vec3& normal);
 		virtual void Invalidate();
+		virtual bool Contain(const Vec3& pos) const;
 
 	private:
 		Vec3 mCenter;

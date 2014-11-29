@@ -9,7 +9,7 @@ namespace fastbird
 	public:
 		Container() : mScrollerV(0)
 			, mUseScrollerH(0), mUseScrollerV(0), mChildrenPosSizeChanged(false)
-			, mWndContentUI(0){}
+			, mWndContentUI(0), mChildrenChanged(false){}
 		virtual ~Container();
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
@@ -39,8 +39,16 @@ namespace fastbird
 		virtual void RefreshScissorRects();
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		virtual bool ParseLua(const fastbird::LuaObject& compTable);
 
 		void SetChildrenPosSizeChanged() { mChildrenPosSizeChanged = true; }
+
+		virtual float PixelToLocalNWidth(int pixel) const;
+		virtual float PixelToLocalNHeight(int pixel) const;
+		virtual Vec2 PixelToLocalNSize(const Vec2I& pixel) const;
+
+		bool HasVScroll() { return mScrollerV != 0; }
+		const Vec2& GetScrollOffset() const;
 		
 	private:
 		friend class WinBase;
@@ -64,6 +72,7 @@ namespace fastbird
 		bool mUseScrollerV;
 		IWinBase* mWndContentUI;
 		bool mChildrenPosSizeChanged;
+		bool mChildrenChanged;  // only detecting addition. not deletion.
 
 	};
 }

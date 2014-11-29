@@ -60,5 +60,7 @@ namespace fastbird
 		const AUXIL_MAP* mAuxCloned;
 		Timer::FRAME_PRECISION mLastUpdateFrame;
 
+		bool mRootAnimated;
+
 	};
 }

@@ -46,6 +46,8 @@ namespace fastbird
 		virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shader, int slot, 
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
 
+		virtual ITexture* GetTexture(BINDING_SHADER shader, int slot);
+
 		virtual void SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slot, 
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
 

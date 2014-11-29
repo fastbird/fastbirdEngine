@@ -75,6 +75,21 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 		successful = true;
 	}
 
+	for (const auto& anim : mAnim)
+	{
+		std::string actionFile = StripExtension(filepath);
+		actionFile += ".actions";
+		for (auto& meshobj : mMeshObjects)
+		{
+			const char* name = meshobj->GetName();
+			if (strcmp(name, anim.first.c_str()) == 0)
+			{
+				meshobj->SetAnimationData(anim.second, actionFile.c_str());
+				break;
+			}
+		}		
+	}
+
 	if (!mUseMeshGroup)
 	{
 		if (!mMeshObjects.empty())
@@ -267,6 +282,17 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 		}
 		else
 		{
+			const InstanceGeometryPointerArray& ga = node[i]->getInstanceGeometries();
+			size_t gaCount = ga.getCount();
+			for (size_t g = 0; g < gaCount; g++)
+			{
+				std::string id = ga[g]->getInstanciatedObjectId().toAscii();
+				IMeshObject* pMeshObject = GetMeshObject(id.c_str());
+				if (pMeshObject)
+				{
+					pMeshObject->SetName(name.c_str());
+				}
+			}
 			// auxiliaries
 			if (name.find("_POS") == 0)
 			{
@@ -340,11 +366,105 @@ bool ColladaImporter::writeLight( const COLLADAFW::Light* light )
 
 bool ColladaImporter::writeAnimation( const COLLADAFW::Animation* animation )
 {
+	auto type = animation->getAnimationType();
+	assert(type == COLLADAFW::Animation::ANIMATION_CURVE);
+	auto uniqueId = animation->getUniqueId();
+	COLLADAFW::AnimationCurve* animationCurve = (COLLADAFW::AnimationCurve*)animation;
+	auto dimention = animationCurve->getOutDimension();
+	assert(dimention == 1);
+	auto keyCount = animationCurve->getKeyCount();
+	auto& inputValues = animationCurve->getInputValues();
+	auto& outputValues = animationCurve->getOutputValues();
+	FLOAT_DATA inputData, outputData;
+	GetFloatOrDouble(inputData, inputValues);
+	GetFloatOrDouble(outputData, outputValues);
+	auto originalId = animation->getOriginalId();
+	auto ids = Split(originalId, "_");
+
+	int animationType = -1; // 0 = location, 1 = rotation, 2 = scale
+	AnimationData::PosComp component;
+	if (ids[1] == "location")
+	{
+		animationType = 0;
+		if (ids[2] == "X")
+			component = AnimationData::X;
+		else if (ids[2] == "Y")
+			component = AnimationData::Y;
+		else if (ids[2] == "Z")
+			component = AnimationData::Z;
+		else
+		{
+			assert(0);
+			return true;
+		}
+	}
+	else if (ids[1] == "rotation")
+	{
+		animationType = 1;
+		assert(ids[2] == "euler");
+		if (ids[3] == "X")
+			component = AnimationData::X;
+		else if (ids[3] == "Y")
+			component = AnimationData::Y;
+		else if (ids[3] == "Z")
+			component = AnimationData::Z;
+		else
+		{
+			assert(0);
+			return true;
+		}
+	}
+	else if (ids[1] == "scale")
+	{
+		animationType = 2;
+		if (ids[2] == "X")
+			component = AnimationData::X;
+		else if (ids[2] == "Y")
+			component = AnimationData::Y;
+		else if (ids[2] == "Z")
+			component = AnimationData::Z;
+		else
+		{
+			assert(0);
+			return true;
+		}
+	}
+	else
+	{
+		assert(0);
+		return true;
+	}
+
+	for (size_t i = 0; i < keyCount; ++i)
+	{
+		switch (animationType)
+		{
+		case 0: // position
+					mAnim[ids[0]].AddPosition(inputData[i], outputData[i], component);							 
+					break;
+
+		case 1: // rotation
+			mAnim[ids[0]].AddRotEuler(inputData[i], Radian(outputData[i]), component);
+			break;
+
+		case 2: // scale
+			// not support for now.
+			//mAnim[ids[0]].AddScale(inputData[i], outputData[i], component);
+			break;			
+		}		
+	}
+
 	return true;
 }
 
 bool ColladaImporter::writeAnimationList( const COLLADAFW::AnimationList* animationList )
 {
+	const auto& bindings = animationList->getAnimationBindings();
+	auto numAnimationBindings = bindings.getCount();
+	for (unsigned i = 0; i < numAnimationBindings; i++)
+	{
+		auto binding = bindings.getData()+1;
+	}
 	return true;
 }
 
@@ -368,7 +488,7 @@ bool ColladaImporter::writeKinematicsScene( const COLLADAFW::KinematicsScene* ki
 	return true;
 }
 
-void ColladaImporter::GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::MeshVertexData& src)
+void ColladaImporter::GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::FloatOrDoubleArray& src)
 {
 	using namespace COLLADAFW;
 	if (src.getType() == FloatOrDoubleArray::DATA_TYPE_FLOAT)
@@ -614,7 +734,7 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 
 	if (mesh >= mMeshObjects.size())
 		mMeshObjects.push_back(IMeshObject::CreateMeshObject());
-	mMeshObjects.back()->SetName(mNames[mesh].c_str());
+	mMeshObjects.back()->SetName(mNames[mesh].c_str()); // this will be overwrtten by the node name
 	IMeshObject* pMeshObject = mMeshObjects.back();
 	if (mPosIndices[mesh].empty())
 		return;	
