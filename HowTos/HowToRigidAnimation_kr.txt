@@ -1,0 +1,26 @@
+# How to Rigid Animation
+
+이 문서는 fastbird engine의 Rigid Animation에 대해 설명합니다. 이 문서에서 Rigid Animation이란 오브젝트의 모든 정점에 동일한 행렬이 적용되는 경우를 뜻합니다. 따라서, 차량의 문짝이나 무기의 반동 혹은 미사일이 장전되는 모습 등, 에니메이션에 참여하는 각 오브젝트들의 모양이 변형되지 않고 Transformation만 에니메이션 되는 경우 사용됩니다.
+
+## 에니메이션 데이터
+
+fastbird-engine은 Transformation 에니메이션을 포함한 Collada(.dae) 데이터를 임포트 할 수 있습니다. 블렌더에서 오브젝트에 Animation Key를 잡고 Transformation을 설정해주고 익스포트를 하면 데이터 준비가 완료됩니다. 블렌더에서 실제로 키를 잡아주는 방법은 이 문서의 범위를 벗어나서 설명하지 않습니다. 블렌더 외의 3D 저작도구에서 익스포트한 .dae파일로는 테스트되지 않았습니다.
+
+만약 Action이 여러 동작이면 한 트랙으로 합치고, 각 Action의 시작과 끝 프레임을 아래와 같이 파일로 기록합니다.
+
+** daefilename.actions
+
+	<Actions>
+		<Action name="Idle" start="0" end="1"/>
+		<Action name="Ready" start="1" end="91"/>
+	</Actions>
+
+
+이제 엔진에서 IEngine::GetMeshObject() 혹은 IEngine::GetMeshGroup() 함수를 사용하여 익스포트한 .dae파일을 임포트하면 Animation Ready인 IMeshObject 혹은 IMeshGroup을 얻을 수 있습니다.
+내부적으로는 동일한 메시에 대한 에니메이션 정보를 들고 있는 하나의 AnimationData(Code/Engine/Animation/AnimationData.h)가 생성되고, 메시를 여러개 생성할 경우 각각의 메시 오브젝트마다 하나의 Animation(Code/Engine/Animation/Animation.h) 인스턴스를 가지게 됩니다. 이 Animation 인스턴스들은 모두 동일한 AnimationData를 참조함으로 메모리가 낭비되지 않습니다.
+
+어플리케이션 프로그래머는 이 Animation 인스턴스을 조작함으로써 원하는 동작을 출력할 수 있습니다. 동작을 출력하기 위해서는 아래 함수를 호출합니다.
+
+	Animation::PlayAction(const std::string& name, bool immediate, bool reverse)
+	
+name은 .actions 파일에 작성해 둔 동작 이름입니다. immediate가 true이면 현재 플레이하고 있는 동작을 바로 중지하고 시작합니다. reverse가 true이면 에니메이션을 거꾸로 출력합니다. 포대가 함선에서 올라오는 에니메이션만 만들면 reverse 기능으로 내려가는 모습을 출력할 수 있습니다.

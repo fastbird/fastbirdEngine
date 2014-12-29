@@ -100,6 +100,7 @@ namespace fastbird
 		virtual void BindMaterialParams() = 0;
 		virtual void RegisterReloading() = 0;
 		virtual bool IsTransparent() const = 0;
+		virtual bool IsGlow() const = 0;
 		virtual void ReloadShader() = 0;
 
 		virtual int GetBindingShaders() const = 0;

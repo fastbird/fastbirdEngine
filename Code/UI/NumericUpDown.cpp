@@ -13,59 +13,63 @@ namespace fastbird
 		, mMin(0)
 		, mMax(100)
 	{
-		mDown = (Button*)AddChild(0.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
-		mDown->SetSizeX(12);
-		mDown->SetText(L"-");		
-		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
-		mDown->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-			std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
-
-		mUp = (Button*)AddChild(1.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
-		mUp->SetSizeX(12);
-		mUp->SetProperty(UIProperty::ALIGNH, "right");
-		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
-		mUp->SetText(L"+");
-		
-		mUp->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-			std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
-
-		mNumber = (StaticText*)AddChild(0.5, 0.0, 0.33333f, 1.0f, ComponentType::StaticText);
-		mNumber->SetProperty(UIProperty::ALIGNH, "center");
-		mNumber->SetProperty(UIProperty::TEXT_ALIGN, "center");
-
-		
-		
-	
-
-		WCHAR buffer[100];
-		swprintf_s(buffer, L"%d", mValue);
-		mNumber->SetText(buffer);
+		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+		mUIObject->mOwnerUI = this;
+		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+		mUIObject->SetTextColor(mTextColor);
+		mUIObject->SetNoDrawBackground(true);		
 	}
 
 	NumericUpDown::~NumericUpDown()
 	{
 	}
 
-	void NumericUpDown::Reposition()
-	{
-
-	}
-
-	void NumericUpDown::OnPosChanged()
-	{
-		__super::OnPosChanged();
-		//Reposition();
-	}
-
-	void NumericUpDown::OnSizeChanged()
-	{
-		__super::OnSizeChanged();
-		//Reposition();
-	}
-
 	void NumericUpDown::GatherVisit(std::vector<IUIObject*>& v)
 	{
+		if (!mVisible)
+			return;
+		v.push_back(mUIObject);
+
 		__super::GatherVisit(v);
+	}
+
+	void NumericUpDown::OnCreated()
+	{
+		InitializeButtons();
+	}
+
+	void NumericUpDown::InitializeButtons()
+	{
+		//mDown = (Button*)AddChild(0.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
+		mDown = (Button*)AddChild(ComponentType::Button);
+
+
+		//mUp = (Button*)AddChild(1.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
+		mUp = (Button*)AddChild(ComponentType::Button);
+
+		mDown->SetNSizeY(1.0);
+		mDown->SetSizeX(12);
+		mDown->SetNPos(Vec2(0, 0));		
+		mDown->SetText(L"-");		
+		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
+		mDown->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
+
+		mUp->SetNSizeY(1.0f);
+		mUp->SetSizeX(12);
+		mUp->SetNPos(Vec2(1, 0));
+		mUp->SetProperty(UIProperty::ALIGNH, "right");
+		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
+		mUp->SetText(L"+");		
+		mUp->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
+
+		SetProperty(UIProperty::ALIGNH, "center");
+		SetProperty(UIProperty::TEXT_ALIGN, "center");
+
+		WCHAR buffer[100];
+		swprintf_s(buffer, L"%d", mValue);
+		SetText(buffer);
 	}
 
 	void NumericUpDown::SetNumber(int number)
@@ -73,7 +77,7 @@ namespace fastbird
 		mValue = number;
 		WCHAR buffer[100];
 		swprintf_s(buffer, L"%d", mValue);
-		mNumber->SetText(buffer);
+		SetText(buffer);
 
 		mUp->SetEnable(mValue < mMax);
 		mDown->SetEnable(mValue > mMin);

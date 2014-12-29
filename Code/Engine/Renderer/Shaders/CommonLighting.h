@@ -171,3 +171,50 @@ float3 GetIrrad(float4 vNormal)
 	
 	// return x1+x2+x3;
 }
+
+float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float ndv, float3 diffColor, float3 specColor)
+{
+	float3 envContrib = {0, 0, 0};
+#ifdef ENV_TEXTURE
+	vec3 Tp = normalize(tangent
+		- normal*dot(tangent, normal)); // local tangent
+	vec3 Bp = normalize(binormal
+		- normal*dot(binormal,normal)
+		- Tp*dot(binormal, Tp)); // local bitangent
+		
+	static float2 hammersley[16] = (float2[16])gHammersley;
+	for(int i=0; i<ENV_SAMPLES; ++i)
+	{
+		vec2 Xi = hammersley[i];
+		vec3 Sd = ImportanceSampleLambert(Xi,Tp,Bp,normal);
+		float pdfD = ProbabilityLambert(Sd, normal);
+		float lodD = ComputeLOD(Sd, pdfD);	
+		
+		envContrib +=	SampleEnvironmentMap(Sd, lodD) * diffColor;
+		vec3 Hn = ImportanceSampleGGX(Xi,Tp,Bp,normal,roughness);
+		
+		float3 Ln = -reflect(toViewDir, Hn);
+		Ln.yz = Ln.zy;
+
+		float ndl = dot(normal, Ln);
+
+		// Horizon fading trick from http://marmosetco.tumblr.com/post/81245981087
+		const float horizonFade = 1.3;
+		float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
+		horiz *= horiz;
+		ndl = max( 0.05, abs(ndl) );
+
+		float vdh = max( 1e-8, abs(dot(toViewDir, Hn)) );
+		float ndh = max( 1e-8, abs(dot(normal, Hn)) );
+		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
+			ProbabilityGGX(ndh, vdh, roughness));
+		envContrib += SampleEnvironmentMap(Ln, lodS)
+			  * CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness) * horiz;
+	}
+
+	envContrib /= ENV_SAMPLES;
+	return envContrib;
+#else
+	return envContrib;
+#endif
+}

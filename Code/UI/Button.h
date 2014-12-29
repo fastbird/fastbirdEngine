@@ -1,6 +1,7 @@
 #pragma once
 
 #include <UI/Container.h>
+#include <UI/ButtonImages.h>
 
 namespace fastbird
 {
@@ -19,22 +20,24 @@ public:
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();
-	virtual void SetNPosOffset(const Vec2& offset);
+	//virtual void SetNPosOffset(const Vec2& offset);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar
 	virtual void Blink(bool blink); // progress bar
 	virtual void OnStartUpdate(float elapsedTime);
 	virtual void EndProgress();
-	virtual void SetEnable(bool enable);
 	virtual void Highlight(bool highlight);
 	virtual void SetBackgroundTexture(ITexture* pTexture);
+	virtual void OnEnableChanged();
 	const static float LEFT_GAP;
 
 	void OnMouseIn(void* arg);
 	void OnMouseHover(void* arg);
 	void OnMouseOut(void* arg);
 	void OnMouseDown(void* arg);
+	bool IsActivated() const { return mActivated; }
+	void AlignIconText();
 
 private:
 
@@ -48,13 +51,15 @@ private:
 	Color mEdgeColorOver;
 
 	std::string mImageAtlas;
-	ImageBox* mImage;
-	ImageBox* mImageOver;
-	ImageBox* mFrameImage;
+	ImageBox* mImages[ButtonImages::Num];
+
 	HorizontalGauge* mProgressBar;
 	bool mInProgress;
 	bool mNoBackgroundBackup;
-	bool mEnable;
+	bool mActivated;
+	bool mChangeImageActivation;
+	bool mIconText;
+	bool mNoButton;
 };
 
 }

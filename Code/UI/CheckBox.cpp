@@ -9,42 +9,41 @@ namespace fastbird
 
 CheckBox::CheckBox()
 	: mChecked(false)
+	, mCheckImageBox(0)
 {
-	mCheckImageBox = static_cast<ImageBox*>(
-		AddChild(0.f, 0.f, 0.05f, 1.0f, ComponentType::ImageBox));
-	mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
-	mStaticText = static_cast<StaticText*>(
-		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
-	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
-
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+	mTextGap.x = 28;
 }
 
 CheckBox::~CheckBox()
 {
 }
 
+void CheckBox::OnCreated()
+{
+	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
+	mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
+	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
+	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
+	mCheckImageBox->SetSize(Vec2I(24, 24));
+	mCheckImageBox->SetNPos(Vec2(0.0, 0.5f));
+
+	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
+
+	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
+	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
+}
+
 void CheckBox::GatherVisit(std::vector<IUIObject*>& v)
 {
+	v.push_back(mUIObject);
 	__super::GatherVisit(v);
-}
-
-void CheckBox::OnSizeChanged()
-{
-	__super::OnSizeChanged();
-	mCheckImageBox->SetSize(Vec2I(mSize.y, mSize.y));
-	mStaticText->SetPosX(mSize.y+2);
-}
-
-void CheckBox::SetText(const wchar_t* szText)
-{
-	mStaticText->SetText(szText);
 }
 
 void CheckBox::SetCheck(bool check)
@@ -66,16 +65,21 @@ void CheckBox::OnClicked(void* arg)
 {
 	mChecked = !mChecked;
 	UpdateImage();
-
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void CheckBox::UpdateImage()
 {
-	if (mChecked)
-		mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_checked");
-	else
-		mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
+	if (mCheckImageBox)
+	{
+		if (mChecked)
+			mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_checked");
+		else
+			mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
+	}
 }
 
+void CheckBox::OnMouseHover(void* arg)
+{
+	SetCursor(WinBase::mCursorOver);
+}
 }

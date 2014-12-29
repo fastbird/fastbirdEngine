@@ -50,6 +50,9 @@ public:
 	virtual void SetItemString(size_t row, size_t col, const wchar_t* szString);
 	virtual void SetItemTexture(size_t row, size_t col, ITexture* texture);
 	virtual void SetItemTexture(size_t row, size_t col, const char* texturePath);
+	virtual void SetTextureAtlas(const char* atlas);
+	virtual void SetItemTextureRegion(size_t row, size_t col, const char* region);
+	virtual void SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize);
 	virtual std::string GetSelectedString();
 	typedef std::vector<size_t> SelectedRows;
 	virtual const SelectedRows& GetSelectedRows() const { return mSelectedRows; }
@@ -66,6 +69,9 @@ public:
 	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 	virtual void ClearSelection();
 	virtual bool IsSelected(unsigned row);
+	virtual unsigned GetNumRows();
+	virtual void MakeMergedRow(unsigned row);
+	virtual void SetRowId(unsigned row, unsigned id);
 
 private:
 
@@ -78,14 +84,17 @@ private:
 	typedef std::vector<ListItem*> ROW;
 	ROW mHeaders;
 	std::vector<ROW> mItems;
+	std::vector<unsigned> mRowIds;
 	SelectedRows mSelectedRows;
 	size_t mCurSelectedCol;
 	unsigned mNumCols;
 	std::vector < float > mColSizes;
 	std::vector< std::string > mColAlignes;
+	std::vector< std::string> mHeaderTextSize;
 	std::vector < std::string > mTextSizes;
 	int mRowHeight;
 	int mRowGap;
+	std::string mTextureAtlas;
 
 	
 };

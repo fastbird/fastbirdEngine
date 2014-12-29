@@ -51,6 +51,8 @@ namespace fastbird
 		virtual void AddListener(ISceneListener* listener);
 		virtual void RemoveListener(ISceneListener* listener);
 
+		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList() const;
+
 
 	protected:
 		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;

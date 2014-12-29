@@ -222,6 +222,21 @@ namespace fastbird
 		return mostClose;
 	}
 
+	bool AnimationData::HasPosAnimation() const
+	{
+		return !mPos.empty();
+	}
+
+	bool AnimationData::HasRotAnimation() const
+	{
+		return !mRot.empty();
+	}
+
+	bool AnimationData::HasScaleAnimation() const
+	{
+		return !mScale.empty();
+	}
+
 	void AnimationData::PickRot(float time, bool cycled, const Quat** prev, const Quat** next, float& interpol)
 	{
 		int i = 0;

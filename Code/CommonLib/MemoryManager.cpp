@@ -54,14 +54,14 @@ namespace fastbird
 		LOCK_CRITICAL_SECTION lock(gMemCS);
 		auto it = GetMemAllocLines().find(ptr);
 		assert(it != GetMemAllocLines().end());
-		if (file &&  it->second.mFile != file)
+		/*if (file &&  it->second.mFile != file)
 		{
 			if (strstr(file, "smartptr.h") == 0 && strstr(file, "SmartPtr.h") == 0)
 			{
 				Log("Memory(%s, %d, %s) is not deleted in the file where it was allocated. deallocated = (%s, %d)",
 					it->second.mFile.c_str(), it->second.mLine, it->second.mFunc.c_str(), file, line);
 			}			
-		}
+		}*/
 		GetMemAllocLines().erase(it);
 		--gNumMemoryAllocation;
 	}
@@ -74,11 +74,11 @@ namespace fastbird
 		LOCK_CRITICAL_SECTION lock(gMemCS);
 		auto it = GetMemAllocLines().find(ptr);
 		assert(it != GetMemAllocLines().end());
-		if (file && it->second.mFile != file)
+		/*if (file && it->second.mFile != file)
 		{
 			Log("Memory(%s, %d, %s) is not deleted in the file where it was allocated. deallocated = (%s, %d)",
 				it->second.mFile.c_str(), it->second.mLine, it->second.mFunc.c_str(), file, line);
-		}
+		}*/
 		GetMemAllocLines().erase(it);
 		--gNumMemoryAllocation;
 	}

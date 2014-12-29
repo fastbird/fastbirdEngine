@@ -78,6 +78,21 @@ namespace fastbird
 		return Value + 1;
 	}
 
+	inline Vec2I GetNextPowerOfTwo(const Vec2I& value)
+	{
+		return Vec2I(GetNextPowerOfTwo(value.x), GetNextPowerOfTwo(value.y));
+	}
+
+	inline unsigned GetNextMultipleOfFour(unsigned value)
+	{
+		return (value + 3)&~0x03;
+	}
+
+	inline Vec2I GetNextMultipleOfFour(const Vec2I value)
+	{
+		return Vec2I(GetNextMultipleOfFour(value.x), GetNextMultipleOfFour(value.y));
+	}
+
 	template <class T>
 	inline void Clamp(T& a, const T min, const T max)
 	{

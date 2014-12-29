@@ -10,7 +10,7 @@ VerticalGauge::VerticalGauge()
 , mBlink(false)
 , mBlinkSpeed(3.f)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIVerticalGauge.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());

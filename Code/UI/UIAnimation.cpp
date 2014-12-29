@@ -1,5 +1,6 @@
 #include <UI/StdAfx.h>
 #include <UI/UIAnimation.h>
+#include <UI/IWinBase.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -12,7 +13,10 @@ UIAnimation::UIAnimation()
 , mLoop(true)
 , mEnd(false)
 , mCurPos(0, 0)
+, mCurScale(1, 1)
 , mActivate(false)
+, mID(-1)
+, mTargetUI(0)
 {
 }
 
@@ -29,12 +33,26 @@ void UIAnimation::SetLength(float seconds)
 }
 
 //---------------------------------------------------------------------------
+void UIAnimation::SetLoop(bool loop)
+{
+	mLoop = loop;
+}
+
+//---------------------------------------------------------------------------
 void UIAnimation::AddPos(float time, const Vec2& pos)
 {
 	if (mKeyPos.empty())
 		mKeyPos[0.0f] = Vec2::ZERO;
 
 	mKeyPos[time] = pos;
+}
+
+void UIAnimation::AddScale(float time, const Vec2& scale)
+{
+	if (mKeyScale.empty())
+		mKeyScale[0.f] = Vec2(1, 1);
+
+	mKeyScale[time] = scale;
 }
 
 void UIAnimation::AddTextColor(float time, const Color& color)
@@ -72,94 +90,76 @@ void UIAnimation::Update(float deltaTime)
 		{
 			mEnd = true;
 			mCurTime = mLength;
+			if (mTargetUI)
+			{
+				if (HasPosAnim())
+				{
+					mCurPos = (mKeyPos.end() - 1)->second;
+				}
+				if (HasScaleAnim())
+				{
+					mCurScale = (mKeyScale.end() - 1)->second;
+				}
+			}
 			mActivate = false;
+			return;
 		}
 	}
 
 	float normTime = mCurTime / mLength;
+
 	// TODO : Use template
 	// pos
 	if (!mKeyPos.empty())
 	{
-		auto it = mKeyPos.begin();
-		auto itEnd = mKeyPos.end();
-		for (; it != itEnd; ++it)
-		{
-			if (normTime <= it->first)
-			{
-				if (it == mKeyPos.begin())
-				{
-					mCurPos = it->second;
-				}
-				auto prevIt = it - 1;
-				float l = SmoothStep(prevIt->first, it->first, normTime);
-				mCurPos = Lerp(prevIt->second, it->second, l);
-				break;
-			}
-		}
+		mCurPos = Animate(mKeyPos, mCurTime, normTime);
+	}
+	// scale
+	if (!mKeyScale.empty())
+	{
+		mCurScale = Animate(mKeyScale, mCurTime, normTime);
 	}
 	// textcolor
 	if (!mKeyTextColor.empty())
 	{
-		auto it = mKeyTextColor.begin();
-		auto itEnd = mKeyTextColor.end();
-		for (; it != itEnd; ++it)
-		{
-			if (normTime <= it->first)
-			{
-				if (it == mKeyTextColor.begin())
-				{
-					mCurTextColor = it->second;
-				}
-				auto prevIt = it - 1;
-				float l = SmoothStep(prevIt->first, it->first, normTime);
-				mCurTextColor = Lerp(prevIt->second, it->second, l);
-				break;
-			}
-		}
+		mCurTextColor = Animate(mKeyTextColor, mCurTime, normTime);
 	}
 
 	// backcolor
 	if (!mKeyBackColor.empty())
 	{
-		auto it = mKeyBackColor.begin();
-		auto itEnd = mKeyBackColor.end();
-		for (; it != itEnd; ++it)
-		{
-			if (normTime <= it->first)
-			{
-				if (it == mKeyBackColor.begin())
-				{
-					mCurBackColor = it->second;
-				}
-				auto prevIt = it - 1;
-				float l = SmoothStep(prevIt->first, it->first, normTime);
-				mCurBackColor = Lerp(prevIt->second, it->second, l);
-				break;
-			}
-		}
+		mCurBackColor = Animate(mKeyBackColor, mCurTime, normTime);
 	}
 
 	
 }
 
 //---------------------------------------------------------------------------
-Vec2 UIAnimation::GetCurrentPos()
+const Vec2& UIAnimation::GetCurrentPos() const
 {
 	return mCurPos;
 }
 
-Color UIAnimation::GetCurrentTextColor()
+const Vec2& UIAnimation::GetCurrentScale() const
+{
+	return mCurScale;
+}
+
+const Color& UIAnimation::GetCurrentTextColor() const
 {
 	return mCurTextColor;
 }
 
-Color UIAnimation::GetCurrentBackColor()
+const Color& UIAnimation::GetCurrentBackColor() const
 {
 	return mCurBackColor;
 }
 
 //---------------------------------------------------------------------------
+bool UIAnimation::HasScaleAnim() const
+{
+	return !mKeyScale.empty();
+}
 bool UIAnimation::HasPosAnim() const
 {
 	return !mKeyPos.empty();
@@ -258,18 +258,98 @@ void UIAnimation::LoadFromXML(tinyxml2::XMLElement* elem)
 	}
 }
 
+void UIAnimation::ParseLua(LuaObject& data)
+{
+	if (!data.IsValid())
+		return;
+
+	mID = data.GetField("id").GetInt(mID);
+	mName = data.GetField("name").GetString();
+	mLength = data.GetField("length").GetFloat();
+	mLoop = data.GetField("loop").GetBoolWithDef(mLoop);
+	auto textColor = data.GetField("TextColor");
+	if (textColor.IsValid())
+	{
+		auto keys = textColor.GetField("keys");
+		assert(keys.IsValid());
+		auto it = keys.GetSequenceIterator();
+		LuaObject v;
+		while (it.GetNext(v))
+		{
+			auto time = v.GetField("time").GetFloat();
+			auto color = v.GetField("color").GetVec4();
+			AddTextColor(time, color);
+		}
+	}
+
+	auto backColor = data.GetField("BackColor");
+	if (backColor.IsValid())
+	{
+		auto keys = backColor.GetField("keys");
+		assert(keys.IsValid());
+		auto it = keys.GetSequenceIterator();
+		LuaObject v;
+		while (it.GetNext(v))
+		{
+			auto time = v.GetField("time").GetFloat();
+			auto color = v.GetField("color").GetVec4();
+			AddBackColor(time, color);
+		}
+	}
+
+	auto posAnim = data.GetField("Pos");
+	if (posAnim.IsValid())
+	{
+		auto keys = posAnim.GetField("keys");
+		assert(keys.IsValid());
+		auto it = keys.GetSequenceIterator();
+		LuaObject v;
+		while (it.GetNext(v))
+		{
+			auto time = v.GetField("time").GetFloat();
+			auto pos = v.GetField("pos").GetVec2();
+			AddPos(time, pos);
+		}
+	}
+}
+
 
 void UIAnimation::SetActivated(bool activate)
 {
 	mActivate = activate;
 	mEnd = false;
 	mCurTime = 0.f;
+	mCurPos = Vec2::ZERO;
+	if (mTargetUI)
+	{
+		if (!mActivate)
+		{
+			mTargetUI->ClearAnimationResult();
+		}
+		else if (mActivate)
+		{
+			if (!mKeyScale.empty())
+			{
+				mCurScale = mKeyScale.begin()->second;
+				mTargetUI->SetAnimScale(mCurScale, mTargetUI->GetPivotWNPos());
+			}
+		}
+	}
+	
 }
 
 void UIAnimation::SetName(const char* name)
 {
 	assert(name && strlen(name)>0);
 	mName = name;
+}
+
+void UIAnimation::ClearData()
+{
+	mKeyPos.clear();
+	mKeyScale.clear();
+	mKeyTextColor.clear();
+	mKeyBackColor.clear();
 }
 
 }

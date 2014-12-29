@@ -124,6 +124,10 @@ void LuaObject::FindFunction(lua_State* L, const char* funcName)
 	{
 		splited[size - 1] = splited[size - 1].substr(0, f);
 	}
+	else
+	{
+		assert(0 && "You need to put () at the end of the function name.");
+	}
 	auto splited2 = Split(splited[0].c_str(), ".");
 	size = splited2.size();
 	LuaObject obj(L, splited2[0].c_str());
@@ -187,6 +191,24 @@ void LuaObject::PushToStack() const
 	}
 }
 
+bool LuaObject::Call()
+{
+	if (!IsFunction())
+	{
+		assert(0);
+		return false;
+	}
+	PushToStack();
+	LUA_PCALL_RET_FALSE(mL, IsMethod() ? 1 : 0, 0);
+	return true;
+}
+
+bool LuaObject::CallWithManualArgs(unsigned numArgs, unsigned numRets)
+{
+	LUA_PCALL_RET_FALSE(mL, numArgs, numRets);
+	return true;
+}
+
 bool LuaObject::IsFunction() const
 {
 	return mType == LUA_TFUNCTION;
@@ -225,6 +247,10 @@ LuaObject LuaObject::GetField(const char* fieldName) const
 {
 	assert(mL);
 	assert(IsTable());
+	if (!IsTable())
+	{
+		return LuaObject();
+	}
 	LUA_STACK_WATCHER watcher(mL);
 	PushToStack();
 
@@ -287,6 +313,16 @@ void LuaObject::SetField(const char* fieldName, unsigned num)
 	lua_pop(mL, 1);
 }
 
+void LuaObject::SetField(const char* fieldName, bool b)
+{
+	assert(fieldName);
+	LUA_STACK_WATCHER w(mL);
+	PushToStack();
+	lua_pushboolean(mL, b);
+	lua_setfield(mL, -2, fieldName);
+	lua_pop(mL, 1);
+}
+
 void LuaObject::SetField(const char* fieldName, const char* str)
 {
 	assert(str); assert(fieldName);
@@ -308,6 +344,16 @@ void LuaObject::SetField(const char* fieldName, const Vec3& v)
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec3I& v)
+{
+	assert(fieldName);
+	LUA_STACK_WATCHER w(mL);
+	PushToStack();
+	luaU_push(mL, v);
+	lua_setfield(mL, -2, fieldName);
+	lua_pop(mL, 1);
+}
+
+void LuaObject::SetField(const char* fieldName, const Vec2& v)
 {
 	assert(fieldName);
 	LUA_STACK_WATCHER w(mL);
@@ -352,6 +398,15 @@ void LuaObject::SetSeq(int n, unsigned num)
 	LUA_STACK_WATCHER w(mL);
 	PushToStack();
 	lua_pushunsigned(mL, num);
+	lua_rawseti(mL, -2, n);
+	lua_pop(mL, 1);
+}
+
+void LuaObject::SetSeq(int n, float num)
+{
+	LUA_STACK_WATCHER w(mL);
+	PushToStack();
+	lua_pushnumber(mL, num);
 	lua_rawseti(mL, -2, n);
 	lua_pop(mL, 1);
 }

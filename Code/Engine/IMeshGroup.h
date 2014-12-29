@@ -25,6 +25,10 @@ namespace fastbird
 
 		virtual void UpdateTransform(bool force = false) = 0;
 
+		virtual void SetAnimationData(const char* meshName, const AnimationData& anim, const char* actionName) = 0;
+		virtual void PlayAction(const std::string& name, bool immediate, bool reverse) = 0;
+		virtual bool IsActionDone(const char* action) const = 0;
+
 	private:
 		friend class Engine;
 		virtual void Delete() = 0;

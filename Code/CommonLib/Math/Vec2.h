@@ -1,5 +1,6 @@
 #pragma once
 #include <CommonLib/luawrapperutil.hpp>
+#include <CommonLib/Math/Vec2I.h>
 namespace fastbird
 {
 	class Vec2
@@ -12,6 +13,12 @@ namespace fastbird
 		Vec2(float _x, float _y)
 			:x(_x), y(_y)
 		{
+		}
+
+		Vec2(const Vec2I& v)
+			:x((float)v.x), y((float)v.y)
+		{
+
 		}
 
 		Vec2(const Vec2& other)

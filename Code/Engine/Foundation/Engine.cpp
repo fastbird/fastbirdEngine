@@ -8,6 +8,7 @@
 #include <Engine/IMeshGroup.h>
 #include <Engine/IParticleEmitter.h>
 #include <Engine/IColladaImporter.h>
+#include <Engine/IRenderToTexture.h>
 #include <Engine/Foundation/Mouse.h>
 #include <Engine/Foundation/Keyboard.h>
 #include <Engine/Foundation/Engine.h>
@@ -17,6 +18,7 @@
 #include <Engine/Renderer/ParticleManager.h>
 #include <Engine/SceneGraph/Scene.h>
 #include <Engine/RenderObjects/SkySphere.h>
+#include <Engine/IRenderToTexture.h>
 #include <CommonLib/Math/Vec2I.h>
 #include <Engine/RenderObjects/UIObject.h>
 #include <CommonLib/INIReader.h>
@@ -43,6 +45,7 @@ namespace fastbird
 	//------------------------------------------------------------------------
 	Engine::Engine()
 		: mSceneOverride(0)
+		, m3DUIEnabled(true)
 	{
 		FileSystem::Initialize();
 		mErrorStream.open("error.log");
@@ -78,6 +81,16 @@ namespace fastbird
 	Engine::~Engine()
 	{
 		mExiting = true;
+
+		for (auto it : mUI3DObjectsRTs)
+		{
+			gFBEnv->pRenderer->DeleteRenderToTexture(it.second);
+		}
+
+		for (auto it : mUI3DRenderObjs)
+		{
+			FB_DELETE(it.second);
+		}
 
 		ParticleManager::FinalizeParticleManager();
 		if (mFileMonitorThread)
@@ -488,6 +501,7 @@ namespace fastbird
 		mRenderer->BindShadowMap(false);
 		// Handle RenderTargets
 		mRenderer->ProcessRenderToTexture();
+		Render3DUIsToTexture();
 
 		if (mRenderer)
 			mRenderer->SetCamera(mCurrentCamera);
@@ -605,6 +619,32 @@ namespace fastbird
 		}
 
 		mRenderer->Present();
+	}
+
+	//---------------------------------------------------------------------------
+	void Engine::Render3DUIsToTexture()
+	{
+		if (!m3DUIEnabled)
+			return;
+		D3DEventMarker mark("Render3DUIsToTexture");
+		for (auto rtIt : mUI3DObjectsRTs)
+		{
+			auto objIt = mUI3DObjects.Find(rtIt.first);
+			assert(objIt != mUI3DObjects.end());
+			auto& rt = rtIt.second;
+			auto& list = objIt->second;
+			rt->Bind();
+
+			for (auto& uiobj : list)
+			{
+				uiobj->PreRender();
+				uiobj->Render();
+				uiobj->PostRender();
+			}
+
+			rt->Unbind();
+			rt->GetRenderTargetTexture()->GenerateMips();
+		}
 	}
 
 	//---------------------------------------------------------------------------
@@ -885,6 +925,79 @@ namespace fastbird
 	void Engine::UnregisterUIs()
 	{
 		mUIObjectsToRender.clear();
+	}
+	
+	void Engine::Register3DUIs(const char* name, std::vector<IUIObject*>& objects)
+	{
+		assert(!objects.empty());
+		
+		auto it = mUI3DObjectsRTs.Find(name);
+		if ( it == mUI3DObjectsRTs.end())
+		{
+			const Vec2I& rtSize = objects[0]->GetRenderTargetSize();
+			auto rtt = gFBEnv->pRenderer->CreateRenderToTexture(false, rtSize,
+				PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, false, false);
+			assert(rtt);
+			mUI3DObjectsRTs.Insert(std::make_pair(std::string(name), rtt));
+			assert(mUI3DRenderObjs.Find(name) == mUI3DRenderObjs.end());
+			auto renderObj = FB_NEW(UI3DObj);
+			mUI3DRenderObjs.Insert(std::make_pair(std::string(name), renderObj));
+			renderObj->SetTexture(rtt->GetRenderTargetTexture());
+			renderObj->AttachToScene();
+		}
+		else
+		{
+			assert(it->second->GetSize() == objects[0]->GetRenderTargetSize());
+			if (!it->second->GetEnable())
+			{
+				it->second->SetEnable(true);
+				auto it2 = mUI3DRenderObjs.Find(name);
+				if_assert_pass(it2 != mUI3DRenderObjs.end())
+				{
+					it2->second->ModifyObjFlag(IObject::OF_HIDE, false);
+				}
+			}
+		}
+		mUI3DObjects[name].swap(objects);
+		Render3DUIsToTexture();
+	}
+
+	void Engine::Unregister3DUIs(const char* name)
+	{
+		auto it = mUI3DRenderObjs.Find(name);
+		if( it != mUI3DRenderObjs.end())
+		{
+			it->second->ModifyObjFlag(IObject::OF_HIDE, true);
+		}
+
+		auto it2 = mUI3DObjectsRTs.Find(name);
+		if(it2 != mUI3DObjectsRTs.end())
+		{
+			it2->second->SetEnable(false);
+		}
+	}
+
+	void Engine::Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld)
+	{
+		auto it = mUI3DRenderObjs.Find(name);
+		if (it != mUI3DRenderObjs.end())
+		{
+			it->second->SetPosSize(pos, sizeInWorld);
+		}
+	}
+
+	void Engine::Reset3DUI(const char* name)
+	{
+		auto it = mUI3DRenderObjs.Find(name);
+		if (it != mUI3DRenderObjs.end())
+		{
+			it->second->Reset3DUI();
+		}
+	}
+
+	void Engine::SetEnable3DUIs(bool enable)
+	{
+		m3DUIEnabled = enable;
 	}
 
 	//--------------------------------------------------------------------------

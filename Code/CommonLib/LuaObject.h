@@ -69,6 +69,7 @@ namespace fastbird
 		bool IsNumber() const;
 		bool IsBool() const;
 		bool IsValid(bool nilIsValid = false) const;
+		unsigned GetType() const { return mType; }
 		LuaObject GetField(const char* fieldName) const;
 		LuaTableIterator GetTableIterator() const;
 		LuaSequenceIterator GetSequenceIterator() const;
@@ -77,14 +78,26 @@ namespace fastbird
 		void SetField(const char* fieldName, double num);
 		void SetField(const char* fieldName, int num);
 		void SetField(const char* fieldName, unsigned num);
+		void SetField(const char* fieldName, bool b);
 		void SetField(const char* fieldName, const char* str);
 		void SetField(const char* fieldName, const Vec3& v);
 		void SetField(const char* fieldName, const Vec3I& v);
+		void SetField(const char* fieldName, const Vec2& v);
 
 		LuaObject SetSeqTable(int n) const;
 		LuaObject GetSeqTable(int n);
 		void SetSeq(int n, const char* str);
 		void SetSeq(int n, unsigned num);
+		void SetSeq(int n, float num);
+		template <class T>
+		void SetSeqTemplate(int n, T v)
+		{
+			LUA_STACK_WATCHER w(mL);
+			PushToStack();
+			luaW_push(mL, v);
+			lua_rawseti(mL, -2, n);
+			lua_pop(mL, 1);
+		}
 
 		double GetNumberAt(int index) const;
 		std::string GetString(std::string& def = std::string()) const;		
@@ -114,6 +127,8 @@ namespace fastbird
 		Quat GetQuat(bool& success)const;
 
 		void PushToStack() const;
+		bool Call();
+		bool CallWithManualArgs(unsigned numArgs, unsigned numRets);
 
 		void Clear();
 

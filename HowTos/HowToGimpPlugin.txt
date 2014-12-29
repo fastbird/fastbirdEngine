@@ -1,0 +1,21 @@
+# How to use layer exporter plug-in for Gimp
+
+You can find gimp python-fu plug-in for exporting texture atlas information in Code/Utility folder. The file name is export_layers_info.py. You can move this file to your gimp plug-in folder or just set additional plug-in forder in the gimp preference dialog.
+
+Then restart your Gimp if it is running. Now you can find a new menu at Tools->Export layer Info..
+
+It is convinient if you modify the following lines in the export_layers_info.py to set the default path to export.
+
+	# Configuration
+
+	# Relative to the folder which running the game executable file game.exe
+	gXMLImagePath = "data/textures/gameui.dds"
+	gXMLPath = "D:\\projects\\fastbird-engine\\data\\textures\\gameui.xml"
+	gDDSPath = "D:\\projects\\fastbird-engine\\data\\textures\\gameui.dds"
+
+	
+If you run the plug-in it will export a .xml files for atlas information and uncompressed dds file of current editing image. If you want to have a compressed one you can modify the following variable. just Ctrl+F to find.
+
+	#Compression format (0 = None, 1 = BC1/DXT1, 2 = BC2/DXT3, 3 = BC3/DXT5, 4 = BC3n/DXT5nm,
+	#5 = BC4/ATI1N, 6 = BC5/ATI2N, 7 = RXGB (DXT5), 8 = Alpha Exponent (DXT5), 9 = YCoCg (DXT5), 10 = YCoCg scaled (DXT5))
+	compression_format = 0

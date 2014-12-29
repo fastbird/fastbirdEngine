@@ -81,6 +81,8 @@ namespace fastbird
 		virtual void RegisterReloading();
 
 		virtual bool IsTransparent() const { return mTransparent; }
+		virtual bool IsGlow() const { return mGlow; }
+
 		virtual void ReloadShader();
 
 		virtual int GetBindingShaders() const { return mShaders; }
@@ -133,6 +135,7 @@ namespace fastbird
 		SmartPtr<IInputLayout> mInputLayout;
 		int mShaders; // combination of enum BINDING_SHADER;
 		bool mTransparent;
+		bool mGlow;
 
 		std::vector<SmartPtr<IMaterial>> mSubMaterials;
 

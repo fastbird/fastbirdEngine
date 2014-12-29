@@ -16,7 +16,7 @@ Scroller::Scroller()
 	, mCurScrollSpeed(0)
 	, mMaxScrollSpeed(20)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }

@@ -17,7 +17,8 @@ namespace fastbird
 
 		void Tick();
 		TIME_PRECISION GetTime();
-		TIME_PRECISION GetDeltaTime();		
+		TIME_PRECISION GetDeltaTime();
+		TIME_PRECISION GetDeltaTimeNotPausable();
 		void Reset();
 		__int64 GetTickCount();
 		__int64 GetFreq() const{ return mFreq.QuadPart; }
@@ -33,6 +34,8 @@ namespace fastbird
 		LARGE_INTEGER mBase;
 		TIME_PRECISION mStartTime;
 		TIME_PRECISION mDeltaTime;
+		TIME_PRECISION mDeltaTimeNotPausable;
+		TIME_PRECISION mTimeNotPausable;
 		TIME_PRECISION mTime;
 		FRAME_PRECISION mFrames;
 		bool mPaused;

@@ -9,9 +9,106 @@ namespace fastbird
 	class ImageBox;
 	class WinBase : public IWinBase, public EventHandler
 	{
+	protected:
+		static const float WinBase::LEFT_GAP;
+		static const float NotDefined;
+
+		bool mVisible;
+		std::string mName;
+		std::string mScriptPath;
+		std::string mUIPath;
+		ALIGNH::Enum mAlignH;
+		ALIGNV::Enum mAlignV;
+		// local
+		Vec2I mSize;
+		Vec2 mNSize; //0.0f~1.0f
+		Vec2I mSizeMod;
+		Vec2I mPos;
+		Vec2 mNPos; // normalized pos 0.f ~ 1.f
+		float mAspectRatio;
+		bool mUseAbsoluteXPos;
+		bool mUseAbsoluteYPos;
+
+		bool mUseAbsoluteXSize;
+		bool mUseAbsoluteYSize;
+		bool mAbsTempLock;
+
+		// aligned local
+		Vec2 mNPosAligned; // normalized pos 0.f ~ 1.f
+
+		// world
+		Vec2 mWNSize; // worldSize aligned.
+		Vec2 mWNPos; // worldPos;
+		Vec2 mWNPosOffset; // scrollbar offset
+		Vec2 mNPosOffset;
+		Container* mParent;
+		WinBase* mManualParent;
+
+		Vec2I mAbsOffset; // when loading;
+
+
+		bool mMouseIn;
+		bool mMouseInPrev;
+
+		IWinBase* mPrev;
+		IWinBase* mNext;
+
+		std::wstring mTextw;
+		Color mTextColor;
+		Color mTextColorHover;
+		Color mTextColorDown;
+		bool mFixedTextSize;
+		float mTextSize;
+
+		ALIGNH::Enum mTextAlignH;
+		ALIGNV::Enum mTextAlignV;
+		bool mMatchSize; // match text and window size
+
+		IUIObject* mUIObject;
+
+		static HCURSOR mCursorOver;
+		bool mMouseDragStartInHere;
+
+		Vec2 mDestNPos;
+		float mAnimationSpeed;				
+		VectorMap<std::string, IUIAnimation*> mAnimations;
+		std::wstring mTooltipText;
+		// this is not related to mAnimation(IUIAnimation)
+		bool mSimplePosAnimEnabled;
+		bool mNoMouseEvent;
+		bool mUseScissor;
+		bool mEnable;
+
+		std::vector<ImageBox*> mBorders;
+
+		void* mCustomContent;
+		int mSpecialOrder;
+		unsigned mTextWidth;
+		unsigned mNumTextLines;
+
+		static const char* sShowAnim;
+		static const char* sHideAnim;
+		static const float sFadeInOutTime;
+		float mHideCounter;
+
+		bool mLockTextSizeChange; // for changing the ui size by text size (MATCH_SIZE Property)
+		bool mStopScissorParent;
+		bool mInheritVisibleTrue;
+		bool mInvalidateMouse;
+
+		bool mShowAnimation;
+		bool mHideAnimation;		
+		bool mPivot;
+		bool mRender3D;
+		Vec2I mRenderTargetSize;
+
+		Vec2I mTextGap;
+
 	public:
 		WinBase();
 		virtual ~WinBase();
+
+		virtual void OnCreated(){}
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type)
 		{
@@ -22,6 +119,10 @@ namespace fastbird
 			return 0;
 		}
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable)
+		{
+			return 0;
+		}
+		virtual IWinBase* AddChild(ComponentType::Enum type)
 		{
 			return 0;
 		}
@@ -71,7 +172,8 @@ namespace fastbird
 		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize;  }
 		virtual bool GetUseAbsYSize() const { return mUseAbsoluteXSize; }
 
-		virtual void SetVisible(bool show);
+		virtual bool SetVisible(bool show);
+		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible) {}
 		virtual bool GetVisible() const;
 		virtual bool GetFocus(bool includeChildren = false) const;
@@ -87,6 +189,7 @@ namespace fastbird
 		virtual const wchar_t* GetText() const;
 		virtual void SetPasswd(bool passwd) {};
 		virtual IUIAnimation* GetUIAnimation(const char* name);
+		virtual void ClearAnimationResult();
 
 		virtual IEventHandler* GetEventHandler() const { return (IEventHandler*)this; }
 
@@ -96,6 +199,9 @@ namespace fastbird
 		virtual void SetNPosOffset(const Vec2& offset);
 		virtual const Vec2& GetNPosOffset() const { return mWNPosOffset; }
 		virtual void SetAnimNPosOffset(const Vec2& offset);
+		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
+		virtual void SetPivotToUIObject(const Vec2& pivot);
+		virtual Vec2 GetPivotWNPos();
 		virtual void SetScissorRect(bool use, const RECT& rect);
 		virtual const RECT& GetRegion() const;
 		// OWN
@@ -169,10 +275,14 @@ namespace fastbird
 
 		virtual void SetUIFilePath(const char* path) { assert(path); mUIPath = path; }
 		virtual const char* GetUIFilePath() const { return mUIPath.c_str(); }
+		virtual void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
+		virtual bool GetRender3D() const{ return mRender3D; }
+		virtual Vec2I GetRenderTargetSize() const;
 
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
+		virtual void OnEnableChanged(){}
 		virtual void AlignText();
 		RECT GetScissorRegion();
 		void GetScissorIntersection(RECT& region);
@@ -184,93 +294,5 @@ namespace fastbird
 	private:
 		friend class Container;
 		void ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos);
-		
-
-	protected:
-		static const float WinBase::LEFT_GAP;
-		static const float NotDefined;
-
-		bool mVisible;
-		std::string mName;
-		std::string mScriptPath;
-		std::string mUIPath;
-		ALIGNH::Enum mAlignH;
-		ALIGNV::Enum mAlignV;
-		// local
-		Vec2I mSize;
-		Vec2 mNSize; //0.0f~1.0f
-		Vec2I mSizeMod;
-		Vec2I mPos;
-		Vec2 mNPos; // normalized pos 0.f ~ 1.f
-		float mAspectRatio;
-		bool mUseAbsoluteXPos;
-		bool mUseAbsoluteYPos;
-
-		bool mUseAbsoluteXSize;
-		bool mUseAbsoluteYSize;
-		bool mAbsTempLock;
-		
-		// aligned local
-		Vec2 mNPosAligned; // normalized pos 0.f ~ 1.f
-		
-		// world
-		Vec2 mWNSize; // worldSize aligned.
-		Vec2 mWNPos; // worldPos;
-		Vec2 mWNPosOffset; // scrollbar offset
-		Vec2 mNPosOffset;
-		Vec2 mWNAnimPosOffset; // animation offset
-		Container* mParent;
-		WinBase* mManualParent;
-
-		Vec2I mAbsOffset; // when loading;
-
-
-		bool mMouseIn;
-		bool mMouseInPrev;
-
-		IWinBase* mPrev;
-		IWinBase* mNext;
-
-		std::wstring mTextw;
-		Color mTextColor;
-		Color mTextColorHover;
-		Color mTextColorDown;
-		bool mFixedTextSize;
-		float mTextSize;
-
-		ALIGNH::Enum mTextAlignH;
-		ALIGNV::Enum mTextAlignV;
-		bool mMatchSize; // match text and window size
-
-		IUIObject* mUIObject;
-
-		static HCURSOR mCursorOver;
-		bool mMouseDragStartInHere;
-
-		Vec2 mDestNPos;
-		float mAnimationSpeed;
-		// this is not related to mAnimation(IUIAnimation)
-		bool mSimplePosAnimEnabled; 
-
-		VectorMap<std::string, IUIAnimation*> mAnimations;
-
-		std::wstring mTooltipText;
-		bool mNoMouseEvent;
-
-		bool mUseScissor;
-		bool mEnable;
-
-		std::vector<ImageBox*> mBorders;
-
-		void* mCustomContent;
-		bool mLockTextSizeChange; // for changing the ui size by text size (MATCH_SIZE Property)
-		
-		bool mStopScissorParent;
-		int mSpecialOrder;
-		unsigned mTextWidth;
-		unsigned mNumTextLines;
-		bool mInheritVisibleTrue;
-		bool mInvalidateMouse;
-
 	};
 }

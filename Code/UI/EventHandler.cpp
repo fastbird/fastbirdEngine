@@ -10,6 +10,7 @@ namespace fastbird
 size_t EventHandler::UNIQUE_ID = 0;
 
 EventHandler::EventHandler()
+: mEventEnable(true)
 {
 }
 EventHandler::~EventHandler()
@@ -106,6 +107,11 @@ void EventHandler::DisableAllEvent()
 	{
 		mDisabledEvent.insert((EVENT)i);
 	}
+}
+
+void EventHandler::ClearDisabledEvents()
+{
+	mDisabledEvent.clear();
 }
 
 }

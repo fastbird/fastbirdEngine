@@ -15,7 +15,7 @@ DropDown::DropDown()
 	, mPasswd(false)
 	, mCurIdx(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
@@ -30,6 +30,7 @@ DropDown::DropDown()
 		std::bind(&DropDown::OnMouseOut, this, std::placeholders::_1));
 
 	mButton = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
 	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 	mButton->SetNSizeY(1.f);

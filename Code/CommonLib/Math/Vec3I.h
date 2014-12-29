@@ -81,6 +81,11 @@ namespace fastbird
 			return !operator==(v);
 		}
 
+		float length() const
+		{
+			return (float)sqrt(x*x + y*y + z*z);
+		}
+
 		static const Vec3I UNIT_X;
 		static const Vec3I UNIT_Y;
 		static const Vec3I UNIT_Z;

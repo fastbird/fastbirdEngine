@@ -183,6 +183,38 @@ pixel로 입력할 때 -값을 주게 되면 화면 크기값에 해당 값을 뺀 값이 결과값이 됩니�
 	}
 
 
+## 3D UI 지원
+
+3D UI를 사용하기 위해서는 아래의 예제처럼 UI 태그안에 render3d와 renderTargetSize 속성을 지정해줍니다.
+
+**WelcomeUI.ui 파일**
+
+	<UI name="WelcomeUI" render3d="true" renderTargetSize="200, 82">
+		<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
+			<component name="_text" type="StaticText" npos="0.01, 0.2" nsize="0.99, 0.5" TEXT="Welcome to fastbird engine!" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+			<component name="OKBtn" type="Button" npos="0.5, 0.85" offset="4, 0" nsize="0.3, 0.1" TEXT="OK" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+			<component name="CloseBtn" type="Button" npos="0.5, 0.85" offset="-4, 0" nsize="0.3, 0.1" TEXT="Close" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		</component>
+	</UI>
+	
+이 속성이 지정된 유아이는 별도의 렌더타겟에 렌더링 되고, 렌더링 포지션은 Application에서 엔진으로 세팅해 주어야합니다. 이 때 사용하는 함수는
+
+	IEngine::Set3DUIPosSize(const char* uiname, const Vec3& pos, const Vec2& size)
+
+입니다.
+
+예제 동영상에서는 매프레임마다 함선의 위치를 고려하여 3DUI의 적당한 포지션과 사이즈를 계산한 후에
+Set3DUIPosSize()함수를 호출해주고 있어서 3DUI가 함선을 따라 다닙니다.
+
+3D UI가 화면 밖으로 나갔을 때는 
+
+	IEngine::Unregister3DUIs(const char* uiname)
+
+함수를 호출하여 렌더링을 중지할 수 있습니다. 다시 화면안으로 들어왔을 때는
+
+	IEngine::Reset3DUI(const char* uiname)
+	
+함수를 호출하면 재사용이 가능합니다.
 
 ## 지원되는 컴포넌트 리스트(UI/ComponentType.h 파일 참고)
 

@@ -62,6 +62,7 @@ namespace fastbird
 		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
 
 		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri = 0) const = 0;
+		virtual void MakeMaterialIndependent() = 0;
 
 	private:
 		friend class Engine;

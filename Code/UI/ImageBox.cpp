@@ -10,8 +10,12 @@ ImageBox::ImageBox()
 	, mUseHighlight(false)
 	, mKeepImageRatio(true)
 	, mFrameImage(0)
+	, mAnimation(false)
+	, mSecPerFrame(0)
+	, mPlayingTime(0)
+	, mCurFrame(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -57,6 +61,25 @@ void ImageBox::CalcUV(const Vec2I& textureSize)
 	}
 }
 
+void ImageBox::OnStartUpdate(float elapsedTime)
+{
+	__super::OnStartUpdate(elapsedTime);
+	if (!mAnimation || !mVisible)
+		return;
+
+	mPlayingTime += elapsedTime;
+	if (mPlayingTime > mSecPerFrame)
+	{
+		mCurFrame++;
+		if (mCurFrame >= mAtlasRegions.size())
+			mCurFrame = 0;
+		Vec2 texcoords[4];
+		mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
+		mUIObject->SetTexCoord(texcoords, 4);
+		mPlayingTime -= mSecPerFrame;
+	}
+}
+
 void ImageBox::SetTexture(const char* file)
 {
 	if (!file || strlen(file) == 0)
@@ -95,6 +118,32 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 			mAtlasRegion->GetQuadUV(texcoords);
 			mUIObject->SetTexCoord(texcoords, 4);
 			DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+			mUIObject->SetColors(colors, 4);
+		}
+	}
+}
+
+void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
+{
+	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(atlas);
+	if (mTextureAtlas)
+	{
+		mTexture = mTextureAtlas->mTexture->Clone();
+		for (const auto& region : data)
+		{
+			mAtlasRegions.push_back(mTextureAtlas->GetRegion(region.c_str()));
+		}
+		SAMPLER_DESC sdesc;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		mUIObject->GetMaterial()->SetTexture(mTexture,
+			BINDING_SHADER_PS, 0, sdesc);
+
+		if (!mAtlasRegions.empty())
+		{
+			Vec2 texcoords[4];
+			mAtlasRegions[0]->GetQuadUV(texcoords);
+			mUIObject->SetTexCoord(texcoords, 4);
+			DWORD colors[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
 			mUIObject->SetColors(colors, 4);
 		}
 	}
@@ -190,6 +239,48 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 		break;
 
+	case UIProperty::REGIONS:
+	{
+								mAnimation = true;
+								auto useNumberData = Split(val, ":");
+								if (useNumberData.size() >= 2)
+								{
+									auto fromtoData = Split(useNumberData[1], ",");
+									fromtoData[0] = StripBoth(fromtoData[0].c_str());
+									fromtoData[1] = StripBoth(fromtoData[1].c_str());
+									unsigned from = StringConverter::parseUnsignedInt(fromtoData[0].c_str());
+									unsigned to = StringConverter::parseUnsignedInt(fromtoData[1].c_str());
+									assert(to > from);
+									std::vector<std::string> data;
+									char buf[256];
+									for (unsigned i = from; i <= to; i++)
+									{
+										sprintf_s(buf, "%s%u", useNumberData[0].c_str(), i);
+										data.push_back(buf);
+									}
+									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+								}
+								else
+								{
+									auto data = Split(val, ",");
+									for (auto& str : data)
+									{
+										str = StripBoth(str.c_str());
+									}
+									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+								}
+								return true;
+
+	}
+		break;
+
+	case UIProperty::FPS:
+	{
+							mSecPerFrame = 1.0f / StringConverter::parseReal(val);
+							return true;
+	}
+		break;
+
 	case UIProperty::TEXTURE_FILE:
 	{
 									 SetTexture(val);
@@ -221,6 +312,18 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 									}
 									return true;
 	}
+
+	case UIProperty::IMAGE_COLOR_OVERLAY:
+	{
+											Vec4 color = StringConverter::parseVec4(val);
+											if (mUIObject)
+											{
+												mUIObject->GetMaterial()->SetDiffuseColor(color);
+											}
+											return true;
+
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -243,5 +346,107 @@ ImageBox* ImageBox::CreateImageBox()
 	return image;
 }
 
+bool ImageBox::IsAnimated() const
+{
+	return !mAtlasRegions.empty();
+}
+
+void ImageBox::SetUVRot(bool set)
+{
+	auto mat = mUIObject->GetMaterial();
+	if (mat)
+	{
+		if (set)
+		{
+			mat->AddShaderDefine("_UV_ROT", "1");
+		}
+		else
+		{
+			mat->RemoveShaderDefine("_UV_ROT");
+		}
+		mat->ApplyShaderDefines();
+	}
+}
+
+void ImageBox::SetCenterUVMatParam()
+{
+	if (mAtlasRegion)
+	{
+		Vec2 uv[4];
+		mAtlasRegion->GetQuadUV(uv);
+		auto center = (uv[1] + uv[2]) * .5f;
+		auto mat = mUIObject->GetMaterial();
+		if_assert_pass(mat)
+		{
+			mat->SetMaterialParameters(0, Vec4(center.x, center.y, 0, 0));
+		}
+
+	}
+	else
+	{
+		assert(0 && "Not Implemented");
+	}
+}
+
+void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
+{
+	Vec2I isize(0, 0);
+	if (mAtlasRegion)
+	{	
+		isize = mAtlasRegion->GetSize();
+	}
+	else if (mTexture)
+	{
+		isize = mTexture->GetSize();		
+	}
+	else
+	{
+		assert(0 && "You didn't set the texture");
+	}
+	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
+	SetWNSize(size);
+	SetWNPos(wnpos);
+	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
+	
+}
+
+void ImageBox::DrawAsFixedSizeAtCenter()
+{
+	Vec2I isize(0, 0);
+	if (mAtlasRegion)
+	{
+		isize = mAtlasRegion->GetSize();
+	}
+	else if (mTexture)
+	{
+		isize = mTexture->GetSize();
+	}
+	else
+	{
+		assert(0 && "You didn't set the texture");
+	}
+	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
+	SetWNSize(size);
+	SetNPos(Vec2(0.5f, 0.5f));
+	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
+}
+
+void ImageBox::SetDesaturate(bool desat)
+{
+	if (desat)
+	{
+		mUIObject->GetMaterial()->AddShaderDefine("_DESATURATE", "1");
+	}
+	else
+	{
+		mUIObject->GetMaterial()->RemoveShaderDefine("_DESATURATE");
+	}
+	mUIObject->GetMaterial()->ApplyShaderDefines();
+}
+
+void ImageBox::SetAmbientColor(const Vec4& color)
+{
+	mUIObject->GetMaterial()->SetAmbientColor(color);
+}
 
 }

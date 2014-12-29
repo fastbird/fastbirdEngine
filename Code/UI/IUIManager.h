@@ -18,14 +18,19 @@ namespace fastbird
 
 		virtual void Shutdown() = 0;
 		virtual void Update(float elapsedTime) = 0;
+		virtual void GatherRenderList() = 0;
 
 		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false) = 0;
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data) = 0;
+		virtual void DeleteLuaUI(const char* uiName) = 0;
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type) = 0;
 		// in normalized space 0.0f~1.0f
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;
 		virtual void DeleteWindow(IWinBase* pWnd) = 0;
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
+		virtual IWinBase* GetFocusUI() const = 0;
+		virtual void SetFocusUI(const char* uiName) = 0;
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
 		virtual void DirtyRenderList() = 0;
 		virtual HCURSOR GetMouseCursorOver() const = 0;
@@ -44,6 +49,13 @@ namespace fastbird
 		virtual lua_State* GetLuaState() const = 0;
 		virtual void OnUIFileChanged(const char* file) = 0;
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const = 0;
+		virtual void SetEnablePosSizeEvent(bool enable) = 0;
+		virtual bool GetEnablePosSizeEvent() const = 0;
+
+		virtual bool GetVisible(const char* uiname) const = 0;
+		virtual void SetVisible(const char* uiname, bool visible) = 0;
+
+		virtual void CloneUI(const char* uiname, const char* newUIname) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

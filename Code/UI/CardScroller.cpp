@@ -9,7 +9,7 @@ CardScroller::CardScroller()
 , mRatio(-1)
 , mNYOffset(0.f)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->GetMaterial()->SetDiffuseColor(Vec4(0.1f, 0.1f, 0, 1));
@@ -34,9 +34,10 @@ void CardScroller::SetCardSize_Offset(const Vec2& x_ratio, int offset)
 	mNYOffset = this->PixelToLocalNHeight(offset);
 
 	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mWidth));
-	float iWidth = gEnv->pRenderer->GetWidth() * worldSize.x;
+	auto rtTarget = GetRenderTargetSize();
+	float iWidth = rtTarget.x * worldSize.x;
 	float iHeight = iWidth / mRatio;
-	mHeight = iHeight / (gEnv->pRenderer->GetHeight() * mWNSize.y);
+	mHeight = iHeight / (rtTarget.y * mWNSize.y);
 }
 
 void CardScroller::SetCardSize(const Vec2I& size)
@@ -48,8 +49,9 @@ void CardScroller::SetCardSize(const Vec2I& size)
 	}
 	else
 	{
-		mWidth = size.x / (float)gEnv->pRenderer->GetWidth();
-		mHeight = size.y / (float)gEnv->pRenderer->GetHeight();
+		auto rtSize = GetRenderTargetSize();
+		mWidth = size.x / (float)rtSize.x;
+		mHeight = size.y / (float)rtSize.y;
 	}
 	
 }
@@ -61,7 +63,8 @@ void CardScroller::SetCardSizeNX(float nx)
 
 void CardScroller::SetCardSizeY(int y)
 {
-	mHeight = y / (gEnv->pRenderer->GetHeight() * mWNSize.y);
+	auto rtSize = GetRenderTargetSize();
+	mHeight = y / (rtSize.y * mWNSize.y);
 }
 
 void CardScroller::SetCardOffset(int offset)
@@ -187,7 +190,7 @@ void CardScroller::ArrangeSlots()
 CardItem::CardItem()
 : mCardData(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->GetMaterial()->SetDiffuseColor(Vec4(1, 0, 0, 1));

@@ -20,6 +20,13 @@ namespace fastbird
 			m[2][0] = m31;			m[2][1] = m32;			m[2][2] = m33;
 		}
 
+		inline Mat33(const Vec3& x, const Vec3& y, const Vec3& z)
+		{
+			SetColumn(0, x);
+			SetColumn(1, y);
+			SetColumn(2, z);
+		}
+
 		inline float* operator[](size_t iRow) const
 		{
 			return (float*)m[iRow];

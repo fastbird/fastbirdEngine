@@ -50,10 +50,12 @@ namespace fastbird
 		void AddPosition(float time, float v, PosComp comp);
 		void AddScale(float time, float v, PosComp comp);
 		void AddRotEuler(float time, float v, PosComp comp);
-
+		bool HasPosAnimation() const;
+		bool HasRotAnimation() const;
+		bool HasScaleAnimation() const;
 		void SetName(const char* name) { mName = name; }
 		const char* GetName() const { return mName.c_str(); }
-		void AnimationData::PickRot(float time, bool cycled, const Quat** prev, const Quat** next, float& interpol);
+		void PickRot(float time, bool cycled, const Quat** prev, const Quat** next, float& interpol);
 
 	private:
 		friend class SpatialObject;

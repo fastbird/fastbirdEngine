@@ -169,10 +169,13 @@ int Font::Init(const char *fontFile)
 	desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
 	desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
 	desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+	desc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_RED | COLOR_WRITE_ENABLE_GREEN | COLOR_WRITE_ENABLE_BLUE;
 	SetBlendState(desc);
+	mRenderTargetSize.x = gFBEnv->pRenderer->GetWidth();
+	mRenderTargetSize.y = gFBEnv->pRenderer->GetHeight();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)mRenderTargetSize.x,
+		(float)mRenderTargetSize.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
@@ -308,6 +311,8 @@ void Font::Write(float x, float y, float z, unsigned int color,
 
 	mColor = color;
 
+	gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+
 	InternalWrite(x, y, z, text, count);
 }
 
@@ -328,17 +333,17 @@ float Font::GetHeight() const
 	return mScale * mFontHeight;
 }
 
-std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, unsigned* outWidth, unsigned* outLines)
+std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, float* outWidth, unsigned* outLines)
 {
 	if (count < 0)
 		count = GetTextLength(text);
 
 	unsigned lines = 1;
-	unsigned maxX = 0;
-	unsigned curX = 0;
+	float maxX = 0;
+	float curX = 0;
 	std::wstring multilineString;
 	unsigned inputBeforeSpace=0;
-	unsigned lengthAfterSpace = 0;
+	float lengthAfterSpace = 0;
 	for (int n = 0; n < count;)
 	{
 		int charId = GetTextChar(text, n, &n);
@@ -351,9 +356,9 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 		{
 			SCharDescr *ch = GetChar(charId);
 			if (ch == 0) ch = &mDefChar;
-			unsigned length = (unsigned)(mScale * (ch->xAdv));
+			float length = (mScale * (ch->xAdv));
 			if (n < count)
-				length += (unsigned)AdjustForKerningPairs(charId, GetTextChar(text, n));
+				length += AdjustForKerningPairs(charId, GetTextChar(text, n));
 			curX += length;
 			lengthAfterSpace += length;
 		}
@@ -367,7 +372,7 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 		}
 		else
 		{
-			if (isspace(charId))
+			if (iswspace(charId))
 			{
 				inputBeforeSpace = 0;
 				lengthAfterSpace = 0;
@@ -457,13 +462,6 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 	}
 }
 
-void Font::SetDefaultConstants()
-{
-	if (!mInitialized)
-		return;
-	gFBEnv->pEngine->GetRenderer()->UpdateObjectConstantsBuffer(&mObjectConstants);
-}
-
 //----------------------------------------------------------------------------
 int Font::GetTextLength(const char *text)
 {
@@ -546,6 +544,26 @@ int Font::GetTextChar(const char *text, int pos, int *nextPos)
 
 	if( nextPos ) *nextPos = pos + len;
 	return ch;
+}
+
+void Font::SetRenderTargetSize(const Vec2I& rtSize)
+{
+	mRenderTargetSize = rtSize;
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)mRenderTargetSize.x,
+		(float)mRenderTargetSize.y,
+		0.f, 1.0f);
+	mObjectConstants.gWorld.MakeIdentity();
+}
+
+void Font::RestoreRenderTargetSize()
+{
+	mRenderTargetSize = Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight());
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)mRenderTargetSize.x,
+		(float)mRenderTargetSize.y,
+		0.f, 1.0f);
+	mObjectConstants.gWorld.MakeIdentity();
 }
 
 //=============================================================================

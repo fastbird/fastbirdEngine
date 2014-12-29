@@ -10,6 +10,8 @@ namespace fastbird
 	class IRenderToTexture : public ReferenceCounter
 	{
 	public:
+		virtual const Vec2I& GetSize() const = 0;
+		virtual bool CheckOptions(const Vec2I& size, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap, bool hasDepth) = 0;
 		virtual void SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap) = 0;
 		virtual void SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap) = 0;
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil) = 0;
@@ -18,7 +20,9 @@ namespace fastbird
 		virtual ILight* GetLight(int idx) = 0;
 		virtual ITexture* GetRenderTargetTexture() = 0;
 		virtual ITexture* GetDepthStencilTexture() = 0;
+		virtual void Bind(size_t face = 0) = 0;
 		virtual void Render(size_t face = 0) = 0;
+		virtual void Unbind() = 0;
 		// for every frame render
 		virtual void SetEnable(bool enable) = 0;
 		virtual bool GetEnable() const = 0;

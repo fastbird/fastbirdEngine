@@ -267,6 +267,7 @@
     <ClInclude Include="RenderObjects\SkySphere.h" />
     <ClInclude Include="RenderObjects\Terrain.h" />
     <ClInclude Include="RenderObjects\TerrainPatch.h" />
+    <ClInclude Include="RenderObjects\UI3DObj.h" />
     <ClInclude Include="RenderObjects\UIObject.h" />
     <ClInclude Include="SceneGraph\Scene.h" />
     <ClInclude Include="SceneGraph\SpatialObject.h" />
@@ -338,6 +339,7 @@
     <ClCompile Include="RenderObjects\SkySphere.cpp" />
     <ClCompile Include="RenderObjects\Terrain.cpp" />
     <ClCompile Include="RenderObjects\TerrainPatch.cpp" />
+    <ClCompile Include="RenderObjects\UI3DObj.cpp" />
     <ClCompile Include="RenderObjects\UIObject.cpp" />
     <ClCompile Include="SceneGraph\Scene.cpp" />
     <ClCompile Include="SceneGraph\SpatialObject.cpp" />

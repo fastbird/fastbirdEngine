@@ -23,6 +23,9 @@ namespace fastbird
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual void SetNPosOffset(const Vec2& nposOffset);// in normalized space 0.0f~1.0f
 		virtual void SetAnimNPosOffset(const Vec2& nposOffset); // in normalized space 0.0f~1.0f
+		virtual const Vec2& GetAnimNPosOffset() const { return mAnimNOffset; }
+		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
+		virtual void SetPivot(const Vec2& pivot) { mPivot = pivot; }
 		virtual void SetAlpha(float alpha);
 		virtual void SetText(const wchar_t* s);
 		virtual void SetTextStartNPos(const Vec2& npos);
@@ -43,6 +46,9 @@ namespace fastbird
 		}
 
 		virtual void SetMultiline(bool multiline){ mMultiline = multiline; }
+		virtual void SetDoNotDraw(bool doNotDraw);
+		virtual void SetRenderTargetSize(const Vec2I& rtSize);
+		virtual const Vec2I& GetRenderTargetSize() const;
 
 		//-------------------------------------------------------------------------
 		// IObject interfaces
@@ -75,6 +81,7 @@ namespace fastbird
 		Vec2 mNOffset;
 		Vec2 mAnimNDCOffset;
 		Vec2 mAnimNOffset;
+		Vec2 mScale;
 		Vec2 mTextNPos;
 		Color mTextColor;
 		float mTextSize;
@@ -96,5 +103,9 @@ namespace fastbird
 		bool mOut;
 		bool mAlphaBlending;
 		bool mMultiline;
+
+		bool mDoNotDraw;
+		Vec2 mPivot;
+		Vec2I mRenderTargetSize;
 	};
 }

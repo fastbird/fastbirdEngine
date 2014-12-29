@@ -14,10 +14,9 @@ public:
 	virtual ~CheckBox();
 
 	// IWinBase
+	virtual void OnCreated();
 	virtual ComponentType::Enum GetType() const { return ComponentType::CheckBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
-	virtual void SetText(const wchar_t* szText);
-	virtual void OnSizeChanged();
 
 	// ICheckBox
 	virtual void SetCheck(bool check);
@@ -26,12 +25,13 @@ public:
 	// event
 	void OnClicked(void* arg);
 
+	void OnMouseHover(void* arg);
+
 private:
 	void UpdateImage();
 
 private:
 	ImageBox* mCheckImageBox;
-	StaticText* mStaticText;
 	bool mChecked;
 };
 

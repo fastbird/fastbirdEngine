@@ -67,7 +67,8 @@ public:
 	virtual int InitSwapChain(HWND handle, int width, int height) = 0;
 	virtual void Deinit() = 0;
 	virtual void ProcessRenderToTexture() = 0;
-	virtual IRenderToTexture* CreateRenderToTexture(bool everyframe) = 0;
+	virtual IRenderToTexture* CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
+		bool srv, bool miplevel, bool cubeMap, bool willCreateDepth) = 0;
 	virtual void DeleteRenderToTexture(IRenderToTexture*) = 0;
 	virtual void SetClearColor(float r, float g, float b, float a=1.f) = 0;
 	virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
@@ -134,6 +135,7 @@ public:
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num, 
 		ITexture* pDepthStencil, size_t dsIndex) = 0;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num) = 0;
+	virtual const Vec2I& GetRenderTargetSize() const = 0;
 	virtual void RestoreRenderTarget() = 0;
 	virtual void SetHDRTarget() = 0;
 	// internal use
@@ -215,7 +217,7 @@ public:
 
 	// will hold reference.
 	virtual void SetEnvironmentTexture(ITexture* pTexture) = 0;
-
+	virtual void BindDepthTexture(bool set) = 0;
 	//-------------------------------------------------------------------------
 	// Render States
 	virtual void RestoreRasterizerState() = 0;

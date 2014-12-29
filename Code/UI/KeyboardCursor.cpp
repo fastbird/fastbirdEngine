@@ -28,7 +28,7 @@ void KeyboardCursor::FinalizeKeyboardCursor()
 KeyboardCursor::KeyboardCursor()
 	: mVisible(false)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, Vec2I(gEnv->pRenderer->GetWidth(), gEnv->pRenderer->GetHeight()));
 	mUIObject->SetMaterial("es/materials/KeyboardCursor.material");
 	mUIObject->SetDebugString("KeyboardCursor");
 }

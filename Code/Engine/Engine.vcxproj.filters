@@ -393,6 +393,9 @@
     <ClInclude Include="Animation\AnimationData.h">
       <Filter>Animation</Filter>
     </ClInclude>
+    <ClInclude Include="RenderObjects\UI3DObj.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -567,6 +570,9 @@
     </ClCompile>
     <ClCompile Include="Animation\AnimationData.cpp">
       <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderObjects\UI3DObj.cpp">
+      <Filter>RenderObjects</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

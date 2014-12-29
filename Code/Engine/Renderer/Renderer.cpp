@@ -42,6 +42,7 @@ namespace fastbird
 		, mGaussianDownScale2x2Calculated(false)
 		, m_fChromaticAberration(0.5f)
 		, m_fStarInclination(HALF_PI)
+		, mCurRTSize(100, 100)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -152,6 +153,12 @@ void Renderer::Deinit()
 	}
 
 	mHDRTarget = 0;
+
+	for (auto rt : mRenderToTexturePool)
+	{
+		FB_DELETE(rt);
+	}
+	mRenderToTexturePool.clear();
 }
 
 void Renderer::CleanDepthWriteResources()
@@ -208,6 +215,9 @@ void Renderer::CleanGodRayResources()
 //----------------------------------------------------------------------------
 bool Renderer::OnPrepared()
 {
+	mCurRTSize.x = GetWidth();
+	mCurRTSize.y = GetHeight();
+
 	// Light
 	for (int i = 0; i < 2; ++i)
 	{
@@ -401,7 +411,10 @@ bool Renderer::OnPrepared()
 		fontName = "es/fonts/nanum_pen_bin.fnt";
 	}
 	mFont->Init(fontName.c_str());
+	if (mFont)
+		mFont->SetRenderTargetSize(mCurRTSize);
 	mFont->SetTextEncoding(IFont::UTF16);
+
 	mDebugHud = FB_NEW(DebugHud);
 
 	if (gFBEnv->pConsole)
@@ -616,6 +629,48 @@ inline IFont* Renderer::GetFont() const
 {
 	return mFont;
 }
+
+void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
+	ITexture* pDepthStencil, size_t dsIndex)
+{
+	if (pRenderTargets && num>0 && pRenderTargets[0])
+	{
+		mCurRTSize = pRenderTargets[0]->GetSize();
+	}
+	else
+	{
+		mCurRTSize = Vec2I(mWidth, mHeight);
+	}
+	if (mFont)
+		mFont->SetRenderTargetSize(mCurRTSize);
+}
+
+void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num)
+{
+	if (pRenderTargets && num>0)
+	{
+		mCurRTSize = pRenderTargets[0]->GetSize();
+	}
+	else
+	{
+		mCurRTSize = Vec2I(mWidth, mHeight);
+	}
+	if (mFont)
+		mFont->SetRenderTargetSize(mCurRTSize);
+}
+
+const Vec2I& Renderer::GetRenderTargetSize() const
+{
+	return mCurRTSize;
+}
+
+void Renderer::RestoreRenderTarget()
+{
+	mCurRTSize = Vec2I(mWidth, mHeight);
+	if (mFont)
+		mFont->SetRenderTargetSize(mCurRTSize);
+}
+
 
 const INPUT_ELEMENT_DESCS& Renderer::GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e)
@@ -1917,9 +1972,11 @@ ITexture* Renderer::FindRenderTarget(const Vec2I& size)
 //---------------------------------------------------------------------------
 void Renderer::SetDepthRenderTarget(bool clear)
 {
+	int width = int(mWidth*.5f);
+	int height = int(mHeight*.5f);
 	if (!mDepthTarget)
 	{ 
-		mDepthTarget = CreateTexture(0, mWidth/2, mHeight/2, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+		mDepthTarget = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 
 		/*BLEND_DESC bdesc;
@@ -1932,7 +1989,7 @@ void Renderer::SetDepthRenderTarget(bool clear)
 	ITexture* rts[] = { mDepthTarget };
 	size_t index[] = { 0 };
 	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
-	Viewport vp = { 0, 0, (float)mWidth*.5f, (float)mHeight*.5f, 0.f, 1.f };
+	Viewport vp = { 0, 0, (float)width, (float)height, 0.f, 1.f };
 	SetViewports(&vp, 1);
 	if (clear)
 		Clear(1.f, 1.f, 1.f, 1.f, 1.f, 0);
@@ -2233,7 +2290,9 @@ void Renderer::CleanCloud()
 void Renderer::BindDepthTexture(bool set)
 {
 	if (set)
+	{
 		SetTexture(mDepthTarget, BINDING_SHADER_PS, 5);
+	}
 	else 
 		SetTexture(0, BINDING_SHADER_PS, 5);
 }
@@ -2359,32 +2418,36 @@ void Renderer::SetSilouetteShader()
 
 void Renderer::SetSamllSilouetteBuffer()
 {
+	int width = int(mWidth*0.5f);
+	int height = int(mHeight*0.5f);
 	if (!mSmallSilouetteBuffer)
 	{
-		mSmallSilouetteBuffer = CreateTexture(0, (int)(mWidth*0.5f), (int)(mHeight*0.5f), PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+		mSmallSilouetteBuffer = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 	}
 
 	ITexture* rts[] = { mSmallSilouetteBuffer };
 	unsigned index[] = { 0 };
 	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
-	Viewport vps = { 0.f, 0.f, mWidth*0.5f, mHeight*0.5f, 0.0f, 1.0f };
+	Viewport vps = { 0.f, 0.f, (float)width, (float)height, 0.0f, 1.0f };
 	SetViewports(&vps, 1);
 	if (!gFBEnv->mSilouetteRendered)
 		Clear(1, 1, 1, 1, 1.f, 0);
 }
 void Renderer::SetBigSilouetteBuffer()
 {
+	int width = int(mWidth);
+	int height = int(mHeight);
 	if (!mBigSilouetteBuffer)
 	{
-		mBigSilouetteBuffer = CreateTexture(0, (int)(mWidth), (int)(mHeight), PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+		mBigSilouetteBuffer = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 	}
 
 	ITexture* rts[] = { mBigSilouetteBuffer };
 	unsigned index[] = { 0 };
 	SetRenderTarget(rts, index, 1, mTempDepthBuffer, 0);
-	Viewport vps = { 0.f, 0.f, (float)mWidth, (float)mHeight, 0.0f, 1.0f };
+	Viewport vps = { 0.f, 0.f, (float)width, (float)height, 0.0f, 1.0f };
 	SetViewports(&vps, 1);
 	if (!gFBEnv->mSilouetteRendered)
 		Clear(1, 1, 1, 1, 1.f, 0);
@@ -2403,8 +2466,8 @@ void Renderer::DrawSilouette()
 	else
 		RestoreRenderTarget();
 	RestoreViewports();
-	ITexture* ts[] = { mSmallSilouetteBuffer, mBigSilouetteBuffer };
-	SetTextures(ts, 2, BINDING_SHADER_PS, 0);
+	ITexture* ts[] = { mSmallSilouetteBuffer, mBigSilouetteBuffer, mDepthTarget };
+	SetTextures(ts, 3, BINDING_SHADER_PS, 0);
 	
 	DrawFullscreenQuad(mSilouetteShader, false);
 }
@@ -2430,6 +2493,30 @@ void Renderer::SetDebugRenderTarget(unsigned idx, const char* textureName)
 		mDebugRenderTargets[idx].mTexture = mShadowMap;
 	else
 		mDebugRenderTargets[idx].mTexture = 0;
+}
+
+IRenderToTexture* Renderer::CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
+	bool srv, bool miplevel, bool cubeMap, bool needDepth)
+{
+	for (auto rt : mRenderToTexturePool)
+	{
+		if (rt->CheckOptions(size, format, srv, miplevel, cubeMap, needDepth))
+		{
+			if (everyframe)
+				mRenderToTextures.push_back(rt);
+			return rt;
+		}
+			
+	}
+	return 0;
+}
+
+void Renderer::DeleteRenderToTexture(IRenderToTexture* rt)
+{
+	if (ValueNotExistInVector(mRenderToTexturePool, rt))
+	{
+		mRenderToTexturePool.push_back(rt);
+	}
 }
 
 }

@@ -38,9 +38,9 @@ namespace fastbird
 
 #define FB_NEW(T) new (fastbird::AllocBytes(sizeof(T), __FILE__, __LINE__, __FUNCTION__)) T
 #define FB_ARRNEW(T, count) fastbird::ConstructN(static_cast<T*>(fastbird::AllocBytes(sizeof(T)*count, __FILE__, __LINE__, __FUNCTION__)), count)
-#define FB_DELETE(ptr) fastbird::Delete(ptr, __FILE__, __LINE__, __FUNCTION__)
+#define FB_DELETE(ptr) fastbird::Delete( (ptr), __FILE__, __LINE__, __FUNCTION__)
 #define FB_ARRDELETE(ptr) fastbird::DeleteArr(ptr, __FILE__, __LINE__, __FUNCTION__)
-#define FB_SAFE_DEL(ptr) ptr ? FB_DELETE(ptr) : 0; ptr = 0;
+#define FB_SAFE_DEL(ptr) (ptr) ? FB_DELETE((ptr)) : 0; (ptr) = 0;
 #define FB_SAFE_ARRDEL(ptr) ptr ? FB_ARRDELETE(ptr) : 0; ptr = 0;
 #else
 #define FB_NEW(T) new T

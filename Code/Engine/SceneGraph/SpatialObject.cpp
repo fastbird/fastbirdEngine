@@ -152,12 +152,12 @@ void SpatialObject::RemoveCameraTargetingMe(ICamera* pCam)
 		mCameraTargetingMe.erase(it);
 }
 
-void SpatialObject::SetAnimationData(const AnimationData& anim, const char* actionFile)
+void SpatialObject::SetAnimationData(const AnimationData& animData, const char* actionFile)
 {
 	if (mAnimData && mAnimOwner)
 		FB_DELETE(mAnimData);
 	mAnimData = FB_NEW(AnimationData);
-	*mAnimData = anim;
+	*mAnimData = animData;
 	mAnimOwner = true;
 
 	mAnimData->ParseAction(actionFile);

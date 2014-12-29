@@ -181,8 +181,15 @@ namespace fastbird
 				if (!it->mMaterial || !it->mVBPos)
 					continue;
 
+				if (it->mMaterial->IsGlow())
+					pRenderer->SetGlowRenderTarget();
+
+				if (it->mMaterial->IsTransparent())
+					pRenderer->SetAlphaBlendState();
 				it->mMaterial->Bind(includeInputLayout);
 				RenderMaterialGroup(&(*it), false);
+				if (it->mMaterial->IsGlow())
+					pRenderer->UnSetGlowRenderTarget();
 			}
 		}
 
@@ -356,12 +363,32 @@ namespace fastbird
 		if (!pMat)
 			Log("Failed to load a material %s", name);
 		mMaterialGroups[0].mMaterial = pMat;
+		if (pMat->IsTransparent())
+		{
+			BLEND_DESC bdesc;
+			bdesc.RenderTarget[0].BlendEnable = true;
+			bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+			bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+			bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+
+			SetBlendState(bdesc);
+		}
 	}
 
 	void MeshObject::SetMaterial(IMaterial* pMat, int pass /*= RENDER_PASS::PASS_NORMAL*/)
 	{
 		CreateMaterialGroupFor(0);
 		mMaterialGroups[0].mMaterial = pMat;
+		if (pMat->IsTransparent())
+		{
+			BLEND_DESC bdesc;
+			bdesc.RenderTarget[0].BlendEnable = true;
+			bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+			bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+			bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+
+			SetBlendState(bdesc);
+		}
 	}
 
 
@@ -962,6 +989,14 @@ namespace fastbird
 			}
 		}
 		return false;
+	}
+
+	void MeshObject::MakeMaterialIndependent()
+	{
+		for (auto& mg : mMaterialGroups)
+		{
+			mg.mMaterial = mg.mMaterial->Clone();
+		}
 	}
 
 	bool MeshObject::CheckNarrowCollision(fastbird::BoundingVolume* pBV) const

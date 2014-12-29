@@ -38,7 +38,8 @@ namespace fastbird
 		virtual void UnmapBigBuffer();
 		virtual unsigned GetMultiSampleCount() const;
 
-		virtual IRenderToTexture* CreateRenderToTexture(bool everyframe);
+		virtual IRenderToTexture* CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
+			bool srv, bool miplevel, bool cubeMap, bool needDepth);
 		virtual void DeleteRenderToTexture(IRenderToTexture*);
 		
 		virtual void SetWireframe(bool enable);

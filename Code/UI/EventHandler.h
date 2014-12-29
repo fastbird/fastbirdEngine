@@ -17,6 +17,7 @@ namespace fastbird
 		virtual void UnregisterAllEventFunc();
 		virtual void DisableEvent(EVENT e);
 		virtual void DisableAllEvent();
+		virtual void ClearDisabledEvents();
 
 		virtual void SetEnableEvent(bool enable){ mEventEnable = enable; }
 		virtual bool GetEnableEvent() const { return mEventEnable; }

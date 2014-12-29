@@ -12,12 +12,13 @@ namespace fastbird
 
 SmartPtr<IRasterizerState> UIObject::mRasterizerStateShared;
 
-IUIObject* IUIObject::CreateUIObject(bool usingSmartPtr)
+IUIObject* IUIObject::CreateUIObject(bool usingSmartPtr, const Vec2I& renderTargetSize)
 {
 	static unsigned uinum = 0;
 	IUIObject* p = FB_NEW(UIObject);
 	if (!usingSmartPtr)
 		p->AddRef();
+	p->SetRenderTargetSize(renderTargetSize);
 	//p->SetDebugNumber(uinum++);
 	return p;
 }
@@ -35,24 +36,27 @@ void UIObject::ClearSharedRS()
 
 //---------------------------------------------------------------------------
 UIObject::UIObject()
-	: mAlpha(1.f)
-	, mNDCPos(0, 0)
-	, mNDCOffset(0, 0.0)
-	, mTextNPos(0, 0)
-	, mNOffset(0, 0.0f)
-	, mNPos(0.5f, 0.5f)
-	, mNSize(0.1f, 0.1f)
-	, mDebugString("UIObject")
-	, mNoDrawBackground(false)
-	, mDirty(true)
-	, mTextSize(30.0f)
-	, mScissor(false)
-	, mOut(false)
-	, mAlphaBlending(false)
-	, mAnimNDCOffset(0, 0)
-	, mAnimNOffset(0, 0)
-	, mSpecialOrder(0)
-	, mMultiline(false)
+: mAlpha(1.f)
+, mNDCPos(0, 0)
+, mNDCOffset(0, 0.0)
+, mTextNPos(0, 0)
+, mNOffset(0, 0.0f)
+, mNPos(0.5f, 0.5f)
+, mNSize(0.1f, 0.1f)
+, mDebugString("UIObject")
+, mNoDrawBackground(false)
+, mDirty(true)
+, mTextSize(30.0f)
+, mScissor(false)
+, mOut(false)
+, mAlphaBlending(false)
+, mAnimNDCOffset(0, 0)
+, mAnimNOffset(0, 0)
+, mSpecialOrder(0)
+, mMultiline(false)
+, mDoNotDraw(false) // debugging purpose
+, mScale(1, 1)
+, mPivot(0, 0)
 {
 	mObjectConstants.gWorld.MakeIdentity();
 	mObjectConstants.gWorldViewProj.MakeIdentity();
@@ -65,6 +69,7 @@ UIObject::UIObject()
 	bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
 	bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
 	bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+	bdesc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_ENABLE_RED | COLOR_WRITE_ENABLE_GREEN | COLOR_WRITE_ENABLE_BLUE;
 	SetBlendState(bdesc);
 	DEPTH_STENCIL_DESC desc;
 	desc.DepthEnable = false;
@@ -103,8 +108,7 @@ void UIObject::SetNSize(const Vec2& size) // in normalized space
 {
 	mNSize = size;
 	UpdateRegion();	
-	mDirty = true;
-	Vec2 ndcSize = size * 2.f;
+	Vec2 ndcSize = size* mScale * 2.f;
 	// 1 3  
 	// 0 2
 	Vec3 positions[4] = 
@@ -143,6 +147,13 @@ void UIObject::SetAnimNPosOffset(const Vec2& nposOffset)
 	UpdateRegion();
 }
 
+void UIObject::SetAnimScale(const Vec2& scale, const Vec2& pivot)
+{
+	mScale = scale;
+	mPivot = pivot;
+	SetNSize(mNSize);
+}
+
 void UIObject::SetTexCoord(Vec2 coord[], DWORD num)
 {
 	mTexcoords.clear();
@@ -162,10 +173,21 @@ void UIObject::SetColors(DWORD colors[], DWORD num)
 
 void UIObject::UpdateRegion()
 {
-	mRegion.left = Round((mNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth());
-	mRegion.top = Round((mNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight());
-	mRegion.right = mRegion.left + Round(mNSize.x * gFBEnv->pRenderer->GetWidth());
-	mRegion.bottom = mRegion.top + Round(mNSize.y * gFBEnv->pRenderer->GetHeight());
+	if (mScale != Vec2(1, 1))
+	{
+		Vec2 gap = mNPos + mNOffset + mAnimNOffset - mPivot;
+		mRegion.left = Round((mPivot.x + gap.x * mScale.x) * mRenderTargetSize.x);
+		mRegion.top = Round((mPivot.y + gap.y * mScale.y) * mRenderTargetSize.y);
+		mRegion.right = mRegion.left + Round(mNSize.x * mScale.x * mRenderTargetSize.x);
+		mRegion.bottom = mRegion.top + Round(mNSize.y * mScale.y * mRenderTargetSize.y);
+	}
+	else
+	{
+		mRegion.left = Round((mNPos.x + mNOffset.x + mAnimNOffset.x) * mRenderTargetSize.x);
+		mRegion.top = Round((mNPos.y + mNOffset.y + mAnimNOffset.y) * mRenderTargetSize.y);
+		mRegion.right = mRegion.left + Round(mNSize.x * mRenderTargetSize.x);
+		mRegion.bottom = mRegion.top + Round(mNSize.y * mRenderTargetSize.y);
+	}
 
 	// ratio
 	Vec4 val((mRegion.right - mRegion.left) / (float)(mRegion.bottom - mRegion.top), 
@@ -216,15 +238,26 @@ void UIObject::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORM
 //----------------------------------------------------------------------------
 void UIObject::PreRender()
 {
-	if (mObjFlag & IObject::OF_HIDE)
+	if (mObjFlag & IObject::OF_HIDE || mDoNotDraw)
 		return;
 
 	mOut = mScissor && 
 		!IsOverlapped(mRegion, mScissorRect);
 	if (mOut)
 		return;
+	if (mScale != Vec2(1, 1))
+	{
+		Vec2 pivot;
+		pivot.x = mPivot.x*2.0f - 1.f;
+		pivot.y = -mPivot.y*2.0f + 1.f;
+		Vec2 gap = mNDCPos + mNDCOffset + mAnimNDCOffset - pivot;
 
-	mObjectConstants.gWorld.SetTranslation( Vec3(mNDCPos+mNDCOffset+mAnimNDCOffset, 0.f ));
+		mObjectConstants.gWorld.SetTranslation(Vec3( pivot + gap*mScale	, 0.f));
+	}
+	else
+	{
+		mObjectConstants.gWorld.SetTranslation(Vec3(mNDCPos + mNDCOffset + mAnimNDCOffset, 0.f));
+	}
 	mObjectConstants.gWorld[0][0] = mAlpha;
 
 	if (mDirty)
@@ -236,7 +269,7 @@ void UIObject::PreRender()
 
 void UIObject::Render()
 {
-	if (gFBEnv->pConsole->GetEngineCommand()->r_UI == 0)
+	if (gFBEnv->pConsole->GetEngineCommand()->r_UI == 0 || mDoNotDraw)
 		return;
 	D3DEventMarker mark(mDebugString.c_str());
 
@@ -252,7 +285,6 @@ void UIObject::Render()
 		if (pFont)
 		{
 			pFont->PrepareRenderResources();
-			pFont->SetDefaultConstants();
 			pFont->SetRenderStates();
 			pFont->SetHeight(30.0f);
 			std::wstringstream ss;
@@ -294,15 +326,25 @@ void UIObject::Render()
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		if (pFont)
 		{
-			gFBEnv->pRenderer->SetAlphaBlendState();
 			pFont->PrepareRenderResources();
-			pFont->SetDefaultConstants();
 			pFont->SetRenderStates(false, mScissor);
-			pFont->SetHeight(mTextSize);
-			pFont->Write(
-				(mTextNPos.x + mNOffset.x + mAnimNOffset.x) * gFBEnv->pRenderer->GetWidth(),
-				(mTextNPos.y + mNOffset.y + mAnimNOffset.y) * gFBEnv->pRenderer->GetHeight(),
-				0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
+			pFont->SetHeight(mTextSize * mScale.x);
+			float x;
+			float y;
+			if (mScale != Vec2(1.0f, 1.0f))
+			{
+				float xgap = mTextNPos.x + mNOffset.x + mAnimNOffset.x - mPivot.x;
+				float ygap = mTextNPos.y + mNOffset.y + mAnimNOffset.y - mPivot.y;
+				x = (mPivot.x + xgap * mScale.x) * mRenderTargetSize.x;
+				y = (mPivot.y + ygap * mScale.y) * mRenderTargetSize.y;
+			}
+			else
+			{
+				x = (mTextNPos.x + mNOffset.x + mAnimNOffset.x) * mRenderTargetSize.x;
+				y = (mTextNPos.y + mNOffset.y + mAnimNOffset.y) * mRenderTargetSize.y;
+			}
+			
+			pFont->Write(x, y,	0.0f, mTextColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
 			pFont->SetBackToOrigHeight();
 		}
 	}
@@ -422,4 +464,20 @@ bool UIObject::GetAlphaBlending() const
 {
 	return mAlphaBlending;
 }
+
+void UIObject::SetDoNotDraw(bool doNotDraw)
+{
+	mDoNotDraw = doNotDraw;
+}
+
+void UIObject::SetRenderTargetSize(const Vec2I& rtSize)
+{
+	mRenderTargetSize = rtSize;
+}
+
+const Vec2I& UIObject::GetRenderTargetSize() const
+{
+	return mRenderTargetSize;
+}
+
 }

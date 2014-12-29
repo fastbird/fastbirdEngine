@@ -284,7 +284,6 @@ void Console::Render()
 
 	// Draw prompt
 	pFont->PrepareRenderResources();
-	pFont->SetDefaultConstants();
 	pFont->SetRenderStates();
 	pFont->Write((float)mPromptStart, (float)mInputPosition.y, 0.f, Color::White, 
 		(char*)mPrompt.c_str(), -1, FONT_ALIGN_LEFT);
@@ -696,6 +695,11 @@ void Console::OnCVarChanged(CVar* cvar)
 void Console::RegisterStdout(StdOutRedirect* p)
 {
 	mStdOutRedirect = p;
+}
+
+void Console::Clear()
+{
+	mBufferw.clear();
 }
 
 }

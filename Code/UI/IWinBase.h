@@ -20,10 +20,12 @@ namespace fastbird
 		IWinBase() {}
 		virtual ~IWinBase() {}
 
+		virtual void OnCreated() = 0;
 		virtual ComponentType::Enum GetType() const = 0;
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable) = 0;
+		virtual IWinBase* AddChild(ComponentType::Enum type) = 0;
 		virtual void RemoveChild(IWinBase* child, bool immediately=false) = 0;
 		virtual void RemoveAllChild(bool immediately = false) = 0;
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
@@ -61,7 +63,8 @@ namespace fastbird
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
-		virtual void SetVisible(bool show) = 0;
+		virtual bool SetVisible(bool show) = 0;
+		virtual void SetVisibleInternal(bool visible) = 0;
 		virtual void OnParentVisibleChanged(bool visible) = 0;
 		virtual bool GetVisible() const = 0;
 		virtual bool GetFocus(bool includeChildren = false) const = 0;
@@ -93,8 +96,11 @@ namespace fastbird
 		virtual void SetNPosOffset(const Vec2& offset) = 0;
 		virtual const Vec2& GetNPosOffset() const = 0;
 		virtual void SetAnimNPosOffset(const Vec2& offset) = 0;
+		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot) = 0;
+		virtual void SetPivotToUIObject(const Vec2& pivot) = 0;
 		virtual void SetScissorRect(bool use, const RECT& rect) = 0;
 		virtual const RECT& GetRegion() const = 0;
+		virtual Vec2 GetPivotWNPos() = 0;
 
 		virtual float PixelToLocalNWidth(int pixel) const = 0;
 		virtual float PixelToLocalNHeight(int pixel) const = 0;
@@ -104,6 +110,7 @@ namespace fastbird
 		virtual Vec2 PixelToLocalNPos(const Vec2I& pixel) const = 0;
 
 		virtual IUIAnimation* GetUIAnimation(const char* name) = 0;
+		virtual void ClearAnimationResult() = 0;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem) = 0;
 		virtual bool ParseLua(const fastbird::LuaObject& compTable) = 0;
@@ -162,8 +169,13 @@ namespace fastbird
 		virtual void SetUIFilePath(const char* path) = 0;
 		virtual const char* GetUIFilePath() const = 0;
 
+		virtual void SetRender3D(bool render3D, const Vec2I& renderTargetSize) = 0;
+		virtual bool GetRender3D() const = 0;
+		virtual Vec2I GetRenderTargetSize() const = 0;
+
 	protected:
 		virtual void OnPosChanged() = 0;
 		virtual void OnSizeChanged() = 0;
+		virtual void OnEnableChanged() = 0;
 	};
 }

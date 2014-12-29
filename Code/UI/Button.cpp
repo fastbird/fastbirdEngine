@@ -12,15 +12,20 @@ namespace fastbird
 const float Button::LEFT_GAP = 0.001f;
 
 Button::Button()
-	: mImage(0)
-	, mImageOver(0)
-	, mFrameImage(0)
-	, mProgressBar(0)
+	: mProgressBar(0)
 	, mInProgress(false)
 	, mNoBackgroundBackup(false)
-	, mEnable(true)
+	, mActivated(false)
+	, mChangeImageActivation(false)
+	, mIconText(false)
+	, mNoButton(false)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	for (int i = 0; i < ButtonImages::Num; i++)
+	{
+		mImages[i] = 0;
+	}
+
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIButton.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -51,38 +56,38 @@ Button::Button()
 
 Button::~Button()
 {
-	FB_DELETE(mImage);
-	FB_DELETE(mImageOver);
-	FB_DELETE(mFrameImage);
-	FB_DELETE(mProgressBar);
+	for (int i = 0; i < ButtonImages::Num; ++i)
+	{
+		auto p = mImages[i];
+		FB_DELETE(p);
+		mImages[i] = 0;
+	}
 }
 
 void Button::OnPosChanged()
 {
 	__super::OnPosChanged();
-	if (mImage)
-		mImage->SetWNPos(mWNPos);
-	if (mImageOver)
-		mImageOver->SetWNPos(mWNPos);
-	if (mFrameImage)
-		mFrameImage->SetWNPos(mWNPos);
-	if (mProgressBar)
-		mProgressBar->SetWNPos(mWNPos);
-
+	for (int i = 0; i < ButtonImages::Num; ++i)
+	{
+		if (mImages[i])
+		{
+			mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+		}
+	}
+		
 }
 
-void Button::SetNPosOffset(const Vec2& offset)
-{
-	__super::SetNPosOffset(offset);
-	if (mImage)
-		mImage->SetNPosOffset(offset);
-	if (mImageOver)
-		mImageOver->SetNPosOffset(offset);
-	if (mFrameImage)
-		mFrameImage->SetNPosOffset(offset);
-	if (mProgressBar)
-		mProgressBar->SetNPosOffset(offset);
-}
+//void Button::SetNPosOffset(const Vec2& offset)
+//{
+//	__super::SetNPosOffset(offset);
+//
+//	for (int i = 0; i < ButtonImages::Num; ++i)
+//	{
+//		if (mImages[i])
+//			mImages[i]->SetNPosOffset(offset);
+//	}
+//		
+//}
 
 void Button::OnSizeChanged()
 {
@@ -112,50 +117,95 @@ void Button::OnSizeChanged()
 		};
 		mUIObject->SetTexCoord(texcoords, 4);
 	}*/
-	if (mImage)
-		mImage->SetWNSize(mWNSize);
-	if (mImageOver)
-		mImageOver->SetWNSize(mWNSize);
-	if (mFrameImage)
-		mFrameImage->SetWNSize(mWNSize);
-	if (mProgressBar)
-		mProgressBar->SetWNSize(mWNSize);
+
+		for (int i = 0; i < ButtonImages::Num; ++i)
+		{
+			if (mImages[i])
+				mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+		}
 }
 
 void Button::GatherVisit(std::vector<IUIObject*>& v)
 {
 	if (!mVisible)
-		return;
+		return;	
 	assert(mUIObject);
 
 	if (mProgressBar && mInProgress)
 		mProgressBar->GatherVisit(v);
+	
+	if (mMouseIn && mImages[ButtonImages::BackImageHover])
+		mImages[ButtonImages::BackImageHover]->GatherVisit(v);
+	else if (mImages[ButtonImages::BackImage])
+		mImages[ButtonImages::BackImage]->GatherVisit(v);
 
 	v.push_back(mUIObject);
 
-	if (mMouseIn && mImageOver)
-		mImageOver->GatherVisit(v);
-	else if (mImage)
-		mImage->GatherVisit(v);	
+	if (mImages[ButtonImages::ActiveImage] && mImages[ButtonImages::ActiveImage]->GetVisible())
+	{
+		if (mChangeImageActivation)
+		{
+			mImages[ButtonImages::ActiveImage]->GatherVisit(v);
+		}
+		else
+		{
+			if (mMouseIn && mImages[ButtonImages::ImageHover])
+				mImages[ButtonImages::ImageHover]->GatherVisit(v);
+			else if(mImages[ButtonImages::Image])
+				mImages[ButtonImages::Image]->GatherVisit(v);
+			mImages[ButtonImages::ActiveImage]->GatherVisit(v);
+		}
+	}
+	else if (mImages[ButtonImages::DeactiveImage] && mImages[ButtonImages::DeactiveImage]->GetVisible())
+	{
+		if (mChangeImageActivation)
+		{
+			mImages[ButtonImages::DeactiveImage]->GatherVisit(v);
+		}
+		else
+		{
+			if (mMouseIn && mImages[ButtonImages::ImageHover])
+				mImages[ButtonImages::ImageHover]->GatherVisit(v);
+			else if (mImages[ButtonImages::Image])
+				mImages[ButtonImages::Image]->GatherVisit(v);
+			mImages[ButtonImages::DeactiveImage]->GatherVisit(v);
+		}
+	}
+	else
+	{
+		if (mMouseIn && mImages[ButtonImages::ImageHover])
+			mImages[ButtonImages::ImageHover]->GatherVisit(v);
+		else if (mImages[ButtonImages::Image])
+			mImages[ButtonImages::Image]->GatherVisit(v);
+	}		
 
-	if (mFrameImage)
-		mFrameImage->GatherVisit(v);
+	if (mImages[ButtonImages::FrameImage])
+		mImages[ButtonImages::FrameImage]->GatherVisit(v);	
 
 	__super::GatherVisit(v);
 }
 
 void Button::OnMouseDown(void* arg)
 {
-	if (!mEnable)
+	if (!mEnable || mNoButton)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColorDown.GetVec4());
 	mUIObject->GetMaterial()->SetEmissiveColor(1.0f, 1.0f, 0.2f, 1);
 	mUIObject->SetTextColor(mEnable ? mTextColorDown : mTextColorDown*.5f);
+
+	if (mImages[ButtonImages::BackImageHover])
+		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+	else if (mImages[ButtonImages::BackImage])
+		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+	else if (mImages[ButtonImages::ImageHover])
+		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
 }
 
 void Button::OnMouseHover(void* arg)
 {
-	if (!mEnable)
+	if (!mEnable || mNoButton)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColorOver.GetVec4());
 	mUIObject->SetTextColor(mEnable ? mTextColorHover : mTextColorHover * .5f);
@@ -164,26 +214,52 @@ void Button::OnMouseHover(void* arg)
 	mUIObject->GetMaterial()->SetEmissiveColor(0.8f, 0.8f, 0.1f, 1);
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColorOver.GetVec4());
-	if (mImageOver)
+	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
 		IUIManager::GetUIManager().DirtyRenderList();
+
+
+
+	if (mImages[ButtonImages::BackImageHover])
+		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::BackImage])
+		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::ImageHover])
+		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
 
 	// sometimes OnMouseHover function is called manually even the mouse
 	// is in out. - DropDown
 	mMouseIn = true;
+
 }
 
 void Button::OnMouseOut(void* arg)
 {
+	if (!mEnable || mNoButton)
+		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
 	mUIObject->SetTextColor(mEnable ? mTextColor : mTextColor*.5f);
 	mUIObject->GetMaterial()->SetEmissiveColor(0, 0, 0, 0);
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
-	if (mImageOver)
+	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
 		IUIManager::GetUIManager().DirtyRenderList();
+
+	
+
+	if (mImages[ButtonImages::BackImageHover])
+		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::BackImage])
+		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0, 0, 0, 1));
+	else if (mImages[ButtonImages::ImageHover])
+		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
 
 	// sometimes OnMouseHover function is called manually even the mouse
 	// is in out. - DropDown
+
 	mMouseIn = false;
 }
 
@@ -213,79 +289,246 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									 mImageAtlas = val;
 									 return true;
 	}
+	case UIProperty::REGION:
+	{
+							   if (!mImages[ButtonImages::Image])
+							   {
+								   mImages[ButtonImages::Image]= CreateImageBox();
+							   }
+							   assert(!mImageAtlas.empty());
+							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   return true;
+	}
+	case UIProperty::HOVER_IMAGE:
+	{
+									if (!mImages[ButtonImages::ImageHover])
+									{
+										mImages[ButtonImages::ImageHover] = CreateImageBox();
+									}
+									assert(!mImageAtlas.empty());
+									mImages[ButtonImages::ImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+									mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+									return true;
+	}
 	case UIProperty::BACKGROUND_IMAGE:
 	{
-										 if (!mImage)
+										 if (!mImages[ButtonImages::BackImage])
 										 {
-											 mImage = CreateImageBox();
+											 mImages[ButtonImages::BackImage] = CreateImageBox();
 										 }
 										 assert(!mImageAtlas.empty());
-										 mImage->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										 mImages[ButtonImages::BackImage]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										 mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										 return true;
+	}
+	case UIProperty::BACKGROUND_IMAGE_DISABLED:
+	{
+										 if (!mImages[ButtonImages::BackImageDisabled])
+										 {
+											 mImages[ButtonImages::BackImageDisabled] = CreateImageBox();
+										 }
+										 assert(!mImageAtlas.empty());
+										 mImages[ButtonImages::BackImageDisabled]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										 mImages[ButtonImages::BackImageDisabled]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 										 return true;
 	}
 
 	case UIProperty::BACKGROUND_IMAGE_HOVER:
 	{
-											   if (!mImageOver)
+											   if (!mImages[ButtonImages::BackImageHover])
 											   {
-												   mImageOver = CreateImageBox();
+												   mImages[ButtonImages::BackImageHover] = CreateImageBox();
 											   }
 
 											   assert(!mImageAtlas.empty());
-											   mImageOver->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-											  
+											   mImages[ButtonImages::BackImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+											   mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 											   return true;
 	}
 
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
-										 if (!mImage)
+										if (!mImages[ButtonImages::BackImage])
 										 {
-											 mImage = CreateImageBox();
+											mImages[ButtonImages::BackImage] = CreateImageBox();
 										 }
 
-										 mImage->SetTexture(val);
+										mImages[ButtonImages::BackImage]->SetTexture(val);
+										mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 										 return true;
 	}
 
 	case UIProperty::BACKGROUND_IMAGE_HOVER_NOATLAS:
 	{
-											   if (!mImageOver)
+												if (!mImages[ButtonImages::BackImageHover])
 											   {
-												   mImageOver = CreateImageBox();
+													mImages[ButtonImages::BackImageHover] = CreateImageBox();
 											   }
 
 											   
-											   mImageOver->SetTexture(val);
+												mImages[ButtonImages::BackImageHover]->SetTexture(val);
+												mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 											   return true;
 	}
 
 	case UIProperty::FRAME_IMAGE:
 	{
-										 if (!mFrameImage)
+										if (!mImages[ButtonImages::FrameImage])
 										 {
-											 mFrameImage = CreateImageBox();
+											mImages[ButtonImages::FrameImage] = CreateImageBox();
 										 }
 
 										 assert(!mImageAtlas.empty());
-										 mFrameImage->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										 mImages[ButtonImages::FrameImage]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 										 if (strlen(val) == 0)
 										 {
-											 mFrameImage->SetVisible(false);
+											 mImages[ButtonImages::FrameImage]->SetVisible(false);
 										 }
 										 else
 										 {
-											 mFrameImage->SetVisible(true);
+											 mImages[ButtonImages::FrameImage]->SetVisible(true);
 										 }
 										 
 										 IUIManager::GetUIManager().DirtyRenderList();
 										 return true;
 	}
 
+	case UIProperty::FRAME_IMAGE_DISABLED:
+	{
+										if (!mImages[ButtonImages::FrameImageDisabled])
+										{
+											mImages[ButtonImages::FrameImageDisabled] = CreateImageBox();
+										}
+
+										assert(!mImageAtlas.empty());
+										mImages[ButtonImages::FrameImageDisabled]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										if (strlen(val) == 0)
+										{
+											mImages[ButtonImages::FrameImageDisabled]->SetVisible(false);
+										}
+										else
+										{
+											mImages[ButtonImages::FrameImageDisabled]->SetVisible(true);
+										}
+
+										IUIManager::GetUIManager().DirtyRenderList();
+										return true;
+	}
+
+	case UIProperty::ACTIVATED_IMAGE:
+	{
+										if (!mImages[ButtonImages::ActiveImage])
+										{
+											mImages[ButtonImages::ActiveImage] = CreateImageBox();
+										}
+
+										if (strlen(val) == 0)
+										{
+											mImages[ButtonImages::ActiveImage]->SetVisible(false);
+										}
+										else
+										{
+											assert(!mImageAtlas.empty());
+											mImages[ButtonImages::ActiveImage]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+											mImages[ButtonImages::ActiveImage]->SetVisible(false);
+											mImages[ButtonImages::ActiveImage]->SetCenterUVMatParam();
+										}
+										mImages[ButtonImages::ActiveImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+
+										return true;
+	}
+
+	case UIProperty::DEACTIVATED_IMAGE:
+	{
+										  if (!mImages[ButtonImages::DeactiveImage])
+										  {
+											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();
+										  }
+
+										  if (strlen(val) == 0)
+										  {
+											  mImages[ButtonImages::DeactiveImage]->SetVisible(false);
+										  }
+										  else
+										  {
+											  assert(!mImageAtlas.empty());
+											  mImages[ButtonImages::DeactiveImage]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+											  mImages[ButtonImages::DeactiveImage]->SetVisible(false);
+											  mImages[ButtonImages::DeactiveImage]->SetCenterUVMatParam();
+										  }
+										  mImages[ButtonImages::DeactiveImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										  return true;
+	}
+
+	case UIProperty::ACTIVATED_IMAGE_ROT:
+	{
+											assert(mImages[ButtonImages::ActiveImage]);
+											mImages[ButtonImages::ActiveImage]->SetUVRot(StringConverter::parseBool(val));
+											return true;
+	}
+
+	case UIProperty::BUTTON_ACTIVATED:
+	{
+										 mActivated = StringConverter::parseBool(val);
+										 if (mImages[ButtonImages::ActiveImage])
+										 {
+											 if (mActivated)
+											 {
+												 mImages[ButtonImages::ActiveImage]->SetVisible(true);
+											 }
+											 else
+											 {
+												 mImages[ButtonImages::ActiveImage]->SetVisible(false);
+											 }
+											 IUIManager::GetUIManager().DirtyRenderList();
+										 }
+
+										 if (mImages[ButtonImages::DeactiveImage])
+										 {
+											 if (mActivated)
+											 {
+												 mImages[ButtonImages::DeactiveImage]->SetVisible(false);
+											 }
+											 else
+											 {
+												 mImages[ButtonImages::DeactiveImage]->SetVisible(true);
+											 }
+										 }
+										 return true;
+	}
+
+	case UIProperty::BUTTON_ICON_TEXT:
+	{
+										 unsigned buttonIconSize = StringConverter::parseUnsignedInt(val);
+										 if (buttonIconSize == 0)
+										 {
+											 mIconText = false;
+										 }
+										 else
+										 {
+											 mIconText = true;
+											 if (mImages[ButtonImages::Image])
+											 {
+												 mImages[ButtonImages::Image]->SetSize(Vec2I(buttonIconSize, buttonIconSize));
+											 }
+											 AlignIconText();
+										 }
+
+										 return true;
+	}
+
+	case UIProperty::CHANGE_IMAGE_ACTIVATE:
+	{
+											  mChangeImageActivation = StringConverter::parseBool(val);
+											  return true;
+	}
+
 	case UIProperty::PROGRESSBAR:
 	{
 									FB_DELETE(mProgressBar);
 									mProgressBar = FB_NEW(HorizontalGauge);
+									mProgressBar->SetRender3D(mRender3D, GetRenderTargetSize());
 									mProgressBar->SetParent(this);
 									mProgressBar->SetWNSize(mWNSize);
 									mProgressBar->SetWNPos(mWNPos);
@@ -333,7 +576,20 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										mEdgeColorOver = StringConverter::parseColor(val);
 										return true;
 	}
-	
+
+	case UIProperty::IMAGE_COLOR_OVERLAY:
+	{
+											if (mImages[ButtonImages::Image])
+											{
+												return mImages[ButtonImages::Image]->SetProperty(UIProperty::IMAGE_COLOR_OVERLAY, val);
+											}
+											return true;
+	}
+	case UIProperty::NO_BUTTON:
+	{
+								  mNoButton = StringConverter::parseBool(val);
+								  return true;
+	}
 
 	}
 
@@ -343,6 +599,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 ImageBox* Button::CreateImageBox()
 {
 	auto image = FB_NEW(ImageBox);
+	image->SetRender3D(mRender3D, GetRenderTargetSize());
 	image->SetVisible(true);
 	image->SetParent(this);
 	image->SetWNPos(mWNPos);
@@ -404,12 +661,6 @@ void Button::EndProgress()
 	IUIManager::GetUIManager().DirtyRenderList();
 }
 
-void Button::SetEnable(bool enable)
-{
-	__super::SetEnable(enable);
-	mEnable = enable;
-}
-
 void Button::Highlight(bool highlight)
 {
 	if (highlight && mEnable)
@@ -424,11 +675,61 @@ void Button::Highlight(bool highlight)
 
 void Button::SetBackgroundTexture(ITexture* pTexture)
 {
-	if (!mImage)
+	if (!mImages[ButtonImages::BackImage])
 	{
-		mImage = CreateImageBox();
+		mImages[ButtonImages::BackImage] = CreateImageBox();
 	}
 
-	mImage->SetTexture(pTexture);
+	mImages[ButtonImages::BackImage]->SetTexture(pTexture);
+}
+
+void Button::OnEnableChanged()
+{
+	if (mEnable)
+	{
+		for (int i = 0; i < ButtonImages::Num; ++i)
+		{
+			if (mImages[i])
+				mImages[i]->SetDesaturate(false);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < ButtonImages::Num; ++i)
+		{
+			if (mImages[i])
+				mImages[i]->SetDesaturate(true);
+		}
+	}
+}
+
+void Button::AlignIconText()
+{
+	const float IconTextGap = 2.0f;
+	if (mImages[ButtonImages::Image])
+	{
+		mImages[ButtonImages::Image]->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
+		auto rtSize = GetRenderTargetSize();
+		float iconSize = mImages[ButtonImages::Image]->GetWNSize().x * rtSize.x;
+		float textSize = (float)mTextWidth;
+		float buttonSize = mWNSize.x * rtSize.x;
+		float buttonCenter = buttonSize*.5f;
+
+		float contentSize = iconSize + textSize + IconTextGap;
+
+		float sizeGap = buttonSize - contentSize;
+		float iconStart = sizeGap*.5f;
+		float textStart = iconStart + iconSize + IconTextGap;
+		float textCenter = textStart + textSize * .5f;
+
+		float wnIconStart = iconStart / rtSize.x;
+		float wnTextStart = textStart / rtSize.x;
+		float nIconStart = ConvertWorldSizeToParentCoord(Vec2(wnIconStart, wnIconStart)).x;
+		mImages[ButtonImages::Image]->SetNPos(Vec2(0.f, 0.5f));
+		mImages[ButtonImages::Image]->SetInitialOffset(Vec2I(((int)iconStart), 0));
+		mImages[ButtonImages::Image]->UpdateWorldPos();
+		mTextGap.x = Round(textCenter - buttonCenter);
+		AlignText();		
+	}	
 }
 }

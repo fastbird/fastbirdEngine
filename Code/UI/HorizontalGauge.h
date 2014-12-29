@@ -24,7 +24,6 @@ namespace fastbird
 		virtual void SetGaugeColorEmpty(const Color& color);
 		virtual void SetBlinkColor(const Color& color);
 
-		virtual void OnSizeChanged();
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 
 	private:

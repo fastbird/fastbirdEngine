@@ -11,10 +11,12 @@ static void EditParticle(StringVector& arg);
 static void Run(StringVector& arg);
 static void DebugRenderTarget(StringVector& arg);
 static void SetFov(StringVector& arg);
+static void Clear(StringVector& arg);
 static ConsoleCommand ccSpawnParticle("EditParticle", EditParticle, "EditParticle");
 static ConsoleCommand ccRun("Run", Run, "Run command");
 static ConsoleCommand ccDebugRenderTarget("DebugRenderTarget", DebugRenderTarget, "DebugRenderTarget");
 static ConsoleCommand ccSetFov("SetFov", SetFov, "SetFov");
+static ConsoleCommand ccClear("Clear", Clear, "Clear console messsage");
 EngineCommand::EngineCommand()
 {
 	WheelSens = gFBEnv->pScriptSystem->GetRealVariable("WheelSens", 0.01f);
@@ -92,6 +94,7 @@ EngineCommand::EngineCommand()
 	REGISTER_CC(&ccRun);
 	REGISTER_CC(&ccDebugRenderTarget);
 	REGISTER_CC(&ccSetFov);
+	REGISTER_CC(&ccClear);
 }
 EngineCommand::~EngineCommand()
 {
@@ -146,6 +149,11 @@ void SetFov(StringVector& arg)
 	if (arg.size() < 2)
 		return;
 	gFBEnv->pEngine->GetCamera(0)->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
+}
+
+void Clear(StringVector& arg)
+{
+	gFBEnv->pConsole->Clear();
 }
 
 }
