@@ -81,6 +81,7 @@ namespace fastbird
 
 		void RegisterStdout(StdOutRedirect* p);
 	
+		virtual void Clear();
 	private:
 
 		void Highlighting(bool shiftkey);

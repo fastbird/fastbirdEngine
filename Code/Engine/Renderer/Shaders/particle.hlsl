@@ -7,6 +7,7 @@
 // Constant Buffer
 //--------------------------------------------------------------------------------------
 #include "Constants.h"
+#include "CommonFunctions.h"
 
 struct a2v
 {
@@ -35,6 +36,8 @@ struct g2p
 	float4 Position : SV_Position;
 	float4 UV_Intensity_Alpha : TEXCOORD0;
 	float3 mColor : TEXCOORD1;
+	float2 ScreenUVData : TEXCOORD2;
+	float3 ViewPos : TEXCOORD3;
 };
 
 //--------------------------------------------------------------------------------------
@@ -97,6 +100,8 @@ void particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> strea
 		OUTPUT.UV_Intensity_Alpha.z = INPUT[0].UDirection_Intensity.w;
 		OUTPUT.UV_Intensity_Alpha.w = INPUT[0].mRot_Alpha_uv.y;
 		OUTPUT.mColor = INPUT[0].mColor;
+		OUTPUT.ScreenUVData = OUTPUT.Position.xy / OUTPUT.Position.w;
+		OUTPUT.ViewPos = viewPos;
 		stream.Append(OUTPUT);
 		if (i%4==3)
 			stream.RestartStrip();
@@ -107,6 +112,7 @@ void particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> strea
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 Texture2D gDiffuseTexture : register(t0);
+Texture2D  gDepthTexture : register(t5);
 
 #if !defined(_NO_GLOW)
 struct PS_OUT
@@ -127,6 +133,24 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	#else
 	PS_OUT output;
 	#endif
+	
+	float2 screenTex = 0.5*( (INPUT.ScreenUVData) + float2(1,1));
+    screenTex.y = 1 - screenTex.y;
+	
+	float sceneDepth = gDepthTexture.Sample(gLinearSampler, screenTex);	
+	float particleDepth = (INPUT.ViewPos.y - gNearFar.x) / (gNearFar.y - gNearFar.x);
+	
+	float diff = sceneDepth - particleDepth;
+	float depthFadeScale = gMaterialParam[0].y;
+	float depthFadeInput = saturate(diff*depthFadeScale);
+	
+	float depthFade = SymetricCurve(depthFadeInput);
+	depthFade = depthFadeInput>0.5 ? 1-depthFade : depthFade;
+	
+	//if (depthFade<=0.00001)
+		//discard;
+		
+		
 	float4 diffuse = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV_Intensity_Alpha.xy);
 	diffuse.xyz *= INPUT.mColor * INPUT.UV_Intensity_Alpha.z;
 	diffuse.w *= INPUT.UV_Intensity_Alpha.z;
@@ -141,7 +165,7 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 #ifdef _NO_GLOW
 	return outColor;
 #else
-	output.color0 = outColor;
+	output.color0 = float4(outColor.rgb, outColor.a*depthFade);
 	float glowPower = gMaterialParam[0].x;
 	output.color1 = float4(outColor.xyz * glowPower, outColor.a);
 	return output;

@@ -22,6 +22,28 @@ Container::~Container()
 	mPendingDelete.clear();
 }
 
+IWinBase* Container::AddChild(ComponentType::Enum type)
+{
+	mChildrenChanged = true; // only detecting addition. not deletion.
+	if (mWndContentUI)
+	{
+		return mWndContentUI->AddChild(type);
+	}
+	WinBase* pWinBase = (WinBase*)IUIManager::GetUIManager().CreateComponent(type);
+	if (pWinBase)
+	{
+		mChildren.push_back(pWinBase);
+		if (mNoMouseEvent)
+		{
+			pWinBase->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
+		}
+		pWinBase->SetParent(this);
+		IUIManager::GetUIManager().DirtyRenderList();
+	}
+	SetChildrenPosSizeChanged();
+	return pWinBase;
+}
+
 IWinBase* Container::AddChild(float posX, float posY, float width, float height, ComponentType::Enum type)
 {
 	mChildrenChanged = true; // only detecting addition. not deletion.
@@ -41,11 +63,8 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 		pWinBase->SetParent(this);
 		pWinBase->SetNSize(fastbird::Vec2(width, height));
 		pWinBase->SetNPos(fastbird::Vec2(posX, posY));
-		Container* pContainer = dynamic_cast<Container*>(pWinBase);
-		for (auto win : mChildren)
-		{
-			win->RefreshScissorRects(); // for scissor
-		}
+		pWinBase->RefreshScissorRects(); // for scissor
+		pWinBase->OnCreated();
 		IUIManager::GetUIManager().DirtyRenderList();
 	}
 	SetChildrenPosSizeChanged();
@@ -63,12 +82,15 @@ IWinBase* Container::AddChild(float posX, float posY, const Vec2& width_aspectRa
 	float width = width_aspectRatio.x;
 	float ratio = width_aspectRatio.y;
 	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(width, width));
-	float iWidth = gEnv->pRenderer->GetWidth() * worldSize.x;
+	auto rtSize = GetRenderTargetSize();
+	float iWidth = rtSize.x * worldSize.x;
 	float iHeight = iWidth / ratio;
-	float height = iHeight / (gEnv->pRenderer->GetHeight() * mWNSize.y);
+	float height = iHeight / (rtSize.y * mWNSize.y);
 	WinBase* pWinBase = (WinBase*)AddChild(posX, posY, width, height, type);
 	if (pWinBase)
 		pWinBase->SetAspectRatio(ratio);
+
+	pWinBase->OnCreated();
 
 	return pWinBase;
 }
@@ -133,13 +155,13 @@ void Container::RemoveAllChild(bool immediately)
 	}
 	else
 	{
-		for (const auto& it : mChildren)
+		for (auto child : mChildren)
 		{
-			it->ClearName();
-			Container* childCont = dynamic_cast<Container*>(it);
+			Container* childCont = dynamic_cast<Container*>(child);
 			if (childCont)
 				childCont->RemoveAllChild(false);
-			mPendingDelete.push_back(it);
+			child->ClearName();
+			mPendingDelete.push_back(child);
 		}
 	}
 }
@@ -385,6 +407,9 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (mWNSize.y == NotDefined)
+		return;
+
 	// find last wn
 	float contentWNEnd = 0.f;
 	for (auto i : mChildren)
@@ -404,6 +429,7 @@ void Container::RefreshVScrollbar()
 		if (!mScrollerV && mUseScrollerV)
 		{
 			mScrollerV = static_cast<Scroller*>(AddChild(1.0f, 0.0f, 0.01f, 1.0f, ComponentType::Scroller));
+			mScrollerV->SetRender3D(mRender3D, GetRenderTargetSize());
 			mScrollerV->SetSizeX(4);
 			mScrollerV->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			mScrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");
@@ -425,14 +451,31 @@ void Container::RefreshVScrollbar()
 	
 }
 
-void Container::SetVisible(bool visible)
+bool Container::SetVisible(bool visible)
 {
-	__super::SetVisible(visible);
+	bool changed = __super::SetVisible(visible);
+	if (changed)
+	{
+		for (auto var : mChildren)
+		{
+			if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
+			{
+				var->SetVisible(visible);
+			}
+			var->OnParentVisibleChanged(visible);
+		}
+	}
+	return changed;
+}
+
+void Container::SetVisibleInternal(bool visible)
+{
+	__super::SetVisibleInternal(visible);
 	for (auto var : mChildren)
 	{
-		if ((visible==true && var->GetInheritVisibleTrue()) || !visible)
+		if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
 		{
-			var->SetVisible(visible);
+			var->SetVisibleInternal(visible);
 		}
 		var->OnParentVisibleChanged(visible);
 	}
@@ -486,6 +529,15 @@ void Container::SetAnimNPosOffset(const Vec2& offset)
 	}
 }
 
+void Container::SetAnimScale(const Vec2& scale, const Vec2& pivot)
+{
+	__super::SetAnimScale(scale, pivot);
+	for (auto item : mChildren)
+	{
+		item->SetAnimScale(scale, pivot);
+	}
+}
+
 bool Container::ParseXML(tinyxml2::XMLElement* pelem)
 {
 	__super::ParseXML(pelem);
@@ -501,9 +553,11 @@ bool Container::ParseXML(tinyxml2::XMLElement* pelem)
 			break;
 		}
 		ComponentType::Enum type = ComponentType::ConverToEnum(sz);		
-		IWinBase* p = AddChild(0.0f, 0.0f, 1.0f, 1.0f, type);
+		IWinBase* p = AddChild(type);
 		assert(p);
+		p->SetRender3D(mRender3D, GetRenderTargetSize());
 		p->ParseXML(pchild);
+		p->OnCreated();
 		
 		if (dropdown)
 		{
@@ -537,8 +591,9 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 			auto typee = ComponentType::ConverToEnum(type.c_str());
 			if (typee != ComponentType::NUM)
 			{
-				IWinBase* p = AddChild(0.0f, 0.0f, 1.0f, 1.0f, typee);
+				IWinBase* p = AddChild(typee);
 				assert(p);
+				p->SetRender3D(mRender3D, GetRenderTargetSize());
 				p->ParseLua(child);
 
 				if (dropdown)
@@ -624,8 +679,17 @@ Vec2 Container::PixelToLocalNSize(const Vec2I& pixel) const
 
 const Vec2& Container::GetScrollOffset() const
 {
-	assert(mScrollerV); 
+	assert(mScrollerV);
 	return mScrollerV->GetOffset();
+}
+
+void Container::SetRender3D(bool render3D, const Vec2I& renderTargetSize)
+{
+	__super::SetRender3D(render3D, renderTargetSize);
+	for (auto child : mChildren)
+	{
+		child->SetRender3D(render3D, renderTargetSize);
+	}
 }
 
 }

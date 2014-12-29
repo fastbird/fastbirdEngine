@@ -76,20 +76,26 @@ namespace fastbird
 			float normTime = curTime / mCurPlayingAction->mLength;
 			bool cycled = mCycled;
 			mCycled = false;
-			if (mCurPlayingAction->mPosStartEnd[0] && mCurPlayingAction->mPosStartEnd[1])
+			if (mAnimationData->HasPosAnimation())
 			{
-				Vec3 pos = Lerp<Vec3>(*mCurPlayingAction->mPosStartEnd[0], *mCurPlayingAction->mPosStartEnd[1],
-					normTime);
-				mResult.SetTranslation(pos);
+				if (mCurPlayingAction->mPosStartEnd[0] && mCurPlayingAction->mPosStartEnd[1])
+				{
+					Vec3 pos = Lerp<Vec3>(*mCurPlayingAction->mPosStartEnd[0], *mCurPlayingAction->mPosStartEnd[1],
+						normTime);
+					mResult.SetTranslation(pos);
+				}
 			}
 
-			const Quat *r1=0, *r2=0;
-			float interpol = 0;
-			mAnimationData->PickRot(curTime, cycled, &r1, &r2, interpol);
-			if (r1 && r2)
+			if (mAnimationData->HasRotAnimation())
 			{
-				Quat rot = Slerp(*r1, *r2, interpol);
-				mResult.SetRotation(rot);
+				const Quat *r1 = 0, *r2 = 0;
+				float interpol = 0;
+				mAnimationData->PickRot(curTime, cycled, &r1, &r2, interpol);
+				if (r1 && r2)
+				{
+					Quat rot = Slerp(*r1, *r2, interpol);
+					mResult.SetRotation(rot);
+				}
 			}
 			
 			mPrevPlayingTime = curTime;

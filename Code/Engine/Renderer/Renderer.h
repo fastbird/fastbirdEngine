@@ -59,6 +59,12 @@ public:
 		const Color& color0, const Color& color1);
 	virtual void RenderDebugHud(); 
 	virtual inline IFont* GetFont() const;
+
+	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
+		ITexture* pDepthStencil, size_t dsIndex);
+	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num);
+	virtual const Vec2I& GetRenderTargetSize() const;
+	virtual void RestoreRenderTarget();
 	
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e);
@@ -87,6 +93,11 @@ public:
 	virtual ILight* GetDirectionalLight(int idx) const;
 
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
+
+	// Render to Texture Pool handling
+	virtual IRenderToTexture* CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
+		bool srv, bool miplevel, bool cubeMap, bool needDepth);
+	virtual void DeleteRenderToTexture(IRenderToTexture*);
 
 
 	//-------------------------------------------------------------------------
@@ -172,7 +183,7 @@ public:
 	virtual void SetGlowRenderTarget();
 	void BlendGlow();
 
-	void BindDepthTexture(bool set);
+	virtual void BindDepthTexture(bool set);
 	void SetCloudVolumeTarget();
 	void SetCloudVolumeTexture(bool set);
 	virtual void SetCloudRendering(bool rendering);
@@ -198,6 +209,7 @@ public:
 protected:
 	unsigned				mWidth;
 	unsigned				mHeight;
+	Vec2I mCurRTSize;
 
 	unsigned mCropWidth;
 	unsigned mCropHeight;
@@ -226,7 +238,9 @@ protected:
 	ISamplerState* mDefaultSamplers[SAMPLERS::NUM];
 
 	SmartPtr<ITexture> mEnvironmentTexture;
-	std::vector< RenderToTexture* > mRenderToTextures;
+	std::vector< IRenderToTexture* > mRenderToTextures;
+
+	std::vector<IRenderToTexture*> mRenderToTexturePool;
 
 	Color mClearColor;
 	float mDepthClear;

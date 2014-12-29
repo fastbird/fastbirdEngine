@@ -33,10 +33,11 @@ namespace fastbird
 		virtual void SetBackToOrigHeight() = 0;
 		virtual float GetHeight() const = 0;
 		virtual float GetTextWidth(const char *text, int count = -1, float *minY = 0, float *maxY = 0) = 0;
-		virtual std::wstring InsertLineFeed(const char *text, int count, unsigned wrapAt, unsigned* outWidth, unsigned* outLines) = 0;
+		virtual std::wstring InsertLineFeed(const char *text, int count, unsigned wrapAt, float* outWidth, unsigned* outLines) = 0;
 		virtual void PrepareRenderResources() = 0;
 		virtual void SetRenderStates(bool depthEnable = false, bool scissorEnable = false) = 0;
-		virtual void SetDefaultConstants() = 0;
+		virtual void SetRenderTargetSize(const Vec2I& rtSize) = 0;
+		virtual void RestoreRenderTargetSize() = 0;
 
 	};
 }

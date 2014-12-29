@@ -11,7 +11,7 @@ namespace fastbird
 		, mBlinkSpeed(3.f)
 		, mGaugeColorEmptySet(false)
 	{
-		mUIObject = IUIObject::CreateUIObject(false);
+		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->SetMaterial("es/Materials/UIHorizontalGauge.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -115,40 +115,43 @@ namespace fastbird
 		mat->SetMaterialParameters(2, color.GetVec4());
 	}
 
-	void HorizontalGauge::OnSizeChanged()
-	{
-		__super::OnSizeChanged();
-		/*float screenratio = gEnv->pRenderer->GetWidth() / (float)gEnv->pRenderer->GetHeight();
-		Vec4 ratio(mWNSize.x*screenratio / mWNSize.y, 0, 0, 0);
-		IMaterial* mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameters(4, ratio);*/
-	}
-
 	bool HorizontalGauge::SetProperty(UIProperty::Enum prop, const char* val)
 	{
-		if (prop == UIProperty::GAUGE_COLOR)
+
+		switch (prop)
 		{
-			SetGaugeColor(StringConverter::parseColor(val));
-			return true;
+		case UIProperty::GAUGE_MAX:
+		{
+									  SetMaximum(StringConverter::parseReal(val));
+									  return true;
+		}
+		case UIProperty::GAUGE_CUR:
+		{
+									  SetPercentage(StringConverter::parseReal(val));
+									  return true;
+		}
+		case UIProperty::GAUGE_COLOR:
+		{
+										SetGaugeColor(StringConverter::parseColor(val));
+										return true;
+		}
+		case UIProperty::GAUGE_COLOR_EMPTY:
+		{
+											  SetGaugeColorEmpty(StringConverter::parseColor(val));
+											  return true;
 		}
 
-		if (prop == UIProperty::GAUGE_COLOR_EMPTY)
+		case UIProperty::GAUGE_BLINK_COLOR:
 		{
-			SetGaugeColorEmpty(StringConverter::parseColor(val));
-			return true;
+											  SetBlinkColor(StringConverter::parseColor(val));
+											  return true;
 		}
 
-		if (prop == UIProperty::GAUGE_BLINK_COLOR)
+		case UIProperty::GAUGE_BLINK_SPEED:
 		{
-			SetBlinkColor(StringConverter::parseColor(val));
-
-			return true;
+											  mBlinkSpeed = StringConverter::parseReal(val);
+											  return true;
 		}
-
-		if (prop == UIProperty::GAUGE_BLINK_SPEED)
-		{
-			mBlinkSpeed = StringConverter::parseReal(val);
-			return true;
 		}
 
 		return __super::SetProperty(prop, val);

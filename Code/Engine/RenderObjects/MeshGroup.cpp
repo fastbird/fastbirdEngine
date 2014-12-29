@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/RenderObjects/MeshGroup.h>
 #include <Engine/RenderObjects/MeshObject.h>
+#include <Engine/Animation/Animation.h>
 
 namespace fastbird
 {
@@ -229,6 +230,49 @@ void MeshGroup::SetEnableHighlight(bool enable)
 	{
 		it->first->SetEnableHighlight(enable);
 	}
+}
+
+//---------------------------------------------------------------------------
+void MeshGroup::SetAnimationData(const char* meshName, const AnimationData& anim, const char* actionFile)
+{
+	for (auto& it : mMeshObjects)
+	{
+		auto meshObj = it.first;
+		if (strcmp(meshObj->GetName(), meshName) == 0)
+		{
+			meshObj->SetAnimationData(anim, actionFile);
+			return;
+		}
+	}
+	Error("Mesh group doesn't have a name %s", meshName);
+}
+
+void MeshGroup::PlayAction(const std::string& name, bool immediate, bool reverse)
+{
+	for (auto& it : mMeshObjects)
+	{
+		auto meshObj = it.first;
+		auto anim = meshObj->GetAnimation();
+		if (anim)
+		{
+			anim->PlayAction(name, immediate, reverse);
+		}
+	}
+}
+
+bool MeshGroup::IsActionDone(const char* action) const
+{
+	for (auto& it : mMeshObjects)
+	{
+		auto meshObj = it.first;
+		auto anim = meshObj->GetAnimation();
+		if (anim)
+		{
+			if (anim->IsActionDone(action))
+				return true;
+		}
+	}
+	return false;
 }
 
 }

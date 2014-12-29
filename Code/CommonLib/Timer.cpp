@@ -24,17 +24,25 @@ namespace fastbird
 
 	void Timer::Tick()
 	{
+		mDeltaTimeNotPausable = (GetTickCount() / (TIME_PRECISION)mFreq.QuadPart - mStartTime) - mTimeNotPausable;
+		mTimeNotPausable += mDeltaTimeNotPausable;
+		
 		if (mPaused)
 			return;
 		++mFrames;
 		float previousTime = mTime;
-		mTime = GetTickCount() / (TIME_PRECISION)mFreq.QuadPart - mStartTime;
-		mDeltaTime = mTime - previousTime;
+		mTime += mDeltaTimeNotPausable;
+		mDeltaTime = mDeltaTimeNotPausable;
 	}
 
 	Timer::TIME_PRECISION Timer::GetDeltaTime()
 	{
 		return mDeltaTime < 0.4f ? mDeltaTime : 0.4f;
+	}
+
+	Timer::TIME_PRECISION Timer::GetDeltaTimeNotPausable()
+	{
+		return mDeltaTimeNotPausable < 0.4f ? mDeltaTimeNotPausable : 0.4f;
 	}
 
 	Timer::TIME_PRECISION Timer::GetTime()
@@ -48,6 +56,8 @@ namespace fastbird
 		mStartTime = mBase.QuadPart / (TIME_PRECISION)mFreq.QuadPart;
 		mTime = 0;
 		mDeltaTime = 0;
+		mTimeNotPausable = 0;
+		mDeltaTimeNotPausable = 0;
 	}
 
 	__int64 Timer::GetTickCount()

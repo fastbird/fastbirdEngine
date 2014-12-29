@@ -55,7 +55,8 @@ void SkySphere::CreateSharedEnvRT()
 {
 	if (!mRT)
 	{
-		mRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
+		mRT = gFBEnv->pRenderer->CreateRenderToTexture(false, 
+			Vec2I(ENV_SIZE, ENV_SIZE), PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true, false);
 		mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
 	}
 }
@@ -115,11 +116,11 @@ void SkySphere::PreRender()
 		{
 			normTime = 1.0f;
 			mInterpolating = false;
-			//if (!mAlphaBlend)
-				//gFBEnv->pRenderer->UpdateEnvMapInNextFrame(this);
+			if (!mAlphaBlend)
+				gFBEnv->pRenderer->UpdateEnvMapInNextFrame(this);
 		}
 			
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			mMaterial->SetMaterialParameters(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
 		}		
@@ -202,6 +203,8 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 
 	pTexture->GenerateMips();
 	//pTexture->SaveToFile("environment.dds");
+	// for bight test.
+	//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 	GenerateRadianceCoef(pTexture);
 	gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
 	gFBEnv->pRenderer->UpdateRadConstantsBuffer(mIrradCoeff);
@@ -405,13 +408,22 @@ void SkySphere::GenerateRadianceCoef(ITexture* pTex)
 
 void SkySphere::SetInterpolationData(unsigned index, const Vec4& data)
 {
-	assert(index < 4);
-	mMaterialParamDest[index] = data;
+	assert(index < 5);
+	if (index == 3)
+	{
+		Vec4 alphaIncluded = data;
+		alphaIncluded.w = mAlpha;
+		mMaterialParamDest[index] = alphaIncluded;
+	}
+	else
+	{
+		mMaterialParamDest[index] = data;
+	}
 }
 
 void SkySphere::PrepareInterpolation(float time)
 {
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		mMaterialParamCur[i] = mMaterial->GetMaterialParameters(i);
 	}
@@ -441,5 +453,6 @@ void SkySphere::SetAlpha(float alpha)
 	Vec4 param = mMaterial->GetMaterialParameters(3);
 	mAlpha = param.w = alpha;
 	mMaterial->SetMaterialParameters(3, param);
+	mMaterialParamDest[3].w = alpha;
 }
 }

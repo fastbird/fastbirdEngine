@@ -7,6 +7,12 @@ namespace fastbird
 
 void RenderToTextureD3D11::SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap)
 {
+	mSize.x = width, mSize.y = height;
+	mFormat = format;
+	mSRV = srv;
+	mMiplevel = miplevel;
+	mCubeMap = cubeMap;
+
 	int type;
 	type = srv ? TEXTURE_TYPE_RENDER_TARGET_SRV : TEXTURE_TYPE_RENDER_TARGET;
 	if (miplevel)
@@ -27,6 +33,7 @@ void RenderToTextureD3D11::SetDepthStencilDesc(int width, int height, PIXEL_FORM
 		type |= TEXTURE_TYPE_CUBE_MAP;
 	mDepthStencilTexture = gFBEnv->pRenderer->CreateTexture(0, width, height, format,
 		BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+	mHasDepth = true;
 }
 
 }

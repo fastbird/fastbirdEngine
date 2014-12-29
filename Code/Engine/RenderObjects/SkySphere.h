@@ -46,8 +46,8 @@ namespace fastbird
 		SmartPtr<IVertexBuffer> mVB;
 		SmartPtr<IIndexBuffer> mIB;
 
-		Vec4 mMaterialParamCur[4];
-		Vec4 mMaterialParamDest[4];
+		Vec4 mMaterialParamCur[5];
+		Vec4 mMaterialParamDest[5];
 		float mCurInterpolationTime;
 		float mInterpolationTime;
 		bool mInterpolating;

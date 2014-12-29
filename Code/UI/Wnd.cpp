@@ -14,7 +14,7 @@ Wnd::Wnd()
 , mUseFrame(false)
 , mBackgroundImage(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false);
+	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);
@@ -92,6 +92,7 @@ void Wnd::RefreshFrame()
 		if (mFrames.empty())
 		{
 			ImageBox* T = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			T->SetRender3D(mRender3D, GetRenderTargetSize());
 			T->SetSizeY(16);
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
 			T->SetManualParent(this);
@@ -101,6 +102,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(T);			
 
 			ImageBox* L = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			L->SetRender3D(mRender3D, GetRenderTargetSize());
 			L->SetSizeX(16);
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
 			L->SetManualParent(this);
@@ -110,6 +112,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(L);			
 
 			ImageBox* R = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			R->SetRender3D(mRender3D, GetRenderTargetSize());
 			R->SetSizeX(16);
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			R->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_R");
@@ -120,6 +123,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(R);
 
 			ImageBox* B = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			B->SetSizeY(20);
 			B->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_B");
@@ -130,6 +134,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(B);
 
 			ImageBox* LT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			LT->SetRender3D(mRender3D, GetRenderTargetSize());
 			LT->SetSize(Vec2I(40, 44));
 			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
 			LT->SetManualParent(this);
@@ -138,6 +143,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LT);
 
 			ImageBox* RT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			RT->SetRender3D(mRender3D, GetRenderTargetSize());
 			RT->SetSize(Vec2I(40, 44));
 			RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			RT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RT");
@@ -147,6 +153,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(RT);
 
 			ImageBox* MT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			MT->SetRender3D(mRender3D, GetRenderTargetSize());
 			MT->SetSize(Vec2I(302, 44));
 			MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
 			MT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_MT");
@@ -156,6 +163,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(MT);
 
 			ImageBox* LB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			LB->SetRender3D(mRender3D, GetRenderTargetSize());
 			LB->SetSize(Vec2I(40, 44));
 			LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			LB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LB");
@@ -165,6 +173,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LB);
 
 			ImageBox* RB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			RB->SetRender3D(mRender3D, GetRenderTargetSize());
 			RB->SetSize(Vec2I(40, 44));
 			RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 			RB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RB");
@@ -246,40 +255,48 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TITLEBAR:
 	{
-								 mTitlebar = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
-								 mTitlebar->SetVisible(mVisible);
-								 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
-									 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
-								 mTitlebar->SetManualParent(this);
-								 mTitlebar->SetNSizeX(mWNSize.x);
-								 mTitlebar->SetSizeY(44);
-								 mTitlebar->SetNPos(GetFinalPos());
-								 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
-								 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
-								 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
-								 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
-								 mTitlebar->SetProperty(UIProperty::FIXED_TEXT_SIZE, "true");
-								 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
-								 mTitlebar->SetText(AnsiToWide(val, strlen(val)));
-								 mTitlebar->SetName("_@TitleBar");
-								 assert(!mWndContentUI);
-								 mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
-								 Vec2I sizeMod = {
-									 mUseFrame ? -26 : 0,
-									 mUseFrame  ? -64 : -44,
-								 };								 
-								 mWndContentUI->SetSizeModificator(sizeMod);
-								 mWndContentUI->SetUseAbsYSize(true);
-								 mWndContentUI->SetPos(Vec2I(20, 44));
-								 mWndContentUI->SetSizeModificator(Vec2I(-20, 0));
-
-								 mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
-								 if (mUseScrollerV)
+								 if (!mTitlebar)
 								 {
-									 mPendingDelete.push_back(mScrollerV);
-									 mUseScrollerV = false;
-									 mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
+									 mTitlebar = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
+									 mTitlebar->SetVisible(mVisible);
+									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
+										 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
+									 mTitlebar->SetManualParent(this);
+									 mTitlebar->SetNSizeX(mWNSize.x);
+									 mTitlebar->SetSizeY(44);
+									 mTitlebar->SetNPos(GetFinalPos());
+									 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
+									 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+									 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
+									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
+									 mTitlebar->SetProperty(UIProperty::FIXED_TEXT_SIZE, "true");
+									 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
+									 mTitlebar->SetName("_@TitleBar");
+									 assert(!mWndContentUI);
+									 mWndContentUI = (Wnd*)AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Window);
+									 mWndContentUI->SetRender3D(mRender3D, GetRenderTargetSize());
+									 Vec2I sizeMod = {
+										 mUseFrame ? -26 : 0,
+										 mUseFrame ? -64 : -44,
+									 };
+									 mWndContentUI->SetSizeModificator(sizeMod);
+									 mWndContentUI->SetUseAbsYSize(true);
+									 mWndContentUI->SetPos(Vec2I(20, 44));
+									 mWndContentUI->SetSizeModificator(Vec2I(-20, 0));
+
+									 mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
+									 if (mUseScrollerV)
+									 {
+										 mPendingDelete.push_back(mScrollerV);
+										 mUseScrollerV = false;
+										 mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
+									 }
 								 }
+
+								 mTitlebar->SetText(AnsiToWide(val, strlen(val)));
+								 
+								 
 								 return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
@@ -287,6 +304,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 												 if (!mBackgroundImage)
 												 {
 													 mBackgroundImage = FB_NEW(ImageBox);
+													 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
 													 mBackgroundImage->SetParent(this);
 													 mBackgroundImage->SetWNPos(GetFinalPos());
 													 mBackgroundImage->SetWNSize(mWNSize);
@@ -303,6 +321,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 										 if (!mBackgroundImage)
 										 {
 											 mBackgroundImage = FB_NEW(ImageBox);
+											 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
 											 mBackgroundImage->SetParent(this);
 											 mBackgroundImage->SetWNPos(GetFinalPos());
 											 mBackgroundImage->SetWNSize(mWNSize);
@@ -322,18 +341,56 @@ void Wnd::OnTitlebarDrag(void *arg)
 {
 	long x, y;
 	gEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
-	Vec2 nposOffset = { x / (float)gEnv->pRenderer->GetWidth(), y / (float)gEnv->pRenderer->GetHeight() };
+	auto rtSize = GetRenderTargetSize();
+	Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
 	mAbsTempLock = true;
 	SetNPos(GetNPos() + nposOffset);
 	mAbsTempLock = false;
 }
 
-void Wnd::SetVisible(bool show)
+bool Wnd::SetVisible(bool show)
 {
-	__super::SetVisible(show);
+	bool changed = __super::SetVisible(show);
 	IUIManager::GetUIManager().SetFocusUI(this);
+	if (changed)
+	{
+		if (mTitlebar)
+			mTitlebar->SetVisible(show);
+	}
+	return changed;
+}
+
+void Wnd::RefreshScissorRects()
+{
+	__super::RefreshScissorRects();
 	if (mTitlebar)
-		mTitlebar->SetVisible(show);
+	{
+		mTitlebar->RefreshScissorRects();
+	}
+	if (!mFrames.empty())
+	{
+		for (auto var : mFrames)
+		{
+			var->RefreshScissorRects();
+		}
+	}
+}
+
+void Wnd::SetAnimScale(const Vec2& scale, const Vec2& pivot)
+{
+	if (mTitlebar)
+	{
+		mTitlebar->SetAnimScale(scale, pivot);
+	}
+	if (!mFrames.empty())
+	{
+		for (auto var : mFrames)
+		{
+			var->SetAnimScale(scale, pivot);
+		}
+	}
+
+	__super::SetAnimScale(scale, pivot);
 }
 
 }

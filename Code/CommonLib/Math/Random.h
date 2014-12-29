@@ -5,6 +5,7 @@
 namespace fastbird
 {
 	//-------------------------------------------------------------------------
+	// max is not included
 	template<class T>
 	inline  T Random(T min, T max)
 	{

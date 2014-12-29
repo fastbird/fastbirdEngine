@@ -174,6 +174,7 @@ namespace fastbird
 		virtual void RemoveListener(ICVarListener* pListener) = 0;
 		virtual EngineCommand* GetEngineCommand() = 0;
 		virtual void RegisterStdout(StdOutRedirect* p) = 0;
+		virtual void Clear() = 0;
 	};
 
 }

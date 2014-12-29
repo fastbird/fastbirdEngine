@@ -46,6 +46,7 @@ Material::Material()
 	, mShaders(0)
 	, mTransparent(false)
 	, mRenderPass(RENDER_PASS::PASS_NORMAL)
+	, mGlow(false)
 {
 	WRITE_LOCK wl(mRWCSMaterial);
 	mMaterials.push_back(this);
@@ -71,6 +72,7 @@ Material::Material(const Material& mat)
 	mShaders = mat.mShaders;
 	mTextures = mat.mTextures;
 	mTransparent = mat.mTransparent;
+	mGlow = mat.mGlow;
 	mRenderPass = mat.mRenderPass;
 	size_t num = mat.mSubMaterials.size();
 	for (size_t i = 0; i < num; ++i)
@@ -165,6 +167,12 @@ bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
 	if (sz)
 	{
 		mTransparent = StringConverter::parseBool(sz);
+	}
+
+	sz = pRoot->Attribute("glow");
+	if (sz)
+	{
+		mGlow = StringConverter::parseBool(sz);
 	}
 
 	sz = pRoot->Attribute("pass");
@@ -542,18 +550,19 @@ void Material::SetTexture(const char* filepath, BINDING_SHADER shader, int slot,
 	if (same)
 	{
 		assert(pTexture);
-		//pTexture->SetSamplerDesc(samplerDesc);
 		return;
 	}
 
 	if (!pTexture)
 	{
 		pTexture = gFBEnv->pEngine->GetRenderer()->CreateTexture(filepath);
-		pTexture->SetSlot(slot);
-		pTexture->SetShaderStage(shader);
-		//pTexture->SetSamplerDesc(samplerDesc);
-		pTexture->SetType(TEXTURE_TYPE_DEFAULT);
-		mTextures.push_back(pTexture);
+		if (pTexture)
+		{
+			pTexture->SetSlot(slot);
+			pTexture->SetShaderStage(shader);
+			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
+			mTextures.push_back(pTexture);
+		}
 	}
 }
 

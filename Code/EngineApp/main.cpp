@@ -137,12 +137,12 @@ int main()
 	//----------------------------------------------------------------------------
 	if (gMeshObject)
 	{
-		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(false);
+		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(
+			false, Vec2I(1024, 1024), PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false, false);
 		rtt->GetScene()->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
 		pRTTCam->SetDir(Vec3(1, 0, 0));
-		rtt->SetColorTextureDesc(1024, 1024, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false);
 		rtt->Render();
 		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
 		gEnv->pRenderer->DeleteRenderToTexture(rtt);

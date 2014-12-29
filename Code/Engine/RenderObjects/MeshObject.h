@@ -72,7 +72,8 @@ namespace fastbird
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx);
 		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx);
 		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri=0) const;
-		
+		virtual void MakeMaterialIndependent();
+
 		struct MaterialGroup
 		{
 			SmartPtr<IMaterial> mMaterial;

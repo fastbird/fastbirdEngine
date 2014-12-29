@@ -6,6 +6,8 @@
 
 namespace fastbird
 {
+	void RegisterLuaFuncs(lua_State* mL);
+
 	class IWinBase;
 	class IUIObject;
 	class UIManager : public IUIManager
@@ -22,11 +24,18 @@ namespace fastbird
 
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
+		virtual void GatherRenderList();
 		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false);
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data);
+		virtual void DeleteLuaUI(const char* uiName);
+		virtual bool IsLoadedUI(const char* uiName);
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type);
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type);
+		virtual IWinBase* AddWindow(ComponentType::Enum type);
 		virtual void DeleteWindow(IWinBase* pWnd);
 		virtual void SetFocusUI(IWinBase* pWnd);
+		virtual IWinBase* GetFocusUI() const;
+		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
 		virtual void DirtyRenderList();
 
@@ -50,9 +59,13 @@ namespace fastbird
 
 		virtual lua_State* GetLuaState() const { return mL; }
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const;
-		void SetVisible(const char* uiname, bool visible);
-		bool GetVisible(const char* uiname) const;
+		virtual void SetEnablePosSizeEvent(bool enable) { mPosSizeEventEnabled = enable; }
+		virtual bool GetEnablePosSizeEvent() const { return mPosSizeEventEnabled; }
+		virtual void SetVisible(const char* uiname, bool visible);
+		virtual bool GetVisible(const char* uiname) const;
 		virtual void OnUIFileChanged(const char* file);
+
+		virtual void CloneUI(const char* uiname, const char* newUIname);
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
@@ -62,7 +75,6 @@ namespace fastbird
 		virtual void DeleteComponent(IWinBase* com);
 		void OnPopupYes(void* arg);
 		void OnPopupNo(void* arg);
-		void RegisterLuaFuncs();
 		const char* FindUIFilenameWithLua(const char* luafilepath);
 		const char* FindUINameWithLua(const char* luafilepath);
 
@@ -84,7 +96,7 @@ namespace fastbird
 		 lua_State* mL;
 
 		 std::map<std::string, std::vector<IWinBase*>> mLuaUIs;
-	
+		 bool mPosSizeEventEnabled;
 	};
 }
 

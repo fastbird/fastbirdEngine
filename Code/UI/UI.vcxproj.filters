@@ -80,6 +80,7 @@
     <ClInclude Include="TextBox.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="ButtonImages.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -157,5 +158,6 @@
     <ClCompile Include="TextBox.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="UIManagerLua.cpp" />
   </ItemGroup>
 </Project>

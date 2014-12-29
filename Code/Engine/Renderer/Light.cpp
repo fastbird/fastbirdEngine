@@ -241,6 +241,10 @@ void DirectionalLight::CopyLight(ILight* other_)
 	}
 	mInterpolating = other->mInterpolating;
 	// temporal.
+	if (mLightCamera)
+	{
+		FB_DELETE(mLightCamera);
+	}
 	mLightCamera = other->mLightCamera;
 	mDuplicatedLightCamera = true;
 }

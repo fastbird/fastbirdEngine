@@ -96,6 +96,12 @@ namespace fastbird
 		virtual void RegisterUIs(std::vector<IUIObject*>& uiobj) = 0;
 		virtual void UnregisterUIs() = 0;
 
+		virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects) = 0;
+		virtual void Unregister3DUIs(const char* name) = 0;
+		virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld) = 0;
+		virtual void Reset3DUI(const char* name) = 0; 
+		virtual void SetEnable3DUIs(bool enable) = 0;
+
 		struct MeshImportDesc
 		{
 			MeshImportDesc()

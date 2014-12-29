@@ -9,7 +9,7 @@ namespace fastbird
 		: mUpdateMaterialParams(true)
 		, mMouseInHexaIdx(-1)
 	{
-		mUIObject = IUIObject::CreateUIObject(false);
+		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->SetMaterial("es/Materials/UIHexagonal.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());

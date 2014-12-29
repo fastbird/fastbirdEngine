@@ -33,6 +33,11 @@ namespace fastbird
 		virtual void AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v);
 		virtual void AddCollisionShape(size_t idx, std::pair<ColShape::Enum, Transformation>& data);
 		virtual void UpdateTransform(bool force = false);
+		
+		virtual void SetAnimationData(const char* meshName, const AnimationData& anim, const char* actionName);
+
+		virtual void PlayAction(const std::string& name, bool immediate, bool reverse);
+		virtual bool IsActionDone(const char* action) const;
 
 		struct Hierarchy
 		{

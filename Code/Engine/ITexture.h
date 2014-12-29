@@ -73,6 +73,10 @@ namespace fastbird
 			uv[2] = mUVEnd;
 			uv[3] = Vec2(mUVEnd.x, mUVStart.y);
 		}
+
+		const Vec2I& GetSize() const {
+			return mSize;
+		}
 	};
 	struct TextureAtlas : public ReferenceCounter
 	{

@@ -314,6 +314,11 @@ void Scene::MakeVisibleSet()
 				return a->GetDistToCam() > b->GetDistToCam();
 			}
 			);
+
+	for (auto l : mListeners)
+	{
+		l->OnAfterMakeVisibleSet();
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -420,6 +425,7 @@ void Scene::Render()
 		{
 			l->OnBeforeRenderingTransparents();
 		}
+		gFBEnv->pRenderer->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
 		{
 			{
@@ -522,4 +528,9 @@ void Scene::AddListener(ISceneListener* listener)
 void Scene::RemoveListener(ISceneListener* listener)
 {
 	DeleteValuesInVector(mListeners, listener);
+}
+
+const std::vector<SpatialObject*>& Scene::GetVisibleSpatialList() const
+{
+	return mVisibleObjectsMain;
 }

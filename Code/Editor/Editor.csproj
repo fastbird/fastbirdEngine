@@ -125,7 +125,7 @@
     <PostBuildEvent>copy $(TargetPath) $(SolutionDir)..\</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>taskkill /f /fi "pid gt 0" /im $(TargetFileName)</PreBuildEvent>
+    <PreBuildEvent>c:\windows\system32\taskkill /f /fi "pid gt 0" /im $(TargetFileName)</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

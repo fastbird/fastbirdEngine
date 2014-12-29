@@ -12,12 +12,11 @@ namespace fastbird
 	public:
 		NumericUpDown();
 		virtual ~NumericUpDown();
-
+		
 		// IWinBase
-		virtual ComponentType::Enum GetType() const { return ComponentType::NumericUpDown; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
-		virtual void OnSizeChanged();
-		virtual void OnPosChanged();
+		virtual void OnCreated();
+		virtual ComponentType::Enum GetType() const { return ComponentType::NumericUpDown; }
 
 		virtual void SetNumber(int number);
 		virtual void SetMinMax(int min, int max);
@@ -26,7 +25,7 @@ namespace fastbird
 		virtual void SetEnableDown(bool enable);
 
 	protected:
-		void Reposition();
+		void InitializeButtons();
 
 		void OnDown(void* arg);
 		void OnUp(void* arg);
@@ -35,7 +34,6 @@ namespace fastbird
 	private:
 		Button* mDown;
 		Button* mUp;
-		StaticText* mNumber;
 		int mValue;
 		int mMin;
 		int mMax;

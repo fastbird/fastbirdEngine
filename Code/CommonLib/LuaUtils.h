@@ -31,6 +31,15 @@ if (numLuaArgs != (x)) \
 	assert(0); \
 	return false; \
 }
+
+#define LUA_PCALL_NO_RET(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
+{\
+	const char* errorString = lua_tostring(lua, -1); \
+	fastbird::Error("Failed to call lua function. ErrorNo : %d, Msg : %s", error, errorString); \
+	lua_pop(lua, 1); \
+	assert(0); \
+}
+
 namespace fastbird
 {
 	struct LUA_STACK_WATCHER
@@ -45,6 +54,23 @@ namespace fastbird
 		{
 			int now = lua_gettop(lua);
 			assert(top == now);
+		}
+
+		lua_State* lua;
+		int top;
+	};
+
+	struct LUA_STACK_CLIPPER
+	{
+		LUA_STACK_CLIPPER(lua_State* L)
+		{
+			lua = L;
+			top = lua_gettop(L);
+		}
+
+		~LUA_STACK_CLIPPER()
+		{
+			lua_settop(lua, top);
 		}
 
 		lua_State* lua;

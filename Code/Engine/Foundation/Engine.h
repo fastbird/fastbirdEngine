@@ -3,6 +3,8 @@
 #define _Engine_header_included_
 
 #include <Engine/IEngine.h>
+#include <Engine/RenderObjects/UI3DObj.h>
+#include <CommonLib/VectorMap.h>
 
 namespace fastbird
 {
@@ -80,6 +82,12 @@ namespace fastbird
 		virtual void RegisterUIs(std::vector<IUIObject*>& uiobj);
 		virtual void UnregisterUIs();
 
+		virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects);
+		virtual void Unregister3DUIs(const char* name);
+		virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld);
+		virtual void Reset3DUI(const char* name);
+		virtual void SetEnable3DUIs(bool enable);
+
 		virtual void AddMarkObject(IObject* mark);
 		virtual void RemoveMarkObject(IObject* mark);
 
@@ -122,6 +130,8 @@ namespace fastbird
 		virtual void RegisterFileChangeListener(IFileChangeListener* listener);
 		virtual void RemoveFileChangeListener(IFileChangeListener* listener);
 
+		void Render3DUIsToTexture();
+
 	private:
 		HWND m_hWnd;
 		SmartPtr<IConsole> mConsole;
@@ -145,6 +155,12 @@ namespace fastbird
 		typedef std::vector<IUIObject*> UI_OBJECTS;
 		UI_OBJECTS mUIObjectsToRender;
 
+		typedef VectorMap<std::string, UI_OBJECTS> UI_3DOBJECTS;
+		UI_3DOBJECTS mUI3DObjects;
+		VectorMap<std::string, IRenderToTexture*> mUI3DObjectsRTs;
+
+		VectorMap<std::string, UI3DObj*> mUI3DRenderObjs;
+
 		std::string mShaderWatchDir;
 		HANDLE mFileMonitorThread;
 		HANDLE mFileChangeThreadFinished;
@@ -164,7 +180,8 @@ namespace fastbird
 
 		std::vector<IObject*> mMarkObjects;
 
-		bool mExiting;		
+		bool mExiting;
+		bool m3DUIEnabled;
 	};
 };
 

@@ -95,6 +95,7 @@
   <ItemGroup>
     <ClInclude Include="Align.h" />
     <ClInclude Include="Button.h" />
+    <ClInclude Include="ButtonImages.h" />
     <ClInclude Include="CardScroller.h" />
     <ClInclude Include="CheckBox.h" />
     <ClInclude Include="ComponentType.h" />
@@ -155,6 +156,7 @@
     <ClCompile Include="TextField.cpp" />
     <ClCompile Include="UIAnimation.cpp" />
     <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="UIManagerLua.cpp" />
     <ClCompile Include="VerticalGauge.cpp" />
     <ClCompile Include="WinBase.cpp" />
     <ClCompile Include="Wnd.cpp" />

@@ -27,6 +27,7 @@ namespace fastbird
 			EVENT_ON_VISIBLE,
 			EVENT_ON_HIDE,
 			EVENT_ON_LOADED,
+			EVENT_LISTBOX_CLEARED,
 
 			EVENT_NUM
 		};
@@ -37,6 +38,7 @@ namespace fastbird
 		virtual void UnregisterEventLuaFunc(EVENT e) = 0;
 		virtual void UnregisterEventFunc(EVENT e, FunctionID id) = 0;
 		virtual void DisableEvent(EVENT e) = 0;
+		virtual void ClearDisabledEvents() = 0;
 
 		// don't need to call this function if you already called IWinBase::SetEnable()
 		virtual void SetEnableEvent(bool enable) = 0;
@@ -117,6 +119,10 @@ namespace fastbird
 		else if (stricmp(sz, "EVENT_ON_LOADED") == 0)
 		{
 			return IEventHandler::EVENT_ON_LOADED;
+		}
+		else if (stricmp(sz, "OnListBoxCleared") == 0)
+		{
+			return IEventHandler::EVENT_LISTBOX_CLEARED;
 		}
 		else
 		{

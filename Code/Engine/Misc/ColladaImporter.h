@@ -151,6 +151,6 @@ namespace fastbird
 		
 		typedef std::vector< std::pair<ColShape::Enum, Transformation > > COLLISION_SHAPES;
 		COLLISION_SHAPES mCollisions;
-		std::map<std::string, AnimationData> mAnim;
+		std::map<std::string, AnimationData> mAnimData;
 	};
 }

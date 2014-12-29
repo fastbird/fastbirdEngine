@@ -325,13 +325,13 @@ bool RendererD3D11::Init(int threadPool)
 	{
 		// See UpdateRadConstantsBuffer()
 		/*std::vector<Vec2> hammersley;
-		GenerateHammersley(256, hammersley);
+		GenerateHammersley(16, hammersley);
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		HRESULT hr;
 		hr = m_pImmediateContext->Map( m_pImmutableConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 		assert(hr == S_OK);
 		IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
-		memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2) * 256);
+		memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2) * 16);
 		m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);*/
 		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 	}
@@ -629,6 +629,7 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	assert(hr == S_OK);
 	RARE_CONSTANTS* pRareConstants = (RARE_CONSTANTS*)mappedResource.pData;
 	pRareConstants->gProj = mCamera->GetProjMat();
+	pRareConstants->gInvProj = pRareConstants->gProj.Inverse();
 	mCamera->GetNearFar(pRareConstants->gNearFar.x, pRareConstants->gNearFar.y);
 	pRareConstants->gScreenSize.x = (float)mWidth;
 	pRareConstants->gScreenSize.y = (float)mHeight;
@@ -653,8 +654,8 @@ void RendererD3D11::UpdateRadConstantsBuffer(void* pData)
 	IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
 	memcpy(pConstants->gIrradConstsnts, pData, sizeof(Vec4)* 9);
 	std::vector<Vec2> hammersley;
-	GenerateHammersley(256, hammersley);
-	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* 256);	
+	GenerateHammersley(16, hammersley);
+	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* 16);	
 	m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);
 	m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 }
@@ -697,22 +698,32 @@ unsigned RendererD3D11::GetMultiSampleCount() const
 	return mMultiSampleDesc.Count;
 }
 //----------------------------------------------------------------------------
-IRenderToTexture* RendererD3D11::CreateRenderToTexture(bool everyframe)
+IRenderToTexture* RendererD3D11::CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
+	bool srv, bool miplevel, bool cubeMap, bool needDepth)
 {
+	auto p = __super::CreateRenderToTexture(everyframe, size, format, srv, miplevel, cubeMap, needDepth);
+	if (p)
+	{			
+		return p;
+	}		
+
+	p = FB_NEW(RenderToTextureD3D11);
+	p->SetColorTextureDesc(size.x, size.y, format, srv, miplevel, cubeMap);
 	if (everyframe)
 	{
-		mRenderToTextures.push_back(FB_NEW(RenderToTextureD3D11));
-		return mRenderToTextures.back();
+		mRenderToTextures.push_back(p);
+		return p;
 	}
 	else
 	{
-		return FB_NEW(RenderToTextureD3D11);
+		return p;
 	}
 }
 
 void RendererD3D11::DeleteRenderToTexture(IRenderToTexture* removeRT)
 {
-	FB_DELETE(removeRT);
+	__super::DeleteRenderToTexture(removeRT);
+
 	mRenderToTextures.erase(
 		std::remove(mRenderToTextures.begin(), mRenderToTextures.end(), removeRT),
 		mRenderToTextures.end());		
@@ -743,7 +754,15 @@ void RendererD3D11::Present()
 			}
 			else
 			{
-				it++;
+				if ((*it)->mHr == E_FAIL)
+				{
+					Error("Error to load texture %s", (*it)->GetName().c_str());
+					it = mCheckTextures.erase(it);
+				}
+				else
+				{
+					it++;
+				}
 			}
 		}
 	}
@@ -1343,7 +1362,7 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 	}
 
 	SAFE_RELEASE(pTexture->mSRView);
-	if (m_pThreadPump)
+	if (m_pThreadPump && false)
 	{
 		pTexture->mHr = S_FALSE;
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 
@@ -1479,7 +1498,7 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 	if (type & TEXTURE_TYPE_MIPS)
 	{
 		assert(!(type & TEXTURE_TYPE_MULTISAMPLE));
-		desc.MipLevels = GetMipLevels((float)std::min(width, height));
+		desc.MipLevels = 0;// GetMipLevels((float)std::min(width, height));
 	}
 		
 	desc.ArraySize = cubeMap ? 6 : 1;
@@ -1573,11 +1592,10 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 		
 
 		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels=1;
-		if (type & TEXTURE_TYPE_MIPS)
-		{
-			srvDesc.Texture2D.MipLevels = desc.MipLevels;
-		}		
+		
+		D3D11_TEXTURE2D_DESC tempDest;
+		pTextureD3D11->GetDesc(&tempDest);
+		srvDesc.Texture2D.MipLevels = tempDest.MipLevels;
 
 		ID3D11ShaderResourceView* pResourceView;
 		m_pDevice->CreateShaderResourceView(pTextureD3D11, &srvDesc, &pResourceView);
@@ -1665,6 +1683,7 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 //-----------------------------------------------------------------------------
 void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num, ITexture* pDepthStencil, size_t dsIndex)
 {
+	__super::SetRenderTarget(pRenderTargets, rtIndex, num, pDepthStencil, dsIndex);
 	std::vector<ID3D11RenderTargetView*> rtviews;
 	if (pRenderTargets)
 	{
@@ -1693,6 +1712,7 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[]
 //----------------------------------------------------------------------------
 void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num)
 {
+	__super::SetRenderTarget(pRenderTargets, rtIndex, num);
 	std::vector<ID3D11RenderTargetView*> rtviews;
 	if (pRenderTargets)
 	{
@@ -1740,6 +1760,7 @@ void RendererD3D11::UnSetGlowRenderTarget()
 //----------------------------------------------------------------------------
 void RendererD3D11::RestoreRenderTarget()
 {
+	__super::RestoreRenderTarget();
 	m_pImmediateContext->OMSetRenderTargets(mRenderTargetViews.size(), &mRenderTargetViews[0], mDepthStencilViews[0]);
 	mCurrentRTViews = mRenderTargetViews;
 	mCurrentDSView = mDepthStencilViews[0];

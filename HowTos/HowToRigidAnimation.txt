@@ -1,0 +1,22 @@
+# How to Rigid Animation
+
+This document explanins about RigidAnimation in fastbird-engine. In this document, Rigid Animation means each objects participating the animation are not deformed but only transformed. This types of animation is good for door animations, weapon-ready or weapon-recoil animations.
+
+## Preparing animation data
+
+fastbird-engine can import collada file(.dae) with animation data. You can create a .dae file with animations in Blender. Insert key-frames and set transformations and just export it as the collada format(file-export-collada). Then the data is ready. How to insert keyframes and transformation is not the scope of this document but you may easily find other useful resources. fastbird-engine is not tested with .dae files exported by other 3D authoring tools then Blender.
+
+If you have serveral actions, you need to merge it into one track since only one track is exported. Then you can write .actions file to tell fastbird-engine about the actions information.
+
+> daefilename.actions
+
+	<Actions>
+		<Action name="Idle" start="0" end="1"/>
+		<Action name="Ready" start="1" end="91"/>
+	</Actions>
+
+Now you can use IEngine::GetMeshObject() or IEngine::GetMeshGroup() function as the same when you import the normal, not animated, collada meshes. If the importer finds the animation data in the collada file, it will create a AnimationData(Code/Engine/AnimationAnimationData.h) instance and serveral Animation(Code/Engine/Animation/Animation.h) instances per one IMeshObject(or IMeshGroup). Application programmers can use Animation instance to animate the object. To animate the object, call the following function
+
+	Animation::PlayAction(const std::string& name, bool immediate, bool reverse)
+	
+`name` is what you wrote in the .actions file. If `immediate` is true, then the previous animation is canceled and the new animation is played immediately. If `reverse` is true, the animation is played reversely. So you can create only one animtion for weapon-ready animation and you play it reversely when weapon is going to idle state.

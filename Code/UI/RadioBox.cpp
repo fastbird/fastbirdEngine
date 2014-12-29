@@ -79,9 +79,9 @@ void RadioBox::OnSizeChanged()
 	__super::OnSizeChanged();
 	Vec2 wnSize = mRadioImageBox->GetWNSize();
 
-
-	unsigned width = gEnv->pRenderer->GetWidth();
-	unsigned height = gEnv->pRenderer->GetHeight();
+	auto rtSize = GetRenderTargetSize();
+	unsigned width = rtSize.x;
+	unsigned height = rtSize.y;
 	float fHeight = wnSize.y * height;
 	float fWidth = wnSize.x * width;
 	if (fHeight > fWidth)
@@ -102,7 +102,8 @@ void RadioBox::OnPosChanged()
 
 	const RECT& region = mRadioImageBox->GetRegion();
 	unsigned posx = region.right+4;
-	float fPosX = (float)posx / gEnv->pRenderer->GetWidth();
+	auto rtSize = GetRenderTargetSize();
+	float fPosX = (float)posx / rtSize.x;
 	Vec2 wnPos = mStaticText->GetWNPos();
 	mStaticText->SetWNPos(Vec2(fPosX, wnPos.y));
 	

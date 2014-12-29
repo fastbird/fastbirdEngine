@@ -73,8 +73,8 @@ void Voxelizer::CalcDistanceMap()
 	float radius = pMeshObject->GetBoundingVolume()->GetRadius() * 1.05f;
 	// draw depth maps;
 	// x axis
-	SmartPtr<IRenderToTexture> pDepthRT = gFBEnv->pRenderer->CreateRenderToTexture(false);
-	pDepthRT->SetColorTextureDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false);
+	SmartPtr<IRenderToTexture> pDepthRT = gFBEnv->pRenderer->CreateRenderToTexture(false,
+		Vec2I(mNumVoxels, mNumVoxels), PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false, true);
 	pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 	ICamera* pCam = pDepthRT->GetCamera();
 	pCam->SetOrthogonal(true);

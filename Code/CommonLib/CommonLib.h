@@ -16,16 +16,20 @@ namespace fastbird
 
 #define FB_FOREACH(it, container) auto it = (container).begin();\
 	auto it ## End = (container).end(); \
-	for (; it!=it ## End; ++it)
+for (; it != it ## End; ++it)
 
 #define if_assert_pass(V) assert((V)); \
-	if ((V))
+if ((V))
 
 #define if_assert_fail(V) assert((V)); \
 if (!(V))
 
 #define ValueNotExistInVector(arr, v)	(std::find(arr.begin(), arr.end(), v) == arr.end())
-#define DeleteValuesInVector(arr, v) arr.erase(std::remove(arr.begin(), arr.end(), v), arr.end())
+#define DeleteValuesInVector(arr, v) \
+	unsigned arr ## SizeBefore = arr.size(); \
+	arr.erase(std::remove(arr.begin(), arr.end(), v), arr.end()); \
+	unsigned arr ## SizeAfter = arr.size();
+
 
 #if defined(_DEBUG)
 #define CHECK(exp)          if(!(exp)) { DebugBreak(); } else {}

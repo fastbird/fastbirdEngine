@@ -14,6 +14,7 @@ namespace fastbird
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
+		virtual IWinBase* AddChild(ComponentType::Enum type);
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable);
 		virtual void RemoveChild(IWinBase* child, bool immediately = false);
 		virtual void RemoveAllChild(bool immediately = false);
@@ -26,11 +27,13 @@ namespace fastbird
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual void RefreshVScrollbar();
-		virtual void SetVisible(bool visible);
+		virtual bool SetVisible(bool visible);
+		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
 		virtual void SetNPosOffset(const Vec2& offset);
 		virtual void SetAnimNPosOffset(const Vec2& offset);
+		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
 
@@ -49,6 +52,7 @@ namespace fastbird
 
 		bool HasVScroll() { return mScrollerV != 0; }
 		const Vec2& GetScrollOffset() const;
+		void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
 		
 	private:
 		friend class WinBase;

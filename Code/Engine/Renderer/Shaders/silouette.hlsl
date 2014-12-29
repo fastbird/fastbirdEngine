@@ -2,6 +2,7 @@
 
 Texture2D gSmallMap : register(t0);
 Texture2D gBigMap : register(t1);
+Texture2D gSceneDepth : register(t2);
 
 //---------------------------------------------------------------------------
 struct QuadVS_Output
@@ -13,13 +14,18 @@ struct QuadVS_Output
 float4 silouette_PixelShader( in QuadVS_Output IN ) : SV_Target
 {
 	float fromSamll = gSmallMap.Sample(gLinearSampler, IN.Tex);
-	float fromBig = gBigMap.Sample(gLinearSampler, IN.Tex);
-	
+	float fromBig = gBigMap.Sample(gPointSampler, IN.Tex);
+	float sceneDepth = gSceneDepth.Sample(gPointSampler, IN.Tex);
 	float gap = abs(fromSamll - fromBig);
-	if (gap<0.05)
+	if (gap<0.01)
 		discard;
+		
+	//if (fromBig > sceneDepth)
+		//discard;
+		
+		
 
 		
-	return float4(gap*3, gap*3, gap*3, 1);
+	return float4(1, 1, 1, 1);
 }
 

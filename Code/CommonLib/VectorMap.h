@@ -202,9 +202,9 @@ namespace fastbird
 		}	
 
 		//--------------------------------------------------------------------
-		inline void erase(iterator it) 
+		iterator erase(iterator it)
 		{
-			mVector.erase(it);
+			return mVector.erase(it);
 		}
 
 		//--------------------------------------------------------------------

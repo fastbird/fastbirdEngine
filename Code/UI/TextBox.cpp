@@ -15,7 +15,7 @@ namespace fastbird
 		, mPasswd(false)
 		, mImage(0)
 	{
-		mUIObject = IUIObject::CreateUIObject(false);
+		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mUIObject->SetTextColor(mTextColor);
@@ -77,7 +77,9 @@ namespace fastbird
 		unsigned width = region.right - region.left;
 
 		pFont->SetHeight(mTextSize);
-		mTextw = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &mTextWidth, &mNumTextLines);
+		float textWidth;
+		mTextw = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
+		mTextWidth = (unsigned)Round(textWidth);
 		pFont->SetBackToOrigHeight();
 		mUIObject->SetText(mTextw.c_str());
 	}
@@ -96,6 +98,7 @@ namespace fastbird
 			if (!mImage)
 			{
 				mImage = FB_NEW(ImageBox);
+				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 				mImage->SetParent(this);
 				mImage->SetWNPos(mWNPos);
 				mImage->SetWNSize(mWNSize);
@@ -111,6 +114,7 @@ namespace fastbird
 											 if (!mImage)
 											 {
 												 mImage = FB_NEW(ImageBox);
+												 mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 												 mImage->SetParent(this);
 												 mImage->SetWNPos(mWNPos);
 												 mImage->SetWNSize(mWNSize);

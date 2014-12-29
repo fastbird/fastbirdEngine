@@ -75,19 +75,35 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 		successful = true;
 	}
 
-	for (const auto& anim : mAnim)
+	// Set Animation
+	if (!mUseMeshGroup)
 	{
-		std::string actionFile = StripExtension(filepath);
-		actionFile += ".actions";
-		for (auto& meshobj : mMeshObjects)
+		for (const auto& animData : mAnimData)
 		{
-			const char* name = meshobj->GetName();
-			if (strcmp(name, anim.first.c_str()) == 0)
+			std::string actionFile = StripExtension(filepath);
+			actionFile += ".actions";
+			for (auto& meshobj : mMeshObjects)
 			{
-				meshobj->SetAnimationData(anim.second, actionFile.c_str());
-				break;
+				const char* name = meshobj->GetName();
+				if (strcmp(name, animData.first.c_str()) == 0)
+				{
+					meshobj->SetAnimationData(animData.second, actionFile.c_str());
+					break;
+				}
 			}
-		}		
+		}
+	}
+	else
+	{
+		if (mMeshGroup)
+		{
+			for (const auto& animData : mAnimData)
+			{
+				std::string actionFile = StripExtension(filepath);
+				actionFile += ".actions";
+				mMeshGroup->SetAnimationData(animData.first.c_str(), animData.second, actionFile.c_str());
+			}
+		}
 	}
 
 	if (!mUseMeshGroup)
@@ -207,6 +223,7 @@ void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
 		if (pMeshObject)
 		{
 			size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, parent);
+			pMeshObject->SetName(name.c_str());
 			if (g == 0)
 			{
 				idx = idxTemp; 
@@ -266,6 +283,7 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 				IMeshObject* pMeshObject = GetMeshObject(id.c_str());
 				if (pMeshObject)
 				{
+					pMeshObject->SetName(name.c_str());
 					size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, -1);
 					if (g == 0)
 					{
@@ -440,16 +458,16 @@ bool ColladaImporter::writeAnimation( const COLLADAFW::Animation* animation )
 		switch (animationType)
 		{
 		case 0: // position
-					mAnim[ids[0]].AddPosition(inputData[i], outputData[i], component);							 
+			mAnimData[ids[0]].AddPosition(inputData[i], outputData[i], component);
 					break;
 
 		case 1: // rotation
-			mAnim[ids[0]].AddRotEuler(inputData[i], Radian(outputData[i]), component);
+			mAnimData[ids[0]].AddRotEuler(inputData[i], Radian(outputData[i]), component);
 			break;
 
 		case 2: // scale
 			// not support for now.
-			//mAnim[ids[0]].AddScale(inputData[i], outputData[i], component);
+			//mAnimData[ids[0]].AddScale(inputData[i], outputData[i], component);
 			break;			
 		}		
 	}
@@ -915,6 +933,14 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 		{
 			IIndexBuffer* pIndexBuffer = CreateIndexBuffer(&indices[0], indices.size());
 			pMeshObject->SetIndexBuffer(0, pIndexBuffer);
+			if (mGenerateTangent)
+			{
+				size_t size = indices.size();
+				pMeshObject->GenerateTangent(0, size ? &indices[0] : 0, size);
+			}
+		}
+		else
+		{
 			if (mGenerateTangent)
 			{
 				size_t size = indices.size();

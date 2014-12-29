@@ -60,6 +60,7 @@ cbuffer RARE_CONSTANTS
 #endif
 {
 	float4x4 gProj;
+	float4x4 gInvProj;
 	float2 gNearFar;
 	float2 gScreenSize;
 	float gTangentTheta;
@@ -84,7 +85,8 @@ cbuffer IMMUTABLE_CONSTANTS
 #endif
 {
 	float4 gIrradConstsnts[9];
-	float2 gHammersley[256]; // reference http://www.cse.cuhk.edu.hk/~ttwong/papers/udpoint/udpoint.pdf
+	// will be casted float2[16]
+	float4 gHammersley[8]; // reference http://www.cse.cuhk.edu.hk/~ttwong/papers/udpoint/udpoint.pdf
 };
 
 #ifdef CPP
