@@ -9,6 +9,7 @@ You need these libraries to compile the source code. You can find the helper .ba
 * Lua 5.2.3
 * Zlib 1.2.8
 * OpenCollada
+* Bullet Physics 2.82
  
 
 How-tos
