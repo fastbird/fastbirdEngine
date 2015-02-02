@@ -30,6 +30,9 @@
     <ClCompile Include="InputHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PhyObj.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdAfx.h">
@@ -45,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QuickSortTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PhyObj.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

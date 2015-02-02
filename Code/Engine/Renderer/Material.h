@@ -57,8 +57,8 @@ namespace fastbird
 		virtual ColorRamp& GetColorRamp(int slot, BINDING_SHADER shader);
 		virtual void RefreshColorRampTexture(int slot, BINDING_SHADER shader);
 
-		virtual void AddShaderDefine(const char* def, const char* val);
-		virtual void RemoveShaderDefine(const char* def);
+		virtual bool AddShaderDefine(const char* def, const char* val);
+		virtual bool RemoveShaderDefine(const char* def);
 		virtual void ApplyShaderDefines();
 
 		virtual void SetMaterialParameters(unsigned index, const Vec4& value);

@@ -1,0 +1,27 @@
+<Material transparent="true">
+	<ShaderFile>Code/Engine/Renderer/Shaders/particle.hlsl</ShaderFile>
+	<Shaders>VS|GS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>1, 1, 1, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+	</Textures>
+	<MaterialParameters>
+		<param comment="glowpower, depthFade, , ">1, 5000, 0, 0</param>
+	</MaterialParameters>
+	<ShaderDefines>
+		<define name="GLOW_PASS" val="1"/>
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="0" format="FLOAT4" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="1" format="FLOAT3" slot="0" alignedByteOffset="28" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="2" format="FLOAT4" slot="0" alignedByteOffset="40" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="3" format="FLOAT4" slot="0" alignedByteOffset="56" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="4" format="FLOAT2" slot="0" alignedByteOffset="72" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="COLOR" index="0" format="UBYTE4" slot="0" alignedByteOffset="80" inputSlotClass="VERTEX" stepRate="0"/>
+	</InputLayout>
+</Material>

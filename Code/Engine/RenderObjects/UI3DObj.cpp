@@ -51,7 +51,8 @@ namespace fastbird
 	{
 		D3DEventMarker mark("UI3DObj Render()");
 
-		if (mObjFlag & IObject::OF_HIDE || !mMaterial || gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+		if (mObjFlag & IObject::OF_HIDE || !mMaterial || gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL
+			|| !gFBEnv->pConsole->GetEngineCommand()->r_UI)
 			return;
 		auto pRenderer = gFBEnv->pRenderer;
 		mObjectConstants.gWorldView = pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;

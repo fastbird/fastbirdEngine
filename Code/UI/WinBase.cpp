@@ -68,6 +68,7 @@ WinBase::WinBase()
 , mHideAnimation(false)
 , mHideCounter(0), mPivot(false)
 , mRender3D(false), mTextGap(0, 0)
+, mModal(false)
 {
 }
 
@@ -535,8 +536,11 @@ void WinBase::UpdateAlignedPos()
 //---------------------------------------------------------------------------
 bool WinBase::SetVisible(bool show)
 {
-	if (mVisible == show && mHideCounter==0.f)
+	if (mVisible == show && mHideCounter == 0.f)
+	{
 		return false;
+	}
+		
 
 	if (mHideCounter != 0.f)
 	{
@@ -571,7 +575,10 @@ bool WinBase::SetVisible(bool show)
 				var->SetVisible(show);
 			}
 		}
-
+		if (mModal)
+		{
+			IUIManager::GetUIManager().IgnoreInput(true);
+		}
 		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
 	}
 	else
@@ -596,6 +603,10 @@ bool WinBase::SetVisible(bool show)
 			{
 				var->SetVisible(show);
 			}
+		}
+		if (mModal)
+		{
+			IUIManager::GetUIManager().IgnoreInput(false);
 		}
 		OnEvent(IEventHandler::EVENT_ON_HIDE);
 	}
@@ -898,6 +909,7 @@ void WinBase::OnPosChanged()
 		mUIObject->SetNPos(GetFinalPos());
 	}
 	AlignText();
+
 	if (mParent)
 	{
 		mParent->SetChildrenPosSizeChanged();		
@@ -994,6 +1006,16 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							Vec2I pos = StringConverter::parseVec2I(val);
 							SetPos(pos);
 							return true;
+	}
+	case UIProperty::POSX:
+	{
+							 SetPosX(StringConverter::parseInt(val));
+							 return true;
+	}
+	case UIProperty::POSY:
+	{
+							 SetPosY(StringConverter::parseInt(val));
+							 return true;
 	}
 	case UIProperty::NPOS:
 	{
@@ -1225,9 +1247,31 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 								   SetEnable(StringConverter::parseBool(val));
 								   return true;
 		}
+
+		case UIProperty::MODAL:
+		{
+								  mModal = StringConverter::parseBool(val);
+								  return true;
+		}
 	}
 
 	assert(0 && "Not processed property found");
+	return false;
+}
+
+bool WinBase::GetProperty(UIProperty::Enum prop, char val[])
+{
+	switch (prop)
+	{
+	case UIProperty::SIZEY:
+	{
+							  auto data = StringConverter::toString(mSize.y);
+							  strcpy(val, data.c_str());
+							  return true;
+	}
+
+	}
+	assert(0 && "No property found");
 	return false;
 }
 
@@ -1364,20 +1408,15 @@ void WinBase::RefreshBorder()
 
 void WinBase::SetNPosOffset(const Vec2& offset)
 {
+	/*char buf[255];
+	sprintf_s(buf, "Winbase SetNPosOffset %s", ComponentType::ConvertToString(GetType()));
+	Profiler p(buf);*/
 	assert(GetType() != ComponentType::Scroller);
 	mWNPosOffset = offset;
 	mNPosOffset = offset;
 	if (mParent)
 		mNPosOffset = mParent->ConvertWorldSizeToParentCoord(offset);
 	OnPosChanged();
-	//if (mUIObject)
-		//mUIObject->SetNPosOffset(offset);
-	//RefreshScissorRects();
-
-	/*for (auto var : mBorders)
-	{
-		var->SetNPosOffset(offset);
-	}*/
 }
 
 void WinBase::SetAnimNPosOffset(const Vec2& offset)
@@ -1531,11 +1570,15 @@ void WinBase::SetAlphaBlending(bool set)
 float WinBase::PixelToLocalNWidth(int pixel) const
 {
 	auto rtSize = GetRenderTargetSize();
+	if (mWNSize.x == 0.f)
+		return 0.0f;
 	return pixel / ((float)rtSize.x * mWNSize.x);
 }
 float WinBase::PixelToLocalNHeight(int pixel) const
 {
 	auto rtSize = GetRenderTargetSize();
+	if (mWNSize.y == 0.0f)
+		return 0.0f;
 	return pixel / ((float)rtSize.y * mWNSize.y);
 }
 
@@ -1562,11 +1605,17 @@ Vec2I WinBase::LocalNSizeToPixel(const Vec2& nsize) const
 float WinBase::PixelToLocalNPosX(int pixel) const
 {
 	auto rtSize = GetRenderTargetSize();
+	if (mWNSize.x == 0.f)
+		return 0.f;
 	return (float)pixel / ((float)rtSize.x * mWNSize.x);
 }
 float WinBase::PixelToLocalNPosY(int pixel) const
 {
 	auto rtSize = GetRenderTargetSize();
+	if (mWNSize.y == 0.0f)
+	{
+		return 0.0f;
+	}
 	return (float)pixel / ((float)rtSize.y * mWNSize.y);
 }
 
@@ -2271,8 +2320,13 @@ void WinBase::SetEnable(bool enable)
 
 	if (mUIObject)
 	{
-		mUIObject->SetTextColor(mTextColor * .5f);
+		if (!mEnable)
+			mUIObject->SetTextColor(mTextColor * .5f);
+		else
+			mUIObject->SetTextColor(mTextColor);
+
 	}
+	
 	OnEnableChanged();
 }
 

@@ -65,6 +65,7 @@ namespace fastbird
 		virtual void Update();
 		virtual bool IsCulled(BoundingVolume* pBV) const;
 		virtual Ray3 ScreenPosToRay(long x, long y);
+		virtual Vec2I WorldToScreen(const Vec3& worldPos) const;
 		virtual void SetYZSwap(bool enable){mYZSwap = enable; mProjPropertyChanged = true; }
 		virtual void SetTarget(SpatialObject* pObj);
 		virtual SpatialObject* GetTarget() const { return mTarget; }

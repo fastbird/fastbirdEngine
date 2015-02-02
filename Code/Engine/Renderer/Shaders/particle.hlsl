@@ -141,7 +141,7 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	float particleDepth = (INPUT.ViewPos.y - gNearFar.x) / (gNearFar.y - gNearFar.x);
 	
 	float diff = sceneDepth - particleDepth;
-	float depthFadeScale = gMaterialParam[0].y;
+	float depthFadeScale = 1000;
 	float depthFadeInput = saturate(diff*depthFadeScale);
 	
 	float depthFade = SymetricCurve(depthFadeInput);

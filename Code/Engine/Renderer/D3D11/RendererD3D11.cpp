@@ -1734,6 +1734,8 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[]
 //----------------------------------------------------------------------------
 void RendererD3D11::SetGlowRenderTarget()
 {
+	if (mGlowSet)
+		return;
 	__super::SetGlowRenderTarget();
 
 	mRTViewsBeforeGlow = mCurrentRTViews;	
@@ -1748,13 +1750,17 @@ void RendererD3D11::SetGlowRenderTarget()
 		mCurrentRTViews[1] = rt->GetRenderTargetView(0);
 	}
 	m_pImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
+	mGlowSet = true;
 }
 
 //----------------------------------------------------------------------------
 void RendererD3D11::UnSetGlowRenderTarget()
 {
+	if (!mGlowSet)
+		return;
 	mCurrentRTViews = mRTViewsBeforeGlow;
 	m_pImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
+	mGlowSet = false;
 }
 
 //----------------------------------------------------------------------------
@@ -2448,6 +2454,12 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 
 void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture)
 {
+	DrawQuadWithTextureUV(pos, size, Vec2(0, 0), Vec2(1, 1), color, texture);	
+}
+
+void RendererD3D11::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
+	const Color& color, ITexture* texture)
+{
 	static OBJECT_CONSTANTS constants =
 	{
 		Mat44(2.f / mWidth, 0, 0, -1.f,
@@ -2461,10 +2473,10 @@ void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, con
 	MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Map(
 		MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
 	DEFAULT_INPUTS::V_PCT data[4] = {
-		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(0, 0)),
-		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(1, 0)),
-		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(0, 1)),
-		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(1, 1)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(uvStart.x, uvStart.y)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y, 0.f), color.Get4Byte(), Vec2(uvEnd.x, uvStart.y)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(uvStart.x, uvEnd.y)),
+		DEFAULT_INPUTS::V_PCT(Vec3((float)pos.x + size.x, (float)pos.y + size.y, 0.f), color.Get4Byte(), Vec2(uvEnd.x, uvEnd.y)),
 	};
 	if (mapped.pData)
 	{
@@ -2484,9 +2496,7 @@ void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, con
 	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Bind();
 	// draw
 	Draw(4, 0);
-	
 }
-
 
 void RendererD3D11::DrawFullscreenQuad(IShader* pixelShader, bool farside)
 {
@@ -2525,9 +2535,23 @@ void RendererD3D11::DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, co
 	Draw(1, 0);
 
 	// vertexBuffer
+}
 
-
-
+void RendererD3D11::DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, IMaterial* mat)
+{
+	IVertexBuffer* pVB = mDynVBs[DEFAULT_INPUTS::POSITION];
+	assert(pVB);
+	MapData mapped = pVB->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
+	DEFAULT_INPUTS::V_P* data = (DEFAULT_INPUTS::V_P*)mapped.pData;
+	data[0].p = a;
+	data[1].p = b;
+	data[2].p = c;
+	pVB->Unmap();
+	pVB->Bind();
+	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	mat->SetMaterialParameters(0, color);
+	mat->Bind(true);
+	Draw(3, 0);
 }
 
 unsigned RendererD3D11::GetNumLoadingTexture() const

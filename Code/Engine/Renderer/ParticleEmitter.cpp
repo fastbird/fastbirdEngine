@@ -681,7 +681,7 @@ void ParticleEmitter::UpdateEmit(float dt)
 		for (int i=0; i<num; i++)
 		{
 			p = Emit(pt);
-			if (itFind != mLastEmitPos.end())
+			if (p && itFind != mLastEmitPos.end())
 			{
 				Vec3 toNew = p->mPos - itFind->second;
 				float length = toNew.Normalize();
@@ -845,7 +845,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	{
 									 if (pt.IsLocalSpace())
 									 {
-										 p.mPos = 0.0f;
+										 p.mPos = Vec3(0.0f);
 									 }
 									 else
 									 {

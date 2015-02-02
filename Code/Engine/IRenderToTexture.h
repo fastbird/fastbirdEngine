@@ -27,6 +27,8 @@ namespace fastbird
 		virtual void SetEnable(bool enable) = 0;
 		virtual bool GetEnable() const = 0;
 
+		virtual void SetEnvTexture(ITexture* texture) = 0;
+
 		// simple camera operation
 		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard) = 0;
 	};

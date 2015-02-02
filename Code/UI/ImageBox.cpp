@@ -13,7 +13,7 @@ ImageBox::ImageBox()
 	, mAnimation(false)
 	, mSecPerFrame(0)
 	, mPlayingTime(0)
-	, mCurFrame(0)
+	, mCurFrame(0), mImageFixedSize(false)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -32,6 +32,19 @@ ImageBox::~ImageBox()
 
 void ImageBox::CalcUV(const Vec2I& textureSize)
 {
+	if (mImageFixedSize)
+	{
+		DrawAsFixedSize();
+		Vec2 texcoords[4] = {
+			Vec2(0.f, 1.f),
+			Vec2(0.f, 0.f),
+			Vec2(1.f, 1.f),
+			Vec2(1.f, 0.f)
+		};
+		mUIObject->SetTexCoord(texcoords, 4);
+		return;
+	}
+
 	float width = (float)textureSize.x;
 	float height = (float)textureSize.y;
 	float imgRatio = width / height;
@@ -82,23 +95,24 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 
 void ImageBox::SetTexture(const char* file)
 {
-	if (!file || strlen(file) == 0)
-		return;
-	mImageFile = file;
-	ITexture* pTexture = gEnv->pRenderer->CreateTexture(file);
+	mImageFile = file ? file : "";
+	if (mImageFile.empty())
+	{
+		mImageFile = "data/textures/blackempty.dds";
+	}
+	ITexture* pTexture = gEnv->pRenderer->CreateTexture(mImageFile.c_str());
 	SetTexture(pTexture);
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)
 {
-	if (!pTexture)
-		return;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;
 	sd.AddressV = TEXTURE_ADDRESS_BORDER;
 	sd.AddressW = TEXTURE_ADDRESS_BORDER;
 	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
-	CalcUV(pTexture->GetSize());
+	if (pTexture)
+		CalcUV(pTexture->GetSize());
 }
 
 void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
@@ -107,7 +121,15 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 	if (mTextureAtlas)
 	{
 		mTexture = mTextureAtlas->mTexture->Clone();
+		if (mImageFixedSize)
+		{
+			DrawAsFixedSize();
+		}
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
+		if (!mAtlasRegion)
+		{
+			Error("Cannot find the region %s in the atlas %s", region, atlas);
+		}
 		SAMPLER_DESC sdesc;
 		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
 		mUIObject->GetMaterial()->SetTexture(mTexture, 
@@ -129,6 +151,10 @@ void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::
 	if (mTextureAtlas)
 	{
 		mTexture = mTextureAtlas->mTexture->Clone();
+		if (mImageFixedSize)
+		{
+			DrawAsFixedSize();
+		}
 		for (const auto& region : data)
 		{
 			mAtlasRegions.push_back(mTextureAtlas->GetRegion(region.c_str()));
@@ -269,6 +295,13 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 									}
 									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
 								}
+								if (!mAtlasRegions.empty())
+								{
+									Vec2 texcoords[4];
+									mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
+									mUIObject->SetTexCoord(texcoords, 4);
+								}
+								
 								return true;
 
 	}
@@ -321,6 +354,18 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 												mUIObject->GetMaterial()->SetDiffuseColor(color);
 											}
 											return true;
+
+	}
+
+	case UIProperty::IMAGE_FIXED_SIZE:
+	{
+										 mImageFixedSize = StringConverter::parseBool(val);										 
+										 if (mTexture || mAtlasRegion)
+										 {
+											 DrawAsFixedSize();
+										 }
+										 
+										 return true;
 
 	}
 
@@ -395,6 +440,10 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 	{	
 		isize = mAtlasRegion->GetSize();
 	}
+	else if (!mAtlasRegions.empty())
+	{
+		isize = mAtlasRegions[0]->GetSize();
+	}
 	else if (mTexture)
 	{
 		isize = mTexture->GetSize();		
@@ -412,10 +461,21 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 
 void ImageBox::DrawAsFixedSizeAtCenter()
 {
+	DrawAsFixedSize();
+	SetNPos(Vec2(0.5f, 0.5f));
+	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
+}
+
+void ImageBox::DrawAsFixedSize()
+{
 	Vec2I isize(0, 0);
 	if (mAtlasRegion)
 	{
 		isize = mAtlasRegion->GetSize();
+	}
+	else if (!mAtlasRegions.empty())
+	{
+		isize = mAtlasRegions[0]->GetSize();
 	}
 	else if (mTexture)
 	{
@@ -423,12 +483,10 @@ void ImageBox::DrawAsFixedSizeAtCenter()
 	}
 	else
 	{
-		assert(0 && "You didn't set the texture");
+		return;
 	}
 	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
 	SetWNSize(size);
-	SetNPos(Vec2(0.5f, 0.5f));
-	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 }
 
 void ImageBox::SetDesaturate(bool desat)

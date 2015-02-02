@@ -1,0 +1,127 @@
+# How to Physics
+
+Bullet Physics v2.82 is now integrated into fastbird engine.
+The following diagram shows relationship of fastbird engine and bullet physics.
+
+(그림)
+
+You can handle all physics related problems only with Physics.dll
+This document explains important interfaces of Physics.dll and how to define collision shapes in the 3d authoring tools Blender.
+
+## Major Interfaces
+
+`class IPhysics` : This is the main interface. It handles initialization and deinitialization as well as creation of rigid bodies.
+`class IPhysicsInterface` : One uses this interface to communicate between Physics.dll and the game. This interface is responsible for providing position, collision shapes, mass and damping ets..
+
+Let's look into details.
+
+### IPhysics
+	class CLASS_DECLSPEC_PHYSICS IPhysics
+	{
+	public:
+		static IPhysics* GetPhysics();
+		static const size_t MemAlign = 16;
+
+		virtual ~IPhysics(){}
+
+		virtual void Deinitilaize() = 0;
+		virtual void Update(float dt) = 0;
+
+		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj) = 0;
+		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider, float mass) = 0;
+		virtual RigidBody* CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass) = 0;
+		virtual void DeleteRigidBody(RigidBody* rigidBody) = 0;
+
+		virtual void SetDebugDrawer(IDebugDrawer* debugDrawer) = 0;
+		virtual void SetDebugMode(int debugMode) = 0;
+
+		virtual void AttachBodies(const std::vector<RigidBody*>& bodies) = 0;
+		
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result) = 0;
+		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
+		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result) = 0;
+
+		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;
+	};
+
+`GetPhysics()` returns the instance of IPhysics. At the first time you call this function, Physics will be initialized automatically.
+`Deinitilaize()` deinitialize Physics and clean memory.
+`Update(...)` Perform the physics simulation. Call this function every frame.
+`CreateRigidBody(...)` creates an instance of fastbird::RigidBody. When the collision shapes are defined in the MeshObjects, use the second form of this function which is receiving two parameters(IPhysicsInterface* and mass).
+`DeleteRigidBody(...)` deletes an instance of fastbird::RigidBody.
+`SetDebugDrawer(...)` set the debug drawer. It is easy to debug if you set the debug drawer.
+`SetDebugMode(...)` if you set the value not zero, debug drawer will start its work.
+`AttachBodies(...)` attaches rigid bodies each other, if the distance between them is close to zero. Good example of using this function is for fracturing.
+`RayTest...(...)` tests collision between a ray and objects.
+`GetAABBOverlaps(...)` returns objects inside of the aabb.
+
+
+### IPhysicsInterface
+User needs to implement a custom class derived from IPhysicsInterface to communicate with Physics.dll. An instance of this class will be passed to the function fastbird::IPhysics::CreateRigidBody(...).
+
+	class IPhysicsInterface
+	{
+	public:
+
+		virtual void* GetUserPtr() const = 0;
+
+		// col shape provider
+		virtual unsigned GetNumColShapes() const = 0;
+		virtual CollisionShape* GetShape(unsigned i) = 0;
+		virtual float GetMass() const = 0;
+		virtual int GetCollisionGroup() const = 0;
+		virtual int GetCollisionMask() const = 0;
+
+		virtual float GetLinearDamping() const = 0;
+		virtual float GetAngularDamping() const = 0;
+
+		// Transform exchanger
+		virtual const Vec3& GetPos() = 0;
+		virtual const Quat& GetRot() = 0;
+		virtual void SetPosRot(const Vec3& pos, const Quat& rot) = 0;
+
+		// Events Handler
+		struct CollisionContactInfo
+		{
+			CollisionContactInfo(void* objB, const Vec3& worldpos, const Vec3& worldNormal, float impulse, int idxA, int idxB)
+			:mObjB(objB), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
+			{
+
+			}
+			void* mObjB;
+			Vec3 mWorldPos;
+			const Vec3 mWorldNormal;
+			float mImpulse;
+			int mIdxA;
+			int mIdxB;
+		};
+		virtual void OnCollision(const CollisionContactInfo& contactInfo) = 0;
+		virtual void AddCloseObjects(void* gamePtr) = 0;
+	};
+
+In the custom class...
+
+`GetUserPtr()` provides a game object pointer.
+`GetNumColShapes()` returns the number of collision shapes. If the number exceed 1, all collision shapes will be integrated into a Compount collision shape.
+`GetShape(...)` returns a collision shape.
+`GetMass()`, `GetCollisionGroup()`, `GetCollisionMask()`, `GetLinearDamping()`, `GetAngularDamping()` return values indicated by each function names.
+`GetPos()`, `GetRot()` return position and roation of the graphical objects corresponding to the physics object. It usually called once when the physical object initiated.
+`SetPosRot(...)` set the result of physics simulation into the graphical object.
+`OnCollision(...)` called when collided.
+`AddCloseObjects(...)` reports near objects detected in Broadphase.
+
+## Collision Shape 정의하기
+Collision Shape is generated by using the information in the .dae file. You can define this information in the 3d authoring tools like Blender. The below screenshot indicates the collision shape information of a ship.
+
+(그림)
+
+Collision shapes are defined by cube-empty or sphere-empty objects in the blender. The collada importer of fastbird engine uses the name of nodes to distinguish shapes. Use '_COL_CUBE_blahbla' for cube shapes, and use '_COL_SPHERE_blahblah' for sphere shapes. '_COL' is mandatory prefix.
+The ship above has three collision shapes. This shape information is imported when the function fastbird::Iengine::GetMeshObject(const char* daefile) is called. You can access these information by the functions 'fastbird::IMeshObject::GetNumCollisionShapes()'and IMeshObject::GetCollisionShape()' and pass these informatino to the Physics.
+
+(그림 col_define_process.gif)
+
+You can use convex shapes for static objects(mass is zero). To use convex shape, set the node name to '_COL_MESH_blahblah' in the Blender. You may need to decrease the number of vertices of original mesh.
+
+(그림 colmesh)
+
+The movie below demonstrates collision and fracturing using fastbird engine.

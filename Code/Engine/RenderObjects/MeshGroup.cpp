@@ -178,9 +178,14 @@ void MeshGroup::AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v)
 	mAuxil[idx].push_back(v);
 }
 
-void MeshGroup::AddCollisionShape(size_t idx, std::pair<ColShape::Enum, Transformation>& data)
+void MeshGroup::AddCollisionShape(size_t idx, std::pair<FBColShape::Enum, Transformation>& data)
 {
 	mMeshObjects[idx].first->AddCollisionShape(data);
+}
+
+void MeshGroup::SetCollisionMesh(size_t idx, IMeshObject* colMesh)
+{
+	mMeshObjects[idx].first->SetCollisionMesh(colMesh);
 }
 
 void MeshGroup::UpdateTransform(bool force)

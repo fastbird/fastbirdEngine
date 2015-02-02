@@ -59,4 +59,9 @@ namespace fastbird
 
 		return Vec3(0, 0, 0);
 	}
+
+	bool IsEqual(float a, float b, float epsilon)
+	{
+		return abs(a - b) < epsilon;
+	}
 }

@@ -183,7 +183,36 @@ To use this animation, write the codes like the below.
 		pAnim->SetActivated(true);
 	}
 
+	
+## 3D UI support
 
+To use 3D UI, define render3d and renderTargetSize properties in the UI tag.
+
+**WelcomeUI.ui file**
+
+	<UI name="WelcomeUI" render3d="true" renderTargetSize="200, 82">
+		<component name="WelcomeUIMain" type="Window" npos="0.5, 0.5" nsize="0.3, 0.1" ALIGNH="center" ALIGNV="middle">
+			<component name="_text" type="StaticText" npos="0.01, 0.2" nsize="0.99, 0.5" TEXT="Welcome to fastbird engine!" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+			<component name="OKBtn" type="Button" npos="0.5, 0.85" offset="4, 0" nsize="0.3, 0.1" TEXT="OK" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+			<component name="CloseBtn" type="Button" npos="0.5, 0.85" offset="-4, 0" nsize="0.3, 0.1" TEXT="Close" TEXT_ALIGN="center" TEXT_VALIGN="middle"/>
+		</component>
+	</UI>
+	
+If these properties are defined, the ui will be rendered in the seperated render target. Application should provide the ui's world position and size vis the following function.
+
+	IEngine::Set3DUIPosSize(const char* uiname, const Vec3& pos, const Vec2& size)
+
+
+In the example movie ( http://youtu.be/DFtA99bNfxg ), the position is decided considering ships position and distance from the camera. IEngine::Set3DUIPosSize() is called every frame.
+
+When the 3D UI is not in the visible range, you can turn it off with the following function.
+
+	IEngine::Unregister3DUIs(const char* uiname)
+
+And again when the UI is reentered into the screen you can call the following function to start rendering again.
+
+	IEngine::Reset3DUI(const char* uiname)
+	
 
 ## Supported UI components(Refer to UI/ComponentType.h)
 

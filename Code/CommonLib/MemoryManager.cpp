@@ -46,6 +46,18 @@ namespace fastbird
 		return p;
 	}
 
+	void* AllocBytesAligned(size_t size, size_t align, const char* file, size_t line, const char* func)
+	{
+		void* p = _aligned_malloc(size, align);
+		if (!p)
+			throw std::bad_alloc();
+
+		++gNumMemoryAllocation;
+		LOCK_CRITICAL_SECTION lock(gMemCS);
+		GetMemAllocLines()[p] = MemLoc(file, line, func);
+		return p;
+	}
+
 	//-----------------------------------------------------------------------
 	void PrepareDelete(void* ptr, const char* file, size_t line, const char* func)
 	{

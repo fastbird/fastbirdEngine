@@ -395,16 +395,20 @@ template <typename T, typename U, U T::*Member>
 int luaU_getset(lua_State* L)
 {
     T* obj = luaW_check<T>(L, 1);
-    if (obj && lua_gettop(L) >= 2)
+    if (obj)
     {
-        obj->*Member = luaU_check<U>(L, 2);
-        return 0;
+		if (lua_gettop(L) >= 2)
+		{
+			obj->*Member = luaU_check<U>(L, 2);
+			return 0;
+		}
+		else
+		{
+			luaU_push<U>(L, obj->*Member);
+			return 1;
+		}
     }
-    else
-    {
-        luaU_push<U>(L, obj->*Member);
-        return 1;
-    }
+	return 0;    
 }
 
 template <typename T, typename U, U* T::*Member>

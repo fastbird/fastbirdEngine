@@ -80,8 +80,8 @@ namespace fastbird
 
 		virtual void SetMaterialParameters(unsigned index, const Vec4& value) = 0;
 		virtual const SHADER_DEFINES& GetShaderDefines() const = 0;
-		virtual void AddShaderDefine(const char* def, const char* val) = 0;
-		virtual void RemoveShaderDefine(const char* def) = 0;
+		virtual bool AddShaderDefine(const char* def, const char* val) = 0;
+		virtual bool RemoveShaderDefine(const char* def) = 0;
 		virtual void ApplyShaderDefines() = 0;
 
 		

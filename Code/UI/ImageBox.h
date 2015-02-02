@@ -38,6 +38,7 @@ public:
 	void SetCenterUVMatParam();
 	void DrawAsFixedSizeCenteredAt(const Vec2& wnpos);
 	void DrawAsFixedSizeAtCenter();
+	void DrawAsFixedSize();
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
 
@@ -56,10 +57,11 @@ private:
 	SmartPtr<ITexture> mTexture;
 	bool mUseHighlight;
 	bool mKeepImageRatio;
-	ImageBox* mFrameImage;
-	bool mAnimation;
+	ImageBox* mFrameImage;	
 	float mSecPerFrame;
 	float mPlayingTime;
 	unsigned mCurFrame;
+	bool mAnimation;
+	bool mImageFixedSize;
 };
 }

@@ -1,5 +1,8 @@
 1
 *.vcxproj.user
+*.gscache
+*.vscache
+*.pscache
 libmysql.dll
 Engine_Debug.dll
 Engine.dll
@@ -7,6 +10,10 @@ Engine_Debug.lib
 Engine_Release.dll
 Engine_Profile.dll
 Engine.lib
+Physics.dll
+Physics_Debug.dll
+Physics_Release.dll
+LuaInteractive.exe
 UI.dll
 UI_Debug.dll
 UI_Release.dll
@@ -34,6 +41,9 @@ profile_result.txt
 *.log
 *.toc
 *.png
+*.xcf
+*.uml
+Data/objects/asteroids/*/textureSets/*
 Data/meshes/*/*/editor/*
 Data/meshes/*/*/paint/*
 Data/meshes/*/*/resources/*
@@ -41,6 +51,7 @@ Data/particles/*/editor/*
 Data/particles/*/paint/*
 Data/particles/*/resources/*
 Data/particles/*/textureSets/*
+data/objects/modules/*/textureSets/*
 Data/objects/*/*/editor/*
 Data/objects/*/*/paint/*
 Data/objects/*/*/resources/*
@@ -98,6 +109,10 @@ Code/GameServer/Release
 Code/GameCommon/Debug
 Code/GameCommon/Profile
 Code/GameCommon/Release
+Code/LuaInteractive/Debug
+Code/LuaInteractive/Release
+Code/Physics/Debug
+Code/Physics/Release
 Data/floatn44w123_13.flt
 Data/*.fbnormal
 Data/Textures

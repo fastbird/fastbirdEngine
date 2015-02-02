@@ -26,6 +26,7 @@ namespace fastbird
 
 		virtual void SetEnable(bool enable){ mEnabled = enable; }
 		virtual bool GetEnable() const { return mEnabled; }
+		virtual void SetEnvTexture(ITexture* texture);
 
 		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
 
@@ -41,6 +42,7 @@ namespace fastbird
 		SmartPtr<IScene> mScene;
 		SmartPtr<ICamera> mCamera;
 		SmartPtr<ILight> mLight[2];
+		SmartPtr<ITexture> mEnvTexture;
 		Color mClearColor;
 		float mDepthClear;
 		UINT8 mStencilClear;

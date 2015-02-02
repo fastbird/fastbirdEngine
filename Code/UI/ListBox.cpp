@@ -241,12 +241,19 @@ void ListBox::SetItemTextureRegion(size_t row, size_t col, const char* region)
 	imageBox->DrawAsFixedSizeAtCenter();
 }
 
-void ListBox::SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize)
+IWinBase* ListBox::SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize)
 {
 	assert(region && strlen(region) != 0);
 	assert(!mTextureAtlas.empty());
 	SetItemString(row, col, L"");
-	auto button = (Button*)mItems[row][col]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Button);
+	Button* button = 0;
+	if (mItems[row][col]->GetNumChildren() > 0)
+	{
+		button = dynamic_cast<Button*>(mItems[row][col]->GetChild((unsigned)0));
+	}
+	if (!button)
+		button = (Button*)mItems[row][col]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Button);
+
 	button->SetVisible(mVisible);
 	button->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	button->SetProperty(UIProperty::TEXT_ALIGN, "center");
@@ -257,6 +264,7 @@ void ListBox::SetItemIconText(size_t row, size_t col, const char* region, const 
 	char buf[128];
 	sprintf_s(buf, "%u", iconSize);
 	button->SetProperty(UIProperty::BUTTON_ICON_TEXT, buf);
+	return button;
 }
 
 void ListBox::SetHighlightRow(size_t row, bool highlight)
@@ -756,26 +764,85 @@ unsigned ListBox::GetNumRows()
 	return mItems.size();
 }
 
-void ListBox::MakeMergedRow(unsigned row)
+IWinBase* ListBox::MakeMergedRow(unsigned row)
 {
 	if (mItems.size() < row)
-		return;
+		return 0;
 
 	if (mItems[row].empty())
-		return;
+		return 0;
 	mItems[row][0]->SetNSizeX(1.0f);
+	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
 	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
+	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
+	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0.2, 0.6, 0.2, 1.0");
+	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
+
+	return mItems[row][0];
 }
 
 void ListBox::SetRowId(unsigned row, unsigned id)
 {
-	unsigned idx = row - 1;
-	while (row > mRowIds.size())
+	while (row >= mRowIds.size())
 	{
 		mRowIds.push_back(-1);
 	}
-	mRowIds[idx] = id;
+	mRowIds[row] = id;
+}
+
+unsigned ListBox::GetRowId(unsigned row)
+{
+	while (row >= mRowIds.size())
+	{
+		mRowIds.push_back(-1);
+	}
+	return mRowIds[row];
+}
+unsigned ListBox::FindRowWithId(unsigned id)
+{
+	unsigned row = 0;
+	for (auto rowId : mRowIds)
+	{
+		if (rowId == id)
+			return row;
+
+		++row;
+	}
+
+	return -1;
+}
+
+void ListBox::DeleteRow(unsigned targetRow)
+{
+	if (targetRow >= mItems.size())
+		return;
+
+	ClearSelection();
+	unsigned num = mItems.size();
+	for (unsigned i = num - 1; i > targetRow; --i)
+	{
+		auto toRow = mItems[i - 1];
+		auto fromRow = mItems[i];
+		unsigned numColToRow = toRow.size();
+		unsigned numColFromRow = fromRow.size();
+		for (unsigned c = 0; c < numColToRow && c < numColFromRow; ++c)
+		{
+			float y = toRow[c]->GetNPos().y;
+			fromRow[c]->SetNPosY(y);
+			fromRow[c]->SetRowIndex(toRow[c]->GetRowIndex());
+		}
+	}
+
+	for (auto item : mItems[targetRow])
+	{
+		RemoveChild(item);
+	}
+	mItems.erase(mItems.begin() + targetRow);
+	if (mRowIds.size() > targetRow)
+	{
+		mRowIds.erase(mRowIds.begin() + targetRow);
+	}
 }
 
 }

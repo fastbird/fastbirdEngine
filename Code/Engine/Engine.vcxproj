@@ -154,7 +154,9 @@
   <ItemGroup>
     <ClInclude Include="Animation\Animation.h" />
     <ClInclude Include="Animation\AnimationData.h" />
+    <ClInclude Include="CollisionInfo.h" />
     <ClInclude Include="DllMain.h" />
+    <ClInclude Include="FBCollisionShape.h" />
     <ClInclude Include="IEngineEventListener.h" />
     <ClInclude Include="Foundation\Engine.h" />
     <ClInclude Include="Foundation\Keyboard.h" />
@@ -209,6 +211,7 @@
     <ClInclude Include="Renderer\CloudManager.h" />
     <ClInclude Include="Renderer\CloudParticle.h" />
     <ClInclude Include="Renderer\CloudSimulation.h" />
+    <ClInclude Include="TextTags.h" />
     <None Include="Renderer\Shaders\CommonDefines.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </None>
@@ -259,6 +262,7 @@
     <ClInclude Include="RenderObjects\BillboardQuad.h" />
     <ClInclude Include="RenderObjects\DebugHud.h" />
     <ClInclude Include="RenderObjects\DustRenderer.h" />
+    <ClInclude Include="RenderObjects\GeometryRenderer.h" />
     <ClInclude Include="RenderObjects\LaserRenderer.h" />
     <ClInclude Include="RenderObjects\MeshGroup.h" />
     <ClInclude Include="RenderObjects\MeshObject.h" />
@@ -278,6 +282,7 @@
     <ClCompile Include="Animation\Animation.cpp" />
     <ClCompile Include="Animation\AnimationData.cpp" />
     <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="Foundation\Engine.cpp" />
     <ClCompile Include="Foundation\Keyboard.cpp" />
     <ClCompile Include="Foundation\Mouse.cpp" />
@@ -331,6 +336,7 @@
     <ClCompile Include="RenderObjects\BillboardQuad.cpp" />
     <ClCompile Include="RenderObjects\DebugHud.cpp" />
     <ClCompile Include="RenderObjects\DustRenderer.cpp" />
+    <ClCompile Include="RenderObjects\GeometryRenderer.cpp" />
     <ClCompile Include="RenderObjects\LaserRenderer.cpp" />
     <ClCompile Include="RenderObjects\MeshGroup.cpp" />
     <ClCompile Include="RenderObjects\MeshObject.cpp" />
@@ -349,6 +355,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">Create</PrecompiledHeader>
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

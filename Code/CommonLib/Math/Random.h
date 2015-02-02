@@ -21,6 +21,10 @@ namespace fastbird
 			Random(min.y, max.y),
 			Random(min.z, max.z));
 	};
+	inline Vec3 RandomDirection()
+	{
+		return Random(Vec3(-1, -1, -1), Vec3(1, 1, 1)).NormalizeCopy();
+	}
 
 	inline Vec2 Random(const Vec2& min, const Vec2& max) 
 	{

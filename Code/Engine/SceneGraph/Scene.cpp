@@ -11,7 +11,7 @@
 #include <Engine/IMeshObject.h>
 #include <Engine/ISceneListener.h>
 #include <Engine/ILight.h>
-
+#include <Engine/FBCollisionShape.h>
 using namespace fastbird;
 
 IScene* IScene::CreateScene()
@@ -231,7 +231,7 @@ IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject
 		{
 			for (unsigned i = 0; i < num; ++i)
 			{
-				const CollisionShape* cs = pObj->GetCollisionShape(i);
+				const FBCollisionShape* cs = pObj->GetCollisionShape(i);
 				Ray3::IResult ret = cs->intersects(ray, pObj->GetTransform());
 				if (ret.first)
 				{
@@ -425,6 +425,7 @@ void Scene::Render()
 		{
 			l->OnBeforeRenderingTransparents();
 		}
+		gFBEnv->pRenderer->RenderGeoms();
 		gFBEnv->pRenderer->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
 		{

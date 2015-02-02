@@ -71,6 +71,14 @@ void UIAnimation::AddBackColor(float time, const Color& color)
 	mKeyBackColor[time] = color;
 }
 
+void UIAnimation::AddMaterialColor(float time, const Color& color)
+{
+	if (mKeyMaterialColor.empty())
+		mKeyMaterialColor[0.0f] = Color::White;
+
+	mKeyMaterialColor[time] = color;
+}
+
 //---------------------------------------------------------------------------
 void UIAnimation::Update(float deltaTime)
 {
@@ -131,6 +139,11 @@ void UIAnimation::Update(float deltaTime)
 		mCurBackColor = Animate(mKeyBackColor, mCurTime, normTime);
 	}
 
+	if (!mKeyMaterialColor.empty())
+	{
+		mCurMaterialColor = Animate(mKeyMaterialColor, mCurTime, normTime);
+	}
+
 	
 }
 
@@ -155,6 +168,11 @@ const Color& UIAnimation::GetCurrentBackColor() const
 	return mCurBackColor;
 }
 
+const Color& UIAnimation::GetCurrentMaterialColor() const
+{
+	return mCurMaterialColor;
+}
+
 //---------------------------------------------------------------------------
 bool UIAnimation::HasScaleAnim() const
 {
@@ -171,6 +189,10 @@ bool UIAnimation::HasTextColorAnim() const
 bool UIAnimation::HasBackColorAnim() const
 {
 	return !mKeyBackColor.empty();
+}
+bool UIAnimation::HasMaterialColorAnim() const
+{
+	return !mKeyMaterialColor.empty();
 }
 
 void UIAnimation::LoadFromXML(tinyxml2::XMLElement* elem)
@@ -231,6 +253,27 @@ void UIAnimation::LoadFromXML(tinyxml2::XMLElement* elem)
 				if (sz)
 					color = StringConverter::parseColor(sz);
 				AddBackColor(time, color);
+				k = k->NextSiblingElement("key");
+			}
+		}
+	}
+
+	{
+		tinyxml2::XMLElement* pC = elem->FirstChildElement("MaterialColor");
+		if (pC)
+		{
+			tinyxml2::XMLElement* k = pC->FirstChildElement("key");
+			while (k)
+			{
+				float time = 0;
+				Color color;
+				sz = k->Attribute("time");
+				if (sz)
+					time = StringConverter::parseReal(sz);
+				sz = k->Attribute("color");
+				if (sz)
+					color = StringConverter::parseColor(sz);
+				AddMaterialColor(time, color);
 				k = k->NextSiblingElement("key");
 			}
 		}
@@ -350,6 +393,7 @@ void UIAnimation::ClearData()
 	mKeyScale.clear();
 	mKeyTextColor.clear();
 	mKeyBackColor.clear();
+	mKeyMaterialColor.clear();
 }
 
 }

@@ -66,6 +66,7 @@ namespace fastbird
 		virtual void OnUIFileChanged(const char* file);
 
 		virtual void CloneUI(const char* uiname, const char* newUIname);
+		virtual void IgnoreInput(bool ignore);
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
@@ -97,6 +98,7 @@ namespace fastbird
 
 		 std::map<std::string, std::vector<IWinBase*>> mLuaUIs;
 		 bool mPosSizeEventEnabled;
+		 int mIgnoreInput;
 	};
 }
 

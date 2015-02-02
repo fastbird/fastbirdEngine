@@ -11,6 +11,7 @@ class DebugHud;
 class IFont;
 class RenderToTexture;
 class CloudManager;
+class GeometryRenderer;
 #define FB_NUM_TONEMAP_TEXTURES  4
 #define FB_NUM_LUMINANCE_TEXTURES 3
 #define FB_NUM_BLOOM_TEXTURES 3
@@ -47,17 +48,27 @@ public:
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
 	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color);
 	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color);
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color);
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color);
+	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);
 	virtual void DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 		const Color& color0, const Color& color1);
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
 		const Color& color0, const Color& color1);
+	// with depth culling
+	virtual void DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
+		const char* texture, bool textureFlow);
+	virtual void DrawSphere(const Vec3& pos, float radius, const Color& color);
+	virtual void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha);
+	virtual void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
 	virtual void RenderDebugHud(); 
+	virtual void RenderGeoms();
 	virtual inline IFont* GetFont() const;
 
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
@@ -93,6 +104,7 @@ public:
 	virtual ILight* GetDirectionalLight(int idx) const;
 
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
+	virtual void SetEnvironmentTextureOverride(ITexture* texture);
 
 	// Render to Texture Pool handling
 	virtual IRenderToTexture* CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
@@ -217,6 +229,7 @@ protected:
 	SmartPtr<ILight>		mDirectionalLight[2];
 	SmartPtr<ILight>		mDirectionalLightOverride[2];
 	SmartPtr<DebugHud>		mDebugHud;
+	SmartPtr<GeometryRenderer> mGeomRenderer;
 	SmartPtr<IFont> mFont;
 	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
 	SmartPtr<IMaterial> mMissingMaterial;
@@ -238,6 +251,7 @@ protected:
 	ISamplerState* mDefaultSamplers[SAMPLERS::NUM];
 
 	SmartPtr<ITexture> mEnvironmentTexture;
+	SmartPtr<ITexture> mEnvironmentTextureOverride;
 	std::vector< IRenderToTexture* > mRenderToTextures;
 
 	std::vector<IRenderToTexture*> mRenderToTexturePool;
@@ -342,6 +356,7 @@ protected:
 	SmartPtr<ITexture> mGlowTarget;
 	SmartPtr<ITexture> mGlowTexture[2];
 	SmartPtr<IShader> mGlowPS;
+	bool mGlowSet;
 
 	// for glow
 	bool mGaussianDistGlowCalculated; // should recalculate when the screen resolution changed

@@ -5,6 +5,7 @@
 
 namespace fastbird
 {
+	class FBCollisionShape;
 	class MeshObject : public IMeshObject
 	{
 	public:
@@ -29,6 +30,7 @@ namespace fastbird
 		//------------------------------------------------------------------------
 		// IMeshObject
 		//------------------------------------------------------------------------
+		virtual void RenderSimple();
 		virtual IObject* Clone() const;
 		virtual bool LoadOgreMesh(const char* filename);
 		virtual void ClearMeshData();
@@ -59,12 +61,14 @@ namespace fastbird
 		virtual const AUXILIARIES& GetAuxiliaries() const { return mAuxCloned ? *mAuxCloned : mAuxil; }
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) {mAuxil = aux; }
 		virtual void AddCollisionShape(const COL_SHAPE& data);
+		virtual void SetCollisionShapes(COLLISION_INFOS& colInfos);
 		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes);
+		virtual void SetCollisionMesh(IMeshObject* colMesh);
 		virtual unsigned GetNumCollisionShapes() const { return mCollisionsCloned ? mCollisionsCloned->size() : 0; }
 		virtual bool HasCollisionShapes() const {
 			return mCollisionsCloned ? !mCollisionsCloned->empty() : false;
 		}
-		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
+		virtual const FBCollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
 		virtual bool CheckNarrowCollision(fastbird::BoundingVolume* pBV) const;
 		virtual Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const;
 		void DeleteCollisionShapes();
@@ -116,7 +120,7 @@ namespace fastbird
 		SmartPtr<IRasterizerState> mHighlightRasterizeState;
 		static SmartPtr<IMaterial> mHighlightMaterial;
 
-		typedef std::vector< CollisionShape* > COLLISION_SHAPES;
+		typedef std::vector< FBCollisionShape* > COLLISION_SHAPES;
 		COLLISION_SHAPES mCollisions;
 		COLLISION_SHAPES* mCollisionsCloned;
 

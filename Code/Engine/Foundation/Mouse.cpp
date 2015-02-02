@@ -39,7 +39,8 @@ namespace fastbird
 
 	Mouse::Mouse()
 		: mLastDownPos(0, 0)
-		, mLastDownTime(0)
+		, mLastLeftDownTime(0)
+		, mLastRightDownTime(0)
 		, mLastClickTime(0)
 		, mLastClickPos(0, 0)
 		, mLockMouse(false)
@@ -100,7 +101,7 @@ namespace fastbird
 			mButtonsDown |= MOUSE_BUTTON_LEFT;
 			mButtonsPressed |= MOUSE_BUTTON_LEFT;
 
-			mLastDownTime = gFBEnv->pTimer->GetTime();
+			mLastLeftDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
@@ -109,7 +110,7 @@ namespace fastbird
 			mButtonsDown |= MOUSE_BUTTON_RIGHT;
 			mButtonsPressed |= MOUSE_BUTTON_RIGHT;
 
-			mLastDownTime = gFBEnv->pTimer->GetTime();
+			mLastRightDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
@@ -118,7 +119,7 @@ namespace fastbird
 			mButtonsDown |= MOUSE_BUTTON_MIDDLE;
 			mButtonsPressed |= MOUSE_BUTTON_MIDDLE;
 
-			mLastDownTime = gFBEnv->pTimer->GetTime();
+			//mLastDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
@@ -127,7 +128,7 @@ namespace fastbird
 			mButtonsDown |= MOUSE_BUTTON_4;
 			mButtonsPressed |= MOUSE_BUTTON_4;
 
-			mLastDownTime = gFBEnv->pTimer->GetTime();
+			//mLastDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
@@ -136,15 +137,16 @@ namespace fastbird
 			mButtonsDown |= MOUSE_BUTTON_5;
 			mButtonsPressed |= MOUSE_BUTTON_5;
 
-			mLastDownTime = gFBEnv->pTimer->GetTime();
+			//mLastDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
 
 
-		bool mouseNotMoved = abs((mLastDownPos.x - mAbsX)) < 2 && abs((mLastDownPos.y - mAbsY)) < 2;
+		bool mouseNotMoved = abs((mLastDownPos.x - mAbsX)) < 4 && abs((mLastDownPos.y - mAbsY)) < 4;
 		float curTime = gFBEnv->pTimer->GetTime();
-		float elapsedTime = (curTime - mLastDownTime);
+		float leftElapsedTime = (curTime - mLastLeftDownTime);
+		float rightElapsedTime = (curTime - mLastRightDownTime);
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_LEFT_BUTTON_UP)
 		{
 			if (mButtonsDown & MOUSE_BUTTON_LEFT)
@@ -165,7 +167,7 @@ namespace fastbird
 				mLButtonDoubleClicked = true;
 			}
 			
-			if (mouseNotMoved && !mLButtonDoubleClicked && elapsedTime < 0.15f)
+			if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.15f)
 			{
 				mButtonsClicked |= MOUSE_BUTTON_LEFT;
 				mLastClickTime = gFBEnv->pTimer->GetTime();
@@ -175,7 +177,7 @@ namespace fastbird
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
 		{
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;			
-			if (mouseNotMoved && elapsedTime < 0.15f)
+			if (mouseNotMoved && rightElapsedTime < 0.15f)
 			{
 				mButtonsClicked |= MOUSE_BUTTON_RIGHT;
 				mLastClickTime = gFBEnv->pTimer->GetTime();
@@ -303,7 +305,7 @@ namespace fastbird
 	bool Mouse::IsLButtonDown(float* time) const
 	{
 		if (time)
-			*time = mLastDownTime;
+			*time = mLastLeftDownTime;
 		return (mButtonsDown & MOUSE_BUTTON_LEFT) !=0;
 	}
 	
@@ -332,7 +334,7 @@ namespace fastbird
 	bool Mouse::IsRButtonDown(float* time) const
 	{
 		if (time)
-			*time = mLastDownTime;
+			*time = mLastRightDownTime;
 		return (mButtonsDown & MOUSE_BUTTON_RIGHT) !=0;
 	}
 
@@ -394,6 +396,9 @@ namespace fastbird
 
 	void Mouse::LockMousePos(bool lock)
 	{
+		if (mLockMouse == lock)
+			return;
+
 		if (lock)
 		{
 			if (GetFocus() == gFBEnv->pEngine->GetWindowHandle())

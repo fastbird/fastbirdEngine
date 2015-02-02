@@ -216,14 +216,16 @@ namespace fastbird
 				  int (*handler)(void*, const char*, const char*, const char*),
 				  void* user)
 	{
-		FILE* file;
+		FILE* file = 0;
 		int error;
 
 		error = fopen_s(&file, filename, "r");
 		if (error!=0)
 			return -1;
 		error = ini_parse_file(file, handler, user);
-		fclose(file);
+		if (file)
+			fclose(file);
+
 		return error;
 	}
 }

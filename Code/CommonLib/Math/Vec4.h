@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CommonLib/Math/Vec3.h>
+#include <CommonLib/Math/fbMath.h>
 
 namespace fastbird
 {

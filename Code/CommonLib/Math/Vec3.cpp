@@ -84,4 +84,20 @@ namespace fastbird
 		return ACos(f);
 
 	}
+
+	void Vec3::SafeNormalize()
+	{
+		Vec3 absVec(Abs(*this));
+
+		int maxIndex = absVec.MaxAxis();
+		if (absVec[maxIndex]>0)
+		{
+			*this /= absVec[maxIndex];
+			*this /= Length();
+			return;
+		}
+		*this = Vec3(1, 0, 0);
+		return;
+
+	}
 }

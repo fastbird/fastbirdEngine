@@ -10,8 +10,6 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "ComponentType.h"
-#include "Align.h"
 
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/SmartPtr.h>
@@ -35,4 +33,7 @@
 #include <Engine/IObject.h>
 #include <Engine/IMaterial.h>
 #include <Engine/IFont.h>
+
+#include "ComponentType.h"
+#include "Align.h"
 #define gEnv gFBEnv

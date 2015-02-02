@@ -94,7 +94,8 @@ namespace fastbird
 		bool mLockMouse;
 
 		Vec2I mLastDownPos;
-		float mLastDownTime;
+		float mLastLeftDownTime;
+		float mLastRightDownTime;
 		float mLastUpTime;
 		Vec2I mLastClickPos;
 		float mLastClickTime;

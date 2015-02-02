@@ -5,6 +5,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/IConsole.h>
 #include <Engine/Animation/Animation.h>
+#include <Engine/FBCollisionShape.h>
 
 namespace fastbird
 {
@@ -363,7 +364,7 @@ namespace fastbird
 		if (!pMat)
 			Log("Failed to load a material %s", name);
 		mMaterialGroups[0].mMaterial = pMat;
-		if (pMat->IsTransparent())
+		if (pMat && pMat->IsTransparent())
 		{
 			BLEND_DESC bdesc;
 			bdesc.RenderTarget[0].BlendEnable = true;
@@ -408,6 +409,18 @@ namespace fastbird
 	}
 
 	//----------------------------------------------------------------------------
+	void MeshObject::RenderSimple()
+	{
+		auto pRenderer = gFBEnv->pRenderer;
+		FB_FOREACH(it, mMaterialGroups)
+		{
+			if (!it->mVBPos)
+				continue;
+			RenderMaterialGroup(&(*it), true);
+		}
+	}
+
+	//----------------------------------------------------------------------------
 	IObject* MeshObject::Clone() const
 	{
 		MeshObject* cloned = (MeshObject*)IMeshObject::CreateMeshObject();
@@ -432,6 +445,7 @@ namespace fastbird
 			mg.mVBColor = it->mVBColor;
 			mg.mVBTangent = it->mVBTangent;
 			mg.mIndexBuffer = it->mIndexBuffer;
+			mg.mPositions = it->mPositions;
 		}
 		cloned->mAuxCloned = mAuxCloned ? mAuxCloned : (AUXILIARIES*)&mAuxil;
 		cloned->mCollisionsCloned = mCollisionsCloned ? mCollisionsCloned : (COLLISION_SHAPES*)&mCollisions;
@@ -781,17 +795,33 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	void MeshObject::AddCollisionShape(const COL_SHAPE& data)
 	{
-		CollisionShape* cs = FB_NEW(CollisionShape)(data.first, data.second);
+		FBCollisionShape* cs = FB_NEW(FBCollisionShape)(data.first, data.second, 0);
 		mCollisions.push_back(cs);
 	}
 
-	void MeshObject::SetCollisionShapes(std::vector< std::pair<ColShape::Enum, Transformation> >& shapes)
+	void MeshObject::SetCollisionShapes(COLLISION_INFOS& colInfos)
+	{
+		DeleteCollisionShapes();
+		for (const auto& var : colInfos)
+		{
+			mCollisions.push_back(FB_NEW(FBCollisionShape(var.mColShapeType, var.mTransform, var.mCollisionMesh)));
+		}
+	}
+
+	// deprecated
+	void MeshObject::SetCollisionShapes(std::vector< std::pair<FBColShape::Enum, Transformation> >& shapes)
 	{
 		DeleteCollisionShapes();
 		for (const auto& var : shapes)
 		{
 			AddCollisionShape(var);
 		}
+	}
+
+	void MeshObject::SetCollisionMesh(IMeshObject* colMesh)
+	{
+		assert(!mCollisions.empty());
+		mCollisions.back()->SetCollisionMesh(colMesh);
 	}
 
 	void MeshObject::DeleteCollisionShapes()
@@ -1007,7 +1037,7 @@ namespace fastbird
 
 		for (unsigned i = 0; i < num; ++i)
 		{
-			const CollisionShape* cs = GetCollisionShape(i);
+			const FBCollisionShape* cs = GetCollisionShape(i);
 			bool collide = cs->TestCollision(pBV, mTransformation);
 			if (collide)
 			{
@@ -1028,7 +1058,7 @@ namespace fastbird
 		bool collided = false;
 		for (unsigned i = 0; i < num; ++i)
 		{
-			const CollisionShape* cs = GetCollisionShape(i);
+			const FBCollisionShape* cs = GetCollisionShape(i);
 			auto result = cs->intersects(ray, mTransformation);
 			if (result.first)
 			{

@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Renderer/Shaders/UI.hlsl</ShaderFile>
+	<ShaderFile>es/Shaders/UI.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 0, 0, 1</DiffuseColor_Alpha>

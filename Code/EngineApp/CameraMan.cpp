@@ -115,7 +115,7 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 		}
 	}
 
-	if (pMouse && pMouse->IsValid() && !pKeyboard->IsKeyDown(VK_CONTROL))
+	if (pMouse && pMouse->IsValid() && pKeyboard && !pKeyboard->IsKeyDown(VK_CONTROL))
 	{
 		long dx, dy;
 		pMouse->GetHDDeltaXY(dx, dy);

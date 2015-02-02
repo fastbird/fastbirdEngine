@@ -111,7 +111,10 @@ namespace fastbird
 		float Dot(const Quat& other) const;
 		float Norm() const;
 		float Normalise();
-		Quat Inverse() const;
+		Quat Inverse() const
+		{
+			return Quat(w, -x, -y, -z);
+		}
 		Quat UnitInverse() const;
 		Quat Exp() const;
 		Quat Log() const;

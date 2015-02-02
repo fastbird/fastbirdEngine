@@ -191,22 +191,39 @@ public:
 
 	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color) = 0;
 	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color) = 0;
+
+	// no depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1) = 0;
 	virtual void DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 		const Color& color0, const Color& color1) = 0;
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
 		const Color& color, const Color& color1) = 0;
+
+	// with depth culling
+	virtual void DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
+		const char* texture, bool textureFlow) = 0;
+
+
+	virtual void DrawSphere(const Vec3& pos, float radius, const Color& color) = 0;
+	virtual void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha) = 0;
+	virtual void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha) = 0;
+	virtual void RenderGeoms() = 0;
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture) = 0;
+	virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
+		const Color& color, ITexture* texture) = 0;
 	virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
 		DWORD color, IMaterial* pMat) = 0;
+	virtual void DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, IMaterial* mat) = 0;
 
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e) = 0;
@@ -274,6 +291,8 @@ public:
 	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName) = 0;
 
 	virtual unsigned GetNumLoadingTexture() const = 0;
+
+	virtual void SetEnvironmentTextureOverride(ITexture* texture) = 0;
 };
 
 }

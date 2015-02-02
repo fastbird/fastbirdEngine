@@ -91,6 +91,7 @@ Font::Font()
 	mHasOutline = false;
 	mEncoding = NONE;
 	mColor = 0xFFFFFFFF;
+	mColorBackup = 0xffffffff;
 	mInitialized = false;
 }
 
@@ -189,6 +190,88 @@ void Font::SetTextEncoding(EFontTextEncoding encoding)
 	mEncoding = encoding;
 }
 
+bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
+{
+	static TextureAtlas* textureAtlas = gFBEnv->pRenderer->GetTextureAtlas("data/textures/gameui.xml");
+
+	assert(end - start > 8);
+	char buf[256];
+	TextTags::Enum tagType = GetTagType(&text[start], end - start, buf);
+	switch (tagType)
+	{
+	case TextTags::Img:
+	{
+						  if (textureAtlas)
+						  {
+							  auto region = textureAtlas->GetRegion(buf);
+							  if (region)
+							  {
+								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y), Vec2I(20, 20), region->mUVStart, region->mUVEnd,
+									  Color::White, textureAtlas->mTexture);
+								  x += 20;
+								  return true;
+							  }
+						  }
+						  break;
+	}
+	case TextTags::ColorStart:
+	{
+								 unsigned color = StringConverter::parseHexa(buf);
+
+								 mColorBackup = mColor;
+								 mColor = Color::FixColorByteOrder(color);
+								 break;
+	}
+	case TextTags::ColorEnd:
+	{
+							   mColor = mColorBackup;
+							   break;
+	}
+	}
+	
+	return false;
+}
+
+TextTags::Enum Font::GetTagType(const char* tagStart, int length, char* buf) const
+{
+	if (length < 8)
+		return TextTags::Num;
+
+	if (tagStart[0] != '[' || tagStart[length - 2] != ']')
+		return TextTags::Num;
+
+	if (tagStart[4] == 'i' && tagStart[6] == 'm' && tagStart[8] == 'g')
+	{
+		if (buf)
+		{
+			int oneI = 0;
+			for (int i = 10; tagStart[i] != '$'; i += 2)
+			{
+				buf[oneI++] = tagStart[i];
+			}
+			buf[oneI] = 0;
+		}
+		
+		return TextTags::Img;
+	}
+
+	if (tagStart[4] == 'c' && tagStart[6] == 'r')
+	{
+		if (buf)
+		{
+			int oneI = 0;
+			for (int i = 8; tagStart[i] != '$'; i += 2)
+			{
+				buf[oneI++] = tagStart[i];
+			}
+			buf[oneI] = 0;
+		}
+		return tagStart[8] == '$' ? TextTags::ColorEnd: TextTags::ColorStart;
+	}
+	
+	return TextTags::Num;
+}
+
 //----------------------------------------------------------------------------
 void Font::InternalWrite(float x, float y, float z, const char *text, int count, float spacing)
 {
@@ -200,6 +283,29 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 	unsigned int batchingVertices = 0;
 	for( int n = 0; n < count; )
 	{
+		bool reapplyRender = false;
+		int skiplen = SkipTags(&text[n]);
+		if (skiplen>0)
+		{
+			do
+			{
+				reapplyRender = ApplyTag(text, n, n + skiplen, x, y) || reapplyRender;
+				n += skiplen;
+				skiplen = SkipTags(&text[n]);
+			} while (skiplen > 0);
+		}		
+
+		if (n >= count)
+			break;
+
+		if (reapplyRender)
+		{
+			PrepareRenderResources();
+			if (page!=-1)
+				mPages[page]->Bind();
+			gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+		}
+
 		int charId = GetTextChar(text, n, &n);
 		
 		if (charId == L'\n')
@@ -295,6 +401,8 @@ void Font::Write(float x, float y, float z, unsigned int color,
 {
 	if (!mInitialized)
 		return;
+
+	//
 	if( count < 0 )
 		count = GetTextLength(text);
 
@@ -346,11 +454,35 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 	float lengthAfterSpace = 0;
 	for (int n = 0; n < count;)
 	{
+		TextTags::Enum tag = TextTags::Num;
+		int numSkip = SkipTags(&text[n], &tag);
+		if (numSkip)
+		{
+			do
+			{
+				if (tag == TextTags::Img)
+				{
+					curX += 20;
+				}
+				int startN = n;
+				for (; n < startN + numSkip;)
+				{
+					int charId = GetTextChar(text, n, &n);
+					multilineString.push_back(charId);
+				}
+				numSkip = SkipTags(&text[n], &tag);
+
+			} while (numSkip);
+			if (n >= count)
+				break;
+		}
+
 		int charId = GetTextChar(text, n, &n);
 		if (charId == L'\n')
 		{
 			curX = 0;
 			lengthAfterSpace = 0;
+			++lines;
 		}
 		else
 		{
@@ -406,6 +538,18 @@ float Font::GetTextWidth(const char *text, int count, float *outMinY/* = 0*/, fl
 	
 	for( int n = 0; n < count; )
 	{
+		int skiplen = SkipTags(&text[n]);
+		if (skiplen>0)
+		{
+			do
+			{
+				n += skiplen;
+				skiplen = SkipTags(&text[n]);
+			} while (skiplen > 0);
+		}
+		if (n >= count)
+			break;
+
 		int charId = GetTextChar(text,n,&n);
 
 		SCharDescr *ch = GetChar(charId);
@@ -462,6 +606,31 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 	}
 }
 
+int Font::SkipTags(const char* text, TextTags::Enum* tag)
+{
+	if (text[0] == 0)
+		return 0;
+
+	if (text[0] == '[' && text[2] == '$')
+	{
+		// found end
+		int pos = 4;
+		for (;text[pos]!=0; pos +=2)
+		{
+			if (text[pos] == '$' && text[pos + 2] == ']')
+			{
+				int endLen = pos+4;
+				if (tag)
+				{
+					*tag = GetTagType(text, endLen);
+				}
+				return endLen;
+			}
+		}
+	}
+	return 0;
+}
+
 //----------------------------------------------------------------------------
 int Font::GetTextLength(const char *text)
 {
@@ -472,10 +641,14 @@ int Font::GetTextLength(const char *text)
 		{
 			unsigned int len;
 			int r = DecodeUTF16((const unsigned char *)&text[textLen], &len);
-			if( r > 0 )
+			if (r > 0)
+			{
 				textLen += len;
-			else if( r < 0 )
+			}				
+			else if (r < 0)
+			{
 				textLen++;
+			}				
 			else
 				return textLen;
 		}
@@ -607,7 +780,7 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 	//font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 	
 	if( font->mPages[id]==0 )
-		IEngine::Log("Failed to load font page '%s'!", str.c_str());
+		IEngine::Log("Failed to load font page '$s'!", str.c_str());
 }
 
 void FontLoader::SetFontInfo(int outlineThickness)
@@ -908,7 +1081,7 @@ void FontLoaderTextFormat::InterpretCommon(const std::string &str, int start)
 	int scaleW;
 	int scaleH;
 	int pages;
-	int packed;
+	int packed = 0;
 
 	// Read all attributes
 	int pos, pos2 = start;
@@ -950,7 +1123,7 @@ void FontLoaderTextFormat::InterpretCommon(const std::string &str, int start)
 
 void FontLoaderTextFormat::InterpretInfo(const std::string &str, int start)
 {
-	int outlineThickness;
+	int outlineThickness = 0;
 
 	// Read all attributes
 	int pos, pos2 = start;
@@ -1037,7 +1210,7 @@ int FontLoaderBinaryFormat::Load()
 	fread(magicString, 4, 1, f);
 	if( strncmp(magicString, "BMF\003", 4) != 0 )
 	{
-		Log("Unrecognized format for '%s'", fontFile.c_str());
+		Log("Unrecognized format for '$s'", fontFile.c_str());
 		fclose(f);
 		return -1;
 	}

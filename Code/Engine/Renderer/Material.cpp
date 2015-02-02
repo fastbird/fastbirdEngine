@@ -126,7 +126,7 @@ bool Material::LoadFromFile(const char* filepath)
 	doc.LoadFile(filepath);
 	if (doc.Error())
 	{
-		Log(FB_DEFAULT_DEBUG_ARG, "Error while parsing material!");
+		Error(FB_DEFAULT_DEBUG_ARG, "Error while parsing material!");
 		if (doc.ErrorID()==tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 		{
 			Log("Material %s is not found!", filepath);
@@ -706,36 +706,45 @@ void Material::RemoveTexture(BINDING_SHADER shader, int slot)
 }
 
 //----------------------------------------------------------------------------
-void Material::AddShaderDefine(const char* name, const char* val)
+bool Material::AddShaderDefine(const char* name, const char* val)
 {
 	if (name==0 || val==0)
-		return;
+		return false;
 	for (auto& d : mShaderDefines)
 	{
 		if (d.name==name)
 		{
-			d.value = val;
-			return;
+			if (d.value != val)
+			{
+				d.value = val;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 	mShaderDefines.push_back(ShaderDefine());
 	mShaderDefines.back().name = name;
 	mShaderDefines.back().value = val;
+	return true;
 }
 
-void Material::RemoveShaderDefine(const char* def)
+bool Material::RemoveShaderDefine(const char* def)
 {
 	if (def == 0)
-		return;
+		return false;
 
 	FB_FOREACH(it, mShaderDefines)
 	{
 		if (strcmp(it->name.c_str(), def) == 0)
 		{
 			it = mShaderDefines.erase(it);
-			return;
+			return true;
 		}		
 	}	
+	return false;
 }
 
 void Material::ApplyShaderDefines()

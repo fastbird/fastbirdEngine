@@ -27,7 +27,6 @@ ColladaImporter::ColladaImporter()
 	, mUseIndexBuffer(false)
 	, mGenerateTangent(false)
 	, mKeepMeshdata(false)
-	, mNumMeshes(0)
 {
 
 }
@@ -55,14 +54,6 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 	mUseIndexBuffer = useIndexBuffer;
 	if (strcmp(filepath, mFilepath.c_str()))
 	{
-		mNumMeshes = 0;
-		mPos.clear();
-		mPosIndices.clear();
-		mNormals.clear();
-		mNormalIndices.clear();
-		mUVs.clear();
-		mUVIndices.clear();
-		mMaterials.clear();
 		// different file.
 		mFilepath = filepath;
 		COLLADASaxFWL::Loader loader;
@@ -70,8 +61,10 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 	}
 	else
 	{
-		for (size_t m=0; m<mNumMeshes; m++)
-			FeedGeometry(m);
+		for (auto& meshInfo : mMeshInfos)
+		{
+			FeedGeometry(&meshInfo);
+		}
 		successful = true;
 	}
 
@@ -82,8 +75,9 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 		{
 			std::string actionFile = StripExtension(filepath);
 			actionFile += ".actions";
-			for (auto& meshobj : mMeshObjects)
+			for (auto& it : mMeshObjects)
 			{
+				auto meshobj = it.second;
 				const char* name = meshobj->GetName();
 				if (strcmp(name, animData.first.c_str()) == 0)
 				{
@@ -110,8 +104,9 @@ bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppo
 	{
 		if (!mMeshObjects.empty())
 		{
-			mMeshObjects[0]->SetAuxiliaries(mAuxil);
-			mMeshObjects[0]->SetCollisionShapes(mCollisions);
+			auto meshObj = mMeshObjects.begin()->second;
+			meshObj->SetAuxiliaries(mAuxil);
+			meshObj->SetCollisionShapes(mCollisions);
 		}
 		else
 		{
@@ -144,7 +139,7 @@ bool ColladaImporter::writeScene ( const COLLADAFW::Scene* scene )
 	return true;
 }
 
-ColShape::Enum GetColShape(const char* str)
+FBColShape::Enum GetColShape(const char* str)
 {
 	int len = strlen(str);
 	assert(len > 5);
@@ -162,88 +157,102 @@ ColShape::Enum GetColShape(const char* str)
 		end = len;
 
 	std::string typestring(str, start, end-start);
-	return ColShape::ConvertToEnum(typestring.c_str());
+	return FBColShape::ConvertToEnum(typestring.c_str());
 }
 
-void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parent)
+void ColladaImporter::WriteChildNode(const COLLADAFW::Node* node, size_t parentMeshIdx)
 {
 	using namespace COLLADAFW;
 
 	std::string name = node->getName();
 	COLLADABU::Math::Matrix4 mat = node->getTransformationMatrix();
-	const TransformationPointerArray& ta = node->getTransformations();
-	COLLADABU::Math::Vector3 scale = mat.getScale();
-	COLLADABU::Math::Matrix3 mat3;
-	mat.extract3x3Matrix(mat3);
-	Mat33 fbMat33((float)mat3[0][0], (float)mat3[0][1], (float)mat3[0][2],
+	/*COLLADABU::Math::Matrix3 mat3;
+	mat.extract3x3Matrix(mat3);*/
+	/*Mat33 fbMat33((float)mat3[0][0], (float)mat3[0][1], (float)mat3[0][2],
 		(float)mat3[1][0], (float)mat3[1][1], (float)mat3[1][2],
-		(float)mat3[2][0], (float)mat3[2][1], (float)mat3[2][2]);
-
+		(float)mat3[2][0], (float)mat3[2][1], (float)mat3[2][2]);*/
+	
+	COLLADABU::Math::Vector3 scale = mat.getScale();
 	COLLADABU::Math::Quaternion rot = mat.extractQuaternion();
+	rot.normalise();
 	COLLADABU::Math::Vector3 trans = mat.getTrans();
 		
 	Transformation transform;
-	//transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
-	//transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
-	transform.SetMatrix(fbMat33);
+	transform.SetScale(Vec3((float)scale.x, (float)scale.y, (float)scale.z));
+	transform.SetRotation(Quat((float)rot.w, (float)rot.x, (float)rot.y, (float)rot.z));
+	//transform.SetMatrix(fbMat33);
 	transform.SetTranslation(Vec3((float)trans.x, (float)trans.y, (float)trans.z));
 
 	if (name.find("_POS") == 0)
 	{
-		assert(parent != -1);
-		mMeshGroup->AddAuxiliary(parent, AUXILIARIES::value_type(name, transform));
+		assert(parentMeshIdx != -1);
+		mMeshGroup->AddAuxiliary(parentMeshIdx, AUXILIARIES::value_type(name, transform));
 	}
 	else if (name.find("_COL") == 0)
 	{
-		ColShape::Enum shape = GetColShape(name.c_str());
+		FBColShape::Enum shape = GetColShape(name.c_str());
+		CollisionInfo colInfo;
+		colInfo.mColShapeType = shape;
+		colInfo.mTransform = transform;
+		colInfo.mCollisionMesh = 0;
 		if (mUseMeshGroup)
 		{
-			assert(parent != -1);
-			mMeshGroup->AddCollisionShape(parent, std::make_pair(shape, transform));
+			assert(parentMeshIdx != -1);
+			mMeshGroup->AddCollisionShape(parentMeshIdx, std::make_pair(colInfo.mColShapeType, colInfo.mTransform));
 		}
 		else
 		{
-			mCollisions.push_back(std::make_pair(shape, transform));
+			mCollisions.push_back(colInfo);
 		}
 	}
-	if (parent == -1)
-		return;
 		
 	const InstanceGeometryPointerArray& ga = node->getInstanceGeometries();
 	size_t gaCount = ga.getCount();
-	assert(gaCount <= 1);// this is temporary.
+	assert(gaCount <= 1);
 	// Currently the engine doesn't support serveral geometries in one node.
 	// So we are assuming one node have one mesh. This has no problem for now.
 
-	size_t idx = -1;
-	for(size_t g = 0; g<gaCount; g++)
+	size_t meshIdx = -1;
+	if (gaCount > 0)
 	{
-		std::string id = ga[g]->getInstanciatedObjectId().toAscii();
+		std::string id = ga[0]->getInstanciatedObjectId().toAscii();
 		IMeshObject* pMeshObject = GetMeshObject(id.c_str());
 		if (pMeshObject)
 		{
-			size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, parent);
 			pMeshObject->SetName(name.c_str());
-			if (g == 0)
+			if (parentMeshIdx != -1)
 			{
-				idx = idxTemp; 
-				if (name.find("_PART") == 0)
+				meshIdx = mMeshGroup->AddMesh(pMeshObject, transform, parentMeshIdx);
+			}
+				
+			if (name.find("_PART") == 0)
+			{
+				AUXILIARIES aux;
+				aux.push_back(AUXILIARIES::value_type(name, transform));
+				mMeshGroup->SetAuxiliaries(meshIdx, aux);
+			}
+			else if (name.find("_COL") == 0) // This collision has seperated mesh object for physics.
+			{
+				if (mUseMeshGroup)
 				{
-					AUXILIARIES aux;
-					aux.push_back(AUXILIARIES::value_type(name, transform));
-					mMeshGroup->SetAuxiliaries(idx, aux);
+					assert(parentMeshIdx != -1);
+					mMeshGroup->SetCollisionMesh(parentMeshIdx, pMeshObject);
+				}
+				else
+				{
+					mCollisions.back().mCollisionMesh = pMeshObject;
 				}
 			}
 		}
 	}
 
-	if (idx != -1)
+	if (meshIdx != -1)
 	{
 		const NodePointerArray& na = node->getChildNodes();
 		size_t naCount = na.getCount();
 		for (size_t n = 0; n< naCount; n++)
 		{
-			WriteChildNode(na[n], idx);
+			WriteChildNode(na[n], meshIdx);
 		}
 	}
 
@@ -277,23 +286,20 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 								// Currently the engine doesn't support serveral geometries in one node.
 								// So we are assuming one node have one mesh. This has no problem for now.
 
-			for (size_t g = 0; g < gaCount; g++)
+			if (gaCount > 0)
 			{
-				std::string id = ga[g]->getInstanciatedObjectId().toAscii();
+				std::string id = ga[0]->getInstanciatedObjectId().toAscii();
 				IMeshObject* pMeshObject = GetMeshObject(id.c_str());
 				if (pMeshObject)
 				{
 					pMeshObject->SetName(name.c_str());
 					size_t idxTemp = mMeshGroup->AddMesh(pMeshObject, transform, -1);
-					if (g == 0)
+					idx = idxTemp;
+					if (name.find("_PART") == 0)
 					{
-						idx = idxTemp;
-						if (name.find("_PART") == 0)
-						{
-							AUXILIARIES aux;
-							aux.push_back(AUXILIARIES::value_type(name, transform));
-							mMeshGroup->SetAuxiliaries(idx, aux);
-						}
+						AUXILIARIES aux;
+						aux.push_back(AUXILIARIES::value_type(name, transform));
+						mMeshGroup->SetAuxiliaries(idx, aux);
 					}
 				}
 			}
@@ -318,8 +324,12 @@ bool ColladaImporter::writeVisualScene ( const COLLADAFW::VisualScene* visualSce
 			}
 			else if (name.find("_COL") == 0)
 			{
-				ColShape::Enum shape = GetColShape(name.c_str());
-				mCollisions.push_back(std::make_pair(shape, transform));
+				FBColShape::Enum shape = GetColShape(name.c_str());
+				mCollisions.push_back(CollisionInfo());
+				CollisionInfo& ci = mCollisions.back();
+				ci.mCollisionMesh = 0;
+				ci.mColShapeType = shape;
+				ci.mTransform = transform;
 			}
 		}
 
@@ -350,8 +360,8 @@ bool ColladaImporter::writeGeometry ( const COLLADAFW::Geometry* geometry )
 		Mesh* pColladaMesh = dynamic_cast<Mesh*>( const_cast<Geometry*>(geometry) );
 		if (pColladaMesh)
 		{
-			CopyData(pColladaMesh);
-			FeedGeometry(mNumMeshes-1);
+			auto meshInfo = CopyData(pColladaMesh);
+			FeedGeometry(meshInfo);
 		}
 	}
 	return true;
@@ -558,41 +568,33 @@ static std::string GetMaterialFilepath(const char* sz)
 
 }
 
-void ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
+ColladaImporter::MeshInfo* ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
 {
 	using namespace COLLADAFW;
-	mNames.push_back(std::string());
-	mNames.back() = pColladaMesh->getName().c_str();
-	mIDs.push_back(std::string());
-	mIDs.back() = pColladaMesh->getUniqueId().toAscii();
+	mMeshInfos.push_back(MeshInfo());
+	MeshInfo& meshInfo = mMeshInfos.back();
+	meshInfo.mName = pColladaMesh->getName().c_str();
+	meshInfo.mUniqueId = pColladaMesh->getUniqueId().toAscii();
+	
 	// positions
-	mPos.push_back(FLOAT_DATA());
-	MeshVertexData& positions = pColladaMesh->getPositions();
-	GetFloatOrDouble(mPos[mNumMeshes], positions);
-	//normals
-	mNormals.push_back(FLOAT_DATA());
-	MeshVertexData& normals = pColladaMesh->getNormals();
-	GetFloatOrDouble(mNormals[mNumMeshes], normals);
+	GetFloatOrDouble(meshInfo.mPos, pColladaMesh->getPositions());
+	//normals	
+	GetFloatOrDouble(meshInfo.mNormals, pColladaMesh->getNormals());
 	// uvs
-	mUVs.push_back(FLOAT_DATA());
-	MeshVertexData& uvs = pColladaMesh->getUVCoords();
-	GetFloatOrDouble(mUVs[mNumMeshes], uvs);
+	GetFloatOrDouble(meshInfo.mUVs, pColladaMesh->getUVCoords());
 
 	MeshPrimitiveArray& meshPrimitives = pColladaMesh->getMeshPrimitives();
 	size_t pc = meshPrimitives.getCount();
-	mHasUVs.assign(pc, false);
-	mNumPrimitives = pc;
-	mPosIndices.push_back(INDICES_PRIMITIVES());
-	mNormalIndices.push_back(INDICES_PRIMITIVES());
-	mUVIndices.push_back(INDICES_PRIMITIVES());
+	meshInfo.mHasUVs.assign(pc, false);
+	meshInfo.mNumPrimitives = pc;
 	for (size_t i=0; i<pc; i++)
-	{
-		mPosIndices[mNumMeshes].push_back(INDICES());
-		mNormalIndices[mNumMeshes].push_back(INDICES());
-		mUVIndices[mNumMeshes].push_back(INDICES());
-		INDICES& posIndices = mPosIndices[mNumMeshes].back();
-		INDICES& normalIndices = mNormalIndices[mNumMeshes].back();
-		INDICES& uvIndices = mUVIndices[mNumMeshes].back();
+	{		
+		meshInfo.mPosIndices.push_back(INDICES());		
+		meshInfo.mNormalIndices.push_back(INDICES());
+		meshInfo.mUVIndices.push_back(INDICES());
+		INDICES& posIndices = meshInfo.mPosIndices.back();
+		INDICES& normalIndices = meshInfo.mNormalIndices.back();
+		INDICES& uvIndices = meshInfo.mUVIndices.back();
 		MeshPrimitive::PrimitiveType type = meshPrimitives[i]->getPrimitiveType();
 		switch(type)
 		{
@@ -608,8 +610,8 @@ void ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
 				posIndices.assign(pi.getData(), pi.getData() + ic);
 				normalIndices.assign(ni.getData(), ni.getData()+ic);
 				
-				mHasUVs[i]= meshPrimitives[i]->hasUVCoordIndices();
-				if (mHasUVs[i])
+				meshInfo.mHasUVs[i]= meshPrimitives[i]->hasUVCoordIndices();
+				if (meshInfo.mHasUVs[i])
 				{
 					UIntValuesArray& ui = meshPrimitives[i]->getUVCoordIndices(0)->getIndices();
 					size_t ic_u = ui.getCount();
@@ -623,7 +625,6 @@ void ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
 		}
 
 		// material
-		mMaterials.push_back(MATERIALS_PRIMITIVES());
 		if (gFBEnv && gFBEnv->pRenderer)
 		{
 			if (!mMergeMaterialGroups)
@@ -632,14 +633,16 @@ void ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMesh)
 				{
 					std::string file = GetMaterialFilepath( meshPrimitives[i]->getMaterial().c_str() );
 					if (file.empty())
+					{
+						Log("Loading Missing materrial! for %s", file.c_str());
 						file = "es/materials/missing.material";
-					mMaterials[mNumMeshes].push_back(IMaterial::CreateMaterial(file.c_str()));					
+					}
+					meshInfo.mMaterials.push_back(IMaterial::CreateMaterial(file.c_str()));
 				}
 			}
 		}
 	}
-
-	mNumMeshes++;
+	return &meshInfo;
 }
 
 //---------------------------------------------------------------------------
@@ -737,8 +740,16 @@ void AssignProjections(ModelTriangle* pTri, const std::vector<Vec3>& positions)
 }
 
 //---------------------------------------------------------------------------
-void ColladaImporter::FeedGeometry(size_t mesh)
+IMeshObject* ColladaImporter::FeedGeometry(MeshInfo* meshInfo)
 {
+	if (meshInfo->mName.find("_COL_MESH") != std::string::npos)
+	{
+		return FeedGeometry_Collision(meshInfo);
+	}
+
+	if (meshInfo->mPosIndices.empty())
+		return 0;
+
 	unsigned elemOffset[] = {0, 1, 2};
 	if (mSwapYZ)
 	{
@@ -749,16 +760,14 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 	{
 		std::swap(indexOffset[1], indexOffset[2]);
 	}
-
-	if (mesh >= mMeshObjects.size())
-		mMeshObjects.push_back(IMeshObject::CreateMeshObject());
-	mMeshObjects.back()->SetName(mNames[mesh].c_str()); // this will be overwrtten by the node name
-	IMeshObject* pMeshObject = mMeshObjects.back();
-	if (mPosIndices[mesh].empty())
-		return;	
-
+	
+	auto itFind = mMeshObjects.find(meshInfo->mUniqueId);
+	assert(itFind == mMeshObjects.end());
+	auto pMeshObject = IMeshObject::CreateMeshObject();
+	mMeshObjects.insert(std::make_pair(meshInfo->mUniqueId, pMeshObject));
+	pMeshObject->SetName(meshInfo->mName.c_str()); // this will be overwrtten by the node name	
+	 
 	pMeshObject->StartModification();
-
 	std::vector<Vec3> positions;
 	positions.reserve(10000);
 	std::vector<Vec3> normals;
@@ -775,11 +784,11 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 	indices.reserve(10000);
 	std::set<DEFAULT_INPUTS::V_PNT> vertSet; // for building index buffer
 	std::map<DEFAULT_INPUTS::V_PNT, size_t> vertToIdx; // for building index buffer
-	for (int pri=0; pri<mNumPrimitives; pri++)
+	for (int pri=0; pri<meshInfo->mNumPrimitives; pri++)
 	{
-		const INDICES& posIndices = mPosIndices[mesh][pri];
-		const INDICES& norIndices = mNormalIndices[mesh][pri];
-		const INDICES& uvIndices = mUVIndices[mesh][pri];
+		const INDICES& posIndices = meshInfo->mPosIndices[pri];
+		const INDICES& norIndices = meshInfo->mNormalIndices[pri];
+		const INDICES& uvIndices = meshInfo->mUVIndices[pri];
 		size_t numIndices = posIndices.size();
 		if (!numIndices)
 			continue;
@@ -796,15 +805,15 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 					size_t pi = posIndices[i+indexOffset[k]]*3;
 					size_t ni = norIndices[i+indexOffset[k]]*3;
 					Vec2 uvCoord(0, 0);
-					if (mHasUVs[pri])
+					if (meshInfo->mHasUVs[pri])
 					{
 						size_t ui = uvIndices[i+indexOffset[k]]*2;
-						uvCoord = Vec2(mUVs[mesh][ui], mUVs[mesh][ui+1]);
+						uvCoord = Vec2(meshInfo->mUVs[ui], meshInfo->mUVs[ui + 1]);
 					}
 				
 					DEFAULT_INPUTS::V_PNT vert(
-						Vec3(mPos[mesh][pi], mPos[mesh][pi+elemOffset[1]], mPos[mesh][pi+elemOffset[2]]),
-						Vec3(mNormals[mesh][ni], mNormals[mesh][ni+elemOffset[1]], mNormals[mesh][ni+elemOffset[2]]),
+						Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]),
+						Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]),
 						uvCoord);
 					
 					auto ret = vertSet.insert(vert);
@@ -844,14 +853,14 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 					size_t pi = posIndices[i+indexOffset[k]]*3;
 					size_t ni = norIndices[i+indexOffset[k]]*3;
 					Vec2 uvCoord(0, 0);
-					if (mHasUVs[pri])
+					if (meshInfo->mHasUVs[pri])
 					{
 						size_t ui = uvIndices[i+indexOffset[k]]*2;
-						uvCoord = Vec2(mUVs[mesh][ui+0], mUVs[mesh][ui+1]);
+						uvCoord = Vec2(meshInfo->mUVs[ui + 0], meshInfo->mUVs[ui + 1]);
 					}
 				
-					positions.push_back(Vec3(mPos[mesh][pi], mPos[mesh][pi+elemOffset[1]], mPos[mesh][pi+elemOffset[2]]));
-					normals.push_back(Vec3(mNormals[mesh][ni], mNormals[mesh][ni+elemOffset[1]], mNormals[mesh][ni+elemOffset[2]]));
+					positions.push_back(Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));
+					normals.push_back(Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]));
 					uvs.push_back(uvCoord);
 
 					tri.v[k] = positions.size() - 1;
@@ -886,7 +895,7 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 			uvs.clear();
 			triangles.clear();
 
-			pMeshObject->SetMaterialFor(pri, mMaterials[mesh][pri]);
+			pMeshObject->SetMaterialFor(pri, meshInfo->mMaterials[pri]);
 
 			if (mUseIndexBuffer)
 			{
@@ -919,7 +928,10 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 	if (mMergeMaterialGroups)
 	{
 		if (positions.empty())
-			return;
+		{
+			assert(0);
+			return 0;
+		}
 		size_t added = positions.size();
 		assert(added == normals.size());
 		assert(added == uvs.size());
@@ -950,21 +962,86 @@ void ColladaImporter::FeedGeometry(size_t mesh)
 	}
 
 	pMeshObject->EndModification(mKeepMeshdata);
+	return pMeshObject;
+}
+
+IMeshObject* ColladaImporter::FeedGeometry_Collision(MeshInfo* meshInfo)
+{
+	if (meshInfo->mPosIndices.empty())
+		return 0;
+
+	unsigned elemOffset[] = { 0, 1, 2 };
+	if (mSwapYZ)
+	{
+		std::swap(elemOffset[1], elemOffset[2]);
+	}
+	unsigned indexOffset[] = { 0, 1, 2 };
+	if (mOppositeCull)
+	{
+		std::swap(indexOffset[1], indexOffset[2]);
+	}
+
+	auto itfind = mCollisionMeshes.find(meshInfo->mUniqueId);
+	assert(itfind == mCollisionMeshes.end());
+	auto pMeshObject = IMeshObject::CreateMeshObject();
+	mCollisionMeshes.insert(std::make_pair(meshInfo->mUniqueId, pMeshObject));
+	pMeshObject->SetName(meshInfo->mName.c_str()); // this will be overwrtten by the node name
+	pMeshObject->StartModification();
+	std::vector<Vec3> positions;
+	positions.reserve(10000);
+
+	for (int pri = 0; pri<meshInfo->mNumPrimitives; pri++)
+	{
+		const INDICES& posIndices = meshInfo->mPosIndices[pri];		
+		size_t numIndices = posIndices.size();
+		if (!numIndices)
+			continue;
+		assert(numIndices % 3 == 0);
+
+		for (size_t i = 0; i<numIndices; i += 3)
+		{
+			ModelTriangle tri;
+			for (int k = 0; k<3; k++)
+			{
+				size_t pi = posIndices[i + indexOffset[k]] * 3;
+				positions.push_back(Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));
+				tri.v[k] = positions.size() - 1;
+			}
+		}
+	} // pri
+
+	if (positions.empty())
+	{
+		assert(0);
+		return 0;
+	}
+		
+	size_t added = positions.size();
+	pMeshObject->SetPositions(0, &positions[0], added);
+	pMeshObject->EndModification(true);
+	return pMeshObject;
 }
 
 IMeshObject* ColladaImporter::GetMeshObject(const char* id) const
 {
-	FB_FOREACH(it, mIDs)
+	for (auto it : mMeshObjects)
 	{
-		if ((*it)==id)
-		{
-			size_t index = std::distance(mIDs.begin(), it);
-			assert(index < mMeshObjects.size());
-			return mMeshObjects[index];
-		}
+		if (strcmp(it.first.c_str(), id) == 0)
+			return it.second;
 	}
+	for (auto it : mCollisionMeshes)
+	{
+		if (strcmp(it.first.c_str(), id) == 0)
+			return it.second;
+	}
+	
 	assert(0);
 	return 0;
+}
+
+IteratorWrapper<ColladaImporter::MeshObjects> ColladaImporter::GetMeshIterator()
+{
+	return IteratorWrapper<MeshObjects>(mMeshObjects);
 }
 
 IMeshObject* ColladaImporter::GetMeshObject() const
@@ -972,7 +1049,7 @@ IMeshObject* ColladaImporter::GetMeshObject() const
 	if (mMeshObjects.empty())
 		return 0;
 
-	return mMeshObjects[0];
+	return mMeshObjects.begin()->second;
 }
 
 }

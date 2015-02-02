@@ -28,21 +28,27 @@ namespace fastbird
 	int SetTextBoxText(lua_State* L);
 	int SetUIBackground(lua_State* L);
 	int SetUIProperty(lua_State* L);
+	int GetUIProperty(lua_State* L);
 	int RemoveUIEventhandler(lua_State* L);
 	int GetMousePos(lua_State* L);
 	int GetComponentWidth(lua_State* L);
 	int FindAndRememberComponent(lua_State* L);
-	int GetListboxSelectedRows(lua_State* L);
+	int GetListBoxSelectedRows(lua_State* L);
+	int GetListBoxSelectedRowsIds(lua_State* L);
 	int SetActivationUIAnim(lua_State* L);
 	int SetFocusUI(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
 	int GetListBoxItemText(lua_State* L);
 	int AddListItem(lua_State* L);
 	int IsButtonActivated(lua_State* L);
+	int StartUIAnimation(lua_State* L);
+	int StopUIAnimation(lua_State* L);
+	int MathUIHeight(lua_State* L);
 
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, MathUIHeight);
 		LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
 		LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
 		LUA_SETCFUNCTION(mL, SetVisibleComponent);
@@ -62,17 +68,21 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetTextBoxText);
 		LUA_SETCFUNCTION(mL, SetUIBackground);
 		LUA_SETCFUNCTION(mL, SetUIProperty);
+		LUA_SETCFUNCTION(mL, GetUIProperty);
 		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
 		LUA_SETCFUNCTION(mL, GetMousePos);
 		LUA_SETCFUNCTION(mL, GetComponentWidth);
 		LUA_SETCFUNCTION(mL, FindAndRememberComponent);
-		LUA_SETCFUNCTION(mL, GetListboxSelectedRows);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedRows);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedRowsIds);
 		LUA_SETCFUNCTION(mL, SetActivationUIAnim);
 		LUA_SETCFUNCTION(mL, SetFocusUI);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);
 		LUA_SETCFUNCTION(mL, GetListBoxItemText);
 		LUA_SETCFUNCTION(mL, AddListItem);
 		LUA_SETCFUNCTION(mL, IsButtonActivated);
+		LUA_SETCFUNCTION(mL, StartUIAnimation);
+		LUA_SETCFUNCTION(mL, StopUIAnimation);
 	}
 
 	int LoadLuaUI(lua_State* L)
@@ -381,6 +391,26 @@ namespace fastbird
 
 	}
 
+	int GetUIProperty(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		const char* prop = luaL_checkstring(L, 3);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		if (comp)
+		{
+			char buf[256];
+
+			bool result = comp->GetProperty(UIProperty::ConverToEnum(prop), buf);
+			if (result)
+			{
+				lua_pushstring(L, buf);
+				return 1;
+			}
+		}
+		return 0;
+	}
+
 	int RemoveUIEventhandler(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
@@ -436,7 +466,7 @@ namespace fastbird
 		return 1;
 	}
 
-	int GetListboxSelectedRows(lua_State* L)
+	int GetListBoxSelectedRows(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
@@ -465,6 +495,36 @@ namespace fastbird
 		lua_pushnil(L);
 		return 1;
 
+	}
+
+	int GetListBoxSelectedRowsIds(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		ListBox* listbox = dynamic_cast<ListBox*>(comp);
+		if (listbox)
+		{
+			auto rows = listbox->GetSelectedRows();
+			if (rows.empty())
+			{
+				lua_pushnil(L);
+				return 1;
+			}
+			LuaObject luaRows;
+			luaRows.NewTable(L);
+			int i = 1;
+			for (auto& row : rows)
+			{
+				luaRows.SetSeq(i++, listbox->GetRowId(row));
+			}
+			luaRows.PushToStack();
+			return 1;
+		}
+
+		assert(0);
+		lua_pushnil(L);
+		return 1;
 	}
 
 	int SetActivationUIAnim(lua_State* L)
@@ -583,6 +643,58 @@ namespace fastbird
 			return 1;
 		}
 
+		return 0;
+	}
+
+	int StartUIAnimation(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
+		const char* animName = luaL_checkstring(L, 3);
+
+		if (comp)
+		{
+			auto uiAnimation = comp->GetUIAnimation(animName);
+			if (uiAnimation)
+			{
+				uiAnimation->SetActivated(true);
+			}
+		}
+		return 0;
+	}
+
+	int StopUIAnimation(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
+		const char* animName = luaL_checkstring(L, 3);
+
+		if (comp)
+		{
+			auto uiAnimation = comp->GetUIAnimation(animName);
+			if (uiAnimation)
+			{
+				uiAnimation->SetActivated(false);
+			}
+		}
+		return 0;
+	}
+
+	int MathUIHeight(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
+		if (comp)
+		{
+			Container* con = dynamic_cast<Container*>(comp);
+			if (con)
+			{
+				con->MatchHeight();
+			}
+		}
 		return 0;
 	}
 }

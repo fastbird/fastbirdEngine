@@ -181,8 +181,8 @@ Vec3 BVaabb::GetSurfaceFrom(const Vec3& src, Vec3& normal)
 
 void BVaabb::Expand(float e)
 {
-	mAABB.SetMax(mAABB.GetMax() + e);
-	mAABB.SetMin(mAABB.GetMin() - e);
+	mAABB.SetMax(mAABB.GetMax() + Vec3(e));
+	mAABB.SetMin(mAABB.GetMin() - Vec3(e));
 	
 }
 

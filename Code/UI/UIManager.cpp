@@ -22,6 +22,7 @@
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
 #include <Engine/IUIObject.h>
+#include <Engine/IScriptSystem.h>
 
 namespace fastbird
 {
@@ -63,7 +64,7 @@ UIManager::UIManager(lua_State* L)
 	, mPopupCallback(std::function< void(void*) >())
 	, mPopupResult(0)
 	, mL(L)
-	, mPosSizeEventEnabled(true)
+	, mPosSizeEventEnabled(true), mIgnoreInput(false)
 {
 	gpTimer = gEnv->pTimer;
 	gEnv->pEngine->AddInputListener(this,
@@ -399,6 +400,12 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 }
 
 //---------------------------------------------------------------------------
+void UIManager::IgnoreInput(bool ignore)
+{
+	ignore ? mIgnoreInput++ : mIgnoreInput--;
+}
+
+//---------------------------------------------------------------------------
 bool UIManager::AddLuaUI(const char* uiName, LuaObject& data)
 {
 	std::string lower = uiName;
@@ -545,7 +552,11 @@ void UIManager::SetFocusUI(const char* uiName)
 		return;
 	}
 
-	SetFocusUI(it->second[0]);
+	for (auto& ui : it->second)
+	{
+		SetFocusUI(ui);
+	}
+	
 }
 
 bool UIManager::IsFocused(const IWinBase* pWnd) const
@@ -637,6 +648,9 @@ void UIManager::DeleteComponent(IWinBase* com)
 void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 {
 	if (!pMouse->IsValid() && !pKeyboard->IsValid())
+		return;
+
+	if (mIgnoreInput)
 		return;
 
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked())
@@ -838,20 +852,22 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 	auto itFind = mLuaUIs.find(lower);
 	if (itFind == mLuaUIs.end())
 	{
+		lua_Debug ar;
+		lua_getstack(mL, 1, &ar);
+		lua_getinfo(mL, "nSl", &ar);
+		int line = ar.currentline;
+
 		assert(0);
 		return;
 	}
 	for (const auto& comp : itFind->second)
 	{
-		if (comp->GetVisible() != visible)
+		comp->SetVisible(visible);
+		// unregistering 3d uis should be handled in the game code.
+		/*if (comp->GetRender3D() && !visible)
 		{
-			comp->SetVisible(visible);
-			// unregistering 3d uis should be handled in the game code.
-			/*if (comp->GetRender3D() && !visible)
-			{
-				gEnv->pEngine->Unregister3DUIs(comp->GetName());
-			}*/
-		}
+			gEnv->pEngine->Unregister3DUIs(comp->GetName());
+		}*/
 	}
 
 
@@ -930,7 +946,13 @@ void UIManager::OnUIFileChanged(const char* file)
 		return;
 
 	if (uiname.empty())
+	{
+		if (!lower.empty())
+			gEnv->pScriptSystem->RunScript(lower.c_str());
+
 		return;
+	}
+		
 
 
 	auto itFind = mLuaUIs.find(uiname);

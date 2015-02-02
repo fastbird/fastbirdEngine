@@ -396,6 +396,12 @@
     <ClInclude Include="RenderObjects\UI3DObj.h">
       <Filter>RenderObjects</Filter>
     </ClInclude>
+    <ClInclude Include="CollisionInfo.h" />
+    <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="RenderObjects\GeometryRenderer.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="TextTags.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -572,6 +578,10 @@
       <Filter>Animation</Filter>
     </ClCompile>
     <ClCompile Include="RenderObjects\UI3DObj.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="FBCollisionShape.cpp" />
+    <ClCompile Include="RenderObjects\GeometryRenderer.cpp">
       <Filter>RenderObjects</Filter>
     </ClCompile>
   </ItemGroup>

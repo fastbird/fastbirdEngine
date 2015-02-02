@@ -7,9 +7,7 @@ namespace fastbird
 	class Container : public WinBase
 	{
 	public:
-		Container() : mScrollerV(0)
-			, mUseScrollerH(0), mUseScrollerV(0), mChildrenPosSizeChanged(false)
-			, mWndContentUI(0), mChildrenChanged(false){}
+		Container();
 		virtual ~Container();
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
@@ -53,6 +51,7 @@ namespace fastbird
 		bool HasVScroll() { return mScrollerV != 0; }
 		const Vec2& GetScrollOffset() const;
 		void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
+		void MatchHeight();
 		
 	private:
 		friend class WinBase;
@@ -77,6 +76,7 @@ namespace fastbird
 		IWinBase* mWndContentUI;
 		bool mChildrenPosSizeChanged;
 		bool mChildrenChanged;  // only detecting addition. not deletion.
+		bool mMatchHeight;
 
 	};
 }

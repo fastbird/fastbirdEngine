@@ -20,7 +20,6 @@ public:
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();
-	//virtual void SetNPosOffset(const Vec2& offset);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar
@@ -54,6 +53,7 @@ private:
 	ImageBox* mImages[ButtonImages::Num];
 
 	HorizontalGauge* mProgressBar;
+	unsigned mButtonIconSize;
 	bool mInProgress;
 	bool mNoBackgroundBackup;
 	bool mActivated;

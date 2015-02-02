@@ -121,6 +121,7 @@ namespace fastbird
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
+		virtual void GetFractureMeshObjects(const char* daeFilePath, std::vector<IMeshObject*>& objects, bool reload=false) = 0;
 		virtual const IMeshObject* GetMeshArchetype(const std::string& name) const = 0;
 		virtual void ReleaseMeshObject(IMeshObject* p) = 0;
 		virtual void ReleaseMeshGroup(IMeshGroup* p) = 0;

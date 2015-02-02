@@ -91,6 +91,7 @@ namespace fastbird
 		virtual IEventHandler* GetEventHandler() const = 0;
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) = 0;
+		virtual bool GetProperty(UIProperty::Enum prop, char val[]) = 0;
 
 		virtual void Scrolled() = 0;
 		virtual void SetNPosOffset(const Vec2& offset) = 0;

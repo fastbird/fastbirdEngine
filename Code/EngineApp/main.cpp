@@ -1,11 +1,14 @@
 #include "StdAfx.h"
 #include "InputHandler.h"
 #include "CameraMan.h"
+#include "QuickSortTask.h"
+#include "PhyObj.h"
 #include <Engine/IVoxelizer.h>
 #include <Engine/IRenderToTexture.h>
 #include <CommonLib/threads.h>
-#include "QuickSortTask.h"
 #include <CommonLib/Profiler.h>
+#include <Physics/IPhysics.h>
+#include <Physics/RigidBody.h>
 using namespace fastbird;
 
 #define RUN_PARALLEL_EXAMPLE 0
@@ -23,6 +26,7 @@ void UpdateFrame()
 	gEnv->pTimer->Tick();
 	float elapsedTime = gpTimer->GetDeltaTime();
 	gEnv->pEngine->UpdateInput();
+	IPhysics::GetPhysics()->Update(elapsedTime);
 	gCameraMan->Update(elapsedTime);
 	gEnv->pEngine->UpdateFrame(elapsedTime);
 }
@@ -107,7 +111,7 @@ int main()
 	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
 	if (gMeshObject)
 	{
-		gMeshObject->AttachToScene();
+		//gMeshObject->AttachToScene();
 		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
 	}
 	
@@ -126,7 +130,7 @@ int main()
 		gVoxels.push_back((IMeshObject*)voxelObject->Clone());
 		IMeshObject* m = gVoxels.back();
 		m->SetPos(offset + v*2.0f);
-		m->AttachToScene();
+		//m->AttachToScene();
 	}
 	IVoxelizer::DeleteVoxelizer(voxelizer);
 	gEnv->pEngine->ReleaseMeshObject(voxelObject);
@@ -203,6 +207,47 @@ int main()
 	//----------------------------------------------------------------------------
 
 	//----------------------------------------------------------------------------
+	// Physics Test
+	//----------------------------------------------------------------------------
+	std::vector<PhyObj*> PhyObjs;
+	PhyObjs.reserve(200);
+	for (int i = 0; i < 100; i++)
+	{
+		Transformation transform;
+		transform.SetDir(RandomDirection());
+		transform.SetTranslation(Vec3(-20, 0, 0) + Random(Vec3(-10, -10, -10), Vec3(10, 10, 10)));
+		float mass = Random(0.5f, 2.f);
+		PhyObjs.push_back(
+			FB_NEW(PhyObj)(transform, mass, 1, 0xffffffff, 0.01f, 0.01f)
+			);
+		auto obj = PhyObjs.back();
+		obj->SetMeshObj((IMeshObject*)gMeshObject->Clone());
+		obj->CreateRigidBody();
+		auto rigidBody = obj->GetRigidBody();
+		rigidBody->ApplyCentralImpulse(Random(Vec3(10, -10, -10), Vec3(10, 10, 10)));
+		
+	}
+
+	for (int i = 0; i < 100; i++)
+	{
+		Transformation transform;
+		transform.SetDir(RandomDirection());
+		transform.SetTranslation(Vec3(20, 0, 0) + Random(Vec3(-10, -10, -10), Vec3(10, 10, 10)));
+		float mass = Random(0.5f, 2.f);
+		PhyObjs.push_back(
+			FB_NEW(PhyObj)(transform, mass, 1, 0xffffffff, 0.01f, 0.01f)
+			);
+		auto obj = PhyObjs.back();
+		obj->SetMeshObj((IMeshObject*)gMeshObject->Clone());
+		obj->CreateRigidBody();
+		auto rigidBody = obj->GetRigidBody();
+		rigidBody->ApplyCentralImpulse(Random(Vec3(-10, -10, -10), Vec3(-10, 10, 10)));
+
+	}
+	
+	//----------------------------------------------------------------------------
+
+	//----------------------------------------------------------------------------
 	// Entering game loop.
 	//----------------------------------------------------------------------------
 	RunGame();
@@ -213,10 +258,15 @@ int main()
 	{
 		gEnv->pEngine->ReleaseMeshObject(m);
 	}
+	for (auto obj : PhyObjs)
+	{
+		FB_DELETE(obj);
+	}
+	PhyObjs.clear();
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
 	FB_SAFE_DEL(gTaskSchedular);
-
+	IPhysics::GetPhysics()->Deinitilaize();
 	if (gEnv)
 	{
 		Destroy_fastbird_Engine();

@@ -19,6 +19,7 @@ Button::Button()
 	, mChangeImageActivation(false)
 	, mIconText(false)
 	, mNoButton(false)
+	, mButtonIconSize(0)
 {
 	for (int i = 0; i < ButtonImages::Num; i++)
 	{
@@ -67,27 +68,20 @@ Button::~Button()
 void Button::OnPosChanged()
 {
 	__super::OnPosChanged();
-	for (int i = 0; i < ButtonImages::Num; ++i)
+	if (mButtonIconSize>0)
+		AlignIconText();
+	else
 	{
-		if (mImages[i])
+		for (int i = 0; i < ButtonImages::Num; ++i)
 		{
-			mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+			if (mImages[i])
+			{
+				mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+			}
 		}
-	}
+	}	
 		
 }
-
-//void Button::SetNPosOffset(const Vec2& offset)
-//{
-//	__super::SetNPosOffset(offset);
-//
-//	for (int i = 0; i < ButtonImages::Num; ++i)
-//	{
-//		if (mImages[i])
-//			mImages[i]->SetNPosOffset(offset);
-//	}
-//		
-//}
 
 void Button::OnSizeChanged()
 {
@@ -180,7 +174,7 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 	}		
 
 	if (mImages[ButtonImages::FrameImage])
-		mImages[ButtonImages::FrameImage]->GatherVisit(v);	
+		mImages[ButtonImages::FrameImage]->GatherVisit(v);
 
 	__super::GatherVisit(v);
 }
@@ -295,10 +289,50 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   {
 								   mImages[ButtonImages::Image]= CreateImageBox();
 							   }
+							   else
+							   {
+								   FB_DELETE(mImages[ButtonImages::Image]);
+								   mImages[ButtonImages::Image] = CreateImageBox();
+							   }
 							   assert(!mImageAtlas.empty());
 							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   if (mIconText)
+							   {
+								   OnSizeChanged();
+								   AlignIconText();
+							   }
 							   return true;
+	}
+	case UIProperty::REGIONS:
+	{
+							   if (!mImages[ButtonImages::Image])
+							   {
+								   mImages[ButtonImages::Image] = CreateImageBox();
+							   }
+							   else
+							   {
+								   FB_DELETE(mImages[ButtonImages::Image]);
+								   mImages[ButtonImages::Image] = CreateImageBox();
+							   }
+							   assert(!mImageAtlas.empty());
+							   mImages[ButtonImages::Image]->SetProperty(UIProperty::TEXTUREATLAS, mImageAtlas.c_str());
+							   mImages[ButtonImages::Image]->SetProperty(prop, val);
+							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   if (mIconText)
+							   {
+								   OnSizeChanged();
+								   AlignIconText();
+							   }
+							   return true;
+	}
+	case UIProperty::FPS:
+	{
+							if_assert_pass(mImages[ButtonImages::Image])
+							{
+								mImages[ButtonImages::Image]->SetProperty(prop, val);
+							}
+							return true;
 	}
 	case UIProperty::HOVER_IMAGE:
 	{
@@ -500,8 +534,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::BUTTON_ICON_TEXT:
 	{
-										 unsigned buttonIconSize = StringConverter::parseUnsignedInt(val);
-										 if (buttonIconSize == 0)
+										 mButtonIconSize = StringConverter::parseUnsignedInt(val);
+										 if (mButtonIconSize == 0)
 										 {
 											 mIconText = false;
 										 }
@@ -510,7 +544,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											 mIconText = true;
 											 if (mImages[ButtonImages::Image])
 											 {
-												 mImages[ButtonImages::Image]->SetSize(Vec2I(buttonIconSize, buttonIconSize));
+												 mImages[ButtonImages::Image]->SetSize(Vec2I(mButtonIconSize, mButtonIconSize));
 											 }
 											 AlignIconText();
 										 }
@@ -613,6 +647,11 @@ void Button::OnStartUpdate(float elapsedTime)
 	__super::OnStartUpdate(elapsedTime);
 	if (mProgressBar)
 		mProgressBar->OnStartUpdate(elapsedTime);
+	for (int i = 0; i < ButtonImages::Num; ++i)
+	{
+		if (mImages[i])
+			mImages[i]->OnStartUpdate(elapsedTime);
+	}
 }
 
 void Button::StartProgress()

@@ -26,6 +26,7 @@ namespace fastbird
 			BYTE b;
 			BYTE a;
 		};
+		static unsigned FixColorByteOrder(unsigned c);
 
 		Color(){}
 		Color(const Vec3& color)
@@ -46,7 +47,7 @@ namespace fastbird
 		{
 		}
 
-		Color(unsigned int c)
+		explicit Color(unsigned int c)
 		{
 			RGBA* rgba = (RGBA*)&c;
 			mValue.x = rgba->r / 255.0f;

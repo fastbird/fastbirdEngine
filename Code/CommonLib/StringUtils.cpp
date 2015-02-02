@@ -651,6 +651,14 @@ unsigned int StringConverter::parseUnsignedInt(const std::string& val, unsigned 
 
 	return ret;
 }
+
+unsigned int StringConverter::parseHexa(const std::string& val, unsigned int defaultValue)
+{
+	std::stringstream str(val);
+	unsigned int ret = defaultValue;
+	str >> std::hex >> ret;
+	return ret;
+}
 //-----------------------------------------------------------------------
 long StringConverter::parseLong(const std::string& val, long defaultValue)
 {

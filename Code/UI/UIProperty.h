@@ -6,9 +6,14 @@ namespace fastbird
 		enum Enum
 		{
 			POS,
+			POSX,
+			POSY,
 			NPOS,
 			NPOSX,
 			NPOSY,
+			SIZE,
+			SIZEX,
+			SIZEY,
 			OFFSETX,
 			OFFSETY,
 			BACK_COLOR, // vec4
@@ -28,6 +33,8 @@ namespace fastbird
 			ALIGNH,
 			ALIGNV,
 			TEXT,
+			TEXTBOX_MATCH_HEIGHT,
+			MATCH_HEIGHT,
 			TEXTUREATLAS,
 			TEXTURE_FILE,
 			KEEP_IMAGE_RATIO,
@@ -82,16 +89,24 @@ namespace fastbird
 			HIDE_ANIMATION,
 			ENABLED,
 			IMAGE_COLOR_OVERLAY,
+			IMAGE_FIXED_SIZE,
 			NO_BUTTON,
+			CHECKBOX_CHECKED,
+			MODAL,
 
 			COUNT
 		};
 
 		static const char* strings[] = {
 			"POS",
+			"POSX",
+			"POSY",
 			"NPOS",
 			"NPOSX",
 			"NPOSY",
+			"SIZE",
+			"SIZEX",
+			"SIZEY",
 			"OFFSETX",
 			"OFFSETY",
 			"BACK_COLOR", // vec4
@@ -111,6 +126,8 @@ namespace fastbird
 			"ALIGNH",
 			"ALIGNV",
 			"TEXT",
+			"TEXTBOX_MATCH_HEIGHT",
+			"MATCH_HEIGHT",
 			"TEXTUREATLAS",
 			"TEXTURE_FILE",
 			"KEEP_IMAGE_RATIO",
@@ -165,7 +182,10 @@ namespace fastbird
 			"HIDE_ANIMATION",
 			"ENABLED",
 			"IMAGE_COLOR_OVERLAY",
+			"IMAGE_FIXED_SIZE",
 			"NO_BUTTON",
+			"CHECKBOX_CHECKED",
+			"MODAL",
 
 			"COUNT"
 		};

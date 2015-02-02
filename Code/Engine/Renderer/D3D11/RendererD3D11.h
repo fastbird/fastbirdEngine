@@ -114,10 +114,14 @@ namespace fastbird
 		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
-		void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture);
+		virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture);
+		virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
+			const Color& color, ITexture* texture);
 		virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
 			DWORD color, IMaterial* pMat);
 		virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside);
+
+		virtual void DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, IMaterial* mat);
 
 		virtual unsigned GetNumLoadingTexture() const;
 

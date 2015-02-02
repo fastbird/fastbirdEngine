@@ -4,6 +4,7 @@
 #include <Engine/Renderer/RendererStructs.h>
 #include <Engine/Renderer/Shaders/Constants.h>
 #include <Engine/Foundation/Object.h>
+#include <Engine/TextTags.h>
 
 namespace fastbird
 {
@@ -68,6 +69,8 @@ namespace fastbird
 
 		static const unsigned int MAX_BATCH;
 
+		bool ApplyTag(const char* text, int start, int end, float& x, float& y);
+		TextTags::Enum GetTagType(const char* tagStart, int length, char* buf = 0) const;
 		void InternalWrite(float x, float y, float z, const char *text, int count, float spacing = 0);
 		void Flush(int page, const FontVertex* pVertices, unsigned int vertexCount);
 
@@ -75,6 +78,7 @@ namespace fastbird
 		SCharDescr *GetChar(int id);
 
 		int GetTextLength(const char *text);
+		int SkipTags(const char* text, TextTags::Enum* tag = 0);
 		int GetTextChar(const char *text, int pos, int *nextPos = 0);
 		int FindTextChar(const char *text, int start, int length, int ch);
 
@@ -89,6 +93,7 @@ namespace fastbird
 		EFontTextEncoding mEncoding;
 
 		unsigned int mColor;
+		unsigned int mColorBackup;
 
 		std::map<int, SCharDescr*> mChars;
 		std::vector<SmartPtr<ITexture>> mPages;

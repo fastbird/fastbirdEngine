@@ -1,7 +1,9 @@
 #pragma once
 #include <Engine/SceneGraph/SpatialObject.h>
 #include <Engine/Renderer/RendererEnums.h>
+#include <Engine/CollisionInfo.h>
 #include <CommonLib/Math/GeomUtils.h>
+#include <CommonLib/FBColShape.h>
 
 namespace fastbird
 {
@@ -55,7 +57,12 @@ namespace fastbird
 		virtual const AUXILIARIES& GetAuxiliaries() const = 0;
 		virtual void SetAuxiliaries(const AUXILIARIES& aux) = 0;
 		virtual void AddCollisionShape(const COL_SHAPE& data) = 0;
+		virtual void SetCollisionShapes(COLLISION_INFOS& colInfos) = 0;
+		//set mesh at last added collision shape info for meshes in a meshgroup
+		virtual void SetCollisionMesh(IMeshObject* colMesh) = 0;
+		// deprecated
 		virtual void SetCollisionShapes(std::vector< COL_SHAPE >& shapes) = 0;
+		
 
 		virtual void SetUseDynamicVB(BUFFER_TYPE type, bool useDynamicVB) = 0;
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx) = 0;
@@ -63,6 +70,8 @@ namespace fastbird
 
 		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri = 0) const = 0;
 		virtual void MakeMaterialIndependent() = 0;
+
+		virtual void RenderSimple() = 0;
 
 	private:
 		friend class Engine;

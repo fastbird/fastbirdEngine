@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Renderer/RenderToTexture.h>
 #include <Engine/Renderer/Camera.h>
+#include <Engine/Renderer/Renderer.h>
 #include <Engine/SceneGraph/Scene.h>
 #include <Engine/Renderer/Light.h>
 
@@ -64,6 +65,10 @@ void RenderToTexture::Bind(size_t face)
 	Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
 	gFBEnv->pRenderer->SetViewports(&vp, 1);
 	gFBEnv->pRenderer->UpdateFrameConstantsBuffer();
+	if (mEnvTexture)
+	{
+		gFBEnv->pRenderer->SetEnvironmentTextureOverride(mEnvTexture);
+	}
 }
 
 void RenderToTexture::Render(size_t face)
@@ -72,6 +77,13 @@ void RenderToTexture::Render(size_t face)
 		return;
 	D3DEventMarker mark("RenderToTexture");
 	Bind(face);
+
+	/*D3DEventMarker mark("Shadow pass");
+	Renderer* pRenderer = (Renderer*)gFBEnv->pRenderer;
+	pRenderer->BindShadowMap(false);
+	pRenderer->PrepareShadowMapRendering();
+	mScene->Render();
+	pRenderer->EndShadowMapRendering();*/
 
 	mScene->PreRender();
 	mScene->Render();
@@ -89,6 +101,12 @@ void RenderToTexture::Unbind()
 	{
 		if (mLight[i])
 			gFBEnv->pRenderer->SetDirectionalLight(0, i);
+	}
+
+
+	if (mEnvTexture)
+	{
+		gFBEnv->pRenderer->SetEnvironmentTextureOverride(0);
 	}
 }
 
@@ -113,6 +131,11 @@ void RenderToTexture::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKe
 	mCamera->SetCurrent(true);
 	mCamera->OnInputFromEngine(pMouse, pKeyboard);
 	mCamera->SetCurrent(false);
+}
+
+void RenderToTexture::SetEnvTexture(ITexture* texture)
+{
+	mEnvTexture = texture;
 }
 
 }

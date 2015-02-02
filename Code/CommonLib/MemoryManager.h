@@ -9,6 +9,7 @@ namespace fastbird
 {
 	void FBReportMemoryForModule();
 	void* AllocBytes(size_t size, const char* file, size_t line, const char* func);
+	void* AllocBytesAligned(size_t size, size_t align, const char* file, size_t line, const char* func);	
 	void PrepareDelete(void* ptr, const char* file, size_t line, const char* func);
 	void PrepareDeleteArr(void* ptr, const char* file, size_t line, const char* func);
 	template <typename T>
@@ -29,6 +30,14 @@ namespace fastbird
 	}
 
 	template <typename T>
+	inline void DeleteAligned(T* p, const char* file, size_t line, const char* func)
+	{
+		PrepareDelete(p, file, line, func);
+		p->~T();
+		_aligned_free(p);
+	}
+
+	template <typename T>
 	inline void DeleteArr(T* p, const char* file, size_t line, const char* func)
 	{
 		PrepareDeleteArr(p, file, line, func);
@@ -42,6 +51,8 @@ namespace fastbird
 #define FB_ARRDELETE(ptr) fastbird::DeleteArr(ptr, __FILE__, __LINE__, __FUNCTION__)
 #define FB_SAFE_DEL(ptr) (ptr) ? FB_DELETE((ptr)) : 0; (ptr) = 0;
 #define FB_SAFE_ARRDEL(ptr) ptr ? FB_ARRDELETE(ptr) : 0; ptr = 0;
+#define FB_NEW_ALIGNED(T, A) new (fastbird::AllocBytesAligned(sizeof(T), A, __FILE__, __LINE__, __FUNCTION__)) T
+#define FB_DEL_ALIGNED(ptr) (ptr) ? fastbird::DeleteAligned( (ptr), __FILE__, __LINE__, __FUNCTION__) : 0;
 #else
 #define FB_NEW(T) new T
 #define FB_ARRNEW(T, count) new T[count]

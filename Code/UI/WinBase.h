@@ -100,6 +100,7 @@ namespace fastbird
 		bool mHideAnimation;		
 		bool mPivot;
 		bool mRender3D;
+		bool mModal;
 		Vec2I mRenderTargetSize;
 
 		Vec2I mTextGap;
@@ -194,6 +195,7 @@ namespace fastbird
 		virtual IEventHandler* GetEventHandler() const { return (IEventHandler*)this; }
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
 
 		virtual void Scrolled(){}
 		virtual void SetNPosOffset(const Vec2& offset);

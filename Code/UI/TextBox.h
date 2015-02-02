@@ -19,6 +19,7 @@ namespace fastbird
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual void SetText(const wchar_t* szText);
 		void SetNPosOffset(const Vec2& offset);
+		virtual unsigned GetTextBoxHeight() const;
 
 	protected:
 		const static float LEFT_GAP;
@@ -29,6 +30,7 @@ namespace fastbird
 	private:
 		int mCursorPos;
 		bool mPasswd;
+		bool mMatchHeight;
 		ImageBox* mImage;
 	};
 

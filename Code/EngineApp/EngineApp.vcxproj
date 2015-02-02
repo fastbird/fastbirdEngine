@@ -85,6 +85,7 @@
     <ClCompile Include="CameraMan.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PhyObj.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -94,6 +95,7 @@
   <ItemGroup>
     <ClInclude Include="CameraMan.h" />
     <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="PhyObj.h" />
     <ClInclude Include="QuickSortTask.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="TestFunction.h" />
@@ -104,6 +106,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{13356807-5ace-4e77-930a-cb196e3d78c4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Physics\Physics.vcxproj">
+      <Project>{7e8d892e-c60b-4e86-9e83-9cd7a75ec3b7}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

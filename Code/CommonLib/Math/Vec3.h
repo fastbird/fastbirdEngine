@@ -23,7 +23,7 @@ namespace fastbird
 			z = _z;
 		}
 
-		Vec3(float s)
+		explicit Vec3(float s)
 			: x(s), y(s), z(s)
 		{
 		}
@@ -207,6 +207,13 @@ namespace fastbird
                 z * rVector.x - x * rVector.z,
                 x * rVector.y - y * rVector.x);
         }
+
+		inline int MaxAxis() const 
+		{
+			return x < y ? (y < z ? 2 : 1) : (x <z ? 2 : 0);
+		}
+
+		void SafeNormalize();
 
 		inline float Normalize()
 		{

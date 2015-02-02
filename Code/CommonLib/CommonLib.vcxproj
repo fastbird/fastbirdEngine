@@ -132,10 +132,9 @@
     <ClInclude Include="AsyncObjects.h" />
     <ClInclude Include="BlockFrequent.h" />
     <ClInclude Include="CircularBuffer.h" />
-    <ClInclude Include="CollisionShape.h" />
     <ClInclude Include="Collision\GeomCollisions.h" />
     <ClInclude Include="Color.h" />
-    <ClInclude Include="ColShape.h" />
+    <ClInclude Include="FBColShape.h" />
     <ClInclude Include="CommonLib.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Curve.h" />
@@ -193,7 +192,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AsyncObjects.cpp" />
-    <ClCompile Include="CollisionShape.cpp" />
     <ClCompile Include="Collision\GeomCollisions.cpp" />
     <ClCompile Include="Color.cpp" />
     <ClCompile Include="CommonLib.cpp" />

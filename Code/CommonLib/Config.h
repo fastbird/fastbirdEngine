@@ -23,6 +23,7 @@
 //-------------------------------------------------------------------------------------------------
 #define CLASS_DECLSPEC_ENGINE __declspec(dllimport)
 #define CLASS_DECLSPEC_UI __declspec(dllimport)
+#define CLASS_DECLSPEC_PHYSICS __declspec(dllimport)
 
 #if defined(_ENGINE)
 	#undef CLASS_DECLSPEC_ENGINE
@@ -30,6 +31,9 @@
 #elif defined(_UI)
 	#undef CLASS_DECLSPEC_UI
 	#define CLASS_DECLSPEC_UI __declspec(dllexport)
+#elif defined(_PHYSICS)
+#undef CLASS_DECLSPEC_PHYSICS
+#define CLASS_DECLSPEC_PHYSICS __declspec(dllexport)
 #endif
 
 // need to check object.h file in engine project

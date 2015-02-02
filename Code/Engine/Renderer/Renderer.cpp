@@ -3,6 +3,7 @@
 #include <Engine/Renderer/Font.h>
 #include <Engine/Renderer/Material.h>
 #include <Engine/RenderObjects/DebugHud.h>
+#include <Engine/RenderObjects/GeometryRenderer.h>
 #include <Engine/Renderer/RenderToTexture.h>
 #include <Engine/ILight.h>
 #include <Engine/RenderObjects/SkySphere.h>
@@ -43,6 +44,7 @@ namespace fastbird
 		, m_fChromaticAberration(0.5f)
 		, m_fStarInclination(HALF_PI)
 		, mCurRTSize(100, 100)
+		, mGlowSet(false)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -120,6 +122,7 @@ void Renderer::Deinit()
 	mDirectionalLightOverride[0] = 0;
 	mDirectionalLightOverride[1] = 0;
 	mDebugHud = 0;
+	mGeomRenderer = 0;
 	mFont = 0;
 	mMissingMaterial = 0;
 	mEnvironmentTexture = 0;
@@ -416,6 +419,7 @@ bool Renderer::OnPrepared()
 	mFont->SetTextEncoding(IFont::UTF16);
 
 	mDebugHud = FB_NEW(DebugHud);
+	mGeomRenderer = FB_NEW(GeometryRenderer);
 
 	if (gFBEnv->pConsole)
 		gFBEnv->pConsole->Init();
@@ -597,6 +601,16 @@ void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color)
 	DrawText(pos, AnsiToWide(text, strlen(text)), color);
 }
 
+void Renderer::Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color)
+{
+	mDebugHud->Draw3DText(worldpos, text, color);
+}
+
+void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& color)
+{
+	Draw3DText(worldpos, AnsiToWide(text), color);
+}
+
 void Renderer::DrawLine(const Vec3& start, const Vec3& end, 
 	const Color& color0, const Color& color1)
 {
@@ -615,11 +629,38 @@ void Renderer::DrawLine(const Vec2I& start, const Vec2I& end,
 	mDebugHud->DrawLine(start, end, color0, color0);
 }
 
+void Renderer::DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
+	const char* texture, bool textureFlow)
+{
+	mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
+}
+
+
+void Renderer::DrawSphere(const Vec3& pos, float radius, const Color& color)
+{
+	mDebugHud->DrawSphere(pos, radius, color);
+}
+void Renderer::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha)
+{
+	mDebugHud->DrawBox(boxMin, boxMax, color, alpha);
+}
+void Renderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha)
+{
+	mDebugHud->DrawTriangle(a, b, c, color, alpha);
+}
+
+void Renderer::RenderGeoms()
+{
+	mGeomRenderer->PreRender();
+	mGeomRenderer->Render();
+}
+
 void Renderer::RenderDebugHud()
 {
 	D3DEventMarker devent("RenderDebugHud");
 	bool backup = GetWireframe();
 	SetWireframe(false);
+	mDebugHud->PreRender();
 	mDebugHud->Render();
 	SetWireframe(backup);
 }
@@ -859,13 +900,28 @@ void Renderer::SetEnvironmentTexture(ITexture* pTexture)
 {
 	mEnvironmentTexture = pTexture;
 	mEnvironmentTexture->SetShaderStage(BINDING_SHADER_PS);
-	/*SAMPLER_DESC desc;
-	desc.AddressU = TEXTURE_ADDRESS_CLAMP;
-	desc.AddressV = TEXTURE_ADDRESS_CLAMP;
-	desc.Filter = TEXTURE_FILTER_ANISOTROPIC;
-	mEnvironmentTexture->SetSamplerDesc(desc);*/
 	mEnvironmentTexture->SetSlot(4); // hardcoded environment slot.
 	mEnvironmentTexture->Bind();
+}
+
+void Renderer::SetEnvironmentTextureOverride(ITexture* texture)
+{
+	mEnvironmentTextureOverride = texture;
+	if (mEnvironmentTextureOverride)
+	{
+		mEnvironmentTextureOverride->SetShaderStage(BINDING_SHADER_PS);
+		mEnvironmentTextureOverride->SetSlot(4);
+		mEnvironmentTextureOverride->Bind();
+	}
+	else
+	{
+		if (mEnvironmentTexture)
+		{
+			mEnvironmentTexture->SetShaderStage(BINDING_SHADER_PS);
+			mEnvironmentTexture->SetSlot(4); // hardcoded environment slot.
+			mEnvironmentTexture->Bind();
+		}
+	}
 }
 
 //---------------------------------------------------------------------------

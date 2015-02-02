@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx;h</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IPhysics.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="fbMotionState.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="mathConv.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBody.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ColShapes.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletDebugDraw.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IDebugDrawer.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RotationInfo.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBodyImpl.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IPhysicsInterface.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RayResult.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="fbMotionState.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DLLMain.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletDebugDraw.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ColShapes.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBodyImpl.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -8,6 +8,14 @@
 namespace fastbird
 {
 
+Container::Container()
+	: mScrollerV(0)
+	, mUseScrollerH(0), mUseScrollerV(0), mChildrenPosSizeChanged(false)
+	, mWndContentUI(0), mChildrenChanged(false), mMatchHeight(false)
+{
+
+}
+
 Container::~Container()
 {
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
@@ -330,6 +338,11 @@ Vec2 Container::ConvertChildSizeToWorldCoord(const fastbird::Vec2& size) const
 Vec2 Container::ConvertWorldSizeToParentCoord(const fastbird::Vec2& worldSize) const
 {
 	Vec2 wc = worldSize / mNSize;
+	if (mNSize.x == 0.0f)
+		wc.x = worldSize.x;
+	if (mNSize.y == 0.0f)
+		wc.y = worldSize.y;
+
 	if (mParent)
 		wc = mParent->ConvertWorldSizeToParentCoord(wc);
 
@@ -348,6 +361,14 @@ Vec2 Container::ConvertChildPosToWorldCoord(const fastbird::Vec2& pos) const
 Vec2 Container::ConvertWorldPosToParentCoord(const fastbird::Vec2& worldPos) const
 {
 	Vec2 pp = (worldPos - (mWNPos+mWNPosOffset)) / mWNSize;
+	if (mWNSize.x == 0.0f)
+	{
+		pp.x = worldPos.x;
+	}
+	if (mWNSize.y == 0.0f)
+	{
+		pp.y = worldPos.y;
+	}
 
 	return pp; // pos in parent space
 }
@@ -465,6 +486,10 @@ bool Container::SetVisible(bool visible)
 			var->OnParentVisibleChanged(visible);
 		}
 	}
+	if (mMatchHeight)
+	{
+		MatchHeight();
+	}
 	return changed;
 }
 
@@ -500,10 +525,15 @@ void Container::Scrolled()
 		float curPos = -offset.y / maxOffset;
 		float nPosY = movable * curPos;
 		mScrollerV->SetNPosY(nPosY);
-		for (auto item : mChildren)
 		{
-			if (item->GetType() != ComponentType::Scroller)
-				item->SetNPosOffset(offset);
+			for (auto child : mChildren)
+			{
+				if (child->GetType() != ComponentType::Scroller)
+				{
+					child->SetNPosOffset(offset);
+				}
+					
+			}
 		}
 	}
 }
@@ -513,11 +543,6 @@ void Container::SetNPosOffset(const Vec2& offset)
 	// scrollbar offset
 	assert(GetType() != ComponentType::Scroller);
 	__super::SetNPosOffset(offset);
-	/*for (auto item : mChildren)
-	{
-		if (item->GetType() != ComponentType::Scroller)
-			item->SetNPosOffset(offset);
-	}*/
 }
 
 void Container::SetAnimNPosOffset(const Vec2& offset)
@@ -604,7 +629,51 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 			}
 		}
 	}
+
+	if (mMatchHeight)
+	{
+		MatchHeight();
+	}
+
 	return true;
+}
+
+void Container::MatchHeight()
+{
+	if (!mMatchHeight)
+		return;
+
+	float contentWNEnd = 0.f;
+	for (auto i : mChildren)
+	{
+		WinBase* pWinBase = (WinBase*)i;
+		if (pWinBase->GetVisible())
+		{
+			float wnEnd = pWinBase->GetWNPos().y + pWinBase->GetWNSize().y;
+			contentWNEnd = std::max(wnEnd, contentWNEnd);
+		}
+	}
+
+	float sizeY = contentWNEnd - mWNPos.y;
+	if (mParent)
+	{
+		float nsizeY = ConvertWorldSizeToParentCoord(Vec2(sizeY, sizeY)).y;
+		SetNSizeY(nsizeY);
+	}
+	else
+	{
+		SetNSizeY(sizeY);
+	}
+
+	for (auto i : mChildren)
+	{
+		WinBase* pWinBase = (WinBase*)i;
+		if (pWinBase->GetVisible())
+		{
+			pWinBase->UpdateWorldPos();
+		}
+		pWinBase->RefreshScissorRects();
+	}
 }
 
 bool Container::SetProperty(UIProperty::Enum prop, const char* val)
@@ -624,6 +693,12 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 								  bool b = StringConverter::parseBool(val);
 								  mUseScrollerH = b;
 								  return true;
+	}
+	case UIProperty::MATCH_HEIGHT:
+	{
+									 // call MathUIHeight() lua function instead of using this property.
+							//		 mMatchHeight = StringConverter::parseBool(val);
+									 return true;
 	}
 
 	}

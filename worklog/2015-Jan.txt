@@ -1,0 +1,251 @@
+Dev log : [[Main Page|2015-01]] | [[201412|2014-12]] | [[201411|2014-11]] | [[201410|2014-10]] | [[201409|2014-09]] | [[201408|2014-08]] | [[201407|2014-07]] | [[201406|2014-06]] | [[201405|2014-05]] | [[201404|2014-04]] | [[old_log]] | [[DevLog|Write]] | [[Neat stuff]]
+
+== 2015-01-05 Integrating Bullet Physics ==
+* Engine
+** Integrating Bullet physics.
+
+== 2015-01-06 Physics, new game concepts, uis. ==
+
+* Engine
+** Added Physics DLL project
+** Aligned memory allocation : Use FB_NEW_ALIGNED(...) / FB_DEL_ALIGNED(...)
+** Mouse button improvements
+
+* Game
+** Refresh officer list. Cleaned code for populating officer list ui.
+** Added PhysicsComp
+** Added 'mass' and 'force' columns to ShipDb
+** Added Morale and Fatigue concepts
+** Added early promotion concept
+** Implementing physical movement into EngineComp
+** Added full-scale attack concept.
+** Added GameTimer.
+** Inheriting command
+** Added event box with graphics
+
+* UI
+** Animating image inside button comps
+** ListBox
+*** Merging columns
+*** Setting user id to each rows
+** Added material color animation
+** Added property : IMAGE_FIXED_SIZE, CHECKBOX_CHECKED, MODAL
+
+* Utils
+** Added lua interactive
+
+* +4862, -760
+
+== 2015-01-07 Applying torque ==
+
+* Engine
+** Bullet Physics debug drawer
+** 3D Text Renderer
+** Rotating RigidBodies using torque according to the user input.
+
+* Game
+** Calculating force and mass of modular ship
+
+* +1072, -66
+
+== 2015-01-09 Support TriangleMesh collision shape. ==
+
+* Engine
+** Support for mesh collision shapes.
+*** Importing mesh collision shape from collada file.
+*** converting it to the btBvhTriangleMeshShape(for static) or btGImpactMeshShape(for dynamic)
+** Cleaned collada importer
+** Fixed DebugHud bug when the number of lines exceed 500
+
+* Game
+** Moved physics update timing after user input.
+** Now actor PostInit() is called after the transform is set to the SpatialComp
+** Fixed crash while exiting the program. Caused by deleting an sub-actor while deleting all actors.
+** Moved physics rigid body update time to after the EngineComp is updated.
+
+* +759,	292
+
+[[File:colmesh.jpg]]<br>
+Defining coaser detailed collision mesh for asteroid. Now engine can import this information to generate mesh collision shape as well as other types(Box, Sphere and Compound)
+
+[[File:bvhcol.jpg]]<br>
+now exact collision detection is possible. ( lines are drawn without depth culling, so looks have many vertices.)
+
+== 2015-01-10 Reporting collision events ==
+
+* Engine
+** Integrated serveral physics interfaces into one(ITransformExchanger, IColShapeProvider and ICollisionEventHander)
+** Saving user ptr into physics instances.
+** Notifying collision events to the application.
+
+* Game
+** Adding new components in RunTime.
+** Detaching modules when it collided with static rigid bodies.(working on)
+
+* +385, -150
+
+== 2015-01-12 Ship crash ==
+* Engine
+** Collision filtering
+
+* Game
+** Camera Shaking
+** An option for effects not to inherit parent's rotation
+** Rigid body feedback for engine output effects
+** Added 'material' amd 'materialParams' for ModelComponent
+** Modular ship destruction
+
+* +842, -160
+
+<html><iframe width="640" height="360" src="//www.youtube.com/embed/fJrLiynLB6I" frameborder="0" allowfullscreen></iframe></html>
+
+== 2015-01-13 Fracturing ==
+
+*Engine
+** Support fracture meshes.
+*** Import fracture meshes
+*** Generate fracture rigid bodies.
+** Interface for convex collision shapes
+** Changed fastbird::RigidBody to be inherited from btRigidBody.
+
+* Game
+** Added FractureComp - mapping physical rigid bodies and graphicals
+** Runtime removal of components
+
+* +739, -357
+
+[[File:fracture.jpg]]<br>
+Now detached modules are fractured and scattered.
+
+== 2015-01-14 Multiple modular ship support ==
+
+* Physics
+** Gluing debris - break when certain threshold is exceeded.
+** Ray test supported
+
+* Game
+** Multiple modular ship support.
+** Replace ray test to use Bullet Physics library.
+
+* +516	-174
+
+[[File:multiple_modularship.jpg]]<br>
+Now can have multiple modular ships.
+
+== 2015-01-15 Space Station as a modular ship ==
+
+Game
+** Debug Draw : ActorId - 'GameDebugFlag 1'
+** Fixed Ray Cast bug
+** Save/Load individual actors to a file.
+** Added Space Station composed with serveral modules
+** Fixed loading carrier modules containing eagles
+** Added two movement mode - Destination mode and Direction mode
+*** It is convinient to use Destination mode when the ship need to arrive at certain position,
+And Direction mode is for user controlling ships and avoiding obstacles.
+** Modules that are not reachable to the core module will be automatically detached from the modular ship.
+
+* Physics
+** Cleaned User Ptr related codes.
+** Direction alignmend codes moved to game project
+
+* +731, -250
+
+[[File:docking_01.jpg]]<br>
+Approaching to the space station.
+
+[[File:docking_02.jpg]]<br>
+Trying to docking. (conceptual) If the ship approaches to the space station with high speed, modules collided will be fractured. Need to be careful.
+Since player can control forward/backward speed, rotation and horizontal/vertical parallel speed, I'm expecting docking might be fun.
+
+== 2015-01-17 Space station ui ==
+
+* Engine
+** Thick textured line rendering
+** Added Geometry Renderer
+** Overriding environment map for render targets.
+
+* Game
+** Improved horizontal/vertical movement of ships with mouse middle btn.
+** Adding space station ui
+** Displaying direction of ships on HUD
+** Displaying docking position of space station
+
+* +1385, -135
+
+== 2015-01-19 Space Station UI ==
+
+* Game
+** Working on the docking ui.
+
+* +606, -40
+
+== 2015-01-20 Space Station UI ==
+
+* Game
+** Station UI
+*** Administration
+* +647, -50
+
+== 2015-01-21 Inline text coloring ==
+
+* Game
+** Station UI - Missions
+
+* UI
+** inline text coloring. use : [$cr0xffffffff$]blahblah[$cr$]
+
+* +462,	-76
+
+== 2015-01-22 Mission - gathering minerals ==
+
+Game
+** Working on a mission - gathering minerals.
+** Setting linear/angular damping
+** Now boid simulatino is using physics.(need to work more)
+** EngineComp : Locking Rotation, Disable physical movement,
+** Reviving mining movement with physics.
+
+* Physics
+** Ray testing with a certain obj
+** Reporting close objects
+
+* UI
+** Supporting inline icon insertion. use : [$img<AtlaRegionName>$]
+** Added 'MATCH_HEIGHT' property
+
+* +1070, -245
+
+== 2015-01-30 FlockSystem and Physics ==
+
+* Engine
+** DebugRenderer - fixed bugs for Sphere and Box shapes.
+
+* Game
+** Fixed bug for stretching space particles.
+** Handling 'Docking Position' mesh auxiliaries - for asteroid's mining pos.
+** Added independent boid concept
+** Following formation
+** Fixed engine thrust effects
+** Flock system and Physics.
+** Recreating physics rigid bodies.
+** Cleaned code for drills
+** Mission : Protect merchant fleet. - handling neutral actors.
+
+* Physics
+** Getting overlapped objects in an AABB
+
+* UI
+** fixed a bug related to Match Height.
+
+* +2358,	-552
+
+== 2015-01-31 Instant Spot ==
+
+* Game
+** Pirates can interupt jumping fleets.
+** Random pirates fleet generation
+** Added a concept 'Instant Spot'
+** Working on a mission 'Protect Merchant Fleet'
+
+* +1161, -66

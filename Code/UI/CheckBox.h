@@ -27,6 +27,8 @@ public:
 
 	void OnMouseHover(void* arg);
 
+	virtual bool SetProperty(UIProperty::Enum, const char*);
+
 private:
 	void UpdateImage();
 

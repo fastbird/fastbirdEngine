@@ -40,7 +40,7 @@ inline void LogLastError(const char* file, int line, const char* function)
 		FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		(LPTSTR)&lpMsgBuf, 0, NULL);
 
-	sprintf_s(buf, 2048, "%s(%d): %s() - %s - %s \n", file, line, function, lpMsgBuf);
+	sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, lpMsgBuf);
 	OutputDebugStringA(buf);
 
 	LocalFree(lpMsgBuf);

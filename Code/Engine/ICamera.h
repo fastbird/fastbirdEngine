@@ -54,6 +54,7 @@ namespace fastbird
 
 		virtual bool IsCulled(BoundingVolume* pBV) const = 0;
 		virtual Ray3 ScreenPosToRay(long x, long y) = 0;
+		virtual Vec2I WorldToScreen(const Vec3& worldPos) const = 0;
 
 		virtual void SetYZSwap(bool enable) = 0;
 		

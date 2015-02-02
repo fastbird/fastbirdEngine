@@ -14,6 +14,7 @@ namespace fastbird
 		: mCursorPos(0)
 		, mPasswd(false)
 		, mImage(0)
+		, mMatchHeight(false)
 	{
 		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
@@ -39,6 +40,8 @@ namespace fastbird
 			mImage->GatherVisit(v);
 
 		v.push_back(mUIObject);
+
+		__super::GatherVisit(v);
 	}
 
 	void TextBox::SetNPosOffset(const Vec2& offset)
@@ -66,7 +69,11 @@ namespace fastbird
 	void TextBox::SetText(const wchar_t* szText)
 	{
 		__super::SetText(szText);
-
+		if (mMatchHeight)
+		{
+			unsigned height = GetTextBoxHeight();
+			SetSizeY(height);
+		}
 	}
 
 	void TextBox::CalcTextWidth()
@@ -125,9 +132,27 @@ namespace fastbird
 											 return true;
 		}
 
+		case UIProperty::TEXTBOX_MATCH_HEIGHT:
+		{
+												 mMatchHeight = StringConverter::parseBool(val);
+												 if (mMatchHeight)
+												 {
+													 unsigned height = GetTextBoxHeight();
+													 SetSizeY(height);
+												 }
+												 return true;
+		}
+
 		}
 		
 		
 		return __super::SetProperty(prop, val);
 	}
+
+
+	unsigned TextBox::GetTextBoxHeight() const
+	{
+		return (unsigned)(mTextSize * (mNumTextLines));
+	}
+
 }

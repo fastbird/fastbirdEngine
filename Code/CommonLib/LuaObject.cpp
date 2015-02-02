@@ -203,6 +203,8 @@ bool LuaObject::Call()
 	return true;
 }
 
+// You need to push the function manually before call this function
+// Push this LuaObject(Function) and then push args
 bool LuaObject::CallWithManualArgs(unsigned numArgs, unsigned numRets)
 {
 	LUA_PCALL_RET_FALSE(mL, numArgs, numRets);
@@ -407,6 +409,15 @@ void LuaObject::SetSeq(int n, float num)
 	LUA_STACK_WATCHER w(mL);
 	PushToStack();
 	lua_pushnumber(mL, num);
+	lua_rawseti(mL, -2, n);
+	lua_pop(mL, 1);
+}
+
+void LuaObject::SetSeq(int n, const Vec4& val)
+{
+	LUA_STACK_WATCHER w(mL);
+	PushToStack();
+	luaU_push<Vec4>(mL, val);
 	lua_rawseti(mL, -2, n);
 	lua_pop(mL, 1);
 }

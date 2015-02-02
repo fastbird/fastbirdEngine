@@ -22,7 +22,8 @@ SpatialObject::~SpatialObject()
 	mDestructing = true;
 	while (!mCameraTargetingMe.empty())
 	{
-		mCameraTargetingMe[0]->SetTarget(0);
+		auto it = mCameraTargetingMe.end() - 1;
+		(*it)->SetTarget(0);
 	}
 
 	for (auto scene : mScenes)

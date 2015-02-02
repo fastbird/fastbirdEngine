@@ -2,11 +2,16 @@
 
 #include <algorithm>
 #include <math.h>
+namespace fastbird
+{
+	bool IsEqual(float a, float b, float epsilon = 0.00001f);
+}
+#include <CommonLib/Math/Vec3.h>
+#include <CommonLib/Math/Vec4.h>
 #include <CommonLib/Math/Mat33.h>
 #include <CommonLib/Math/Mat44.h>
-#include <CommonLib/Math/Vec3.h>
+
 #include <CommonLib/Math/Vec3I.h>
-#include <CommonLib/Math/Vec4.h>
 #include <CommonLib/Math/Vec2.h>
 #include <CommonLib/Math/Vec2I.h>
 #include <CommonLib/Math/Quat.h>
@@ -14,6 +19,7 @@
 #include <CommonLib/Math/AABB.h>
 #include <CommonLib/Math/Random.h>
 #include <CommonLib/Math/Ray3.h>
+#include <CommonLib/Math/Transformation.h>
 
 
 
@@ -174,11 +180,6 @@ namespace fastbird
 		return true;
 	}
 
-	inline bool IsEqual(float a, float b, float epsilon = 0.00001f)
-	{
-		return abs(a-b) < epsilon;
-	}
-
 	inline float Step(float edge, float s)
 	{
 		return edge > s ? 0.0f : 1.0f;
@@ -268,6 +269,11 @@ namespace fastbird
 	inline Vec2 Abs(const Vec2& v)
 	{
 		return Vec2(abs(v.x), abs(v.y));
+	}
+
+	inline Vec3 Abs(const Vec3& v)
+	{
+		return Vec3(abs(v.x), abs(v.y), abs(v.z));
 	}
 
 	// 0 <= r < infinite

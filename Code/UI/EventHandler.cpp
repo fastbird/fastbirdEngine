@@ -82,6 +82,7 @@ bool EventHandler::OnEvent(EVENT e)
 			assert(it->second.IsFunction());
 
 			lua_State* L = IUIManager::GetUIManager().GetLuaState();
+			LUA_STACK_CLIPPER lsc(L);
 			it->second.PushToStack();
 			WinBase* pComp = dynamic_cast<WinBase*>(this);
 			lua_pushstring(L, pComp->GetName());

@@ -1,0 +1,127 @@
+# How to Physics
+
+fastbird engine은 Bullet Physics 라이브러리 v2.82버전을 사용하여 물리 시뮬레이션을 처리합니다.
+아래 다이어그램은 Bullet physics와 fastbird engine의 관계를 나타냅니다.
+
+(그림)
+
+fastbird engine 사용자는 Physics.dll의 인터페이스들을 사용하여 모든 물리 시뮬레이션을 수행합니다. 
+이 문서에서는 Physics.dll의 인터페이스와 블렌더에서 충돌 쉐입 설정 방법에 대해서 설명합니다.
+
+##주요 인터페이스
+
+`class IPhysics` : 매인 인터페이스로 Physics.dll의 초기화, 해제, RigidBody 생성 등을 담당합니다.
+`class IPhysicsInterface` : 사용자가 Physics.dll과 정보 교환을 위해 사용하는 인터페이스입니다. 이 클래스를 상속받은 사용자 클래스가 물리엔진과의 포지션 교환, 충돌 쉐입 정보 제공, 질량이나 댐핑등의 정보 제공을 담당합니다.
+
+IPhysics와 IPhysicsInterface 순서대로 살펴보겠습니다.
+
+## IPhysics
+	class CLASS_DECLSPEC_PHYSICS IPhysics
+	{
+	public:
+		static IPhysics* GetPhysics();
+		static const size_t MemAlign = 16;
+
+		virtual ~IPhysics(){}
+
+		virtual void Deinitilaize() = 0;
+		virtual void Update(float dt) = 0;
+
+		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj) = 0;
+		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider, float mass) = 0;
+		virtual RigidBody* CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass) = 0;
+		virtual void DeleteRigidBody(RigidBody* rigidBody) = 0;
+
+		virtual void SetDebugDrawer(IDebugDrawer* debugDrawer) = 0;
+		virtual void SetDebugMode(int debugMode) = 0;
+
+		virtual void AttachBodies(const std::vector<RigidBody*>& bodies) = 0;
+		
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result) = 0;
+		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
+		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result) = 0;
+
+		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;
+	};
+
+`GetPhysics()` 는 IPhysics의 인스턴스를 리턴합니다. 최초로 호출 했을 경우에는 Bullet physics를 초기화합니다.
+`Deinitilaize()` 는 사용했던 메모리를 정리해줍니다. 게임이 종료될 때 한번 호출해 주면 됩니다.
+`Update(...)` 은 물리 시뮬레이션을 실행합니다. 매 프레임 호출해주면 됩니다.
+`CreateRigidBody(...)`는 fastbird::RigidBody를 만들어줍니다.  충돌 쉐입이 메시에 정의되어 있을 경우(대부분의 경우)는 IPhysicsInterface*와 float을 인자로 받는 함수를 사용합니다.
+`DeleteRigidBody(...)`는 만들었던 fastbird::RigidBody의 인스턴스를 삭제합니다.
+`SetDebugDrawer(...)`은 IDebugDrawer의 구현을 세팅해줍니다. IDebugDrawer를 구현하게 되면 현재 시뮬레이션 상태를 가시화 할 수 있어서 디버깅에 도움이 됩니다.
+`SetDebugMode(...)` 0이 아닌 값으로 설정하면 디버그 드로잉을 시작합니다.
+`AttachBodies(...)`는 넘어온 RigidBody들의 현재 위치를 확인하여 붙어있을 경우에 Constraint를 생성하여 결합시켜줍니다. 파괴 시뮬레이션을 위해 주로 사용합니다.
+`RayTest...(...)`은 물체들과 레이 충돌 검사를 실시합니다. Picking등에 사용됩니다.
+`GetAABBOverlaps(...)` 은 주어진 aabb 안에 들어있는 물리 오브젝트들을 리턴합니다.
+
+
+## IPhysicsInterface
+사용자는 IPhysicsInterface를 상속받아 구현을 제공해야합니다. 이렇게 구현된 클래스는  fastbird::IPhysics::CreateRigidBody()함수의 인자로 넘겨주게 됩니다. 아래는 IPhysicsInterface에 대한 설명입니다.
+
+	class IPhysicsInterface
+	{
+	public:
+
+		virtual void* GetUserPtr() const = 0;
+
+		// col shape provider
+		virtual unsigned GetNumColShapes() const = 0;
+		virtual CollisionShape* GetShape(unsigned i) = 0;
+		virtual float GetMass() const = 0;
+		virtual int GetCollisionGroup() const = 0;
+		virtual int GetCollisionMask() const = 0;
+
+		virtual float GetLinearDamping() const = 0;
+		virtual float GetAngularDamping() const = 0;
+
+		// Transform exchanger
+		virtual const Vec3& GetPos() = 0;
+		virtual const Quat& GetRot() = 0;
+		virtual void SetPosRot(const Vec3& pos, const Quat& rot) = 0;
+
+		// Events Handler
+		struct CollisionContactInfo
+		{
+			CollisionContactInfo(void* objB, const Vec3& worldpos, const Vec3& worldNormal, float impulse, int idxA, int idxB)
+			:mObjB(objB), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
+			{
+
+			}
+			void* mObjB;
+			Vec3 mWorldPos;
+			const Vec3 mWorldNormal;
+			float mImpulse;
+			int mIdxA;
+			int mIdxB;
+		};
+		virtual void OnCollision(const CollisionContactInfo& contactInfo) = 0;
+		virtual void AddCloseObjects(void* gamePtr) = 0;
+	};
+
+상속받은 클래스에서...
+
+`GetUserPtr()`은 fastbird::RigidBody가 저장할 포인터를 제공합니다. 게임 오브젝트 클래스의 포인터가 적당합니다.
+`GetNumColShapes()`는 충돌 쉐입의 개수를 리턴합니다. 2개 이상이 존재할 경우 모든 충돌 쉐입이 결합된 Compound Shape이 사용됩니다.
+`GetShape(...)`은 충돌 쉐입을 리턴합니다.
+`GetMass()`, `GetCollisionGroup()`, `GetCollisionMask()`, `GetLinearDamping()`, `GetAngularDamping()` 는 각각 함수 이름이 나타내는 정보를 리턴합니다.
+`GetPos()`, `GetRot()`는 (물리 물체에 상응하는) 그래픽 물체의 현재 위치와 회전을 리턴해야합니다. 주로 물리 오브젝트가 최초로 생성될 때 한번만 사용됩니다.
+`SetPosRot(...)`은 물리 시뮬레이션 결과를 받아 그래픽 물체에 세팅해줍니다.
+`OnCollision(...)`은 충돌 발생시에 호출되며 충돌 정보를 받아서 그에 맞는 처리를 해줍니다. (파괴하거나, HP를 깍거나...)
+`AddCloseObjects(...)`는 Broadphase에서 감지된 근처의 오브젝트를 보고해줍니다.
+
+## Collision Shape 정의하기
+Collision Shape은 콜라다(.dae)파일에 있는 정보를 사용합니다. 3D 저작도구 블렌더에서 충돌 쉐입을 정의할 수 있습니다. 아래는 한 함선에 정의된 충돌 쉐입 정보입니다.
+
+(그림)
+
+충돌 쉐입은 블렌더에서 Cube-Empty 혹은 Sphere-Empty 오브젝트를 이용하여 정의합니다. fastbird engine의 Collada Importer는 모양을 구분하기 위해서 노드의 이름을 사용합니다. CUBE shape을 위해서는 _COL_CUBE_blahblah를 노드이름으로 세팅해주고 SPHERE shape을 위해서는 _COL_SPHERE_blahblah로 설정해주면 됩니다. _COL은 꼭 붙여주어야 하는 접두사입니다.
+위 함선의 경우에는 3개의 충돌 쉐입을 가지고 있습니다. 이 충돌 쉐입 정보는 fastbird::IEngine::GetMeshObject(const char* daefile...)함수로 Collada를 임포트를 할 때 함께 읽혀지고  `fastbird::IMeshObject::GetNumCollisionShapes()`와 `fastbird::IMeshObject::GetCollisionShape()`함수를 이용하여 Physics 프로젝트로 넘겨주게 됩니다.
+
+(그림 col_define_process.gif)
+
+static object(mass가 0)의 경우에는 Convex Shape을 사용할 수 있습니다. Converx Shape을 사용하기 위해서는 블렌더에서 노드 이름을 _COL_MESH로 설정해 주면 됩니다. 이 충돌 메시는 그래픽 메시보다 정점 수를 줄여주는 것이 좋습니다.
+
+(그림 colmesh)
+
+아래 동영상은 이 시스템을 이용하여 충돌과 파괴를 구현한 모습입니다.

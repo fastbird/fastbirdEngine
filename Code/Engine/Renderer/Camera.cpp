@@ -335,6 +335,7 @@ bool Camera::IsCulled(BoundingVolume* pBV) const
 Ray3 Camera::ScreenPosToRay(long x, long y)
 {
 	Update();
+
 	float fx = 2.0f * x / mWidth - 1.0f;
 	float fy = 1.0f - 2.0f * y / mHeight;
 	Vec3 screenPos((float)fx, (float)fy, -1.0f);
@@ -346,6 +347,16 @@ Ray3 Camera::ScreenPosToRay(long x, long y)
 
 	Ray3 ray(origin, dir);
 	return ray;
+}
+
+Vec2I Camera::WorldToScreen(const Vec3& worldPos) const
+{
+	auto projPos = mViewProjMat * Vec4(worldPos, 1);
+	float x = projPos.x / projPos.w;
+	float y = projPos.y / projPos.w;
+	int ix = Round((x * .5f + .5f) * mWidth);
+	int iy = Round((-y*.5f + .5f) * mHeight);
+	return Vec2I(ix, iy);
 }
 
 //----------------------------------------------------------------------------

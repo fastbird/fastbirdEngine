@@ -42,6 +42,30 @@ public:
 		unsigned mColore;
 	};
 
+	struct Sphere
+	{
+		Vec3 mPos;
+		float mRadius;
+		Color mColor;
+	};
+
+	struct Box
+	{
+		Vec3 mPos;
+		Vec3 mExtent;
+		Color mColor;
+		float mAlpha;
+	};
+
+	struct Triangle
+	{
+		Vec3 a;
+		Vec3 b;
+		Vec3 c;
+		Color mColor;
+		float mAlpha;
+	};
+
 	/*struct HdrLine
 	{
 		Vec3 mStart;
@@ -69,6 +93,7 @@ public:
 	void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color);
 	void DrawText(const Vec2I& pos, WCHAR* text, const Color& color);
+	void Draw3DText(const Vec3& pos, WCHAR* text, const Color& color);
 	// if wolrdspace is false, it's in the screenspace 0~width, 0~height
 	void DrawLine(const Vec3& start, const Vec3& end, const Color& color0,
 		const Color& color1);
@@ -76,6 +101,9 @@ public:
 		const Color& color1);
 	void DrawLine(const Vec2I& start, const Vec2I& end, const Color& color0, 
 		const Color& color1);
+	void DrawSphere(const Vec3& pos, float radius, const Color& color);
+	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha);
+	void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
 
 private:
 
@@ -110,11 +138,19 @@ private:
 	OBJECT_CONSTANTS mObjectConstants;
 	OBJECT_CONSTANTS mObjectConstants_WorldLine;
 
+	std::vector<Sphere> mSpheres;
+	std::vector<Box> mBoxes;
+	std::vector<Triangle> mTriangles;
+
 	SmartPtr<IShader> mLineShader;
 	SmartPtr<IInputLayout> mInputLayout;
 	/*SmartPtr<IInputLayout> mHdrInputLayout;*/
 	SmartPtr<IVertexBuffer> mVertexBuffer;
 	/*SmartPtr<IVertexBuffer> mHdrVertexBuffer;*/
+	SmartPtr<IMaterial> mTriMaterial;
+
+	IMeshObject* mSphereMesh;
+	IMeshObject* mBoxMesh;
 };
 
 }

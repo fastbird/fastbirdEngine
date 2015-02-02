@@ -4,11 +4,11 @@
 
 #include <Engine/Foundation/Object.h>
 #include <CommonLib/Math/Transformation.h>
-#include <CommonLib/CollisionShape.h>
 
 namespace fastbird
 {
 	class AnimationData;
+	class FBCollisionShape;
 	class SpatialObject : public Object
 	{
 	public:
@@ -43,7 +43,7 @@ namespace fastbird
 		// own
 		virtual unsigned GetNumCollisionShapes() const { return 0; }
 		virtual bool HasCollisionShapes() const { return false; }
-		virtual const CollisionShape* GetCollisionShape(unsigned idx) const { assert(0); return 0; }
+		virtual const FBCollisionShape* GetCollisionShape(unsigned idx) const { assert(0); return 0; }
 		// Only called when broad collision is true.
 		virtual bool CheckNarrowCollision(fastbird::BoundingVolume* pBV) const { return true; }
 		virtual Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const { return Ray3::IResult(false, 0.f); }

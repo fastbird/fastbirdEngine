@@ -438,7 +438,7 @@ namespace fastbird
 					errno_t err = fopen_s(&file, filepath.c_str(), "a+");
 					if (err)
 						canOpen = false;
-					else
+					else if (file)
 						fclose(file);
 
 					if (canOpen)
@@ -739,7 +739,7 @@ namespace fastbird
 		}
 		SmartPtr<IColladaImporter> pColladaImporter = IColladaImporter::CreateColladaImporter();
 		pColladaImporter->ImportCollada(filepath.c_str(), desc.yzSwap, desc.oppositeCull, desc.useIndexBuffer,
-			desc.mergeMaterialGroups, true, desc.generateTangent, false);
+			desc.mergeMaterialGroups, desc.keepMeshData, desc.generateTangent, false);
 		IMeshObject* pMeshObject = pColladaImporter->GetMeshObject();
 		
 		if (pMeshObject)
@@ -774,6 +774,55 @@ namespace fastbird
 		assert(pMeshGroup);
 		mMeshGroups[filepath] = pMeshGroup;
 		return (IMeshGroup*)pMeshGroup->Clone();
+	}
+
+	//---------------------------------------------------------------------------
+	void Engine::GetFractureMeshObjects(const char* daeFilePath, std::vector<IMeshObject*>& objects, bool reload )
+	{
+		objects.clear();
+		assert(daeFilePath);
+		std::string filepath = daeFilePath;
+		ToLowerCase(filepath);
+		if (gFBEnv->pConsole->GetEngineCommand()->e_NoMeshLoad)
+		{
+			filepath = "es/objects/defaultCube.dae";
+		}
+		if (!reload)
+		{
+			auto it = mFractureObjects.find(filepath);
+			if (it != mFractureObjects.end())
+			{
+				for (auto& data : it->second)
+				{
+					objects.push_back((IMeshObject*)data->Clone());
+				}
+				return;
+			}
+		}
+
+		MeshImportDesc desc;
+		SmartPtr<IColladaImporter> pColladaImporter = IColladaImporter::CreateColladaImporter();
+		pColladaImporter->ImportCollada(filepath.c_str(), desc.yzSwap, desc.oppositeCull, desc.useIndexBuffer,
+			desc.mergeMaterialGroups, true, desc.generateTangent, false);
+		auto iterator = pColladaImporter->GetMeshIterator();
+		mFractureObjects[filepath].clear();
+		while (iterator.HasMoreElement())
+		{
+			auto data = iterator.GetNext();
+			mFractureObjects[filepath].push_back(data.second);
+		}
+		
+		if (!mFractureObjects[filepath].empty())
+		{
+			for (auto& data : mFractureObjects[filepath])
+			{
+				objects.push_back((IMeshObject*)data->Clone());
+			}
+		}
+		else
+		{
+			Log("Mesh %s is not found!", filepath.c_str());
+		}
 	}
 
 	const IMeshObject* Engine::GetMeshArchetype(const std::string& name) const
@@ -1204,7 +1253,8 @@ namespace fastbird
 			ProcessFileChange();
 		}
 
-		CloseHandle(mOverlapped.hEvent);
+		if (mOverlapped.hEvent)
+			CloseHandle(mOverlapped.hEvent);
 		CleanFileChangeMonitor();
 		SetEvent(mFileChangeThreadFinished);
 	}
@@ -1377,7 +1427,7 @@ namespace fastbird
 			FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			(LPTSTR) &lpMsgBuf, 0, NULL );
 
-		sprintf_s(buf, 2048, "%s(%d): %s() - %s - %s \n", file, line, function, lpMsgBuf);
+		sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, lpMsgBuf);
 		OutputDebugString(buf);
 
 

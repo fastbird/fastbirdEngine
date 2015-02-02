@@ -1,0 +1,16 @@
+<Material>
+	<ShaderFile>Code/Engine/Renderer/Shaders/HighlightMesh.hlsl</ShaderFile>
+	<MaterialConstants>
+		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<MaterialParameters>
+	</MaterialParameters>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="2" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

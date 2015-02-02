@@ -135,6 +135,7 @@ namespace fastbird
             0.0 if the value could not be parsed, otherwise the numeric version of the String.
         */
         static unsigned int parseUnsignedInt(const std::string& val, unsigned int defaultValue = 0);
+		static unsigned int parseHexa(const std::string& val, unsigned int defaultValue = 0);
         /** Converts a std::string to a whole number. 
         @returns
             0.0 if the value could not be parsed, otherwise the numeric version of the String.

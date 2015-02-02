@@ -89,6 +89,7 @@ namespace fastbird
 		void SetSeq(int n, const char* str);
 		void SetSeq(int n, unsigned num);
 		void SetSeq(int n, float num);
+		void SetSeq(int n, const Vec4& val);
 		template <class T>
 		void SetSeqTemplate(int n, T v)
 		{

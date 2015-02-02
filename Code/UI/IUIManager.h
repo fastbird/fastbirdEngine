@@ -56,6 +56,7 @@ namespace fastbird
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
 
 		virtual void CloneUI(const char* uiname, const char* newUIname) = 0;
+		virtual void IgnoreInput(bool ignore) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

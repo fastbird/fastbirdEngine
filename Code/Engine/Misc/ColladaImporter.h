@@ -1,7 +1,8 @@
 #pragma once
 #include <Engine/IColladaImporter.h>
 #include <Engine/Animation/AnimationData.h>
-#include <CommonLib/ColShape.h>
+#include <Engine/CollisionInfo.h>
+#include <CommonLib/FBColShape.h>
 #include <COLLADAFWIWriter.h>
 namespace COLLADAFW
 {
@@ -19,12 +20,75 @@ namespace fastbird
 	// Write collada data to our format.
 	class ColladaImporter : public IColladaImporter, public COLLADAFW::IWriter
 	{
+		typedef std::vector<float> FLOAT_DATA;
+		MeshObjects mMeshObjects;
+		MeshObjects mCollisionMeshes;
+		SmartPtr<IMeshGroup> mMeshGroup;
+		std::string mFilepath;
+		bool mSwapYZ;
+		bool mOppositeCull;
+		bool mUseIndexBuffer;
+		bool mMergeMaterialGroups;
+		bool mGenerateTangent;
+		bool mUseMeshGroup;
+		bool mKeepMeshdata;
+
+		/*size_t mNumMeshes;
+		std::vector<std::string> mNames;
+		std::vector<std::string> mIDs;
+		std::vector<FLOAT_DATA> mPos;*/
+		typedef std::vector<UINT> INDICES;
+		typedef std::vector< INDICES > INDICES_PRIMITIVES;// indices per primitives
+		//std::vector< INDICES_PRIMITIVES > mPosIndices; // indices per mesh
+		//std::vector<FLOAT_DATA> mNormals;
+		//std::vector< INDICES_PRIMITIVES > mNormalIndices; // indices per mesh
+		//std::vector< FLOAT_DATA > mUVs;
+		//std::vector< INDICES_PRIMITIVES > mUVIndices; // indices per mesh
+		typedef std::vector< SmartPtr<IMaterial> > MATERIALS_PRIMITIVES; // materials per primitives
+		//std::vector< MATERIALS_PRIMITIVES > mMaterials; // materials per mesh
+
+		AUXILIARIES mAuxil;
+
+		struct MeshInfo
+		{
+			std::string mName;
+			std::string mUniqueId;
+			FLOAT_DATA mPos;
+			FLOAT_DATA mNormals;
+			FLOAT_DATA mUVs;
+			std::vector<bool> mHasUVs;
+			int mNumPrimitives;
+			// per primitives
+			INDICES_PRIMITIVES mPosIndices;
+			INDICES_PRIMITIVES mNormalIndices;
+			INDICES_PRIMITIVES mUVIndices;
+			MATERIALS_PRIMITIVES mMaterials;
+
+		};
+		std::vector<MeshInfo> mMeshInfos;
+
+		COLLISION_INFOS mCollisions;
+		std::map<std::string, AnimationData> mAnimData;
+
+		//------------------------------------------------------------------
+		// Private functions
+		//------------------------------------------------------------------
+		ColladaImporter(const ColladaImporter& other);
+		const ColladaImporter& operator= (const ColladaImporter& other);
+		MeshInfo* CopyData(COLLADAFW::Mesh* pColladaMesh);
+		void GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::FloatOrDoubleArray& src);
+		IMeshObject* FeedGeometry(MeshInfo* meshInfo);
+		IMeshObject* FeedGeometry_Collision(MeshInfo* meshInfo);
+		IIndexBuffer* CreateIndexBuffer(UINT* indices, size_t num);
+		void WriteChildNode(const COLLADAFW::Node* node, size_t parent);
+
 	public:
 		ColladaImporter();
 		virtual ~ColladaImporter();
 
 		bool ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, 
 			bool useIndexBuffer, bool mergeMaterialGroups, bool keepMeshData, bool generateTangent, bool meshGroup);
+		virtual IteratorWrapper<MeshObjects> GetMeshIterator();
 		virtual IMeshObject* GetMeshObject() const;
 		virtual IMeshObject* GetMeshObject(const char* id) const;
 		virtual IMeshGroup* GetMeshGroup() const { return mMeshGroup; }
@@ -105,52 +169,6 @@ namespace fastbird
 
 		/** When this method is called, the writer must write the kinematics scene. 
 		@return The writer should return true, if writing succeeded, false otherwise.*/
-		virtual bool writeKinematicsScene( const COLLADAFW::KinematicsScene* kinematicsScene );
-
-	private:
-		ColladaImporter( const ColladaImporter& other );
-		const ColladaImporter& operator= ( const ColladaImporter& other );
-
-	protected:
-		void CopyData(COLLADAFW::Mesh* pColladaMesh);
-		typedef std::vector<float> FLOAT_DATA;
-		void GetFloatOrDouble(FLOAT_DATA& dest, COLLADAFW::FloatOrDoubleArray& src);
-		void FeedGeometry(size_t index);
-		IIndexBuffer* CreateIndexBuffer(UINT* indices, size_t num);
-		void WriteChildNode(const COLLADAFW::Node* node, size_t parent);
-
-	protected:
-		std::vector<SmartPtr<IMeshObject>> mMeshObjects;
-		SmartPtr<IMeshGroup> mMeshGroup;
-		std::string mFilepath;
-		bool mSwapYZ;
-		bool mOppositeCull;
-		bool mUseIndexBuffer;
-		std::vector<bool> mHasUVs;
-		int mNumPrimitives; // maybe same with the number of materials;
-		bool mMergeMaterialGroups;
-		bool mGenerateTangent;
-		bool mUseMeshGroup;
-		bool mKeepMeshdata;
-
-		size_t mNumMeshes;
-		std::vector<std::string> mNames;
-		std::vector<std::string> mIDs;
-		std::vector<FLOAT_DATA> mPos;
-		typedef std::vector<UINT> INDICES;
-		typedef std::vector< INDICES > INDICES_PRIMITIVES;// indices per primitives
-		std::vector< INDICES_PRIMITIVES > mPosIndices; // indices per mesh
-		std::vector<FLOAT_DATA> mNormals;
-		std::vector< INDICES_PRIMITIVES > mNormalIndices; // indices per mesh
-		std::vector< FLOAT_DATA > mUVs;
-		std::vector< INDICES_PRIMITIVES > mUVIndices; // indices per mesh
-		typedef std::vector< SmartPtr<IMaterial> > MATERIALS_PRIMITIVES; // materials per primitives
-		std::vector< MATERIALS_PRIMITIVES > mMaterials; // materials per mesh
-
-		AUXILIARIES mAuxil;
-		
-		typedef std::vector< std::pair<ColShape::Enum, Transformation > > COLLISION_SHAPES;
-		COLLISION_SHAPES mCollisions;
-		std::map<std::string, AnimationData> mAnimData;
+		virtual bool writeKinematicsScene( const COLLADAFW::KinematicsScene* kinematicsScene );		
 	};
 }

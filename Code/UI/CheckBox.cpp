@@ -82,4 +82,21 @@ void CheckBox::OnMouseHover(void* arg)
 {
 	SetCursor(WinBase::mCursorOver);
 }
+
+
+bool CheckBox::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	switch (prop)
+	{
+	case UIProperty::CHECKBOX_CHECKED:
+	{
+										 bool checked = StringConverter::parseBool(val);
+										 SetCheck(checked);
+										 return true;
+	}
+	}
+
+	return __super::SetProperty(prop, val);
+}
+
 }

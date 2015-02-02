@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Renderer/Shaders/Module.hlsl</ShaderFile>
+	<ShaderFile>Data/shaders/Module.hlsl</ShaderFile>
 	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>

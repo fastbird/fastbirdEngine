@@ -91,6 +91,8 @@ namespace fastbird
 	{
 		CHECK(!GThreadDesc);
 		CHECK(mThreadDesc);
+		if (!mThreadDesc)
+			return;
 
 		mThreadDesc->ThreadID = GetCurrentThreadId();
 		GThreadDesc = mThreadDesc;

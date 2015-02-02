@@ -62,6 +62,8 @@ namespace fastbird
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
 
+		virtual void GetFractureMeshObjects(const char* daeFilePath, std::vector<IMeshObject*>& objects, bool reload = false);
+
 		virtual const IMeshObject* GetMeshArchetype(const std::string& name) const;
 		virtual void ReleaseMeshObject(IMeshObject* p);
 		virtual void ReleaseMeshGroup(IMeshGroup* p);
@@ -173,6 +175,7 @@ namespace fastbird
 
 		std::map<std::string, SmartPtr<IMeshObject> > mMeshObjects;
 		std::map<std::string, SmartPtr<IMeshGroup> > mMeshGroups;
+		std::map<std::string, std::vector< SmartPtr<IMeshObject> >  > mFractureObjects;
 
 		std::set<std::string> mChangedFiles;
 		float mLastChangedTime;

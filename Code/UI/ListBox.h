@@ -52,7 +52,7 @@ public:
 	virtual void SetItemTexture(size_t row, size_t col, const char* texturePath);
 	virtual void SetTextureAtlas(const char* atlas);
 	virtual void SetItemTextureRegion(size_t row, size_t col, const char* region);
-	virtual void SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize);
+	virtual IWinBase* SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize);
 	virtual std::string GetSelectedString();
 	typedef std::vector<size_t> SelectedRows;
 	virtual const SelectedRows& GetSelectedRows() const { return mSelectedRows; }
@@ -70,8 +70,11 @@ public:
 	virtual void ClearSelection();
 	virtual bool IsSelected(unsigned row);
 	virtual unsigned GetNumRows();
-	virtual void MakeMergedRow(unsigned row);
+	virtual IWinBase* MakeMergedRow(unsigned row);
 	virtual void SetRowId(unsigned row, unsigned id);
+	virtual unsigned GetRowId(unsigned row);
+	virtual unsigned FindRowWithId(unsigned id);
+	virtual void DeleteRow(unsigned row);
 
 private:
 

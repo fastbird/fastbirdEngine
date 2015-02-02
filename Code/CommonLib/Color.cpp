@@ -13,4 +13,14 @@ const Color Color::Yellow(1, 1, 0);
 const Color Color::Blue(0, 0, 1);
 const Color Color::SkyBlue(0, 0.5f, 1);
 const Color Color::Zero(0, 0, 0, 0);
+
+unsigned Color::FixColorByteOrder(unsigned c)
+{
+	RGBA color;
+	color.r = c >> 24;
+	color.g = c >> 16 & 0xff;
+	color.b = c >> 8 & 0xff;
+	color.a = c & 0xff;
+	return *(unsigned*)&color;
+}
 }

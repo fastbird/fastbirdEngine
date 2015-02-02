@@ -15,15 +15,18 @@ namespace fastbird
 		virtual void AddScale(float time, const Vec2& scale);
 		virtual void AddTextColor(float time, const Color& color);
 		virtual void AddBackColor(float time, const Color& color);
+		virtual void AddMaterialColor(float time, const Color& color);
 		virtual void Update(float deltaTime);
 		virtual const Vec2& GetCurrentPos() const;
 		virtual const Vec2& GetCurrentScale() const;
 		virtual const Color& GetCurrentTextColor() const;
 		virtual const Color& GetCurrentBackColor() const;
+		virtual const Color& GetCurrentMaterialColor() const;
 		virtual bool HasScaleAnim() const;
 		virtual bool HasPosAnim() const;
 		virtual bool HasTextColorAnim() const;
 		virtual bool HasBackColorAnim() const;
+		virtual bool HasMaterialColorAnim() const;
 		virtual void LoadFromXML(tinyxml2::XMLElement* elem);
 		virtual void ParseLua(LuaObject& data);
 		virtual bool IsActivated() const { return mActivate; }
@@ -68,6 +71,7 @@ namespace fastbird
 		VectorMap<float, Vec2> mKeyScale;
 		VectorMap<float, Color> mKeyTextColor;
 		VectorMap<float, Color> mKeyBackColor;
+		VectorMap<float, Color> mKeyMaterialColor;
 		float mLength;
 		float mCurTime;
 		bool mLoop;
@@ -76,6 +80,7 @@ namespace fastbird
 		Vec2 mCurScale;
 		Color mCurTextColor;
 		Color mCurBackColor;
+		Color mCurMaterialColor;
 		
 	};
 }

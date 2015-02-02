@@ -56,19 +56,18 @@ extern "C" {
 #include <zlib.h>
 
 #include <CommonLib/CommonLib.h>
+#include <CommonLib/Math/fbMath.h>
 #include <CommonLib/Color.h>
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/tinyxml2.h>
 #include <CommonLib/threads.h>
 #include <CommonLib/Timer.h>
 #include <CommonLib/LuaUtils.h>
-#include <CommonLib/Math/fbMath.h>
 #include <CommonLib/Math/Transformation.h>
 #include <CommonLib/Unicode.h>
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/Profiler.h>
-#include <CommonLib/CollisionShape.h>
 #include <CommonLib/FileSystem.h>
 
 #include <Engine/IEngine.h>

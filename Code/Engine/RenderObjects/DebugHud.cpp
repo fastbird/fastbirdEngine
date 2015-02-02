@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/RenderObjects/DebugHud.h>
 #include <Engine/ICamera.h>
+#include <Engine/IMeshObject.h>
 
 using namespace fastbird;
 
@@ -39,7 +40,16 @@ DebugHud::DebugHud()
 	DEPTH_STENCIL_DESC ddesc;
 	ddesc.DepthEnable = false;
 	SetDepthStencilState(ddesc);
+
+	RASTERIZER_DESC desc;
+	SetRasterizerState(desc);
+
 	gFBEnv->pEngine->GetScene()->AddListener(this);
+	
+	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugSphere.dae");
+	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugBox.dae");
+
+	//mTriMaterial = IMaterial::CreateMaterial("es/material/DebugTriangle.material");
 }
 
 //----------------------------------------------------------------------------
@@ -47,6 +57,9 @@ DebugHud::~DebugHud()
 {
 	if (gFBEnv->pEngine->GetScene())
 		gFBEnv->pEngine->GetScene()->RemoveListener(this);
+
+	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
+	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
 }
 
 //----------------------------------------------------------------------------
@@ -65,6 +78,16 @@ void DebugHud::DrawText(const Vec2I& pos, WCHAR* text,
 	const Color& color)
 {
 	mTexts.push(TextData(pos, text, color, 0.f));	
+}
+
+void DebugHud::Draw3DText(const Vec3& pos, WCHAR* text, const Color& color)
+{
+	auto cam = gFBEnv->pRenderer->GetCamera();
+	if (cam)
+	{
+		Vec2I spos = cam->WorldToScreen(pos);
+		mTexts.push(TextData(spos, text, color, 0.f));
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -107,9 +130,39 @@ void DebugHud::DrawLine(const Vec2I& start, const Vec2I& end,
 	mScreenLines.push_back(line);
 }
 
+void DebugHud::DrawSphere(const Vec3& pos, float radius, const Color& color)
+{
+	mSpheres.push_back(Sphere());
+	auto& s = mSpheres.back();
+	s.mPos = pos;
+	s.mRadius = radius;
+	s.mColor = color;
+}
+void DebugHud::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha)
+{
+	mBoxes.push_back(Box());
+	auto& b = mBoxes.back();
+	b.mPos = (boxMin + boxMax) * .5f;
+	b.mExtent = boxMax - b.mPos;
+	b.mColor = color;
+	b.mAlpha = alpha;
+}
+void DebugHud::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha)
+{
+	mTriangles.push_back(Triangle());
+	auto& t = mTriangles.back();
+	t.a = a;
+	t.b = b;
+	t.c = c;
+	t.mColor = color;
+	t.mAlpha = alpha;
+}
+
 //----------------------------------------------------------------------------
 void DebugHud::PreRender()
 {
+	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+		return;
 	mObjectConstants_WorldLine.gWorldViewProj = 
 		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 }
@@ -158,6 +211,8 @@ void DebugHud::OnBeforeRenderingTransparents()
 //----------------------------------------------------------------------------
 void DebugHud::Render()
 {
+	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+		return;
 	D3DEventMarker mark("DebugHud::Render()");
 	//PreRender();
 
@@ -171,18 +226,19 @@ void DebugHud::Render()
 	unsigned lineCount = mWorldLines.size();
 	if (lineCount > 0)
 	{
-		while(lineCount)
+		unsigned processedLines = 0;
+		while(lineCount > processedLines)
 		{			
 			MapData mapped = mVertexBuffer->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
 			if (mapped.pData)
 			{
 				unsigned totalVertexCount = lineCount * 2;		
 				unsigned numVertex = 0;
-				for (numVertex = 0; numVertex < totalVertexCount && numVertex < MAX_LINE_VERTEX; numVertex+=2)
+				for (numVertex = 0; processedLines < lineCount && numVertex < MAX_LINE_VERTEX; numVertex+=2)
 				{
 					unsigned base = numVertex*LINE_STRIDE;
-					memcpy((char*)mapped.pData + base, &mWorldLines[numVertex/2], LINE_STRIDE*2);
-					lineCount--;
+					memcpy((char*)mapped.pData + base, &mWorldLines[processedLines], LINE_STRIDE*2);
+					processedLines++;
 				}
 				mVertexBuffer->Unmap();
 				mVertexBuffer->Bind();
@@ -192,6 +248,11 @@ void DebugHud::Render()
 		mWorldLines.clear();
 	}
 
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
+		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		0.f, 1.0f);
+	mObjectConstants.gWorld.MakeIdentity();
 	pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 	lineCount = mScreenLines.size();
 	if (lineCount > 0)
@@ -257,6 +318,60 @@ void DebugHud::Render()
 			
 		}
 	}
+
+	if (mSphereMesh)
+	{
+		D3DEventMarker mark("DebugHud::Render - Spheres()");
+		gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		for (auto& sphere : mSpheres)
+		{
+			Transformation t;
+			t.SetScale(Vec3(sphere.mRadius, sphere.mRadius, sphere.mRadius));
+			t.SetTranslation(sphere.mPos);
+			t.GetHomogeneous(mObjectConstants.gWorld);
+			// only world are available. other matrix will be calculated in the shader
+			//mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
+			//mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetProjMat() * mObjectConstants.gWorldView;
+			gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+			mSphereMesh->GetMaterial()->SetMaterialParameters(0, sphere.mColor.GetVec4());
+			mSphereMesh->GetMaterial()->Bind(true);
+			mSphereMesh->RenderSimple();
+		}
+	}
+	mSpheres.clear();
+
+	if (mBoxMesh)
+	{
+		D3DEventMarker mark("DebugHud::Render - Boxes()");
+		gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		for (auto& box : mBoxes)
+		{
+			Transformation t;
+			t.SetScale(box.mExtent);
+			t.SetTranslation(box.mPos);
+			t.GetHomogeneous(mObjectConstants.gWorld);
+
+			gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+			Vec4 color = box.mColor.GetVec4();
+			color.w = box.mAlpha;
+			mBoxMesh->GetMaterial()->SetMaterialParameters(0, color);
+			mBoxMesh->GetMaterial()->Bind(true);
+			mBoxMesh->RenderSimple();
+		}
+	}
+	mBoxes.clear();
+
+	if (mTriMaterial)
+	{
+		for (auto& tri : mTriangles)
+		{
+			Vec4 color = tri.mColor.GetVec4();
+			color.w = tri.mAlpha;
+			gFBEnv->pRenderer->DrawTriangleNow(tri.a, tri.b, tri.c, color, mTriMaterial);
+		}
+	}	
+	mTriangles.clear();
+
 	PostRender();
 }
 //----------------------------------------------------------------------------
