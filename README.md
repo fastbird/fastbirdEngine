@@ -45,7 +45,7 @@ How-tos
 Development Log
 ------------------
 You can find the development log at the site below
-* https://www.youtube.com/user/jungwan82 (video logs)
+* https://www.youtube.com/user/jungwan82 (video logs and demonstrations)
 * http://jungwan.net/w/ (text logs)
 
 
