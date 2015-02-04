@@ -41,6 +41,8 @@ How-tos
  
 * Texture manipulation reference : https://github.com/fastbird/fastbirdEngine/wiki/Texture-manipulation-reference
 
+* more : https://github.com/fastbird/fastbirdEngine/wiki
+
 
 Development Log
 ------------------
