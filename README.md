@@ -1,6 +1,9 @@
-Fastbird Engine
+fastbird engine
 ==============
-Open source game engine.
+'fastbird engine' was initially started for self-teaching purpose in 2013 and now I'm trying
+to finish a complete game with it. Currently the engine is martured enough to create a
+simple space simulation game and I'm continually updating new code modifications and
+funtionalities as I'm working on the game.
 
 Compilation
 ---------------
