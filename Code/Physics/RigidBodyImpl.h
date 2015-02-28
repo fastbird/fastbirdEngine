@@ -9,7 +9,7 @@ namespace fastbird
 		btDiscreteDynamicsWorld* mWorld;
 		
 		RotationInfo* mRotationInfo;
-
+		IPhysicsInterface* mColProvider;
 		
 
 		// Game object. (class PhysicsComp for my game.)
@@ -62,5 +62,9 @@ namespace fastbird
 		virtual void SetLinearDamping(float damping);
 
 		virtual bool HasContact();
+
+		virtual void RemoveRigidBodyFromWorld();
+		// make sure mColProvider is valid.
+		virtual void ReAddRigidBodyFromWorld();
 	};
 }

@@ -62,18 +62,24 @@ namespace fastbird
 			return;
 		__super::PreRender();
 		
+		bool pointLightDataGathered = false;
 		if (mTransformChanged)
 		{
+			mTransformChanged = false;
+
 			if (mAnim)
 			{
 				mAnimatedTransformation = mTransformation * mAnim->GetResult();
 				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
+				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
 			}
 			else
 			{
 				mTransformation.GetHomogeneous(mObjectConstants.gWorld);
-			}
-			mTransformChanged = false;
+				gFBEnv->pRenderer->GatherPointLightData(mTransformation.GetTranslation(), &mPointLightConstants);
+			}		
+			pointLightDataGathered = true;
+			
 		}
 		else
 		{
@@ -81,6 +87,20 @@ namespace fastbird
 			{
 				mAnimatedTransformation = mTransformation * mAnim->GetResult();
 				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
+				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
+				pointLightDataGathered = true;
+			}
+		}
+
+		if (!pointLightDataGathered && gFBEnv->pRenderer->NeedToRefreshPointLight())
+		{
+			if (mAnim)
+			{
+				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
+			}
+			else
+			{
+				gFBEnv->pRenderer->GatherPointLightData(mTransformation.GetTranslation(), &mPointLightConstants);
 			}
 		}
 	}
@@ -101,6 +121,8 @@ namespace fastbird
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
 			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
+		pRenderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
+
 		pRenderer->SetPrimitiveTopology(mTopology);
 		BindRenderStates();
 
@@ -108,7 +130,7 @@ namespace fastbird
 		{
 			FB_FOREACH(it, mMaterialGroups)
 			{
-				if (!it->mMaterial || !it->mVBPos)
+				if (!it->mMaterial || !it->mVBPos || it->mMaterial->IsNoShadowCast())
 					continue;
 				if (!it->mMaterial->BindSubPass(RENDER_PASS::PASS_SHADOW, true))
 				{
@@ -124,7 +146,7 @@ namespace fastbird
 		{
 			FB_FOREACH(it, mMaterialGroups)
 			{
-				if (!it->mMaterial || !it->mVBPos)
+				if (!it->mMaterial || !it->mVBPos || it->mMaterial->IsNoShadowCast())
 					continue;
 				bool materialReady = false;
 				if (it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
@@ -151,7 +173,7 @@ namespace fastbird
 			gFBEnv->pRenderer->SetPositionInputLayout();
 			FB_FOREACH(it, mMaterialGroups)
 			{
-				if (!it->mMaterial || !it->mVBPos)
+				if (!it->mMaterial || !it->mVBPos || it->mMaterial->IsNoShadowCast())
 					continue;
 
 				if (it->mMaterial->GetBindingShaders() & BINDING_SHADER_GS) {

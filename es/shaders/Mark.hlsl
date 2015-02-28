@@ -17,6 +17,17 @@ struct g2p
 };
 
 //--------------------------------------------------------------------------------------
+// Vertex Shader
+//--------------------------------------------------------------------------------------
+v2g mark_VertexShader(uint id : SV_VertexID)
+{
+	v2g OUTPUT;
+	OUTPUT.NDCPos = mul(gWorldViewProj, float4(0, 0, 0, 1)); // in ndc space
+	return OUTPUT;
+}
+
+
+//--------------------------------------------------------------------------------------
 // Geometry Shader
 //--------------------------------------------------------------------------------------
 cbuffer cbImmutable
@@ -28,19 +39,6 @@ cbuffer cbImmutable
 		{0.5, 0.6}
 	};
 }
-
-//--------------------------------------------------------------------------------------
-// Vertex Shader
-//--------------------------------------------------------------------------------------
-v2g mark_VertexShader(uint id : SV_VertexID)
-{
-	v2g OUTPUT;
-	OUTPUT.NDCPos = mul(gWorldViewProj, float4(0, 0, 0, 1)); // in ndc space
-	return OUTPUT;
-}
-
-
-
 [maxvertexcount(3)]
 void mark_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 {
@@ -71,6 +69,7 @@ void mark_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 float4 mark_PixelShader(in g2p INPUT) : SV_Target
 {
 	float3 color = gDiffuseColor;
+	float alpha = gDiffuseColor.w;
 	float3 highlightedColor = color+gEmissiveColor;
 	float2 nuv;
 	nuv.x	= abs(INPUT.UV.x * 2.0 - 1.0);
@@ -80,13 +79,5 @@ float4 mark_PixelShader(in g2p INPUT) : SV_Target
 	glowss.y = smoothstep(0.2, 0.6, nuv.y);
 	float3 finalColor = lerp(color, highlightedColor, sin(gTime*4.0)*.5+.5);
 	
-	return float4(finalColor, 1.0);
-	// float2 tex = INPUT.UV*2.0 -1.0;
-	// tex.y=-tex.y;
-	// float len = length(tex);
-	// if (len> 1.0)
-		// discard;
-	// float alpha = 1.0- smoothstep(0.5, 1.0, len);
-	// float3 color = INPUT.Color*INPUT.Color*INPUT.Color*3.0;
-	// return float4(color, alpha);
+	return float4(finalColor, alpha);
 }

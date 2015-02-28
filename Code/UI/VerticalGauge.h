@@ -22,6 +22,8 @@ public:
 	virtual void SetGaugeColor(const Color& color);
 	virtual void SetBlinkColor(const Color& color);
 
+	void SetTextureAtlasRegion(UIProperty::Enum, const char* region);
+
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 
 private:
@@ -32,6 +34,13 @@ private:
 	bool mBlink;
 	float mBlinkSpeed;
 
+	std::string mTextureAtlasFile;
+	TextureAtlas* mTextureAtlas;
+	TextureAtlasRegion* mAtlasRegions[2];
+	ITexture* mTextures[2];
+
+	bool mMaterialUsingImage;
+	bool mHorizontalFlip;
 
 };
 }

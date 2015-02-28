@@ -5,20 +5,225 @@
 
 namespace fastbird
 {
-
+struct POINT_LIGHT_CONSTANTS;
 class ILight;
 class DebugHud;
 class IFont;
 class RenderToTexture;
 class CloudManager;
 class GeometryRenderer;
+class PointLightMan;
 #define FB_NUM_TONEMAP_TEXTURES  4
+#define FB_NUM_TONEMAP_TEXTURES_NEW 5
 #define FB_NUM_LUMINANCE_TEXTURES 3
 #define FB_NUM_BLOOM_TEXTURES 3
 #define FB_NUM_STAR_TEXTURES     12 
 #define FB_MAX_SAMPLES           16      // Maximum number of texture grabs
 class Renderer : public IRenderer, public ICVarListener
 {
+protected:
+	unsigned				mWidth;
+	unsigned				mHeight;
+	Vec2I mCurRTSize;
+
+	unsigned mCropWidth;
+	unsigned mCropHeight;
+
+	SmartPtr<ILight>		mDirectionalLight[2];
+	SmartPtr<ILight>		mDirectionalLightOverride[2];
+	SmartPtr<DebugHud>		mDebugHud;
+	SmartPtr<GeometryRenderer> mGeomRenderer;
+	SmartPtr<IFont> mFont;
+	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
+	SmartPtr<IMaterial> mMissingMaterial;
+	SmartPtr<IRasterizerState> mDefaultRasterizerState;
+	SmartPtr<IRasterizerState> mFrontFaceCullRS;
+	SmartPtr<IBlendState> mDefaultBlendState;
+	SmartPtr<IBlendState> mAdditiveBlendState;
+	SmartPtr<IBlendState> mAlphaBlendState;
+	SmartPtr<IBlendState> mMaxBlendState;
+
+	SmartPtr<IDepthStencilState> mDefaultDepthStencilState;
+	SmartPtr<IDepthStencilState> mNoDepthStencilState;
+	SmartPtr<IDepthStencilState> mNoDepthWriteLessEqualState;
+	SmartPtr<IDepthStencilState> mLessEqualDepthState;
+	bool mLockDepthStencil;
+
+	// just temporal holder
+	// dont need to delete. it will be deleted in the inherited class.
+	ISamplerState* mDefaultSamplers[SAMPLERS::NUM];
+
+	SmartPtr<ITexture> mEnvironmentTexture;
+	SmartPtr<ITexture> mEnvironmentTextureOverride;
+	std::vector< IRenderToTexture* > mRenderToTextures;
+
+	std::vector<IRenderToTexture*> mRenderToTexturePool;
+
+	Color mClearColor;
+	float mDepthClear;
+	UINT8 mStencilClear;
+	bool					mForcedWireframe;
+	bool					mDepthStencilCreated;
+
+	ICamera*				mCamera;
+	RENDERER_FRAME_PROFILER		mFrameProfiler;
+	IShader* mBindedShader;
+	IInputLayout* mBindedInputLayout;
+	PRIMITIVE_TOPOLOGY mCurrentTopology;
+
+	typedef std::map<INPUT_ELEMENT_DESCS, SmartPtr<IInputLayout> > INPUTLAYOUT_MAP;
+	INPUTLAYOUT_MAP mInputLayouts;
+
+
+	INPUT_ELEMENT_DESCS mInputLayoutDescs[DEFAULT_INPUTS::COUNT];
+	const int DEFAULT_DYN_VERTEX_COUNTS;
+	SmartPtr<IVertexBuffer> mDynVBs[DEFAULT_INPUTS::COUNT];
+
+	typedef VectorMap< std::string, SmartPtr<ITexture> > TextureCache;
+	TextureCache mTextureCache;
+
+	typedef std::vector< SmartPtr<TextureAtlas> > TextureAtlasCache;
+	TextureAtlasCache mTextureAtalsCache;
+
+	typedef VectorMap< std::string, SmartPtr<IMaterial> > MaterialCache;
+	MaterialCache mMaterialCache;
+	SmartPtr<IShader> mFullscreenQuadVSNear;
+	SmartPtr<IShader> mFullscreenQuadVSFar;
+
+	SmartPtr<ITexture> mTempDepthBufferHalf; // for depth writing and clouds
+	SmartPtr<ITexture> mTempDepthBuffer;
+
+	// linear sampler
+	SmartPtr<IShader> mCopyPS;
+	SmartPtr<IShader> mCopyPSMS;
+
+	// DepthPass Resources
+	SmartPtr<ITexture> mDepthTarget;
+	SmartPtr<IShader> mDepthWriteShader;
+	SmartPtr<IShader> mCloudDepthWriteShader;
+	SmartPtr<IBlendState> mMinBlendState;
+
+	// HDR resources.
+	SmartPtr<ITexture> mHDRTarget;
+	SmartPtr<ITexture> mToneMap[FB_NUM_TONEMAP_TEXTURES_NEW];
+	SmartPtr<ITexture> mLuminanceMap[FB_NUM_LUMINANCE_TEXTURES];
+	int mLuminanceIndex;
+	SmartPtr<IShader> mDownScale2x2LumPS;
+	SmartPtr<IShader> mSampleLumInitialShader;
+	SmartPtr<IShader> mSampleLumIterativeShader;
+	SmartPtr<IShader> mSampleLumFinalShader;
+	SmartPtr<IShader> mCalcAdaptedLumShader;
+	SmartPtr<IShader> mDownScale3x3PS;
+	SmartPtr<IShader> mToneMappingPS;
+	SmartPtr<IShader> mLuminanceAvgPS;
+	SmartPtr<ITexture> mBrightPassTexture;
+	SmartPtr<ITexture> mBloomSourceTex;
+	SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
+	SmartPtr<IShader> mBrightPassPS;
+	SmartPtr<IShader> mBloomPS;
+
+	// 1/4
+
+	// x, y,    offset, weight;
+	VectorMap< std::pair<DWORD, DWORD>, std::pair<std::vector<Vec4>, std::vector<Vec4> > > mGauss5x5;
+
+	Vec4 mGaussianOffsetsDownScale2x2[4];
+	bool mGaussianDownScale2x2Calculated;
+
+	// Star
+	StarDef mStarDef;
+	SmartPtr<ITexture> mStarSourceTex;
+	SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
+	SmartPtr<IShader> mBlur5x5;
+	SmartPtr<IShader> mStarGlareShader;
+	SmartPtr<IShader> mMergeTexture2;
+	float m_fChromaticAberration;
+	float m_fStarInclination;
+
+	// GodRay resources.
+	SmartPtr<ITexture> mGodRayTarget[2]; // half resolution; could be shared.
+	SmartPtr<IShader> mOccPrePassShader;
+	SmartPtr<IShader> mOccPrePassGSShader;
+	SmartPtr<IShader> mGodRayPS;
+	SmartPtr<ITexture> mNoMSDepthStencil;
+	SmartPtr<IInputLayout> mPositionInputLayout;
+	// for bloom
+	bool mGaussianDistCalculated; // should recalculate when the screen resolution changed
+	Vec4 mGaussianDistOffsetX[15];
+	Vec4 mGaussianDistWeightX[15];
+	Vec4 mGaussianDistOffsetY[15];
+	Vec4 mGaussianDistWeightY[15];
+
+	// Glow
+	SmartPtr<ITexture> mGlowTarget;
+	SmartPtr<ITexture> mGlowTexture[2];
+	SmartPtr<IShader> mGlowPS;
+	bool mGlowSet;
+
+	// for glow
+	bool mGaussianDistGlowCalculated; // should recalculate when the screen resolution changed
+	Vec4 mGaussianDistGlowOffsetX[15];
+	Vec4 mGaussianDistGlowWeightX[15];
+	Vec4 mGaussianDistGlowOffsetY[15];
+	Vec4 mGaussianDistGlowWeightY[15];
+
+	// for Cloud Volumes;
+	SmartPtr<ITexture> mCloudVolumeDepth;
+	SmartPtr<IBlendState> mRedAlphaMaskBlend;
+
+	SmartPtr<IBlendState> mGreenAlphaMaskBlend;
+	SmartPtr<IBlendState> mGreenAlphaMaskMaxBlend;
+
+	SmartPtr<IBlendState> mRedAlphaMaskAddMinusBlend;
+	SmartPtr<IBlendState> mGreenAlphaMaskAddAddBlend;
+
+	SmartPtr<IBlendState> mRedAlphaMaskAddAddBlend;
+	SmartPtr<IBlendState> mGreenAlphaMaskAddMinusBlend;
+
+
+	SmartPtr<IBlendState> mGreenMaskBlend;
+	SmartPtr<IBlendState> mBlueMaskBlend;
+	SmartPtr<IRasterizerState> mRSCloudFar;
+	SmartPtr<IRasterizerState> mRSCloudNear;
+	bool mCloudRendering;
+
+	SmartPtr<ITexture> mNoiseMap;
+
+	ISkySphere* mNextEnvUpdateSkySphere;
+
+	CloudManager* mCloudManager;
+	bool mLockBlendState;
+
+	// shadow
+	SmartPtr<ITexture> mShadowMap;
+	SmartPtr<IShader> mShadowMapShader;
+	ICamera* mCameraBackup;
+
+	SmartPtr<ITexture> mSmallSilouetteBuffer;
+	SmartPtr<ITexture> mBigSilouetteBuffer;
+	SmartPtr<IShader> mSilouetteShader;
+
+	float mMiddleGray;
+	float mStarPower;
+	float mBloomPower;
+
+	struct DebugRenderTarget
+	{
+		Vec2 mPos;
+		Vec2 mSize;
+
+		SmartPtr<ITexture> mTexture;
+	};
+	static const unsigned MaxDebugRenderTargets = 4;
+	DebugRenderTarget mDebugRenderTargets[MaxDebugRenderTargets];
+
+	PointLightMan* mPointLightMan;
+	bool mRefreshPointLight;
+	bool mLuminanceOnCpu;
+	bool mUseFilmicToneMapping;
+	float mLuminance;
+	unsigned mFrameLuminanceCalced;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -170,6 +375,7 @@ public:
 
 	virtual void SetHDRTarget();
 	void MeasureLuminanceOfHDRTarget();
+	void MeasureLuminanceOfHDRTargetNew();
 	void BrightPass();
 	void BrightPassToStarSource();
 	void StarSourceToBloomSource();
@@ -216,204 +422,21 @@ public:
 	void RenderDebugRenderTargets();
 	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName);
 
+	virtual void GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst);
+	virtual void RefreshPointLight();
+	virtual bool NeedToRefreshPointLight() const { return mRefreshPointLight; }
+
+	virtual IPointLight* CreatePointLight(const Vec3& pos, float range, const Vec3& color, float intensity, float lifeTime,
+		bool manualDeletion);
+	virtual void DeletePointLight(IPointLight* pointLight);
+
+	void CalcLuminance();
+	void ToneMapLuminanceOnCpu(bool oncpu);
+	bool IsLuminanceOnCpu() const { return mLuminanceOnCpu; }
+	void UseFilmicToneMapping(bool filmic);
+	void CreateToneMappingShader();
 
 
-protected:
-	unsigned				mWidth;
-	unsigned				mHeight;
-	Vec2I mCurRTSize;
-
-	unsigned mCropWidth;
-	unsigned mCropHeight;
-
-	SmartPtr<ILight>		mDirectionalLight[2];
-	SmartPtr<ILight>		mDirectionalLightOverride[2];
-	SmartPtr<DebugHud>		mDebugHud;
-	SmartPtr<GeometryRenderer> mGeomRenderer;
-	SmartPtr<IFont> mFont;
-	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
-	SmartPtr<IMaterial> mMissingMaterial;
-	SmartPtr<IRasterizerState> mDefaultRasterizerState;
-	SmartPtr<IRasterizerState> mFrontFaceCullRS;
-	SmartPtr<IBlendState> mDefaultBlendState;
-	SmartPtr<IBlendState> mAdditiveBlendState;
-	SmartPtr<IBlendState> mAlphaBlendState;
-	SmartPtr<IBlendState> mMaxBlendState;
-	
-	SmartPtr<IDepthStencilState> mDefaultDepthStencilState;
-	SmartPtr<IDepthStencilState> mNoDepthStencilState;
-	SmartPtr<IDepthStencilState> mNoDepthWriteLessEqualState;
-	SmartPtr<IDepthStencilState> mLessEqualDepthState;
-	bool mLockDepthStencil;
-
-	// just temporal holder
-	// dont need to delete. it will be deleted in the inherited class.
-	ISamplerState* mDefaultSamplers[SAMPLERS::NUM];
-
-	SmartPtr<ITexture> mEnvironmentTexture;
-	SmartPtr<ITexture> mEnvironmentTextureOverride;
-	std::vector< IRenderToTexture* > mRenderToTextures;
-
-	std::vector<IRenderToTexture*> mRenderToTexturePool;
-
-	Color mClearColor;
-	float mDepthClear;
-	UINT8 mStencilClear;
-	bool					mForcedWireframe;
-	bool					mDepthStencilCreated;
-
-	ICamera*				mCamera;
-	RENDERER_FRAME_PROFILER		mFrameProfiler;
-	IShader* mBindedShader;
-	IInputLayout* mBindedInputLayout;
-	PRIMITIVE_TOPOLOGY mCurrentTopology;
-
-	typedef std::map<INPUT_ELEMENT_DESCS, SmartPtr<IInputLayout> > INPUTLAYOUT_MAP;
-	INPUTLAYOUT_MAP mInputLayouts;
-
-	
-	INPUT_ELEMENT_DESCS mInputLayoutDescs[DEFAULT_INPUTS::COUNT];
-	const int DEFAULT_DYN_VERTEX_COUNTS;
-	SmartPtr<IVertexBuffer> mDynVBs[DEFAULT_INPUTS::COUNT];
-
-	typedef VectorMap< std::string, SmartPtr<ITexture> > TextureCache;
-	TextureCache mTextureCache;
-
-	typedef std::vector< SmartPtr<TextureAtlas> > TextureAtlasCache;
-	TextureAtlasCache mTextureAtalsCache;
-
-	typedef VectorMap< std::string, SmartPtr<IMaterial> > MaterialCache;
-	MaterialCache mMaterialCache;
-	SmartPtr<IShader> mFullscreenQuadVSNear;
-	SmartPtr<IShader> mFullscreenQuadVSFar;
-
-	SmartPtr<ITexture> mTempDepthBufferHalf; // for depth writing and clouds
-	SmartPtr<ITexture> mTempDepthBuffer;
-
-	// linear sampler
-	SmartPtr<IShader> mCopyPS;
-	SmartPtr<IShader> mCopyPSMS;
-
-	// DepthPass Resources
-	SmartPtr<ITexture> mDepthTarget;
-	SmartPtr<IShader> mDepthWriteShader;
-	SmartPtr<IShader> mCloudDepthWriteShader;
-	SmartPtr<IBlendState> mMinBlendState;
-
-	// HDR resources.
-	SmartPtr<ITexture> mHDRTarget;
-	SmartPtr<ITexture> mToneMap[FB_NUM_TONEMAP_TEXTURES];
-	SmartPtr<ITexture> mLuminanceMap[FB_NUM_LUMINANCE_TEXTURES];
-	int mLuminanceIndex;	
-	SmartPtr<IShader> mDownScale2x2LumPS;
-	SmartPtr<IShader> mSampleLumInitialShader;
-	SmartPtr<IShader> mSampleLumIterativeShader;
-	SmartPtr<IShader> mSampleLumFinalShader;
-	SmartPtr<IShader> mCalcAdaptedLumShader;
-	SmartPtr<IShader> mDownScale3x3PS;
-	SmartPtr<IShader> mToneMappingPS;
-	SmartPtr<IShader> mLuminanceAvgPS;	
-	SmartPtr<ITexture> mBrightPassTexture;
-	SmartPtr<ITexture> mBloomSourceTex;
-	SmartPtr<IShader> mDownScale2x2PS;
-	SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
-	SmartPtr<IShader> mBrightPassPS;
-	SmartPtr<IShader> mBloomPS;
-
-	// 1/4
-
-	// x, y,    offset, weight;
-	VectorMap< std::pair<DWORD, DWORD>, std::pair<std::vector<Vec4>, std::vector<Vec4> > > mGauss5x5;
-
-	Vec4 mGaussianOffsetsDownScale2x2[4];
-	bool mGaussianDownScale2x2Calculated;
-
-	// Star
-	StarDef mStarDef;
-	SmartPtr<ITexture> mStarSourceTex;
-	SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
-	SmartPtr<IShader> mBlur5x5;
-	SmartPtr<IShader> mStarGlareShader;
-	SmartPtr<IShader> mMergeTexture2;
-	float m_fChromaticAberration;
-	float m_fStarInclination;
-	
-	// GodRay resources.
-	SmartPtr<ITexture> mGodRayTarget[2]; // half resolution; could be shared.
-	SmartPtr<IShader> mOccPrePassShader;
-	SmartPtr<IShader> mOccPrePassGSShader;
-	SmartPtr<IShader> mGodRayPS;
-	SmartPtr<ITexture> mNoMSDepthStencil;
-	SmartPtr<IInputLayout> mPositionInputLayout;
-	// for bloom
-	bool mGaussianDistCalculated; // should recalculate when the screen resolution changed
-	Vec4 mGaussianDistOffsetX[15];
-	Vec4 mGaussianDistWeightX[15];
-	Vec4 mGaussianDistOffsetY[15];
-	Vec4 mGaussianDistWeightY[15];
-
-	// Glow
-	SmartPtr<ITexture> mGlowTarget;
-	SmartPtr<ITexture> mGlowTexture[2];
-	SmartPtr<IShader> mGlowPS;
-	bool mGlowSet;
-
-	// for glow
-	bool mGaussianDistGlowCalculated; // should recalculate when the screen resolution changed
-	Vec4 mGaussianDistGlowOffsetX[15];
-	Vec4 mGaussianDistGlowWeightX[15];
-	Vec4 mGaussianDistGlowOffsetY[15];
-	Vec4 mGaussianDistGlowWeightY[15];
-
-	// for Cloud Volumes;
-	SmartPtr<ITexture> mCloudVolumeDepth;
-	SmartPtr<IBlendState> mRedAlphaMaskBlend;
-	
-	SmartPtr<IBlendState> mGreenAlphaMaskBlend; 
-	SmartPtr<IBlendState> mGreenAlphaMaskMaxBlend;
-	
-	SmartPtr<IBlendState> mRedAlphaMaskAddMinusBlend;
-	SmartPtr<IBlendState> mGreenAlphaMaskAddAddBlend;
-
-	SmartPtr<IBlendState> mRedAlphaMaskAddAddBlend;
-	SmartPtr<IBlendState> mGreenAlphaMaskAddMinusBlend;
-	
-
-	SmartPtr<IBlendState> mGreenMaskBlend;
-	SmartPtr<IBlendState> mBlueMaskBlend;
-	SmartPtr<IRasterizerState> mRSCloudFar;
-	SmartPtr<IRasterizerState> mRSCloudNear;
-	bool mCloudRendering;
-
-	SmartPtr<ITexture> mNoiseMap;
-
-	ISkySphere* mNextEnvUpdateSkySphere;
-
-	CloudManager* mCloudManager;
-	bool mLockBlendState;
-
-	// shadow
-	SmartPtr<ITexture> mShadowMap;
-	SmartPtr<IShader> mShadowMapShader;	
-	ICamera* mCameraBackup;
-
-	SmartPtr<ITexture> mSmallSilouetteBuffer;
-	SmartPtr<ITexture> mBigSilouetteBuffer;
-	SmartPtr<IShader> mSilouetteShader;	
-
-	float mMiddleGray;
-	float mStarPower;
-	float mBloomPower;
-
-	struct DebugRenderTarget
-	{
-		Vec2 mPos;
-		Vec2 mSize;
-
-		SmartPtr<ITexture> mTexture;
-	};
-	static const unsigned MaxDebugRenderTargets = 4;
-	DebugRenderTarget mDebugRenderTargets[MaxDebugRenderTargets];
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)
@@ -423,18 +446,31 @@ inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DES
 	else if (left.size() == right.size())
 	{
 		DWORD size = left.size();
-		for (DWORD i=0; i<size; i++)
+
+		int cmp = memcmp(&left[0], &right[0], sizeof(INPUT_ELEMENT_DESC)*size);
+		if (cmp < 0)
+			return true;
+
+		/*for (DWORD i=0; i<size; i++)
 		{
 			if (left[i].mInputSlot < right[i].mInputSlot)
+			{
 				return true;
+			}
 			else if (left[i].mInputSlot == right[i].mInputSlot)
 			{
 				if (left[i] < right[i])
+				{
 					return true;
+				}					
 			}
-		}
+			else
+			{
+				
+				return false;
+			}
+		}*/
 	}
-	
 	return false;
 }
 

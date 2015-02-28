@@ -2,8 +2,14 @@
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/LuaObject.h>
+#include <CommonLib/FileSystem.h>
 namespace fastbird
 {
+	const char* GetCWD()
+	{
+		return FileSystem::GetCWD();
+	}
+
 	void CallLuaFunction(lua_State* L, const char* func, const char* sig, ...)
 	{
 		va_list vl;
@@ -23,6 +29,9 @@ namespace fastbird
 				break;
 			case 'i':
 				lua_pushinteger(L, va_arg(vl, int));
+				break;
+			case 'u':
+				lua_pushunsigned(L, va_arg(vl, unsigned));
 				break;
 			case 's':
 				lua_pushstring(L, va_arg(vl, char*));
@@ -85,6 +94,13 @@ namespace fastbird
 					   bool b = lua_toboolean(L, nres)!=0;
 					   *va_arg(vl, bool*) = b;
 					   break;
+			}
+
+			case 'u':
+			{
+						unsigned u = lua_tounsigned(L, nres);
+						*va_arg(vl, unsigned*) = u;
+						break;
 			}
 
 			default:

@@ -51,7 +51,7 @@ namespace fastbird
 		bool HasVScroll() { return mScrollerV != 0; }
 		const Vec2& GetScrollOffset() const;
 		void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
-		void MatchHeight();
+		void MatchHeight(bool checkName);
 		
 	private:
 		friend class WinBase;

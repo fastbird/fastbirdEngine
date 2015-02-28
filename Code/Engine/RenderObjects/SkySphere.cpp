@@ -123,6 +123,10 @@ void SkySphere::PreRender()
 		for (int i = 0; i < 5; i++)
 		{
 			mMaterial->SetMaterialParameters(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
+			if (mMaterialOCC)
+			{
+				mMaterialOCC->SetMaterialParameters(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
+			}
 		}		
 	}
 }

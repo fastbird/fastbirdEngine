@@ -82,6 +82,7 @@ namespace fastbird
 
 		virtual bool IsTransparent() const { return mTransparent; }
 		virtual bool IsGlow() const { return mGlow; }
+		virtual bool IsNoShadowCast() const { return mNoShadowCast; }
 
 		virtual void ReloadShader();
 
@@ -136,6 +137,7 @@ namespace fastbird
 		int mShaders; // combination of enum BINDING_SHADER;
 		bool mTransparent;
 		bool mGlow;
+		bool mNoShadowCast;
 
 		std::vector<SmartPtr<IMaterial>> mSubMaterials;
 

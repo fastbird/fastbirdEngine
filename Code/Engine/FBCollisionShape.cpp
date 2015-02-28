@@ -61,7 +61,7 @@ namespace fastbird
 		auto shapeTransform = objT * mTransformation;
 		auto newCenter = (shapeTransform).ApplyInverse(pBV->GetCenter());
 		float newRad = pBV->GetRadius() / shapeTransform.GetNorm();
-		auto localBV = BoundingVolume::Create();
+		SmartPtr<BoundingVolume> localBV = BoundingVolume::Create();
 		localBV->SetCenter(newCenter);
 		localBV->SetRadius(newRad);		
 		return localBV->TestIntersection(mBV);

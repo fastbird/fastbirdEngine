@@ -109,6 +109,7 @@ namespace fastbird
 
 		PRIMITIVE_TOPOLOGY mTopology;
 		OBJECT_CONSTANTS mObjectConstants;
+		POINT_LIGHT_CONSTANTS mPointLightConstants;
 		// if you have only one MaterialGroup,
 		// this vector will not be used.
 		std::vector<MaterialGroup> mMaterialGroups; // can call it as SubMeshes.

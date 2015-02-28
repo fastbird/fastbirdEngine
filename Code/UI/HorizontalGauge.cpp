@@ -19,8 +19,11 @@ namespace fastbird
 		IMaterial* mat = mUIObject->GetMaterial();
 		mGaugeColor = Color(1, 1, 1, 1);
 		mBlinkColor = Color(1, 1, 0, 1);
+		mGaugeBorderColor = Color(0.5f, 0.5f, 0.5f, 0.5f);
 		mat->SetMaterialParameters(1, mGaugeColor.GetVec4());
 		mat->SetMaterialParameters(2, mBlinkColor.GetVec4());
+		mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
+
 		// x is lerp.
 		mat->SetMaterialParameters(3, Vec4(0, 0, 0, 0));
 		Vec2 texcoords[4] = {
@@ -151,6 +154,20 @@ namespace fastbird
 		{
 											  mBlinkSpeed = StringConverter::parseReal(val);
 											  return true;
+		}
+
+		case UIProperty::GAUGE_BORDER_COLOR:
+		{
+											   mGaugeBorderColor = StringConverter::parseColor(val);
+											   if (mUIObject)
+											   {
+												   auto mat = mUIObject->GetMaterial();
+												   if (mat)
+												   {
+													   mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
+												   }
+											   }
+											   return true;
 		}
 		}
 

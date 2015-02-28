@@ -35,5 +35,6 @@ SamplerState gLinearBlackBorderSampler : register(s6);
 
 #endif // !CPP
 
+#define MAX_POINT_LIGHT 3
 
 #endif //_ShaderCommon_h_

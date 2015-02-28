@@ -24,8 +24,9 @@ CheckBox::~CheckBox()
 void CheckBox::OnCreated()
 {
 	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
-	mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
+	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
 	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
 	mCheckImageBox->SetSize(Vec2I(24, 24));
@@ -38,6 +39,11 @@ void CheckBox::OnCreated()
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
+
+	if (mChecked)
+		mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_checked");
+	else
+		mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_unchecked");
 }
 
 void CheckBox::GatherVisit(std::vector<IUIObject*>& v)
@@ -65,6 +71,7 @@ void CheckBox::OnClicked(void* arg)
 {
 	mChecked = !mChecked;
 	UpdateImage();
+	OnEvent(IEventHandler::EVENT_CHECKBOX_CLICKED);
 }
 
 void CheckBox::UpdateImage()
@@ -97,6 +104,21 @@ bool CheckBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	return __super::SetProperty(prop, val);
+}
+
+bool CheckBox::GetProperty(UIProperty::Enum prop, char val[])
+{
+	switch (prop)
+	{
+	case UIProperty::CHECKBOX_CHECKED:
+	{
+		auto data = StringConverter::toString(mChecked);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	}
+	return __super::GetProperty(prop, val);
 }
 
 }

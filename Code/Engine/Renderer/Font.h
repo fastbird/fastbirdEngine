@@ -93,7 +93,7 @@ namespace fastbird
 		EFontTextEncoding mEncoding;
 
 		unsigned int mColor;
-		unsigned int mColorBackup;
+		std::stack<unsigned int> mColorBackup;
 
 		std::map<int, SCharDescr*> mChars;
 		std::vector<SmartPtr<ITexture>> mPages;

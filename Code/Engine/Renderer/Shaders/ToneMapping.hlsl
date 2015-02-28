@@ -43,36 +43,47 @@ float4 tonemapping_PixelShader(QuadVS_Output Input
 #endif
 	) : SV_TARGET
 {
-	float vLum = max(0.2, gLumTexture.Sample(gPointSampler, float2(0.5, 0.5)).r);
+#ifdef _CPU_LUMINANCE
+	float vLum = max(0.2, gMaterialParam[0].x);
+#else
+	float vLum = max(0.2, gLumTexture.Sample(gPointSampler, float2(0.0, 0.0)).r);
+#endif
+	//return float4(vLum.xxx, 1);
 #ifdef _MULTI_SAMPLE
 	float4 vColor = gHDRTexture.Load(int2(Input.Pos.xy),sampleIndex);
 #else
-	float4 vColor = gHDRTexture.Sample(gLinearSampler, Input.Tex);
+	float4 vColor = gHDRTexture.Sample(gPointSampler, Input.Tex);
 #endif
-	//return vColor;
+	float3 originalColor = vColor.rgb;
 	float3 vBloom = gBloomTexture.Sample(gLinearSampler, Input.Tex);
 	float4 vStar = gStarGlareTexture.Sample(gLinearSampler, Input.Tex);
-	
-	//float3 CurrentColor = FilmicTonemap( vColor*16 );	
-    //float3 WhiteScale = FilmicTonemap( 11.2 );
-	//return float4( (CurrentColor) / WhiteScale+0.4f*vBloom, 1.0f );   
-	
-	float fBlueShiftCoefficient = 1.0f - (vLum + 3.0)/2.0;
-	fBlueShiftCoefficient = saturate(fBlueShiftCoefficient);
 
+#ifdef _FILMIC_TONEMAP
+	float3 CurrentColor = FilmicTonemap( vColor*2.0 );
+    float3 WhiteScale = FilmicTonemap( 2.0 );
+	vColor.rgb = (CurrentColor) / WhiteScale;
+	vColor.rgb += gStarPower * vStar;
+	vColor.rgb += gBloomPower * vBloom;
+	return float4( vColor.rgb, 1.0f );   
+#else
+	
+	
 	// Lerp between current color and blue, desaturated copy
+	float fBlueShiftCoefficient = 1.0f - (vLum + 3.0)/2.0;
+	fBlueShiftCoefficient = saturate(fBlueShiftCoefficient);	
 	float3 vRodColor = dot( (float3)vColor, LUMINANCE_VECTOR ) * BLUE_SHIFT_VECTOR;
 	vColor.rgb = lerp( (float3)vColor, vRodColor, fBlueShiftCoefficient );
 	
 	// Tone mapping
-	vColor.rgb *= gMiddleGray_Star_Bloom_Empty.x / (vLum + 0.001f);
+	vColor.rgb *= gMiddleGray / vLum;
 	vColor.rgb *= (1.0f + vColor / LUM_WHITE);
 	vColor.rgb /= (1.0f + vColor);
 
-	vColor.rgb += gMiddleGray_Star_Bloom_Empty.y * vStar;
-	vColor.rgb += gMiddleGray_Star_Bloom_Empty.z * vBloom;
+	vColor.rgb += gStarPower * vStar;
+	vColor.rgb += gBloomPower * vBloom;
 	
 	vColor.a = 1.0f;
-
+	
 	return vColor;
+#endif
 }

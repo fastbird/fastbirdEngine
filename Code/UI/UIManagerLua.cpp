@@ -4,7 +4,10 @@
 #include <UI/Button.h>
 #include <UI/ListBox.h>
 #include <UI/TextBox.h>
-
+#include <UI/CheckBox.h>
+#include <UI/NumericUpDown.h>
+#include <UI/DropDown.h>
+#include <UI/ColorRampComp.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -17,6 +20,8 @@ namespace fastbird
 	int DeleteLuaUI(lua_State* L);
 	int SetStaticText(lua_State* L);
 	int SetVisibleLuaUI(lua_State* L);
+	int ToggleVisibleLuaUI(lua_State* L);
+	int CloseAllLuaUI(lua_State* L);
 	int SetVisibleComponent(lua_State* L);
 	int GetVisibleLuaUI(lua_State* L);
 	int RemoveAllChildrenOf(lua_State* L);
@@ -43,13 +48,51 @@ namespace fastbird
 	int IsButtonActivated(lua_State* L);
 	int StartUIAnimation(lua_State* L);
 	int StopUIAnimation(lua_State* L);
-	int MathUIHeight(lua_State* L);
-
+	int MatchUIHeight(lua_State* L);
+	int CacheListBox(lua_State* L);
+	int InsertCachedListItemCheckBox(lua_State* L);
+	int InsertCachedListItemString(lua_State* L);
+	int SetCachedListItemString(lua_State* L);
+	int GetCheckedFromCheckBox(lua_State* L);
+	int GetNumericUpDownValue(lua_State* L);
+	int SetNumericUpDownValue(lua_State* L);
+	int GetListItemText(lua_State* L);
+	int MoveUIToBottom(lua_State* L);
+	int SetDropDownIndex(lua_State* L);
+	int GetDropDownIndex(lua_State* L);
+	int SetVisibleLuaUIWithoutFocusing(lua_State* L);
+	int GetNumListBoxItems(lua_State* L);
+	int SetListBoxRowId(lua_State* L);
+	int GetListBoxRowIds(lua_State* L);
+	int GetListBoxSelectedRowIds(lua_State* L);
+	int SwapListBoxItem(lua_State* L);
+	int GetColorRampUIValues(lua_State* L);
+	int SetColorRampUIValues(lua_State* L);
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
-		LUA_SETCFUNCTION(mL, MathUIHeight);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedRowIds);
+		LUA_SETCFUNCTION(mL, SetColorRampUIValues);
+		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
+		LUA_SETCFUNCTION(mL, GetListBoxRowIds);
+		LUA_SETCFUNCTION(mL, SwapListBoxItem);
+		LUA_SETCFUNCTION(mL, SetListBoxRowId);
+		LUA_SETCFUNCTION(mL, GetNumListBoxItems);
+		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
+		LUA_SETCFUNCTION(mL, GetDropDownIndex);
+		LUA_SETCFUNCTION(mL, SetDropDownIndex);
+		LUA_SETCFUNCTION(mL, MoveUIToBottom);
+		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
+		LUA_SETCFUNCTION(mL, GetNumericUpDownValue);
+		LUA_SETCFUNCTION(mL, GetCheckedFromCheckBox);
+		LUA_SETCFUNCTION(mL, InsertCachedListItemCheckBox);
+		LUA_SETCFUNCTION(mL, InsertCachedListItemString);
+		LUA_SETCFUNCTION(mL, SetCachedListItemString);
+		LUA_SETCFUNCTION(mL, CacheListBox);
+		LUA_SETCFUNCTION(mL, MatchUIHeight);
 		LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
+		LUA_SETCFUNCTION(mL, ToggleVisibleLuaUI);
+		LUA_SETCFUNCTION(mL, CloseAllLuaUI);
 		LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
 		LUA_SETCFUNCTION(mL, SetVisibleComponent);
 		LUA_SETCFUNCTION(mL, LoadLuaUI);
@@ -83,6 +126,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, IsButtonActivated);
 		LUA_SETCFUNCTION(mL, StartUIAnimation);
 		LUA_SETCFUNCTION(mL, StopUIAnimation);
+		LUA_SETCFUNCTION(mL, GetListItemText);
 	}
 
 	int LoadLuaUI(lua_State* L)
@@ -194,6 +238,19 @@ namespace fastbird
 		luaL_checktype(L, 2, LUA_TBOOLEAN);
 		bool visible = lua_toboolean(L, 2) != 0;
 		UIManager::GetUIManagerStatic()->SetVisible(uiname, visible);
+		return 0;
+	}
+
+	int ToggleVisibleLuaUI(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		UIManager::GetUIManagerStatic()->ToggleVisibleLuaUI(uiname);
+		return 0;
+	}
+
+	int CloseAllLuaUI(lua_State* L)
+	{
+		UIManager::GetUIManagerStatic()->CloseAllLuaUI();
 		return 0;
 	}
 
@@ -492,9 +549,7 @@ namespace fastbird
 		}
 
 		assert(0);
-		lua_pushnil(L);
-		return 1;
-
+		return 0;
 	}
 
 	int GetListBoxSelectedRowsIds(lua_State* L)
@@ -523,8 +578,7 @@ namespace fastbird
 		}
 
 		assert(0);
-		lua_pushnil(L);
-		return 1;
+		return 0;
 	}
 
 	int SetActivationUIAnim(lua_State* L)
@@ -682,18 +736,301 @@ namespace fastbird
 		return 0;
 	}
 
-	int MathUIHeight(lua_State* L)
+	int MatchUIHeight(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
+		bool checkName = false;
+		if (!lua_isnil(L, 3))
+			checkName = lua_toboolean(L, 3)!=0;
+
 		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
 		if (comp)
 		{
 			Container* con = dynamic_cast<Container*>(comp);
 			if (con)
 			{
-				con->MatchHeight();
+				con->MatchHeight(checkName);
 			}
+		}
+		return 0;
+	}
+
+	int CacheListBox(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		bool found = IUIManager::GetUIManager().CacheListBox(uiname, compName);
+		lua_pushboolean(L, found);
+		return 1;
+	}
+
+	int InsertCachedListItemCheckBox(lua_State* L)
+	{
+		bool checked = lua_toboolean(L, 1) != 0;
+		const char* name = luaL_checkstring(L, 2);
+		const char* eventFunc = luaL_checkstring(L, 3);
+		ListBox* listbox = IUIManager::GetUIManager().GetCachedListBox();
+		if_assert_fail(listbox)
+			return 0;
+		unsigned row = listbox->InsertCheckBoxItem(checked);
+		CheckBox* checkbox = listbox->GetCheckBox(row, 0);
+		checkbox->SetName(name);
+		checkbox->RegisterEventLuaFunc(IEventHandler::EVENT_CHECKBOX_CLICKED, eventFunc);
+		lua_pushunsigned(L, row);
+		return 1;
+	}
+
+	int InsertCachedListItemString(lua_State* L)
+	{
+		const char* str = luaL_checkstring(L, 1);
+		ListBox* listbox = IUIManager::GetUIManager().GetCachedListBox();
+		if_assert_fail(listbox)
+			return 0;
+
+		unsigned row = listbox->InsertItem(AnsiToWide(str));
+		lua_pushunsigned(L, row);
+		return 1;
+	}
+
+	int SetCachedListItemString(lua_State* L)
+	{
+		unsigned row = luaL_checkunsigned(L, 1);
+		unsigned col = luaL_checkunsigned(L, 2);
+		const char* text = luaL_checkstring(L, 3);
+		ListBox* listbox = IUIManager::GetUIManager().GetCachedListBox();
+		if_assert_fail(listbox)
+			return 0;
+		listbox->SetItemString(row, col, AnsiToWide(text));
+		return 0;
+	}
+
+	int GetCheckedFromCheckBox(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = dynamic_cast<CheckBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (comp)
+		{
+			lua_pushboolean(L, comp->GetCheck());
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetNumericUpDownValue(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = dynamic_cast<NumericUpDown*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (comp)
+		{
+			lua_pushinteger(L, comp->GetValue());
+			return 1;
+		}
+		return 0;
+	}
+
+	int SetNumericUpDownValue(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = dynamic_cast<NumericUpDown*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (comp)
+		{
+			int val = luaL_checkint(L, 3);
+			comp->SetNumber(val);
+			return 0;
+		}
+		return 0;
+	}
+
+	int GetListItemText(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (comp)
+		{
+			unsigned row = luaL_checkunsigned(L, 3);
+			unsigned col = luaL_checkunsigned(L, 4);
+			auto item = comp->GetItem(row, col);
+			if (item)
+			{
+				lua_pushstring(L, WideToAnsi(item->GetText()));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	int MoveUIToBottom(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		IUIManager::GetUIManager().MoveToBottom(uiname);
+		return 0;
+	}
+
+	int SetDropDownIndex(lua_State* L)
+	{
+		unsigned index = luaL_checkunsigned(L, 1);
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto dropDown = dynamic_cast<DropDown*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (dropDown)
+		{
+			dropDown->SetSelectedIndex(index);
+		}
+		return 0;
+	}
+
+	int GetDropDownIndex(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto dropDown = dynamic_cast<DropDown*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (dropDown)
+		{
+			lua_pushunsigned(L, dropDown->GetSelectedIndex());
+			return 1;
+		}
+		return 0;
+	}
+
+	int SetVisibleLuaUIWithoutFocusing(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		luaL_checktype(L, 2, LUA_TBOOLEAN);
+		bool visible = lua_toboolean(L, 2) != 0;
+		UIManager::GetUIManagerStatic()->LockFocus(true);
+		UIManager::GetUIManagerStatic()->SetVisible(uiname, visible);
+		UIManager::GetUIManagerStatic()->LockFocus(false);
+		return 0;
+	}
+
+	int GetNumListBoxItems(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (listBox)
+		{
+			lua_pushunsigned(L, listBox->GetNumItems());
+			return 1;
+		}
+		return 0;
+	}
+
+	int SetListBoxRowId(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (listBox)
+		{
+			listBox->SetRowId(luaL_checkunsigned(L, 3), luaL_checkunsigned(L, 4));
+		}
+		return 0;
+	}
+
+	int SwapListBoxItem(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (listBox)
+		{
+			listBox->SwapItems(luaL_checkunsigned(L, 3), luaL_checkunsigned(L, 4));
+		}
+		return 0;
+	}
+
+	int GetListBoxRowIds(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (listBox)
+		{
+			auto numItems = listBox->GetNumItems();
+			if (numItems == 0)
+				return 0;
+
+			LuaObject table;
+			table.NewTable(L);
+			for (unsigned i = 0; i < numItems; i++)
+			{
+				unsigned rowId = listBox->GetRowId(i);
+				table.SetSeq(i + 1, rowId);
+			}
+			table.PushToStack();
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetColorRampUIValues(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto colorRamp = dynamic_cast<ColorRampComp*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (colorRamp)
+		{
+			std::vector<float> values;
+			colorRamp->GetColorRampValuesFloats(values);
+			if (values.empty())
+				return 0;
+			LuaObject table;
+			table.NewTable(L);
+			int n = 1;
+			for (auto v : values)
+			{
+				table.SetSeq(n++, v);
+			}
+			table.PushToStack();
+			return 1;
+		}
+		return 0;
+	}
+
+	int SetColorRampUIValues(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto colorRamp = dynamic_cast<ColorRampComp*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (colorRamp)
+		{
+			std::vector<float> values;
+			LuaObject table(L, 3);
+			auto it = table.GetSequenceIterator();
+			LuaObject elem;
+			while (it.GetNext(elem))
+			{
+				values.push_back(elem.GetFloat());
+			}
+			colorRamp->SetColorRampValuesFloats(values);
+		}
+		return 0;
+	}
+
+	int GetListBoxSelectedRowIds(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listbox = dynamic_cast<ListBox*>(IUIManager::GetUIManager().FindComp(uiname, compName));
+		if (listbox)
+		{
+			std::vector<unsigned> rowIds;
+			listbox->GetSelectedRowIds(rowIds);
+			int n = 1;
+			LuaObject table;
+			table.NewTable(L);
+			for (auto rowId : rowIds)
+			{
+				table.SetSeq(n++, rowId);
+			}
+			table.PushToStack();
+			return 1;
 		}
 		return 0;
 	}

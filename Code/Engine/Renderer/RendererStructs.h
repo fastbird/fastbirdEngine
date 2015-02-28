@@ -219,18 +219,20 @@ namespace fastbird
 			INPUT_ELEMENT_FORMAT format, unsigned inputSlot,
 			unsigned alignedByteOffset, INPUT_CLASSIFICATION slotClass,
 			unsigned instanceDataStepRate)
-			: mSemanticName(semantic), mSemanticIndex(index)
+			: mSemanticIndex(index)
 			, mFormat(format), mInputSlot(inputSlot)
 			, mAlignedByteOffset(alignedByteOffset), mInputSlotClass(slotClass)
 			, mInstanceDataStepRate(instanceDataStepRate)
 		{
+			memset(mSemanticName, 0, 256);
+			strcpy(mSemanticName, semantic);
 		}
 		INPUT_ELEMENT_DESC()
 		{
 		}
 		bool operator==(const INPUT_ELEMENT_DESC& other) const
 		{
-			return mSemanticName == other.mSemanticName &&
+			return strcmp(mSemanticName,other.mSemanticName)==0 &&
 				mSemanticIndex == other.mSemanticIndex &&
 				mFormat == other.mFormat &&
 				mInputSlot == other.mInputSlot &&
@@ -241,7 +243,9 @@ namespace fastbird
 
 		bool operator< (const INPUT_ELEMENT_DESC& other) const
 		{
-			int cmp = mSemanticName.compare(other.mSemanticName);
+			int cmp = memcmp(this, &other, sizeof(INPUT_ELEMENT_DESC));
+			return cmp < 0;
+			/*int cmp = mSemanticName.compare(other.mSemanticName);
 
 			if (cmp < 0)
 				return true;
@@ -275,10 +279,10 @@ namespace fastbird
 					}
 				}
 			}
-			return false;
+			return false;*/
 		}
 
-		std::string mSemanticName;
+		char mSemanticName[256];
 		unsigned mSemanticIndex;
 		INPUT_ELEMENT_FORMAT mFormat;
 		unsigned mInputSlot;

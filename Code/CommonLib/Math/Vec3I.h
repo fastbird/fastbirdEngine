@@ -67,7 +67,7 @@ namespace fastbird
 
 		Vec3I operator- (const Vec3I& v) const
 		{
-			return Vec3I(x-v.x, y-v.y, y-v.y);
+			return Vec3I(x-v.x, y-v.y, z-v.z);
 		}
 
 		//-------------------------------------------------------------------

@@ -128,4 +128,19 @@ namespace fastbird
 	{
 		mDown->SetEnable(enable);
 	}
+
+	bool NumericUpDown::SetProperty(UIProperty::Enum prop, const char* val)
+	{
+		switch (prop)
+		{
+		case UIProperty::NUMERIC_UPDOWN_MINMAX:
+		{
+												  Vec2I minmax = StringConverter::parseVec2I(val);
+												  SetMinMax(minmax.x, minmax.y);
+												  return true;
+		}
+		}
+
+		return __super::SetProperty(prop, val);
+	}
 }

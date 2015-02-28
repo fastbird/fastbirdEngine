@@ -18,6 +18,7 @@
 #include <UI/NumericUpDown.h>
 #include <UI/DropDown.h>
 #include <UI/TextBox.h>
+#include <UI/ColorRampComp.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
@@ -65,6 +66,8 @@ UIManager::UIManager(lua_State* L)
 	, mPopupResult(0)
 	, mL(L)
 	, mPosSizeEventEnabled(true), mIgnoreInput(false)
+	, mCachedListBox(0)
+	, mModelWindow(0), mLockFocus(false)
 {
 	gpTimer = gEnv->pTimer;
 	gEnv->pEngine->AddInputListener(this,
@@ -110,9 +113,58 @@ void UIManager::Shutdown()
 //---------------------------------------------------------------------------
 void UIManager::Update(float elapsedTime)
 {
+	for (auto ui : mSetFocusReserved)
+	{
+		if (mFocusWnd)
+			mFocusWnd->OnFocusLost();
+		mFocusWnd = ui;
+		if (mFocusWnd)
+			mFocusWnd->OnFocusGain();
+
+		WINDOWS::iterator f = std::find(mWindows.begin(), mWindows.end(), ui);
+		if (f != mWindows.end())
+		{
+			// insert f at the mWindows.end().
+			mWindows.splice(mWindows.end(), mWindows, f);
+		}
+		if (!ui->IsAlwaysOnTop())
+		{
+			for (auto& win : mAlwaysOnTopWindows)
+			{
+				if (!win->GetVisible())
+					continue;
+				WINDOWS::iterator f = std::find(mWindows.begin(), mWindows.end(), win);
+				if (f != mWindows.end())
+				{
+					// insert f at the mWindows.end().
+					mWindows.splice(mWindows.end(), mWindows, f);
+				}
+			}
+		}
+		if (!ui->GetRender3D())
+			mNeedToRegisterUIObject = true;
+	}
+	mSetFocusReserved.clear();
+
+	for (auto& ui : mMoveToBottomReserved)
+	{
+		WINDOWS::iterator f = std::find(mWindows.begin(), mWindows.end(), ui);
+		if (f != mWindows.end())
+		{
+			// insert f at the mWindows.begin().
+			if (mWindows.begin() != f)
+			{
+				mWindows.splice(mWindows.begin(), mWindows, f);
+				mNeedToRegisterUIObject = true;
+			}			
+		}		
+	}
+	mMoveToBottomReserved.clear();	
+
 	for each(auto& wnd in mWindows)
 	{
-		wnd->OnStartUpdate(elapsedTime);
+		if (wnd->GetVisible())
+			wnd->OnStartUpdate(elapsedTime);
 	}
 }
 
@@ -400,9 +452,17 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 }
 
 //---------------------------------------------------------------------------
-void UIManager::IgnoreInput(bool ignore)
+void UIManager::IgnoreInput(bool ignore, IWinBase* modalWindow)
 {
 	ignore ? mIgnoreInput++ : mIgnoreInput--;
+	mModelWindow = modalWindow;
+}
+
+void UIManager::ToggleVisibleLuaUI(const char* uiname)
+{
+	bool visible = GetVisible(uiname);
+	visible = !visible;
+	SetVisible(uiname, visible);
 }
 
 //---------------------------------------------------------------------------
@@ -458,7 +518,7 @@ IWinBase* UIManager::AddWindow(int posX, int posY, int width, int height, Compon
 	
 	if (pWnd !=0)
 	{
-		mWindows.push_front(pWnd);
+		mWindows.push_back(pWnd);
 		pWnd->SetSize(Vec2I(width, height));
 		pWnd->SetPos(Vec2I(posX, posY));
 	}
@@ -472,7 +532,7 @@ IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height
 
 	if (pWnd!=0)
 	{
-		mWindows.push_front(pWnd);
+		mWindows.push_back(pWnd);
 		pWnd->SetNSize(Vec2(width, height));
 		pWnd->SetNPos(Vec2(posX, posY));
 	}
@@ -486,7 +546,7 @@ IWinBase* UIManager::AddWindow(ComponentType::Enum type)
 
 	if (pWnd != 0)
 	{
-		mWindows.push_front(pWnd);
+		mWindows.push_back(pWnd);
 	}
 	mNeedToRegisterUIObject = true;
 	return pWnd;
@@ -510,23 +570,19 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	mNeedToRegisterUIObject = true;
 	if (winbase->GetFocus(true))
 		mFocusWnd = 0;
+
+	if (winbase->GetRender3D())
+	{
+		gFBEnv->pEngine->Unregister3DUIs(winbase->GetName());
+	}
 }
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
-
-	if (mFocusWnd)
-		mFocusWnd->OnFocusLost();
-	mFocusWnd = ui;
-	if (mFocusWnd)
-		mFocusWnd->OnFocusGain();
-
-	WINDOWS::iterator f = std::find(mWindows.begin(), mWindows.end(), ui);
-	if (f!=mWindows.end())
-	{
-		mWindows.splice(mWindows.end(), mWindows, f);
-	}
-	mNeedToRegisterUIObject = true;
+	if (!ui || !ui->GetVisible())
+		return;
+	if (ValueNotExistInVector(mSetFocusReserved, ui))
+		mSetFocusReserved.push_back(ui);
 }
 
 IWinBase* UIManager::GetFocusUI() const
@@ -632,6 +688,9 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::TextBox:
 		pWnd = FB_NEW(TextBox);
 		break;
+	case ComponentType::ColorRamp:
+		pWnd = FB_NEW(ColorRampComp);
+		break;
 	default:
 		assert(0 && "Unknown component");
 	}
@@ -650,8 +709,20 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	if (!pMouse->IsValid() && !pKeyboard->IsValid())
 		return;
 
+	if (pKeyboard->IsValid() && pKeyboard->IsKeyPressed(VK_ESCAPE))
+	{
+		if (mFocusWnd && mFocusWnd->GetCloseByEsc())
+		{
+			mFocusWnd->SetVisible(false);
+		}
+	}
+
 	if (mIgnoreInput)
+	{
+		if (mModelWindow)
+			mModelWindow->OnInputFromHandler(pMouse, pKeyboard);
 		return;
+	}
 
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked())
 	{
@@ -669,8 +740,9 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	}
 
 	mMouseIn = false;
-	WINDOWS::reverse_iterator it = mWindows.rbegin(),itEnd = mWindows.rend();
-	for (; it!=itEnd; it++)
+	WINDOWS::reverse_iterator it = mWindows.rbegin(), itEnd = mWindows.rend();
+	int i = 0;
+	for (; it != itEnd; ++it)
 	{
 		if ((*it)->GetVisible())
 		{
@@ -829,6 +901,9 @@ IWinBase* UIManager::FindComp(const char* uiname, const char* compName) const
 	if (itFind == mLuaUIs.end())
 		return 0;
 
+	if ((compName == 0 || strlen(compName) == 0) && !itFind->second.empty())
+		return itFind->second[0];
+
 	for (const auto& comp : itFind->second)
 	{
 		if (strcmp(comp->GetName(), compName) == 0)
@@ -842,6 +917,12 @@ IWinBase* UIManager::FindComp(const char* uiname, const char* compName) const
 	}
 
 	return 0;
+}
+
+bool UIManager::CacheListBox(const char* uiname, const char* compName)
+{
+	mCachedListBox = dynamic_cast<ListBox*>(FindComp(uiname, compName));
+	return mCachedListBox != 0;
 }
 
 void UIManager::SetVisible(const char* uiname, bool visible)
@@ -873,6 +954,11 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 
 }
 
+void UIManager::LockFocus(bool lock)
+{
+	mLockFocus = lock;
+}
+
 bool UIManager::GetVisible(const char* uiname) const
 {
 	assert(uiname);
@@ -890,6 +976,17 @@ bool UIManager::GetVisible(const char* uiname) const
 		visible = visible || comp->GetVisible();
 	}
 	return visible;
+}
+
+void UIManager::CloseAllLuaUI()
+{
+	for (auto& it : mLuaUIs)
+	{
+		for (auto& ui : it.second)
+		{
+			ui->SetVisible(false);
+		}
+	}
 }
 
 const char* UIManager::FindUIFilenameWithLua(const char* luafilepath)
@@ -958,6 +1055,11 @@ void UIManager::OnUIFileChanged(const char* file)
 	auto itFind = mLuaUIs.find(uiname);
 	if (itFind != mLuaUIs.end())
 	{
+		if (GetVisible(uiname.c_str()))
+		{
+			SetVisible(uiname.c_str(), false);
+		}
+
 		for (const auto& ui : itFind->second)
 		{
 			DeleteWindow(ui);
@@ -975,6 +1077,27 @@ void UIManager::OnUIFileChanged(const char* file)
 UIManager* UIManager::GetUIManagerStatic()
 {
 	return (UIManager*)&IUIManager::GetUIManager();
+}
+
+void UIManager::RegisterAlwaysOnTopWnd(IWinBase* win)
+{
+	if (ValueNotExistInVector(mAlwaysOnTopWindows, win))
+		mAlwaysOnTopWindows.push_back(win);
+}
+
+void UIManager::UnRegisterAlwaysOnTopWnd(IWinBase* win)
+{
+	DeleteValuesInVector(mAlwaysOnTopWindows, win);
+}
+
+void UIManager::MoveToBottom(const char* moveToBottom)
+{
+	auto ui = FindComp(moveToBottom, 0);
+	if (ui)
+	{
+		if (ValueNotExistInVector(mMoveToBottomReserved, ui))
+			mMoveToBottomReserved.push_back(ui);
+	}	
 }
 
 } // namespace fastbird

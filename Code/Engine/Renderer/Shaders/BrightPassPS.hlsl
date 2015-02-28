@@ -18,7 +18,7 @@ struct QuadVS_Output
 
 static const float  LUM_WHITE = 1.5f;
 static const float  BRIGHT_THRESHOLD = 0.7f;
-static const float  BRIGHT_PASS_OFFSET     = 10.0f; // Offset for BrightPass filter
+static const float  BRIGHT_PASS_OFFSET     = 1.0f; // Offset for BrightPass filter
 //---------------------------------------------------------------------------
 // PS
 //---------------------------------------------------------------------------
@@ -29,16 +29,17 @@ float4 brightpassps_PixelShader(QuadVS_Output Input
 ) : SV_TARGET
 {
 	float3 vColor = 0.0f;
-	float fLum = gLumTexture.Sample(gPointSampler, float2(0.5, 0.5));
+	float fLum = max(0.2, gLumTexture.Sample(gPointSampler, float2(0, 0)));
+	//float fLum = gLumTexture.Sample(gPointSampler, float2(0, 0));
 #ifdef _MULTI_SAMPLE
 	float2 textureSize = gMaterialParam[0].xy;
 	vColor = gHDRTexture.Load(Input.Tex.xy*textureSize, sampleIndex).rgb;
 #else
-	vColor = gHDRTexture.Sample(gLinearSampler, Input.Tex).rgb;
+	vColor = gHDRTexture.Sample(gPointSampler, Input.Tex).rgb;
 #endif	
 
 	// Bright pass and tone mapping
-	vColor *= gMiddleGray_Star_Bloom_Empty.x / (fLum + 0.001f);	
+	vColor *= gMiddleGray / fLum;	
 	vColor = max(0.0f, vColor - BRIGHT_THRESHOLD);	
 	vColor /= (BRIGHT_PASS_OFFSET + vColor);
 

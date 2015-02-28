@@ -73,7 +73,9 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 #ifdef _DESATURATE
 	color.rgb = (0.212671 * color.r + 0.71516 * color.g + 0.072169 * color.b)*.7;
 #endif
-	color.rgb += gAmbientColor.rgb;
+
+	color.rgb += gAmbientColor.xyz;
+	color.rgb *= gSpecularColor.xyz;
 
     return color;
 }

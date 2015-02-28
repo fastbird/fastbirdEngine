@@ -14,6 +14,7 @@ ImageBox::ImageBox()
 	, mSecPerFrame(0)
 	, mPlayingTime(0)
 	, mCurFrame(0), mImageFixedSize(false)
+	, mTexture(0)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -95,6 +96,8 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 
 void ImageBox::SetTexture(const char* file)
 {
+	if (strcmp(file, mImageFile.c_str()) == 0)
+		return;
 	mImageFile = file ? file : "";
 	if (mImageFile.empty())
 	{
@@ -120,6 +123,7 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
+		// need to set to material. matarial will hold its reference counter
 		mTexture = mTextureAtlas->mTexture->Clone();
 		if (mImageFixedSize)
 		{
@@ -150,6 +154,7 @@ void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::
 	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
+		// need to set to material. matarial will hold its reference counter
 		mTexture = mTextureAtlas->mTexture->Clone();
 		if (mImageFixedSize)
 		{
@@ -257,10 +262,11 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::REGION:
 	{
-							   if (!mTextureAtlasFile.empty())
+							   if (mTextureAtlasFile.empty())
 							   {
-								   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+								   mTextureAtlasFile = "data/textures/gameui.xml";
 							   }
+							   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
 							   return true;
 	}
 		break;
@@ -451,6 +457,7 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 	else
 	{
 		assert(0 && "You didn't set the texture");
+		return;
 	}
 	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
 	SetWNSize(size);
@@ -505,6 +512,11 @@ void ImageBox::SetDesaturate(bool desat)
 void ImageBox::SetAmbientColor(const Vec4& color)
 {
 	mUIObject->GetMaterial()->SetAmbientColor(color);
+}
+
+void ImageBox::SetSpecularColor(const Vec4& color)
+{
+	mUIObject->GetMaterial()->SetSpecularColor(color);
 }
 
 }

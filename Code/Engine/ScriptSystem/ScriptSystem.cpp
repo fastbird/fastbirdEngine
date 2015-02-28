@@ -13,7 +13,7 @@ int FBPrint(lua_State* L)
 
 namespace fastbird
 {
-
+	void InitEngineLuaFuncs(lua_State* L);
 //-------------------------------------------------------------------------
 ScriptSystem::ScriptSystem()
 {
@@ -22,6 +22,7 @@ ScriptSystem::ScriptSystem()
 	assert(mLuaState);
 	ExportsDefaultFunctions();
 	RunScript("configEngine.lua");
+	InitEngineLuaFuncs(mLuaState);
 }
 
 //-------------------------------------------------------------------------
@@ -61,7 +62,9 @@ bool ScriptSystem::ExecuteLua(const std::string& chunk)
 		lua_pop(mLuaState, 1);
 		if (gFBEnv->pEngine)
 		{
-			gFBEnv->pEngine->Error(err.c_str());
+			char buf[1024];
+			sprintf_s(buf, "\n%s/%s", GetCWD(), err.c_str());
+			gFBEnv->pEngine->Error(buf);
 		}
 		else
 		{

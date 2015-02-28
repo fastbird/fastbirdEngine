@@ -48,9 +48,9 @@ def write_layer(layer, elem, id):
     subElem.set("height", "{}".format(layer.height))
         
         
-def export_layers_info(image, drawable, filepath, ddspath):
+def export_layers_info(image, drawable, filepath, ddspath, ddspathInXml):
     rootElem = ET.Element("TextureAtlas")
-    rootElem.set("file", gXMLImagePath)
+    rootElem.set("file", ddspathInXml)
     id = 1;
     for layer in image.layers:
         write_layer(layer, rootElem, id)
@@ -90,6 +90,7 @@ register(
     (PF_DRAWABLE, "drawable", "Drawable", None),
     (PF_FILE , "filepath", "File Path", gXMLPath),
     (PF_FILE , "ddspath", "DDS File Path", gDDSPath),
+	(PF_STRING , "ddspathInXml", "DDS File Path In Xml", gXMLImagePath),
   ],
   [],
   export_layers_info, menu="<Image>/Tools")

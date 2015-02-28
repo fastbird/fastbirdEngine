@@ -402,6 +402,13 @@
       <Filter>RenderObjects</Filter>
     </ClInclude>
     <ClInclude Include="TextTags.h" />
+    <ClInclude Include="Renderer\PointLightMan.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\PointLight.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IPointLight.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -583,6 +590,12 @@
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="RenderObjects\GeometryRenderer.cpp">
       <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\PointLightMan.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\PointLight.cpp">
+      <Filter>Renderer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

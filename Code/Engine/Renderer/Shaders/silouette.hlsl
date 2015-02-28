@@ -26,6 +26,6 @@ float4 silouette_PixelShader( in QuadVS_Output IN ) : SV_Target
 		
 
 		
-	return float4(1, 1, 1, 1);
+	return float4(0.7, 0.7, 0.7, 0.5);
 }
 

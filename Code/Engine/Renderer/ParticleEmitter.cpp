@@ -39,8 +39,19 @@ ParticleEmitter::~ParticleEmitter()
 {
 	FB_FOREACH(it, mParticles)
 	{
-		FB_SAFE_DEL(it->second);
+		auto particles = it->second;
+		PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
+		for (; itParticle != itEndParticle; ++itParticle)
+		{
+			if (itParticle->mPointLight)
+			{
+				gFBEnv->pRenderer->DeletePointLight(itParticle->mPointLight);
+				itParticle->mPointLight = 0;
+			}
+		}
+		FB_SAFE_DEL(particles);
 	}
+	mParticles.clear();
 }
 
 //-----------------------------------------------------------------------------
@@ -98,6 +109,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("texture");
 		if (sz)
 			pt.mTexturePath = sz;
+
+		sz = pPT->Attribute("pointLightRangeMinMax");
+		if (sz)
+			pt.mPLRangeMinMax = StringConverter::parseVec2(sz);
 
 		sz = pPT->Attribute("geometry");
 		if (sz)
@@ -525,10 +540,16 @@ bool ParticleEmitter::Update(float dt)
 					p.mCurLifeTime += dt;
 					if (p.mCurLifeTime>=p.mLifeTime)
 					{
-						p.mLifeTime = 0.0f; // mark dead.
-						p.mCurLifeTime = 0.0f;
 						if (p.mMeshObject)
 							p.mMeshObject->DetachFromScene();
+						if (p.mPointLight)
+						{
+							gFBEnv->pRenderer->DeletePointLight(p.mPointLight);
+							p.mPointLight = 0;
+						}
+
+						p.mLifeTime = 0.0f; // mark dead.
+						p.mCurLifeTime = 0.0f;
 						continue;
 					}
 				}
@@ -638,6 +659,11 @@ bool ParticleEmitter::Update(float dt)
 							}
 						}
 					}					
+				}
+
+				if (p.mPointLight)
+				{
+					p.mPointLight->SetAlpha(p.mAlpha);
 				}
 			}
 		}
@@ -818,10 +844,18 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 							dest->mColor = p.mColor;
 							dest++;
 						}
-						else // geometry
+						else // geometry or point light
 						{
-							p.mMeshObject->SetPos(p.mPosWorld);
-							p.mMeshObject->SetDir(GetForward());
+							if (p.mMeshObject)
+							{
+								p.mMeshObject->SetPos(p.mPosWorld);
+								p.mMeshObject->SetDir(GetForward());
+							}
+							if (p.mPointLight)
+							{
+								p.mPointLight->SetPos(p.mPosWorld);
+							}
+							
 						}
 							
 					}
@@ -971,6 +1005,16 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		p.mMeshObject->AttachToScene();
 		p.mMeshObject->SetPos(p.mPosWorld);
 		p.mMeshObject->SetDir(GetForward());
+	}
+
+	if (pt.mPLRangeMinMax != Vec2::ZERO)
+	{
+		if (!p.mPointLight)
+		{
+			Vec4 color(pt.mColor.GetVec4());
+			Vec3 color3(color.x, color.y, color.z);
+			p.mPointLight = gFBEnv->pRenderer->CreatePointLight(p.mPosWorld, pt.mPLRangeMinMax.y, color3, pt.mIntensityMinMax.y, FLT_MAX, true);
+		}
 	}
 	return &p;
 }

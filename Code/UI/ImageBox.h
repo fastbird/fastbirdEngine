@@ -41,6 +41,7 @@ public:
 	void DrawAsFixedSize();
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
+	void SetSpecularColor(const Vec4& color);
 
 private:
 
@@ -54,7 +55,9 @@ private:
 	TextureAtlas* mTextureAtlas;
 	TextureAtlasRegion* mAtlasRegion;
 	std::vector<TextureAtlasRegion*> mAtlasRegions;
-	SmartPtr<ITexture> mTexture;
+	// should not be smart pointer
+	// material will hold a reference of this image.
+	ITexture* mTexture;
 	bool mUseHighlight;
 	bool mKeepImageRatio;
 	ImageBox* mFrameImage;	

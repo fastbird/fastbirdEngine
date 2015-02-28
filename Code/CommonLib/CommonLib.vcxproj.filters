@@ -130,6 +130,7 @@
     <ClInclude Include="FBColShape.h">
       <Filter>Collision</Filter>
     </ClInclude>
+    <ClInclude Include="ClipboardData.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -219,5 +220,6 @@
     <ClCompile Include="LuaUtils.cpp" />
     <ClCompile Include="StdOutRedirect.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="ClipboardData.cpp" />
   </ItemGroup>
 </Project>

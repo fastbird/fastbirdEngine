@@ -188,9 +188,14 @@ void Camera::Update()
 		Vec3 forward = mTransformation.GetMatrix().Column(1);
 		Vec3 up = mTransformation.GetMatrix().Column(2);
 		const Vec3& pos = mTransformation.GetTranslation();
-		
-		mViewMat  = fastbird::MakeViewMatrix(pos, right, forward, up);
-		mInvViewMat = mViewMat.InverseAffine();
+		mViewMat = fastbird::MakeViewMatrix(pos, right, forward, up);
+		// The same code
+		//Transformation temp;
+		//mTransformation.Inverse(temp);
+		//temp.GetHomogeneous(mViewMat);
+
+		//mInvViewMat = 
+		mTransformation.GetHomogeneous(mInvViewMat);
 	}
 
 	bool projChanged = mProjPropertyChanged;

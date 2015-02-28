@@ -27,6 +27,7 @@ namespace fastbird
 			NumericUpDown,
 			DropDown,
 			TextBox,
+			ColorRamp,
 
 			NUM
 		};
@@ -53,6 +54,7 @@ namespace fastbird
 			"NumericUpDown",
 			"DropDown",
 			"TextBox",
+			"ColorRamp",
 
 			"NUM",
 		};

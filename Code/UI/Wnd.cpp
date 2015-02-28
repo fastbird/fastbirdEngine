@@ -13,6 +13,8 @@ Wnd::Wnd()
 :mTitlebar(0)
 , mUseFrame(false)
 , mBackgroundImage(0)
+, mAlwaysOnTop(false)
+, mCloseByEsc(false)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -24,6 +26,10 @@ Wnd::Wnd()
 
 Wnd::~Wnd()
 {
+	if (mAlwaysOnTop)
+	{
+		IUIManager::GetUIManager().UnRegisterAlwaysOnTopWnd(this);
+	}
 	FB_DELETE(mBackgroundImage);
 	for (auto var : mFrames)
 	{
@@ -31,6 +37,7 @@ Wnd::~Wnd()
 	}
 	mFrames.clear();
 	IUIManager::GetUIManager().DeleteComponent(mTitlebar);
+	mTitlebar = 0;
 }
 
 void Wnd::GatherVisit(std::vector<IUIObject*>& v)
@@ -332,6 +339,22 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 										 return true;
 	}
 
+	case UIProperty::ALWAYS_ON_TOP:
+	{
+									  mAlwaysOnTop = StringConverter::parseBool(val);
+									  if (mAlwaysOnTop)
+										  IUIManager::GetUIManager().RegisterAlwaysOnTopWnd(this);
+									  else
+										  IUIManager::GetUIManager().UnRegisterAlwaysOnTopWnd(this);
+									  return true;
+	}
+
+	case UIProperty::CLOSE_BY_ESC:
+	{
+									 mCloseByEsc = StringConverter::parseBool(val);
+									 return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -351,9 +374,11 @@ void Wnd::OnTitlebarDrag(void *arg)
 bool Wnd::SetVisible(bool show)
 {
 	bool changed = __super::SetVisible(show);
-	IUIManager::GetUIManager().SetFocusUI(this);
 	if (changed)
 	{
+		if (!mParent && !mManualParent)
+			IUIManager::GetUIManager().SetFocusUI(this);
+
 		if (mTitlebar)
 			mTitlebar->SetVisible(show);
 	}

@@ -25,6 +25,9 @@ public:
 	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 	void MouseConsumer(void* arg){}
 
+	virtual bool IsAlwaysOnTop() const{ return mAlwaysOnTop; }
+	virtual bool GetCloseByEsc() const { return mCloseByEsc; }
+
 protected:
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();
@@ -36,6 +39,8 @@ private:
 	std::vector<ImageBox*> mFrames;
 	bool mUseFrame;
 	ImageBox* mBackgroundImage;
+	bool mAlwaysOnTop;
+	bool mCloseByEsc;
 };
 
 }

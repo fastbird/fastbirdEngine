@@ -17,12 +17,16 @@ namespace fastbird
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual void OnCreated();
 		virtual ComponentType::Enum GetType() const { return ComponentType::NumericUpDown; }
+		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 
 		virtual void SetNumber(int number);
 		virtual void SetMinMax(int min, int max);
+		virtual int GetValue() const { return mValue; }
 
 		virtual void SetEnableUp(bool enable);
 		virtual void SetEnableDown(bool enable);
+
+
 
 	protected:
 		void InitializeButtons();

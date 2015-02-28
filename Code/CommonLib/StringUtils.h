@@ -6,6 +6,7 @@ namespace fastbird
 	typedef std::vector<std::string> StringVector;
 	typedef std::vector<std::wstring> WStringVector;
 
+	void ReplaceCharacter(char* s, char target, char replace);
 	char* StripRight(char* s);
 	char* StripLeft(char* s);
 	std::string StripBoth(const char* s);

@@ -10,6 +10,7 @@ namespace fastbird
 
 	class IWinBase;
 	class IUIObject;
+	class ListBox;
 	class UIManager : public IUIManager
 	{
 		friend class IUIManager;
@@ -59,14 +60,26 @@ namespace fastbird
 
 		virtual lua_State* GetLuaState() const { return mL; }
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const;
+		virtual bool CacheListBox(const char* uiname, const char* compName);
+		virtual ListBox* GetCachedListBox() const{
+			return mCachedListBox;
+		}
 		virtual void SetEnablePosSizeEvent(bool enable) { mPosSizeEventEnabled = enable; }
 		virtual bool GetEnablePosSizeEvent() const { return mPosSizeEventEnabled; }
 		virtual void SetVisible(const char* uiname, bool visible);
+		virtual void LockFocus(bool lock);
 		virtual bool GetVisible(const char* uiname) const;
+		virtual void CloseAllLuaUI();
 		virtual void OnUIFileChanged(const char* file);
 
 		virtual void CloneUI(const char* uiname, const char* newUIname);
-		virtual void IgnoreInput(bool ignore);
+		virtual void IgnoreInput(bool ignore, IWinBase* modalWindow);
+		virtual void ToggleVisibleLuaUI(const char* uisname);
+
+		virtual void RegisterAlwaysOnTopWnd(IWinBase* win);
+		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win);
+
+		virtual void MoveToBottom(const char* moveToBottom);
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
@@ -98,7 +111,15 @@ namespace fastbird
 
 		 std::map<std::string, std::vector<IWinBase*>> mLuaUIs;
 		 bool mPosSizeEventEnabled;
+		 bool mLockFocus;
 		 int mIgnoreInput;
+		 IWinBase* mModelWindow;
+
+		 ListBox* mCachedListBox;
+
+		 std::vector<IWinBase*> mAlwaysOnTopWindows;
+		 WINDOWS mMoveToBottomReserved;
+		 WINDOWS mSetFocusReserved;
 	};
 }
 

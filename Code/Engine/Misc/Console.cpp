@@ -5,6 +5,7 @@
 #include <Engine/GlobalEnv.h>
 #include <Engine/ScriptSystem/ScriptSystem.h>
 #include <CommonLib/StdOutRedirect.h>
+#include <CommonLib/ClipboardData.h>
 
 namespace fastbird
 {
@@ -320,70 +321,83 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 
 	if (unsigned int chr = pKeyboard->GetChar())
 	{
-		switch(chr)
+		if (chr == 22) // Synchronous idle - ^V
 		{
-		case VK_BACK:
+			std::string data = GetClipbardDataAsString();
+			if (!data.empty())
 			{
-				if (IsHighlighting() && !mInputString.empty())
-				{
-					auto it = mInputString.begin() + mCursorPos;
-					auto end = mInputString.begin() + mHighlightStart;
-					if (mCursorPos > mHighlightStart)
-					{
-						std::swap(it, end);
-					}
-					mCursorPos = std::distance(mInputString.begin(), it);
-					mInputString.erase(it, end);
-					EndHighlighting();					
-				}
-				else if (mCursorPos>0 && !mInputString.empty())
-				{
-					mInputString.erase(mInputString.begin()+mCursorPos-1);
-					mCursorPos--;
-				}
-				EndAutoCompletion();
+				auto insertionPos = mInputString.begin() + mCursorPos;
+				mInputString.insert(insertionPos, data.begin(), data.end());
+				mCursorPos += data.size();
 			}
-			break;
-		case VK_TAB:
+		}
+		else
+		{
+			switch (chr)
 			{
-				AutoCompletion();
-			}
-			break;
-		case VK_RETURN:
+			case VK_BACK:
 			{
-				ProcessCommand(mInputString.c_str());
-				mInputString.clear();
-				mCursorPos = 0;
-				EndHighlighting();
-				EndAutoCompletion();
-			}
-			break;
-		default:
-			{
-				if (IsValidCharForInput(chr))
-				{
-					if (IsHighlighting())
-					{
-						if (!mACMode)
-						{
-							auto it = mInputString.begin() + mCursorPos;
-							auto end = mInputString.begin() + mHighlightStart;
-							if (mCursorPos > mHighlightStart)
+							if (IsHighlighting() && !mInputString.empty())
 							{
-								std::swap(it, end);
+								auto it = mInputString.begin() + mCursorPos;
+								auto end = mInputString.begin() + mHighlightStart;
+								if (mCursorPos > mHighlightStart)
+								{
+									std::swap(it, end);
+								}
+								mCursorPos = std::distance(mInputString.begin(), it);
+								mInputString.erase(it, end);
+								EndHighlighting();
 							}
-							mCursorPos = std::distance(mInputString.begin(), it);
-							// delete selected string
-							mInputString.erase(it, end);
-						}
-						EndHighlighting();
-					}
+							else if (mCursorPos > 0 && !mInputString.empty())
+							{
+								mInputString.erase(mInputString.begin() + mCursorPos - 1);
+								mCursorPos--;
+							}
+							EndAutoCompletion();
+			}
+				break;
+			case VK_TAB:
+			{
+						   AutoCompletion();
+			}
+				break;
+			case VK_RETURN:
+			{
+							  ProcessCommand(mInputString.c_str());
+							  mInputString.clear();
+							  mCursorPos = 0;
+							  EndHighlighting();
+							  EndAutoCompletion();
+			}
+				break;
+			default:
+			{
+					   if (IsValidCharForInput(chr))
+					   {
+						   if (IsHighlighting())
+						   {
+							   if (!mACMode)
+							   {
+								   auto it = mInputString.begin() + mCursorPos;
+								   auto end = mInputString.begin() + mHighlightStart;
+								   if (mCursorPos > mHighlightStart)
+								   {
+									   std::swap(it, end);
+								   }
+								   mCursorPos = std::distance(mInputString.begin(), it);
+								   // delete selected string
+								   mInputString.erase(it, end);
+							   }
+							   EndHighlighting();
+						   }
 
-					EndAutoCompletion();
-					
-					mInputString.insert(mInputString.begin() + mCursorPos, chr);
-					mCursorPos++;
-				}
+						   EndAutoCompletion();
+
+						   mInputString.insert(mInputString.begin() + mCursorPos, chr);
+						   mCursorPos++;
+					   }
+			}
 			}
 		}
 	}

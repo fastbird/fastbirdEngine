@@ -18,7 +18,7 @@ namespace fastbird
 		virtual void SetVertices(const Vec3* ndcPoints, int num,
 			const DWORD* colors = 0, const Vec2* texcoords = 0) = 0;
 		// or call
-		virtual void SetTexCoord(Vec2 coord[], DWORD num) = 0;
+		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0) = 0;
 		virtual void SetColors(DWORD colors[], DWORD num) = 0;
 
 		virtual void SetNSize(const Vec2& size) = 0; // in normalized space 0.0f~1.0f

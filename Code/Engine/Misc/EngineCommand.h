@@ -22,6 +22,9 @@ public:
 	int r_particleProfile;
 	int r_HDR;
 	float r_HDRMiddleGray;
+	int r_HDRCpuLuminance;
+	int r_HDRFilmic;
+	float r_BloomGaussianWeight;
 	float r_BloomPower;
 	float r_StarPower;
 	int r_GodRay;
@@ -34,6 +37,7 @@ public:
 	int r_Shadow;
 	int r_UseShaderCache;
 	int r_GenerateShaderCache;
+	int r_numRenderTargets;
 
 private:
 	std::vector<CVar*> mCVars;

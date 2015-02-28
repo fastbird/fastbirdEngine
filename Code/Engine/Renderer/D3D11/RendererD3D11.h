@@ -29,6 +29,7 @@ namespace fastbird
 		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
 		virtual void UpdateObjectConstantsBuffer(void* pData);
+		virtual void UpdatePointLightConstantsBuffer(void* pData);
 		virtual void UpdateMaterialConstantsBuffer(void* pData);
 		virtual void UpdateRareConstantsBuffer();
 		virtual void UpdateRadConstantsBuffer(void* pData);
@@ -51,6 +52,7 @@ namespace fastbird
 		virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot);
 		virtual void GenerateMips(ITexture* pTexture);
 		virtual IVertexBuffer* CreateVertexBuffer(void* data, unsigned stride, unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
+		virtual void DeleteVertexBuffer(IVertexBuffer* buffer);
 		virtual IIndexBuffer* CreateIndexBuffer(void* data, unsigned int numIndices, INDEXBUFFER_FORMAT format);
 		virtual IShader* CreateShader(const char* filepath, int shaders,
 			const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0);
@@ -142,6 +144,7 @@ namespace fastbird
 		D3D11_VIEWPORT			mViewPort;
 		ID3D11Buffer*			m_pFrameConstantsBuffer;
 		ID3D11Buffer*			m_pObjectConstantsBuffer;
+		ID3D11Buffer*			m_pPointLightConstantsBuffer;
 		ID3D11Buffer*			m_pMaterialConstantsBuffer;
 		ID3D11Buffer*			m_pMaterialParametersBuffer;
 		ID3D11Buffer*			m_pRareConstantsBuffer;

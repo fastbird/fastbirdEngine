@@ -76,6 +76,7 @@ namespace fastbird
 		// this is not related to mAnimation(IUIAnimation)
 		bool mSimplePosAnimEnabled;
 		bool mNoMouseEvent;
+		bool mNoMouseEventAlone;
 		bool mUseScissor;
 		bool mEnable;
 
@@ -101,6 +102,7 @@ namespace fastbird
 		bool mPivot;
 		bool mRender3D;
 		bool mModal;
+		Vec2I mDragable;
 		Vec2I mRenderTargetSize;
 
 		Vec2I mTextGap;
@@ -281,6 +283,14 @@ namespace fastbird
 		virtual bool GetRender3D() const{ return mRender3D; }
 		virtual Vec2I GetRenderTargetSize() const;
 
+		virtual IWinBase* GetRootWnd() const;
+
+		virtual bool IsAlwaysOnTop() const{ return false; }
+
+		virtual IUIObject* GetUIObj() const { return mUIObject; }
+
+		virtual bool GetCloseByEsc() const { return false; }
+
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
@@ -292,6 +302,8 @@ namespace fastbird
 		void RefreshBorder();
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual void CalcTextWidth(); // virtual for mutiline text
+		void OnDrag(int dx, int dy);
+		virtual void OnChildHasDragged(){}
 		
 	private:
 		friend class Container;

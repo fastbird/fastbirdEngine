@@ -47,6 +47,7 @@ RendererD3D11::RendererD3D11()
 	m_pDepthStencilView = 0;
 	m_pFrameConstantsBuffer = 0;
 	m_pObjectConstantsBuffer = 0;
+	m_pPointLightConstantsBuffer = 0;
 	m_pMaterialConstantsBuffer = 0;
 	m_pMaterialParametersBuffer = 0;
 	m_pRareConstantsBuffer = 0;
@@ -91,6 +92,7 @@ void RendererD3D11::Deinit()
 	SAFE_RELEASE(m_pMaterialParametersBuffer);
 	SAFE_RELEASE(m_pMaterialConstantsBuffer);
 	SAFE_RELEASE(m_pObjectConstantsBuffer);
+	SAFE_RELEASE(m_pPointLightConstantsBuffer);
 	SAFE_RELEASE(m_pFrameConstantsBuffer);
 	SAFE_RELEASE(m_pRareConstantsBuffer);
 	SAFE_RELEASE(m_pBigBuffer);
@@ -275,6 +277,16 @@ bool RendererD3D11::Init(int threadPool)
 	if ( FAILED( hr ) )
 	{
 		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(ObjectConstants)!");
+		assert(0);
+	}
+
+	//------------------------------------------------------------------------
+	// OBJECT CONSTANT
+	Desc.ByteWidth = sizeof(POINT_LIGHT_CONSTANTS);
+	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pPointLightConstantsBuffer);
+	if (FAILED(hr))
+	{
+		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(PointLightConstants)!");
 		assert(0);
 	}
 
@@ -601,6 +613,15 @@ void RendererD3D11::UpdateObjectConstantsBuffer(void* pData)
 	m_pImmediateContext->GSSetConstantBuffers(1, 1, &m_pObjectConstantsBuffer);
 }
 
+void RendererD3D11::UpdatePointLightConstantsBuffer(void* pData)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map(m_pPointLightConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, pData, sizeof(POINT_LIGHT_CONSTANTS));
+	m_pImmediateContext->Unmap(m_pPointLightConstantsBuffer, 0);
+	m_pImmediateContext->PSSetConstantBuffers(7, 1, &m_pPointLightConstantsBuffer);
+}
+
 //----------------------------------------------------------------------------
 void RendererD3D11::UpdateMaterialConstantsBuffer(void* pData)
 {
@@ -608,7 +629,7 @@ void RendererD3D11::UpdateMaterialConstantsBuffer(void* pData)
 	HRESULT hr;
 	hr = m_pImmediateContext->Map( m_pMaterialConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 	assert(hr == S_OK);
-	memcpy(mappedResource.pData, pData, sizeof(OBJECT_CONSTANTS));
+	memcpy(mappedResource.pData, pData, sizeof(MATERIAL_CONSTANTS));
 	m_pImmediateContext->Unmap(m_pMaterialConstantsBuffer, 0);
 	m_pImmediateContext->PSSetConstantBuffers(2, 1, &m_pMaterialConstantsBuffer);
 }
@@ -635,7 +656,9 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	pRareConstants->gScreenSize.y = (float)mHeight;
 	pRareConstants->gTangentTheta = tan(mCamera->GetFOV()/2.0f);
 	pRareConstants->gScreenRatio = mWidth / (float)mHeight;
-	pRareConstants->gMiddleGray_Star_Bloom_Empty = Vec4(mMiddleGray, mStarPower, mBloomPower, 0);
+	pRareConstants->gMiddleGray = mMiddleGray;
+	pRareConstants->gStarPower = mStarPower;
+	pRareConstants->gBloomPower = mBloomPower;
 	pRareConstants->gFogColor = gFBEnv->pEngine->GetScene()->GetFogColor().GetVec4();
 	m_pImmediateContext->Unmap(m_pRareConstantsBuffer, 0);
 	m_pImmediateContext->VSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
@@ -915,6 +938,12 @@ IVertexBuffer* RendererD3D11::CreateVertexBuffer(void* data, unsigned stride,
 	pVertexBufferD3D11->SetHardwareBuffer(pHardwareBuffer);
 
 	return pVertexBufferD3D11;
+}
+
+// when you don't use SmartPtr
+void RendererD3D11::DeleteVertexBuffer(IVertexBuffer* buffer)
+{
+	FB_DELETE(buffer);
 }
 
 //----------------------------------------------------------------------------
@@ -1361,8 +1390,14 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 		pTexture->SetName(filepath.c_str());
 	}
 
+	if (imageInfo.Format == DXGI_FORMAT_R8G8B8A8_UNORM || imageInfo.Format == DXGI_FORMAT_BC1_UNORM ||
+		imageInfo.Format == DXGI_FORMAT_BC3_UNORM || imageInfo.Format == DXGI_FORMAT_BC5_UNORM)
+	{
+		pTexture->mLoadInfo.Format = (DXGI_FORMAT)(imageInfo.Format + 1);
+	}
+
 	SAFE_RELEASE(pTexture->mSRView);
-	if (m_pThreadPump && false)
+	if (m_pThreadPump)
 	{
 		pTexture->mHr = S_FALSE;
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 
@@ -2421,7 +2456,7 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 		0.f, -2.f / mHeight, 0, 1.f,
 		0, 0, 1.f, 0.f,
 		0, 0, 0, 1.f),
-		Mat44()
+		Mat44(),
 	};
 
 	// vertex buffer
@@ -2466,7 +2501,7 @@ void RendererD3D11::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, c
 		0.f, -2.f / mHeight, 0, 1.f,
 		0, 0, 1.f, 0.f,
 		0, 0, 0, 1.f),
-		Mat44()
+		Mat44(),
 	};
 
 	// vertex buffer

@@ -53,6 +53,9 @@ namespace fastbird
 			, mPosInterpolation(false), mDeleteWhenFull(true)
 			, mStartAfter(0), mUseRelativeVelocity(false)
 
+			// point light
+			, mPLRangeMinMax(0, 0)
+
 			{
 			}
 
@@ -100,6 +103,7 @@ namespace fastbird
 			Vec2I mUVAnimColRow;
 			Color mColor;
 			Color mColorEnd;
+			Vec2 mPLRangeMinMax;
 			float mUVAnimFramesPerSec;
 			float mUV_INV_FPS;
 			float mStretchMax;
