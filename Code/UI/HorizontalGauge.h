@@ -31,6 +31,7 @@ namespace fastbird
 		float mMaximum;
 		Color mGaugeColor;
 		Color mGaugeColorEmpty;
+		Color mGaugeBorderColor;
 		bool mGaugeColorEmptySet;
 		Color mBlinkColor;
 		bool mBlink;

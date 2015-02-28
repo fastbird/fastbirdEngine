@@ -61,7 +61,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 {
 	INPUT.UV.y = 1.0 - INPUT.UV.y;
 	// process normal map.
-	float3 baseColor = srgb_to_linear(gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz);
+	float3 baseColor = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz;
 	float metallic = gMetallicTexture.Sample(gLinearSampler, INPUT.UV).r;	
 	float roughness = gRoughnessTexture.Sample(gLinearSampler, INPUT.UV).r;
 #ifdef NORMAL_TEXTURE
@@ -112,7 +112,9 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 #ifdef ENV_TEXTURE
 	envContrib = CalcEnvContrib(normal, INPUT.Tangent, INPUT.Binormal, roughness, toViewDir, ndv, diffColor, specColor);
 #endif
+
+	float3 pointLightResult = CalcPointLights(INPUT.WorldPos, normal) * baseColor;
 	float2 screenUV = GetScreenUV(INPUT.Position.xy);
-	float3 foggedColor = GetFoggedColor(screenUV, shadedColor+envContrib, normalize(INPUT.WorldPos) );
+	float3 foggedColor = GetFoggedColor(screenUV, shadedColor+envContrib+pointLightResult, normalize(INPUT.WorldPos) );
 	return float4(foggedColor * invShadow, 1.0);
 }

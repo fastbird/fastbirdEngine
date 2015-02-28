@@ -427,19 +427,40 @@ namespace fastbird
 			{
 				for (auto it = mChangedFiles.begin(); it != mChangedFiles.end(); )
 				{
-					bool shader = CheckExtension(it->c_str(), "hlsl") || CheckExtension(it->c_str(), "h");
-					bool material = CheckExtension(it->c_str(), "material");
-					bool texture = CheckExtension(it->c_str(), "png") || CheckExtension(it->c_str(), "dds");
-					bool particle = CheckExtension(it->c_str(), "particle");
-					bool canOpen = true;
 					std::string filepath = it->c_str();
-
-					FILE* file;
-					errno_t err = fopen_s(&file, filepath.c_str(), "a+");
-					if (err)
-						canOpen = false;
-					else if (file)
+					auto strs = Split(filepath, "~");
+					if (strs.size() >= 2)
+					{
+						filepath = strs[0];
+					}
+					const char* extension = GetFileExtension(filepath.c_str());
+					bool shader = _stricmp(extension, "hlsl") == 0 || _stricmp(extension, "h")==0;
+					bool material = _stricmp(extension, "material")==0;
+					bool texture = _stricmp(extension, "png") == 0 || _stricmp(extension, "dds")==0;
+					bool particle = _stricmp(extension, "particle")==0;
+					bool hasExtension = strlen(extension) != 0;
+					bool sdfFile = _stricmp(extension, "sdf") == 0;
+					bool canOpen = true;
+					if (!hasExtension || sdfFile)
+					{
+						auto nextit = it;
+						++nextit;
+						mChangedFiles.erase(it);
+						it = nextit;
+						continue;
+					}
+					FILE* file = 0;
+					errno_t err = fopen_s(&file, filepath.c_str(), "r");
+					if (!err && file)
+					{
 						fclose(file);
+						err = fopen_s(&file, filepath.c_str(), "a+");
+						if (err)
+							canOpen = false;
+						else if (file)
+							fclose(file);
+					}
+					
 
 					if (canOpen)
 					{
@@ -581,6 +602,12 @@ namespace fastbird
 					mRenderer->DrawSilouette();
 			}
 
+			
+			if (mRenderer->IsLuminanceOnCpu())
+			{
+				mRenderer->CalcLuminance();
+			}
+
 			// POST_PROCESS
 			if (mConsole->GetEngineCommand()->r_Glow)
 				mRenderer->BlendGlow();
@@ -589,7 +616,7 @@ namespace fastbird
 			if (mConsole->GetEngineCommand()->r_HDR)
 			{
 				mRenderer->RestoreRenderTarget();
-				mRenderer->MeasureLuminanceOfHDRTarget();
+				mRenderer->MeasureLuminanceOfHDRTargetNew();
 
 				mRenderer->BrightPass();
 				mRenderer->BrightPassToStarSource();
@@ -629,6 +656,8 @@ namespace fastbird
 		D3DEventMarker mark("Render3DUIsToTexture");
 		for (auto rtIt : mUI3DObjectsRTs)
 		{
+			if (!rtIt.second->GetEnable())
+				continue;
 			auto objIt = mUI3DObjects.Find(rtIt.first);
 			assert(objIt != mUI3DObjects.end());
 			auto& rt = rtIt.second;
@@ -1137,8 +1166,9 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	void Engine::RenderMarks()
 	{
-		mRenderer->SetNoDepthStencil();
 		D3DEventMarker mark("Render Marks");
+		mRenderer->SetAlphaBlendState();
+		mRenderer->SetNoDepthStencil();
 		FB_FOREACH(it, mMarkObjects)
 		{
 			(*it)->PreRender();
@@ -1222,7 +1252,7 @@ namespace fastbird
 	}
 
 
-	const DWORD Engine::FILE_CHANGE_BUFFER_SIZE = 4000;
+	const DWORD Engine::FILE_CHANGE_BUFFER_SIZE = 8000;
 	//----------------------------------------------------------------------------
 	void Engine::FileChangeMonitorThread()
 	{
@@ -1234,6 +1264,9 @@ namespace fastbird
 
 		while (!mExiting)
 		{
+			auto handleBackup = mOverlapped.hEvent;
+			memset(&mOverlapped, 0, sizeof(OVERLAPPED));
+			mOverlapped.hEvent = handleBackup;
 			bool success = MonitorFileChange();
 			if (!success)
 			{
@@ -1262,20 +1295,21 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	bool Engine::MonitorFileChange()
 	{
-		::CancelIo(mMonitoringDirectory);
-		::CloseHandle(mMonitoringDirectory);
-
-		mMonitoringDirectory = CreateFile(mShaderWatchDir.c_str(), FILE_LIST_DIRECTORY,
-			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-			0, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
+		//::CancelIo(mMonitoringDirectory);
+		//::CloseHandle(mMonitoringDirectory);
 		if (mMonitoringDirectory == INVALID_HANDLE_VALUE)
 		{
-			Log(FB_DEFAULT_DEBUG_ARG, "Cannot open the shader watch directory!");
-			FB_LOG_LAST_ERROR_ENG();
-			return false;
-		}
+			mMonitoringDirectory = CreateFile(mShaderWatchDir.c_str(), FILE_LIST_DIRECTORY,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				0, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, 0);
+			if (mMonitoringDirectory == INVALID_HANDLE_VALUE)
+			{
+				Log(FB_DEFAULT_DEBUG_ARG, "Cannot open the shader watch directory!");
+				FB_LOG_LAST_ERROR_ENG();
+				return false;
+			}
+		}		
 
-		ResetEvent(mOverlapped.hEvent);
 		DWORD writtenBytes=0;
 		memset(&mFileChangeBuffer[0], 0, FILE_CHANGE_BUFFER_SIZE);
 
@@ -1301,7 +1335,6 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	void Engine::ProcessFileChange()
 	{
-		Sleep(100);
 		float time = gFBEnv->pTimer->GetTime();
 		FILE_NOTIFY_INFORMATION* pFNI = (FILE_NOTIFY_INFORMATION*)&mFileChangeBuffer[0];
 		while (pFNI)
@@ -1359,7 +1392,7 @@ namespace fastbird
 	//------------------------------------------------------------------------
 	void Engine::AddMarkObject(IObject* mark)
 	{
-		assert(std::find(mMarkObjects.begin(), mMarkObjects.end(), mark) == mMarkObjects.end());
+		//assert(std::find(mMarkObjects.begin(), mMarkObjects.end(), mark) == mMarkObjects.end());
 		mMarkObjects.push_back(mark);
 	}
 

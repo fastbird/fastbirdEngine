@@ -95,11 +95,6 @@ namespace fastbird
 	{		
 		switch (prop)
 		{
-		case UIProperty::TEXT_COLOR:
-				{
-					mUIObject->SetTextColor(mTextColor);
-					return true;
-				}
 		case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 		{
 			if (!mImage)

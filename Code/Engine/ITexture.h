@@ -74,6 +74,9 @@ namespace fastbird
 			uv[3] = Vec2(mUVEnd.x, mUVStart.y);
 		}
 
+		const Vec2& GetStartUV() const { return mUVStart; }
+		const Vec2 GetUVSize() const { return mUVEnd - mUVStart; }
+
 		const Vec2I& GetSize() const {
 			return mSize;
 		}

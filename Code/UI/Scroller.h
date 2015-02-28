@@ -6,6 +6,7 @@ class Scroller : public WinBase
 {
 public:
 	Scroller();
+	virtual ~Scroller();
 
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::Scroller; }

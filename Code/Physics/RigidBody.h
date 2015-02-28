@@ -53,5 +53,9 @@ namespace fastbird
 
 		virtual void SetLinearDamping(float damping) = 0;
 		virtual bool HasContact() = 0;
+
+		virtual void RemoveRigidBodyFromWorld() = 0;
+		// make sure mColProvider is valid.
+		virtual void ReAddRigidBodyFromWorld() = 0;
 	};
 }

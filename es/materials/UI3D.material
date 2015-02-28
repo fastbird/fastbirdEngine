@@ -2,8 +2,8 @@
 	<ShaderFile>es/Shaders/UI3D.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
-		<DiffuseColor_Alpha>0, 0, 0, 1.0</DiffuseColor_Alpha>
-		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<DiffuseColor_Alpha>1, 1, 1, 0.8</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 1.0</SpecularColor_Shine>
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>
 	<Textures>

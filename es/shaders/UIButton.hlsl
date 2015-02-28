@@ -59,7 +59,7 @@ float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
 		
 #ifdef DIFFUSE_TEXTURE
     float4 t_color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
-    t_color.rgb = srgb_to_linear(t_color.rgb);
+    t_color.rgb = t_color.rgb;
 	float4 color = gDiffuseColor * t_color;
 	float2 uv2 = (INPUT.UV - gMaterialParam[0].zw) / gMaterialParam[0].xy;
 	

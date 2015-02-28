@@ -33,6 +33,23 @@ Particle Emitter는 아래와 같이 정의됩니다. 아래 내용은 data/particles/7_explosio
 			Intensity="1.0, 1.0"
 		/>
 		
+		<!-- for Point lights -->
+		<ParticleTemplate pointLightRangeMinMax="4, 8" emitPerSec="0" numInitialParticle="1"
+			color="0.95, 0.95, 0.8, 1.0" colorEnd="0.85, 0.85, 0.5, 1.0"
+			lifeTimeMinMax="0.1, 0.15" 
+			emitTo="localSpace" range="Point" rangeRadius="0.0"
+			
+			scaleVelMinMax="0.01, 0.05"
+			scaleAccel="1" scaleAccelUntil="10 percent" scaleDeaccel="10.0" scaleDeaccelAfter="90 percent"
+			
+			velocityMinMax="0,0" velocityDirectionMin="-1,-1,-1" velocityDirectionMax = "1, 1, 1"		
+			accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent"
+			
+			fadeInUntil="0 percent" fadeOutAfter="80 percent"
+			
+			Intensity="1.0, 1.6"		
+		/>
+		
 	</ParticleEmitter>
 
 
@@ -79,10 +96,16 @@ Particle Emitter는 아래와 같이 정의됩니다. 아래 내용은 data/particles/7_explosio
     * rotAccelUntil/rotDeaccelAfter : 회적 가속 끝 / 감속 시작 시간
   * fadeInUntil/fadeOutAfter : 페이드인이 끝나는 시간 / 페이드아웃이 시작되는 시간
   * Intensity : 생상 발기 최소 최대 값.
+  * color, colorEnd : 컬러 에니메이션을 위한 속성입니다. 파티클 라이프 타임 값에 의해 이 두 색상의 보간 결과가 최종 색상이 됩니다.
 
 한 emitter가 여러 종류의 파티클을 발생시킨다면 `<ParticleTemplate>`을 여러개
 정의하면 됩니다.
 
+**추가. 2015년 2월 - 포인트 라이트 에미터**
+
+* `<ParticleTemplate>` 의 속성
+  * pointLightRangeMinMax : 포인트라이트의 범위를 지정합니다.
+  * color, colorEnd : 포인트 라이트의 색상을 선택합니다.
 
 ## 엔진에서 사용법
 

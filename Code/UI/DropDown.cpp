@@ -14,13 +14,14 @@ DropDown::DropDown()
 	: mCursorPos(0)
 	, mPasswd(false)
 	, mCurIdx(0)
+	, mReservedIdx(-1)
+	, mButton(0)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 	mUIObject->SetNoDrawBackground(true);
-
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 
@@ -28,24 +29,32 @@ DropDown::DropDown()
 		std::bind(&DropDown::OnMouseHover, this, std::placeholders::_1));
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT,
 		std::bind(&DropDown::OnMouseOut, this, std::placeholders::_1));
-
-	mButton = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
-	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
-	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
-		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
-	mButton->SetNSizeY(1.f);
-	mButton->SetSizeX(24);
-	mButton->SetNPos(Vec2(1, 0));
-	mButton->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-	mButton->SetProperty(UIProperty::NO_BACKGROUND, "true");
-	mButton->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");
-	mButton->SetProperty(UIProperty::BACKGROUND_IMAGE, "dropdown");
-	mButton->SetProperty(UIProperty::BACKGROUND_IMAGE_HOVER, "dropdown_hover");
 }
 
 DropDown::~DropDown()
 {
+	if (sCurrentDropDown == this)
+		sCurrentDropDown = 0;
 	IUIManager::GetUIManager().DeleteComponent(mButton);
+	mDropDownItems.clear();
+}
+
+void DropDown::OnCreated()
+{
+	mButton = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
+	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
+		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
+	mButton->SetSize(Vec2I(24, 24));
+	Vec2 btnPos = mWNPos;
+	//btnPos.x += mWNSize.x;
+	mButton->SetWNPos(btnPos);
+	mButton->SetProperty(UIProperty::NO_BACKGROUND, "true");
+	mButton->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");
+	mButton->SetProperty(UIProperty::REGION, "dropdown");
+	mButton->SetProperty(UIProperty::HOVER_IMAGE, "dropdown_hover");
+
+
 }
 
 void DropDown::GatherVisit(std::vector<IUIObject*>& v)
@@ -54,7 +63,8 @@ void DropDown::GatherVisit(std::vector<IUIObject*>& v)
 		return;
 	v.push_back(mUIObject);
 	__super::GatherVisit(v);
-	mButton->GatherVisit(v);
+	if (mButton)
+		mButton->GatherVisit(v);
 }
 
 void DropDown::OnPosChanged()
@@ -64,7 +74,8 @@ void DropDown::OnPosChanged()
 	
 	Vec2 btnPos= mWNPos;
 	btnPos.x += mWNSize.x;
-	mButton->SetWNPos(btnPos);
+	if (mButton)
+		mButton->SetWNPos(btnPos);
 }
 
 void DropDown::OnSizeChanged()
@@ -72,17 +83,46 @@ void DropDown::OnSizeChanged()
 	__super::OnSizeChanged();
 	AlignText();
 
-	mButton->SetWNSize(mWNSize);
-	mButton->SetSizeX(24);
+	if (mButton)
+	{
+		mButton->SetWNSize(mWNSize);
+		mButton->SetSizeX(24);
+	}
 }
 
 bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 {
-	__super::SetProperty(prop, val);
-	if (prop == UIProperty::TEXT_COLOR)
-		mUIObject->SetTextColor(mTextColor);
+	switch (prop)
+	{
+	case UIProperty::DROPDOWN_INDEX:
+	{
+		unsigned index = StringConverter::parseUnsignedInt(val);
+		if (index < mDropDownItems.size())
+			SetSelectedIndex(index);
+		else
+			SetReservedIndex(index);
+		return true;
+	}
+	}
 
-	return true;
+
+	return __super::SetProperty(prop, val);
+}
+
+bool DropDown::GetProperty(UIProperty::Enum prop, char val[])
+{
+	switch (prop)
+	{
+	case UIProperty::DROPDOWN_INDEX:
+	{
+		auto data = StringConverter::toString(mCurIdx);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	}
+	
+	return __super::GetProperty(prop, val);
 }
 
 void DropDown::OnMouseClick(void* arg)
@@ -132,11 +172,13 @@ void DropDown::OnFocusLost()
 
 void DropDown::OnMouseHover(void* arg)
 {
-	mButton->OnMouseHover(0);
+	if (mButton)
+		mButton->OnMouseHover(0);
 }
 void DropDown::OnMouseOut(void* arg)
 {
-	mButton->OnMouseOut(0);
+	if (mButton)
+		mButton->OnMouseOut(0);
 }
 
 void DropDown::OnItemSelected(void* arg)
@@ -179,13 +221,19 @@ size_t DropDown::AddDropDownItem(IWinBase* item)
 {
 	mDropDownItems.push_back((Button*)item);
 	item->SetNSize(Vec2(1.0f, 1.0f));
-	item->SetNPos(Vec2(0.0f, 1.0f));
+	item->SetNPos(Vec2(0.0f, (float)mDropDownItems.size()));
 	Button* pDropDownItem = mDropDownItems.back();	
 	size_t index = mDropDownItems.size() - 1;
 	SetCommonProperty(pDropDownItem, index);
 	if (mDropDownItems.size() == 1)
 	{
 		OnItemSelected(item);
+	}
+	if (mReservedIdx != -1 && mReservedIdx < mDropDownItems.size())
+	{
+		unsigned resv = mReservedIdx;
+		mReservedIdx = -1;
+		SetSelectedIndex(resv);
 	}
 
 	return index;
@@ -224,6 +272,11 @@ void DropDown::SetSelectedIndex(size_t index)
 	SetText(mDropDownItems[index]->GetText());
 }
 
+void DropDown::SetReservedIndex(size_t index)
+{
+	mReservedIdx = index;
+}
+
 bool DropDown::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (mDropDownItems.empty())
@@ -255,6 +308,18 @@ void DropDown::OnParentVisibleChanged(bool show)
 			var->SetVisible(false);
 		}
 	}
+}
+
+
+bool DropDown::SetVisible(bool show)
+{
+	bool ret = __super::SetVisible(show);
+	for (auto item : mDropDownItems)
+	{
+		item->SetVisible(false);
+	}
+	mButton->SetVisible(show);
+	return ret;
 }
 
 }

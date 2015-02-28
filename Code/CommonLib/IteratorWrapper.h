@@ -12,6 +12,7 @@ namespace fastbird
 		{
 			mCurrent = mBegin = data.begin();
 			mEnd = data.end();
+			mNumElem = data.size();
 		}
 
 		ValueType GetType()
@@ -28,9 +29,22 @@ namespace fastbird
 			return *mCurrent++;
 		}
 
+		ValueType Advance(unsigned dist)
+		{
+			if (dist >= mNumElem)
+			{
+				mCurrent = mEnd;
+			}
+			else
+			{
+				mCurrent += dist;
+			}			
+		}
+
 	private:
 		Iterator mBegin;
 		Iterator mEnd;
 		Iterator mCurrent;
+		unsigned mNumElem;
 	};
 }

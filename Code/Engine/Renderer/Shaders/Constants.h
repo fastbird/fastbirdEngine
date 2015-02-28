@@ -63,11 +63,13 @@ cbuffer RARE_CONSTANTS
 	float4x4 gInvProj;
 	float2 gNearFar;
 	float2 gScreenSize;
+	float4 gFogColor;
 	float gTangentTheta;
 	float gScreenRatio;
-	float2 gEmpty;
-	float4 gFogColor;
-	float4 gMiddleGray_Star_Bloom_Empty;
+	float gMiddleGray;
+	float gStarPower;	
+	float gBloomPower;
+	float3 gEmpty;
 };
 
 cbuffer BIG_BUFFER
@@ -89,8 +91,24 @@ cbuffer IMMUTABLE_CONSTANTS
 	float4 gHammersley[8]; // reference http://www.cse.cuhk.edu.hk/~ttwong/papers/udpoint/udpoint.pdf
 };
 
+cbuffer POINT_LIGHT_CONSTANTS
+#ifndef CPP
+	: register (b7)
+#endif
+{
+	float4 gPointLightPos[MAX_POINT_LIGHT];
+	float4 gPointLightColor[MAX_POINT_LIGHT];
+	
+#ifdef CPP	
+	POINT_LIGHT_CONSTANTS()
+	{
+		memset(this, 0, sizeof(POINT_LIGHT_CONSTANTS));
+	}
+#endif
+	};
+
 #ifdef CPP
-}
+} // namespace
 #endif
 
 #endif //__SHADER_CONSTANTS_H_

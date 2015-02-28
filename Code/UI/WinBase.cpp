@@ -43,7 +43,7 @@ WinBase::WinBase()
 , mAspectRatio(1.0)
 , mNPos(0, 0)
 , mUIObject(0)
-, mNoMouseEvent(false)
+, mNoMouseEvent(false), mNoMouseEventAlone(false)
 , mUseScissor(true)
 , mUseAbsoluteXPos(false)
 , mUseAbsoluteYPos(false)
@@ -68,12 +68,19 @@ WinBase::WinBase()
 , mHideAnimation(false)
 , mHideCounter(0), mPivot(false)
 , mRender3D(false), mTextGap(0, 0)
-, mModal(false)
+, mModal(false), mDragable(0, 0), mEnable(true)
 {
 }
 
 WinBase::~WinBase()
 {
+	if (mModal)
+	{
+		if (mVisible)
+		{
+			IUIManager::GetUIManager().IgnoreInput(false, this);
+		}
+	}
 	FB_FOREACH(it, mAnimations)
 	{
 		FB_SAFE_DEL(it->second);
@@ -271,14 +278,22 @@ void WinBase::UpdateWorldSize(bool settingSize)
 {
 	if (!settingSize)
 	{
-		if (mUseAbsoluteXSize)
+		if (mUseAbsoluteXSize && mUseAbsoluteYSize)
 		{
-			SetSizeX(mSize.x);
+			SetSize(mSize);
 		}
-		if (mUseAbsoluteYSize)
+		else
 		{
-			SetSizeY(mSize.y);
+			if (mUseAbsoluteXSize)
+			{
+				SetSizeX(mSize.x);
+			}
+			if (mUseAbsoluteYSize)
+			{
+				SetSizeY(mSize.y);
+			}
 		}
+		
 
 		if (mParent)
 		{
@@ -577,7 +592,7 @@ bool WinBase::SetVisible(bool show)
 		}
 		if (mModal)
 		{
-			IUIManager::GetUIManager().IgnoreInput(true);
+			IUIManager::GetUIManager().IgnoreInput(true, this);
 		}
 		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
 	}
@@ -606,7 +621,7 @@ bool WinBase::SetVisible(bool show)
 		}
 		if (mModal)
 		{
-			IUIManager::GetUIManager().IgnoreInput(false);
+			IUIManager::GetUIManager().IgnoreInput(false, this);
 		}
 		OnEvent(IEventHandler::EVENT_ON_HIDE);
 	}
@@ -673,7 +688,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	if (!mVisible)
 		return false;
 
-	if (mNoMouseEvent)
+	if (mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return false;
 	}
@@ -691,6 +706,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				)
 			{
 				mMouseDragStartInHere = true;
+				IUIManager::GetUIManager().SetFocusUI(GetRootWnd());
 			}
 			else
 			{
@@ -703,7 +719,13 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				if (x != 0 || y != 0)
 				{
 					if (OnEvent(IEventHandler::EVENT_MOUSE_DRAG))
+					{
 						mouse->Invalidate();
+					}
+					else if (mDragable != Vec2I::ZERO)
+					{
+						OnDrag(x, y);
+					}
 				}
 				else
 				{
@@ -939,7 +961,7 @@ void WinBase::OnSizeChanged()
 		mUIObject->SetNSize(mWNSize);
 		const auto& region = mUIObject->GetRegion();
 		assert(region.right - region.left == mSize.x);
-		assert(region.bottom - region.top == mSize.y);
+		assert(!mUseAbsoluteYSize || region.bottom - region.top == mSize.y);
 
 		if (!mFixedTextSize)
 		{
@@ -999,7 +1021,7 @@ void WinBase::ClearAnimationResult()
 bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	assert(val);
-	switch(prop)
+	switch (prop)
 	{
 	case UIProperty::POS:
 	{
@@ -1039,57 +1061,57 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 								mAbsOffset.x = StringConverter::parseInt(val);
 								UpdateWorldPos();
-							  return true;
+								return true;
 	}
 	case UIProperty::OFFSETY:
 	{
-							  mAbsOffset.y = StringConverter::parseInt(val);
-							  UpdateWorldPos();
-							  return true;
+								mAbsOffset.y = StringConverter::parseInt(val);
+								UpdateWorldPos();
+								return true;
 	}
 	case UIProperty::BACK_COLOR:
-		{
-									if (mUIObject)
-									{
-										Color color;
-										color = StringConverter::parseVec4(val);
-										mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
-										return true;
-									}
-									break;
-
-		}
-
-	case UIProperty::TEXT_SIZE:
-		{
+	{
 								   if (mUIObject)
 								   {
-									   mTextSize = StringConverter::parseReal(val, 20.0f);
-									   CalcTextWidth();
-									   mUIObject->SetTextSize(mTextSize);
-									   mFixedTextSize = true;
+									   Color color;
+									   color = StringConverter::parseVec4(val);
+									   mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
 									   return true;
 								   }
 								   break;
-		}
+
+	}
+
+	case UIProperty::TEXT_SIZE:
+	{
+								  if (mUIObject)
+								  {
+									  mTextSize = StringConverter::parseReal(val, 20.0f);
+									  CalcTextWidth();
+									  mUIObject->SetTextSize(mTextSize);
+									  mFixedTextSize = true;
+									  return true;
+								  }
+								  break;
+	}
 
 	case UIProperty::FIXED_TEXT_SIZE:
-		{
-										 mFixedTextSize = stricmp("true", val) == 0;
-										 return true;
-		}
+	{
+										mFixedTextSize = stricmp("true", val) == 0;
+										return true;
+	}
 
 	case UIProperty::TEXT_ALIGN:
-		{
+	{
 								   mTextAlignH = ALIGNH::ConvertToEnum(val);
 								   AlignText();
-									return true;
-		}
+								   return true;
+	}
 	case UIProperty::TEXT_VALIGN:
 	{
 									mTextAlignV = ALIGNV::ConvertToEnum(val);
 									AlignText();
-								   return true;
+									return true;
 	}
 	case UIProperty::TEXT_LEFT_GAP:
 	{
@@ -1101,84 +1123,90 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 									   mTextGap.y = StringConverter::parseInt(val);
 									   AlignText();
-									  return true;
+									   return true;
 	}
 	case UIProperty::MATCH_SIZE:
-		{
-									mMatchSize = stricmp("true", val) == 0;
-									return true;
-		}
+	{
+								   mMatchSize = stricmp("true", val) == 0;
+								   return true;
+	}
 	case UIProperty::NO_BACKGROUND:
-		{
-									   if (stricmp("true", val) == 0)
-									   {
-										   if (mUIObject)
-											   mUIObject->SetNoDrawBackground(true);
-									   }
-									   else
-									   {
-										   if (mUIObject)
-											   mUIObject->SetNoDrawBackground(false);
-									   }
-									   return true;
-		}
+	{
+									  if (stricmp("true", val) == 0)
+									  {
+										  if (mUIObject)
+											  mUIObject->SetNoDrawBackground(true);
+									  }
+									  else
+									  {
+										  if (mUIObject)
+											  mUIObject->SetNoDrawBackground(false);
+									  }
+									  return true;
+	}
 	case UIProperty::TEXT_COLOR:
-		{
-									mTextColor = StringConverter::parseVec4(val);
-									mUIObject->SetTextColor(mTextColor);
-									return true;
-		}
+	{
+								   mTextColor = StringConverter::parseVec4(val);
+								   mUIObject->SetTextColor(mTextColor);
+								   return true;
+	}
 	case UIProperty::TEXT_COLOR_HOVER:
-		{
-										  mTextColorHover = StringConverter::parseVec4(val);
-										  return true;
-		}
-	case UIProperty::TEXT_COLOR_DOWN:
-		{
-										 mTextColorDown = StringConverter::parseVec4(val);
+	{
+										 mTextColorHover = StringConverter::parseVec4(val);
 										 return true;
-		}
-		case UIProperty::ALIGNH:
-		{
-								   ALIGNH::Enum align = ALIGNH::ConvertToEnum(val);
-								   SetAlign(align, mAlignV);
-								   return true;
-		}
-		case UIProperty::ALIGNV:
-		{
-								   ALIGNV::Enum align = ALIGNV::ConvertToEnum(val);
-								   SetAlign(mAlignH, align);
-								   return true;
-		}
-		case UIProperty::TEXT:
-		{
-								 assert(val);
-								 SetText(AnsiToWide(val, strlen(val)));
-								 return true;
-		}
-		case UIProperty::ALPHA:
-		{
-								  bool b = StringConverter::parseBool(val);
-								  if (mUIObject)
-									  mUIObject->SetAlphaBlending(b);
-								  IUIManager::GetUIManager().DirtyRenderList();
-								  return true;
-		}
+	}
+	case UIProperty::TEXT_COLOR_DOWN:
+	{
+										mTextColorDown = StringConverter::parseVec4(val);
+										return true;
+	}
+	case UIProperty::ALIGNH:
+	{
+							   ALIGNH::Enum align = ALIGNH::ConvertToEnum(val);
+							   SetAlign(align, mAlignV);
+							   return true;
+	}
+	case UIProperty::ALIGNV:
+	{
+							   ALIGNV::Enum align = ALIGNV::ConvertToEnum(val);
+							   SetAlign(mAlignH, align);
+							   return true;
+	}
+	case UIProperty::TEXT:
+	{
+							 assert(val);
+							 SetText(AnsiToWide(val, strlen(val)));
+							 return true;
+	}
+	case UIProperty::ALPHA:
+	{
+							  bool b = StringConverter::parseBool(val);
+							  if (mUIObject)
+								  mUIObject->SetAlphaBlending(b);
+							  IUIManager::GetUIManager().DirtyRenderList();
+							  return true;
+	}
 
-		case UIProperty::TOOLTIP:
-		{
-									assert(val);
-									mTooltipText = AnsiToWide(val, strlen(val));
-									return true;
-		}
+	case UIProperty::TOOLTIP:
+	{
+								assert(val);
+								mTooltipText = AnsiToWide(val, strlen(val));
+								return true;
+	}
 
-		case UIProperty::NO_MOUSE_EVENT:
-		{
-										   mNoMouseEvent = StringConverter::parseBool(val);
-										   return true;
-		}
+	case UIProperty::NO_MOUSE_EVENT:
+	{
+									   mNoMouseEvent = StringConverter::parseBool(val);
+									   return true;
+	}
 
-		case UIProperty::USE_SCISSOR:
+	case UIProperty::NO_MOUSE_EVENT_ALONE:
+	{
+											 mNoMouseEventAlone = StringConverter::parseBool(val);
+											 return true;
+	}
+
+	case UIProperty::USE_SCISSOR:
 		{
 										mUseScissor = StringConverter::parseBool(val);
 										if (!mUseScissor)
@@ -1252,6 +1280,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 								  mModal = StringConverter::parseBool(val);
 								  return true;
+		}
+		
+		case UIProperty::DRAGABLE:
+		{
+			mDragable = StringConverter::parseVec2I(val);
+			return true;
 		}
 	}
 
@@ -2376,4 +2410,43 @@ Vec2I WinBase::GetRenderTargetSize() const
 		return Vec2I(gEnv->pRenderer->GetWidth(), gEnv->pRenderer->GetHeight());
 	}
 }
+
+IWinBase* WinBase::GetRootWnd() const
+{
+	if (mParent)
+		return mParent->GetRootWnd();
+	if (mManualParent)
+		return mManualParent->GetRootWnd();
+	return (IWinBase*)this;
+}
+
+void WinBase::OnDrag(int dx, int dy)
+{
+	auto rtSize = GetRenderTargetSize();
+	Vec2 nposOffset = { dx / (float)rtSize.x, dy / (float)rtSize.y };
+	if (mParent)
+	{
+		nposOffset = mParent->ConvertWorldSizeToParentCoord(nposOffset);
+	}
+	 
+	mAbsTempLock = true;
+	if (!mDragable.x)
+		nposOffset.x = 0;
+	if (!mDragable.y)
+		nposOffset.y = 0;
+	auto newPos = mNPos + nposOffset;
+	newPos.x = std::max(0.f, newPos.x);
+	newPos.x = std::min(1.f, newPos.x);
+	newPos.y = std::max(0.f, newPos.y);
+	newPos.y = std::min(1.f, newPos.y);
+	
+		
+	SetNPos(newPos);
+	mAbsTempLock = false;
+	if (mParent)
+	{
+		mParent->OnChildHasDragged();
+	}
+}
+
 }

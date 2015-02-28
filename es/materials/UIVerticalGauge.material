@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>es/UIVerticalGauge.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/UIVerticalGauge.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0, 0, 0, 1</AmbientColor>
 		<DiffuseColor_Alpha>0.8, 0.8, 0.8, 1</DiffuseColor_Alpha>

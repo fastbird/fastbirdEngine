@@ -98,6 +98,7 @@
     <ClInclude Include="ButtonImages.h" />
     <ClInclude Include="CardScroller.h" />
     <ClInclude Include="CheckBox.h" />
+    <ClInclude Include="ColorRampComp.h" />
     <ClInclude Include="ComponentType.h" />
     <ClInclude Include="Container.h" />
     <ClInclude Include="DropDown.h" />
@@ -134,6 +135,7 @@
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="CardScroller.cpp" />
     <ClCompile Include="CheckBox.cpp" />
+    <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />

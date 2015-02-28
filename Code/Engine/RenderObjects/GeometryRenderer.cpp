@@ -199,6 +199,7 @@ void GeometryRenderer::Render()
 	pRenderer->SetAlphaBlendState();
 	// object constant buffer
 	BindRenderStates();
+	pRenderer->SetAlphaBlendState();
 	mInputLayout->Bind();
 	mLineShader->Bind();
 	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
@@ -265,19 +266,19 @@ void GeometryRenderer::Render()
 				bool refreshDefines = false;
 				if (curProcessingLine.mTexture)
 				{
-					refreshDefines = mThickLineMaterial->AddShaderDefine("DIFFUSE_TEXTURE", "1");
+					refreshDefines = mThickLineMaterial->AddShaderDefine("DIFFUSE_TEXTURE", "1") || refreshDefines;
 				}
 				else
 				{
-					refreshDefines = mThickLineMaterial->RemoveShaderDefine("DIFFUSE_TEXTURE");
+					refreshDefines = mThickLineMaterial->RemoveShaderDefine("DIFFUSE_TEXTURE") || refreshDefines;
 				}
 				if (curProcessingLine.mTextureFlow)
 				{
-					refreshDefines = mThickLineMaterial->AddShaderDefine("_TEXTURE_FLOW", "1");
+					refreshDefines = mThickLineMaterial->AddShaderDefine("_TEXTURE_FLOW", "1") || refreshDefines;
 				}
 				else
 				{
-					refreshDefines = mThickLineMaterial->RemoveShaderDefine("_TEXTURE_FLOW");
+					refreshDefines = mThickLineMaterial->RemoveShaderDefine("_TEXTURE_FLOW") || refreshDefines;
 				}
 
 				if (refreshDefines)

@@ -41,9 +41,6 @@
     <ClInclude Include="FileSelector.h">
       <Filter>Components</Filter>
     </ClInclude>
-    <ClInclude Include="CheckBox.h">
-      <Filter>Components</Filter>
-    </ClInclude>
     <ClInclude Include="Scroller.h">
       <Filter>Components</Filter>
     </ClInclude>
@@ -81,6 +78,12 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="ButtonImages.h" />
+    <ClInclude Include="CheckBox.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorRampComp.h">
+      <Filter>Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -124,9 +127,6 @@
     <ClCompile Include="FileSelector.cpp">
       <Filter>Components</Filter>
     </ClCompile>
-    <ClCompile Include="CheckBox.cpp">
-      <Filter>Components</Filter>
-    </ClCompile>
     <ClCompile Include="Scroller.cpp">
       <Filter>Components</Filter>
     </ClCompile>
@@ -159,5 +159,11 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="UIManagerLua.cpp" />
+    <ClCompile Include="CheckBox.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorRampComp.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

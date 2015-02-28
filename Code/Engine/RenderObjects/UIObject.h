@@ -14,7 +14,7 @@ namespace fastbird
 		//-------------------------------------------------------------------------
 		virtual void SetVertices(const Vec3* ndcPoints, int num,
 			const DWORD* colors = 0, const Vec2* texcoords = 0);
-		virtual void SetTexCoord(Vec2 coord[], DWORD num);
+		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0);
 		virtual void SetColors(DWORD colors[], DWORD num);
 
 		virtual void SetNSize(const Vec2& nsize); // in normalized space (0.0f ~ 1.0f)
@@ -93,9 +93,9 @@ namespace fastbird
 		bool mNoDrawBackground;
 		std::vector<Vec3> mPositions;
 		std::vector<DWORD> mColors;
-		std::vector<Vec2> mTexcoords;
+		std::vector<Vec2> mTexcoords[2];
 		SmartPtr<IVertexBuffer> mVBColor;
-		SmartPtr<IVertexBuffer> mVBTexCoord;
+		SmartPtr<IVertexBuffer> mVBTexCoords[2];
 		RECT mScissorRect;
 		int mSpecialOrder;
 		bool mDirty;

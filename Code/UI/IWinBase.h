@@ -173,10 +173,16 @@ namespace fastbird
 		virtual void SetRender3D(bool render3D, const Vec2I& renderTargetSize) = 0;
 		virtual bool GetRender3D() const = 0;
 		virtual Vec2I GetRenderTargetSize() const = 0;
+		virtual IWinBase* GetRootWnd() const = 0;
+
+		virtual bool IsAlwaysOnTop() const = 0;
+		virtual IUIObject* GetUIObj() const = 0;
+		virtual bool GetCloseByEsc() const = 0;
 
 	protected:
 		virtual void OnPosChanged() = 0;
 		virtual void OnSizeChanged() = 0;
 		virtual void OnEnableChanged() = 0;
+		virtual void OnChildHasDragged()= 0;
 	};
 }

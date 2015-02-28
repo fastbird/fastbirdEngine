@@ -91,11 +91,13 @@ void UIObject::SetVertices(const Vec3* ndcPoints, int num,
 	mColors.clear();
 	if (colors)
 		mColors.assign(colors, colors+num);
-	mTexcoords.clear();
+	
+	mTexcoords[0].clear();
+	
 	if (texcoords)
 	{
 		assert(num>=4);
-		mTexcoords.assign(texcoords, texcoords+num);
+		mTexcoords[0].assign(texcoords, texcoords+num);
 		Vec2 step = texcoords[2] - texcoords[1];
 		Vec4 val(step.x, step.y, texcoords[1].x, texcoords[1].y);
 		mMaterial->SetMaterialParameters(0, val);
@@ -154,11 +156,13 @@ void UIObject::SetAnimScale(const Vec2& scale, const Vec2& pivot)
 	SetNSize(mNSize);
 }
 
-void UIObject::SetTexCoord(Vec2 coord[], DWORD num)
+void UIObject::SetTexCoord(Vec2 coord[], DWORD num, unsigned index)
 {
-	mTexcoords.clear();
+	if_assert_fail(index < 2)
+		return;
+	mTexcoords[index].clear();
 	if (coord)
-		mTexcoords.assign(coord, coord+num);
+		mTexcoords[index].assign(coord, coord + num);
 
 	mDirty = true;
 }
@@ -226,10 +230,10 @@ void UIObject::SetMaterial(const char* name, int pass /*= RENDER_PASS::PASS_NORM
 		mRasterizerStateShared = gFBEnv->pRenderer->CreateRasterizerState(desc);
 	}
 
-	if (mVBTexCoord)
+	if (mVBTexCoords[0])
 	{
-		Vec2 uvStep = mTexcoords[2] - mTexcoords[1];
-		Vec4 val(uvStep.x, uvStep.y, mTexcoords[1].x, mTexcoords[1].y);
+		Vec2 uvStep = mTexcoords[0][2] - mTexcoords[0][1];
+		Vec4 val(uvStep.x, uvStep.y, mTexcoords[0][1].x, mTexcoords[0][1].y);
 		mMaterial->SetMaterialParameters(0, val);
 	}
 }
@@ -311,13 +315,16 @@ void UIObject::Render()
 		gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		BindRenderStates();
 	
-		const unsigned int numBuffers = 3;
-		IVertexBuffer* buffers[numBuffers] = {mVertexBuffer, mVBColor, mVBTexCoord};
-		unsigned int strides[numBuffers] = {mVertexBuffer->GetStride(), 
+		const unsigned int numBuffers = 4;
+		IVertexBuffer* buffers[numBuffers] = { mVertexBuffer, mVBColor, mVBTexCoords[0], mVBTexCoords[1] };
+		unsigned int strides[numBuffers] = { mVertexBuffer->GetStride(),
 			mVBColor ? mVBColor->GetStride() : 0,
-			mVBTexCoord ? mVBTexCoord->GetStride(): 0};
-		unsigned int offsets[numBuffers] = {0, 0, 0};
+			mVBTexCoords[0] ? mVBTexCoords[0]->GetStride() : 0,
+			mVBTexCoords[1] ? mVBTexCoords[1]->GetStride() : 0
+		};
+		unsigned int offsets[numBuffers] = { 0, 0, 0, 0 };
 		gFBEnv->pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
+		
 		gFBEnv->pRenderer->Draw(mVertexBuffer->GetNumVertices(), 0);
 	}
 
@@ -379,15 +386,18 @@ void UIObject::PrepareVBs()
 		mVBColor = 0;
 	}
 
-	if (!mTexcoords.empty())
+	for (int i = 0; i < 2; i++)
 	{
-		mVBTexCoord = gFBEnv->pRenderer->CreateVertexBuffer(&mTexcoords[0],
-			sizeof(Vec2), mTexcoords.size(), BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE);
-	}
-	else
-	{
-		mVBTexCoord = 0;
-	}
+		if (!mTexcoords[i].empty())
+		{
+			mVBTexCoords[i] = gFBEnv->pRenderer->CreateVertexBuffer(&mTexcoords[i][0],
+				sizeof(Vec2), mTexcoords[i].size(), BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE);
+		}
+		else
+		{
+			mVBTexCoords[i] = 0;
+		}
+	}	
 }
 
 void UIObject::SetTextColor(const Color& c)

@@ -34,7 +34,7 @@ namespace fastbird
 		void SetMin(const Vec3& min) { mMin = min;}
 		void SetMax(const Vec3& max) { mMax = max;}
 
-		Vec3 GetCenter() { return (mMin + mMax) * .5f; }
+		Vec3 GetCenter() const { return (mMin + mMax) * .5f; }
 
 		void Translate(const Vec3& pos)
 		{

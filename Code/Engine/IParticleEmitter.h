@@ -1,6 +1,7 @@
 #pragma once
 #include <Engine/SceneGraph/SpatialObject.h>
 #include <Engine/IMeshObject.h>
+#include <Engine/IPointLight.h>
 #include <CommonLib/CircularBuffer.h>
 namespace fastbird
 {
@@ -16,6 +17,7 @@ namespace fastbird
 			, mAlpha(0.0f)
 			, mIntensity(1.0f)
 			, mMeshObject(0)
+			, mPointLight(0)
 			{
 			}
 			bool IsAvailable() const
@@ -51,6 +53,7 @@ namespace fastbird
 			float mIntensity;
 			DWORD mColor;
 			SmartPtr<IMeshObject> mMeshObject;
+			IPointLight* mPointLight;
 		};
 
 		virtual IObject* Clone() const{assert(0); return 0;}

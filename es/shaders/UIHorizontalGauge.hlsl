@@ -51,16 +51,16 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	float yPos = abs(snc.y);
 	if ( xPos >= 1.0 - 0.03 / ratio || yPos >= 0.93)
 	{
-		return float4(1.0, 1.0, 1.0, 1.0);
+		return float4(1.0, 1.0, 1.0, 1.0) * gAmbientColor;
 	}
 	else if (xPos >= 1.0- 0.06 / ratio || yPos >= 0.88)
 	{
-		return float4(0.87058, 0.87058, 0.847058, 1.0);
+		return float4(0.87058, 0.87058, 0.847058, 1.0) * gAmbientColor;
 	}
 	
 	else if (xPos >= 1.0- 0.09 / ratio || yPos >= 0.80)
 	{
-		return float4(0.521568, 0.521568, 0.505882, 1.0);
+		return float4(0.521568, 0.521568, 0.505882, 1.0) *  gAmbientColor;
 	}
 	
 	// param 4

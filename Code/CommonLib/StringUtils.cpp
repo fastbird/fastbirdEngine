@@ -3,6 +3,17 @@
 
 namespace fastbird
 {
+
+void ReplaceCharacter(char* s, char target, char replace)
+{
+	int size = strlen(s);
+	for (int i = 0; i < size; i++)
+	{
+		if (s[i] == target)
+			s[i] = replace;
+	}
+}
+
 //------------------------------------------------------------------------
 char* StripRight(char* s)
 {

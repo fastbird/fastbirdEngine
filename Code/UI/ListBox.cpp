@@ -3,6 +3,7 @@
 #include <UI/Scroller.h>
 #include <UI/ImageBox.h>
 #include <UI/Button.h>
+#include <UI/CheckBox.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -14,6 +15,8 @@ const size_t ListItem::INVALID_INDEX = -1;
 ListItem::ListItem()
 : mRowIndex(INVALID_INDEX)
 , mColIndex(INVALID_INDEX)
+, mNoBackground(true)
+, mBackColor("0.1, 0.3, 0.3, 0.7")
 {
 	assert(mUIObject);
 	//mUIObject = IUIObject::CreateUIObject(false);
@@ -45,12 +48,37 @@ void ListItem::OnSizeChanged()
 	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
 }
 
+CheckBox* ListItem::GetCheckBox() const
+{
+	for (auto& child : mChildren)
+	{
+		if (child->GetType() == ComponentType::CheckBox)
+		{
+			return dynamic_cast<CheckBox*>(child);
+		}
+	}
+	return 0;
+}
+
+void ListItem::SetBackColor(const char* backColor)
+{
+	if_assert_fail(backColor)
+		return;
+	mBackColor = backColor;
+}
+
+void ListItem::SetNoBackground(bool noBackground)
+{
+	mNoBackground = noBackground;
+}
+
 //-----------------------------------------------------------------------------
 ListBox::ListBox()
 	: mCurSelectedCol(ListItem::INVALID_INDEX)
 	, mNumCols(1)
 	, mRowHeight(26)
 	, mRowGap(4)
+	, mHighlightColor("0.1, 0.3, 0.3, 0.7")
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -87,7 +115,7 @@ ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2&
 	{
 		item->SetProperty(UIProperty::TEXT_SIZE, mTextSizes[col].c_str());
 	}
-	item->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.3, 0.3, 0.7");
+	item->SetProperty(UIProperty::BACK_COLOR, mHighlightColor.c_str());
 	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
@@ -96,10 +124,12 @@ ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2&
 	item->SetVisible(mVisible);
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
+	item->SetBackColor(mHighlightColor.c_str());
+	item->SetNoBackground(true);
 	return item;
 }
 
-int ListBox::InsertItem(const wchar_t* szString)
+unsigned ListBox::InsertItem(const wchar_t* szString)
 {	
 	float nh = PixelToLocalNHeight(mRowHeight);
 	float nextPosY = PixelToLocalNHeight(mRowHeight + mRowGap);
@@ -118,17 +148,41 @@ int ListBox::InsertItem(const wchar_t* szString)
 	if (szString)
 		pAddedItem->SetText(szString);
 
-	return mItems.size() - 1;
+	unsigned curRow = mItems.size() - 1;
+	GetRowId(curRow);
+
+	return curRow;
 }
 
-int ListBox::InsertItem(ITexture* texture)
+unsigned ListBox::InsertItem(ITexture* texture)
 {
-	int row = InsertItem(L"");
+	auto row = InsertItem(L"");
 	auto imageBox = (ImageBox*)mItems[row][0]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
 	imageBox->SetTexture(texture);
 	imageBox->SetVisible(mVisible);
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	return row;
+}
+
+unsigned ListBox::InsertCheckBoxItem(bool check)
+{
+	auto row = InsertItem(L"");
+	auto checkbox = (CheckBox*)mItems[row][0]->AddChild(0, 0, 1, 1, ComponentType::CheckBox);
+	checkbox->SetSize(Vec2I(24, 24));
+	checkbox->SetCheck(check);
+	checkbox->SetVisible(mVisible);
+	return row;
+}
+
+CheckBox* ListBox::GetCheckBox(unsigned row, unsigned col) const
+{
+	if (row >= mItems.size())
+	{
+		assert(0);
+		return 0;
+	}
+
+	return mItems[row][col]->GetCheckBox();
 }
 
 void ListBox::RemoveItem(size_t index)
@@ -273,18 +327,22 @@ void ListBox::SetHighlightRow(size_t row, bool highlight)
 	{
 		if (mItems[row].size() <= i)
 			break;
-		mItems[row][i]->SetProperty(UIProperty::NO_BACKGROUND, highlight ? "false" : "true");
+		if (highlight)
+		{
+			mItems[row][i]->SetProperty(UIProperty::NO_BACKGROUND, "false");
+			mItems[row][i]->SetProperty(UIProperty::BACK_COLOR, mHighlightColor.c_str());
+		}
+		else
+		{
+			mItems[row][i]->SetProperty(UIProperty::NO_BACKGROUND, StringConverter::toString(mItems[row][i]->GetNoBackground()).c_str());
+			mItems[row][i]->SetProperty(UIProperty::BACK_COLOR, mItems[row][i]->GetBackColor());
+		}
 	}
 }
 
 void ListBox::SetHighlightRowAndSelect(size_t row, bool highlight)
 {
-	for (size_t i = 0; i < mNumCols; ++i)
-	{
-		if (mItems[row].size() <= i)
-			break;
-		mItems[row][i]->SetProperty(UIProperty::NO_BACKGROUND, highlight ? "false" : "true");
-	}
+	SetHighlightRow(row, highlight);
 	if (highlight)
 	{
 		if (ValueNotExistInVector(mSelectedRows, row))
@@ -408,6 +466,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	switch (prop)
 	{
+	case UIProperty::LISTBOX_HIGHLIGHT_COLOR:
+	{
+		mHighlightColor = val;
+		return true;
+	}
 	case UIProperty::LISTBOX_COL:
 	{
 									mNumCols = StringConverter::parseUnsignedInt(val);
@@ -448,8 +511,6 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::LISTBOX_TEXT_SIZES:
 	{
 										  // set UIProperty::LISTBOX_COL first
-										  // don't need to set this property if the num of col is 1.
-										  assert(mNumCols != 1);
 										  mTextSizes.clear();
 										  StringVector strs = Split(val);
 										  assert(!strs.empty());
@@ -771,12 +832,45 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 
 	if (mItems[row].empty())
 		return 0;
+
 	mItems[row][0]->SetNSizeX(1.0f);
 	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
 	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
 	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0.2, 0.6, 0.2, 1.0");
+	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
+	mItems[row][0]->SetNoBackground(false);
+	mItems[row][0]->SetBackColor("0, 0, 0, 0.3");
+
+
+	return mItems[row][0];
+}
+
+IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char* textColor, bool noMouseEvent)
+{
+	if (mItems.size() < row)
+		return 0;
+
+	if (mItems[row].empty())
+		return 0;
+
+	mItems[row][0]->SetNSizeX(1.0f);
+	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
+	
+	if (backColor && strlen(backColor) != 0)
+	{
+		mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, backColor);
+		mItems[row][0]->SetBackColor(backColor);
+		mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
+		mItems[row][0]->SetNoBackground(false);
+	}
+		
+	if (textColor && strlen(textColor) !=0)
+		mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, textColor);
+
+	if (noMouseEvent)
+		mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");	
 	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
 
 	return mItems[row][0];
@@ -789,6 +883,47 @@ void ListBox::SetRowId(unsigned row, unsigned id)
 		mRowIds.push_back(-1);
 	}
 	mRowIds[row] = id;
+}
+
+void ListBox::SwapItems(unsigned row0, unsigned row1)
+{
+	if_assert_fail(row0 < mRowIds.size() && row1 < mRowIds.size())
+		return;
+
+	auto cols = mItems[row0].size();
+	if_assert_fail( cols == mItems[row1].size())
+		return;
+
+	bool row0selected = !ValueNotExistInVector(mSelectedRows, row0);
+	bool row1selected = !ValueNotExistInVector(mSelectedRows, row1);
+	if (row0selected && !row1selected)
+	{
+		DeleteValuesInVector(mSelectedRows, row0);
+		mSelectedRows.push_back(row1);
+	}
+	else if (!row0selected && row1selected)
+	{
+		DeleteValuesInVector(mSelectedRows, row1);
+		mSelectedRows.push_back(row0);
+	}
+	for (unsigned col = 0; col < mItems[row0].size(); col++)
+	{
+		ListItem* item0 = mItems[row0][col];
+		ListItem* item1 = mItems[row1][col];
+		std::swap(mItems[row0][col], mItems[row1][col]);
+		
+		auto item0RowIndex = item0->GetRowIndex();
+		auto item1RowIndex = item1->GetRowIndex();
+		item0->SetRowIndex(item1RowIndex);
+		item1->SetRowIndex(item0RowIndex);
+		
+		auto pos0 = item0->GetNPos();
+		auto pos1 = item1->GetNPos();
+		item0->SetNPos(pos1);
+		item1->SetNPos(pos0);
+	}
+	std::swap(mRowIds[row0], mRowIds[row1]);
+
 }
 
 unsigned ListBox::GetRowId(unsigned row)
@@ -842,6 +977,15 @@ void ListBox::DeleteRow(unsigned targetRow)
 	if (mRowIds.size() > targetRow)
 	{
 		mRowIds.erase(mRowIds.begin() + targetRow);
+	}
+}
+
+void ListBox::GetSelectedRowIds(std::vector<unsigned>& ids) const
+{
+	ids.clear();
+	for (unsigned rowIdx : mSelectedRows)
+	{
+		ids.push_back(mRowIds[rowIdx]);
 	}
 }
 

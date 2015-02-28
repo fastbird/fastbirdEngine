@@ -31,7 +31,8 @@
 
 namespace fastbird
 {	
-
+struct POINT_LIGHT_CONSTANTS;
+class IPointLight;
 class ICamera;
 class Vec2I;
 class Vec3;
@@ -81,6 +82,7 @@ public:
 	virtual ICamera* GetCamera() const = 0;
 	virtual void UpdateFrameConstantsBuffer() = 0;
 	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
+	virtual void UpdatePointLightConstantsBuffer(void* pData) = 0;
 	virtual void UpdateMaterialConstantsBuffer(void* pData) = 0;
 	virtual void UpdateRareConstantsBuffer() = 0;
 	virtual void UpdateRadConstantsBuffer(void* pData) = 0;
@@ -123,6 +125,8 @@ public:
 		
 	virtual IVertexBuffer* CreateVertexBuffer(void* data, unsigned stride, 
 		unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) = 0;
+	// when you don't use SmartPtr
+	virtual void DeleteVertexBuffer(IVertexBuffer* buffer) = 0;
 	virtual IIndexBuffer* CreateIndexBuffer(void* data, unsigned int numIndices, 
 		INDEXBUFFER_FORMAT format) = 0;
 	virtual IShader* CreateShader(const char* filepath, int shaders,
@@ -293,6 +297,16 @@ public:
 	virtual unsigned GetNumLoadingTexture() const = 0;
 
 	virtual void SetEnvironmentTextureOverride(ITexture* texture) = 0;
+	
+	// internal only
+	virtual void GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst) = 0;
+	virtual void RefreshPointLight() = 0;
+	virtual bool NeedToRefreshPointLight() const = 0;
+
+	virtual IPointLight* CreatePointLight(const Vec3& pos, float range, const Vec3& color, float intensity, float lifeTime, 
+		bool manualDeletion) = 0;
+	virtual void DeletePointLight(IPointLight* pointLight) = 0;
+	
 };
 
 }

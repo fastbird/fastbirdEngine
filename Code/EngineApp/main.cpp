@@ -34,10 +34,10 @@ void UpdateFrame()
 //-----------------------------------------------------------------------------
 void RunGame()
 {
-	MSG msg={};
-	while(msg.message != WM_QUIT)
+	MSG msg = {};
+	while (msg.message != WM_QUIT)
 	{
-		if (PeekMessage( &msg, NULL, 0, 0, PM_REMOVE))
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -50,51 +50,51 @@ void RunGame()
 }
 
 //-----------------------------------------------------------------------------
-LRESULT CALLBACK WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
+LRESULT CALLBACK WinProc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
 {
-	switch(msg)
+	switch (msg)
 	{
 	case WM_CLOSE:
-		{
-			PostQuitMessage(0);
-		}
+	{
+					 PostQuitMessage(0);
+	}
 		break;
 
 	}
 	return IEngine::WinProc(window, msg, wp, lp);
 }
 
-	//-----------------------------------------------------------------------------
-	void InitEngine()
+//-----------------------------------------------------------------------------
+void InitEngine()
+{
+	fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
+	gEnv = gFBEnv;
+	pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
+	pEngine->InitEngine(fastbird::IEngine::D3D11);
+	pEngine->InitSwapChain(gEnv->pEngine->GetWindowHandle(), 1600, 900);
+	gpTimer = gEnv->pTimer;
+
+	if (gEnv->pRenderer)
 	{
-		fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
-		gEnv = gFBEnv;
-		pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
-		pEngine->InitEngine(fastbird::IEngine::D3D11);
-		pEngine->InitSwapChain(gEnv->pEngine->GetWindowHandle(), 1600, 900);
-		gpTimer = gEnv->pTimer;
-
-		if (gEnv->pRenderer)
-		{
-			gEnv->pRenderer->SetClearColor(0, 0, 0, 1);
-		}
-		gInputHandler = FB_NEW(InputHandler)();
-		gCameraMan = FB_NEW(CameraMan)(gEnv->pRenderer->GetCamera());
-		gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
-
-		gTaskSchedular = FB_NEW(TaskScheduler)(6);
+		gEnv->pRenderer->SetClearColor(0, 0, 0, 1);
 	}
+	gInputHandler = FB_NEW(InputHandler)();
+	gCameraMan = FB_NEW(CameraMan)(gEnv->pRenderer->GetCamera());
+	gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
+
+	gTaskSchedular = FB_NEW(TaskScheduler)(6);
+}
 
 //-----------------------------------------------------------------------------
 int main()
 {
-	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 	std::vector<int> test;
 	test.push_back(0);
 	test.push_back(0);
-	
-	
+
+
 	//----------------------------------------------------------------------------
 	// 1. How to init engine.
 	//----------------------------------------------------------------------------
@@ -114,7 +114,7 @@ int main()
 		//gMeshObject->AttachToScene();
 		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
 	}
-	
+
 
 	//----------------------------------------------------------------------------
 	// 4. How to use voxelizer (Need to include <Engine/IVoxelizer.h>)
@@ -151,13 +151,13 @@ int main()
 		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
 		gEnv->pRenderer->DeleteRenderToTexture(rtt);
 	}
-	
+
 #if RUN_PARALLEL_EXAMPLE
 	//----------------------------------------------------------------------------
 	// 6. How to parallel computing. (Need to include <CommonLib/threads.h>)
 	// reference : Efficient and Scalable Multicore Programming
 	//----------------------------------------------------------------------------
-	int numInts = INT_MAX/100;
+	int numInts = INT_MAX / 100;
 	int* pInts = FB_ARRNEW(int, numInts);
 	{
 		//------------------------------------------------------------------------
@@ -182,7 +182,7 @@ int main()
 		assert(pInts[i] <= pInts[i + 1]);
 	}
 	FB_SAFE_DEL(pQuickSort);
-	
+
 	DWORD random = 0;
 	for (int i = 0; i < numInts; i++)
 	{
@@ -225,7 +225,7 @@ int main()
 		obj->CreateRigidBody();
 		auto rigidBody = obj->GetRigidBody();
 		rigidBody->ApplyCentralImpulse(Random(Vec3(10, -10, -10), Vec3(10, 10, 10)));
-		
+
 	}
 
 	for (int i = 0; i < 100; i++)
@@ -244,7 +244,7 @@ int main()
 		rigidBody->ApplyCentralImpulse(Random(Vec3(-10, -10, -10), Vec3(-10, 10, 10)));
 
 	}
-	
+
 	//----------------------------------------------------------------------------
 
 	//----------------------------------------------------------------------------

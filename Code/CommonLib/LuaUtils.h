@@ -2,6 +2,10 @@
 #include <CommonLib/luawrapperutil.hpp>
 
 struct lua_State;
+namespace fastbird
+{ 
+	const char* GetCWD();
+}
 
 #define CHECK_NUM_LUA_ARGS_FB(x) \
 	int numLuaArgs = lua_gettop(L); \
@@ -17,7 +21,7 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d, Msg : %s", error, errorString); \
+	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s/%s", error, fastbird::GetCWD(), errorString); \
 	lua_pop(lua, 1); \
 	assert(0);\
 	return;\
@@ -26,7 +30,7 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL_RET_FALSE(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d, Msg : %s", error, errorString); \
+	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, errorString); \
 	lua_pop(lua, 1); \
 	assert(0); \
 	return false; \
@@ -35,7 +39,7 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL_NO_RET(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d, Msg : %s", error, errorString); \
+	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, errorString); \
 	lua_pop(lua, 1); \
 	assert(0); \
 }

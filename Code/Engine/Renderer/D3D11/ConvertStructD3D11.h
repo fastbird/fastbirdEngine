@@ -82,7 +82,7 @@ namespace fastbird
 	inline D3D11_INPUT_ELEMENT_DESC ConvertStructD3D11(const INPUT_ELEMENT_DESC& srcDesc)
 	{
 		D3D11_INPUT_ELEMENT_DESC destDesc;
-		destDesc.SemanticName = srcDesc.mSemanticName.c_str();
+		destDesc.SemanticName = srcDesc.mSemanticName;
 		destDesc.SemanticIndex = srcDesc.mSemanticIndex;
 		switch(srcDesc.mFormat)
 		{

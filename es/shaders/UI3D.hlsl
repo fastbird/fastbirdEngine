@@ -54,7 +54,7 @@ float4 ui3d_PixelShader( in v2p INPUT ) : SV_Target
 	if (depthFade<0.01f)
 		discard;
 	
-	float4 color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
+	float4 color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV) * gDiffuseColor;
 	color.a *= depthFade;
 	return color;
 }

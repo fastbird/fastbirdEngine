@@ -11,6 +11,7 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 , mWorld(world)
 , mPhysicsInterface(0)
 , mGamePtr(0)
+, mColProvider(colProvider)
 {
 	assert(world);
 	auto colShape = getCollisionShape();
@@ -276,4 +277,14 @@ bool RigidBodyImpl::HasContact()
 	Callback callback;
 	mWorld->contactTest(this, callback);
 	return callback.mHasCollision;
+}
+
+void RigidBodyImpl::RemoveRigidBodyFromWorld()
+{
+	this->forceActivationState(WANTS_DEACTIVATION);
+}
+
+void RigidBodyImpl::ReAddRigidBodyFromWorld()
+{
+	this->forceActivationState(ACTIVE_TAG);
 }

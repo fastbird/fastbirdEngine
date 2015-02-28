@@ -91,7 +91,6 @@ Font::Font()
 	mHasOutline = false;
 	mEncoding = NONE;
 	mColor = 0xFFFFFFFF;
-	mColorBackup = 0xffffffff;
 	mInitialized = false;
 }
 
@@ -218,13 +217,14 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 	{
 								 unsigned color = StringConverter::parseHexa(buf);
 
-								 mColorBackup = mColor;
+								 mColorBackup.push(mColor);
 								 mColor = Color::FixColorByteOrder(color);
 								 break;
 	}
 	case TextTags::ColorEnd:
 	{
-							   mColor = mColorBackup;
+							   mColor = mColorBackup.top();
+							   mColorBackup.pop();
 							   break;
 	}
 	}
@@ -312,6 +312,13 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		{
 			y += mScale * mBase;
 			x = initialX;
+			if (batchingVertices > 0)
+			{
+				Flush(page, vertices, batchingVertices);
+				batchingVertices = 0;
+				mVertexLocation += batchingVertices;
+			}
+			
 			continue;
 		}
 
@@ -384,7 +391,7 @@ void Font::Flush(int page, const FontVertex* pVertices, unsigned int vertexCount
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 
 	MapData data = pRenderer->MapVertexBuffer(mVertexBuffer, 0, 
-		MAP_TYPE_WRITE_NO_OVERWRITE, MAP_FLAG_NONE);
+		MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
 	FontVertex* pDest = (FontVertex*)data.pData;
 	memcpy(pDest + mVertexLocation, pVertices + mVertexLocation, 
 		vertexCount * sizeof(FontVertex));
@@ -497,7 +504,18 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 		
 		if (curX > wrapAt)
 		{
-			multilineString.insert(multilineString.end() - inputBeforeSpace, L'\n');
+			int numTagChar = 0;
+			auto it = multilineString.end() - 1;
+			if (*(it) == ']' && *(it-1) == '$')
+			{
+				auto startIt = it - 2;
+				for (startIt; startIt >= multilineString.begin(); startIt--)
+				{
+					if (*startIt == '[' && *(startIt + 1) == '$')
+						numTagChar = std::distance(startIt, it);
+				}
+			}
+			multilineString.insert(multilineString.end() - inputBeforeSpace - numTagChar, L'\n');
 			curX = lengthAfterSpace;
 			multilineString.push_back(charId);
 			++lines;

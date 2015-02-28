@@ -1,204 +1,147 @@
-# How to Material
+# How to particles
+
+This document explains about particle emitter in fastbird-engine.
+
+## File format
+
+A particle emitter is defined like the below. This content is the part of data/particles/7_explosion.particle.
+
+	<ParticleEmitter emitterLifeTime="1.0" emitterID="7">
+		
+		<ParticleTemplate texture="data/particles/nova.png" emitPerSec="0" numInitialParticle="1"
+		
+			cross="false" blendMode="Additive" preMultiAlpha="true" stretchMax="0"
+			glow="1.0" emitTo="WorldSpace" range="Point" rangeRadius="0.0"
+			
+			uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+			
+			lifeTimeMinMax="1.0, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+			
+			sizeMinMax="0.5, 1.0" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+			scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+			scaleAccel="5.0" scaleAccelUntil="10 percent" scaleDeaccel="20.0" scaleDeaccelAfter="90 percent"
+			
+			velocityMinMax="0.0,0.0" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1, 1, 1"
+			accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent" 
+			
+			rotMinMax="0, 0 deg" rotSpeedMin = "35" rotSpeedMax="15"		
+			rotAccel="0 deg" rotAccelUntil="0 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+			
+			fadeInUntil="20 percent" fadeOutAfter="80 percent"
+			
+			Intensity="1.0, 1.0"
+		/>
+		
+		<!-- for Point lights -->
+		<ParticleTemplate pointLightRangeMinMax="4, 8" emitPerSec="0" numInitialParticle="1"
+			color="0.95, 0.95, 0.8, 1.0" colorEnd="0.85, 0.85, 0.5, 1.0"
+			lifeTimeMinMax="0.1, 0.15" 
+			emitTo="localSpace" range="Point" rangeRadius="0.0"
+			
+			scaleVelMinMax="0.01, 0.05"
+			scaleAccel="1" scaleAccelUntil="10 percent" scaleDeaccel="10.0" scaleDeaccelAfter="90 percent"
+			
+			velocityMinMax="0,0" velocityDirectionMin="-1,-1,-1" velocityDirectionMax = "1, 1, 1"		
+			accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent"
+			
+			fadeInUntil="0 percent" fadeOutAfter="80 percent"
+			
+			Intensity="1.0, 1.6"		
+		/>
+		
+	</ParticleEmitter>
 
 
-## Material file format
-
-Let's open one example .material file. es/materials/missing.material would be
-good to examine. This material is also used when the user specified material is
-missing. The folder name es means essential and it stores assets for engine internal.
-You may want to save your material files to data/materials or objects/yourmodel/ folder
-possibly.
-
-missing.material
-
-	<Material>
-		<ShaderFile>Code/Engine/Renderer/Shaders/Mesh.hlsl</ShaderFile>
-		<Shaders>VS|PS</Shaders>
-		<MaterialConstants>
-			<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
-			<DiffuseColor_Alpha>1, 0, 0, 1</DiffuseColor_Alpha>
-			<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
-			<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
-		</MaterialConstants>
-		<Textures>
-			<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">es/textures/missingmaterial.dds</Texture>
-		</Textures>
-		<MaterialParameters>
-		</MaterialParameters>
-		<ShaderDefines>
-		</ShaderDefines>
-		<InputLayout>
-			<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-			<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-		</InputLayout>
-	</Material>
-
-
-A material is defined in XML format. There are not that many elements here.
 Let's check it out one by one.
 
-*  `<ShaderFile>` : You define here the .hlsl file you want to use. the path
-is relative to the execution file. Default engine shaders exist in
-code/engine/renderer/shaders/ . And you may want to keep your custom shaders in the foler
-data/shaders.
+* `<ParticleEmitter>`
+ * emitterLifeTime : Life time. -1 is infinite.
+ * emitterID : unique id. you can use this id to load a particle. And this id 
+should be a prefix of the file name like 7_explosion.particle. You can also load
+a particle emitter without the id, this case you can use filename.
+* `<ParticleTemplate>` : Can be defined more than one.
+ * texture : texture file used.
+ * emitPerSec : Emit per second.
+ * numInitialParticle : The number of particles when the particle emitter is activated.
+ * cross : When you want render the particle as crossed quad, true.
+ * blendMode : currently supporting Additive, AlphaBlend, InvColorBlend, Replace blend modes.
+ * preMultiAlpha : if true, the final color get multipiled by alpha before the shader ouputs the result.
+ * stretchMax : if true, particle will be stretched to u direction according to the emitter's speed.
+ * glow : glow power. 0 is no glow.
+ * emitTo : Where to emit. World space for independent particles, local space for dependent particles to the emitter transform.
+ * range / rangeRadius : emittion position variation.
+ * uvAnimColRow : if the texture contains uv animation frames, specify the columns and rows here.
+ * uvAnimFramesPerSec : uv animation fps. if 0, the animation play once through the particle life time.
+ * lifeTimeMinMax : life time min/max.
+ * align
+    * billboard : billboard alignment.
+    * direction : quad u direction will be aligned to the emitter's forward direction.
+ * DefaultDirection : not used for now.
+ * Scale
+    * sizeMinMax: size min/max
+    * sizeRatioMinMax : ratio of u and v. if 1, its square other wise rectangle.
+    * scaleAccel : size acceleration
+    * scaleAccelUntil : the time the acceleration is finished.
+    * scaleDeaccel : size deacceleration
+    * scaleDeaccelAfter : when the deacceleration is finished.
+ * Velocity
+    * velocityMinMax : velocity min/max.
+    * velocityDirectionMin/Max : Random direction for velocity.
+    * accel/deaccel : acceleration / deacceleration.
+    * accelUntil/deaccelAfter : the time finishing/starting acc/deacc
+ * Rotation
+    * rotMinMax : rotation min/max
+    * rotSpeedMin/Max : rotation speed min/max
+    * rotAccel/Deaccel : rot acc/deacc
+    * rotAccelUntil/rotDeaccelAfter : the time finishing/starting acc/deacc
+ * fadeInUntil/fadeOutAfter : the time finishing fadein/fadeout
+ * Intensity : intensity.
+ * color, colorEnd : specify color animation. Particle color will be interpolated by the particles life time.
 
-* `<MaterialConstants>` :  Shader constatns data is defined here.
-These data can be accessed in the shader using the following constant buffer.
+You can define one ore more `<ParticleTemplate>` to have a emitter emitting serveral
+types of particles.
 
-partial text from code/engine/renderer/shaders/constants.h
+**Added 2015 Feb. - PointLight emitters**
+* `<ParticleTemplate>` 's attributes
+  * pointLightRangeMinMax : specify this attribute when you want to spawn point lights.
+  * color, colorEnd : specify point lights color.
 
-	cbuffer MATERIAL_CONSTANTS
-		#ifndef CPP
-			: register (b2)
-		#endif
-	{
-		float4 gAmbientColor;
-		float4 gDiffuseColor;
-		float4 gSpecularColor;
-		float4 gEmissiveColor;
-	};
+## How to use in the engine
 
-* `<Textures>` : Defines textures. slot is the register number in the shader.
-In this example it is using 0 slot. You can access this texture using the following
-texture object and sampler state object in the shader.
+You can load and use it like the below code.
 
-example of code/engine/renderer/shaders/mesh.hlsl
-
-	Texture2D  gDiffuseTexture : register(t0);
-	SamplerState gDiffuseSampler : register(s0);
-
-* `<MaterialParameters>` : You can define additional shader constants here. In this
-example shader, there is no material parameters but if you want to define, write like this.
-
-	<MaterialParameters>
-		<param comment="partSize, uvStepSize, radius, empty">2.0f, 0.25, 0.8, 0</param>
-		<param comment="x, y, z, w">2.5f, 1.25, 0.3, 0.5</param>
-	</MaterialParameters>
-
-`<param>` can be defined up to five. These data can be accessed in the shader through
-the following constatns buffer
-
-	cbuffer MATERIAL_PARAMETERS
-	#ifndef CPP
-		: register (b3)
-	#endif
-	{
-		float4 gMaterialParam[5];
-	};
-
-
-* `<ShaderDefines>` : You can customize shader behavior using `#ifdef` compile preprocessor.
-for example you define
-
-	<ShaderDefines>
-		<Define name="ENV_TEXTURE" val="1"></Define>
-		<Define name="PRE_MULTIPLIED_ALPHA" val="1"></Define>
-	</ShaderDefines>
-
-
-then you can use the preprocessor
-
-	#ifdef ENV_TEXTURE
-	...
-	#else
-	...
-	#endif
-
-in the shader. (also for PRE_MULTIPLIED_ALPHA)
-
-There is no limitation on numbers of `<Define>` in the engine.
-
-* `<Shaders>` : defines which shader functions the .hlsl file has. if this element is not defined in
-the material xml, it works same as `<Shaders>VS|PS</Shaders>` is defined. (VertexShader and PixelShader)
-
-* `<InputLayout>` : Defines InputLayout which should match the input of vertex shaders.
-most attributes are defined in DirectX sdk. For the format attributes, you can use
-FLOAT4, FLOAT3, UBYTE4, FLOAT2, INT4. The engine usually use the different slot number
-for differenct inputs. For example, POSITION usually bound to slot 0 and NORMAL
-bound to slot1, and uv to slot2.
+	IParticleEmitter* pEmitter = gEnv->pEngine->GetParticleEmitter(7, false); // Get the particle emitter object. It will be cached for next GetParticleEmitter() call.
+	pEmitter->SetPos(...)
+	pEmitter->Active(true); // Start emittion and add it to the scene.
 
 
-## Shader
-
-Now we are figuring out how to write shaders in the fastbird-engine.
-
-Currently the engine only support DirectX so the extension of the shaders is .hlsl
-
-If you are writing your own mesh shader and you decided its file name to 'mymesh.hlsl',
-then your shader file should define at least two functions mymesh_VertexShader and
-mymesh_PixelShader to use it within the material. 'mymesh' is the same with .hlsl file name. and '_VertexShader',
-'_PixelShader' is predefined strings in the engine.
-
-If you define `<Shaders>VS|GS|PS</Shaders>` in the material, you also need to define
-mymesh_GeometryShader function.
-
-Let's create a simple shader which applys white color on a mesh.
+when you turn the emitter off for temporary.
+	pEmitter->StopImmediate(); // sudden stop
+	pEmitter->Stop(); // emittion will be stopped immediately, and wait for all particles are dead
 
 
-	#include "Constants.h"
-	struct a2v
-	{
-		float4 Position : POSITION;
-	};
+When you want to destroy the emitter
+	gEnv->pEngine->ReleaseParticleEmitter(pEmitter);
 
-	struct v2p 
-	{
-		float4 Position   : SV_Position;
-	};
+If you don't want to control the particle emitter's instance life time, you can
+use smartpointer. this is for the one time play particle like explosion or hit effects.
 
-	v2p mymesh_VertexShader( in a2v INPUT )
-	{
-		v2p OUTPUT;
-
-		OUTPUT.Position = mul( gWorldViewProj, INPUT.Position );
-		return OUTPUT;
-	}
-
-	float4 mymesh_PixelShader( in v2p INPUT ) : SV_Target
-	{	
-		// Diffuse Light
-		return float4(1.0, 1.0, 1.0, 1.0);
-	}
+	SmartPtr<IParticleEmitter> pOneTimeParticle = gEnv->pEngine->GetParticleEmitter(7, true);
+	pOneTimeParticle->SetPos(...)
+	pOneTimeParticle->Active(true)
+	pOneTimeParticle = 0; // You can set the smartptr to zero here or you can leave it.
 
 
-Constants.h file defines serveral ConstantsBuffers. This include needs for gWorldViewProj variable.
-The include file location is engine/renderer/shaders/constants.h. Engine usually searches include files
-at the same folder of the .hlsl exists and if the file is not found, it searches engine/renderer/shaders/ folder.
+.particle can be hot reloaded in the run time. You can open a .particle file
+while you are running the game, and edit/save it then you can see the modification is
+applied to the game immediately. this is necessary for fast development iteration.
 
-The `a2v` struct defines the InputLayout. For this a2v input, InputLayout in the material
-is defined like this.
+Also you can use runtime editing feature while editing your new particle.
+Open the console(press \`) and type `EditParticle <emitterid>`.
+Then the emitter will be loaded in the center of screen and the camera will orbit
+around the emitter. if you want to check the moving particle, type `MoveEditParticle 1`
+in the console. then the particle will move like pendulum. 
 
-	<InputLayout>
-		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-	</InputLayout>
+![](http://jungwan.net/imgs/particles.jpg)
 
-
-
-
-The remain of content is just hlsl codes.
-
-Materials and shaders can be hot reloaded when they are modified in the run-time.
-If you modify your shader or material, this will be applied to the game running.
-This feature is essential for fast iteration.
-
-
-## How to use the material in the engine
-
-In engine you use IObject::SetMaterial() to set a material to an object.
-for example,
-
-	IMeshObject gMeshObject = 0;
-	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
-	if (gMeshObject)
-	{
-		gMeshObject->AttachToScene();
-		gMeshObject->SetMaterial("data/objects/CommandModule/CommandModule.material");
-	}
-
-
-But you can also define the material in the dae file in the 3d authoring tool.
-like the below screen shot.
-
-![](http://jungwan.net/imgs/materialdae.jpg)
-
-You can compile and check this material system. Source codes are available at GitHub((https://github.com/fastbird/fastbirdEngine)
+You can test the particle system with EngineApp project in the github(https://github.com/fastbird/fastbirdEngine)

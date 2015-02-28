@@ -5,7 +5,11 @@
 namespace fastbird
 {
 	//-------------------------------------------------------------------------
-	// max is not included
+	// max is included
+	inline float Random()
+	{
+		return (float)std::rand() / (float)RAND_MAX;
+	}
 	template<class T>
 	inline  T Random(T min, T max)
 	{

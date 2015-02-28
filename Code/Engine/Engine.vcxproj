@@ -184,6 +184,7 @@
     <ClInclude Include="IMouse.h" />
     <ClInclude Include="IObject.h" />
     <ClInclude Include="IParticleEmitter.h" />
+    <ClInclude Include="IPointLight.h" />
     <ClInclude Include="IRenderer.h" />
     <ClInclude Include="IRenderToTexture.h" />
     <ClInclude Include="IScene.h" />
@@ -211,6 +212,8 @@
     <ClInclude Include="Renderer\CloudManager.h" />
     <ClInclude Include="Renderer\CloudParticle.h" />
     <ClInclude Include="Renderer\CloudSimulation.h" />
+    <ClInclude Include="Renderer\PointLight.h" />
+    <ClInclude Include="Renderer\PointLightMan.h" />
     <ClInclude Include="TextTags.h" />
     <None Include="Renderer\Shaders\CommonDefines.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -309,6 +312,8 @@
     <ClCompile Include="Renderer\CloudManager.cpp" />
     <ClCompile Include="Renderer\CloudParticle.cpp" />
     <ClCompile Include="Renderer\CloudSimulation.cpp" />
+    <ClCompile Include="Renderer\PointLight.cpp" />
+    <ClCompile Include="Renderer\PointLightMan.cpp" />
     <ClCompile Include="Renderer\StarDef.cpp" />
     <ClCompile Include="Renderer\VolumetricCloud.cpp" />
     <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp" />

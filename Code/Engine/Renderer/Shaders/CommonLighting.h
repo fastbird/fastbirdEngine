@@ -218,3 +218,23 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 	return envContrib;
 #endif
 }
+
+float3 CalcPointLights(float3 worldPos, float3 normal)
+{
+	float3 result={0, 0, 0};
+	int count = (int)gPointLightColor[0].w;
+	count = min(3, count);
+	for(int i=0; i<count; i++)
+	{
+		
+		float lightReach = gPointLightPos[i].w;
+		float3 toLight = gPointLightPos[i].xyz - worldPos;
+		float dist = length(toLight);
+		toLight = toLight / dist;
+		float atten = clamp(1.0 - dist/lightReach, 0, 1);
+		atten *= atten;
+		float d = max(0, dot(toLight, normal));
+		result += (atten * d) * gPointLightColor[i].xyz;
+	}
+	return result;
+}

@@ -188,13 +188,13 @@ void Button::OnMouseDown(void* arg)
 	mUIObject->SetTextColor(mEnable ? mTextColorDown : mTextColorDown*.5f);
 
 	if (mImages[ButtonImages::BackImageHover])
-		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
 	else if (mImages[ButtonImages::BackImage])
-		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
-	else if (mImages[ButtonImages::Image])
-		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+		mImages[ButtonImages::BackImage]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
 	else if (mImages[ButtonImages::ImageHover])
-		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0.5, 0, 0, 1));
+		mImages[ButtonImages::ImageHover]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
 }
 
 void Button::OnMouseHover(void* arg)
@@ -211,16 +211,15 @@ void Button::OnMouseHover(void* arg)
 	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
 		IUIManager::GetUIManager().DirtyRenderList();
 
-
-
 	if (mImages[ButtonImages::BackImageHover])
-		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	else if (mImages[ButtonImages::BackImage])
-		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0, 0, 0, 1));
-	else if (mImages[ButtonImages::Image])
-		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::BackImage]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	else if (mImages[ButtonImages::ImageHover])
-		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::ImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	
 
 	// sometimes OnMouseHover function is called manually even the mouse
 	// is in out. - DropDown
@@ -243,13 +242,13 @@ void Button::OnMouseOut(void* arg)
 	
 
 	if (mImages[ButtonImages::BackImageHover])
-		mImages[ButtonImages::BackImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	else if (mImages[ButtonImages::BackImage])
-		mImages[ButtonImages::BackImage]->SetAmbientColor(Vec4(0, 0, 0, 1));
-	else if (mImages[ButtonImages::Image])
-		mImages[ButtonImages::Image]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::BackImage]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	else if (mImages[ButtonImages::ImageHover])
-		mImages[ButtonImages::ImageHover]->SetAmbientColor(Vec4(0, 0, 0, 1));
+		mImages[ButtonImages::ImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	else if (mImages[ButtonImages::Image])
+		mImages[ButtonImages::Image]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	// sometimes OnMouseHover function is called manually even the mouse
 	// is in out. - DropDown
@@ -296,7 +295,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   }
 							   assert(!mImageAtlas.empty());
 							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
+							   //mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 							   if (mIconText)
 							   {
 								   OnSizeChanged();
@@ -326,6 +326,27 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   }
 							   return true;
 	}
+	case UIProperty::TEXTURE_FILE:
+	{
+									 if (!mImages[ButtonImages::Image])
+									 {
+										 mImages[ButtonImages::Image] = CreateImageBox();
+									 }
+									 else
+									 {
+										 FB_DELETE(mImages[ButtonImages::Image]);
+										 mImages[ButtonImages::Image] = CreateImageBox();
+									 }
+									 assert(!mImageAtlas.empty());
+									 mImages[ButtonImages::Image]->SetTexture(val);
+									 mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
+									 if (mIconText)
+									 {
+										 OnSizeChanged();
+										 AlignIconText();
+									 }
+									return true;
+	}
 	case UIProperty::FPS:
 	{
 							if_assert_pass(mImages[ButtonImages::Image])
@@ -341,8 +362,17 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										mImages[ButtonImages::ImageHover] = CreateImageBox();
 									}
 									assert(!mImageAtlas.empty());
-									mImages[ButtonImages::ImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-									mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+									if (strlen(val) == 0)
+									{
+										FB_DELETE(mImages[ButtonImages::ImageHover]);
+										mImages[ButtonImages::ImageHover] = 0;
+									}
+									else
+									{
+										mImages[ButtonImages::ImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
+										mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+									}
+									
 									return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE:

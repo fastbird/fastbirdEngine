@@ -18,16 +18,28 @@ Container::Container()
 
 Container::~Container()
 {
+	for (auto winBase : mPendingDelete)
+	{
+		COMPONENTS::iterator it = std::find(mChildren.begin(), mChildren.end(), winBase);
+		if (it != mChildren.end())
+		{
+			if (*it == mScrollerV)
+				mScrollerV = 0;
+			mChildren.erase(it);
+			IUIManager::GetUIManager().DeleteComponent(winBase);
+		}
+		else
+		{
+			assert(0);
+		}
+	}
+	mPendingDelete.clear();
+
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
 	for (; it!=itEnd; it++)
 	{
 		IUIManager::GetUIManager().DeleteComponent(*it);
 	}
-	for (auto& winbase : mPendingDelete)
-	{
-		IUIManager::GetUIManager().DeleteComponent(winbase);
-	}
-	mPendingDelete.clear();
 }
 
 IWinBase* Container::AddChild(ComponentType::Enum type)
@@ -109,9 +121,10 @@ IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
 	std::string typeText = compTable.GetField("type_").GetString();
 	auto type = ComponentType::ConverToEnum(typeText.c_str());
 	bool dropdown = GetType() == ComponentType::DropDown;
-	IWinBase* p = AddChild(0.0f, 0.0f, 1.0f, 1.0f, type);
+	IWinBase* p = AddChild(type);
 	assert(p);
 	p->ParseLua(compTable);
+	p->OnCreated();
 
 	if (dropdown)
 	{
@@ -169,7 +182,8 @@ void Container::RemoveAllChild(bool immediately)
 			if (childCont)
 				childCont->RemoveAllChild(false);
 			child->ClearName();
-			mPendingDelete.push_back(child);
+			if (ValueNotExistInVector(mPendingDelete, child))
+				mPendingDelete.push_back(child);
 		}
 	}
 }
@@ -246,14 +260,13 @@ void Container::OnStartUpdate(float elapsedTime)
 			if (*it == mScrollerV)
 				mScrollerV = 0;
 			mChildren.erase(it);
+			IUIManager::GetUIManager().DeleteComponent(winBase);
+			deleted = true;
 		}
 		else
 		{
 			assert(0);
 		}
-		
-		IUIManager::GetUIManager().DeleteComponent(winBase);		
-		deleted = true;
 	}
 	mPendingDelete.clear();
 	if (deleted)
@@ -441,10 +454,10 @@ void Container::RefreshVScrollbar()
 	}
 		
 	float boxWNEnd = mWNPos.y + mWNSize.y;
-
-	if (contentWNEnd > boxWNEnd)
+	float length = contentWNEnd - boxWNEnd;
+	if (length > 0.0001f)
 	{
-		float length = contentWNEnd - boxWNEnd;
+		float ;
 		float visableRatio = mWNSize.y / (mWNSize.y + length);
 
 		if (!mScrollerV && mUseScrollerV)
@@ -488,7 +501,7 @@ bool Container::SetVisible(bool visible)
 	}
 	if (mMatchHeight)
 	{
-		MatchHeight();
+		MatchHeight(false);
 	}
 	return changed;
 }
@@ -535,6 +548,10 @@ void Container::Scrolled()
 					
 			}
 		}
+	}
+	else if (mWndContentUI)
+	{
+		mWndContentUI->Scrolled();
 	}
 }
 
@@ -620,6 +637,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 				assert(p);
 				p->SetRender3D(mRender3D, GetRenderTargetSize());
 				p->ParseLua(child);
+				p->OnCreated();
 
 				if (dropdown)
 				{
@@ -632,23 +650,22 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 
 	if (mMatchHeight)
 	{
-		MatchHeight();
+		MatchHeight(false);
 	}
 
 	return true;
 }
 
-void Container::MatchHeight()
+void Container::MatchHeight(bool checkName)
 {
-	if (!mMatchHeight)
-		return;
-
 	float contentWNEnd = 0.f;
 	for (auto i : mChildren)
 	{
 		WinBase* pWinBase = (WinBase*)i;
 		if (pWinBase->GetVisible())
 		{
+			if (checkName && strlen(pWinBase->GetName())==0)
+				continue;
 			float wnEnd = pWinBase->GetWNPos().y + pWinBase->GetWNSize().y;
 			contentWNEnd = std::max(wnEnd, contentWNEnd);
 		}

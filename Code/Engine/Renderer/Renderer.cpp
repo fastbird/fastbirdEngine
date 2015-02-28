@@ -12,6 +12,7 @@
 #include <Engine/IScriptSystem.h>
 #include <Engine/Renderer/VolumetricCloud.h>
 #include <Engine/Renderer/CloudManager.h>
+#include <Engine/Renderer/PointLightMan.h>
 #include <CommonLib/Unicode.h>
 
 namespace fastbird
@@ -45,6 +46,12 @@ namespace fastbird
 		, m_fStarInclination(HALF_PI)
 		, mCurRTSize(100, 100)
 		, mGlowSet(false)
+		, mPointLightMan(0)
+		, mRefreshPointLight(true)
+		, mLuminanceOnCpu(false)
+		, mFrameLuminanceCalced(0)
+		, mLuminance(0.5f)
+		, mUseFilmicToneMapping(true)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -65,9 +72,11 @@ namespace fastbird
 		mDebugRenderTargets[i].mSize = Vec2(0.25, 0.24f);
 		y += 0.25f;
 	}
+	mPointLightMan = FB_NEW(PointLightMan);
 }
 Renderer::~Renderer()
 {
+	FB_DELETE(mPointLightMan);
 	StarDef::FinalizeStatic();
 	if (gFBEnv->pConsole)
 		gFBEnv->pConsole->RemoveListener(this);
@@ -183,7 +192,7 @@ void Renderer::CleanGlowResources()
 void Renderer::CleanHDRResources()
 {
 	mHDRTarget = 0;
-	for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES; ++i)
+	for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES_NEW; ++i)
 		mToneMap[i] = 0;
 	for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; ++i)
 		mLuminanceMap[i] = 0;
@@ -200,7 +209,6 @@ void Renderer::CleanHDRResources()
 	mBrightPassPS = 0;
 	mBloomPS = 0;
 	mBloomSourceTex = 0;
-	mDownScale2x2PS = 0;
 }
 
 void Renderer::CleanGodRayResources()
@@ -674,6 +682,20 @@ inline IFont* Renderer::GetFont() const
 void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
 	ITexture* pDepthStencil, size_t dsIndex)
 {
+	static float time = 0;
+	static std::set<ITexture*> usedRenderTargets;
+	if (gFBEnv->pConsole->GetEngineCommand()->r_numRenderTargets)
+	{
+		for (int i = 0; i<num; i++)
+		{
+			usedRenderTargets.insert(pRenderTargets[i]);
+		}
+		if (gpTimer->GetTime() - time > 5)
+		{
+			time = gpTimer->GetTime();
+			Log("used RenderTargets = %u", usedRenderTargets.size());
+		}
+	}
 	if (pRenderTargets && num>0 && pRenderTargets[0])
 	{
 		mCurRTSize = pRenderTargets[0]->GetSize();
@@ -765,7 +787,7 @@ TextureAtlas* Renderer::GetTextureAtlas(const char* path)
 		{
 			const char* errMsg = doc.GetErrorStr1();
 			if (errMsg)
-				Error("\t%s", errMsg);
+				Error("texture atlas error : \t%s", errMsg);
 			else
 				Error(FB_DEFAULT_DEBUG_ARG, "Error while parsing material!");
 			return 0;
@@ -1220,10 +1242,125 @@ void Renderer::SetHDRTarget()
 	size_t index[] = { 0 };
 	SetRenderTarget(rts, index, 1);
 }
+void Renderer::MeasureLuminanceOfHDRTargetNew()
+{
+	mDefaultBlendState->Bind();
+	mNoDepthStencilState->Bind(0);
+	if (mToneMap[0] == 0)
+	{
+		int nSampleLen = 1;
+		for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES_NEW; i++)
+		{
+			// 1, 3, 9, 27, 81
+			mToneMap[i] = CreateTexture(0, nSampleLen, nSampleLen, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+			char buff[255];
+			sprintf_s(buff, "ToneMap(%d)", nSampleLen);
+			FB_SET_DEVICE_DEBUG_NAME(mToneMap[i], buff);
+			nSampleLen *= 3;
+		}
+		for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; i++)
+		{
+			mLuminanceMap[i] = CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+		}
+		ITexture* textures[] = { mLuminanceMap[0], mLuminanceMap[1] };
+		size_t index[] = { 0, 0 };
+		SetRenderTarget(textures, index, 2, 0, 0);
+		Clear();
+
+		IMaterial::SHADER_DEFINES shaderDefines;
+		if (GetMultiSampleCount() != 1)
+		{
+			shaderDefines.push_back(IMaterial::ShaderDefine());
+			shaderDefines.back().name = "_MULTI_SAMPLE";
+			shaderDefines.back().value = "1";
+		}
+		/*mDownScale2x2LumPS = CreateShader("code/engine/renderer/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mDownScale3x3PS = CreateShader("code/engine/renderer/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
+		mLuminanceAvgPS = CreateShader("code/engine/renderer/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
+
+		mSampleLumInitialShader = CreateShader("code/engine/renderer/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mSampleLumIterativeShader = CreateShader("code/engine/renderer/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
+		mSampleLumFinalShader = CreateShader("code/engine/renderer/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
+		mCalcAdaptedLumShader = CreateShader("code/engine/renderer/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
+	}
+
+	D3DEventMarker mark("Luminance");
+	assert(mHDRTarget);
+	int dwCurTexture = FB_NUM_TONEMAP_TEXTURES_NEW - 1;
+	ITexture* renderTarget = mToneMap[dwCurTexture];
+	ITexture* rts[] = { renderTarget };
+	size_t index[] = { 0 };
+	SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
+	SetTexture(mHDRTarget, BINDING_SHADER_PS, 0);
+	bool msaa = GetMultiSampleCount() > 1;
+	if (msaa)
+	{
+		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
+		if (pDest)
+		{
+			pDest->x = (float)mHDRTarget->GetWidth();
+			pDest->y = (float)mHDRTarget->GetHeight();
+			UnmapMaterialParameterBuffer();
+		}
+	}
+
+	const Vec2I& resol = renderTarget->GetSize();
+	Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
+	SetViewports(&vp, 1);
+	DrawFullscreenQuad(mSampleLumInitialShader, false);
+	--dwCurTexture;
+
+	while (dwCurTexture>0)
+	{
+		ITexture* src = mToneMap[dwCurTexture + 1];
+		ITexture* renderTarget = mToneMap[dwCurTexture];
+
+		ITexture* rts[] = { renderTarget };
+		size_t index[] = { 0 };
+		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
+		SetTexture(src, BINDING_SHADER_PS, 0);
+
+		const Vec2I& resol = renderTarget->GetSize();
+		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
+		SetViewports(&vp, 1);
+		DrawFullscreenQuad(mSampleLumIterativeShader, false);
+		--dwCurTexture;
+	}
+
+	// Perform the final pass of the average luminance calculation.
+	{
+		ITexture* src = mToneMap[dwCurTexture + 1];
+		ITexture* renderTarget = mToneMap[dwCurTexture];
+		ITexture* rts[] = { renderTarget };
+		size_t index[] = { 0 };
+		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
+		SetTexture(src, BINDING_SHADER_PS, 0);
+		const Vec2I& resol = renderTarget->GetSize();
+		{Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
+		SetViewports(&vp, 1); }
+
+		DrawFullscreenQuad(mSampleLumFinalShader, false);
+	}
+
+	// AdaptedLum
+	{
+		std::swap(mLuminanceMap[0], mLuminanceMap[1]);
+		ITexture* rts[] = { mLuminanceMap[0] };
+		size_t index[] = { 0 };
+		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
+		SetTexture(mLuminanceMap[1], BINDING_SHADER_PS, 0);
+		SetTexture(mToneMap[0], BINDING_SHADER_PS, 1);
+
+		Viewport vp = { 0, 0, (float)mLuminanceMap[0]->GetWidth(), (float)mLuminanceMap[0]->GetHeight(), 0.f, 1.f };
+		SetViewports(&vp, 1);
+		DrawFullscreenQuad(mCalcAdaptedLumShader, false);
+	}
+}
+
 void Renderer::MeasureLuminanceOfHDRTarget()
 {
-	/*if (++mLuminanceIndex >= FB_NUM_LUMINANCE_TEXTURES)
-		mLuminanceIndex = 0;*/
 
 	mDefaultBlendState->Bind();
 	mNoDepthStencilState->Bind(0);
@@ -1232,7 +1369,7 @@ void Renderer::MeasureLuminanceOfHDRTarget()
 		int nSampleLen = 1;
 		for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES; i++)
 		{
-			// 1, 4, 16, 32
+			// 1, 4, 16, 64
 			int iSampleLen = 1 << (2 * i);
 
 			mToneMap[i] = CreateTexture(0, iSampleLen, iSampleLen, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
@@ -1341,30 +1478,6 @@ void Renderer::MeasureLuminanceOfHDRTarget()
 		DrawFullscreenQuad(mCalcAdaptedLumShader, false);
 	}
 
-
-	// average exposure
-	//{
-	//	ITexture* rts[] = { mLuminanceMap[mLuminanceIndex] };
-	//	size_t index[] = { 0 };
-	//	SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-
-	//	std::vector<ITexture*> rvs;
-	//	rvs.reserve(FB_NUM_LUMINANCE_TEXTURES);
-	//	rvs.push_back(mToneMap[0]);
-	//	for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; ++i)
-	//	{
-	//		if (i != mLuminanceIndex)
-	//		{
-	//			rvs.push_back(mLuminanceMap[i]);
-	//		}
-	//	}
-	//	SetTextures(&rvs[0], rvs.size(), BINDING_SHADER_PS, 0);
-
-	//	Viewport vp = { 0, 0, 1, 1, 0.f, 1.f };
-	//	SetViewports(&vp, 1);
-	//	DrawFullscreenQuad(mLuminanceAvgPS, false);
-	//}
-
 }
 
 //---------------------------------------------------------------------------
@@ -1470,31 +1583,15 @@ void Renderer::BrightPassToStarSource()
 //---------------------------------------------------------------------------
 void Renderer::StarSourceToBloomSource()
 {
+	D3DEventMarker mark("StarSourceToBloomSource");
 	if (!mBloomSourceTex)
 	{
 		mBloomSourceTex = CreateTexture(0, mCropWidth / 8, mCropHeight / 8, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		mGaussianDownScale2x2Calculated = false;
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		mDownScale2x2PS = CreateShader("code/engine/renderer/shaders/downscale2x2.hlsl", BINDING_SHADER_PS, shaderDefines);
 	}
-	/*if (!mGaussianDownScale2x2Calculated)
-	{
-		mGaussianDownScale2x2Calculated = true;
-		GetSampleOffsets_DownScale2x2(mStarSourceTex->GetWidth(), mStarSourceTex->GetHeight(), mGaussianOffsetsDownScale2x2);
-	}
-	BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-	memcpy(pData->gSampleOffsets, mGaussianOffsetsDownScale2x2, sizeof(Vec4)* 4);
-	UnmapBigBuffer();*/
 
-	assert(mBlur5x5);	
-
+	assert(mBlur5x5);
 	Vec4* pOffsets = 0;
 	Vec4* pWeights = 0;
 	GetSampleOffsets_GaussBlur5x5(mBrightPassTexture->GetWidth(), mBrightPassTexture->GetHeight(),
@@ -1540,7 +1637,7 @@ void Renderer::Bloom()
 			mBloomTexture[i] = CreateTexture(0, mCropWidth / 8, mCropHeight / 8, PIXEL_FORMAT_R8G8B8A8_UNORM,
 				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 			char buff[255];
-			sprintf_s(buff, "Blood(%d)", i);
+			sprintf_s(buff, "Bloom(%d)", i);
 			FB_SET_DEVICE_DEBUG_NAME(mBloomTexture[i], buff);
 		}
 		
@@ -1600,7 +1697,8 @@ void Renderer::Bloom()
 		else
 		{
 			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(resol.x, afSampleOffsets, mGaussianDistWeightX, 3.0f, 1.25f);
+			GetSampleOffsets_Bloom(resol.x, afSampleOffsets, mGaussianDistWeightX, 3.0f, 
+				gFBEnv->pConsole->GetEngineCommand()->r_BloomGaussianWeight);
 			for (int i = 0; i < 15; i++)
 			{
 
@@ -1629,7 +1727,8 @@ void Renderer::Bloom()
 		else
 		{
 			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(resol.y, afSampleOffsets, mGaussianDistWeightY, 3.0f, 1.25f);
+			GetSampleOffsets_Bloom(resol.y, afSampleOffsets, mGaussianDistWeightY, 3.0f, 
+				gFBEnv->pConsole->GetEngineCommand()->r_BloomGaussianWeight);
 			for (int i = 0; i < 15; i++)
 			{
 				mGaussianDistOffsetY[i] = avSampleOffsets[i] = Vec4(0.f, afSampleOffsets[i], 0.0f, 0.0f);
@@ -1817,21 +1916,23 @@ void Renderer::ToneMapping()
 {
 	if (!mToneMappingPS)
 	{
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		mToneMappingPS = CreateShader("code/engine/renderer/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+		CreateToneMappingShader();
 	}
 	D3DEventMarker mark("ToneMapping");
 	ITexture* textures[] = { mHDRTarget, mLuminanceMap[0], mBloomTexture[0], mStarTextures[0] };
 	RestoreRenderTarget();
 	SetTextures(textures, 4, BINDING_SHADER_PS, 0); 
 	Viewport vp = { 0, 0, (float)GetWidth(), (float)GetHeight(), 0.f, 1.f };
-	gFBEnv->pRenderer->SetViewports(&vp, 1);
+	SetViewports(&vp, 1);
+	if (mLuminanceOnCpu)
+	{
+		Vec4* pData = (Vec4*)MapMaterialParameterBuffer();
+		if (pData)
+		{
+			*pData = float4(mLuminance, 0, 0, 0);
+			UnmapMaterialParameterBuffer();
+		}
+	}	
 
 	DrawFullscreenQuad(mToneMappingPS, false);
 	RestoreDepthStencilState();
@@ -1978,6 +2079,21 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 		CleanHDRResources();
 		return true;
 	}
+	else if (pCVar->mName == "r_hdrcpuluminance")
+	{
+		if (pCVar->GetInt())
+		{
+			ToneMapLuminanceOnCpu(true);
+		}
+		else
+		{
+			ToneMapLuminanceOnCpu(false);
+		}
+	}
+	else if (pCVar->mName == "r_hdrfilmic")
+	{
+		UseFilmicToneMapping(pCVar->GetInt() != 0);
+	}
 	else if (pCVar->mName == "r_hdrmiddlegray")
 	{
 		mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
@@ -1985,10 +2101,16 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	else if (pCVar->mName == "r_bloompower")
 	{
 		mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
+		UpdateRareConstantsBuffer();
 	}
 	else if (pCVar->mName == "r_starpower")
 	{
 		mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
+		UpdateRareConstantsBuffer();
+	}
+	else if (pCVar->mName == "r_bloomgaussianweight")
+	{
+		mGaussianDistCalculated = false;
 	}
 
 	return false;
@@ -2016,6 +2138,10 @@ void Renderer::UpdateLights(float dt)
 {
 	for (int i = 0; i < 2; i++)
 		mDirectionalLight[i]->Update(dt);
+
+	mPointLightMan->Update(dt);
+	// good point to reset.
+	mRefreshPointLight = false;
 }
 
 ITexture* Renderer::FindRenderTarget(const Vec2I& size)
@@ -2573,6 +2699,104 @@ void Renderer::DeleteRenderToTexture(IRenderToTexture* rt)
 	{
 		mRenderToTexturePool.push_back(rt);
 	}
+}
+
+void Renderer::GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst)
+{
+	assert(plConst);
+	mPointLightMan->GatherPointLightData(pos, plConst);
+}
+
+void Renderer::RefreshPointLight()
+{
+	mRefreshPointLight = true;
+}
+
+IPointLight* Renderer::CreatePointLight(const Vec3& pos, float range, const Vec3& color, float intensity, float lifeTime,
+	bool manualDeletion)
+{
+	assert(mPointLightMan);
+	RefreshPointLight();
+	return mPointLightMan->CreatePointLight(pos, range, color, intensity, lifeTime, manualDeletion);
+}
+
+void Renderer::DeletePointLight(IPointLight* pointLight)
+{
+	assert(mPointLightMan);
+	mPointLightMan->DeletePointLight(pointLight);
+}
+
+void Renderer::CalcLuminance()
+{
+	if (mFrameLuminanceCalced == gFBEnv->mFrameCounter ||
+		gFBEnv->pConsole->GetEngineCommand()->r_HDR==0)
+	{
+		return;
+	}
+	mFrameLuminanceCalced = gFBEnv->mFrameCounter;
+	SmartPtr<ITexture> stage = CreateTexture(0, mWidth, mHeight, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_STAGING,
+		BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+	mHDRTarget->CopyToStaging(stage, 0, 0, 0, 0, 0, 0);
+	auto mapped = stage->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	if (mapped.pData)
+	{
+		float accumulated = 0.f;
+		Vec3 luminance(0.2125f, 0.7154f, 0.0721f);
+		BYTE* data = (BYTE*)mapped.pData;
+		unsigned numPixels = mWidth * mHeight;
+		for (unsigned i = 0; i < numPixels; i++)
+		{
+			Vec3 target;
+			Halfp2Singles(&target, data, 3);
+			// Reference : 
+			// Reinhard, Erik, Greg Ward, Sumanta Pattanaik, and Paul Debeve,
+			// Photographic Tone Reproduction for Digital Images, 
+			// ACM Transactions on Graphics, vol. 21, no. 3, pp.267-276, July 2002.
+			//accumulated +=  log(target.Dot(luminance)+0.0001f);
+
+			float l = target.Dot(luminance);
+			//accumulated += std::max(l, 0.2f);
+			accumulated += l;
+
+			data += 8;
+		}
+		//mLuminance = exp(accumulated / numPixels);
+		mLuminance = (accumulated / numPixels);
+		Log("Luminance = %f", mLuminance);
+	}
+}
+
+void Renderer::ToneMapLuminanceOnCpu(bool oncpu)
+{
+	if (mLuminanceOnCpu == oncpu)
+		return;
+
+	mLuminanceOnCpu = oncpu;
+
+	CreateToneMappingShader();
+}
+
+void Renderer::UseFilmicToneMapping(bool filmic)
+{
+	if (mUseFilmicToneMapping == filmic)
+		return;
+	mUseFilmicToneMapping = filmic;
+	CreateToneMappingShader();
+}
+
+void Renderer::CreateToneMappingShader()
+{
+	IMaterial::SHADER_DEFINES shaderDefines;
+	if (GetMultiSampleCount() != 1)
+		shaderDefines.push_back(IMaterial::ShaderDefine("_MULTI_SAMPLE", "1"));
+
+	if (mLuminanceOnCpu)
+		shaderDefines.push_back(IMaterial::ShaderDefine("_CPU_LUMINANCE", "1"));
+
+	if (mUseFilmicToneMapping)
+		shaderDefines.push_back(IMaterial::ShaderDefine("_FILMIC_TONEMAP", "1"));
+
+	mToneMappingPS = CreateShader("code/engine/renderer/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
 }
 
 }

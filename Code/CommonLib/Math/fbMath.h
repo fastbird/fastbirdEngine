@@ -69,6 +69,13 @@ namespace fastbird
 		if (fabs(x) < 1.0e-4) return 1.0;
 		else return(sin(x) / x);
 	}
+	
+	bool IsLittleEndian(); // intel
+
+	void Halfp2Singles(void *target, void *source, unsigned num);
+	void Halfp2Doubles(void *target, void *source, unsigned num);
+	void Doubles2Halfp(void *target, void *source, unsigned num);
+	void Singles2Halfp(void *target, void *source, unsigned num);
 
 	inline unsigned long GetNextPowerOfTwo(unsigned long Value)
 	{
@@ -189,13 +196,13 @@ namespace fastbird
 	inline Mat44 MakeViewMatrix(const Vec3& pos, const Vec3& x, const Vec3& y, const Vec3& z)
 	{
 		// transposed
-		Mat33 tansposedRot(
+		Mat33 transposedRot(
 			x.x, x.y, x.z,
 			y.x, y.y, y.z,
 			z.x, z.y, z.z
 			);
-		Vec3 t = -(tansposedRot * pos);
-		Mat44 viewMat(tansposedRot, t);
+		Vec3 t = -(transposedRot * pos);
+		Mat44 viewMat(transposedRot, t);
 		return viewMat;
 	}
 

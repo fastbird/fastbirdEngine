@@ -47,6 +47,7 @@ Material::Material()
 	, mTransparent(false)
 	, mRenderPass(RENDER_PASS::PASS_NORMAL)
 	, mGlow(false)
+	, mNoShadowCast(false)
 {
 	WRITE_LOCK wl(mRWCSMaterial);
 	mMaterials.push_back(this);
@@ -73,6 +74,7 @@ Material::Material(const Material& mat)
 	mTextures = mat.mTextures;
 	mTransparent = mat.mTransparent;
 	mGlow = mat.mGlow;
+	mNoShadowCast = mat.mNoShadowCast;
 	mRenderPass = mat.mRenderPass;
 	size_t num = mat.mSubMaterials.size();
 	for (size_t i = 0; i < num; ++i)
@@ -173,6 +175,12 @@ bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
 	if (sz)
 	{
 		mGlow = StringConverter::parseBool(sz);
+	}
+
+	sz = pRoot->Attribute("noShadowCast");
+	if (sz)
+	{
+		mNoShadowCast = StringConverter::parseBool(sz);
 	}
 
 	sz = pRoot->Attribute("pass");
@@ -349,7 +357,7 @@ bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
 			mInputElementDescs.push_back(INPUT_ELEMENT_DESC());
 			const char* pbuffer = pElem->Attribute("semantic");
 			if (pbuffer)
-				mInputElementDescs.back().mSemanticName = pbuffer;
+				strcpy(mInputElementDescs.back().mSemanticName, pbuffer);
 			mInputElementDescs.back().mSemanticIndex = pElem->IntAttribute("index");
 
 			pbuffer = pElem->Attribute("format");

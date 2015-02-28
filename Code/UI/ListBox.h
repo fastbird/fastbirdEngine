@@ -6,6 +6,7 @@ namespace fastbird
 {
 class IUIObject;
 class Scroller;
+class CheckBox;
 class ListItem : public Wnd
 {
 public:
@@ -23,6 +24,12 @@ public:
 
 	void SetColIndex(size_t index) { mColIndex = index; }
 	size_t GetColIndex() const { return mColIndex; }
+	CheckBox* ListItem::GetCheckBox() const;
+
+	void SetBackColor(const char* backColor);
+	void SetNoBackground(bool noBackground);
+	const char* GetBackColor() const {return mBackColor.c_str();}
+	bool GetNoBackground() const { return mNoBackground; }
 
 protected:
 	const static float LEFT_GAP;
@@ -31,6 +38,10 @@ protected:
 
 	size_t mRowIndex;
 	size_t mColIndex;
+
+	// backup values
+	std::string mBackColor;
+	bool mNoBackground;
 };
 
 //--------------------------------------------------------------------------------
@@ -44,8 +55,10 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 
 	// Own
-	virtual int InsertItem(const wchar_t* szString);
-	virtual int ListBox::InsertItem(ITexture* texture);
+	virtual unsigned InsertItem(const wchar_t* szString);
+	virtual unsigned InsertItem(ITexture* texture);
+	virtual unsigned InsertCheckBoxItem(bool check);
+	virtual CheckBox* GetCheckBox(unsigned row, unsigned col) const;
 	virtual void RemoveItem(size_t index);
 	virtual void SetItemString(size_t row, size_t col, const wchar_t* szString);
 	virtual void SetItemTexture(size_t row, size_t col, ITexture* texture);
@@ -56,6 +69,7 @@ public:
 	virtual std::string GetSelectedString();
 	typedef std::vector<size_t> SelectedRows;
 	virtual const SelectedRows& GetSelectedRows() const { return mSelectedRows; }
+	virtual void GetSelectedRowIds(std::vector<unsigned>& ids) const;
 	void OnItemClicked(void* arg);
 	void OnItemDoubleClicked(void* arg);
 	virtual void Clear();
@@ -71,7 +85,9 @@ public:
 	virtual bool IsSelected(unsigned row);
 	virtual unsigned GetNumRows();
 	virtual IWinBase* MakeMergedRow(unsigned row);
+	virtual IWinBase* MakeMergedRow(unsigned row, const char* backColor, const char* textColor, bool noMouseEvent);
 	virtual void SetRowId(unsigned row, unsigned id);
+	virtual void SwapItems(unsigned row0, unsigned row1);
 	virtual unsigned GetRowId(unsigned row);
 	virtual unsigned FindRowWithId(unsigned id);
 	virtual void DeleteRow(unsigned row);
@@ -97,6 +113,7 @@ private:
 	std::vector < std::string > mTextSizes;
 	int mRowHeight;
 	int mRowGap;
+	std::string mHighlightColor;
 	std::string mTextureAtlas;
 
 	

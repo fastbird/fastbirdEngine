@@ -19,5 +19,6 @@ namespace fastbird
 		static bool TestSecurity(const char* filepath);
 
 		static bool IsFileExisting(const char* filepath);
+		static const char* GetCWD() { return mRootAbs.c_str(); }
 	};
 }

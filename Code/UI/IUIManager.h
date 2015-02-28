@@ -8,6 +8,7 @@
 namespace fastbird
 {
 	class IWinBase;
+	class ListBox;
 
 	class CLASS_DECLSPEC_UI IUIManager : public IInputListener
 	{
@@ -49,14 +50,24 @@ namespace fastbird
 		virtual lua_State* GetLuaState() const = 0;
 		virtual void OnUIFileChanged(const char* file) = 0;
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const = 0;
+		virtual bool CacheListBox(const char* uiname, const char* compName) = 0;
+		virtual ListBox* GetCachedListBox() const = 0;
 		virtual void SetEnablePosSizeEvent(bool enable) = 0;
 		virtual bool GetEnablePosSizeEvent() const = 0;
 
 		virtual bool GetVisible(const char* uiname) const = 0;
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
+		virtual void LockFocus(bool lock) = 0;
+		virtual void CloseAllLuaUI()=0;
 
 		virtual void CloneUI(const char* uiname, const char* newUIname) = 0;
-		virtual void IgnoreInput(bool ignore) = 0;
+		virtual void IgnoreInput(bool ignore, IWinBase* modalWindow) = 0;
+		virtual void ToggleVisibleLuaUI(const char* uisname) = 0;
+
+		virtual void RegisterAlwaysOnTopWnd(IWinBase* win) =0;
+		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win) = 0;
+
+		virtual void MoveToBottom(const char* moveToBottom) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

@@ -46,10 +46,19 @@ EngineCommand::EngineCommand()
 	r_HDR = gFBEnv->pScriptSystem->GetIntVariable("r_HDR", 1);
 	REGISTER_CVAR(r_HDR, r_HDR, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
-	r_HDRMiddleGray = gFBEnv->pScriptSystem->GetRealVariable("r_HDRMiddleGray", 0.5f);
-	REGISTER_CVAR(r_HDRMiddleGray, r_HDRMiddleGray, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
+	r_HDRMiddleGray = gFBEnv->pScriptSystem->GetRealVariable("r_HDRMiddleGray", 0.25);
+	REGISTER_CVAR(r_HDRMiddleGray, r_HDRMiddleGray, CVAR_CATEGORY_CLIENT, "Decide scene key.");
 
-	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.1f);
+	r_HDRCpuLuminance = gFBEnv->pScriptSystem->GetIntVariable("r_HDRCpuLuminance", 0);
+	REGISTER_CVAR(r_HDRCpuLuminance, r_HDRCpuLuminance, CVAR_CATEGORY_CLIENT, "If true, luminance will be calculated in CPU. Debug purpose");
+
+	r_HDRFilmic = gFBEnv->pScriptSystem->GetIntVariable("r_HDRFilmic", 1);
+	REGISTER_CVAR(r_HDRFilmic, r_HDRFilmic, CVAR_CATEGORY_CLIENT, "Use Filmic tone mapping");
+
+	r_BloomGaussianWeight = gFBEnv->pScriptSystem->GetRealVariable("r_BloomGaussianWeight", 1.3f);
+	REGISTER_CVAR(r_BloomGaussianWeight, r_BloomGaussianWeight, CVAR_CATEGORY_CLIENT, "bloom gaussian weight");
+
+	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.2f);
 	REGISTER_CVAR(r_BloomPower, r_BloomPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
 	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.2f);
@@ -89,6 +98,9 @@ EngineCommand::EngineCommand()
 
 	r_GenerateShaderCache = gFBEnv->pScriptSystem->GetIntVariable("r_GenerateShaderCache", 1);
 	REGISTER_CVAR(r_GenerateShaderCache, r_GenerateShaderCache, CVAR_CATEGORY_CLIENT, "generate shader cache");
+
+	r_numRenderTargets = gFBEnv->pScriptSystem->GetIntVariable("r_numRenderTargets", 0);
+	REGISTER_CVAR(r_numRenderTargets, r_numRenderTargets, CVAR_CATEGORY_CLIENT, "Log render targets");
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);

@@ -132,6 +132,7 @@
     <ClInclude Include="AsyncObjects.h" />
     <ClInclude Include="BlockFrequent.h" />
     <ClInclude Include="CircularBuffer.h" />
+    <ClInclude Include="ClipboardData.h" />
     <ClInclude Include="Collision\GeomCollisions.h" />
     <ClInclude Include="Color.h" />
     <ClInclude Include="FBColShape.h" />
@@ -192,6 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AsyncObjects.cpp" />
+    <ClCompile Include="ClipboardData.cpp" />
     <ClCompile Include="Collision\GeomCollisions.cpp" />
     <ClCompile Include="Color.cpp" />
     <ClCompile Include="CommonLib.cpp" />

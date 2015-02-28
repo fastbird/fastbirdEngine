@@ -12,13 +12,18 @@ Scroller::Scroller()
 	, mOwner(0)
 	, mDestOffset(0)
 	, mCurOffset(0)
-	, mScrollAcc(7)
+	, mScrollAcc(10)
 	, mCurScrollSpeed(0)
-	, mMaxScrollSpeed(20)
+	, mMaxScrollSpeed(30)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+}
+
+Scroller::~Scroller()
+{
+
 }
 
 void Scroller::GatherVisit(std::vector<IUIObject*>& v)
@@ -30,17 +35,19 @@ void Scroller::GatherVisit(std::vector<IUIObject*>& v)
 
 bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mParent)
+	if (!mParent || !mVisible)
 		return false;
 
 	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
 	long wheel = mouse->GetWheel();
 	if (wheel && mParent->IsIn(mouse))
 	{		
+		float prevDestOffset = mDestOffset;
 		mDestOffset += wheel * mScrollAmount;
 		mDestOffset = std::min(0.f, mDestOffset);
 		mDestOffset = std::max(-mMaxOffset.y, mDestOffset);
-		mouse->ClearWheel();
+		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
+			mouse->ClearWheel();
 	}
 	return isIn;
 }

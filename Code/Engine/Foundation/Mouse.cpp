@@ -167,7 +167,7 @@ namespace fastbird
 				mLButtonDoubleClicked = true;
 			}
 			
-			if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.15f)
+			if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
 			{
 				mButtonsClicked |= MOUSE_BUTTON_LEFT;
 				mLastClickTime = gFBEnv->pTimer->GetTime();

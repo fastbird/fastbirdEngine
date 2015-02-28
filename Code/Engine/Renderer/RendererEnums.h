@@ -8,6 +8,7 @@ namespace fastbird
 		VC_COLOR =0x4,
 		VC_TEXCOORD = 0x8,
 		VC_TANGENT = 0x10,
+		VC_BLENDINDICES = 0x20,
 	};
 
 	enum BUFFER_USAGE
