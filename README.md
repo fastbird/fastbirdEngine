@@ -19,7 +19,7 @@ You need these libraries to compile the source code. You can find the helper .ba
 * Bullet Physics 2.82
   * copy code/_BULLET(2.82)_DIR.bat file to your Bullet directory and run. This will create $(BULLET_DIR) environment variable.
  
-The project is being developed in Visual Studio 2013 express edition.
+The project is being developed in Visual Studio 2013 Community.
  
 
 How-tos
