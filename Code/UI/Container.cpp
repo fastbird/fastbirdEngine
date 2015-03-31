@@ -394,7 +394,7 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		return false;
 
 	bool mouseIn = false;
-	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
+	auto it = mChildren.rbegin(), itEnd = mChildren.rend();
 	for (; it!=itEnd; it++)
 	{
 		mouseIn = (*it)->OnInputFromHandler(mouse, keyboard) || mouseIn;
@@ -782,6 +782,24 @@ void Container::SetRender3D(bool render3D, const Vec2I& renderTargetSize)
 	{
 		child->SetRender3D(render3D, renderTargetSize);
 	}
+}
+
+void Container::StartHighlight(float speed)
+{
+	for (auto child : mChildren)
+	{
+		child->StartHighlight(speed);
+	}
+	__super::StartHighlight(speed);
+}
+
+void Container::StopHighlight()
+{
+	for (auto child : mChildren)
+	{
+		child->StopHighlight();
+	}
+	__super::StopHighlight();
 }
 
 }

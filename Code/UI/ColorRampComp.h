@@ -23,7 +23,7 @@ namespace fastbird
 		// alread added as a child
 
 		void SetColorRampValues(const char* values);
-		void GetColorRampValues(char val[]);
+		void GetColorRampValues(char val[], int precision = 1);
 		void GetColorRampValuesFloats(std::vector<float>& values);
 		void SetColorRampValuesFloats(const std::vector<float>& values);
 

@@ -136,6 +136,8 @@ void ParticleManager::Update(float elapsedTime)
 		else
 			it++;
 	}
+
+	ParticleRenderObject::EndUpdateParticles();
 }
 
 void ParticleManager::AddActiveParticle(IParticleEmitter* pEmitter)

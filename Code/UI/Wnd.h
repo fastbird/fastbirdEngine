@@ -28,6 +28,9 @@ public:
 	virtual bool IsAlwaysOnTop() const{ return mAlwaysOnTop; }
 	virtual bool GetCloseByEsc() const { return mCloseByEsc; }
 
+	virtual void StartHighlight(float speed);
+	virtual void StopHighlight();
+
 protected:
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();

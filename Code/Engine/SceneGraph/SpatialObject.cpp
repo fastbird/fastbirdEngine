@@ -72,6 +72,7 @@ void SpatialObject::SetRot(const Quat& rot)
 
 void SpatialObject::SetScale(const Vec3& scale)
 {
+	// for fix precision problem.
 	if (mBoundingVolume && mBoundingVolumeWorld)
 		mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius() * std::max(scale.x, std::max(scale.y, scale.z)));
 	mTransformation.SetScale(scale);
@@ -108,7 +109,12 @@ const Quat& SpatialObject::GetRot() const
 void SpatialObject::SetTransform(const Transformation& t)
 {
 	if (mBoundingVolume && mBoundingVolumeWorld)
-		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + t.GetTranslation());
+	{
+		auto& scalev = mTransformation.GetScale();
+		float scale = std::max(scalev.x, std::max(scalev.y, scalev.z));
+		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() * scale + t.GetTranslation());
+	}
+		
 	mPrevPos = mTransformation.GetTranslation();
 	mTransformation = t;
 	mTransformChanged = true;

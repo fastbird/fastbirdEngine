@@ -18,6 +18,7 @@ namespace fastbird
 			, mIntensity(1.0f)
 			, mMeshObject(0)
 			, mPointLight(0)
+			, mPendulumBackward(false)
 			{
 			}
 			bool IsAvailable() const
@@ -54,6 +55,7 @@ namespace fastbird
 			DWORD mColor;
 			SmartPtr<IMeshObject> mMeshObject;
 			IPointLight* mPointLight;
+			bool mPendulumBackward;
 		};
 
 		virtual IObject* Clone() const{assert(0); return 0;}
@@ -61,8 +63,10 @@ namespace fastbird
 		virtual bool Load(const char* filepath) = 0;
 		virtual bool Update(float elapsedTime)= 0;
 		virtual void Active(bool a) = 0;
+		virtual bool IsActive() const = 0;
 		virtual void Stop() = 0;
 		virtual void StopImmediate() = 0;
+		virtual void SetVisibleParticle(bool visible) = 0;
 		virtual bool IsAlive() = 0;
 		virtual void SetEmitterDirection(const fastbird::Vec3& dir) = 0;
 		virtual void SetEmitterColor(const Color& c) = 0;

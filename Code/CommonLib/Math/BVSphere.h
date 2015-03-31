@@ -34,6 +34,7 @@ namespace fastbird
 		virtual fastbird::Vec3 GetSurfaceFrom(const Vec3& src, Vec3& normal);
 		virtual void Invalidate();
 		virtual bool Contain(const Vec3& pos) const;
+		virtual Vec3 GetRandomPosInVolume(const Vec3* nearLocal=0) const;
 
 	private:
 		Vec3 mCenter;

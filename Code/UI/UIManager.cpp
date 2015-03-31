@@ -19,6 +19,7 @@
 #include <UI/DropDown.h>
 #include <UI/TextBox.h>
 #include <UI/ColorRampComp.h>
+#include <UI/NamedPortrait.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
@@ -70,6 +71,7 @@ UIManager::UIManager(lua_State* L)
 	, mModelWindow(0), mLockFocus(false)
 {
 	gpTimer = gEnv->pTimer;
+	FileSystem::Initialize();
 	gEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
@@ -97,6 +99,7 @@ UIManager::~UIManager()
 	assert(mWindows.empty());
 	gEnv->pEngine->RemoveInputListener(this);
 	KeyboardCursor::FinalizeKeyboardCursor();
+	FileSystem::Finalize();
 }
 
 void UIManager::Shutdown()
@@ -177,10 +180,16 @@ void UIManager::GatherRenderList()
 		uiObjects.reserve(200);
 		std::map<std::string, std::vector<IUIObject*>> render3DList;
 
+		bool hideAll = !mHideUIExcepts.empty();
 		WINDOWS::iterator it = mWindows.begin(), itEnd = mWindows.end();
 		size_t start = 0;
 		for (; it != itEnd; it++)
 		{
+			if (hideAll)
+			{
+				if (std::find(mHideUIExcepts.begin(), mHideUIExcepts.end(), (*it)->GetName()) == mHideUIExcepts.end())
+					continue;
+			}
 			if ((*it)->GetVisible())
 			{
 				if ((*it)->GetRender3D())
@@ -223,8 +232,9 @@ void UIManager::GatherRenderList()
 }
 
 //---------------------------------------------------------------------------
-bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI)
+bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& uiname, bool luaUI)
 {
+
 	LUA_STACK_CLIPPER c(mL);
 	tinyxml2::XMLDocument doc;
 	int err = doc.LoadFile(filepath);
@@ -244,8 +254,27 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 		assert(0);
 		return false;
 	}
+
 	if (pRoot->Attribute("name"))
 		uiname = pRoot->Attribute("name");
+
+	std::string lowerUIname = uiname;
+	ToLowerCase(lowerUIname);
+
+	auto itFind = mLuaUIs.find(lowerUIname);
+	if (itFind != mLuaUIs.end())
+	{
+		if (GetVisible(lowerUIname.c_str()))
+		{
+			SetVisible(lowerUIname.c_str(), false);
+		}
+
+		for (const auto& ui : itFind->second)
+		{
+			DeleteWindow(ui);
+		}
+		mLuaUIs.erase(itFind);
+	}
 
 	std::string scriptPath;
 	const char* sz = pRoot->Attribute("script");
@@ -254,7 +283,9 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 		int error = luaL_dofile(mL, sz);
 		if (error)
 		{
-			Log(lua_tostring(mL, -1));
+			char buf[1024];
+			sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
+			Log(buf);
 			assert(0);
 			return false;
 		}
@@ -311,12 +342,10 @@ bool UIManager::ParseUI(const char* filepath, std::vector<IWinBase*>& windows, s
 	assert(!uiname.empty());
 	if (luaUI && !uiname.empty())
 	{
-		std::string lower = uiname;
-		ToLowerCase(lower);
-		mLuaUIs[lower].clear();
+		mLuaUIs[lowerUIname].clear();
 		for (const auto& topWindow : windows)
 		{
-			mLuaUIs[lower].push_back(topWindow);
+			mLuaUIs[lowerUIname].push_back(topWindow);
 		}
 
 		for (const auto& topWindow : windows)
@@ -399,7 +428,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 
 	tinyxml2::XMLElement* pComp = pRoot->FirstChildElement("component");
 	unsigned idx = 0;
-	std::vector<IWinBase*> windows;
+	WinBases windows;
 	while (pComp)
 	{
 		sz = pComp->Attribute("type");
@@ -625,6 +654,26 @@ void UIManager::DirtyRenderList()
 	mNeedToRegisterUIObject = true;
 }
 
+void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val)
+{
+	SetUIProperty(uiname, compname, UIProperty::ConverToEnum(prop), val);
+}
+void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val)
+{
+	if_assert_fail(uiname && compname && val)
+		return;
+
+	auto comp = FindComp(uiname, compname);
+	if (comp)
+	{
+		comp->SetProperty(prop, val);
+	}
+	else
+	{
+		Error("Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", compname, uiname, UIProperty::ConvertToString(prop));
+	}
+}
+
 //---------------------------------------------------------------------------
 IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 {
@@ -690,6 +739,9 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 		break;
 	case ComponentType::ColorRamp:
 		pWnd = FB_NEW(ColorRampComp);
+		break;
+	case ComponentType::NamedPortrait:
+		pWnd = FB_NEW(NamedPortrait);
 		break;
 	default:
 		assert(0 && "Unknown component");
@@ -821,7 +873,7 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 	Vec2 backPos = npos;
 	if (backPos.y > 0.9f)
 	{
-		backPos.y -= gTooltipFontSize * 2.0f / (float)gEnv->pRenderer->GetHeight();
+		backPos.y -= (gTooltipFontSize * 2.0f+10) / (float)gEnv->pRenderer->GetHeight();
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
 	if (backPos.x + nSize.x>1.0f)
@@ -919,6 +971,24 @@ IWinBase* UIManager::FindComp(const char* uiname, const char* compName) const
 	return 0;
 }
 
+void UIManager::FindUIWnds(const char* uiname, WinBases& outV) const
+{
+	assert(uiname);
+	std::string lower(uiname);
+	ToLowerCase(lower);
+	auto itFind = mLuaUIs.find(lower);
+	if (itFind == mLuaUIs.end())
+		return;
+
+	for (const auto& comp : itFind->second)
+	{
+		if (strcmp(comp->GetName(), uiname) == 0)
+		{
+			outV.push_back(comp);
+		}
+	}
+}
+
 bool UIManager::CacheListBox(const char* uiname, const char* compName)
 {
 	mCachedListBox = dynamic_cast<ListBox*>(FindComp(uiname, compName));
@@ -933,12 +1003,7 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 	auto itFind = mLuaUIs.find(lower);
 	if (itFind == mLuaUIs.end())
 	{
-		lua_Debug ar;
-		lua_getstack(mL, 1, &ar);
-		lua_getinfo(mL, "nSl", &ar);
-		int line = ar.currentline;
-
-		assert(0);
+		Error("UIManager::SetVisible(): UI(%s) is not found.", uiname);
 		return;
 	}
 	for (const auto& comp : itFind->second)
@@ -967,7 +1032,6 @@ bool UIManager::GetVisible(const char* uiname) const
 	auto itFind = mLuaUIs.find(lower.c_str());
 	if (itFind == mLuaUIs.end())
 	{
-		assert(0);
 		return false;
 	}
 	bool visible = false;
@@ -1098,6 +1162,33 @@ void UIManager::MoveToBottom(const char* moveToBottom)
 		if (ValueNotExistInVector(mMoveToBottomReserved, ui))
 			mMoveToBottomReserved.push_back(ui);
 	}	
+}
+
+void UIManager::HideUIsExcept(const std::vector<std::string>& excepts)
+{
+	mHideUIExcepts = excepts;
+	DirtyRenderList();
+}
+
+
+void UIManager::HighlightUI(const char* uiname)
+{
+	WinBases topWnds;
+	FindUIWnds(uiname, topWnds);
+	for (auto& it : topWnds)
+	{
+		it->StartHighlight(2.0f);
+	}
+}
+
+void UIManager::StopHighlightUI(const char* uiname)
+{
+	WinBases topWnds;
+	FindUIWnds(uiname, topWnds);
+	for (auto& it : topWnds)
+	{
+		it->StopHighlight();
+	}
 }
 
 } // namespace fastbird

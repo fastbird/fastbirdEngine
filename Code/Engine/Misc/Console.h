@@ -18,6 +18,7 @@ namespace fastbird
 		WStringVector mBufferw; // display buffer
 		FB_CRITICAL_SECTION mBufferwCS;
 
+		static const int sFontSize=22;
 		int mBufferBtmLine; // bottom line
 		int mLines;
 		bool mOpen;
@@ -41,6 +42,7 @@ namespace fastbird
 
 		StringVector mHistory;
 		int mHistoryIndex;
+		int mHistoryIndexBackup;
 
 		SmartPtr<EngineCommand> mEngineCommand;
 

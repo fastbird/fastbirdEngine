@@ -1,4 +1,4 @@
-<Material transparent="true">
+<Material transparent="true" >
 	<ShaderFile>es/Shaders/DebugDraw.hlsl</ShaderFile>
 	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>

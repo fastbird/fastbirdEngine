@@ -13,12 +13,6 @@
     <Filter Include="Animation">
       <UniqueIdentifier>{84bf99cb-e062-4e56-98f1-640b46adc364}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Physics">
-      <UniqueIdentifier>{447451a5-ef4f-4f8b-b15e-0f464d74397a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="AI">
-      <UniqueIdentifier>{2c378c83-e939-4d6f-9e34-f7a049d71aab}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Misc">
       <UniqueIdentifier>{4a172b19-207d-497e-8c48-3bacb734d726}</UniqueIdentifier>
     </Filter>
@@ -148,10 +142,6 @@
     <None Include="Renderer\Shaders\CommonDefines.h" />
     <None Include="Renderer\Shaders\CommonFunctions.h" />
     <None Include="Renderer\Shaders\CommonLighting.h" />
-    <None Include="Renderer\Shaders\DownScale2x2.hlsl" />
-    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl" />
-    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl" />
-    <None Include="Renderer\Shaders\StarGlare.hlsl" />
     <None Include="Renderer\Shaders\CalculateAdaptedLum.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
@@ -162,6 +152,24 @@
       <Filter>Renderer\Shaders</Filter>
     </None>
     <None Include="Renderer\Shaders\SampleLumIterative.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\StarGlare.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\DownScale2x2.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\depth.hlsl">
+      <Filter>Renderer\Shaders</Filter>
+    </None>
+    <None Include="Renderer\Shaders\depth_cloud.hlsl">
       <Filter>Renderer\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -294,7 +302,6 @@
       <Filter>ScriptSystem</Filter>
     </ClInclude>
     <ClInclude Include="IScriptSystem.h" />
-    <ClInclude Include="IScriptTable.h" />
     <ClInclude Include="IScript.h" />
     <ClInclude Include="IInputDevice.h" />
     <ClInclude Include="SceneGraph\SpatialObject.h">

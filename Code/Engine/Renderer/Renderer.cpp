@@ -52,6 +52,7 @@ namespace fastbird
 		, mFrameLuminanceCalced(0)
 		, mLuminance(0.5f)
 		, mUseFilmicToneMapping(true)
+		, mFadeAlpha(0.0f)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -126,6 +127,7 @@ void Renderer::Deinit()
 	mFullscreenQuadVSNear = 0;
 	mCopyPS = 0;
 	mCopyPSMS = 0;
+
 	mDirectionalLight[0] = 0;
 	mDirectionalLight[1] = 0;
 	mDirectionalLightOverride[0] = 0;
@@ -416,7 +418,7 @@ bool Renderer::OnPrepared()
 	static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
 
 	mFont = FB_NEW(Font);
-	std::string fontName = gFBEnv->pEngine->GetConfigStringValue("ETC", "Font");
+	std::string fontName = gFBEnv->pScriptSystem->GetStringVariable("r_font");
 	if (fontName.empty())
 	{
 		fontName = "es/fonts/nanum_pen_bin.fnt";
@@ -588,35 +590,35 @@ Vec2 Renderer::ToNdcPos(const Vec2I& screenPos) const
 
 //----------------------------------------------------------------------------
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color)
+	const Color& color, float size)
 {
-	mDebugHud->DrawTextForDuration(secs, pos, text, color);
+	mDebugHud->DrawTextForDuration(secs, pos, text, color, size);
 }
 
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
-	const Color& color)
+	const Color& color, float size)
 {
-	DrawTextForDuration(secs, pos, AnsiToWide(text, strlen(text)), color);
+	DrawTextForDuration(secs, pos, AnsiToWide(text, strlen(text)), color, size);
 }
 
-void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color)
+void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->DrawText(pos, text, color);
+	mDebugHud->DrawText(pos, text, color, size);
 }
 
-void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color)
+void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color, float size)
 {
-	DrawText(pos, AnsiToWide(text, strlen(text)), color);
+	DrawText(pos, AnsiToWide(text, strlen(text)), color, size);
 }
 
-void Renderer::Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color)
+void Renderer::Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->Draw3DText(worldpos, text, color);
+	mDebugHud->Draw3DText(worldpos, text, color, size);
 }
 
-void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& color)
+void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size)
 {
-	Draw3DText(worldpos, AnsiToWide(text), color);
+	Draw3DText(worldpos, AnsiToWide(text), color, size);
 }
 
 void Renderer::DrawLine(const Vec3& start, const Vec3& end, 
@@ -646,15 +648,15 @@ void Renderer::DrawTexturedThickLine(const Vec3& start, const Vec3& end, const C
 
 void Renderer::DrawSphere(const Vec3& pos, float radius, const Color& color)
 {
-	mDebugHud->DrawSphere(pos, radius, color);
+	mGeomRenderer->DrawSphere(pos, radius, color);
 }
 void Renderer::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha)
 {
-	mDebugHud->DrawBox(boxMin, boxMax, color, alpha);
+	mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
 }
 void Renderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha)
 {
-	mDebugHud->DrawTriangle(a, b, c, color, alpha);
+	mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
 }
 
 void Renderer::RenderGeoms()
@@ -1738,6 +1740,9 @@ void Renderer::Bloom()
 
 		UnmapBigBuffer();
 
+		SetTexture(0, BINDING_SHADER_PS, 0);
+		SetTexture(0, BINDING_SHADER_PS, 1);
+		SetTexture(0, BINDING_SHADER_PS, 2);
 		rts[0] = mBloomTexture[0];
 		SetRenderTarget(rts, index, 1, 0, 0);
 		SetTexture(mBloomTexture[1], BINDING_SHADER_PS, 0);
@@ -1909,6 +1914,13 @@ void Renderer::RenderStarGlare()
 	default:
 		assert(0);
 	}
+
+	textures.clear();
+	for (int i = 0; i < mStarDef.m_nStarLines; i++)
+	{
+		textures.push_back(0);
+	}
+	SetTextures(&textures[0], mStarDef.m_nStarLines, BINDING_SHADER_PS, 0);
 }
 
 //---------------------------------------------------------------------------
@@ -1936,6 +1948,7 @@ void Renderer::ToneMapping()
 
 	DrawFullscreenQuad(mToneMappingPS, false);
 	RestoreDepthStencilState();
+	SetTexture(0, BINDING_SHADER_PS, 3);
 }
 
 //---------------------------------------------------------------------------
@@ -2541,7 +2554,7 @@ void Renderer::PrepareShadowMapRendering()
 {
 	if (!mShadowMap)
 	{
-		mShadowMap = CreateTexture(0, 2048, 2048, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
+		mShadowMap = CreateTexture(0, 4096, 4096, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
 	}
 
@@ -2701,10 +2714,10 @@ void Renderer::DeleteRenderToTexture(IRenderToTexture* rt)
 	}
 }
 
-void Renderer::GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst)
+void Renderer::GatherPointLightData(BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst)
 {
 	assert(plConst);
-	mPointLightMan->GatherPointLightData(pos, plConst);
+	mPointLightMan->GatherPointLightData(aabb, transform, plConst);
 }
 
 void Renderer::RefreshPointLight()
@@ -2797,6 +2810,18 @@ void Renderer::CreateToneMappingShader()
 		shaderDefines.push_back(IMaterial::ShaderDefine("_FILMIC_TONEMAP", "1"));
 
 	mToneMappingPS = CreateShader("code/engine/renderer/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+}
+
+void Renderer::SetFadeAlpha(float alpha)
+{
+	mFadeAlpha = alpha;
+}
+
+void Renderer::RenderFade()
+{
+	if (mFadeAlpha <= 0)
+		return;
+	DrawQuad(Vec2I(0, 0), Vec2I(mWidth, mHeight), Color(0, 0, 0, mFadeAlpha));	
 }
 
 }

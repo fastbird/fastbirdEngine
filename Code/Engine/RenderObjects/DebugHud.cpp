@@ -64,10 +64,10 @@ DebugHud::~DebugHud()
 
 //----------------------------------------------------------------------------
 void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color)
+		const Color& color, float size)
 {
-	mTextsForDur.push_back(TextData(pos, text, color, secs));
-	while (mTextsForDur.size() > 4)
+	mTextsForDur.push_back(TextData(pos, text, color, size, secs));
+	while (mTextsForDur.size() > 10)
 	{
 		mTextsForDur.pop_front();
 	}
@@ -75,18 +75,18 @@ void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text,
 
 //----------------------------------------------------------------------------
 void DebugHud::DrawText(const Vec2I& pos, WCHAR* text, 
-	const Color& color)
+	const Color& color, float size)
 {
-	mTexts.push(TextData(pos, text, color, 0.f));	
+	mTexts.push(TextData(pos, text, color, size, 0.f));	
 }
 
-void DebugHud::Draw3DText(const Vec3& pos, WCHAR* text, const Color& color)
+void DebugHud::Draw3DText(const Vec3& pos, WCHAR* text, const Color& color, float size)
 {
 	auto cam = gFBEnv->pRenderer->GetCamera();
 	if (cam)
 	{
 		Vec2I spos = cam->WorldToScreen(pos);
-		mTexts.push(TextData(spos, text, color, 0.f));
+		mTexts.push(TextData(spos, text, color, size, 0.f));
 	}
 }
 
@@ -284,6 +284,7 @@ void DebugHud::Render()
 	while (!mTexts.empty())
 	{
 		const TextData& textData = mTexts.front();
+		pFont->SetHeight(textData.mSize);
 		pFont->Write((float)textData.mPos.x, (float)textData.mPos.y, 0.5f, textData.mColor.Get4Byte(), 
 			(const char*)textData.mText.c_str(), -1, FONT_ALIGN_LEFT);
 		mTexts.pop();
@@ -308,15 +309,18 @@ void DebugHud::Render()
 				offset.y += (int)pFont->GetHeight() * count;
 
 				Vec2I drawPos = it->mPos + offset;
-				pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, it->mColor.Get4Byte(),
+				pFont->SetHeight(it->mSize);
+				Color color = it->mColor;
+				float proportion = 1.0f - (it->mSecs / it->mDuration);
+				color.a() = 1.0f - (proportion*proportion);
+				pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
 					(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
-				
+
 
 				it++;
 			}
-
-			
 		}
+		pFont->SetBackToOrigHeight();
 	}
 
 	if (mSphereMesh)

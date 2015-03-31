@@ -50,7 +50,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(SolutionDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_UI;_DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>UI/StdAfx.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -73,7 +73,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(SolutionDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_UI;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>UI/StdAfx.h</PrecompiledHeaderFile>
@@ -117,6 +117,7 @@
     <ClInclude Include="IWinBase.h" />
     <ClInclude Include="KeyboardCursor.h" />
     <ClInclude Include="ListBox.h" />
+    <ClInclude Include="NamedPortrait.h" />
     <ClInclude Include="NumericUpDown.h" />
     <ClInclude Include="RadioBox.h" />
     <ClInclude Include="Scroller.h" />
@@ -146,6 +147,7 @@
     <ClCompile Include="ImageBox.cpp" />
     <ClCompile Include="KeyboardCursor.cpp" />
     <ClCompile Include="ListBox.cpp" />
+    <ClCompile Include="NamedPortrait.cpp" />
     <ClCompile Include="NumericUpDown.cpp" />
     <ClCompile Include="RadioBox.cpp" />
     <ClCompile Include="Scroller.cpp" />

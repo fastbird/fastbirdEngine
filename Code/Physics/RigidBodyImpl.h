@@ -33,10 +33,12 @@ namespace fastbird
 		virtual void ApplyCentralImpulse(const Vec3& impulse);
 		virtual void ApplyTorqueImpulse(const Vec3& torque);
 		virtual void ApplyTorque(const Vec3& torque);
+		virtual Vec3 GetForce();
 		virtual void ClearForces();
 		virtual float GetSpeed() const;
 		virtual Vec3 GetVelocity() const;
 		virtual Vec3 GetAngularVelocity() const;
+		virtual void SetAngularVelocity(const Vec3& angVel);
 		virtual Vec3 GetTorque() const;
 		virtual void SetVelocity(const Vec3& vel);
 		virtual void Activate();
@@ -54,17 +56,23 @@ namespace fastbird
 		virtual void* GetGamePtr() const;
 		virtual void SetRotationalForce(float force);
 
-		virtual void RemoveColFlag(unsigned flag);
-		virtual void AddColFlag(unsigned flag);
+		virtual void RemoveCollisionFilter(unsigned flag);
+		virtual void AddCollisionFilter(unsigned flag);
 		virtual void SetColMask(unsigned mask);
 		virtual unsigned GetColMask() const;
 
 		virtual void SetLinearDamping(float damping);
+		virtual void SetAngularDamping(float damping);
+		virtual void SetDamping(float linear, float angular);
 
-		virtual bool HasContact();
+		virtual bool HasContact(void** gamePtr);
 
 		virtual void RemoveRigidBodyFromWorld();
 		// make sure mColProvider is valid.
 		virtual void ReAddRigidBodyFromWorld();
+		virtual void ModifyCollisionFlag(int flag, bool enable);
+		virtual void SetCCDMotionThreshold(float threshold);
+		virtual void SetCCDSweptSphereRadius(float radius);
+		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore);
 	};
 }

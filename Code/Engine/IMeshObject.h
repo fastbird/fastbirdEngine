@@ -73,6 +73,8 @@ namespace fastbird
 
 		virtual void RenderSimple() = 0;
 
+		virtual BoundingVolume* GetAABB() const = 0;
+
 	private:
 		friend class Engine;
 		virtual void Delete() = 0;

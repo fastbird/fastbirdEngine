@@ -14,6 +14,8 @@ namespace fastbird
 			SIZE,
 			SIZEX,
 			SIZEY,
+			NSIZEX,
+			NSIZEY,
 			OFFSETX,
 			OFFSETY,
 			BACK_COLOR, // vec4
@@ -21,6 +23,7 @@ namespace fastbird
 			BACK_COLOR_DOWN,
 			TEXT_LEFT_GAP,
 			TEXT_RIGHT_GAP,
+			TEXT_GAP,
 			TEXT_ALIGN,		// left, center, right
 			TEXT_VALIGN,	// top, middle, bottom
 			TEXT_SIZE,			// be sure set fixed text size also if you need.
@@ -105,6 +108,9 @@ namespace fastbird
 			DROPDOWN_INDEX,
 			COLOR_RAMP_VALUES,
 			DRAGABLE,
+			NAMED_PORTRAIT_IMAGE_SIZE,
+			NAMED_PORTRAIT_TEXT,
+			NAMED_PORTRAIT_TEXT_COLOR,
 
 			COUNT
 		};
@@ -119,6 +125,8 @@ namespace fastbird
 			"SIZE",
 			"SIZEX",
 			"SIZEY",
+			"NSIZEX",
+			"NSIZEY",
 			"OFFSETX",
 			"OFFSETY",
 			"BACK_COLOR", // vec4
@@ -126,6 +134,7 @@ namespace fastbird
 			"BACK_COLOR_DOWN", // vec4
 			"TEXT_LEFT_GAP",
 			"TEXT_RIGHT_GAP",
+			"TEXT_GAP",
 			"TEXT_ALIGN",		// left, center, right
 			"TEXT_VALIGN", 
 			"TEXT_SIZE",			// be sure set fixed text size also if you need.
@@ -210,6 +219,9 @@ namespace fastbird
 			"DROPDOWN_INDEX",
 			"COLOR_RAMP_VALUES",
 			"DRAGABLE",
+			"NAMED_PORTRAIT_IMAGE_SIZE",
+			"NAMED_PORTRAIT_TEXT",
+			"NAMED_PORTRAIT_TEXT_COLOR",
 
 			"COUNT"
 		};

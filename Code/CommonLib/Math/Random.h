@@ -13,9 +13,14 @@ namespace fastbird
 	template<class T>
 	inline  T Random(T min, T max)
 	{
-		T k = max - min;
-		T offset = (T)(((float)std::rand() / (float)RAND_MAX) * (float)k);
-		T result = min + offset;
+		return min + (std::rand() % (int)(max - min + 1));
+	}
+
+	inline float Random(float min, float max)
+	{
+		auto k = max - min;
+		auto offset = (float)(((float)std::rand() / (float)RAND_MAX) * k);
+		auto result = min + offset;
 		return result;
 	}
 

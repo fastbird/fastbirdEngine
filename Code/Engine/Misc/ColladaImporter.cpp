@@ -39,6 +39,7 @@ ColladaImporter::~ColladaImporter()
 bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, bool useIndexBuffer, 
 	bool mergeMatGroups, bool keepMeshData, bool generateTangent, bool meshGroup)
 {
+	Log("Importing Collada (%s)", filepath);
 	assert(filepath);
 	mMeshObjects.clear();
 	mGenerateTangent = generateTangent;

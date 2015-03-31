@@ -20,10 +20,13 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 
 	mWorld->addRigidBody(this, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
 	mRotationInfo = FB_NEW(RotationInfo);
+	setUserPointer(0);
 }
 
 RigidBodyImpl::~RigidBodyImpl()
 {
+	setUserPointer(0);
+	mGamePtr = 0;
 	FB_DELETE(mRotationInfo);
 	while(getNumConstraintRefs()>0)
 	{
@@ -105,6 +108,11 @@ void RigidBodyImpl::ApplyTorque(const Vec3& torque)
 	applyTorque(FBToBullet(torque));
 }
 
+Vec3 RigidBodyImpl::GetForce()
+{
+	return BulletToFB(getTotalForce());
+}
+
 void RigidBodyImpl::ClearForces()
 {
 	clearForces();
@@ -123,6 +131,11 @@ Vec3 RigidBodyImpl::GetVelocity() const
 Vec3 RigidBodyImpl::GetAngularVelocity() const
 {
 	return BulletToFB(getAngularVelocity());
+}
+
+void RigidBodyImpl::SetAngularVelocity(const Vec3& angVel)
+{
+	setAngularVelocity(FBToBullet(angVel));
 }
 
 Vec3 RigidBodyImpl::GetTorque() const
@@ -196,10 +209,11 @@ IPhysicsInterface* RigidBodyImpl::GetPhysicsInterface() const
 void* RigidBodyImpl::GetColShapeUserPtr(int idx)
 {
 	auto colShape = getCollisionShape();
+	assert(colShape);
 	if (colShape->isCompound())
 	{
 		btCompoundShape* compound = (btCompoundShape*)colShape;
-		if_assert_pass(idx < compound->getNumChildShapes())
+		if_assert_pass(idx < compound->getNumChildShapes() && idx>=0)
 		{
 			auto child = compound->getChildShape(idx);
 			if (child)
@@ -227,12 +241,12 @@ void RigidBodyImpl::SetRotationalForce(float force)
 	mRotationInfo->mForce = force;
 }
 
-void RigidBodyImpl::RemoveColFlag(unsigned flag)
+void RigidBodyImpl::RemoveCollisionFilter(unsigned flag)
 {
 	getBroadphaseHandle()->m_collisionFilterGroup = getBroadphaseHandle()->m_collisionFilterGroup & ~flag;
 }
 
-void RigidBodyImpl::AddColFlag(unsigned flag)
+void RigidBodyImpl::AddCollisionFilter(unsigned flag)
 {
 	getBroadphaseHandle()->m_collisionFilterGroup |= flag;
 }
@@ -253,29 +267,60 @@ void RigidBodyImpl::SetLinearDamping(float damping)
 	setDamping(damping, an);
 }
 
-bool RigidBodyImpl::HasContact()
+void RigidBodyImpl::SetAngularDamping(float damping)
+{
+	float linear = getLinearDamping();
+	setDamping(linear, damping);
+}
+
+void RigidBodyImpl::SetDamping(float linear, float angular)
+{
+	setDamping(linear, angular);
+}
+
+bool RigidBodyImpl::HasContact(void** gamePtr)
 {
 	struct Callback : public btCollisionWorld::ContactResultCallback
 	{
-		Callback()
-		:mHasCollision(false)
+		RigidBody* mCollided;
+		RigidBodyImpl* mMe;
+
+		Callback(RigidBodyImpl* me)
+			:mHasCollision(false), mCollided(0), mMe(me)
 		{
 
 		}
+
 		bool mHasCollision;
 		virtual	btScalar	addSingleResult(btManifoldPoint& cp, 
 			const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, 
 			const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
 		{
+			if (!colObj0Wrap->m_collisionObject->checkCollideWith(colObj1Wrap->m_collisionObject) || 
+				!colObj1Wrap->m_collisionObject->checkCollideWith(colObj0Wrap->m_collisionObject))
+				return 1.0f;
 			if (cp.getDistance() < 0.05f)
 			{
 				mHasCollision = true;
+				if (colObj0Wrap->m_collisionObject->getUserPointer() == mMe)
+				{
+					mCollided = (RigidBody*)colObj1Wrap->m_collisionObject->getUserPointer();
+				}
+				else if (colObj1Wrap->m_collisionObject->getUserPointer() == mMe)
+				{
+					mCollided = (RigidBody*)colObj0Wrap->m_collisionObject->getUserPointer();
+				}
+				
 			}
 			return 1.0f;
 		}
 	};
-	Callback callback;
+	Callback callback(this);
 	mWorld->contactTest(this, callback);
+	if (gamePtr && callback.mCollided)
+	{
+		*gamePtr = callback.mCollided->GetGamePtr();
+	}
 	return callback.mHasCollision;
 }
 
@@ -287,4 +332,32 @@ void RigidBodyImpl::RemoveRigidBodyFromWorld()
 void RigidBodyImpl::ReAddRigidBodyFromWorld()
 {
 	this->forceActivationState(ACTIVE_TAG);
+}
+
+void RigidBodyImpl::ModifyCollisionFlag(int flag, bool enable)
+{
+	if (enable)
+	{ 
+		setCollisionFlags(getCollisionFlags() | flag);
+	}
+	else
+	{
+		setCollisionFlags(getCollisionFlags() & ~flag);
+	}	
+}
+
+void RigidBodyImpl::SetCCDMotionThreshold(float threshold)
+{
+	setCcdMotionThreshold(threshold);
+}
+
+void RigidBodyImpl::SetCCDSweptSphereRadius(float radius)
+{
+	setCcdSweptSphereRadius(radius);
+}
+
+void RigidBodyImpl::SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore)
+{
+	RigidBodyImpl* rigid = (RigidBodyImpl*)rigidBody;
+	setIgnoreCollisionCheck(rigid, ignore);
 }

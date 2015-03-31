@@ -75,14 +75,13 @@ bool ScriptSystem::ExecuteLua(const std::string& chunk)
 	return true;
 }
 
-std::string ScriptSystem::GetStringVariable(const char* name, 
-		const std::string& def)
+std::string ScriptSystem::GetStringVariable(const char* name, const std::string& def)
 {
 	std::string ret = def;
 	if (name==0 || strlen(name)==0)
 		return ret;
 
-	fastbird::LUA_STACK_WATCHER watcher(mLuaState);
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState, "std::string ScriptSystem::GetStringVariable(const char* name, const std::string& def)");
 	lua_getglobal(mLuaState, name);
 	const char* str = lua_tostring(mLuaState, -1);
 	if (str)
@@ -100,7 +99,7 @@ int ScriptSystem::GetIntVariable(const char* name, int def/* = 0*/)
 	if (name == 0 || strlen(name) == 0)
 		return ret;
 
-	fastbird::LUA_STACK_WATCHER watcher(mLuaState);
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState, "int ScriptSystem::GetIntVariable(const char* name, int def/* = 0*/)");
 	lua_getglobal(mLuaState, name);
 	if (!lua_isnil(mLuaState, -1))
 		ret = lua_tointeger(mLuaState, -1);
@@ -114,7 +113,7 @@ float ScriptSystem::GetRealVariable(const char* name, float def)
 	if (name == 0 || strlen(name) == 0)
 		return ret;
 
-	fastbird::LUA_STACK_WATCHER watcher(mLuaState);
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState, "float ScriptSystem::GetRealVariable(const char* name, float def)");
 	int top = lua_gettop(mLuaState);
 	lua_getglobal(mLuaState, name);
 	int top2 = lua_gettop(mLuaState);

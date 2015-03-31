@@ -193,14 +193,14 @@ public:
 	virtual Vec2I ToSreenPos(const Vec3& ndcPos) const = 0;
 	virtual Vec2 ToNdcPos(const Vec2I& screenPos) const = 0;
 
-	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color) = 0;
-	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color) = 0;
-	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color) = 0;
-	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color) = 0;
+	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24) = 0;
+	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 24) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 24) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 24) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color) = 0;
+		const Color& color, float size = 24) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
-		const Color& color) = 0;
+		const Color& color, float size = 24) = 0;
 
 	// no depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
@@ -299,13 +299,15 @@ public:
 	virtual void SetEnvironmentTextureOverride(ITexture* texture) = 0;
 	
 	// internal only
-	virtual void GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst) = 0;
+	virtual void GatherPointLightData(BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) = 0;
 	virtual void RefreshPointLight() = 0;
 	virtual bool NeedToRefreshPointLight() const = 0;
 
 	virtual IPointLight* CreatePointLight(const Vec3& pos, float range, const Vec3& color, float intensity, float lifeTime, 
 		bool manualDeletion) = 0;
 	virtual void DeletePointLight(IPointLight* pointLight) = 0;
+
+	virtual void SetFadeAlpha(float alpha) = 0;
 	
 };
 

@@ -56,9 +56,9 @@ void PhyObj::SetPosRot(const fastbird::Vec3& pos, const fastbird::Quat& rot)
 		mMesh->SetTransform(mTransform);
 }
 
-void PhyObj::OnCollision(const CollisionContactInfo& contactInfo)
+bool PhyObj::OnCollision(const CollisionContactInfo& contactInfo)
 {
-
+	return false;
 }
 void PhyObj::AddCloseObjects(void* gamePtr)
 {

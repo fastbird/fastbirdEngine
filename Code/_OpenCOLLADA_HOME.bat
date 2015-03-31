@@ -1,2 +1,2 @@
-setx OpenCOLLADA_HOME "%CD%"
+c:\windows\system32\setx OpenCOLLADA_HOME "%CD%"
 pause

@@ -229,57 +229,17 @@ namespace fastbird
 		}
 		INPUT_ELEMENT_DESC()
 		{
+			memset(this, 0, sizeof(INPUT_ELEMENT_DESC));
 		}
 		bool operator==(const INPUT_ELEMENT_DESC& other) const
 		{
-			return strcmp(mSemanticName,other.mSemanticName)==0 &&
-				mSemanticIndex == other.mSemanticIndex &&
-				mFormat == other.mFormat &&
-				mInputSlot == other.mInputSlot &&
-				mAlignedByteOffset == other.mAlignedByteOffset &&
-				mInputSlotClass == other.mInputSlotClass &&
-				mInstanceDataStepRate == other.mInstanceDataStepRate;
+			return memcmp(this, &other, sizeof(INPUT_ELEMENT_DESC)) == 0;
 		}
 
 		bool operator< (const INPUT_ELEMENT_DESC& other) const
 		{
 			int cmp = memcmp(this, &other, sizeof(INPUT_ELEMENT_DESC));
 			return cmp < 0;
-			/*int cmp = mSemanticName.compare(other.mSemanticName);
-
-			if (cmp < 0)
-				return true;
-			else if (cmp==0)
-			{
-				if (mSemanticIndex < other.mSemanticIndex)
-					return true;
-				else if (mSemanticIndex == other.mSemanticIndex)
-				{
-					if (mFormat < other.mFormat)
-						return true;
-					else if (mFormat == other.mFormat)
-					{
-						if (mInputSlot < other.mInputSlot)
-							return true;
-						else if (mInputSlot == other.mInputSlot)
-						{
-							if (mAlignedByteOffset < other.mAlignedByteOffset)
-								return true;
-							else if (mAlignedByteOffset == other.mAlignedByteOffset)
-							{
-								if (mInputSlotClass < other.mInputSlotClass)
-									return true;
-								else if (mInputSlotClass == other.mInputSlotClass)
-								{
-									if (mInstanceDataStepRate < other.mInstanceDataStepRate)
-										return true;
-								}
-							}
-						}
-					}
-				}
-			}
-			return false;*/
 		}
 
 		char mSemanticName[256];

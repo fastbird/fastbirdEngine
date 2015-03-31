@@ -59,7 +59,7 @@ namespace fastbird
 		FB_DELETE(pointLight);
 	}
 
-	void PointLightMan::GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst)
+	void PointLightMan::GatherPointLightData(BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst)
 	{
 		struct GatheredData
 		{
@@ -78,7 +78,12 @@ namespace fastbird
 		for (auto& pointLight : mPointLights)
 		{
 			PointLight* p = (PointLight*)pointLight;
-			float distSQ = p->GetPos().DistanceToSQ(pos);
+			if (!p->GetEnabled())
+				continue;
+			Ray3 ray(p->GetPos(), transform.GetTranslation() - p->GetPos());
+			Ray3 localRay = transform.ApplyInverse(ray);
+			auto iresult = localRay.intersects(aabb);			
+			float distSQ = Squared(iresult.second);
 			if ( distSQ < (p->mRange*p->mRange))
 			{
 				gathered.push_back(GatheredData(distSQ, i));

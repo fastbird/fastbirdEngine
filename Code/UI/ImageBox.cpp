@@ -1,20 +1,20 @@
 #include <UI/StdAfx.h>
 #include <UI/ImageBox.h>
-
+#include <UI/IUIManager.h>
 namespace fastbird
 {
 
-ImageBox::ImageBox()
-	: mTextureAtlas(0)
-	, mAtlasRegion(0)
-	, mUseHighlight(false)
-	, mKeepImageRatio(true)
-	, mFrameImage(0)
-	, mAnimation(false)
-	, mSecPerFrame(0)
-	, mPlayingTime(0)
-	, mCurFrame(0), mImageFixedSize(false)
-	, mTexture(0)
+	ImageBox::ImageBox()
+		: mTextureAtlas(0)
+		, mAtlasRegion(0)
+		, mUseHighlight(false)
+		, mKeepImageRatio(true)
+		, mFrameImage(0)
+		, mAnimation(false)
+		, mSecPerFrame(0)
+		, mPlayingTime(0)
+		, mCurFrame(0), mImageFixedSize(false)
+		, mTexture(0)
 {
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -96,19 +96,23 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 
 void ImageBox::SetTexture(const char* file)
 {
-	if (strcmp(file, mImageFile.c_str()) == 0)
+	if (!file)
+		return;
+	if (mImageFile == file)
 		return;
 	mImageFile = file ? file : "";
 	if (mImageFile.empty())
 	{
-		mImageFile = "data/textures/blackempty.dds";
+		mImageFile = "data/textures/empty_transparent.dds";
 	}
 	ITexture* pTexture = gEnv->pRenderer->CreateTexture(mImageFile.c_str());
 	SetTexture(pTexture);
+	IUIManager::GetUIManager().DirtyRenderList();
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)
 {
+	mTexture = pTexture;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;
 	sd.AddressV = TEXTURE_ADDRESS_BORDER;
@@ -211,6 +215,9 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 {
 	if (!mVisible)
 		return;
+
+	if (!mTexture && mImageFile.empty())
+		return;
 	v.push_back(mUIObject);
 	__super::GatherVisit(v);
 }
@@ -218,7 +225,7 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 void ImageBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	if (!mAtlasRegion)
+	if (!mAtlasRegion && mAtlasRegions.empty())
 	{
 		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
 		if (texture)
@@ -448,7 +455,7 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 	}
 	else if (!mAtlasRegions.empty())
 	{
-		isize = mAtlasRegions[0]->GetSize();
+		isize = mAtlasRegions[mCurFrame]->GetSize();
 	}
 	else if (mTexture)
 	{
@@ -518,5 +525,7 @@ void ImageBox::SetSpecularColor(const Vec4& color)
 {
 	mUIObject->GetMaterial()->SetSpecularColor(color);
 }
+
+
 
 }

@@ -83,6 +83,7 @@ using namespace fastbird;
 Font::Font()
 {
 	mFontHeight = 0;
+	mScaledFontSize = 0;
 	mBase = 0;
 	mScaleW = 0;
 	mScaleH = 0;
@@ -205,7 +206,9 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 							  auto region = textureAtlas->GetRegion(buf);
 							  if (region)
 							  {
-								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y), Vec2I(20, 20), region->mUVStart, region->mUVEnd,
+								  auto& regionSize = region->GetSize();
+								  Vec2I imgSize(mScaledFontSize-4, mScaledFontSize-4);
+								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y+2), imgSize, region->mUVStart, region->mUVEnd,
 									  Color::White, textureAtlas->mTexture);
 								  x += 20;
 								  return true;
@@ -217,8 +220,10 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 	{
 								 unsigned color = StringConverter::parseHexa(buf);
 
+								 int prevAlpha = mColor & 0xff000000;
 								 mColorBackup.push(mColor);
 								 mColor = Color::FixColorByteOrder(color);
+								 mColor = mColor & 0x00ffffff + prevAlpha;
 								 break;
 	}
 	case TextTags::ColorEnd:
@@ -279,7 +284,7 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 
 	const float initialX = x;
 	int page = -1;
-	y -= mScale * float(mFontHeight);
+	y -= mScaledFontSize;
 	unsigned int batchingVertices = 0;
 	for( int n = 0; n < count; )
 	{
@@ -435,6 +440,7 @@ void Font::Write(float x, float y, float z, unsigned int color,
 void Font::SetHeight(float h)
 {
 	mScale = h / float(mFontHeight);
+	mScaledFontSize = short(Round(h));
 }
 
 void Font::SetBackToOrigHeight()
@@ -469,7 +475,7 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 			{
 				if (tag == TextTags::Img)
 				{
-					curX += 20;
+					curX += mScaledFontSize;
 				}
 				int startN = n;
 				for (; n < startN + numSkip;)
@@ -512,7 +518,15 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 				for (startIt; startIt >= multilineString.begin(); startIt--)
 				{
 					if (*startIt == '[' && *(startIt + 1) == '$')
-						numTagChar = std::distance(startIt, it);
+					{
+						numTagChar = std::distance(startIt, it)+1;
+						break;
+					}
+					if (startIt == multilineString.begin())
+					{
+						numTagChar = 0;
+						break;
+					}
 				}
 			}
 			multilineString.insert(multilineString.end() - inputBeforeSpace - numTagChar, L'\n');
@@ -556,13 +570,22 @@ float Font::GetTextWidth(const char *text, int count, float *outMinY/* = 0*/, fl
 	
 	for( int n = 0; n < count; )
 	{
-		int skiplen = SkipTags(&text[n]);
+		TextTags::Enum tag;
+		int skiplen = SkipTags(&text[n], &tag);
 		if (skiplen>0)
 		{
+			if (tag == TextTags::Img)
+			{
+				x += mScaledFontSize;
+			}
 			do
 			{
 				n += skiplen;
-				skiplen = SkipTags(&text[n]);
+				skiplen = SkipTags(&text[n], &tag);
+				if (tag == TextTags::Img)
+				{
+					x += mScaledFontSize;
+				}
 			} while (skiplen > 0);
 		}
 		if (n >= count)
@@ -626,8 +649,15 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 
 int Font::SkipTags(const char* text, TextTags::Enum* tag)
 {
+	if (tag)
+	{
+		*tag = TextTags::Num;
+	}
+
 	if (text[0] == 0)
+	{		
 		return 0;
+	}
 
 	if (text[0] == '[' && text[2] == '$')
 	{
@@ -809,6 +839,7 @@ void FontLoader::SetFontInfo(int outlineThickness)
 void FontLoader::SetCommonInfo(int fontHeight, int base, int scaleW, int scaleH, int pages, bool isPacked)
 {
 	font->mFontHeight = fontHeight;
+	font->mScaledFontSize = font->mFontHeight;
 	font->mBase = base;
 	font->mScaleW = scaleW;
 	font->mScaleH = scaleH;

@@ -62,7 +62,7 @@ UIObject::UIObject()
 	mObjectConstants.gWorldViewProj.MakeIdentity();
 	SetMaterial("es/materials/UI.material");
 	mOwnerUI = 0;
-	mTextColor = Color::White;
+	mTextColor = Color(0.8f, 0.8f, 0.8f);
 
 	BLEND_DESC bdesc;
 	bdesc.RenderTarget[0].BlendEnable = true;

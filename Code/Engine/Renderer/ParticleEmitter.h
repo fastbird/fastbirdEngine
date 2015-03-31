@@ -17,8 +17,11 @@ namespace fastbird
 		virtual IObject* Clone() const;
 		virtual void Active(bool a);
 		virtual void Stop();
+		void ParticleEmitter::ProcessDeleteOnStop(bool stopping);
 		virtual void StopImmediate();
+		virtual void SetVisibleParticle(bool visible);
 		virtual bool IsAlive();
+		virtual bool IsActive() const { return mInActiveList; }
 		virtual void SetEmitterDirection(const fastbird::Vec3& dir){mEmitterDirection = dir;}
 		virtual void SetEmitterColor(const Color& c){ mEmitterColor = c; }
 
@@ -50,8 +53,8 @@ namespace fastbird
 			, mUVAnimColRow(1, 1), mUVAnimFramesPerSec(0), mUV_INV_FPS(1.f)
 			, mDefaultDirection(0, 1, 0), mCross(false), mColor(1, 1, 1), mColorEnd(1, 1, 1)
 			, mBlendMode(), mGlow(1.f), mPreMultiAlpha(false), mUVFlow(0, 0), mPosOffset(0, 0, 0)
-			, mPosInterpolation(false), mDeleteWhenFull(true)
-			, mStartAfter(0), mUseRelativeVelocity(false)
+			, mPosInterpolation(false), mDeleteWhenFull(false), mDeleteWhenStop(false)
+			, mStartAfter(0), mUseRelativeVelocity(false), mAnimPendulum(false), mCameraPulling(0)
 
 			// point light
 			, mPLRangeMinMax(0, 0)
@@ -71,6 +74,7 @@ namespace fastbird
 			unsigned mInitialParticles;
 			unsigned mMaxParticle;
 			bool mDeleteWhenFull;
+			bool mDeleteWhenStop;
 			bool mPreMultiAlpha;
 			ParticleBlendMode::Enum mBlendMode;
 			ParticleAlign::Enum mAlign;			
@@ -79,6 +83,7 @@ namespace fastbird
 			float mGlow;
 			Vec2 mLifeMinMax;
 			Vec3 mDefaultDirection;
+			float mCameraPulling;
 			float mRangeRadius;
 			float mRangeRadiusMin;
 			Vec3 mPosOffset;
@@ -111,6 +116,7 @@ namespace fastbird
 			bool mPosInterpolation;
 			Vec2 mUVFlow;
 			bool mUseRelativeVelocity;
+			bool mAnimPendulum;
 		};
 
 		virtual Particle* Emit(unsigned templateIdx);
@@ -141,6 +147,7 @@ namespace fastbird
 		PARTICLESS mParticles;
 
 		VectorMap<const ParticleTemplate*, unsigned> mAliveParticles;
+		VectorMap<const ParticleTemplate*, unsigned> mMaxParticles;
 
 		// not using currently
 		// Assuming Y is the direction.
@@ -154,11 +161,13 @@ namespace fastbird
 		bool mInActiveList;
 		bool mStop;
 		bool mStopImmediate;
-
+		bool mMoveToCam;
 		bool mManualEmitter;
 		Color mEmitterColor;
 		float mLength;
 		Vec3 mRelativeVelocityDir;
 		float mRelativeVelocity;
+		Vec3 mStartPos;
+		float mFinalAlphaMod; // for glares in the opposite side of camera.
 	};
 }

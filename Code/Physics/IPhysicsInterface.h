@@ -32,7 +32,7 @@ namespace fastbird
 
 		// col shape provider
 		virtual unsigned GetNumColShapes() const = 0;
-		virtual CollisionShape* GetShape(unsigned i) = 0;
+		virtual fastbird::CollisionShape* GetShape(unsigned i) = 0;
 		virtual float GetMass() const = 0;
 		virtual int GetCollisionGroup() const = 0;
 		virtual int GetCollisionMask() const = 0;
@@ -41,14 +41,14 @@ namespace fastbird
 		virtual float GetAngularDamping() const = 0;
 
 		// Transform exchanger
-		virtual const Vec3& GetPos() = 0;
-		virtual const Quat& GetRot() = 0;
+		virtual const fastbird::Vec3& GetPos() = 0;
+		virtual const fastbird::Quat& GetRot() = 0;
 		virtual void SetPosRot(const Vec3& pos, const Quat& rot) = 0;
 
 		// Events Handler
 		struct CollisionContactInfo
 		{
-			CollisionContactInfo(void* objB, const Vec3& worldpos, const Vec3& worldNormal, float impulse, int idxA, int idxB)
+			CollisionContactInfo(void* objB, const fastbird::Vec3& worldpos, const fastbird::Vec3& worldNormal, float impulse, int idxA, int idxB)
 			:mObjB(objB), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
 			{
 
@@ -60,8 +60,8 @@ namespace fastbird
 			int mIdxA;
 			int mIdxB;
 		};
-		virtual void OnCollision(const CollisionContactInfo& contactInfo) = 0;
+		virtual bool OnCollision(const CollisionContactInfo& contactInfo) = 0;
 		virtual void AddCloseObjects(void* gamePtr) = 0;
-		virtual void OnRigidBodyUpdated(const RigidBodyEvents& data){}
+		virtual void OnRigidBodyUpdated(const fastbird::RigidBodyEvents& data){}
 	};
 }

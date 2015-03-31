@@ -52,6 +52,9 @@ namespace fastbird
 		const Vec2& GetScrollOffset() const;
 		void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
 		void MatchHeight(bool checkName);
+
+		virtual void StartHighlight(float speed);
+		virtual void StopHighlight();
 		
 	private:
 		friend class WinBase;

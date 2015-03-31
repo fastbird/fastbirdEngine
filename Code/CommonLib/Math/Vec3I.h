@@ -104,7 +104,7 @@ struct luaU_Impl<fastbird::Vec3I>
 {
 	static fastbird::Vec3I luaU_check(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec3I luaU_check(lua_State* L, int index)");
 		luaL_checktype(L, index, LUA_TTABLE);
 		fastbird::Vec3I ret;
 		lua_rawgeti(L, index, 1);
@@ -121,7 +121,7 @@ struct luaU_Impl<fastbird::Vec3I>
 
 	static fastbird::Vec3I luaU_to(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec3I luaU_to(lua_State* L, int index)");
 		fastbird::Vec3I ret;
 		lua_rawgeti(L, index, 1);
 		ret.x = lua_tointeger(L, -1);

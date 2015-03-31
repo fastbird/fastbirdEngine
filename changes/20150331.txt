@@ -1,0 +1,59 @@
+Engine
+
+	Effect
+		Pendulum texture animation for particles
+		Particle Emitters moving toward the camera.
+		Fixed particle alpha fading in/out bugs.
+		Tweaked soft particles.
+		Added 'CameraPulling' option for particles.
+		Now particles are scalable.
+		Added special option 'MoveToCam' for huge glare effect
+		Scalable Circular Buffer for particles
+		The size of vertex buffer in ParticleRenderObject is now scalable.
+		Added particle property : 'deleteWhenStop'
+		Improved 'Relative Velocity Stretching' feature in the particle system.
+		Hiding particle emitters
+
+	Collision
+		Fixed FBCollisionShape::TestCollision()	
+		Exact retrieval of random positions in compound collision boxes
+		Fixed a bug in BVaabb::TestIntersection(BoundingVolume*)
+		Fixed bounding volume bug when scaling a mesh
+		
+	Rendering
+		Point light distance calculation now considers objects surface rather than the center position
+		PointLight disabling
+		Depth calculation moved to pixel shader from vertex shader for the Depth pass.
+		Fixed depth shader bug		
+		Fixed LightCamera bug	
+		Fixed a bug in RenderToTextre feature
+		InputLayout : unique value violation fixed.	
+		Primitive Topology Initial value error.
+		Removed the case in which the textures bound to input and ouput simultaneously.
+	
+	ETC
+		Fixed that Random does not produce evenly distributed values				
+		Scene overriding for blank screen
+		Font alpha blending for fade out / in
+		Draw text functions now receive a size param.	
+		Save/Load typed console commands to a file.
+		Fixed history iteration bugs in console window.
+		Fixed the line feed bug in console window.		
+		Fixed Text-embeded img size bug 
+	
+
+Physics
+
+	Reporting collision is now done by Step Tick callback - should do this to prevent refering deleted collision objects
+	Using continuos collision for fast traveling objects like bullets
+
+
+UI
+	Hiding all uis with exception
+	Now one can specify delta value(relative to the previous component) for component position. 
+	Added translating feature. Texts start with '@' will be translated.
+	Added NamedPortrait component
+	Fixed order of processing inputs.
+	Removed the Blinking feature. Added the Highlighting feature
+	Fixed image display when scrolling
+	Tweaked the NamedPortrait component

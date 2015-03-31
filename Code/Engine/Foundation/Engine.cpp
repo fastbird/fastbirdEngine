@@ -46,6 +46,7 @@ namespace fastbird
 	Engine::Engine()
 		: mSceneOverride(0)
 		, m3DUIEnabled(true)
+		, mLockSceneOverride(false)
 	{
 		FileSystem::Initialize();
 		mErrorStream.open("error.log");
@@ -154,7 +155,7 @@ namespace fastbird
 		if( RegisterClassEx(&wndclass) )
 		{
 			m_hWnd = CreateWindowEx( 0, myclass, title,
-					   WS_OVERLAPPEDWINDOW, x, y,
+				WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, x, y,
 					   width, height, 0, 0, GetModuleHandle(0), 0 ) ;
 
 			/*HWND console = GetConsoleWindow();
@@ -383,13 +384,13 @@ namespace fastbird
 	{
 		if (mKeyboard)
 		{
-			if (mKeyboard->IsKeyPressed('W') && mKeyboard->IsKeyDown(VK_CONTROL))
+			if (mKeyboard->IsKeyPressed('W') && mKeyboard->IsKeyDown(VK_CONTROL) && mKeyboard->IsKeyDown(VK_LMENU))
 			{
 				bool wire = GetRenderer()->GetWireframe();
 				GetRenderer()->SetWireframe(!wire);
 			}
 
-			if (mKeyboard->IsKeyPressed('S') && mKeyboard->IsKeyDown(VK_CONTROL))
+			if (mKeyboard->IsKeyPressed('S') && mKeyboard->IsKeyDown(VK_CONTROL) && mKeyboard->IsKeyDown(VK_LMENU))
 			{
 				GetScene()->ToggleSkyRendering();
 			}
@@ -632,6 +633,7 @@ namespace fastbird
 		RenderUI();
 		RenderDebugHud();
 		mRenderer->RenderDebugRenderTargets();
+		mRenderer->RenderFade();
 
 		if (mConsole)
 			mConsole->Render();
@@ -1400,6 +1402,17 @@ namespace fastbird
 	void Engine::RemoveMarkObject(IObject* mark)
 	{
 		mMarkObjects.erase(std::remove(mMarkObjects.begin(), mMarkObjects.end(), mark), mMarkObjects.end());
+	}
+
+	//------------------------------------------------------------------------
+	IScene* Engine::CreateScene()
+	{
+		return FB_NEW(Scene);
+	}
+
+	void Engine::DeleteScene(IScene* p)
+	{
+		FB_DELETE(p);
 	}
 
 

@@ -139,21 +139,15 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	
 	float sceneDepth = gDepthTexture.Sample(gLinearSampler, screenTex);	
 	float particleDepth = (INPUT.ViewPos.y - gNearFar.x) / (gNearFar.y - gNearFar.x);
+
+	float diff = abs(sceneDepth - particleDepth);
+	diff *= diff;
+	float depthFadeScale = 70000000;
+	float depthFade = saturate(diff*depthFadeScale);		
 	
-	float diff = sceneDepth - particleDepth;
-	float depthFadeScale = 1000;
-	float depthFadeInput = saturate(diff*depthFadeScale);
-	
-	float depthFade = SymetricCurve(depthFadeInput);
-	depthFade = depthFadeInput>0.5 ? 1-depthFade : depthFade;
-	
-	//if (depthFade<=0.00001)
-		//discard;
-		
-		
 	float4 diffuse = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV_Intensity_Alpha.xy);
 	diffuse.xyz *= INPUT.mColor * INPUT.UV_Intensity_Alpha.z;
-	diffuse.w *= INPUT.UV_Intensity_Alpha.z;
+	//diffuse.w *= INPUT.UV_Intensity_Alpha.z;
 	diffuse.w *= INPUT.UV_Intensity_Alpha.w;	
 	
 #if defined(_INV_COLOR_BLEND) || defined(_PRE_MULTIPLIED_ALPHA)
@@ -162,12 +156,13 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	float4 outColor = diffuse;
 #endif
 
+
 #ifdef _NO_GLOW
-	return outColor;
+	return float4(outColor.rgb, outColor.a * depthFade);
 #else
 	output.color0 = float4(outColor.rgb, outColor.a*depthFade);
 	float glowPower = gMaterialParam[0].x;
-	output.color1 = float4(outColor.xyz * glowPower, outColor.a);
+	output.color1 = float4(outColor.xyz * glowPower, outColor.a*depthFade);
 	return output;
 #endif
 }

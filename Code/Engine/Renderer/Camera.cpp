@@ -26,7 +26,7 @@ Camera::Camera()
 	, mPrevTargetPos(0, 0, 0)
 {
 	// proj properties
-	mFov = Radian(70);
+	SetFOV(Radian(70));
 	if (IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer())
 	{
 		mWidth = (float)pRenderer->GetWidth();
@@ -123,7 +123,7 @@ void Camera::GetNearFar(float& n, float& f) const
 //----------------------------------------------------------------------------
 void Camera::ProcessInputData()
 {
-	if (!mProcessInput || !mCurrentCamera)
+	if (!mProcessInput || !mCurrentCamera || !mTarget)
 		return;
 	if (mUserParams.Changed() || mPrevTargetPos != mTarget->GetPos())
 	{
@@ -464,4 +464,11 @@ void Camera::RegisterCamListener(ICameraListener* p)
 void Camera::UnregisterCamListener(ICameraListener* p)
 {
 	mCamListener.erase(std::remove(mCamListener.begin(), mCamListener.end(), p), mCamListener.end());
+}
+
+void Camera::SetFOV(float fov)
+{
+	mFov = fov; 
+	mTanHalfFOV = tan(mFov*.5f);
+	mProjPropertyChanged = true;
 }

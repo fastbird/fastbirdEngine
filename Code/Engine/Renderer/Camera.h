@@ -47,8 +47,9 @@ namespace fastbird
 		virtual const Mat44& GetProjMat();
 		virtual const Mat44& GetViewProjMat();
 		// field of view in the y direction, in radians.
-		virtual void SetFOV(float fov) { mFov = fov; mProjPropertyChanged = true;}
+		virtual void SetFOV(float fov);
 		virtual float GetFOV() const { return mFov; }
+		virtual float GetTanHalfFOV() const { return mTanHalfFOV; }
 		// width / height
 		virtual void SetAspectRatio(float ar) { mAspectRatio = ar; mProjPropertyChanged = true;}
 		virtual float GetAspectRatio() const { return mAspectRatio; }
@@ -126,6 +127,7 @@ namespace fastbird
 		Mat44 mViewProjMat;
 		Mat44 mInvViewProjMat;
 		float mFov;
+		float mTanHalfFOV;
 		float mAspectRatio;
 		float mNear;
 		float mFar;

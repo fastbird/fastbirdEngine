@@ -63,7 +63,7 @@ RendererD3D11::RendererD3D11()
 
 	mBindedShader = 0;
 	mBindedInputLayout = 0;
-	mCurrentTopology = PRIMITIVE_TOPOLOGY_POINTLIST;
+	mCurrentTopology = PRIMITIVE_TOPOLOGY_UNKNOWN;
 }
 
 //----------------------------------------------------------------------------
@@ -828,18 +828,26 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 {
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTexture);
 	
-	ID3D11ShaderResourceView* pSRV = pTextureD3D11 ? pTextureD3D11->GetHardwareResourceView() : 0;
-	switch(shaderType)
+	ID3D11ShaderResourceView* const pSRV = pTextureD3D11 ? pTextureD3D11->GetHardwareResourceView() : 0;
+	try
 	{
-	case BINDING_SHADER_VS:
-		m_pImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
-		break;
-	case BINDING_SHADER_PS:
-		m_pImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
-		break;
-	default:
-		assert(0);
-		break;	
+		switch (shaderType)
+		{
+		case BINDING_SHADER_VS:
+			m_pImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
+			break;
+		case BINDING_SHADER_PS:
+			m_pImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
+			break;
+		default:
+			assert(0);
+			break;
+		}
+	}
+	catch (...)
+	{
+		int a = 0;
+		a++;
 	}
 }
 
@@ -860,17 +868,25 @@ void RendererD3D11::SetTextures(ITexture* pTextures[], int num, BINDING_SHADER s
 		}
 	}
 
-	switch (shaderType)
+	try
 	{
-	case BINDING_SHADER_VS:
-		m_pImmediateContext->VSSetShaderResources(startSlot, num, &rvs[0]);
-		break;
-	case BINDING_SHADER_PS:
-		m_pImmediateContext->PSSetShaderResources(startSlot, num, &rvs[0]);
-		break;
-	default:
-		assert(0);
-		break;
+		switch (shaderType)
+		{
+		case BINDING_SHADER_VS:
+			m_pImmediateContext->VSSetShaderResources(startSlot, num, &rvs[0]);
+			break;
+		case BINDING_SHADER_PS:
+			m_pImmediateContext->PSSetShaderResources(startSlot, num, &rvs[0]);
+			break;
+		default:
+			assert(0);
+			break;
+		}
+	}
+	catch (...)
+	{
+		int a = 0;
+		a++;
 	}
 	
 }
@@ -1722,7 +1738,7 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[]
 	std::vector<ID3D11RenderTargetView*> rtviews;
 	if (pRenderTargets)
 	{
-		for (int i=0; i<num; i++)
+		for (int i = 0; i < num; i++)
 		{
 			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTargets[i]);
 			rtviews.push_back(pTextureD3D11 ? pTextureD3D11->GetRenderTargetView(rtIndex[i]) : 0);
@@ -1738,8 +1754,16 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[]
 		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pDepthStencil);
 		pDepthStencilView = pTextureD3D11->GetDepthStencilView(dsIndex);
 	}
+	try
+	{
+		m_pImmediateContext->OMSetRenderTargets(rtviews.size(), &rtviews[0], pDepthStencilView);
+	}
+	catch (...)
+	{
+		int a = 0;
+		a++;
+	}
 	
-	m_pImmediateContext->OMSetRenderTargets(rtviews.size(), &rtviews[0], pDepthStencilView);
 	mCurrentRTViews = rtviews;
 	mCurrentDSView = pDepthStencilView;
 }
@@ -1859,6 +1883,9 @@ void RendererD3D11::RestoreScissorRects()
 IInputLayout* RendererD3D11::GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			IMaterial* material)
 {
+	if (descs.empty())
+		return 0;
+
 	IInputLayout* ret = __super::GetInputLayout(descs);
 	if (ret)
 		return ret;
@@ -1888,6 +1915,9 @@ IInputLayout* RendererD3D11::GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 IInputLayout* RendererD3D11::GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			IShader* shader)
 {
+	if (descs.empty())
+		return 0;
+
 	IInputLayout* ret = __super::GetInputLayout(descs);
 	if (ret)
 		return ret;
@@ -1917,6 +1947,8 @@ IInputLayout* RendererD3D11::GetInputLayout(const INPUT_ELEMENT_DESCS& descs,
 IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 	void* byteCode, int byteLength)
 {
+	if (descs.empty())
+		return 0;
 	InputLayoutD3D11* pInputLayoutD3D11 = InputLayoutD3D11::CreateInstance();
 	std::vector<D3D11_INPUT_ELEMENT_DESC> d3d11Descs;
 	d3d11Descs.resize(descs.size());
@@ -1948,8 +1980,9 @@ IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 //----------------------------------------------------------------------------
 void RendererD3D11::SetShaders(IShader* pShader)
 {
-	if (!pShader->IsValid())
+	if (!pShader || !pShader->IsValid())
 	{
+		assert(0);
 		return;
 	}
 	if (mBindedShader == pShader)

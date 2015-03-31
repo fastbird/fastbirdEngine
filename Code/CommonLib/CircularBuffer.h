@@ -75,6 +75,21 @@ public:
 		mInit = true;
 	}
 
+	unsigned size() const
+	{
+		return mVector.size();
+	}
+
+	void DoubleSize()
+	{
+		VECTOR temp;
+		size_t beginIdx = std::distance(mVector.begin(), mBegin);
+		size_t endIdx = std::distance(mVector.begin(), mEnd);
+		mVector.resize(mVector.size() * 2);
+		mBegin = mVector.begin() + beginIdx;
+		mEnd = mVector.begin() + endIdx;
+	}
+
 	size_t push_back(const value_type& data)
 	{
 		if (!mInit)
@@ -143,9 +158,7 @@ public:
 	iterator& GetRawBeginIter() { return mBegin; }
 	iterator& GetRawEndIter() { return mEnd; }
 
-private:
-	size_t mNext;
-	
+private:	
 	VECTOR mVector;
 
 	iterator mBegin;

@@ -31,9 +31,19 @@ namespace fastbird
 			return sqrt(x*x + y*y);
 		}
 
+		inline float LengthSQ() const
+		{
+			return x*x + y*y;
+		}
+
 		inline float DistanceTo(const Vec2& other) const
 		{
 			return (*this - other).Length();
+		}
+
+		inline float DistanceToSQ(const Vec2& other) const
+		{
+			return (*this - other).LengthSQ();
 		}
 
 		//-------------------------------------------------------------------
@@ -104,6 +114,13 @@ namespace fastbird
 			return *this;
 		}
 
+		inline Vec2& operator/= (float s)
+		{
+			x /= s;
+			y /= s;
+			return *this;
+		}
+
 		Vec2 operator/ (const Vec2& v) const
 		{
 			return Vec2(x/v.x, y/v.y);
@@ -147,6 +164,26 @@ namespace fastbird
 			Vec2 result = *this;
 			result.Normalize();
 			return result;
+		}
+
+		inline int MaxAxis() const
+		{
+			return x < y ? 1 : 0;
+		}
+		void SafeNormalize();
+
+		inline float operator[] (const size_t i) const
+		{
+			assert(i < 2);
+
+			return *(&x + i);
+		}
+
+		inline float& operator[] (const size_t i)
+		{
+			assert(i < 2);
+
+			return *(&x + i);
 		}
 
 		bool operator<(const Vec2& other) const;

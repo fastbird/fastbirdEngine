@@ -47,6 +47,7 @@ namespace fastbird
 		// Only called when broad collision is true.
 		virtual bool CheckNarrowCollision(fastbird::BoundingVolume* pBV) const { return true; }
 		virtual Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const { return Ray3::IResult(false, 0.f); }
+		virtual Vec3 GetRandomPosInVolume(const Vec3* nearWorld = 0) const { return Vec3::ZERO; }
 
 		void SetAnimationData(const AnimationData& anim, const char* actionFile);
 		AnimationData* GetAnimationData() const { return mAnimData; }

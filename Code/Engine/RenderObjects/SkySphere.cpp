@@ -413,11 +413,10 @@ void SkySphere::GenerateRadianceCoef(ITexture* pTex)
 void SkySphere::SetInterpolationData(unsigned index, const Vec4& data)
 {
 	assert(index < 5);
-	if (index == 3)
+	if (index == 2)
 	{
-		Vec4 alphaIncluded = data;
-		alphaIncluded.w = mAlpha;
-		mMaterialParamDest[index] = alphaIncluded;
+		mMaterialParamDest[index] = data;
+		mMaterialParamDest[index].w = mAlpha;
 	}
 	else
 	{

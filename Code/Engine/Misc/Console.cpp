@@ -16,11 +16,12 @@ IConsole* IConsole::CreateConsole()
 	return pCon;
 }
 
+const char* cacheFile = "consoleCache.tmp";
 //--------------------------------------------------------------------------
 Console::Console()
 	: mCursorPos(0)
 	, mCursorWidth(10)
-	, mLines(10)
+	, mLines(15)
 	, mOpen(false)
 	, mLineGap(2)
 	, mHighlightStart(-1)
@@ -28,6 +29,8 @@ Console::Console()
 	, mBufferBtmLine(0)
 	, mLuaMode(false)
 	, mStdOutRedirect(0)
+	, mHistoryIndex(0)
+	, mHistoryIndexBackup(0)
 {
 	assert(gFBEnv->pConsole == 0);
 	gFBEnv->pConsole = this;
@@ -37,12 +40,43 @@ Console::Console()
 
 	mCandiData = FB_NEW(CandidatesData);
 	mEngineCommand = FB_NEW(EngineCommand);
+
+	std::ifstream file(cacheFile);
+	if (file.is_open())
+	{
+		do {
+			std::string data;
+			file >> data;
+			if (!data.empty())
+				mHistory.push_back(data);
+		} while (!file.eof());
+		file.close();
+		mHistoryIndex = mHistory.size();
+	}
 }
 
 //--------------------------------------------------------------------------
 Console::~Console()
 {
 	FB_DELETE(mCandiData);
+	if (!mHistory.empty())
+	{
+		std::ofstream file(cacheFile);
+		if (file.is_open())
+		{
+			unsigned startIdx = 0;
+			if (mHistory.size() > 10)
+			{
+				startIdx = mHistory.size() - 10;
+			}
+			for (unsigned i = startIdx; i < mHistory.size(); i++)
+			{
+				file << mHistory[i] << std::endl;
+			}
+			file.close();
+		}		
+	}
+	
 }
 
 /*
@@ -78,11 +112,8 @@ void Output(void* arg)
 //--------------------------------------------------------------------------
 bool Console::Init()
 {
-
 	// calc background size
-	IFont* pFont = gFBEnv->pRenderer->GetFont();
-	int lineHeight = (int)pFont->GetHeight();
-	mHeight = (lineHeight + mLineGap) * mLines;
+	mHeight = (sFontSize + mLineGap) * mLines;
 
 	mPrompt = AnsiToWide(">", 1);
 	mPromptStart = 2;
@@ -215,8 +246,17 @@ void Console::Log(const char* szFmt, ...)
 	int remainedLined = mLines-1;
 	for (; rit != ritEnd && remainedLined; rit++)
 	{
-		mBufferw.push_back( AnsiToWide(rit->c_str(), rit->length()*2) );
-		remainedLined--;
+		auto strVec = Split(*rit, "\n");
+		auto rit2 = strVec.rbegin(), ritEnd2 = strVec.rend();
+		for (; rit2 != ritEnd2 && remainedLined; rit2++)
+		{
+			if (!rit2->empty())
+			{
+				mBufferw.push_back(AnsiToWide(rit2->c_str()));
+				remainedLined--;
+			}
+		}
+		
 	}
 }
 
@@ -248,7 +288,7 @@ void Console::Render()
 		return;
 	IRenderer* pRenderer = gFBEnv->pRenderer;
 	IFont* pFont = pRenderer->GetFont();
-
+	pFont->SetHeight((float)sFontSize);
 	const int lineHeight = (int)pFont->GetHeight();
 
 	// Draw Background
@@ -305,10 +345,12 @@ void Console::Render()
 	auto itEnd = bufferwRender.end();
 	for (; it < itEnd; it++)
 	{
+		unsigned numLineFeed = std::count(it->begin(), it->end(), L'\n');
 		pFont->Write((float)mInputPosition.x, (float)bufferDrawPosY, 0.f,
 			Color::Gray, (char*)it->c_str(), -1, FONT_ALIGN_LEFT);
-		bufferDrawPosY -= (lineHeight + mLineGap);
+		bufferDrawPosY -= lineHeight + mLineGap;
 	}
+	pFont->SetBackToOrigHeight();
 	
 
 
@@ -518,8 +560,16 @@ void Console::ProcessCommand(const char* command)
 		command = command + 1;
 	}
 
-	mHistory.push_back(command);
-	mHistoryIndex = mHistory.size() - 1;
+	if (mHistory.back() != command)
+	{
+		mHistory.push_back(command);
+		mHistoryIndex = mHistory.size();
+	}
+	else
+	{
+		mHistoryIndex = mHistoryIndexBackup;
+	}
+		
 
 	if (mLuaMode)
 	{
@@ -656,12 +706,14 @@ void Console::GetNextHistory()
 	if (mHistory.empty())
 		return;
 
+	mHistoryIndexBackup = mHistoryIndex;
+	--mHistoryIndex;
 	if (mHistoryIndex >= (int)mHistory.size() || mHistoryIndex<0)
 	{
 		mHistoryIndex = (int)mHistory.size()-1;
 	}
 
-	mInputString = mHistory[mHistoryIndex--].c_str();
+	mInputString = mHistory[mHistoryIndex].c_str();
 	mCursorPos = 0;
 	EndHighlighting();
 	StartHighlighting();
@@ -673,13 +725,14 @@ void Console::GetPrevHistory()
 {
 	if (mHistory.empty())
 		return;
-
+	mHistoryIndexBackup = mHistoryIndex;
+	++mHistoryIndex;
 	if (mHistoryIndex >= (int)mHistory.size() || mHistoryIndex<0)
 	{
 		mHistoryIndex = 0;
 	}
 
-	mInputString = mHistory[mHistoryIndex++].c_str();
+	mInputString = mHistory[mHistoryIndex].c_str();
 	mCursorPos = 0;
 	EndHighlighting();
 	StartHighlighting();

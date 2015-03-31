@@ -13,6 +13,7 @@ namespace fastbird
 		float mLifeTime; // -1 is infinite
 		float mAlpha;
 		bool mManualDeletion;
+		bool mEnabled;
 
 	public:
 		PointLight(const Vec3& pos, float range, const Vec3& color, float intensity, float lifeTime, bool manualDeletion);
@@ -43,5 +44,7 @@ namespace fastbird
 		virtual bool GetManualDeletion() const;
 
 		virtual void SetAlpha(float alpha);
+		virtual bool GetEnabled() const { return mEnabled; }
+		virtual void SetEnabled(bool enable);
 	};
 }

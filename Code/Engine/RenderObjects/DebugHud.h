@@ -22,8 +22,8 @@ public:
 
 	struct TextData
 	{
-		TextData(const Vec2I& pos, WCHAR* text, const Color& color, float secs)
-			: mPos(pos), mText(text), mColor(color), mSecs(secs)
+		TextData(const Vec2I& pos, WCHAR* text, const Color& color, float size, float secs)
+			: mPos(pos), mText(text), mColor(color), mSecs(secs), mSize(size), mDuration(secs)
 		{
 		}
 
@@ -31,6 +31,8 @@ public:
 		std::wstring mText;
 		Color mColor;
 		float mSecs;
+		float mDuration;
+		float mSize;
 	};
 
 	struct Line
@@ -91,9 +93,9 @@ public:
 	// Own
 	//--------------------------------------------------------------------
 	void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color);
-	void DrawText(const Vec2I& pos, WCHAR* text, const Color& color);
-	void Draw3DText(const Vec3& pos, WCHAR* text, const Color& color);
+		const Color& color, float size);
+	void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size);
+	void Draw3DText(const Vec3& pos, WCHAR* text, const Color& color, float size);
 	// if wolrdspace is false, it's in the screenspace 0~width, 0~height
 	void DrawLine(const Vec3& start, const Vec3& end, const Color& color0,
 		const Color& color1);

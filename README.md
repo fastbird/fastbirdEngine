@@ -8,6 +8,8 @@ funtionalities as I'm working on the game.
 Compilation
 ---------------
 You need these libraries to compile the source code. You can find the helper .bat files setting environment variables for these paths in the code/ folder.
+* _FASTBIRD_ENGINE_DIR
+	Rue _FASTBIRD_ENGINE_DIR.bat in code/ directory.
 * FreeImage 3.15.4
   * Copy code/_FREEIMAGE(3.15.4)_DIR.bat file to your FreeImage directory and run. This will create $(FREEIMAGE_DIR) environment variable and the variable is used in the project setting.
 * Lua 5.2.3 

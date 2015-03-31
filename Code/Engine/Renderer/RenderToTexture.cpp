@@ -77,7 +77,7 @@ void RenderToTexture::Render(size_t face)
 		return;
 	D3DEventMarker mark("RenderToTexture");
 	Bind(face);
-
+	gFBEnv->mRenderToTexture = this;
 	/*D3DEventMarker mark("Shadow pass");
 	Renderer* pRenderer = (Renderer*)gFBEnv->pRenderer;
 	pRenderer->BindShadowMap(false);
@@ -85,9 +85,10 @@ void RenderToTexture::Render(size_t face)
 	mScene->Render();
 	pRenderer->EndShadowMapRendering();*/
 
+	gFBEnv->pRenderer->RestoreBlendState();
 	mScene->PreRender();
 	mScene->Render();
-
+	gFBEnv->mRenderToTexture = 0;
 	Unbind();	
 }
 

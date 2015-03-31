@@ -25,6 +25,7 @@ namespace fastbird
 		virtual float GetSpeed() const = 0;
 		virtual Vec3 GetVelocity() const = 0;
 		virtual Vec3 GetAngularVelocity() const = 0;
+		virtual void SetAngularVelocity(const Vec3& angVel) = 0;
 		virtual Vec3 GetTorque() const = 0;
 		virtual void SetVelocity(const Vec3& vel) = 0;
 		virtual void Activate() = 0;
@@ -46,16 +47,24 @@ namespace fastbird
 
 		virtual void SetRotationalForce(float force) = 0;
 
-		virtual void RemoveColFlag(unsigned flag)=0;
-		virtual void AddColFlag(unsigned flag)=0;
+		virtual void RemoveCollisionFilter(unsigned flag) = 0;
+		virtual void AddCollisionFilter(unsigned flag)=0;
 		virtual void SetColMask(unsigned mask) = 0;
 		virtual unsigned GetColMask() const = 0;
 
 		virtual void SetLinearDamping(float damping) = 0;
-		virtual bool HasContact() = 0;
+		virtual void SetAngularDamping(float damping) = 0;
+		virtual void SetDamping(float linear, float angular) = 0;
+		virtual bool HasContact(void** gamePtr) = 0;
 
 		virtual void RemoveRigidBodyFromWorld() = 0;
 		// make sure mColProvider is valid.
 		virtual void ReAddRigidBodyFromWorld() = 0;
+		virtual void ModifyCollisionFlag(int flag, bool enable) = 0;
+
+		virtual void SetCCDMotionThreshold(float threshold) = 0;
+		virtual void SetCCDSweptSphereRadius(float radius) = 0;
+
+		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore) = 0;
 	};
 }

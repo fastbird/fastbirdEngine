@@ -7,6 +7,7 @@ namespace fastbird
 	class IConsole;
 	class IScriptSystem;
 	class Timer;
+	class RenderToTexture;
 
 	struct GlobalEnv
 	{
@@ -23,6 +24,7 @@ namespace fastbird
 			mRenderPass = 0;
 			mGodRayInScreen = false;
 			mSilouetteRendered = false;
+			mRenderToTexture = 0;
 		}
 		IEngine* pEngine;
 		IRenderer* pRenderer;
@@ -35,6 +37,7 @@ namespace fastbird
 		int mRenderPass; // enum RENDER_PASS
 		bool mGodRayInScreen;
 		bool mSilouetteRendered;
+		RenderToTexture* mRenderToTexture;
 	};
 }
 

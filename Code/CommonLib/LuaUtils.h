@@ -30,7 +30,9 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL_RET_FALSE(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, errorString); \
+	char buf[1024];\
+	sprintf_s(buf, "\n%s/%s", GetCWD(), errorString);\
+	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, buf); \
 	lua_pop(lua, 1); \
 	assert(0); \
 	return false; \
@@ -48,20 +50,26 @@ namespace fastbird
 {
 	struct LUA_STACK_WATCHER
 	{
-		LUA_STACK_WATCHER(lua_State* L)
+		LUA_STACK_WATCHER(lua_State* L, const char* name)
+			: lua(L), mName(name)
 		{
-			lua = L;
+			assert(name != 0);
 			top = lua_gettop(L);
 		}
 
 		~LUA_STACK_WATCHER()
 		{
 			int now = lua_gettop(lua);
+			if (top != now)
+			{
+				Log("LuaStackWather : %s", mName);
+			}
 			assert(top == now);
 		}
 
 		lua_State* lua;
 		int top;
+		const char* mName;
 	};
 
 	struct LUA_STACK_CLIPPER
@@ -86,6 +94,8 @@ namespace fastbird
 	bool CheckLuaGlobalExist(lua_State* L, const char* name);
 	void PrintLuaDebugInfo(lua_State* L, int level);
 	std::string GetLuaValueAsString(lua_State* L, int stackIndex);
+	bool GetLuaVarAsBoolean(lua_State* L, const char* varName);
+	void SetLuaVar(lua_State* L, const char* varName, bool value);
 }
 
 // luawapper util

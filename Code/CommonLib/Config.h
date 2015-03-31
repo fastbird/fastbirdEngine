@@ -6,6 +6,7 @@
 
 //-------------------------------------------------------------------------------------------------
 #define _FBENGINE_FOR_WINDOWS_
+//#define _ITERATOR_DEBUG_LEVEL 0
 
 // use std::min(), std::max()
 #define NOMINMAX

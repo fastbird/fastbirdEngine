@@ -1,2 +1,2 @@
-setx FREEIMAGE_DIR "%CD%"
+c:\windows\system32\setx FREEIMAGE_DIR "%CD%"
 pause

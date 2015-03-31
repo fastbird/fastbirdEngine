@@ -22,5 +22,6 @@ namespace fastbird
 		virtual void SetManualDeletion(bool manual) = 0;
 		virtual bool GetManualDeletion() const = 0;
 		virtual void SetAlpha(float alpha) = 0;
+		virtual void SetEnabled(bool enable) = 0;
 	};
 }

@@ -25,7 +25,7 @@ WinBase::WinBase()
 , mMouseInPrev(false)
 , mNext(0)
 , mPrev(0)
-, mTextColor(1.f, 1.f, 1.f, 1.f)
+, mTextColor(0.8f, 0.8f, 0.8f, 1.0f)
 , mTextColorHover(1.f, 1.0f, 1.f, 1.f)
 , mTextColorDown(1.0f, 1.0f, 1.0f, 1.f)
 , mTextAlignH(ALIGNH::LEFT)
@@ -60,7 +60,6 @@ WinBase::WinBase()
 , mTextWidth(0)
 , mNumTextLines(1)
 , mInheritVisibleTrue(true)
-, mInvalidateMouse(true)
 , mNSize(NotDefined, NotDefined)
 , mWNPos(NotDefined, NotDefined)
 , mWNSize(NotDefined, NotDefined)
@@ -69,6 +68,9 @@ WinBase::WinBase()
 , mHideCounter(0), mPivot(false)
 , mRender3D(false), mTextGap(0, 0)
 , mModal(false), mDragable(0, 0), mEnable(true)
+, mCurHighlightTime(0)
+, mHighlightSpeed(0.f)
+, mGoingBright(true)
 {
 }
 
@@ -701,12 +703,14 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		mMouseIn = mMouseDragStartInHere || IsIn(mouse);
 		if (mMouseIn)
 		{
+			bool invalidate = false;
 			if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
 				|| (mMouseDragStartInHere && mouse->IsLButtonDown())
 				)
 			{
 				mMouseDragStartInHere = true;
 				IUIManager::GetUIManager().SetFocusUI(GetRootWnd());
+				invalidate = true;
 			}
 			else
 			{
@@ -714,6 +718,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			if (mouse->IsLButtonDown() && mMouseDragStartInHere)
 			{
+				invalidate = true;
 				long x,  y;
 				mouse->GetDeltaXY(x, y);
 				if (x != 0 || y != 0)
@@ -767,7 +772,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				if (OnEvent(EVENT_MOUSE_RIGHT_CLICK))
 					mouse->Invalidate();
 			}
-			if (mInvalidateMouse)
+			if (invalidate)
 				mouse->Invalidate();
 		}		
 		else if (mMouseInPrev)
@@ -798,8 +803,8 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		{
 		case VK_RETURN:
 			{
-				OnEvent(EVENT_ENTER);
-				keyboard->Invalidate();
+				if (OnEvent(EVENT_ENTER))
+					keyboard->Invalidate();
 			}
 			break;
 		}
@@ -978,6 +983,23 @@ void WinBase::OnSizeChanged()
 	RefreshBorder();
 }
 
+std::string WinBase::TranslateText(const char* text)
+{
+	if (!text || strlen(text) == 0)
+		return std::string();
+	if (text[0] == '@')
+	{
+		char varName[255];
+		sprintf_s(varName, "msg.%s", text+1);
+		auto var = GetLuaVar(IUIManager::GetUIManager().GetLuaState(), varName, "msg.lua");
+		if (var.IsString())
+		{
+			return var.GetString();
+		}
+	}
+	return std::string();
+}
+
 void WinBase::SetTextColor(const Color& c)
 {
 	mTextColor = c;
@@ -1025,18 +1047,23 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::POS:
 	{
-							Vec2I pos = StringConverter::parseVec2I(val);
-							SetPos(pos);
+							auto v = Split(val, ", ");
+							assert(v.size() == 2);
+							int x = ParseIntPosX(v[0]);
+							int y = ParseIntPosY(v[1]);
+							SetPos(Vec2I(x, y));
 							return true;
 	}
 	case UIProperty::POSX:
 	{
-							 SetPosX(StringConverter::parseInt(val));
+							int x = ParseIntPosX(val);
+							 SetPosX(x);
 							 return true;
 	}
 	case UIProperty::POSY:
 	{
-							 SetPosY(StringConverter::parseInt(val));
+							int y = ParseIntPosY(val);
+							 SetPosY(y);
 							 return true;
 	}
 	case UIProperty::NPOS:
@@ -1069,12 +1096,36 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 								UpdateWorldPos();
 								return true;
 	}
+	case UIProperty::SIZE:
+	{
+		SetSize(StringConverter::parseVec2I(val));
+		return true;
+	}
+	case UIProperty::SIZEX:
+	{
+		SetSizeX(StringConverter::parseInt(val));
+		return true;
+	}
+	case UIProperty::SIZEY:
+	{
+		SetSizeY(StringConverter::parseInt(val));
+		return true;
+	}
+	case UIProperty::NSIZEX:
+	{
+		SetNSizeX(StringConverter::parseReal(val));
+		return true;
+	}
+	case UIProperty::NSIZEY:
+	{
+		SetNSizeY(StringConverter::parseReal(val));
+		return true;
+	}
 	case UIProperty::BACK_COLOR:
 	{
 								   if (mUIObject)
 								   {
-									   Color color;
-									   color = StringConverter::parseVec4(val);
+									   Color color(val);
 									   mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
 									   return true;
 								   }
@@ -1125,6 +1176,15 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 									   AlignText();
 									   return true;
 	}
+
+	case UIProperty::TEXT_GAP:
+	{
+		int gap = StringConverter::parseInt(val);
+		mTextGap.x = gap;
+		mTextGap.y = gap;
+		AlignText();
+		return true;
+	}
 	case UIProperty::MATCH_SIZE:
 	{
 								   mMatchSize = stricmp("true", val) == 0;
@@ -1146,18 +1206,18 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TEXT_COLOR:
 	{
-								   mTextColor = StringConverter::parseVec4(val);
+									mTextColor = Color(val);								   
 								   mUIObject->SetTextColor(mTextColor);
 								   return true;
 	}
 	case UIProperty::TEXT_COLOR_HOVER:
 	{
-										 mTextColorHover = StringConverter::parseVec4(val);
+		mTextColorHover = Color(val);
 										 return true;
 	}
 	case UIProperty::TEXT_COLOR_DOWN:
 	{
-										mTextColorDown = StringConverter::parseVec4(val);
+		mTextColorDown = Color(val);
 										return true;
 	}
 	case UIProperty::ALIGNH:
@@ -1175,7 +1235,15 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT:
 	{
 							 assert(val);
-							 SetText(AnsiToWide(val, strlen(val)));
+							 std::string translated = TranslateText(val);
+							 if (translated.empty())
+							 {
+								 SetText(AnsiToWide(val));
+							 }
+							 else
+							 {
+								 SetText(AnsiToWide(translated.c_str()));
+							 }
 							 return true;
 	}
 	case UIProperty::ALPHA:
@@ -1190,7 +1258,11 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TOOLTIP:
 	{
 								assert(val);
-								mTooltipText = AnsiToWide(val, strlen(val));
+								auto msg = TranslateText(val);
+								if (msg.empty())
+									mTooltipText = AnsiToWide(val);
+								else
+									mTooltipText = AnsiToWide(msg.c_str());
 								return true;
 	}
 
@@ -1307,6 +1379,17 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[])
 	}
 	assert(0 && "No property found");
 	return false;
+}
+
+bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
+{
+	char buf[256];
+	bool get = GetProperty(prop, buf);
+	if (get)
+	{
+		return StringConverter::parseBool(buf);
+	}
+	return defaultVal;
 }
 
 void WinBase::SetUseBorder(bool use)
@@ -1585,6 +1668,11 @@ void WinBase::OnStartUpdate(float elapsedTime)
 		SetAnimNPosOffset(evaluatedPos);
 	if (hasScale)
 		SetAnimScale(evaluatedScale, GetPivotWNPos());
+
+	if (mHighlightSpeed > 0.f)
+	{
+		ProcessHighlight(elapsedTime);
+	}
 }
 
 void WinBase::SetAlphaBlending(bool set)
@@ -1719,8 +1807,18 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("pos");
 	if (sz)
 	{
-		Vec2I pos = StringConverter::parseVec2I(sz);
-		SetPos(pos);
+		StringVector vec = Split(sz);
+		if (vec.size() < 2)
+		{
+			SetPos(Vec2I(0, 0));
+		}
+		else
+		{
+			Vec2I pos;
+			pos.x = ParseIntPosX(vec[0]);
+			pos.y = ParseIntPosY(vec[1]);
+			SetPos(pos);
+		}
 	}		
 
 	sz = pelem->Attribute("nposX");
@@ -1734,14 +1832,14 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("posX");
 	if (sz)
 	{
-		int x = StringConverter::parseInt(sz);
+		int x = ParseIntPosX(sz);
 		SetPosX(x);
 	}
 
 	sz = pelem->Attribute("posY");
 	if (sz)
 	{
-		int y = StringConverter::parseInt(sz);
+		int y = ParseIntPosY(sz);
 		SetPosY(y);
 	}
 
@@ -2446,6 +2544,100 @@ void WinBase::OnDrag(int dx, int dy)
 	if (mParent)
 	{
 		mParent->OnChildHasDragged();
+	}
+}
+
+
+int WinBase::ParseIntPosX(const std::string& posX)
+{
+	if_assert_fail(!posX.empty())
+		return 0;
+
+	static int lastPos = 0;
+	if (posX[0] == '+')
+	{
+		int val = StringConverter::parseInt(&posX[1]);
+		lastPos = val + lastPos;
+		return lastPos;
+	}
+	else
+	{
+		int val = StringConverter::parseInt(posX);
+		lastPos = val;
+		return val;
+	}
+}
+
+int WinBase::ParseIntPosY(const std::string& posY)
+{
+	if_assert_fail(!posY.empty())
+		return 0;
+
+	static int lastPos = 0;
+	if (posY[0] == '+')
+	{
+		int val = StringConverter::parseInt(&posY[1]);
+		lastPos = val + lastPos;
+		return lastPos;
+	}
+	else
+	{
+		int val = StringConverter::parseInt(posY);
+		lastPos = val;
+		return val;
+	}
+}
+
+void WinBase::StartHighlight(float speed)
+{
+	for (auto ib : mBorders)
+	{
+		ib->StartHighlight(speed);
+	}
+
+	mHighlightSpeed = speed;
+	mCurHighlightTime = 0.f;
+	mGoingBright = true;
+}
+
+void WinBase::StopHighlight()
+{
+	for (auto ib : mBorders)
+	{
+		ib->StopHighlight();
+	}
+
+	mHighlightSpeed = 0.f;
+	mCurHighlightTime = 0.f;
+	if (mUIObject)
+	{
+		auto mat = mUIObject->GetMaterial();
+		if (mat)
+			mat->SetAmbientColor(Vec4(0, 0, 0, 1));
+	}
+}
+
+void WinBase::ProcessHighlight(float dt)
+{
+	if (mUIObject)
+	{
+		mCurHighlightTime += mGoingBright ? dt * mHighlightSpeed : -dt * mHighlightSpeed;
+		if (mCurHighlightTime > 1.f)
+		{
+			mCurHighlightTime = 1.0f;
+			mGoingBright = false;
+		}
+		else if (mCurHighlightTime < 0.f)
+		{
+			mCurHighlightTime = 0.f;
+			mGoingBright = true;
+		}
+
+		auto mat = mUIObject->GetMaterial();
+		if (mat)
+		{
+			mat->SetAmbientColor(Lerp(Vec4(0, 0, 0, 1), Vec4(0, 1, 1, 1), mCurHighlightTime));
+		}
 	}
 }
 

@@ -174,7 +174,7 @@ bool Object::HasObjFlag(unsigned flag)
 //----------------------------------------------------------------------------
 void Object::SetShow(bool show)
 {
-	ModifyObjFlag(IObject::OF_HIDE, false);
+	ModifyObjFlag(IObject::OF_HIDE, !show);
 }
 
 bool Object::GetShow() const
