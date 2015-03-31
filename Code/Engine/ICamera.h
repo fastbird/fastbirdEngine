@@ -36,6 +36,7 @@ namespace fastbird
 		// field of view in the y direction, in radians.
 		virtual void SetFOV(float fov) = 0;
 		virtual float GetFOV() const = 0;
+		virtual float GetTanHalfFOV() const = 0;
 		// width / height
 		virtual void SetAspectRatio(float ar) = 0;
 		virtual float GetAspectRatio() const = 0;

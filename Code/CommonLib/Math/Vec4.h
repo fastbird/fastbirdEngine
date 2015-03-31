@@ -70,6 +70,11 @@ namespace fastbird
 			return Vec4(x + r.x, y + r.y, z + r.z, w + r.w);
 		}
 
+		inline Vec4 operator+(float v)
+		{
+			return Vec4(v +x, v + y, v + z, v + w);
+		}
+
 		bool operator== (const Vec4& other) const
 		{
 			return (IsEqual(x, other.x) && IsEqual(y, other.y) && IsEqual(z, other.z) && IsEqual(w, other.w));
@@ -103,7 +108,7 @@ struct luaU_Impl<fastbird::Vec4>
 {
 	static fastbird::Vec4 luaU_check(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec4 luaU_check(lua_State* L, int index)");
 		luaL_checktype(L, index, LUA_TTABLE);
 		fastbird::Vec4 ret;
 		lua_rawgeti(L, index, 1);
@@ -123,7 +128,7 @@ struct luaU_Impl<fastbird::Vec4>
 
 	static fastbird::Vec4 luaU_to(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec4 luaU_to(lua_State* L, int index)");
 		fastbird::Vec4 ret;
 		lua_rawgeti(L, index, 1);
 		ret.x = (float)lua_tonumber(L, -1);

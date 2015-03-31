@@ -1,5 +1,6 @@
 #include <CommonLib/StdAfx.h>
-#include "Color.h"
+#include <CommonLib/Color.h>
+#include <CommonLib/StringUtils.h>
 namespace fastbird
 {
 const Color Color::White(1, 1, 1);
@@ -22,5 +23,26 @@ unsigned Color::FixColorByteOrder(unsigned c)
 	color.b = c >> 8 & 0xff;
 	color.a = c & 0xff;
 	return *(unsigned*)&color;
+}
+
+Color::Color(const char* str)
+{
+	if (str[0] == '0' && str[1] == 'x')
+	{	
+		if (strlen(str) == 8)
+		{
+			std::string strColor = str;
+			strColor += "ff";
+			*this = Color(Color::FixColorByteOrder(StringConverter::parseHexa(strColor.c_str())));
+		}
+		else
+		{
+			*this = Color(Color::FixColorByteOrder(StringConverter::parseHexa(str)));
+		}
+	}
+	else
+	{
+		mValue =  StringConverter::parseVec4(str);
+	}
 }
 }

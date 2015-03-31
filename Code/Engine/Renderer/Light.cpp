@@ -30,9 +30,9 @@ DirectionalLight::DirectionalLight()
 {
 	mLightCamera = FB_NEW(Camera);
 	mLightCamera->SetOrthogonal(true);
-	mLightCamera->SetWidth(100.0f);
-	mLightCamera->SetHeight(100.0f);
-	mLightCamera->SetNearFar(1.0f, 400.0f);
+	mLightCamera->SetWidth(200.0f);
+	mLightCamera->SetHeight(200.0f);
+	mLightCamera->SetNearFar(1.0f, 300.0f);
 	gFBEnv->pEngine->GetCamera(0)->RegisterCamListener(this);
 }
 
@@ -241,7 +241,7 @@ void DirectionalLight::CopyLight(ILight* other_)
 	}
 	mInterpolating = other->mInterpolating;
 	// temporal.
-	if (mLightCamera)
+	if (mLightCamera && !mDuplicatedLightCamera)
 	{
 		FB_DELETE(mLightCamera);
 	}

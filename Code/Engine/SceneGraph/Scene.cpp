@@ -12,6 +12,7 @@
 #include <Engine/ISceneListener.h>
 #include <Engine/ILight.h>
 #include <Engine/FBCollisionShape.h>
+#include <Engine/Renderer/Renderer.h>
 using namespace fastbird;
 
 IScene* IScene::CreateScene()
@@ -368,7 +369,7 @@ void Scene::PreRender()
 //----------------------------------------------------------------------------
 void Scene::Render()
 {
-
+	Renderer* pRenderer = (Renderer*)gFBEnv->pRenderer;
 	if (!mSkipSpatialObjects)
 	{
 		D3DEventMarker mark("VisibleObjects - Opaque");
@@ -393,40 +394,39 @@ void Scene::Render()
 		}
 	}
 
-	if (mSkyRendering && gFBEnv->mRenderPass != RENDER_PASS::PASS_SHADOW)
+	if (!(gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW || gFBEnv->mRenderPass == RENDER_PASS::PASS_DEPTH))
 	{
-		D3DEventMarker mark("SkyRendering");
-		if (mSkyBox)
+		if (mSkyRendering)
 		{
-			mSkyBox->Render();
-			if (mSkySphereBlend)
-				mSkySphereBlend->Render();
-		}
-			
-		else if (mSkySphere)
-		{
-			if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
+			D3DEventMarker mark("SkyRendering");
+			if (mSkyBox)
 			{
-				mSkySphereBlend->Render();
-			}
-			else
-			{
-				mSkySphere->Render();
-				if (mSkySphereBlend && mSkySphereBlend->GetAlpha() != 0.f)
+				mSkyBox->Render();
+				if (mSkySphereBlend)
 					mSkySphereBlend->Render();
 			}
-		}
-			
-	}
 
-	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_SHADOW)
-	{
-		for (const auto& l : mListeners)
-		{
-			l->OnBeforeRenderingTransparents();
+			else if (mSkySphere)
+			{
+				if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
+					mSkySphereBlend->Render();
+				else
+				{
+					mSkySphere->Render();
+					if (mSkySphereBlend && mSkySphereBlend->GetAlpha() != 0.f)
+						mSkySphereBlend->Render();
+				}
+			}
+
 		}
-		gFBEnv->pRenderer->RenderGeoms();
-		gFBEnv->pRenderer->BindDepthTexture(true);
+
+		for (const auto& l : mListeners)
+			l->OnBeforeRenderingTransparents();
+
+		if (!gFBEnv->mRenderToTexture)
+			pRenderer->RenderGeoms();
+
+		pRenderer->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
 		{
 			{
@@ -446,7 +446,7 @@ void Scene::Render()
 				(*it)->Render();
 			}
 		}
-	}	
+	}
 }
 
 void Scene::ClearEverySpatialObject()

@@ -13,15 +13,13 @@ const int ParticleRenderObject::MAX_SHARED_VERTICES = 5000;
 ParticleRenderObject* ParticleRenderObject::GetRenderObject(const char* texturePath)
 {
 	assert(texturePath);
-	std::string id = texturePath;
-	ToLowerCase(id);
-	RENDER_OBJECTS::iterator it = mRenderObjects.Find(id.c_str());
+	RENDER_OBJECTS::iterator it = mRenderObjects.Find(texturePath);
 	if (it != mRenderObjects.end())
 		return it->second;
 	ParticleRenderObject* p = FB_NEW(ParticleRenderObject);
 	p->SetTexture(texturePath);
 	p->AttachToScene();
-	mRenderObjects.Insert(RENDER_OBJECTS::value_type(id.c_str(), p));
+	mRenderObjects.Insert(RENDER_OBJECTS::value_type(texturePath, p));
 
 	return p;
 }
@@ -51,6 +49,14 @@ void ParticleRenderObject::ClearParticles()
 	mNumDrawPrimitives = 0;
 }
 
+void ParticleRenderObject::EndUpdateParticles()
+{
+	for (auto it : mRenderObjects)
+	{
+		it.second->EndUpdate();
+	}
+}
+
 void ParticleRenderObject::FinalizeRenderObjects()
 {
 	mRenderObjects.clear();
@@ -61,6 +67,8 @@ ParticleRenderObject::ParticleRenderObject()
 	, mMapped(0)
 	, mDoubleSided(false)
 	, mGlow(true)
+	, mMaxVertices(MAX_SHARED_VERTICES)
+	, mLastFrameNumVertices(0)
 {
 	mMaterial = IMaterial::CreateMaterial("es/materials/particle.material");
 	mBoundingVolumeWorld->SetAlwaysPass(true);
@@ -97,6 +105,7 @@ void ParticleRenderObject::SetDoubleSided(bool set)
 
 void ParticleRenderObject::SetTexture(const char* texturePath)
 {
+	mTextureName = texturePath;
 	mMaterial->SetTexture(texturePath, BINDING_SHADER_PS, 0);
 }
 
@@ -137,7 +146,7 @@ void ParticleRenderObject::Render()
 		if (start > it->first)
 		{
 			// draw
-			assert(start + num <= MAX_SHARED_VERTICES);
+			assert(start + num <= mMaxVertices);
 			pRenderer->Draw(num, start);
 			++mNumDrawCalls;
 			mNumDrawPrimitives += num;
@@ -148,7 +157,7 @@ void ParticleRenderObject::Render()
 	}
 	if (num)
 	{
-		num = std::min(num, (UINT)MAX_SHARED_VERTICES);
+		assert(num < mMaxVertices);
 		pRenderer->Draw(num, start);
 		++mNumDrawCalls;
 		mNumDrawPrimitives += num;
@@ -169,25 +178,46 @@ void ParticleRenderObject::PostRender()
 void ParticleRenderObject::Clear()
 {
 	mBatches.clear();
+	if (mLastFrameNumVertices * 3 >= mMaxVertices)
+	{
+		mMaxVertices *= 2;
+		mVertexBuffer = 0;
+		Log("Particle Vertex Buffer(%s) resized to : %u", mTextureName.c_str(), mMaxVertices);
+	}
+	mLastFrameNumVertices = 0;
 }
 
-ParticleRenderObject::Vertex* ParticleRenderObject::Map(UINT numVertices)
+void ParticleRenderObject::EndUpdate()
 {
-	assert(numVertices < MAX_SHARED_VERTICES/2);
+	if (mVertexBuffer && mMapped)
+	{
+		mVertexBuffer->Unmap();
+	}
+}
+
+ParticleRenderObject::Vertex* ParticleRenderObject::Map(UINT numVertices, unsigned& canWrite)
+{
+	mLastFrameNumVertices += numVertices;
+	assert(numVertices < mMaxVertices / 2);
 	if (!mVertexBuffer)
 		mVertexBuffer = gFBEnv->pRenderer->CreateVertexBuffer(
-			0, sizeof(Vertex), MAX_SHARED_VERTICES, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		0, sizeof(Vertex), mMaxVertices, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 
-	if (mNextMap + numVertices >= MAX_SHARED_VERTICES)
+	canWrite = numVertices;
+	if (mNextMap + numVertices >= mMaxVertices)
 	{
 		if (!mBatches.empty())
 		{
-			if (mBatches[0].first <= numVertices)
-				Log("MAX_SHARED_VERTICES exceeded!");
+			if (mBatches[0].first < numVertices)
+			{
+				canWrite = mBatches[0].first;
+			}				
 		}
 		mNextMap = 0;
 	}
-
+	if (canWrite == 0)
+		return 0;
+	
 	if (!mMapped)
 	{
 		MapData m = mVertexBuffer->Map(MAP_TYPE_WRITE_NO_OVERWRITE, 0, MAP_FLAG_NONE);
@@ -195,19 +225,13 @@ ParticleRenderObject::Vertex* ParticleRenderObject::Map(UINT numVertices)
 		mMapped = (Vertex*)m.pData;
 	}
 	
-	mBatches.push_back( BATCHES::value_type(mNextMap, numVertices) );
+	mBatches.push_back(BATCHES::value_type(mNextMap, canWrite));
 	Vertex* p = mMapped;
 	p += mNextMap;
-	mNextMap+=numVertices;
+	mNextMap += canWrite;
 
 	return p;
 	
-}
-
-void ParticleRenderObject::Unmap()
-{
-	/*mSharedVertexBuffer->Unmap();
-	mMapped = 0;*/
 }
 
 void ParticleRenderObject::SetGlow(bool glow)

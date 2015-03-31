@@ -18,7 +18,7 @@ namespace fastbird
 		void DeletePointLight(IPointLight* pointLight);
 		void Update(float dt);
 
-		void GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst);
+		void GatherPointLightData(BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst);
 
 	};
 }

@@ -40,7 +40,9 @@ namespace fastbird
 		virtual inline IRenderer* GetRenderer() const;
 		virtual inline IScene* GetScene() const;
 		virtual inline IScene* GetOriginalScene() const;
-		virtual void SetSceneOverride(IScene* pScene) { mSceneOverride = pScene; }
+		virtual void SetSceneOverride(IScene* pScene) { if (!mLockSceneOverride) mSceneOverride = pScene; }
+		virtual void LockSceneOverride(bool lock){ mLockSceneOverride = lock; }
+		virtual IScene* GetSceneOverride() const { return mSceneOverride; }
 
 		virtual void UpdateInput();
 		virtual void UpdateFrame(float dt);
@@ -134,6 +136,9 @@ namespace fastbird
 
 		void Render3DUIsToTexture();
 
+		virtual IScene* CreateScene();
+		virtual void DeleteScene(IScene* p);
+
 	private:
 		HWND m_hWnd;
 		SmartPtr<IConsole> mConsole;
@@ -185,6 +190,7 @@ namespace fastbird
 
 		bool mExiting;
 		bool m3DUIEnabled;
+		bool mLockSceneOverride;
 	};
 };
 

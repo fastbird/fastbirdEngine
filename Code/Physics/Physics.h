@@ -27,14 +27,18 @@ namespace fastbird
 		//-------------------------------------------------------------------
 		// Private Functions
 		//-------------------------------------------------------------------
-		void ReportCollisions();
 		btCollisionShape* CreateBulletColShape(CollisionShape* colShape);
 
+		int mRayGroup;
+
 	public:
+		Physics::Physics();
 		Physics::~Physics();
 		virtual void Initilaize();
 		virtual void Deinitilaize();
 		virtual void Update(float dt);
+		// internal only.
+		void _ReportCollisions();
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj);
 		virtual RigidBody* CreateRigidBody(IPhysicsInterface* obj, float mass);
 		virtual RigidBody* CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass);
@@ -48,10 +52,14 @@ namespace fastbird
 		virtual void SetDebugDrawer(IDebugDrawer* debugDrawer);
 		virtual void SetDebugMode(int debugMode);
 
+		
 		virtual void AttachBodies(const std::vector<RigidBody*>& bodies);
+
+		virtual void SetRayCollisionGroup(int group);
 		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result);
 		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result);
 		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result);
 		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except);
+		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b);
 	};
 }

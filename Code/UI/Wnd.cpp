@@ -20,8 +20,8 @@ Wnd::Wnd()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
-		std::bind(&Wnd::MouseConsumer, this, std::placeholders::_1));
+	//RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		//std::bind(&Wnd::MouseConsumer, this, std::placeholders::_1));
 }
 
 Wnd::~Wnd()
@@ -300,9 +300,11 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 										 mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
 									 }
 								 }
-
-								 mTitlebar->SetText(AnsiToWide(val, strlen(val)));
-								 
+								 auto text = TranslateText(val);
+								 if (text.empty())
+									mTitlebar->SetText(AnsiToWide(val));
+								 else
+									 mTitlebar->SetText(AnsiToWide(text.c_str()));
 								 
 								 return true;
 	}
@@ -418,4 +420,24 @@ void Wnd::SetAnimScale(const Vec2& scale, const Vec2& pivot)
 	__super::SetAnimScale(scale, pivot);
 }
 
+
+void Wnd::StartHighlight(float speed)
+{
+	for (auto var : mFrames)
+	{
+		var->StartHighlight(speed);
+	}
+	__super::StartHighlight(speed);
 }
+void Wnd::StopHighlight()
+{
+	for (auto var : mFrames)
+	{
+		var->StopHighlight();
+	}
+
+	__super::StopHighlight();
+}
+
+}
+

@@ -28,6 +28,7 @@ namespace fastbird
 			DropDown,
 			TextBox,
 			ColorRamp,
+			NamedPortrait,
 
 			NUM
 		};
@@ -55,6 +56,7 @@ namespace fastbird
 			"DropDown",
 			"TextBox",
 			"ColorRamp",
+			"NamedPortrait",
 
 			"NUM",
 		};

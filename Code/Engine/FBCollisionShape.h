@@ -28,6 +28,7 @@ namespace fastbird
 		typedef std::pair<bool, float> IResult;
 		IResult intersects(const Ray3& ray, const Transformation& objT) const;
 		bool TestCollision(fastbird::BoundingVolume* pBV, const Transformation& objT) const;
+		Vec3 GetRandomPosInVolume(const Vec3* nearWorld, const Transformation& objT) const;
 
 	private:
 		FBColShape::Enum mColShape;

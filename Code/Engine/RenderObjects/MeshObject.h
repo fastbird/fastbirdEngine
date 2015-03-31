@@ -71,12 +71,14 @@ namespace fastbird
 		virtual const FBCollisionShape* GetCollisionShape(unsigned idx) const { return mCollisionsCloned ? (*mCollisionsCloned)[idx] : 0; }
 		virtual bool CheckNarrowCollision(fastbird::BoundingVolume* pBV) const;
 		virtual Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const;
+		virtual Vec3 GetRandomPosInVolume(const Vec3* nearWorld = 0) const;
 		void DeleteCollisionShapes();
 		virtual void SetUseDynamicVB(BUFFER_TYPE type,  bool useDynamicVB);
 		virtual MapData MapVB(BUFFER_TYPE type, size_t materialGroupIdx);
 		virtual void UnmapVB(BUFFER_TYPE type, size_t materialGroupIdx);
 		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri=0) const;
 		virtual void MakeMaterialIndependent();
+		virtual BoundingVolume* GetAABB() const { return mAABB; }
 
 		struct MaterialGroup
 		{
@@ -124,6 +126,7 @@ namespace fastbird
 		typedef std::vector< FBCollisionShape* > COLLISION_SHAPES;
 		COLLISION_SHAPES mCollisions;
 		COLLISION_SHAPES* mCollisionsCloned;
+		SmartPtr<BoundingVolume> mAABB;
 
 		bool mUseDynamicVB[BUFFER_TYPE_NUM];
 	};

@@ -24,7 +24,7 @@
 #ifndef IEngine_header_included
 #define IEngine_header_included
 #include <CommonLib/SmartPtr.h>
-
+#include <vector>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IInputListener.h>
 
@@ -40,6 +40,7 @@ namespace fastbird
 	class IFont;
 	class Vec2I;
 	class Vec3;
+	class Vec2;
 	class IUIObject;
 	class IMeshObject;
 	class IMeshGroup;
@@ -74,6 +75,8 @@ namespace fastbird
 		virtual inline IScene* GetScene() const = 0;
 		virtual inline IScene* GetOriginalScene() const = 0;
 		virtual void SetSceneOverride(IScene* pScene) = 0;
+		virtual void LockSceneOverride(bool lock) = 0;
+		virtual IScene* GetSceneOverride() const = 0;
 
 		virtual void UpdateInput() = 0;
 		virtual void UpdateFrame(float dt) = 0;
@@ -144,6 +147,10 @@ namespace fastbird
 
 		virtual void AddMarkObject(IObject* mark) = 0;
 		virtual void RemoveMarkObject(IObject* mark) = 0;
+
+		// you have resposible to delete it.
+		virtual IScene* CreateScene() = 0;
+		virtual void DeleteScene(IScene* p) = 0;
 
 #ifdef _FBENGINE_FOR_WINDOWS_
 		// return processed

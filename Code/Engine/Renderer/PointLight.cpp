@@ -11,6 +11,7 @@ namespace fastbird
 		, mLifeTime(lifeTime)
 		, mManualDeletion(manualDeletion)
 		, mAlpha(1.0f)
+		, mEnabled(true)
 	{
 		mColorPowered *= intensity;
 		SetPos(pos);
@@ -73,5 +74,13 @@ namespace fastbird
 	{
 		mAlpha = alpha;
 		mColorPowered = mColor * mIntensity * alpha;
+	}
+
+	void PointLight::SetEnabled(bool enable)
+	{
+		if (mEnabled == enable)
+			return;
+		mEnabled = enable;
+		gFBEnv->pRenderer->RefreshPointLight();
 	}
 }

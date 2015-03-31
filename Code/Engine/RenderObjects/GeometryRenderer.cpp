@@ -45,8 +45,8 @@ GeometryRenderer::GeometryRenderer()
 
 	gFBEnv->pEngine->GetScene()->AddListener(this);
 
-	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/DebugSphere.dae");
-	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/DebugBox.dae");
+	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/objects/Sphere.dae");
+	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugBox.dae");
 
 	//mTriMaterial = IMaterial::CreateMaterial("es/materials/DebugTriangle.material");
 	//assert(mTriMaterial);
@@ -160,12 +160,13 @@ void GeometryRenderer::OnBeforeRenderingTransparents()
 
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 	// object constant buffer
-	mInputLayout->Bind();
-	mLineShader->Bind();
-	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
-	pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
+	
 	if (lineCount > 0)
 	{
+		mInputLayout->Bind();
+		mLineShader->Bind();
+		pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
+		pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
 		while (lineCount)
 		{
 			MapData mapped = mVertexBuffer->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
@@ -196,7 +197,6 @@ void GeometryRenderer::Render()
 	D3DEventMarker mark("GeometryRenderer::Render()");
 	
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
-	pRenderer->SetAlphaBlendState();
 	// object constant buffer
 	BindRenderStates();
 	pRenderer->SetAlphaBlendState();
@@ -300,7 +300,12 @@ void GeometryRenderer::Render()
 					
 					Color colorStart(curProcessingLine.mColor);
 					Color colorEnd(curProcessingLine.mColore);
-					auto left = camDir.Cross(curProcessingLine.mEnd - curProcessingLine.mStart).NormalizeCopy();
+					auto left = camDir.Cross((curProcessingLine.mEnd - curProcessingLine.mStart).NormalizeCopy());
+					auto length = left.Normalize();
+					if (length < 0.05f)
+					{
+						left = gFBEnv->pRenderer->GetCamera()->GetRight();
+					}
 					THICK_LINE_VERTEX vertices[6] =
 					{
 						THICK_LINE_VERTEX(curProcessingLine.mStart + left * halfThick, colorStart.Get4Byte(),
@@ -333,7 +338,7 @@ void GeometryRenderer::Render()
 	if (mThickLineMaterial->IsGlow())
 		pRenderer->UnSetGlowRenderTarget();
 
-
+	BindRenderStates();
 	if (mSphereMesh)
 	{
 		D3DEventMarker mark("DebugHud::Render - Spheres()");
@@ -345,8 +350,8 @@ void GeometryRenderer::Render()
 			t.SetTranslation(sphere.mPos);
 			t.GetHomogeneous(mObjectConstants.gWorld);
 			// only world are available. other matrix will be calculated in the shader
-			//mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
-			//mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetProjMat() * mObjectConstants.gWorldView;
+			mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
+			mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetProjMat() * mObjectConstants.gWorldView;
 			gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 			mSphereMesh->GetMaterial()->SetMaterialParameters(0, sphere.mColor.GetVec4());
 			mSphereMesh->GetMaterial()->Bind(true);

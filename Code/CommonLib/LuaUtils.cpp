@@ -114,7 +114,7 @@ namespace fastbird
 
 	bool CheckLuaGlobalExist(lua_State* L, const char* name)
 	{
-		LUA_STACK_WATCHER watcher(L);
+		LUA_STACK_WATCHER watcher(L, "bool CheckLuaGlobalExist(lua_State* L, const char* name)");
 		lua_getglobal(L, name);
 		bool exist = !lua_isnil(L, -1);
 		lua_pop(L, 1);
@@ -201,6 +201,20 @@ namespace fastbird
 		
 		}
 		return std::string();
+	}
+
+	bool GetLuaVarAsBoolean(lua_State* L, const char* varName)
+	{
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return lua_toboolean(L, -1)!=0;
+	}
+
+	void SetLuaVar(lua_State* L, const char* varName, bool value)
+	{
+		LUA_STACK_WATCHER w(L, "void SetLuaVar(lua_State* L, const char* varName, bool value)");
+		lua_pushboolean(L, value);
+		lua_setglobal(L, varName);
 	}
 }
 

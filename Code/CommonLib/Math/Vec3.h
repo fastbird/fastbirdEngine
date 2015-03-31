@@ -263,6 +263,10 @@ namespace fastbird
 			return Vec3(z, z, x);
 		}
 
+		Vec2 xy(){
+			return Vec2(x, y);
+		}
+
 	public:
 		float x, y, z;
 
@@ -328,7 +332,7 @@ struct luaU_Impl<fastbird::Vec3>
 {
 	static fastbird::Vec3 luaU_check(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec3 luaU_check(lua_State* L, int index)");
 		luaL_checktype(L, index, LUA_TTABLE);
 		fastbird::Vec3 ret;
 		lua_rawgeti(L, index, 1);
@@ -345,7 +349,7 @@ struct luaU_Impl<fastbird::Vec3>
 
 	static fastbird::Vec3 luaU_to(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Vec3 luaU_to(lua_State* L, int index)");
 		fastbird::Vec3 ret;
 		lua_rawgeti(L, index, 1);
 		ret.x = (float)lua_tonumber(L, -1);

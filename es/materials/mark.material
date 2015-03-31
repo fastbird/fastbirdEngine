@@ -11,7 +11,7 @@
 	</Textures>
 	<MaterialParameters>
 	</MaterialParameters>
-	<InputLayout>
+	<!--InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-	</InputLayout>
+	</InputLayout-->
 </Material>

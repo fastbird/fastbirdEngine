@@ -97,7 +97,6 @@ namespace fastbird
 			return;
 		}
 		*this = Vec3(1, 0, 0);
-		return;
 
 	}
 }

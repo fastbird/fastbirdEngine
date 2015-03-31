@@ -57,6 +57,8 @@ namespace fastbird
 
 		virtual bool GetVisible(const char* uiname) const = 0;
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val) = 0;
 		virtual void LockFocus(bool lock) = 0;
 		virtual void CloseAllLuaUI()=0;
 
@@ -68,6 +70,10 @@ namespace fastbird
 		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win) = 0;
 
 		virtual void MoveToBottom(const char* moveToBottom) = 0;
+		virtual void HideUIsExcept(const std::vector<std::string>& excepts)=0;
+
+		virtual void HighlightUI(const char* uiname)=0;
+		virtual void StopHighlightUI(const char* uiname)=0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

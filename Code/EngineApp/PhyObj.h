@@ -48,7 +48,7 @@ public:
 	virtual const fastbird::Quat& GetRot();
 	virtual void SetPosRot(const fastbird::Vec3& pos, const fastbird::Quat& rot);
 
-	virtual void OnCollision(const CollisionContactInfo& contactInfo);
+	virtual bool OnCollision(const CollisionContactInfo& contactInfo);
 	virtual void AddCloseObjects(void* gamePtr);
 	virtual void OnRigidBodyUpdated(const fastbird::RigidBodyEvents& data){}
 

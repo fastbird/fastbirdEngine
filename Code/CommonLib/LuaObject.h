@@ -93,7 +93,7 @@ namespace fastbird
 		template <class T>
 		void SetSeqTemplate(int n, T v)
 		{
-			LUA_STACK_WATCHER w(mL);
+			LUA_STACK_WATCHER w(mL, "void SetSeqTemplate(int n, T v)");
 			PushToStack();
 			luaW_push(mL, v);
 			lua_rawseti(mL, -2, n);
@@ -132,6 +132,8 @@ namespace fastbird
 		bool CallWithManualArgs(unsigned numArgs, unsigned numRets);
 
 		void Clear();
+
+		unsigned GetLen() const;
 
 	private:
 		void CheckType();

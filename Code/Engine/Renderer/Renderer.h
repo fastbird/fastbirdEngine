@@ -223,6 +223,7 @@ protected:
 	bool mUseFilmicToneMapping;
 	float mLuminance;
 	unsigned mFrameLuminanceCalced;
+	float mFadeAlpha;
 
 public:
 	Renderer();
@@ -251,14 +252,14 @@ public:
 	virtual ICamera* GetCamera() const;
 	virtual void InitFrameProfiler(float dt);
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
-	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color);
-	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color);
-	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color);
-	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color);
+	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24);
+	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 24);
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 24);
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 24);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color);
+		const Color& color, float size = 24);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
-		const Color& color);
+		const Color& color, float size = 24);
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);
@@ -422,7 +423,7 @@ public:
 	void RenderDebugRenderTargets();
 	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName);
 
-	virtual void GatherPointLightData(const Vec3& pos, POINT_LIGHT_CONSTANTS* plConst);
+	virtual void GatherPointLightData(BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst);
 	virtual void RefreshPointLight();
 	virtual bool NeedToRefreshPointLight() const { return mRefreshPointLight; }
 
@@ -436,6 +437,8 @@ public:
 	void UseFilmicToneMapping(bool filmic);
 	void CreateToneMappingShader();
 
+	virtual void SetFadeAlpha(float alpha);
+	void RenderFade();
 
 };
 
@@ -450,26 +453,6 @@ inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DES
 		int cmp = memcmp(&left[0], &right[0], sizeof(INPUT_ELEMENT_DESC)*size);
 		if (cmp < 0)
 			return true;
-
-		/*for (DWORD i=0; i<size; i++)
-		{
-			if (left[i].mInputSlot < right[i].mInputSlot)
-			{
-				return true;
-			}
-			else if (left[i].mInputSlot == right[i].mInputSlot)
-			{
-				if (left[i] < right[i])
-				{
-					return true;
-				}					
-			}
-			else
-			{
-				
-				return false;
-			}
-		}*/
 	}
 	return false;
 }

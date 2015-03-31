@@ -1,3 +1,4 @@
+
 #include <Engine/StdAfx.h>
 #include <Engine/RenderObjects/MeshObject.h>
 #include <Engine/IRenderer.h>
@@ -41,6 +42,7 @@ namespace fastbird
 		{
 			mUseDynamicVB[i] = false;
 		}
+		mAABB = BoundingVolume::Create(BoundingVolume::BV_AABB);
 	}
 
 	//----------------------------------------------------------------------------
@@ -71,12 +73,12 @@ namespace fastbird
 			{
 				mAnimatedTransformation = mTransformation * mAnim->GetResult();
 				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
-				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
+				gFBEnv->pRenderer->GatherPointLightData(mAABB, mAnimatedTransformation, &mPointLightConstants);
 			}
 			else
 			{
 				mTransformation.GetHomogeneous(mObjectConstants.gWorld);
-				gFBEnv->pRenderer->GatherPointLightData(mTransformation.GetTranslation(), &mPointLightConstants);
+				gFBEnv->pRenderer->GatherPointLightData(mAABB, mTransformation, &mPointLightConstants);
 			}		
 			pointLightDataGathered = true;
 			
@@ -87,7 +89,7 @@ namespace fastbird
 			{
 				mAnimatedTransformation = mTransformation * mAnim->GetResult();
 				mAnimatedTransformation.GetHomogeneous(mObjectConstants.gWorld);
-				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
+				gFBEnv->pRenderer->GatherPointLightData(mAABB, mAnimatedTransformation, &mPointLightConstants);
 				pointLightDataGathered = true;
 			}
 		}
@@ -96,11 +98,11 @@ namespace fastbird
 		{
 			if (mAnim)
 			{
-				gFBEnv->pRenderer->GatherPointLightData(mAnimatedTransformation.GetTranslation(), &mPointLightConstants);
+				gFBEnv->pRenderer->GatherPointLightData(mAABB, mAnimatedTransformation, &mPointLightConstants);
 			}
 			else
 			{
-				gFBEnv->pRenderer->GatherPointLightData(mTransformation.GetTranslation(), &mPointLightConstants);
+				gFBEnv->pRenderer->GatherPointLightData(mAABB, mTransformation, &mPointLightConstants);
 			}
 		}
 	}
@@ -270,7 +272,7 @@ namespace fastbird
 			}
 
 			gFBEnv->mSilouetteRendered = true;
-			mRenderHighlight = false;
+			//mRenderHighlight = false;
 
 			if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
 				pRenderer->SetHDRTarget();
@@ -471,6 +473,7 @@ namespace fastbird
 		}
 		cloned->mAuxCloned = mAuxCloned ? mAuxCloned : (AUXILIARIES*)&mAuxil;
 		cloned->mCollisionsCloned = mCollisionsCloned ? mCollisionsCloned : (COLLISION_SHAPES*)&mCollisions;
+		cloned->mAABB = mAABB;
 		return cloned;
 	}
 
@@ -716,7 +719,7 @@ namespace fastbird
 	void MeshObject::EndModification(bool keepMeshData)
 	{
 		mModifying = false;
-		mBoundingVolume->StartComputeFromData();
+		mAABB->StartComputeFromData();
 		FB_FOREACH(it, mMaterialGroups)
 		{
 			if (!it->mPositions.empty() && gFBEnv && gFBEnv->pRenderer)
@@ -725,7 +728,7 @@ namespace fastbird
 					&it->mPositions[0], sizeof(Vec3), it->mPositions.size(),
 					mUseDynamicVB[BUFFER_TYPE_POSITION] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
 					mUseDynamicVB[BUFFER_TYPE_POSITION] ? BUFFER_CPU_ACCESS_WRITE : BUFFER_CPU_ACCESS_NONE);
-				mBoundingVolume->AddComputeData(&it->mPositions[0], it->mPositions.size());
+				mAABB->AddComputeData(&it->mPositions[0], it->mPositions.size());
 			}
 			else
 			{
@@ -784,7 +787,9 @@ namespace fastbird
 
 
 		}
-		mBoundingVolume->EndComputeFromData();
+		mAABB->EndComputeFromData();
+		mBoundingVolume->SetCenter(mAABB->GetCenter());
+		mBoundingVolume->SetRadius(mAABB->GetRadius());
 		mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + mTransformation.GetTranslation());
 		const Vec3& s = mTransformation.GetScale();
 		mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius() * std::max(std::max(s.x, s.y), s.z));
@@ -1091,5 +1096,18 @@ namespace fastbird
 		}
 
 		return Ray3::IResult(collided, minDist);
+	}
+
+	Vec3 MeshObject::GetRandomPosInVolume(const Vec3* nearWorld) const
+	{
+		unsigned num = GetNumCollisionShapes();
+		if (!num)
+			return Vec3::ZERO;
+
+		auto index = Random((unsigned)0, num-1);
+		assert(index < num);
+		auto cs = GetCollisionShape(index);
+		assert(cs);
+		return cs->GetRandomPosInVolume(nearWorld, mTransformation);
 	}
 }

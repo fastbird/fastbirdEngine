@@ -42,7 +42,6 @@ public:
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
 	void SetSpecularColor(const Vec4& color);
-
 private:
 
 	ImageBox* ImageBox::CreateImageBox();
@@ -65,6 +64,6 @@ private:
 	float mPlayingTime;
 	unsigned mCurFrame;
 	bool mAnimation;
-	bool mImageFixedSize;
+	bool mImageFixedSize;	
 };
 }

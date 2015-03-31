@@ -188,3 +188,15 @@ bool BVSphere::Contain(const Vec3& pos) const
 {
 	return (mCenter - pos).Length() < mRadius;
 }
+
+Vec3 BVSphere::GetRandomPosInVolume(const Vec3* nearLocal) const
+{
+	Vec3 pos = Vec3(Random(0.f, mRadius), Random(0.f, mRadius), Random(0.f, mRadius));
+	if (nearLocal)
+	{
+		pos = Lerp(pos, *nearLocal, Random(0.5f, 1.0f));
+	}
+	pos.Normalize();
+	return mCenter + pos*mRadius;
+	
+}

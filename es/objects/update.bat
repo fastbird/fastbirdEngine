@@ -1,0 +1,1 @@
+copy D:\Blender\scifi\es\*.dae .\

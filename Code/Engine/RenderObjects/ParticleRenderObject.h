@@ -9,6 +9,7 @@ namespace fastbird
 		static const int MAX_SHARED_VERTICES;
 		static ParticleRenderObject* GetRenderObject(const char* texturePath);
 		static void ClearParticles();
+		static void EndUpdateParticles();
 		static void FinalizeRenderObjects();
 		static size_t GetNumRenderObject();
 		static size_t GetNumDrawCalls();
@@ -24,6 +25,7 @@ namespace fastbird
 		virtual void SetGlow(bool glow);
 
 		void Clear();
+		void EndUpdate();
 		void SetDoubleSided(bool set);
 		void SetTexture(const char* texturePath);
 
@@ -38,8 +40,7 @@ namespace fastbird
 			DWORD mColor;
 		};
 
-		Vertex* Map(UINT numVertices);
-		void Unmap();
+		Vertex* Map(UINT numVertices, unsigned& canWrite);
 
 
 	private:
@@ -48,6 +49,9 @@ namespace fastbird
 		SmartPtr<IMaterial> mMaterial;
 		static size_t mNumDrawCalls;
 		static size_t mNumDrawPrimitives;
+		unsigned mMaxVertices;
+		unsigned mLastFrameNumVertices;
+		std::string mTextureName;
 
 		SmartPtr<IVertexBuffer> mVertexBuffer;
 		UINT mNextMap;

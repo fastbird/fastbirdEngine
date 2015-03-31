@@ -21,13 +21,18 @@ namespace fastbird
 #include <CommonLib/Math/Ray3.h>
 #include <CommonLib/Math/Transformation.h>
 
-
-
 namespace fastbird
 {
 	inline bool IsNaN(float f)
 	{
 		return f != f;
+	}
+
+	template<typename T>
+	inline bool IsInf(T value)
+	{
+		return std::numeric_limits<T>::has_infinity &&
+			value == std::numeric_limits<T>::infinity();
 	}
 
 	inline float Degree(float radian)
@@ -55,9 +60,29 @@ namespace fastbird
 		return (int)(v + 0.5f);
 	}
 
-	inline Vec2I Round(Vec2 v)
+	inline Vec2I Round(const Vec2& v)
 	{
 		return Vec2I(Round(v.x), Round(v.y));
+	}
+
+	inline Vec3I Round(const Vec3& v)
+	{
+		return Vec3I(Round(v.x), Round(v.y), Round(v.z));
+	}
+
+	inline Vec3 FixPrecisionScaleVector(const Vec3& v)
+	{
+		Vec3 fixedScale = v;
+		Vec3I rounded = Round(v);
+		if (rounded.x == rounded.y && rounded.x == rounded.z)
+		{
+			// uniform
+			if (abs((float)rounded.x - v.x) < 0.00001f)
+			{
+				fixedScale.x = fixedScale.y = fixedScale.z = (float)rounded.x;
+			}
+		}
+		return fixedScale;
 	}
 
 	inline float log2(float v)
@@ -127,6 +152,8 @@ namespace fastbird
 	template <class T>
 	inline T Lerp(const T& a, const T& b, float lp)
 	{
+		lp = std::min(lp, 1.0f);
+		lp = std::max(0.f, lp);
 		return a * (1.0f-lp) + b * lp;
 	}
 
@@ -322,4 +349,13 @@ namespace fastbird
 		float pos = v - min;
 		return pos / size;
 	}
+
+	inline float Squared(float x)
+	{
+		return x*x;
+	}
+
+	// outPos and TimeToTarget have to be specified both if you need.
+	void CalcInterceptPosition(const Vec3& firePos, float ammoSpeed, const Vec3& toTargetDir, float distance, const Vec3& targetVel,
+		Vec3& outVelocity, Vec3* outPos = 0, float* timeToTarget = 0);
 }

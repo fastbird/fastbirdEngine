@@ -8,6 +8,10 @@
 #include <Physics/RayResult.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
+#include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
+#include <BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h>
+#include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
+#include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 
 using namespace fastbird;
 
@@ -24,8 +28,20 @@ IPhysics* IPhysics::GetPhysics()
 	return sp;
 }
 
+Physics::Physics()
+	: mRayGroup(0x40) // default of the current game under development
+{
+
+}
+
 Physics::~Physics()
 {
+}
+
+void TickCallback(btDynamicsWorld *world, btScalar timeStep) 
+{
+	auto physics = (Physics*)IPhysics::GetPhysics();
+	physics->_ReportCollisions();
 }
 
 void Physics::Initilaize()
@@ -44,9 +60,14 @@ void Physics::Initilaize()
 	mSolver = sol;
 
 	mDynamicsWorld = FB_NEW_ALIGNED(btDiscreteDynamicsWorld, MemAlign)(mDispatcher, mBroadphase, mSolver, mCollisionConfiguration);
+	mDynamicsWorld->getDispatchInfo().m_useContinuous = true;
 
 	mDynamicsWorld->setGravity(btVector3(0, 0, 0));
 	mDynamicsWorld->setDebugDrawer(&mDebugDrawer);
+	mDynamicsWorld->setInternalTickCallback(TickCallback);
+
+	//auto& info = mDynamicsWorld->getSolverInfo();
+	//info.m_splitImpulse = 1;
 }
 
 void Physics::Deinitilaize()
@@ -106,41 +127,32 @@ void Physics::Update(float dt)
 		{
 			mDynamicsWorld->debugDrawWorld();
 		}
-		ReportCollisions();
 	}
 }
 
-void Physics::ReportCollisions()
+void Physics::_ReportCollisions()
 {
-	/*auto& pairs = mDynamicsWorld->getBroadphase()->getOverlappingPairCache()->getOverlappingPairArray();
-	auto numPairs = pairs.size();
-	btManifoldArray manifoldArray;
-	for (int i = 0; i < numPairs; ++i)
-	{
-		manifoldArray.clear();
-
-		const auto& pair = pairs[i];
-		auto* collisionPair = mDynamicsWorld->getPairCache()->findPair(pair.m_pProxy0, pair.m_pProxy1);
-		if (!collisionPair)
-			continue;
-
-		if (collisionPair->m_algorithm)
-			collisionPair->m_algorithm->getAllContactManifolds(manifoldArray);
-
-		for (int j = 0; j < manifoldArray.size(); j++)
-		{
-
-		}
-	}*/
-
 	// manifolds
 	int numManifolds = mDynamicsWorld->getDispatcher()->getNumManifolds();
 	for (int i = 0; i<numManifolds; i++)
 	{
 		btPersistentManifold* contactManifold = mDynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
-		const RigidBodyImpl* obA = (RigidBodyImpl*)contactManifold->getBody0()->getUserPointer();
-		const RigidBodyImpl* obB = (RigidBodyImpl*)contactManifold->getBody1()->getUserPointer();
+		auto colObjA = contactManifold->getBody0();
+		auto colObjB = contactManifold->getBody1();
+		if (!colObjA || !colObjB)
+			continue;
+		int numContacts = contactManifold->getNumContacts();
+		if (numContacts == 0)
+			continue;
+
+		const RigidBodyImpl* obA = (RigidBodyImpl*)colObjA->getUserPointer();
+		const RigidBodyImpl* obB = (RigidBodyImpl*)colObjB->getUserPointer();
 		
+		if (!obA || !obB)
+		{ 
+			continue;
+		}
+
 		IPhysicsInterface* a = (IPhysicsInterface*)obA->GetPhysicsInterface();
 		IPhysicsInterface* b = (IPhysicsInterface*)obB->GetPhysicsInterface();
 		if (a && b)
@@ -148,8 +160,11 @@ void Physics::ReportCollisions()
 			a->AddCloseObjects(obB->GetGamePtr());
 			b->AddCloseObjects(obA->GetGamePtr());
 		}
-
-		int numContacts = contactManifold->getNumContacts();
+		else
+		{
+			continue;
+		}
+		
 		for (int j = 0; j<numContacts; j++)
 		{
 			btManifoldPoint& pt = contactManifold->getContactPoint(j);
@@ -161,14 +176,16 @@ void Physics::ReportCollisions()
 			float impulse = pt.getAppliedImpulse();
 			if (impulse>0)
 			{				
-				if (a && b)
-				{
-					IPhysicsInterface::CollisionContactInfo contactInfo(obB->GetGamePtr(), BulletToFB(ptB), BulletToFB(normal),
-						impulse, pt.m_index0, pt.m_index1);
+				IPhysicsInterface::CollisionContactInfo contactInfo(obB->GetGamePtr(), BulletToFB(ptB), BulletToFB(normal),
+					impulse, pt.m_index0, pt.m_index1);
 						
-					a->OnCollision(contactInfo);
+				bool processed = a->OnCollision(contactInfo);
+				if (!processed)
+				{
+					IPhysicsInterface::CollisionContactInfo contactInfo(obA->GetGamePtr(), BulletToFB(ptA), BulletToFB(-normal),
+						impulse, pt.m_index1, pt.m_index0);
+					b->OnCollision(contactInfo);
 				}
-				contactManifold->clearManifold();
 				break;
 			}
 		}
@@ -541,6 +558,11 @@ void Physics::AttachBodies(const std::vector<RigidBody*>& bodies)
 	}	
 }
 
+void Physics::SetRayCollisionGroup(int group)
+{
+	mRayGroup = group;
+}
+
 bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result)
 {
 	auto from = FBToBullet(fromWorld);
@@ -581,6 +603,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 
 	};
 	MyclosestRayResultCallBack cb(from, to);
+	cb.m_collisionFilterGroup = mRayGroup;
 	cb.m_collisionFilterMask = mask;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
@@ -595,10 +618,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 }
 
 bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result)
-{
-	auto from = FBToBullet(fromWorld);
-	auto to = FBToBullet(toWorld);
-	
+{	
 	struct ObjectHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback
 	{
 		int mIndex;
@@ -648,10 +668,17 @@ bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayRe
 
 	if (!result.mTargetBody)
 		return false;
+
+	auto from = FBToBullet(fromWorld);
+	auto to = FBToBullet(toWorld);
+
 	ObjectHitsRayResultCallback cb(from, to, result.mTargetBody);
 	RigidBodyImpl* rigidBody = (RigidBodyImpl*)result.mTargetBody;
-	cb.m_collisionFilterMask = rigidBody->getCollisionFlags();
+	cb.m_collisionFilterMask = -1;
+	cb.m_collisionFilterGroup = -1;
 	//cb.m_flags = btTriangleRaycastCallback::kF_FilterBackfaces;
+	if (from == to)
+		return false;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
@@ -709,6 +736,7 @@ bool Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, R
 
 	MyAllHitsRayResultCallback cb(from, to);
 	cb.m_collisionFilterMask = mask;
+	cb.m_collisionFilterGroup = mRayGroup;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
@@ -772,4 +800,92 @@ void Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit
 	btVector3 max = FBToBullet(aabb.GetMax());
 	AABBOverlapCallback callback(min, max, colMask, limit, ret, except);
 	mDynamicsWorld->getBroadphase()->aabbTest(min, max, callback);
+}
+
+float Physics::GetDistanceBetween(RigidBody* a, RigidBody* b)
+{
+	if (!a || !b)
+	{
+		return FLT_MAX;
+	}
+	float distance = FLT_MAX;
+	RigidBodyImpl* aImpl = (RigidBodyImpl*)a;
+	RigidBodyImpl* bImpl = (RigidBodyImpl*)b;
+	auto aColShape = aImpl->getCollisionShape();
+	auto bColShape = bImpl->getCollisionShape();
+	btCompoundShape* aCompound = aColShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE ? (btCompoundShape*)aColShape : 0;
+	btCompoundShape* bCompound = bColShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE ? (btCompoundShape*)bColShape : 0;
+	if (aCompound && bCompound)
+	{
+		unsigned anum = aCompound->getNumChildShapes();
+		unsigned bnum = bCompound->getNumChildShapes();
+		for (unsigned ai = 0; ai < anum; ai++)
+		{
+			for (unsigned bi = 0; bi < bnum; bi++)
+			{
+				auto achild = aCompound->getChildShape(ai);
+				assert(achild->getShapeType() >= BOX_SHAPE_PROXYTYPE && achild->getShapeType() < CONCAVE_SHAPES_START_HERE);
+				auto bchild = bCompound->getChildShape(bi);
+				assert(bchild->getShapeType() >= BOX_SHAPE_PROXYTYPE && bchild->getShapeType() < CONCAVE_SHAPES_START_HERE);
+				btVoronoiSimplexSolver sGjkSimplexSolver;
+				btGjkEpaPenetrationDepthSolver epaSolver;
+				btPointCollector gjkOutput;
+				btGjkPairDetector convexConvex((btConvexShape*)achild, (btConvexShape*)bchild, &sGjkSimplexSolver, &epaSolver);
+				btGjkPairDetector::ClosestPointInput input;
+				input.m_transformA = aImpl->getWorldTransform() * aCompound->getChildTransform(ai);
+				input.m_transformB = bImpl->getWorldTransform() * bCompound->getChildTransform(bi);
+
+				convexConvex.getClosestPoints(input, gjkOutput, 0);
+				distance = std::min(gjkOutput.m_distance, distance);
+			}
+		}
+	}
+
+	if (!aCompound && bCompound)
+	{
+		std::swap(aCompound, bCompound);
+		std::swap(a, b);
+		std::swap(aImpl, bImpl);
+		std::swap(aColShape, bColShape);
+	}
+
+	if (aCompound && !bCompound)
+	{
+		unsigned anum = aCompound->getNumChildShapes();
+		for (unsigned ai = 0; ai < anum; ai++)
+		{
+			auto achild = aCompound->getChildShape(ai);
+			assert((achild->getShapeType() >= BOX_SHAPE_PROXYTYPE && achild->getShapeType() < CONCAVE_SHAPES_START_HERE) || bColShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE);
+			assert((bColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && bColShape->getShapeType() < CONCAVE_SHAPES_START_HERE) || bColShape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE);
+			btVoronoiSimplexSolver sGjkSimplexSolver;
+			btGjkEpaPenetrationDepthSolver epaSolver;
+			btPointCollector gjkOutput;
+			btGjkPairDetector convexConvex((btConvexShape*)achild, (btConvexShape*)bColShape, &sGjkSimplexSolver, &epaSolver);
+			btGjkPairDetector::ClosestPointInput input;
+			input.m_transformA = aImpl->getWorldTransform() * aCompound->getChildTransform(ai);
+			input.m_transformB = bImpl->getWorldTransform();
+
+			convexConvex.getClosestPoints(input, gjkOutput, 0);
+			distance = std::min(gjkOutput.m_distance, distance);
+		}
+	}
+
+	else if (!aCompound && !bCompound)
+	{
+		assert(aColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && aColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
+		assert(bColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && bColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
+		btVoronoiSimplexSolver sGjkSimplexSolver;
+		btGjkEpaPenetrationDepthSolver epaSolver;
+		btPointCollector gjkOutput;
+		btGjkPairDetector convexConvex((btConvexShape*)aColShape, (btConvexShape*)bColShape, &sGjkSimplexSolver, &epaSolver);
+		btGjkPairDetector::ClosestPointInput input;
+		input.m_transformA = aImpl->getWorldTransform();
+		input.m_transformB = bImpl->getWorldTransform();
+
+		convexConvex.getClosestPoints(input, gjkOutput, 0);
+		distance = std::min(gjkOutput.m_distance, distance);
+	}
+	
+
+	return distance;
 }

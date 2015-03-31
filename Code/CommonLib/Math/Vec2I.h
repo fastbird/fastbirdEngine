@@ -69,6 +69,13 @@ namespace fastbird
 			return !operator==(v);
 		}
 
+		Vec2I& operator+=(const Vec2I& v)
+		{
+			x += v.x;
+			y += v.y;
+			return *this;
+		}
+
 		bool operator<(const Vec2I& v) const;
 
 		static const Vec2I ZERO;

@@ -19,7 +19,7 @@ static ConsoleCommand ccSetFov("SetFov", SetFov, "SetFov");
 static ConsoleCommand ccClear("Clear", Clear, "Clear console messsage");
 EngineCommand::EngineCommand()
 {
-	WheelSens = gFBEnv->pScriptSystem->GetRealVariable("WheelSens", 0.01f);
+	WheelSens = gFBEnv->pScriptSystem->GetRealVariable("WheelSens", 0.005f);
 	REGISTER_CVAR(WheelSens, WheelSens, CVAR_CATEGORY_CLIENT, "WheelSensitivity");
 
 	MouseSens = gFBEnv->pScriptSystem->GetRealVariable("MouseSens", 0.03f);

@@ -38,6 +38,7 @@ namespace fastbird
 
 		void Expand(float e);
 		virtual bool Contain(const Vec3& pos) const;
+		virtual Vec3 GetRandomPosInVolume(const Vec3* nearLocal = 0) const;
 	
 
 	private:

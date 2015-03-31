@@ -46,8 +46,9 @@ void DropDown::OnCreated()
 	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 	mButton->SetSize(Vec2I(24, 24));
+	mButton->SetProperty(UIProperty::ALIGNH, "right");
 	Vec2 btnPos = mWNPos;
-	//btnPos.x += mWNSize.x;
+	btnPos.x += mWNSize.x;
 	mButton->SetWNPos(btnPos);
 	mButton->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	mButton->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");

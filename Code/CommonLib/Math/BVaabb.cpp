@@ -146,11 +146,21 @@ bool BVaabb::TestIntersection(const Ray3& ray) const
 	return ret.first;
 }
 
+
 bool BVaabb::TestIntersection(BoundingVolume* pBV) const
 {
-	float distSQ = pBV->GetCenter().DistanceToSQ(mCenter);
-	float radiusSQ = GetRadius() + pBV->GetRadius();
-	return distSQ < radiusSQ*radiusSQ;
+	float R = pBV->GetRadius();
+	const auto& S = pBV->GetCenter();
+	float dist_squared = R * R;
+	const auto& C1 = mAABB.GetMin();
+	const auto& C2 = mAABB.GetMax();	
+	if (S.x < C1.x) dist_squared -= Squared(S.x - C1.x);
+	else if (S.x > C2.x) dist_squared -= Squared(S.x - C2.x);
+	if (S.y < C1.y) dist_squared -= Squared(S.y - C1.y);
+	else if (S.y > C2.y) dist_squared -= Squared(S.y - C2.y);
+	if (S.z < C1.z) dist_squared -= Squared(S.z - C1.z);
+	else if (S.z > C2.z) dist_squared -= Squared(S.z - C2.z);
+	return dist_squared > 0;
 }
 
 void BVaabb::SetAABB(const AABB& aabb)
@@ -190,4 +200,37 @@ bool BVaabb::Contain(const Vec3& pos) const
 {
 	return mAABB.Contain(pos);
 }
+
+Vec3 BVaabb::GetRandomPosInVolume(const Vec3* nearLocal) const
+{
+	const auto& mn = mAABB.GetMin();
+	const auto& mx = mAABB.GetMax();
+	auto pos = Random(mAABB.GetMin(), mAABB.GetMax());
+	if (nearLocal)
+	{
+		pos = Lerp(pos, *nearLocal, Random(0.5f, 1.0f));
+	}
+	Vec3 dir = (pos - mAABB.GetCenter()).NormalizeCopy();
+	Ray3 ray(pos, -dir);
+	Vec3 normal;
+	Ray3::IResult ret = ray.intersects(mAABB, normal);
+	if (ret.first)
+	{
+		if (mAABB.Contain(pos))
+		{
+			return pos + dir * ret.second;
+		}
+		else
+		{
+			return pos - dir * ret.second;
+		}
+		
+	}
+	else
+	{
+		return pos;
+	}
+
+}
+
 }

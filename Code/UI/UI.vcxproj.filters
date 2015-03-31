@@ -84,6 +84,9 @@
     <ClInclude Include="ColorRampComp.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="NamedPortrait.h">
+      <Filter>Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -163,6 +166,9 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="ColorRampComp.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="NamedPortrait.cpp">
       <Filter>Components</Filter>
     </ClCompile>
   </ItemGroup>

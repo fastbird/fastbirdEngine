@@ -70,7 +70,7 @@ namespace fastbird
 		bool mMouseDragStartInHere;
 
 		Vec2 mDestNPos;
-		float mAnimationSpeed;				
+		float mAnimationSpeed;
 		VectorMap<std::string, IUIAnimation*> mAnimations;
 		std::wstring mTooltipText;
 		// this is not related to mAnimation(IUIAnimation)
@@ -95,10 +95,9 @@ namespace fastbird
 		bool mLockTextSizeChange; // for changing the ui size by text size (MATCH_SIZE Property)
 		bool mStopScissorParent;
 		bool mInheritVisibleTrue;
-		bool mInvalidateMouse;
 
 		bool mShowAnimation;
-		bool mHideAnimation;		
+		bool mHideAnimation;
 		bool mPivot;
 		bool mRender3D;
 		bool mModal;
@@ -106,6 +105,11 @@ namespace fastbird
 		Vec2I mRenderTargetSize;
 
 		Vec2I mTextGap;
+
+		// for highlight
+		float mHighlightSpeed;
+		float mCurHighlightTime;
+		bool mGoingBright;
 
 	public:
 		WinBase();
@@ -135,7 +139,7 @@ namespace fastbird
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
 		virtual unsigned GetNumChildren() const { return 0; }
 		virtual void RemoveAllEvents(bool includeChildren);
-		virtual void SetName(const char* name);		
+		virtual void SetName(const char* name);
 		virtual const char* GetName() const;
 		virtual void ClearName();
 		virtual void SetSize(const fastbird::Vec2I& size);
@@ -150,7 +154,7 @@ namespace fastbird
 		virtual void SetNSizeX(float x);
 		virtual void SetNSizeY(float y);
 
-		virtual void SetWNSize(const fastbird::Vec2& size);		
+		virtual void SetWNSize(const fastbird::Vec2& size);
 		virtual void SetNPos(const fastbird::Vec2& pos); // normalized pos (0.0~1.0)
 		virtual void SetNPosX(float x);
 		virtual void SetNPosY(float y);
@@ -158,11 +162,11 @@ namespace fastbird
 		void SetAspectRatio(float ratio) { mAspectRatio = ratio; }
 		virtual void SetSizeModificator(const Vec2I& sizemod);
 
-		virtual const Vec2& GetWNPos() const { return mWNPos;}
+		virtual const Vec2& GetWNPos() const { return mWNPos; }
 		virtual Vec2 GetFinalPos() const { return mWNPos + mWNPosOffset; }
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
-		virtual const Vec2& GetWNSize() const { return mWNSize;}
+		virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
@@ -172,7 +176,7 @@ namespace fastbird
 		virtual bool GetUseAbsYPos() const { return mUseAbsoluteYPos; }
 		virtual void SetUseAbsXSize(bool use) { mUseAbsoluteXSize = use; }
 		virtual void SetUseAbsYSize(bool use) { mUseAbsoluteYSize = use; }
-		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize;  }
+		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize; }
 		virtual bool GetUseAbsYSize() const { return mUseAbsoluteXSize; }
 
 		virtual bool SetVisible(bool show);
@@ -187,6 +191,7 @@ namespace fastbird
 		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual void OnFocusLost(){}
 		virtual void OnFocusGain(){}
+		std::string TranslateText(const char* text);
 		virtual void SetTextColor(const Color& c);
 		virtual void SetText(const wchar_t* szText);
 		virtual const wchar_t* GetText() const;
@@ -198,6 +203,7 @@ namespace fastbird
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false);
 
 		virtual void Scrolled(){}
 		virtual void SetNPosOffset(const Vec2& offset);
@@ -213,7 +219,7 @@ namespace fastbird
 		fastbird::Vec2 ConvertToAlignedPos(const fastbird::Vec2& beforeAlign) const;
 		fastbird::Vec2I ConvertToScreen(const fastbird::Vec2 npos) const;
 		fastbird::Vec2 ConvertToNormalized(const fastbird::Vec2I pos) const; // convert to 0~1
-		
+
 
 		void SetParent(Container* parent);
 		// manually controlling objects are allowed to have parent which is not a container.
@@ -244,7 +250,7 @@ namespace fastbird
 		virtual float PixelToLocalNPosX(int pixel) const;
 		virtual float PixelToLocalNPosY(int pixel) const;
 		virtual Vec2 PixelToLocalNPos(const Vec2I& pixel) const;
-		
+
 		virtual int LocalNPosXToPixel(float nposx) const;
 		virtual int LocalNPosYToPixel(float nposy) const;
 		virtual Vec2I LocalNPosToPixel(const Vec2& npos) const;
@@ -291,6 +297,9 @@ namespace fastbird
 
 		virtual bool GetCloseByEsc() const { return false; }
 
+		virtual void StartHighlight(float speed);
+		virtual void StopHighlight();
+
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
@@ -308,5 +317,10 @@ namespace fastbird
 	private:
 		friend class Container;
 		void ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos);
+
+		int ParseIntPosX(const std::string& posX);
+		int ParseIntPosY(const std::string& posY);
+
+		void ProcessHighlight(float dt);
 	};
 }

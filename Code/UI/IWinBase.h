@@ -92,6 +92,7 @@ namespace fastbird
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) = 0;
 		virtual bool GetProperty(UIProperty::Enum prop, char val[]) = 0;
+		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false) = 0;
 
 		virtual void Scrolled() = 0;
 		virtual void SetNPosOffset(const Vec2& offset) = 0;
@@ -178,6 +179,9 @@ namespace fastbird
 		virtual bool IsAlwaysOnTop() const = 0;
 		virtual IUIObject* GetUIObj() const = 0;
 		virtual bool GetCloseByEsc() const = 0;
+
+		virtual void StartHighlight(float speed)=0;
+		virtual void StopHighlight()=0;
 
 	protected:
 		virtual void OnPosChanged() = 0;

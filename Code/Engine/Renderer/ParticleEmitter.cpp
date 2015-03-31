@@ -26,11 +26,12 @@ ParticleEmitter::ParticleEmitter()
 	, mStopImmediate(false)
 	, mEmitterDirection(0, 1, 0)
 	, mAdam(0)
-	, mManualEmitter(false)
+	, mManualEmitter(false), mMoveToCam(false)
 	, mEmitterColor(1, 1, 1)
 	, mLength(0.0f)
 	, mRelativeVelocity(0)
 	, mRelativeVelocityDir(Vec3::ZERO)
+	, mFinalAlphaMod(1.0f)
 {
 	mObjFlag |= OF_IGNORE_ME;
 }
@@ -95,6 +96,12 @@ bool ParticleEmitter::Load(const char* filepath)
 		Log("Emitter id omitted! (%s)", filepath);
 	}
 
+	sz = pPE->Attribute("moveToCam");
+	if (sz)
+	{
+		mMoveToCam = StringConverter::parseBool(sz);
+	}
+
 	sz = pPE->Attribute("manualControl");
 	if (sz)
 		mManualEmitter = StringConverter::parseBool(sz);
@@ -108,7 +115,12 @@ bool ParticleEmitter::Load(const char* filepath)
 
 		sz = pPT->Attribute("texture");
 		if (sz)
+		{
 			pt.mTexturePath = sz;
+			ToLowerCase(pt.mTexturePath);
+		}
+		
+		
 
 		sz = pPT->Attribute("pointLightRangeMinMax");
 		if (sz)
@@ -170,6 +182,10 @@ bool ParticleEmitter::Load(const char* filepath)
 		if (sz)
 			pt.mLifeMinMax = StringConverter::parseVec2(sz);
 
+		sz = pPT->Attribute("deleteWhenStop");
+		if (sz)
+			pt.mDeleteWhenStop = StringConverter::parseBool(sz);
+
 		sz = pPT->Attribute("align");
 		if (sz)
 			pt.mAlign = ParticleAlign::ConverToEnum(sz);
@@ -189,6 +205,12 @@ bool ParticleEmitter::Load(const char* filepath)
 		sz = pPT->Attribute("emitTo");
 		if (sz)
 			pt.mEmitTo = ParticleEmitTo::ConverToEnum(sz);
+
+		sz = pPT->Attribute("cameraPulling");
+		if (sz)
+		{
+			pt.mCameraPulling = StringConverter::parseReal(sz);
+		}
 
 		sz = pPT->Attribute("range");
 		if (sz)
@@ -331,6 +353,12 @@ bool ParticleEmitter::Load(const char* filepath)
 			}
 		}
 
+		sz = pPT->Attribute("pendulum");
+		if (sz)
+		{
+			pt.mAnimPendulum = StringConverter::parseBool(sz);
+		}
+
 		sz = pPT->Attribute("uvFlow");
 		if (sz)
 		{
@@ -351,7 +379,7 @@ bool ParticleEmitter::Load(const char* filepath)
 			{
 												desc.RenderTarget[0].BlendEnable = true;
 												desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-												desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+												desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
 												desc.RenderTarget[0].DestBlend = BLEND_ONE;
 			}
 				break;
@@ -428,6 +456,7 @@ IObject* ParticleEmitter::Clone() const
 	cloned->mAdam = (ParticleEmitter*)this;
 	cloned->mClonedTemplates = &mPTemplates;
 	cloned->mEmitterID = mEmitterID;
+	cloned->mMoveToCam = mMoveToCam;
 	cloned->mLifeTime = mLifeTime;
 	cloned->mMaxSize = mMaxSize;
 	cloned->mManualEmitter = mManualEmitter;
@@ -437,11 +466,14 @@ IObject* ParticleEmitter::Clone() const
 	FB_FOREACH(it, mPTemplates)
 	{
 		PARTICLES* particles = FB_NEW(PARTICLES);
-		particles->Init(it->mMaxParticle*2);
+		
+		cloned->mMaxParticles.Insert(std::make_pair(&(*it), it->mMaxParticle));
+		particles->Init(cloned->mMaxParticles[&(*it)] * 2);
 		cloned->mParticles.Insert(PARTICLESS::value_type(&(*it), particles));
 		cloned->mNextEmits.Insert(NEXT_EMITS::value_type(&(*it), 0.f));
 		cloned->mNextEmits[&(*it)] = (float)it->mInitialParticles;
 		cloned->mAliveParticles.Insert(std::make_pair(&(*it), 0));
+		
 	}
 	cloned->mBoundingVolumeWorld = BoundingVolume::Create(BoundingVolume::BV_AABB);
 	cloned->mBoundingVolume = 0;
@@ -467,6 +499,8 @@ void ParticleEmitter::Active(bool a)
 				mNextEmits[&(*it)] = (float)it->mInitialParticles;
 			}
 		}
+		mStartPos = mTransformation.GetTranslation();
+		ProcessDeleteOnStop(false);
 	}
 	else if (!a && mInActiveList)
 	{
@@ -478,12 +512,62 @@ void ParticleEmitter::Active(bool a)
 void ParticleEmitter::Stop()
 {
 	mStop = true;
+	ProcessDeleteOnStop(true);
+	
+}
+
+void ParticleEmitter::ProcessDeleteOnStop(bool stopping)
+{
+	for (auto& pt : *mClonedTemplates)
+	{
+		if (pt.mDeleteWhenStop)
+		{
+			PARTICLES& particles = *(mParticles[&pt]);
+			if (stopping)
+			{
+				for (auto& p : particles)
+				{
+					p.mCurLifeTime = p.mLifeTime;
+					if (p.mMeshObject)
+						p.mMeshObject->DetachFromScene();
+					if (p.mPointLight)
+						p.mPointLight->SetEnabled(false);
+				}
+			}
+			else
+			{
+				for (auto& p : particles)
+				{
+					if (p.mMeshObject)
+						p.mMeshObject->AttachToScene();
+					if (p.mPointLight)
+						p.mPointLight->SetEnabled(true);
+				}
+			}
+		}
+	}
 }
 
 void ParticleEmitter::StopImmediate()
 {
 	mStop = true;
 	mStopImmediate = true;
+}
+
+void ParticleEmitter::SetVisibleParticle(bool visible)
+{
+	SetShow(visible);
+	for (auto& pt : *mClonedTemplates)
+	{
+		PARTICLES& particles = *(mParticles[&pt]);
+		for (auto& p : particles)
+		{
+			if (p.mMeshObject)
+				p.mMeshObject->SetShow(visible);
+			if (p.mPointLight)
+				p.mPointLight->SetEnabled(visible);
+		}
+	}
 }
 
 bool ParticleEmitter::IsAlive()
@@ -516,12 +600,26 @@ bool ParticleEmitter::Update(float dt)
 				}
 			}
 		}
+		else
+		{
+			FB_FOREACH(it, mParticles)
+			{
+				const ParticleTemplate* pt = it->first;
+				PARTICLES* particles = it->second;
+				PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
+				for (; itParticle != itEndParticle; ++itParticle)
+				{
+					itParticle->mCurLifeTime = itParticle->mLifeTime;
+				}
+			}
+		}
 		if (numAlive == 0)
 		{
 			mInActiveList = false;
 			return false;
 		}
 	}
+
 
 	mBoundingVolumeWorld->Invalidate();
 	// update existing partices
@@ -578,6 +676,10 @@ bool ParticleEmitter::Update(float dt)
 				{
 					p.mPosWorld = p.mPos;
 				}
+				if (pt->mCameraPulling != 0)
+				{
+					p.mPosWorld -= gFBEnv->pRenderer->GetCamera()->GetDir() * pt->mCameraPulling;
+				}
 
 				//change rot speed
 				if (!p.IsInfinite())
@@ -596,16 +698,17 @@ bool ParticleEmitter::Update(float dt)
 				p.mRot += p.mRotSpeed * dt;
 				
 
+				float scale = mTransformation.GetScale().x;
 				// change scale speed
 				if (!p.IsInfinite())
 				{
 					if (normTime < pt->mScaleAccel.y)
 					{
-						p.mScaleSpeed += pt->mScaleAccel.x * dt;
+						p.mScaleSpeed += pt->mScaleAccel.x * scale * dt;
 					}
 					if (normTime > pt->mScaleDeaccel.y)
 					{
-						p.mScaleSpeed -= pt->mScaleDeaccel.x * dt;
+						p.mScaleSpeed -= pt->mScaleDeaccel.x * scale * dt;
 					}
 				}
 				// change scale
@@ -623,11 +726,11 @@ bool ParticleEmitter::Update(float dt)
 				if (!p.IsInfinite())
 				{
 					if (normTime < pt->mFadeInOut.x)
-						p.mAlpha = normTime / pt->mFadeInOut.x;
+						p.mAlpha = SmoothStep(0, pt->mFadeInOut.x, normTime) * mFinalAlphaMod;
 					else if (normTime > pt->mFadeInOut.y)
-						p.mAlpha = (1.0f - normTime) / (1.0f - pt->mFadeInOut.y);
+						p.mAlpha = 1.0f - SmoothStep(pt->mFadeInOut.y, 1.0, normTime) * mFinalAlphaMod;
 					else
-						p.mAlpha = 1.0f;
+						p.mAlpha = 1.0f * mFinalAlphaMod;
 
 					// update color
 					if (pt->mColor != pt->mColorEnd)
@@ -637,7 +740,7 @@ bool ParticleEmitter::Update(float dt)
 				}
 				else
 				{
-					p.mAlpha = 1.0f;
+					p.mAlpha = 1.0f * mFinalAlphaMod;
 				}
 
 
@@ -648,14 +751,41 @@ bool ParticleEmitter::Update(float dt)
 					while (p.mUVFrame > p.mUV_SPF)
 					{
 						p.mUVFrame -= p.mUV_SPF;
-						p.mUVIndex.x += 1;
-						if (p.mUVIndex.x >= pt->mUVAnimColRow.x)
+						if (p.mPendulumBackward)
 						{
-							p.mUVIndex.x = 0;
-							p.mUVIndex.y += 1;
-							if (p.mUVIndex.y >= pt->mUVAnimColRow.y)
+							p.mUVIndex.x -= 1;
+							if (p.mUVIndex.x < 0)
 							{
-								p.mUVIndex.y = 0;
+								p.mUVIndex.x = pt->mUVAnimColRow.x - 1.f;
+								p.mUVIndex.y -= 1;
+								if (p.mUVIndex.y < 0)
+								{
+									p.mUVIndex.y = 0;
+									p.mPendulumBackward = false;
+								}
+							}
+						}
+						else
+						{
+							p.mUVIndex.x += 1;
+							if (p.mUVIndex.x >= pt->mUVAnimColRow.x)
+							{
+								p.mUVIndex.x = 0;
+								p.mUVIndex.y += 1;
+								if (p.mUVIndex.y >= pt->mUVAnimColRow.y)
+								{
+									if (pt->mAnimPendulum)
+									{
+										p.mPendulumBackward = true;
+										p.mUVIndex.y = pt->mUVAnimColRow.y - 1.f;
+										p.mUVIndex.x = pt->mUVAnimColRow.x - 1.f;
+									}
+									else
+									{
+										p.mUVIndex.y = 0;
+									}
+									
+								}
 							}
 						}
 					}					
@@ -663,10 +793,42 @@ bool ParticleEmitter::Update(float dt)
 
 				if (p.mPointLight)
 				{
-					p.mPointLight->SetAlpha(p.mAlpha);
+					p.mPointLight->SetAlpha(p.mAlpha * mFinalAlphaMod);
 				}
 			}
 		}
+	}
+
+	if (mMoveToCam)
+	{
+		auto cam = gFBEnv->pRenderer->GetCamera();
+		if (cam)
+		{
+			auto& camPos = cam->GetPos();
+			float emitterNormTime = std::min((mCurLifeTime / mLifeTime) * 2.0f, 0.85f);
+			auto toStartPos = mStartPos - camPos;
+			float dist = toStartPos.Length();
+			float d = cam->GetDir().Dot(toStartPos.NormalizeCopy());
+			if (d < 0.2f)
+			{
+				auto oppositeStart = cam->GetDir() * dist;
+				float angle = oppositeStart.AngleBetween(toStartPos);
+				float rotAngle = cam->GetFOV()*.5f;
+				auto axis = oppositeStart.Cross(toStartPos).NormalizeCopy();
+				auto desiredLocation = camPos + (Quat(rotAngle, axis) * oppositeStart);				
+				auto dest = Lerp(desiredLocation, camPos, emitterNormTime);
+				mTransformation.SetTranslation(dest);
+				mFinalAlphaMod += emitterNormTime *.5f;
+				mFinalAlphaMod = std::min(1.0f, mFinalAlphaMod);
+			}
+			else
+			{
+				auto dest = Lerp(mStartPos, camPos, emitterNormTime);
+				mTransformation.SetTranslation(dest);
+				mFinalAlphaMod = 1.0f;
+			}
+		}
+
 	}
 	assert(mBoundingVolumeWorld->GetBVType()==BoundingVolume::BV_AABB);
 	BVaabb* pAABB = (BVaabb*)mBoundingVolumeWorld.get();
@@ -691,10 +853,12 @@ void ParticleEmitter::UpdateEmit(float dt)
 			continue;
 
 		unsigned alives = mAliveParticles[&pt];
-		if (alives > pt.mMaxParticle && !pt.mDeleteWhenFull)
+		unsigned& maxParticles = mMaxParticles[&pt];
+		if (alives >= maxParticles && !pt.mDeleteWhenFull)
 		{
-			mNextEmits[&pt] = 0;
-			continue;
+			Log("ParticleEmitter(%u) doubled its buffer.", mEmitterID);
+			mParticles[&pt]->DoubleSize();
+			maxParticles *= 2;
 		}
 
 		float& nextEmit = mNextEmits[&pt];
@@ -724,10 +888,12 @@ void ParticleEmitter::UpdateEmit(float dt)
 
 void ParticleEmitter::CopyDataToRenderer(float dt)
 {
+	if (mObjFlag & IObject::OF_HIDE)
+		return;
 	ICamera* pCamera = gFBEnv->pRenderer->GetCamera();
 	assert(pCamera);
-	if (pCamera->IsCulled(mBoundingVolumeWorld))
-		return;
+	//if (pCamera->IsCulled(mBoundingVolumeWorld))
+		//return;
 
 	FB_FOREACH(it, mParticles)
 	{
@@ -754,8 +920,18 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 		if (aliveParticle > 0)
 		{
 			ParticleRenderObject::Vertex* dest = 0;
+			unsigned numVertices = pt->mCross ? aliveParticle * 2 : aliveParticle;
+			unsigned numWritable = numVertices;
 			if (pro)
-				dest = pro->Map(pt->mCross ? aliveParticle * 2 : aliveParticle);
+			{
+				dest = pro->Map(numVertices, numWritable);
+				if (numVertices != numWritable)
+				{
+					Log("Emitter(%u) tried lock %u but only %u locked.", mEmitterID, numVertices, numWritable);
+				}
+				
+			}
+				
 			PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
 			for (; itParticle != itEndParticle; ++itParticle)
 			{
@@ -792,34 +968,36 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 							}
 						}
 						else
-						{
+						{							
 							Vec3 worldForward;
-							if (pt->IsAlignDirection() && p.mVelocity != 0)
+							if (pt->mUseRelativeVelocity && !IsEqual(mRelativeVelocity, 0.0f, 0.001f)) // camera relative
 							{
-								Mat33 toViewRot = pCamera->GetViewMat().To33();
-								if (i == 0)
-								{
-									Vec3 worldForward = p.mVelDir;
-
-									udir = toViewRot * worldForward;
-									udirBackup = udir;
-									vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
-									vdirBackup = vdir;
-								}
-								else
-								{
-									// crossed additional plane
-									udir = udirBackup;
-									vdir = vdirBackup.Cross(udirBackup).NormalizeCopy();
-								}
-							}
-
-							if (pt->mUseRelativeVelocity && !IsEqual(mRelativeVelocity, 0.0f)) // camera relative
-							{
-								worldForward = (mRelativeVelocityDir);
+								worldForward = mRelativeVelocityDir;
 								Mat33 toViewRot = pCamera->GetViewMat().To33();
 								udir = toViewRot * worldForward;
-								vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
+								vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();								
+							}
+							else
+							{
+								if (pt->IsAlignDirection() && p.mVelocity != 0)
+								{
+									Mat33 toViewRot = pCamera->GetViewMat().To33();
+									if (i == 0)
+									{
+										Vec3 worldForward = p.mVelDir;
+
+										udir = toViewRot * worldForward;
+										udirBackup = udir;
+										vdir = toViewRot  * pCamera->GetForward().Cross(worldForward).NormalizeCopy();
+										vdirBackup = vdir;
+									}
+									else
+									{
+										// crossed additional plane
+										udir = udirBackup;
+										vdir = vdirBackup.Cross(udirBackup).NormalizeCopy();
+									}
+								}
 							}
 						}
 						Vec2 size = p.mSize;
@@ -827,12 +1005,16 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 						{
 							auto pos = GetPos();
 							auto prevPos = GetPrevPos();
-							if (pos!=prevPos)
+							if (!IsEqual(mRelativeVelocity, 0.f, 0.001f))
+							{
+								size.x += std::min(size.x * pt->mStretchMax, std::max(0.f, mRelativeVelocity));
+							}
+							else if (!IsEqual(pos, prevPos, 0.001f))
+							{
 								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (GetPos() - GetPrevPos()).Length() / dt*0.1f - mDistToCam*.1f));
-							if (!IsEqual(mRelativeVelocity, 0.f))
-								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, mRelativeVelocity*3.0f));
+							}								
 						}
-						if (dest)
+						if (dest && numWritable)
 						{
 							dest->mPos = p.mPosWorld;
 							dest->mUDirection_Intensity = Vec4(udir.x, udir.y, udir.z, p.mIntensity);
@@ -843,13 +1025,16 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 							dest->mUVStep = p.mUVStep;
 							dest->mColor = p.mColor;
 							dest++;
+							numWritable--;
+							
 						}
-						else // geometry or point light
+						
+						// geometry or point light
 						{
 							if (p.mMeshObject)
 							{
 								p.mMeshObject->SetPos(p.mPosWorld);
-								p.mMeshObject->SetDir(GetForward());
+								p.mMeshObject->SetRot(GetRot());
 							}
 							if (p.mPointLight)
 							{
@@ -861,8 +1046,6 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 					}
 				}
 			}
-			if (pro)
-				pro->Unmap();
 		}
 	}
 }
@@ -873,6 +1056,8 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	PARTICLES& particles = *(mParticles[&pt]);
 	size_t addedPos = particles.push_back(Particle());
 	Particle& p = particles.GetAt(addedPos);
+	const auto& vScale =  mTransformation.GetScale();
+	float scale = vScale.x;
 	switch (pt.mRangeType)
 	{
 	case ParticleRangeType::Point:
@@ -889,7 +1074,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		break;
 	case ParticleRangeType::Box:
 	{
-								   p.mPos = Random(Vec3(-pt.mRangeRadius), Vec3(pt.mRangeRadius));
+		p.mPos = Random(Vec3(-pt.mRangeRadius*scale), Vec3(pt.mRangeRadius*scale));
 								   if (!pt.IsLocalSpace())
 								   {
 									   p.mPos += mTransformation.GetTranslation();
@@ -898,7 +1083,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		break;
 	case ParticleRangeType::Sphere:
 	{
-									  float r = Random(pt.mRangeRadiusMin, pt.mRangeRadius);
+		float r = Random(pt.mRangeRadiusMin*scale, pt.mRangeRadius*scale);
 									  float theta = Random(0.0f, PI);
 									  float phi = Random(0.0f, TWO_PI);
 									  p.mPos = SphericalToCartesian(r, theta, phi);
@@ -910,7 +1095,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		break;
 	case ParticleRangeType::Hemisphere:
 	{
-										  float r = Random(0.0f, pt.mRangeRadius);
+		float r = Random(0.0f, pt.mRangeRadius*scale);
 										  float theta = Random(0.0f, HALF_PI);
 										  float phi = Random(0.0f, TWO_PI);
 										  p.mPos = SphericalToCartesian(theta, phi) * r;
@@ -925,7 +1110,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 									float tanS = Random(0.0f, PI);
 									float cosT = Random(0.0f, TWO_PI);
 									float sinT = Random(0.0f, TWO_PI);
-									float height = Random(0.0f, pt.mRangeRadius);
+									float height = Random(0.0f, pt.mRangeRadius*scale);
 									p.mPos = Vec3(height*tanS*cosT, height*tanS*sinT, height);
 									if (!pt.IsLocalSpace())
 									{
@@ -948,7 +1133,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	}
 	p.mPos += posOffset;
 
-	Vec3 velDir = Random(pt.mVelocityDirMin, pt.mVelocityDirMax).NormalizeCopy();	
+	Vec3 velDir = Random(pt.mVelocityDirMin, pt.mVelocityDirMax).NormalizeCopy();
 	if (angle > 0.01f && pt.mEmitTo == ParticleEmitTo::WorldSpace)
 	{
 		Vec3 axis = pt.mDefaultDirection.Cross(GetForward());
@@ -958,7 +1143,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	}
 
 	p.mVelDir = velDir;
-	p.mVelocity = Random(pt.mVelocityMinMax.x, pt.mVelocityMinMax.y);
+	p.mVelocity = Random(pt.mVelocityMinMax.x*scale, pt.mVelocityMinMax.y*scale);
 	if (pt.mAlign == ParticleAlign::Billboard)
 	{
 		p.mUDirection = Vec3::UNIT_X;
@@ -983,7 +1168,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		
 	}
 	p.mCurLifeTime = 0.0f;
-	float size = Random(pt.mSizeMinMax.x, pt.mSizeMinMax.y);
+	float size = Random(pt.mSizeMinMax.x*scale, pt.mSizeMinMax.y*scale);
 	float ratio = Random(pt.mSizeRatioMinMax.x, pt.mSizeRatioMinMax.y);
 	p.mSize = Vec2(size * ratio, size);
 	if (mLength != 0 && pt.mAlign == ParticleAlign::Direction)
@@ -991,19 +1176,30 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		p.mSize.x = p.mSize.x * (mLength / size);
 	}
 
-	float scalevel = Random(pt.mScaleVelMinMax.x, pt.mScaleVelMinMax.y);
+	float scalevel = Random(pt.mScaleVelMinMax.x*scale, pt.mScaleVelMinMax.y*scale);
 	float svratio = Random(pt.mScaleVelRatio.x, pt.mScaleVelRatio.y);
 	p.mScaleSpeed = Vec2(scalevel * svratio, scalevel);
 	p.mRot = Random(pt.mRotMinMax.x, pt.mRotMinMax.y);
 	p.mRotSpeed = Random(pt.mRotSpeedMinMax.x, pt.mRotSpeedMinMax.y);
 	p.mIntensity = Random(pt.mIntensityMinMax.x, pt.mIntensityMinMax.y);
 	p.mColor = pt.mColor * mEmitterColor;
+
+	if (pt.IsLocalSpace())
+	{
+		p.mPosWorld = mTransformation.ApplyForward(p.mPos);
+	}
+	else
+	{
+		p.mPosWorld = p.mPos;
+	}
+
 	if (!pt.mGeometryPath.empty())
 	{
 		if (!p.mMeshObject)
 			p.mMeshObject = (IMeshObject*)pt.mMeshObject->Clone();
 		p.mMeshObject->AttachToScene();
 		p.mMeshObject->SetPos(p.mPosWorld);
+		p.mMeshObject->SetScale(Vec3(scale));
 		p.mMeshObject->SetDir(GetForward());
 	}
 
@@ -1013,7 +1209,7 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 		{
 			Vec4 color(pt.mColor.GetVec4());
 			Vec3 color3(color.x, color.y, color.z);
-			p.mPointLight = gFBEnv->pRenderer->CreatePointLight(p.mPosWorld, pt.mPLRangeMinMax.y, color3, pt.mIntensityMinMax.y, FLT_MAX, true);
+			p.mPointLight = gFBEnv->pRenderer->CreatePointLight(p.mPosWorld, pt.mPLRangeMinMax.y*scale, color3, pt.mIntensityMinMax.y, FLT_MAX, true);
 		}
 	}
 	return &p;
@@ -1044,6 +1240,7 @@ void ParticleEmitter::SetBufferSize(unsigned size)
 {
 	FB_FOREACH(it, (*mClonedTemplates))
 	{
+		mMaxParticles[&(*it)] = size;
 		mParticles[&(*it)]->Init(size);
 	}
 }
@@ -1098,9 +1295,10 @@ void ParticleEmitter::SetLength(float len)
 
 void ParticleEmitter::SetRelativeVelocity(const Vec3& dir, float speed)
 {
-	mRelativeVelocityDir = dir;
+	if (speed > 0)
+		mRelativeVelocityDir = dir;
+
 	mRelativeVelocity = speed;
-	mRelativeVelocity *= mRelativeVelocity;
 }
 
 }

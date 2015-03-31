@@ -178,9 +178,11 @@ void Transformation::SetScale (const Vec3& s)
     assert(mRSSeperated && s.x != 0.0f && s.y != 0.0f
         && s.z != 0.0f);
 
-    mS = s;
+	Vec3 fixedScale = FixPrecisionScaleVector(s);
+
+	mS = fixedScale;
     mIdentity = false;
-	if (s.x == s.y && s.x == s.z)
+	if (fixedScale.x == fixedScale.y && fixedScale.x == fixedScale.z)
 		mUniformScale = true;
 	else
 		mUniformScale = false;

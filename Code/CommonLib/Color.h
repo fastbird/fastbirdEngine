@@ -47,6 +47,8 @@ namespace fastbird
 		{
 		}
 
+		Color(const char* str);
+
 		explicit Color(unsigned int c)
 		{
 			RGBA* rgba = (RGBA*)&c;

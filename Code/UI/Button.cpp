@@ -79,8 +79,7 @@ void Button::OnPosChanged()
 				mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
 			}
 		}
-	}	
-		
+	}		
 }
 
 void Button::OnSizeChanged()
@@ -262,18 +261,18 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::BACK_COLOR:
 	{
-								   mBackColor = StringConverter::parseColor(val);
+								   mBackColor = Color(val);
 								   mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
 								   return true;
 	}
 	case UIProperty::BACK_COLOR_OVER:
 	{
-										mBackColorOver = StringConverter::parseColor(val);
+		mBackColorOver = Color(val);
 										return true;
 	}
 	case UIProperty::BACK_COLOR_DOWN:
 	{
-										mBackColorDown = StringConverter::parseColor(val);
+		mBackColorDown = Color(val);
 										return true;
 	}
 
@@ -337,7 +336,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										 FB_DELETE(mImages[ButtonImages::Image]);
 										 mImages[ButtonImages::Image] = CreateImageBox();
 									 }
-									 assert(!mImageAtlas.empty());
+									 
 									 mImages[ButtonImages::Image]->SetTexture(val);
 									 mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
 									 if (mIconText)
@@ -606,7 +605,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 									
 									if (mProgressBar)
-										mProgressBar->SetGaugeColor(StringConverter::parseColor(val));
+										mProgressBar->SetGaugeColor(Color(val));
 
 									return true;									
 	}
@@ -614,7 +613,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::GAUGE_BLINK_COLOR:
 	{
 										  if (mProgressBar)
-											  mProgressBar->SetBlinkColor(StringConverter::parseColor(val));
+											  mProgressBar->SetBlinkColor(Color(val));
 
 										  return true;
 	}
@@ -629,7 +628,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::EDGE_COLOR:
 	{
-								   mEdgeColor = StringConverter::parseColor(val);
+		mEdgeColor = Color(val);
 								   assert(mUIObject);
 								   mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 								   return true;
@@ -637,7 +636,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::EDGE_COLOR_OVER:
 	{
-										mEdgeColorOver = StringConverter::parseColor(val);
+		mEdgeColorOver = Color(val);
 										return true;
 	}
 

@@ -166,7 +166,7 @@ struct luaU_Impl<fastbird::Quat>
 {
 	static fastbird::Quat luaU_check(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Quat luaU_check(lua_State* L, int index)");
 		luaL_checktype(L, index, LUA_TTABLE);
 		fastbird::Quat ret;
 		lua_rawgeti(L, index, 1);
@@ -186,7 +186,7 @@ struct luaU_Impl<fastbird::Quat>
 
 	static fastbird::Quat luaU_to(lua_State* L, int index)
 	{
-		fastbird::LUA_STACK_WATCHER watcher(L);
+		fastbird::LUA_STACK_WATCHER watcher(L, "static fastbird::Quat luaU_to(lua_State* L, int index)");
 		fastbird::Quat ret;
 		lua_rawgeti(L, index, 1);
 		ret.w = (float)lua_tonumber(L, -1);

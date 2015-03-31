@@ -38,10 +38,13 @@ namespace fastbird
 
 		virtual void AttachBodies(const std::vector<RigidBody*>& bodies) = 0;
 		
+		virtual void SetRayCollisionGroup(int group) = 0;
 		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result) = 0;
 		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
 		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result) = 0;
 
 		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;
+
+		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
 	};
 }

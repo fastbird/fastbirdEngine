@@ -18,7 +18,7 @@ namespace fastbird
 		virtual ~UIManager();	
 
 	public:
-		
+		typedef std::vector<IWinBase*> WinBases;
 		static UIManager* GetUIManagerStatic();
 
 		virtual void Shutdown();
@@ -26,7 +26,7 @@ namespace fastbird
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
 		virtual void GatherRenderList();
-		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false);
+		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, bool luaUI = false);
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data);
 		virtual void DeleteLuaUI(const char* uiName);
 		virtual bool IsLoadedUI(const char* uiName);
@@ -39,6 +39,9 @@ namespace fastbird
 		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
 		virtual void DirtyRenderList();
+
+		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val);
+		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val);
 
 		// IInputListener Interfaces
 		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);
@@ -60,6 +63,7 @@ namespace fastbird
 
 		virtual lua_State* GetLuaState() const { return mL; }
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const;
+		virtual void FindUIWnds(const char* uiname, WinBases& outV) const;
 		virtual bool CacheListBox(const char* uiname, const char* compName);
 		virtual ListBox* GetCachedListBox() const{
 			return mCachedListBox;
@@ -80,6 +84,10 @@ namespace fastbird
 		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win);
 
 		virtual void MoveToBottom(const char* moveToBottom);
+		virtual void HideUIsExcept(const std::vector<std::string>& excepts);
+
+		virtual void HighlightUI(const char* uiname);
+		virtual void StopHighlightUI(const char* uiname);
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
@@ -109,17 +117,18 @@ namespace fastbird
 
 		 lua_State* mL;
 
-		 std::map<std::string, std::vector<IWinBase*>> mLuaUIs;
+		 std::map<std::string, WinBases> mLuaUIs;
 		 bool mPosSizeEventEnabled;
 		 bool mLockFocus;
 		 int mIgnoreInput;
 		 IWinBase* mModelWindow;
 
 		 ListBox* mCachedListBox;
-
-		 std::vector<IWinBase*> mAlwaysOnTopWindows;
+		 WinBases mAlwaysOnTopWindows;
 		 WINDOWS mMoveToBottomReserved;
 		 WINDOWS mSetFocusReserved;
+
+		 std::vector<std::string> mHideUIExcepts;
 	};
 }
 

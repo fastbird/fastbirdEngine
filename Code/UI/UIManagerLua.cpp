@@ -45,6 +45,7 @@ namespace fastbird
 	int SelectListBoxItem(lua_State* L);
 	int GetListBoxItemText(lua_State* L);
 	int AddListItem(lua_State* L);
+	int SetListItemProperty(lua_State* L);
 	int IsButtonActivated(lua_State* L);
 	int StartUIAnimation(lua_State* L);
 	int StopUIAnimation(lua_State* L);
@@ -68,9 +69,15 @@ namespace fastbird
 	int SwapListBoxItem(lua_State* L);
 	int GetColorRampUIValues(lua_State* L);
 	int SetColorRampUIValues(lua_State* L);
+	int HideUIsExcept(lua_State* L);
+	int StartHighlightUI(lua_State* L);
+	int StopHighlightUI(lua_State* L);
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, StartHighlightUI);
+		LUA_SETCFUNCTION(mL, StopHighlightUI);
+		LUA_SETCFUNCTION(mL, HideUIsExcept);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedRowIds);
 		LUA_SETCFUNCTION(mL, SetColorRampUIValues);
 		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
@@ -123,6 +130,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);
 		LUA_SETCFUNCTION(mL, GetListBoxItemText);
 		LUA_SETCFUNCTION(mL, AddListItem);
+		LUA_SETCFUNCTION(mL, SetListItemProperty);
 		LUA_SETCFUNCTION(mL, IsButtonActivated);
 		LUA_SETCFUNCTION(mL, StartUIAnimation);
 		LUA_SETCFUNCTION(mL, StopUIAnimation);
@@ -437,13 +445,7 @@ namespace fastbird
 		const char* compName = luaL_checkstring(L, 2);
 		const char* prop = luaL_checkstring(L, 3);
 		const char* val = luaL_checkstring(L, 4);
-		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
-		if (comp)
-		{
-			comp->SetProperty(UIProperty::ConverToEnum(prop), val);
-			return 0;
-		}
-		assert(0);
+		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val);
 		return 0;
 
 	}
@@ -665,8 +667,8 @@ namespace fastbird
 		if (listbox)
 		{
 			unsigned n = 3;
-			int col = 0;
-			int row = 0;
+			unsigned col = 0;
+			unsigned row = 0;
 			while (!lua_isnone(L, n))
 			{
 				const char* data = luaL_checkstring(L, n++);
@@ -680,6 +682,27 @@ namespace fastbird
 					listbox->SetItemString(row, col++, AnsiToWide(data));
 				}
 			}
+			lua_pushunsigned(L, row);
+			lua_pushunsigned(L, col);
+			return 2;
+		}
+		return 0;
+	}
+
+	int SetListItemProperty(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* listCompName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, listCompName);
+		ListBox* listbox = dynamic_cast<ListBox*>(comp);
+		if (listbox)
+		{
+			unsigned row = luaL_checkunsigned(L, 3);
+			unsigned col = luaL_checkunsigned(L, 4);
+			auto item = listbox->GetItem(3, 4);
+			auto prop = luaL_checkstring(L, 5);
+			auto val = luaL_checkstring(L, 6);
+			item->SetProperty(UIProperty::ConverToEnum(prop), val);
 		}
 		return 0;
 	}
@@ -1032,6 +1055,34 @@ namespace fastbird
 			table.PushToStack();
 			return 1;
 		}
+		return 0;
+	}
+
+	int HideUIsExcept(lua_State* L)
+	{
+		LuaObject table(L, 1);
+		std::vector<std::string> excepts;
+		auto it = table.GetSequenceIterator();
+		LuaObject data;
+		while (it.GetNext(data))
+		{
+			excepts.push_back(data.GetString());
+		}
+		UIManager::GetUIManagerStatic()->HideUIsExcept(excepts);
+		return 0;
+	}
+
+	int StartHighlightUI(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		IUIManager::GetUIManager().HighlightUI(uiname);
+		return 0;
+	}
+
+	int StopHighlightUI(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		IUIManager::GetUIManager().StopHighlightUI(uiname);
 		return 0;
 	}
 }

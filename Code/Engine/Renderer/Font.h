@@ -83,6 +83,7 @@ namespace fastbird
 		int FindTextChar(const char *text, int start, int length, int ch);
 
 		short mFontHeight; // total height of the font
+		short mScaledFontSize;
 		short mBase;       // y of base line
 		short mScaleW;
 		short mScaleH;

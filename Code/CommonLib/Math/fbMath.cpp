@@ -322,4 +322,39 @@ namespace fastbird
 	{
 		return abs(a - b) < epsilon;
 	}
+
+	// toTargetDir : normalized
+	void CalcInterceptPosition(const Vec3& firePos, float ammoSpeed, const Vec3& toTargetDir, float distance, const Vec3& targetVel,
+		Vec3& outVelocity, Vec3* outPos, float* timeToTarget)
+	{
+		assert(ammoSpeed != 0);
+		float targetVelUMag = targetVel.Dot(toTargetDir);
+		Vec3 targetVelU = toTargetDir * targetVelUMag;
+		Vec3 targetVelV = targetVel - targetVelU;
+
+		Vec3 shotVelV = targetVelV; // should be the same.
+		float shotVelMag = shotVelV.Length();
+		if (shotVelMag < ammoSpeed)
+		{
+			// Pythagoras theorem
+			float shotSpeedMag = sqrt(ammoSpeed*ammoSpeed - shotVelMag*shotVelMag);
+			Vec3 shotVelU = toTargetDir * shotSpeedMag;
+			outVelocity = shotVelU + shotVelV;
+			if (outPos && timeToTarget)
+			{
+				*timeToTarget = distance / (shotSpeedMag - targetVelUMag);
+				*outPos = firePos + outVelocity * (*timeToTarget);
+			}
+			
+		}
+		else
+		{
+			outVelocity = toTargetDir * ammoSpeed;
+			if (outPos && timeToTarget)
+			{
+				*outPos = firePos + outVelocity;
+				*timeToTarget = 1000.0f;
+			}			
+		}
+	}
 }
