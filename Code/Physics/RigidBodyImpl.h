@@ -56,6 +56,7 @@ namespace fastbird
 		virtual void* GetGamePtr() const;
 		virtual void SetRotationalForce(float force);
 
+		virtual void SetCollisionFilter(unsigned group);
 		virtual void RemoveCollisionFilter(unsigned flag);
 		virtual void AddCollisionFilter(unsigned flag);
 		virtual void SetColMask(unsigned mask);
@@ -74,5 +75,11 @@ namespace fastbird
 		virtual void SetCCDMotionThreshold(float threshold);
 		virtual void SetCCDSweptSphereRadius(float radius);
 		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore);
+
+		virtual void SetTransform(const Transformation& t);
+
+		virtual void RegisterToWorld();
+
+		virtual void SetKinematic(bool enable);
 	};
 }

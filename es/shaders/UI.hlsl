@@ -76,6 +76,6 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 
 	color.rgb += gAmbientColor.xyz;
 	color.rgb *= gSpecularColor.xyz;
-
+	color.a *= gMaterialParam[4].w;
     return color;
 }

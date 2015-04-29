@@ -89,6 +89,10 @@ namespace fastbird
 		virtual void HighlightUI(const char* uiname);
 		virtual void StopHighlightUI(const char* uiname);
 
+		virtual IUIAnimation* GetGlobalAnimation(const char* animName);
+		virtual IUIAnimation* GetGlobalAnimationOrCreate(const char* animName);
+		virtual void PrepareTooltipUI();
+
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase);
 
@@ -99,6 +103,7 @@ namespace fastbird
 		void OnPopupNo(void* arg);
 		const char* FindUIFilenameWithLua(const char* luafilepath);
 		const char* FindUINameWithLua(const char* luafilepath);
+		void ShowTooltip();
 
 	private:
 		bool mInputListenerEnable;
@@ -108,7 +113,8 @@ namespace fastbird
 		 IWinBase* mFocusWnd;
 		 bool mNeedToRegisterUIObject;
 		 bool mMouseIn;
-		 IUIObject* mTooltipUI;
+		 IWinBase* mTooltipUI;
+		 IWinBase* mTooltipTextBox;
 		 std::wstring mTooltipText;
 
 		 IWinBase* mPopup;
@@ -129,6 +135,9 @@ namespace fastbird
 		 WINDOWS mSetFocusReserved;
 
 		 std::vector<std::string> mHideUIExcepts;
+
+		 VectorMap<std::string, IUIAnimation*> mAnimations;
+		 float mDelayForTooltip;
 	};
 }
 

@@ -1,0 +1,40 @@
+== 2015-04-17 Asteroid shower ==
+
+* Game
+** Dump process
+** Asteroid Shower
+** Change asteroid size if content is extracted.
+** Asteroid tooltip
+
+* +1123, 151
+
+
+== 2015-04-21 Trading System ==
+* Engine
+** Added new option 'DepthFade' for particle emitters
+
+* Game
+** Fixed physics crash, when asteroids's scale changes
+** Trading system.
+** Excluding specific ship type when finding an attack target.
+** Impulse laser now works for asteroids
+* +1199, -277
+
+
+== 2015-04-22 ==
+* Game
+** Trading system
+** Shopping.
+
+* +1386, -636
+
+== 2015-04-23 ==
+
+* Game
+** Shopping
+** ShipList UI
+
+* UI
+** Exposed card scroller ui to lua.
+
+* +698,	-268

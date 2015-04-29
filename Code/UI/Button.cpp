@@ -120,7 +120,7 @@ void Button::OnSizeChanged()
 
 void Button::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;	
 	assert(mUIObject);
 
@@ -741,14 +741,13 @@ void Button::Highlight(bool highlight)
 	}
 }
 
-void Button::SetBackgroundTexture(ITexture* pTexture)
+void Button::SetTexture(ButtonImages::Enum type, ITexture* pTexture)
 {
-	if (!mImages[ButtonImages::BackImage])
+	if (!mImages[type])
 	{
-		mImages[ButtonImages::BackImage] = CreateImageBox();
+		mImages[type] = CreateImageBox();
 	}
-
-	mImages[ButtonImages::BackImage]->SetTexture(pTexture);
+	mImages[type]->SetTexture(pTexture);
 }
 
 void Button::OnEnableChanged()

@@ -179,9 +179,23 @@ void Transformation::SetScale (const Vec3& s)
         && s.z != 0.0f);
 
 	Vec3 fixedScale = FixPrecisionScaleVector(s);
-
 	mS = fixedScale;
+
     mIdentity = false;
+	if (fixedScale.x == fixedScale.y && fixedScale.x == fixedScale.z)
+		mUniformScale = true;
+	else
+		mUniformScale = false;
+}
+
+void Transformation::AddScale(const Vec3& s)
+{
+	assert(mRSSeperated && s.x != 0.0f && s.y != 0.0f
+		&& s.z != 0.0f);
+
+	Vec3 fixedScale = FixPrecisionScaleVector(s);
+	mS *= fixedScale;
+	mIdentity = false;
 	if (fixedScale.x == fixedScale.y && fixedScale.x == fixedScale.z)
 		mUniformScale = true;
 	else
@@ -262,6 +276,19 @@ void Transformation::ApplyForward (int iQuantity, const Vec3* points,
             }
         }
     }
+}
+
+AABB Transformation::ApplyForward(const AABB& aabb) const
+{
+	Vec3 m2 = ApplyForward(aabb.GetMin());
+	Vec3 x2 = ApplyForward(aabb.GetMax());
+
+	Vec3 newMin(std::min(m2.x, x2.x), std::min(m2.y, x2.y), std::min(m2.z, x2.z));
+	Vec3 newMax(std::max(m2.x, x2.x), std::max(m2.y, x2.y), std::max(m2.z, x2.z));
+	AABB newAABB;
+	newAABB.SetMin(newMin);
+	newAABB.SetMax(newMax);
+	return newAABB;
 }
 
 //----------------------------------------------------------------------------
@@ -537,11 +564,22 @@ void Transformation::Inverse (Transformation& rkInverse) const
     }
 
     rkInverse.mT = -(rkInverse.mMat*mT);
-	if (!mRSSeperated || !mUniformScale || mS.x != 1.0f || mS.y != 1.0f || mS.z != 1.0f)
+	if (!mRSSeperated)
+	{
 		rkInverse.mRSSeperated = false;
+	}
+	else
+	{
+		rkInverse.mR = rkInverse.mMat;
+		if (mS.x != 1.0f)
+		{
+			rkInverse.mR.Normalise();
+		}
+	}
+	if (!mUniformScale)
+		rkInverse.mUniformScale = false;
+
     rkInverse.mIdentity = false;
-    
-    rkInverse.mUniformScale = false;
 }
 
 //----------------------------------------------------------------------------
@@ -597,6 +635,18 @@ Vec3 Transformation::GetForward() const
 Vec3 Transformation::GetUp() const
 {
 	return mMat.Column(2);
+}
+
+bool Transformation::operator==(const Transformation& other) const
+{
+	if (mRSSeperated)
+	{
+		return mR == other.mR && mS == other.mS && mT == other.mT;
+	}
+	else
+	{
+		return mMat == other.mMat && mT == other.mT;
+	}
 }
 
 }

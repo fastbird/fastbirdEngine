@@ -1,5 +1,7 @@
 <Material>
-	<ShaderFile>es/Shaders/MarkTextured.hlsl</ShaderFile>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
+	<DepthStencilDesc DepthEnable="false" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	<ShaderFile>es/Shaders/Mark.hlsl</ShaderFile>
 	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
@@ -10,10 +12,12 @@
 	<Textures>
 	</Textures>
 	<MaterialParameters>
-	</MaterialParameters>
+		<Param desc="uvstart_end">0, 0, 1, 1</Param>
+		<Param desc="offset, scale">1, 1, 0, 0</Param>
+	</MaterialParameters>	
 	<ShaderDefines>
-		<!--Define name="_QUAD_TEXTURED_MARK" val="1"></Define-->
-	</ShaderDefines>
+		<Define name="DIFFUSE_TEXTURE" val="1"/>
+	</ShaderDefines>	
 	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"></input>

@@ -47,6 +47,7 @@ namespace fastbird
 
 		virtual void SetRotationalForce(float force) = 0;
 
+		virtual void SetCollisionFilter(unsigned group) = 0;
 		virtual void RemoveCollisionFilter(unsigned flag) = 0;
 		virtual void AddCollisionFilter(unsigned flag)=0;
 		virtual void SetColMask(unsigned mask) = 0;
@@ -66,5 +67,10 @@ namespace fastbird
 		virtual void SetCCDSweptSphereRadius(float radius) = 0;
 
 		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore) = 0;
+
+		virtual void SetTransform(const Transformation& t) = 0;
+
+		virtual void RegisterToWorld() = 0;
+		virtual void SetKinematic(bool enable) = 0;
 	};
 }

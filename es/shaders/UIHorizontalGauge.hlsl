@@ -49,7 +49,7 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	float edge = max(abs(snc.x), abs(snc.y));
 	float xPos = abs(snc.x);
 	float yPos = abs(snc.y);
-	if ( xPos >= 1.0 - 0.03 / ratio || yPos >= 0.93)
+	if ( xPos >= 1.0 - 0.03  / ratio || yPos >= 0.93)
 	{
 		return float4(1.0, 1.0, 1.0, 1.0) * gAmbientColor;
 	}
@@ -75,11 +75,11 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		return lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
 	}
 	
-	float maximum = gMaterialParam[4].y * 2.0 - 1.0;
-	if (abs(snc.x-maximum)<0.01)
-	{
-		return float4(1, 1, 0, 1);
-	}	
+	//float maximum = gMaterialParam[4].y * 2.0 - 1.0;
+	//if (abs(snc.x-maximum)<0.001)
+	//{
+//		return float4(1, 1, 0, 1);
+	//}	
 
     return gDiffuseColor;
 }

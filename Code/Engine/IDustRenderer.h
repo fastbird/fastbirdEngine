@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
 namespace fastbird
 {
 	class CLASS_DECLSPEC_ENGINE IDustRenderer : public SpatialObject

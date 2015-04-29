@@ -27,7 +27,7 @@ StaticText::~StaticText()
 
 void StaticText::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 	v.push_back(mUIObject);	
 }

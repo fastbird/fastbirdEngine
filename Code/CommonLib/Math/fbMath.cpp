@@ -357,4 +357,12 @@ namespace fastbird
 			}			
 		}
 	}
+
+	void ExpandRect(RECT& r, int size)
+	{
+		r.left -= size;
+		r.top -= size;
+		r.right += size;
+		r.bottom += size;
+	}
 }

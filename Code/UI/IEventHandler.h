@@ -23,12 +23,12 @@ namespace fastbird
 			EVENT_FILE_SELECTOR_CANCEL,
 			EVENT_NUMERIC_UP,
 			EVENT_NUMERIC_DOWN,
+			EVENT_NUMERIC_SET,
 			EVENT_DROP_DOWN_SELECTED,
 			EVENT_ON_VISIBLE,
 			EVENT_ON_HIDE,
 			EVENT_ON_LOADED,
 			EVENT_LISTBOX_CLEARED,
-			EVENT_CHECKBOX_CLICKED,
 			EVENT_COLORRAMP_DRAGGED,
 
 			EVENT_NUM
@@ -114,6 +114,10 @@ namespace fastbird
 		{
 			return IEventHandler::EVENT_NUMERIC_DOWN;
 		}
+		else if (stricmp(sz, "OnNumericSet") == 0)
+		{
+			return IEventHandler::EVENT_NUMERIC_SET;
+		}
 		else if (stricmp(sz, "OnDropDownSelected") == 0)
 		{
 			return IEventHandler::EVENT_DROP_DOWN_SELECTED;
@@ -125,10 +129,6 @@ namespace fastbird
 		else if (stricmp(sz, "OnListBoxCleared") == 0)
 		{
 			return IEventHandler::EVENT_LISTBOX_CLEARED;
-		}
-		else if (stricmp(sz, "OnCheckBoxClicked") == 0)
-		{
-			return IEventHandler::EVENT_CHECKBOX_CLICKED;
 		}
 		else if (stricmp(sz, "OnColorRampDragged") == 0)
 		{

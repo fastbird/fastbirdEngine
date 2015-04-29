@@ -27,7 +27,7 @@ public:
 	virtual void OnStartUpdate(float elapsedTime);
 	virtual void EndProgress();
 	virtual void Highlight(bool highlight);
-	virtual void SetBackgroundTexture(ITexture* pTexture);
+	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture);
 	virtual void OnEnableChanged();
 	const static float LEFT_GAP;
 

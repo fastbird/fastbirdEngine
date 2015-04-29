@@ -8,6 +8,7 @@ namespace fastbird
 	{
 	public:
 		static size_t UNIQUE_ID;
+		static unsigned sLastEventProcess;
 		EventHandler();
 		virtual ~EventHandler();
 		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION);

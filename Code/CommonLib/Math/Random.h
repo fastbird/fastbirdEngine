@@ -13,7 +13,10 @@ namespace fastbird
 	template<class T>
 	inline  T Random(T min, T max)
 	{
-		return min + (std::rand() % (int)(max - min + 1));
+		int divider = (int)(max - min + 1);
+		if (divider != 0)
+			return min + (std::rand() % divider);
+		return min;
 	}
 
 	inline float Random(float min, float max)

@@ -42,7 +42,7 @@ Wnd::~Wnd()
 
 void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 
 	v.push_back(mUIObject);
@@ -63,7 +63,7 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 
 bool Wnd::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return false;
 
 	if (!mouse->IsValid() && !keyboard->IsValid())
@@ -266,7 +266,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 								 {
 									 mTitlebar = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
 									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
-									 mTitlebar->SetVisible(mVisible);
+									 mTitlebar->SetVisible(mVisibility.IsVisible());
 									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
 										 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
 									 mTitlebar->SetManualParent(this);

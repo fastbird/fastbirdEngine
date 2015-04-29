@@ -4,7 +4,7 @@
 #include <set>
 #include <CommonLib/SmartPtr.h>
 #include <Engine/IMaterial.h>
-#include <Engine/Renderer/RendererStructs.h>
+#include <Engine/RendererStructs.h>
 
 namespace fastbird
 {

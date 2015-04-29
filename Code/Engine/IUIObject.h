@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Foundation/Object.h>
+#include <Engine/Object.h>
 
 namespace fastbird
 {
@@ -29,6 +29,7 @@ namespace fastbird
 		virtual void SetAnimNPosOffset(const Vec2& nposOffset) = 0;// in normalized space 0.0f~1.0f
 		virtual const Vec2& GetAnimNPosOffset() const = 0;
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot) = 0;
+		virtual const Vec2& GetAnimScale() const = 0;
 		virtual void SetPivot(const Vec2& pivot) = 0;
 		virtual void SetAlpha(float alpha) = 0;
 		virtual void SetText(const wchar_t* s) = 0;

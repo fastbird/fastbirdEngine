@@ -56,6 +56,7 @@ namespace fastbird
 			return mT;
 		}
 		void SetScale (const Vec3& s);
+		void AddScale(const Vec3& s);
 		inline const Vec3& GetScale () const
 		{
 			assert(mRSSeperated);
@@ -82,6 +83,7 @@ namespace fastbird
 		Vec3 InvertVector (const Vec3& v) const;
 
 		Plane3 ApplyForward (const Plane3& p) const;
+		AABB ApplyForward(const AABB& aabb) const;
 
 		void Product (const Transformation& a, const Transformation& b);
 
@@ -93,6 +95,8 @@ namespace fastbird
 		Vec3 GetRight() const;
 		Vec3 GetForward() const;
 		Vec3 GetUp() const;	
+
+		bool operator==(const Transformation& other) const;
 
 		static const Transformation IDENTITY;
 

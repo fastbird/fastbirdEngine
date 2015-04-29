@@ -61,6 +61,11 @@ namespace fastbird
 		virtual void RemoveListener(ISceneListener* listener) = 0;
 
 		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList() const = 0;
+
+		virtual unsigned GetNumSpatialObjects() const = 0;
+		virtual void PrintSpatialObject() = 0;
+		virtual void SetRttScene(bool set) = 0;
+		virtual bool IsRttScene() const = 0;
 	};
 }
 

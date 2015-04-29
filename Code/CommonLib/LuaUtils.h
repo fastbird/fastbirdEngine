@@ -1,5 +1,6 @@
 #pragma once
 #include <CommonLib/luawrapperutil.hpp>
+#include <CommonLib/Math/Vec2I.h>
 
 struct lua_State;
 namespace fastbird
@@ -21,7 +22,8 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s/%s", error, fastbird::GetCWD(), errorString); \
+	fastbird::Error("Failed to call lua function. Error(%d)", error);\
+	fastbird::PrintLuaErrorString(lua, errorString);\
 	lua_pop(lua, 1); \
 	assert(0);\
 	return;\
@@ -29,10 +31,9 @@ if (numLuaArgs != (x)) \
 
 #define LUA_PCALL_RET_FALSE(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
-	const char* errorString = lua_tostring(lua, -1); \
-	char buf[1024];\
-	sprintf_s(buf, "\n%s/%s", GetCWD(), errorString);\
-	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, buf); \
+	const char* errorString = lua_tostring(lua, -1);\
+	fastbird::Error("Failed to call lua function. Error(%d)", error);\
+	fastbird::PrintLuaErrorString(lua, errorString);\
 	lua_pop(lua, 1); \
 	assert(0); \
 	return false; \
@@ -41,7 +42,8 @@ if (numLuaArgs != (x)) \
 #define LUA_PCALL_NO_RET(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
-	fastbird::Error("Failed to call lua function. ErrorNo : %d\n%s", error, errorString); \
+	fastbird::Error("Failed to call lua function. Error(%d)", error);\
+	fastbird::PrintLuaErrorString(lua, errorString);\
 	lua_pop(lua, 1); \
 	assert(0); \
 }
@@ -92,10 +94,14 @@ namespace fastbird
 	// Generic lua call
 	void CallLuaFunction(lua_State* L, const char* func, const char* sig, ...);
 	bool CheckLuaGlobalExist(lua_State* L, const char* name);
+	void PrintLuaErrorString(lua_State* L, const char* luaString);
 	void PrintLuaDebugInfo(lua_State* L, int level);
 	std::string GetLuaValueAsString(lua_State* L, int stackIndex);
+	std::string GetLuaVarAsString(lua_State* L, const char* varName, const char* luaFile=0);
 	bool GetLuaVarAsBoolean(lua_State* L, const char* varName);
+	Vec2I GetLuaVarAsVec2I(lua_State* L, const char* varname);
 	void SetLuaVar(lua_State* L, const char* varName, bool value);
+	
 }
 
 // luawapper util

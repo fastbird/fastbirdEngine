@@ -13,12 +13,9 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 , mGamePtr(0)
 , mColProvider(colProvider)
 {
-	assert(world);
 	auto colShape = getCollisionShape();
 	if (colShape)
 		IPhysics::GetPhysics()->AddRef(colShape);
-
-	mWorld->addRigidBody(this, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
 	mRotationInfo = FB_NEW(RotationInfo);
 	setUserPointer(0);
 }
@@ -39,7 +36,8 @@ RigidBodyImpl::~RigidBodyImpl()
 	if (colShape)
 		IPhysics::GetPhysics()->Release(colShape);
 
-	mWorld->removeRigidBody(this);
+	if (mWorld)
+		mWorld->removeRigidBody(this);
 	FB_DEL_ALIGNED(getMotionState());
 }
 
@@ -80,32 +78,32 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 
 void RigidBodyImpl::ApplyForce(const Vec3& force, const Vec3& rel_pos)
 {
-	activate();
 	applyForce(FBToBullet(force), FBToBullet(rel_pos));
+	activate();
 }
 
 void RigidBodyImpl::ApplyImpulse(const Vec3& impulse, const Vec3& rel_pos)
 {
-	activate();
 	applyImpulse(FBToBullet(impulse), FBToBullet(rel_pos));
+	activate();
 }
 
 void RigidBodyImpl::ApplyCentralImpulse(const Vec3& impulse)
 {
-	activate();
 	applyCentralImpulse(FBToBullet(impulse));
+	activate();
 }
 
 void RigidBodyImpl::ApplyTorqueImpulse(const Vec3& torque)
 {
-	activate();
 	applyTorqueImpulse(FBToBullet(torque));
+	activate();
 }
 
 void RigidBodyImpl::ApplyTorque(const Vec3& torque)
 {
-	activate();
 	applyTorque(FBToBullet(torque));
+	activate();
 }
 
 Vec3 RigidBodyImpl::GetForce()
@@ -241,24 +239,37 @@ void RigidBodyImpl::SetRotationalForce(float force)
 	mRotationInfo->mForce = force;
 }
 
+
+void RigidBodyImpl::SetCollisionFilter(unsigned group)
+{
+	if (getBroadphaseHandle())
+		getBroadphaseHandle()->m_collisionFilterGroup = group;
+}
+
 void RigidBodyImpl::RemoveCollisionFilter(unsigned flag)
 {
-	getBroadphaseHandle()->m_collisionFilterGroup = getBroadphaseHandle()->m_collisionFilterGroup & ~flag;
+	if (getBroadphaseHandle())
+		getBroadphaseHandle()->m_collisionFilterGroup = getBroadphaseHandle()->m_collisionFilterGroup & ~flag;
 }
 
 void RigidBodyImpl::AddCollisionFilter(unsigned flag)
 {
-	getBroadphaseHandle()->m_collisionFilterGroup |= flag;
+	if (getBroadphaseHandle())
+		getBroadphaseHandle()->m_collisionFilterGroup |= flag;
 }
 
 void RigidBodyImpl::SetColMask(unsigned mask)
 {
-	getBroadphaseHandle()->m_collisionFilterMask = mask;
+	if (getBroadphaseHandle())
+		getBroadphaseHandle()->m_collisionFilterMask = mask;
 }
 
 unsigned RigidBodyImpl::GetColMask()  const
 {
-	return getBroadphaseHandle()->m_collisionFilterMask;
+	if (getBroadphaseHandle())
+		return getBroadphaseHandle()->m_collisionFilterMask;
+	else
+		return -1;
 }
 
 void RigidBodyImpl::SetLinearDamping(float damping)
@@ -291,14 +302,22 @@ bool RigidBodyImpl::HasContact(void** gamePtr)
 
 		}
 
+		virtual bool needsCollision(btBroadphaseProxy* proxy) const {
+			// superclass will check m_collisionFilterGroup and m_collisionFilterMask
+			if (!btCollisionWorld::ContactResultCallback::needsCollision(proxy))
+				return false;
+			// if passed filters, may also want to avoid contacts between constraints
+			return mMe->checkCollideWithOverride(static_cast<btCollisionObject*>(proxy->m_clientObject));
+		}
+
 		bool mHasCollision;
 		virtual	btScalar	addSingleResult(btManifoldPoint& cp, 
 			const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, 
 			const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
 		{
-			if (!colObj0Wrap->m_collisionObject->checkCollideWith(colObj1Wrap->m_collisionObject) || 
-				!colObj1Wrap->m_collisionObject->checkCollideWith(colObj0Wrap->m_collisionObject))
-				return 1.0f;
+			//if (!colObj0Wrap->m_collisionObject->checkCollideWith(colObj1Wrap->m_collisionObject) || 
+			//	!colObj1Wrap->m_collisionObject->checkCollideWith(colObj0Wrap->m_collisionObject))
+			//	return 1.0f;
 			if (cp.getDistance() < 0.05f)
 			{
 				mHasCollision = true;
@@ -316,7 +335,8 @@ bool RigidBodyImpl::HasContact(void** gamePtr)
 		}
 	};
 	Callback callback(this);
-	mWorld->contactTest(this, callback);
+	Physics* physics = (Physics*)IPhysics::GetPhysics();
+	physics->_GetDynamicWorld()->contactTest(this, callback);
 	if (gamePtr && callback.mCollided)
 	{
 		*gamePtr = callback.mCollided->GetGamePtr();
@@ -360,4 +380,35 @@ void RigidBodyImpl::SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore)
 {
 	RigidBodyImpl* rigid = (RigidBodyImpl*)rigidBody;
 	setIgnoreCollisionCheck(rigid, ignore);
+}
+
+void RigidBodyImpl::SetTransform(const Transformation& t)
+{
+	Mat44 mat4;
+	t.GetHomogeneous(mat4);
+	auto btT = FBToBullet(mat4);
+	setWorldTransform(btT);
+
+}
+
+void RigidBodyImpl::RegisterToWorld()
+{
+	if (mWorld && mColProvider)
+		mWorld->addRigidBody(this, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
+	else
+		Error(DEFAULT_DEBUG_ARG, "No colprovier exists!");
+}
+
+void RigidBodyImpl::SetKinematic(bool enable)
+{
+	if (enable)
+	{
+		int colFlag = getCollisionFlags() | CF_KINEMATIC_OBJECT;
+		setCollisionFlags(colFlag);
+	}
+	else
+	{
+		int colFlag = getCollisionFlags() & ~CF_KINEMATIC_OBJECT;
+		setCollisionFlags(colFlag);
+	}
 }

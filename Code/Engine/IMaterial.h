@@ -1,13 +1,18 @@
 #pragma once
 #include <CommonLib/SmartPtr.h>
-#include <Engine/Renderer/RendererEnums.h>
-#include <Engine/Renderer/RendererStructs.h>
-#include <Engine/Misc/ColorRamp.h>
-#include <Engine/Renderer/RendererEnums.h>
+#include <Engine/RendererEnums.h>
+#include <Engine/RendererStructs.h>
+#include <Engine/ColorRamp.h>
+#include <Engine/RendererEnums.h>
 namespace fastbird
 {
 	class ITexture;
 	class Vec4;
+	class IRasterizerState;
+	class IBlendState;
+	class IDepthStencilState;
+	class RenderStates;
+
 	class IMaterial : public ReferenceCounter
 	{
 	public:
@@ -92,20 +97,35 @@ namespace fastbird
 
 		virtual const char* GetShaderFile() const = 0;
 		virtual void* GetShaderByteCode(unsigned& size) const = 0;
-		virtual const Vec4& GetMaterialParameters(unsigned index) const = 0;
+		virtual const Vec4& GetMaterialParameters(unsigned index) = 0;
 		virtual bool IsRelatedShader(const char* shaderFile) = 0;
 
-		virtual void Bind(bool inputLayout) = 0;
+		virtual void Bind(bool inputLayout, unsigned stencilRef = 0) = 0;
+		virtual void Unbind() = 0;
 		virtual bool BindSubPass(RENDER_PASS p, bool includeInputLayout) = 0;
 		virtual void BindMaterialParams() = 0;
 		virtual void RegisterReloading() = 0;
 		virtual bool IsTransparent() const = 0;
 		virtual bool IsGlow() const = 0;
 		virtual bool IsNoShadowCast() const = 0;
+		virtual bool IsDoubleSided() const = 0;
 		virtual void ReloadShader() = 0;
 
 		virtual int GetBindingShaders() const = 0;
 		virtual void CopyMaterialParamFrom(const IMaterial* src) = 0;
+
+		virtual void SetTransparent(bool trans) = 0;
+		virtual void SetGlow(bool glow) = 0;
+		virtual void SetRasterizerState(const RASTERIZER_DESC& desc) = 0;
+		virtual void SetBlendState(const BLEND_DESC& desc) = 0;
+		virtual void SetDepthStencilState(const DEPTH_STENCIL_DESC& desc) = 0;
+		virtual void ClearRasterizerState() = 0;
+		virtual void ClearBlendState(const BLEND_DESC& desc) = 0;
+		virtual void ClearDepthStencilState(const DEPTH_STENCIL_DESC& desc) = 0;
+
+		virtual RenderStates* GetRenderStates() const = 0;
+		virtual void CloneRenderStates() = 0;
+		
 	};
 
 	inline bool operator==(const IMaterial::SHADER_DEFINES& a,

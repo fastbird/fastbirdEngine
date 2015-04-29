@@ -19,7 +19,7 @@ ColorRampComp::~ColorRampComp()
 
 void ColorRampComp::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 	v.push_back(mUIObject);
 	__super::GatherVisit(v);

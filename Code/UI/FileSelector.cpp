@@ -77,7 +77,7 @@ FileSelector::~FileSelector()
 
 void FileSelector::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 
 	__super::GatherVisit(v);
@@ -159,7 +159,6 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 		return;
 	}
 	mFileTextField->SetText( AnsiToWide(mFolder.c_str(), mFolder.size() ) );
-	mFileTextField->SetScissorRect(true, mFileTextField->GetRegion());
 	mListBox->Clear();
 
 	if (mFolder.size()<=3)

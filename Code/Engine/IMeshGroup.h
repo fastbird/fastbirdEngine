@@ -1,5 +1,6 @@
 #pragma once
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
+#include <Engine/CollisionInfo.h>
 #include <CommonLib/FBColShape.h>
 namespace fastbird
 {
@@ -21,6 +22,8 @@ namespace fastbird
 		
 		virtual const AUXILIARIES* GetAuxiliaries(size_t idx) const = 0;
 		virtual void SetAuxiliaries(size_t idx, const AUXILIARIES& aux) = 0;
+		virtual void SetCollisionShapes(COLLISION_INFOS& colInfos) = 0;
+		virtual void DeleteCollisionShapes() = 0;
 		virtual void AddAuxiliary(size_t idx, const AUXILIARIES::value_type& v) = 0;
 		virtual void AddCollisionShape(size_t idx, std::pair<FBColShape::Enum, Transformation>& data) = 0;
 		virtual void SetCollisionMesh(size_t idx, IMeshObject* colMesh) = 0;
@@ -30,6 +33,17 @@ namespace fastbird
 		virtual void SetAnimationData(const char* meshName, const AnimationData& anim, const char* actionName) = 0;
 		virtual void PlayAction(const std::string& name, bool immediate, bool reverse) = 0;
 		virtual bool IsActionDone(const char* action) const = 0;
+
+		virtual Transformation GetToLocalTransform(unsigned meshIdx) = 0;
+		virtual Transformation GetToLocalTransform(const char* meshName) = 0;
+
+		virtual void SetAlpha(float alpha) = 0;
+		virtual void SetAmbientColor(const Color& color) = 0;
+
+		// do not hold a reference.
+		virtual IMeshObject* GetMeshObject(unsigned idx) = 0;
+		virtual unsigned GetNumCollisionShapes() const = 0;
+		virtual unsigned GetNumCollisionShapes(unsigned idx) const = 0;
 
 	private:
 		friend class Engine;

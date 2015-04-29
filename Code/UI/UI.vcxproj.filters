@@ -87,6 +87,7 @@
     <ClInclude Include="NamedPortrait.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="VisibleStatus.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -171,5 +172,6 @@
     <ClCompile Include="NamedPortrait.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="VisibleStatus.cpp" />
   </ItemGroup>
 </Project>

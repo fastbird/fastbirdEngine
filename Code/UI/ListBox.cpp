@@ -121,7 +121,7 @@ ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2&
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
 	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
-	item->SetVisible(mVisible);
+	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
 	item->SetBackColor(mHighlightColor.c_str());
@@ -159,7 +159,7 @@ unsigned ListBox::InsertItem(ITexture* texture)
 	auto row = InsertItem(L"");
 	auto imageBox = (ImageBox*)mItems[row][0]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
 	imageBox->SetTexture(texture);
-	imageBox->SetVisible(mVisible);
+	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	return row;
 }
@@ -170,7 +170,7 @@ unsigned ListBox::InsertCheckBoxItem(bool check)
 	auto checkbox = (CheckBox*)mItems[row][0]->AddChild(0, 0, 1, 1, ComponentType::CheckBox);
 	checkbox->SetSize(Vec2I(24, 24));
 	checkbox->SetCheck(check);
-	checkbox->SetVisible(mVisible);
+	checkbox->SetVisible(mVisibility.IsVisible());
 	return row;
 }
 
@@ -263,7 +263,7 @@ void ListBox::SetItemTexture(size_t row, size_t col, ITexture* texture)
 	SetItemString(row, col, L"");
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
 	imageBox->SetTexture(texture);
-	imageBox->SetVisible(mVisible);
+	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 }
 
@@ -272,7 +272,7 @@ void ListBox::SetItemTexture(size_t row, size_t col, const char* texturePath)
 	SetItemString(row, col, L"");
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
 	imageBox->SetTexture(texturePath);
-	imageBox->SetVisible(mVisible);
+	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 }
 
@@ -290,7 +290,7 @@ void ListBox::SetItemTextureRegion(size_t row, size_t col, const char* region)
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
 	imageBox->SetProperty(UIProperty::TEXTUREATLAS, mTextureAtlas.c_str());
 	imageBox->SetProperty(UIProperty::REGION, region);
-	imageBox->SetVisible(mVisible);
+	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	imageBox->DrawAsFixedSizeAtCenter();
 }
@@ -308,7 +308,7 @@ IWinBase* ListBox::SetItemIconText(size_t row, size_t col, const char* region, c
 	if (!button)
 		button = (Button*)mItems[row][col]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Button);
 
-	button->SetVisible(mVisible);
+	button->SetVisible(mVisibility.IsVisible());
 	button->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	button->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	button->SetProperty(UIProperty::TEXT, txt);	
@@ -680,7 +680,7 @@ bool ListBox::IsSelected(unsigned row)
 
 bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return false;
 
 	if (mNoMouseEvent)
@@ -838,7 +838,7 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
 	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0.2, 0.6, 0.2, 1.0");
+	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0x88cceeff");
 	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mItems[row][0]->SetNoBackground(false);
 	mItems[row][0]->SetBackColor("0, 0, 0, 0.3");

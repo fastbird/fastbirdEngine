@@ -20,6 +20,7 @@
 #include <UI/TextBox.h>
 #include <UI/ColorRampComp.h>
 #include <UI/NamedPortrait.h>
+#include <UI/UIAnimation.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
@@ -35,6 +36,7 @@ void IUIManager::InitializeUIManager(lua_State* L)
 {
 	assert(!mUIManager);
 	mUIManager = FB_NEW(UIManager)(L);
+	mUIManager->PrepareTooltipUI();
 	WinBase::InitMouseCursor();
 	
 }
@@ -55,7 +57,8 @@ IUIManager& IUIManager::GetUIManager()
 	assert(mUIManager);
 	return *mUIManager;
 }
-
+static float gTooltipFontSize = 26;
+static float gDelayForTooltip = 0.7f;
 //---------------------------------------------------------------------------
 UIManager::UIManager(lua_State* L)
 	: mInputListenerEnable(true)
@@ -68,26 +71,26 @@ UIManager::UIManager(lua_State* L)
 	, mL(L)
 	, mPosSizeEventEnabled(true), mIgnoreInput(false)
 	, mCachedListBox(0)
-	, mModelWindow(0), mLockFocus(false)
+	, mModelWindow(0), mLockFocus(false), mDelayForTooltip(0)
 {
 	gpTimer = gEnv->pTimer;
 	FileSystem::Initialize();
 	gEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
-	mTooltipUI = IUIObject::CreateUIObject(false, Vec2I(gEnv->pRenderer->GetWidth(), gEnv->pRenderer->GetHeight()));
-	mTooltipUI->mOwnerUI = 0;
-	mTooltipUI->mTypeString = "TooltipUI";	
-	mTooltipUI->SetAlphaBlending(true);
-	mTooltipUI->GetMaterial()->SetDiffuseColor(Vec4(0, 0, 0, 0.7f));
-	mTooltipUI->SetTextColor(Color(1, 1, 1, 1));
-	RegisterLuaFuncs(L);
+	RegisterLuaFuncs(L);	
 }
 
 UIManager::~UIManager()
 {
+
+	for (auto it : mAnimations)
+	{
+		FB_DELETE(it.second);
+	}
+	mAnimations.clear();
+
 	DeleteWindow(mPopup);
-	mTooltipUI->Delete();
 	// delete lua uis
 	for (const auto& it : mLuaUIs)
 	{
@@ -169,6 +172,15 @@ void UIManager::Update(float elapsedTime)
 		if (wnd->GetVisible())
 			wnd->OnStartUpdate(elapsedTime);
 	}
+
+	if (!mTooltipText.empty())
+	{
+		mDelayForTooltip -= elapsedTime;
+		if (mDelayForTooltip <= 0)
+		{
+			ShowTooltip();
+		}
+	}
 }
 
 void UIManager::GatherRenderList()
@@ -214,9 +226,6 @@ void UIManager::GatherRenderList()
 			}				
 		}
 
-
-		if (!mTooltipText.empty())
-			uiObjects.push_back(mTooltipUI);
 
 		if (mPopup&& mPopup->GetVisible())
 			mPopup->GatherVisit(uiObjects);
@@ -285,7 +294,7 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 		{
 			char buf[1024];
 			sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
-			Log(buf);
+			Error(DEFAULT_DEBUG_ARG, buf);
 			assert(0);
 			return false;
 		}
@@ -337,6 +346,24 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 		}
 
 		pComp = pComp->NextSiblingElement("component");
+	}
+
+	auto animElem = pRoot->FirstChildElement("Animation");
+	while (animElem)
+	{
+		IUIAnimation* pAnim = FB_NEW(UIAnimation);
+		pAnim->LoadFromXML(animElem);
+		std::string name = pAnim->GetName();
+		auto it = mAnimations.Find(name);
+		if (it  != mAnimations.end())
+		{
+			FB_DELETE(it->second);
+			mAnimations.erase(it);
+			Log("UI global animation %s is replaced", name.c_str());
+		}
+		mAnimations[pAnim->GetName()] = pAnim;
+
+		animElem = animElem->NextSiblingElement("Animation");
 	}
 
 	assert(!uiname.empty());
@@ -409,7 +436,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 	const char* sz = pRoot->Attribute("script");
 	if (sz)
 	{
-		assert(0 && "can not clone scriptable ui");
+		Error(DEFAULT_DEBUG_ARG, "cannot clone scriptable ui");
 		return;
 	}
 
@@ -596,6 +623,8 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 {
 	if (!winbase)
 		return;
+
+
 	mNeedToRegisterUIObject = true;
 	if (winbase->GetFocus(true))
 		mFocusWnd = 0;
@@ -763,9 +792,15 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 
 	if (pKeyboard->IsValid() && pKeyboard->IsKeyPressed(VK_ESCAPE))
 	{
-		if (mFocusWnd && mFocusWnd->GetCloseByEsc())
+		WINDOWS::reverse_iterator it = mWindows.rbegin(), itEnd = mWindows.rend();
+		int i = 0;
+		for (; it != itEnd; ++it)
 		{
-			mFocusWnd->SetVisible(false);
+			if ((*it)->GetVisible() && (*it)->GetCloseByEsc())
+			{
+				(*it)->SetVisible(false);
+				break;
+			}
 		}
 	}
 
@@ -803,6 +838,20 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 
 		if (!pMouse->IsValid() && !pKeyboard->IsValid())
 			break;
+	}
+
+	if (mMouseIn && EventHandler::sLastEventProcess != gpTimer->GetFrame() && pMouse->IsLButtonClicked())
+	{		
+		LuaObject mouseInvalided;
+		mouseInvalided.FindFunction(IUIManager::GetUIManager().GetLuaState(), "OnMouseInvalidatedInUI");
+		if (mouseInvalided.IsValid())
+		{
+			mouseInvalided.Call();
+		}
+		else
+		{
+			Log(DEFAULT_DEBUG_ARG, "info : lua function OnMouseInvalidatedInUI is not found.");
+		}
 	}
 }
 void UIManager::EnableInputListener(bool enable)
@@ -843,33 +892,58 @@ void UIManager::DisplayMsg(const std::string& msg, ...)
 	}
 }
 
-static float gTooltipFontSize = 26;
 void UIManager::SetTooltipString(const std::wstring& ts)
 {
 	if (mTooltipText == ts)
-		return;
-	mTooltipText = ts;
-	mTooltipUI->SetText(mTooltipText.c_str());
-	mNeedToRegisterUIObject = true;
-	
-	if (!mTooltipText.empty())
 	{
-		IFont* pFont = gEnv->pRenderer->GetFont();
-		pFont->SetHeight(gTooltipFontSize);
-		int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
-			(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
-		pFont->SetBackToOrigHeight();
-
-		Vec2 nsize = { (width + 4) / (float)gEnv->pRenderer->GetWidth(),
-			gTooltipFontSize / (float)gEnv->pRenderer->GetHeight() };
-
-		mTooltipUI->SetNSize(nsize);
-		mTooltipUI->SetTextSize(gTooltipFontSize);
+		return;
 	}
+	mTooltipText = ts;
+	if (mTooltipText.empty())
+	{
+		mTooltipUI->SetVisible(false);
+	}
+	else
+	{
+		if (mTooltipUI->GetVisible())
+		{
+			ShowTooltip();
+		}
+		else
+		{
+			mDelayForTooltip = gDelayForTooltip;
+		}
+	}
+}
+
+void UIManager::ShowTooltip()
+{
+	Log("Info: void UIManager::ShowTooltip()");
+	assert(!mTooltipText.empty());	
+	IFont* pFont = gEnv->pRenderer->GetFont();
+	pFont->SetHeight(gTooltipFontSize);
+	int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
+	pFont->SetBackToOrigHeight();
+
+	const int maxWidth = 350;
+	width = std::min(maxWidth, width) + 4;
+	mTooltipUI->SetSizeX(width + 16);
+	mTooltipTextBox->SetSizeX(width);
+	mTooltipTextBox->SetText(mTooltipText.c_str());
+	int textWidth = mTooltipTextBox->GetTextWidth();
+	mTooltipUI->SetSizeX(textWidth + 16);
+	mTooltipTextBox->SetSizeX(textWidth+4);
+	int sizeY = mTooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
+	mTooltipUI->SetSizeY(sizeY + 8);
+	mTooltipUI->SetVisible(true);
 }
 
 void UIManager::SetTooltipPos(const Vec2& npos)
 {
+	if (!mTooltipUI->GetVisible())
+		return;
+
 	Vec2 backPos = npos;
 	if (backPos.y > 0.9f)
 	{
@@ -880,9 +954,6 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 	{
 		backPos.x -= backPos.x + nSize.x - 1.0f;
 	}
-	Vec2 textpos = backPos;
-	textpos.y += gTooltipFontSize*2 / (float)gEnv->pRenderer->GetHeight();
-	mTooltipUI->SetTextStartNPos(textpos);
 	backPos.y += gTooltipFontSize / (float)gEnv->pRenderer->GetHeight();
 	mTooltipUI->SetNPos(backPos);
 }
@@ -892,7 +963,7 @@ void UIManager::CleanTooltip()
 	if (!mTooltipText.empty())
 	{
 		mTooltipText.clear();
-		mNeedToRegisterUIObject = true;
+		mTooltipUI->SetVisible(false);
 	}
 }
 
@@ -1076,7 +1147,7 @@ const char* UIManager::FindUINameWithLua(const char* luafilepath)
 		const auto& wins = it.second;
 		for (const auto& win : wins)
 		{
-			if (strcmp(win->GetScriptPath(), luafilepath) == 0)
+			if (_stricmp(win->GetScriptPath(), luafilepath) == 0)
 			{
 				return it.first.c_str();
 			}
@@ -1108,9 +1179,28 @@ void UIManager::OnUIFileChanged(const char* file)
 
 	if (uiname.empty())
 	{
-		if (!lower.empty())
-			gEnv->pScriptSystem->RunScript(lower.c_str());
-
+		LuaObject loadUIFunc;
+		loadUIFunc.FindFunction(mL, "LoadLuaUI");
+		loadUIFunc.PushToStack();
+		auto uiFilePath = ReplaceExtension(file, "ui");
+		if (FileSystem::IsFileExisting(uiFilePath.c_str()))
+		{
+			lua_pushstring(mL, uiFilePath.c_str());
+			loadUIFunc.CallWithManualArgs(1, 0);
+			uiname = GetFileNameWithoutExtension(uiFilePath.c_str());
+			SetVisible(uiname.c_str(), true);
+		}
+		else if (strcmp(extension, "lua") == 0)
+		{
+			int error = luaL_dofile(mL, file);
+			if (error)
+			{
+				char buf[1024];
+				sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
+				Error(DEFAULT_DEBUG_ARG, buf);
+				assert(0);
+			}
+		}
 		return;
 	}
 		
@@ -1188,6 +1278,65 @@ void UIManager::StopHighlightUI(const char* uiname)
 	for (auto& it : topWnds)
 	{
 		it->StopHighlight();
+	}
+}
+
+IUIAnimation* UIManager::GetGlobalAnimation(const char* animName)
+{
+	auto it = mAnimations.Find(animName);
+	if (it == mAnimations.end())
+		return 0;
+
+	return it->second;
+}
+
+IUIAnimation* UIManager::GetGlobalAnimationOrCreate(const char* animName)
+{
+	auto anim = GetGlobalAnimation(animName);
+	if (!anim)
+	{
+		anim = FB_NEW(UIAnimation);
+		anim->SetName(animName);
+		mAnimations.Insert(std::make_pair(animName, anim));
+	}
+	return anim;
+}
+
+void UIManager::PrepareTooltipUI()
+{
+	LuaObject tooltip;
+	tooltip.NewTable(mL);
+	tooltip.SetField("name", "MouseTooltip");
+	tooltip.SetField("type_", "Window");
+	tooltip.SetField("pos", Vec2I(0, 0));
+	tooltip.SetField("size", Vec2I(366, (int)gTooltipFontSize+8));
+	tooltip.SetField("HIDE_ANIMATION", "1");
+	tooltip.SetField("SHOW_ANIMATION", "1");
+	tooltip.SetField("NO_BACKGROUND", "false");
+	tooltip.SetField("BACK_COLOR", "0, 0, 0, 0.8f");
+	tooltip.SetField("ALWAYS_ON_TOP", "true");
+	tooltip.SetField("USE_BORDER", "true");
+	auto tooltipChildren = tooltip.SetFieldTable("children");
+	auto children1 = tooltipChildren.SetSeqTable(1);
+	children1.SetField("name", "TooltipTextBox");
+	children1.SetField("type_", "TextBox");
+	children1.SetField("pos", Vec2I(6, 4));
+	children1.SetField("size", Vec2I(350, (int)gTooltipFontSize));
+	children1.SetField("TEXTBOX_MATCH_HEIGHT", "true");
+	children1.SetField("TEXT_SIZE", StringConverter::toString(gTooltipFontSize).c_str());	
+	bool success = AddLuaUI("MouseTooltip", tooltip);
+	if (!success)
+	{
+		Error(DEFAULT_DEBUG_ARG, "Cannot create MouseTooltip UI.");
+	}
+	else
+	{
+		WinBases wnds;
+		FindUIWnds("MouseTooltip", wnds);
+		assert(!wnds.empty());
+		mTooltipUI = wnds[0];
+		mTooltipTextBox = FindComp("MouseTooltip", "TooltipTextBox");
+		assert(mTooltipTextBox);
 	}
 }
 

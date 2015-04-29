@@ -3,7 +3,7 @@
 #define _IVertexBuffer_header_included__
 
 #include <CommonLib/SmartPtr.h>
-#include <Engine/Renderer/RendererStructs.h>
+#include <Engine/RendererStructs.h>
 
 namespace fastbird
 {
@@ -17,6 +17,8 @@ namespace fastbird
 		virtual void Bind() = 0;
 		virtual MapData Map(MAP_TYPE type, UINT subResource, MAP_FLAG flag) = 0;
 		virtual void Unmap() = 0;
+		// only need if you don't use shared ptr
+		virtual void Delete() = 0;
 	};
 }
 

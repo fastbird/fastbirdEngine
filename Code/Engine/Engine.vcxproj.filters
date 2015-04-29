@@ -16,15 +16,8 @@
     <Filter Include="Misc">
       <UniqueIdentifier>{4a172b19-207d-497e-8c48-3bacb734d726}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Renderer\D3D9">
-      <UniqueIdentifier>{5b296952-dfd1-4b73-9e78-5ded7b89e42d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Renderer\D3D11">
       <UniqueIdentifier>{5388449c-5710-4534-97ae-d3f1bb94622b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Renderer\Shaders">
-      <UniqueIdentifier>{8c8c81ff-fe5c-426c-b917-be2b5e5d4d0b}</UniqueIdentifier>
-      <ParseFiles>false</ParseFiles>
     </Filter>
     <Filter Include="RenderObjects">
       <UniqueIdentifier>{599c69b1-43a5-41fc-a45e-52593db95d92}</UniqueIdentifier>
@@ -35,6 +28,12 @@
     <Filter Include="ScriptSystem">
       <UniqueIdentifier>{91734bd0-38b0-4952-8c7d-da3dca7a2db3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Renderer\D3D9">
+      <UniqueIdentifier>{297dcfdf-be85-4195-b3e5-54e3a02e6211}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{4d74c43e-9fd5-425e-bc6f-2b8a39eb8f3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Documents\dll.txt">
@@ -43,135 +42,142 @@
     <None Include="Documents\terrain.txt">
       <Filter>Document</Filter>
     </None>
-    <None Include="Renderer\Shaders\Constants.h">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\BillboardQuad.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\dust.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\BloomPS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\font.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\CommonLighting.h">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\HelpMesh.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\CopyPS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\HighlightMesh.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\depth.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\Line.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\depth_cloud.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\locator.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\DownScale2x2.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\Mesh.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\DownScale2x2_Lum.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\MeshPBR.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\DownScale3x3.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\module.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\dust.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\modules.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\font.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\particle.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\FullScreenQuadVS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\Quad.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\GaussBlur5x5.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\ShaderCommon.h">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\GodRayPS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\skybox.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\HdrLine.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\SkySphere.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\HighlightMesh.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\star.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\line.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\terrain.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\locator.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\UI.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\LuminanceAvgPS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\UIHexagonal.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\MergeTextures2PS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\DownScale2x2_Lum.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\mesh.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\DownScale3x3.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\MeshPBR.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\FullScreenQuadVS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\ModulesImmutable.h">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\ToneMapping.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\OccPrePass.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\BrightPassPS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\OccPrePassGS.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\BloomPS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\particle.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\LuminanceAvgPS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\quad.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\GodRayPS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumFinal.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\ModulesImmutable.h">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumFinalNew.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\OccPrePass.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumInitial.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\OccPrePassGS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumInitialNew.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\CopyPS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumIterative.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\CommonDefines.h" />
-    <None Include="Renderer\Shaders\CommonFunctions.h" />
-    <None Include="Renderer\Shaders\CommonLighting.h" />
-    <None Include="Renderer\Shaders\CalculateAdaptedLum.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SampleLumIterativeNew.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\SampleLumFinal.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\shadowdepth.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\SampleLumInitial.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\silouette.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\SampleLumIterative.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\skybox.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SkySphere.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\StarGlare.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\SkySphere_notusing.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\DownScale2x2.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\star.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\StarGlare.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\depth.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\terrain.hlsl">
+      <Filter>Shaders</Filter>
     </None>
-    <None Include="Renderer\Shaders\depth_cloud.hlsl">
-      <Filter>Renderer\Shaders</Filter>
+    <None Include="Shaders\ToneMapping.hlsl">
+      <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\Constants.h">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\ShaderCommon.h">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\CommonDefines.h" />
+    <None Include="Shaders\CommonFunctions.h" />
+    <None Include="Shaders\BrightPassPS.hlsl" />
+    <None Include="Shaders\CalculateAdaptedLum.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IRenderer.h" />
@@ -186,422 +192,428 @@
     <ClInclude Include="IInputListener.h" />
     <ClInclude Include="IKeyboard.h" />
     <ClInclude Include="IMouse.h" />
-    <ClInclude Include="Foundation\Engine.h">
-      <Filter>Foundation</Filter>
-    </ClInclude>
-    <ClInclude Include="Foundation\Mouse.h">
-      <Filter>Foundation</Filter>
-    </ClInclude>
-    <ClInclude Include="Foundation\Keyboard.h">
-      <Filter>Foundation</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Camera.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D9\RendererD3D9.h">
-      <Filter>Renderer\D3D9</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\IndexBufferD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\VertexBufferD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\RendererD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\ShaderD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\Terrain.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="IScene.h" />
-    <ClInclude Include="RenderObjects\TerrainPatch.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneGraph\Scene.h">
-      <Filter>SceneGraph</Filter>
-    </ClInclude>
     <ClInclude Include="IObject.h" />
-    <ClInclude Include="Foundation\Object.h">
-      <Filter>Foundation</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\DebugHud.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="IFont.h" />
     <ClInclude Include="ITexture.h" />
-    <ClInclude Include="Renderer\D3D11\TextureD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\TextureUtil.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\RendererEnums.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\ConvertEnumD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\RendererStructs.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\ConvertStructD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\IRenderState.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3D11\RenderStateD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Light.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Shader.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="IMaterial.h" />
-    <ClInclude Include="Renderer\Material.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="IInputLayout.h" />
-    <ClInclude Include="Renderer\D3D11\InputLayoutD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Renderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Misc\ColorRamp.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Texture.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Misc\ToolConn.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="ISkyBox.h" />
-    <ClInclude Include="RenderObjects\SkyBox.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\D3DEventMarker.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="DllMain.h" />
-    <ClInclude Include="RenderObjects\MeshObject.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="IMeshObject.h" />
-    <ClInclude Include="Misc\Console.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="IConsole.h" />
-    <ClInclude Include="ScriptSystem\ScriptSystem.h">
-      <Filter>ScriptSystem</Filter>
-    </ClInclude>
     <ClInclude Include="IScriptSystem.h" />
     <ClInclude Include="IScript.h" />
     <ClInclude Include="IInputDevice.h" />
-    <ClInclude Include="SceneGraph\SpatialObject.h">
-      <Filter>SceneGraph</Filter>
-    </ClInclude>
     <ClInclude Include="IDGenerator.h" />
     <ClInclude Include="IUIObject.h" />
-    <ClInclude Include="RenderObjects\UIObject.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="GlobalEnv.h" />
-    <ClInclude Include="Renderer\VertexBuffer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Misc\CandidatesData.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Font.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="IVoxelizer.h" />
-    <ClInclude Include="Misc\Voxelizer.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\RenderToTexture.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="IRenderToTexture.h" />
-    <ClInclude Include="Renderer\D3D11\RenderToTextureD3D11.h">
-      <Filter>Renderer\D3D11</Filter>
-    </ClInclude>
-    <ClInclude Include="Misc\EngineCommand.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="ILight.h" />
-    <ClInclude Include="Misc\ColladaImporter.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="IColladaImporter.h" />
-    <ClInclude Include="RenderObjects\DustRenderer.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="IDustRenderer.h" />
-    <ClInclude Include="Renderer\Inputlayout.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\MeshGroup.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\SkySphere.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="ISkySphere.h" />
     <ClInclude Include="IMeshGroup.h" />
     <ClInclude Include="IParticleEmitter.h" />
-    <ClInclude Include="Renderer\ParticleManager.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\ParticleEnum.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\ParticleEmitter.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\ParticleRenderObject.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\LaserRenderer.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="ILaserRenderer.h" />
     <ClInclude Include="IBillboardQuad.h" />
-    <ClInclude Include="RenderObjects\BillboardQuad.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="IEngineEventListener.h" />
-    <ClInclude Include="Renderer\CloudSimulation.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\CloudParticle.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\CloudManager.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\VolumetricCloud.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\StarDef.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="ISceneListener.h" />
-    <ClInclude Include="Animation\Animation.h">
-      <Filter>Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="Animation\AnimationData.h">
-      <Filter>Animation</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderObjects\UI3DObj.h">
-      <Filter>RenderObjects</Filter>
-    </ClInclude>
     <ClInclude Include="CollisionInfo.h" />
     <ClInclude Include="FBCollisionShape.h" />
-    <ClInclude Include="RenderObjects\GeometryRenderer.h">
+    <ClInclude Include="TextTags.h" />
+    <ClInclude Include="IPointLight.h" />
+    <ClInclude Include="AnimationData.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Keyboard.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Mouse.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>Foundation</Filter>
+    </ClInclude>
+    <ClInclude Include="CandidatesData.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ColladaImporter.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorRamp.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Console.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineCommand.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolConn.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Voxelizer.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleEmitter.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleEnum.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleManager.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLightMan.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererEnums.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererStructs.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderToTexture.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="StarDef.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureUtil.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBuffer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="VolumetricCloud.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="CloudManager.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="CloudParticle.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="CloudSimulation.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DEventMarker.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Font.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Inputlayout.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="IRenderState.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvertEnumD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="ConvertStructD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexBufferD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="InputLayoutD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderStateD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderToTextureD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBufferD3D11.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererD3D9.h">
+      <Filter>Renderer\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="BillboardQuad.h">
       <Filter>RenderObjects</Filter>
     </ClInclude>
-    <ClInclude Include="TextTags.h" />
-    <ClInclude Include="Renderer\PointLightMan.h">
-      <Filter>Renderer</Filter>
+    <ClInclude Include="DebugHud.h">
+      <Filter>RenderObjects</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\PointLight.h">
-      <Filter>Renderer</Filter>
+    <ClInclude Include="DustRenderer.h">
+      <Filter>RenderObjects</Filter>
     </ClInclude>
-    <ClInclude Include="IPointLight.h" />
+    <ClInclude Include="GeometryRenderer.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="LaserRenderer.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshGroup.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleRenderObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBox.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="SkySphere.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Terrain.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainPatch.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="UI3DObj.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="UIObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="SpatialObject.h">
+      <Filter>SceneGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptSystem.h">
+      <Filter>ScriptSystem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
-    <ClCompile Include="Foundation\Engine.cpp">
+    <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="FBCollisionShape.cpp" />
+    <ClCompile Include="AnimationData.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
       <Filter>Foundation</Filter>
     </ClCompile>
-    <ClCompile Include="Foundation\Keyboard.cpp">
+    <ClCompile Include="Keyboard.cpp">
       <Filter>Foundation</Filter>
     </ClCompile>
-    <ClCompile Include="Foundation\Mouse.cpp">
+    <ClCompile Include="Mouse.cpp">
       <Filter>Foundation</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Camera.cpp">
+    <ClCompile Include="Object.cpp">
+      <Filter>Foundation</Filter>
+    </ClCompile>
+    <ClCompile Include="ColladaImporter.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorRamp.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Console.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineCommand.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolConn.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Voxelizer.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="CandidatesData.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\D3D9\RendererD3D9.cpp">
+    <ClCompile Include="ParticleEmitter.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleManager.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLightMan.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderToTexture.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="StarDef.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureUtil.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexBuffer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="VolumetricCloud.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="CloudManager.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="CloudParticle.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="CloudSimulation.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DEventMarker.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="InputLayout.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexBufferD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="InputLayoutD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderStateD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderToTextureD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexBufferD3D11.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererD3D9.cpp">
       <Filter>Renderer\D3D9</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\VertexBufferD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\RendererD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\ShaderD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\Terrain.cpp">
+    <ClCompile Include="BillboardQuad.cpp">
       <Filter>RenderObjects</Filter>
     </ClCompile>
-    <ClCompile Include="RenderObjects\TerrainPatch.cpp">
+    <ClCompile Include="DebugHud.cpp">
       <Filter>RenderObjects</Filter>
     </ClCompile>
-    <ClCompile Include="SceneGraph\Scene.cpp">
+    <ClCompile Include="DustRenderer.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryRenderer.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="LaserRenderer.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshGroup.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleRenderObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBox.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="SkySphere.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Terrain.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="TerrainPatch.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="UI3DObj.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="UIObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
       <Filter>SceneGraph</Filter>
     </ClCompile>
-    <ClCompile Include="Foundation\Object.cpp">
-      <Filter>Foundation</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\DebugHud.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\TextureD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\TextureUtil.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\RenderStateD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Light.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Shader.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Material.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\InputLayoutD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\ColorRamp.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Texture.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\ToolConn.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\SkyBox.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3DEventMarker.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\MeshObject.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\Console.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="ScriptSystem\ScriptSystem.cpp">
-      <Filter>ScriptSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneGraph\SpatialObject.cpp">
+    <ClCompile Include="SpatialObject.cpp">
       <Filter>SceneGraph</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Renderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="DLLMain.cpp" />
-    <ClCompile Include="RenderObjects\UIObject.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\VertexBuffer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\CandidatesData.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Font.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\Voxelizer.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\RenderToTexture.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\D3D11\RenderToTextureD3D11.cpp">
-      <Filter>Renderer\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\EngineCommand.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="Misc\ColladaImporter.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\DustRenderer.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\InputLayout.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\MeshGroup.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\SkySphere.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\ParticleManager.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\ParticleEmitter.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\ParticleRenderObject.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\LaserRenderer.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\BillboardQuad.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\CloudSimulation.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\CloudParticle.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\CloudManager.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\VolumetricCloud.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\StarDef.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="ScriptSystem\LuaExports.cpp">
+    <ClCompile Include="LuaExports.cpp">
       <Filter>ScriptSystem</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\Animation.cpp">
-      <Filter>Animation</Filter>
+    <ClCompile Include="ScriptSystem.cpp">
+      <Filter>ScriptSystem</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\AnimationData.cpp">
-      <Filter>Animation</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderObjects\UI3DObj.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="FBCollisionShape.cpp" />
-    <ClCompile Include="RenderObjects\GeometryRenderer.cpp">
-      <Filter>RenderObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\PointLightMan.cpp">
+    <ClCompile Include="IRenderState.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\PointLight.cpp">
+    <ClCompile Include="RendererEnums.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
   </ItemGroup>

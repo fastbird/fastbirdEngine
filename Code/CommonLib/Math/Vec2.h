@@ -86,6 +86,13 @@ namespace fastbird
 			return *this;
 		}
 
+		Vec2& operator*= (const Vec2& v)
+		{
+			x *= v.x;
+			y *= v.y;
+			return *this;
+		}
+
 		Vec2& operator+= (float s)
 		{
 			x+=s;
@@ -193,6 +200,7 @@ namespace fastbird
 		static const Vec2 UNIT_X;
 		static const Vec2 UNIT_Y;
 		static const Vec2 ZERO;
+		static const Vec2 ONE;
 
 
 	};

@@ -28,14 +28,14 @@ Scroller::~Scroller()
 
 void Scroller::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 	v.push_back(mUIObject);	
 }
 
 bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mParent || !mVisible)
+	if (!mParent || !mVisibility.IsVisible())
 		return false;
 
 	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
@@ -80,4 +80,40 @@ void Scroller::OnStartUpdate(float elapsedTime)
 	mOffset.y = mCurOffset;
 	mOwner->Scrolled();
 }
+void Scroller::ResetScroller()
+{
+	mOffset = Vec2I(0, 0);
+	mCurOffset = 0;
+	mDestOffset = 0;
+
+}
+
+void Scroller::SetMaxOffset(const Vec2& maxOffset)
+{
+	if (mMaxOffset != maxOffset)
+	{
+		mMaxOffset = maxOffset;
+		if (mOffset.y < -mMaxOffset.y)
+		{
+			mOffset.y = -mMaxOffset.y;
+			mCurOffset = mOffset.y;
+			mDestOffset = mCurOffset;
+			mOwner->Scrolled();
+		}		
+		
+	}
+}
+
+void Scroller::SetOffset(const Vec2& offset)
+{
+	mOffset = offset;
+	if (mOffset.y < -mMaxOffset.y)
+	{
+		mOffset.y = -mMaxOffset.y;
+	}
+	mCurOffset = mOffset.y;
+	mDestOffset = mCurOffset;
+	mOwner->Scrolled();
+}
+
 }

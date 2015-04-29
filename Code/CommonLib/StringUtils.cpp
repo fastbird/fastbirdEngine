@@ -106,15 +106,27 @@ std::string GetFileName(const char* s)
 
 std::string GetFileNameWithoutExtension(const char* s)
 {
+	if (!s)
+		return std::string();
 	int len = strlen(s);
+	if (len == 0)
+		return std::string();
 	const char* nameStart = FindLastOf(s, '/');
 	if (!nameStart)
 	{
 		nameStart = FindLastOf(s, '\\');
 	}
-	if (nameStart)
+	const char* dot = FindLastOf(s, '.');
+	if (!dot)
 	{
-		const char* dot = FindLastOf(s, '.');
+		dot = s + strlen(s);
+	}
+	if (!nameStart)
+	{		
+		return std::string(s, dot);
+	}
+	else
+	{
 		return std::string(nameStart + 1, dot);
 	}
 	return std::string();
@@ -175,6 +187,21 @@ bool CheckExtension(const char* filename, const char* extension)
 		return false;
 
 	return _stricmp(szExtension, extension)==0;
+}
+
+std::string ReplaceExtension(const char* s, const char* newExtension)
+{
+	if_assert_fail(newExtension)
+	{
+		return std::string();
+	}
+	auto ret = StripExtension(s);
+	if (newExtension[0] != '.')
+	{
+		ret += ".";
+	}
+	ret += newExtension;
+	return ret;
 }
 
 //------------------------------------------------------------------------
@@ -422,6 +449,17 @@ bool IsNumeric(const char* str)
 			return false;
 	}
 	return true;
+}
+
+const char* FormatString(const char* str, ...)
+{
+	static char buf[2048];
+	va_list args;
+	va_start(args, str);
+	vsprintf_s(buf, 2048, str, args);
+	va_end(args);
+
+	return buf;
 }
 
 // STRING CONVERTER
@@ -841,6 +879,14 @@ Quat StringConverter::parseQuat(const std::string& val, const Quat& defaultValue
 //-----------------------------------------------------------------------
 Color StringConverter::parseColor(const std::string& val, const Color& defaultValue)
 {
+	if (val.size() < 3)
+		return defaultValue;
+
+	if (val[0] == '0' && val[1] == 'x')
+	{
+		unsigned c = parseHexa(val);
+		return Color(Color::FixColorByteOrder(c));		
+	}
     // Split on space
     StringVector vec = Split(val);
 

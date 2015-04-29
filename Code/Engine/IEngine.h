@@ -47,6 +47,7 @@ namespace fastbird
 	class IParticleEmitter;
 	class IFileChangeListener;
 	class IObject;
+	class ProfilerSimple;
 
 	class CLASS_DECLSPEC_ENGINE IEngine : public ReferenceCounter
 	{
@@ -147,10 +148,15 @@ namespace fastbird
 
 		virtual void AddMarkObject(IObject* mark) = 0;
 		virtual void RemoveMarkObject(IObject* mark) = 0;
+		virtual void AddHPBarObject(IObject* hpBar) = 0;
+		virtual void RemoveHPBarObject(IObject* hpBar) = 0;
 
 		// you have resposible to delete it.
 		virtual IScene* CreateScene() = 0;
 		virtual void DeleteScene(IScene* p) = 0;
+
+		virtual void DrawProfileResult(ProfilerSimple& p, const char* posVarName, int tab = 0) = 0;
+		virtual void DrawProfileResult(wchar_t* buf, const char* posVarName, int tab = 0) = 0;
 
 #ifdef _FBENGINE_FOR_WINDOWS_
 		// return processed

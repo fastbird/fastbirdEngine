@@ -1,6 +1,7 @@
 #pragma once
 #include <UI/IWinBase.h>
 #include <UI/EventHandler.h>
+#include <UI/VisibleStatus.h>
 
 namespace fastbird
 {
@@ -13,7 +14,10 @@ namespace fastbird
 		static const float WinBase::LEFT_GAP;
 		static const float NotDefined;
 
-		bool mVisible;
+		static Vec2I sLastPos;
+
+		friend class VisibleStatus;
+		VisibleStatus mVisibility;
 		std::string mName;
 		std::string mScriptPath;
 		std::string mUIPath;
@@ -45,6 +49,7 @@ namespace fastbird
 		WinBase* mManualParent;
 
 		Vec2I mAbsOffset; // when loading;
+		Vec2 mNOffset;
 
 
 		bool mMouseIn;
@@ -95,9 +100,6 @@ namespace fastbird
 		bool mLockTextSizeChange; // for changing the ui size by text size (MATCH_SIZE Property)
 		bool mStopScissorParent;
 		bool mInheritVisibleTrue;
-
-		bool mShowAnimation;
-		bool mHideAnimation;
 		bool mPivot;
 		bool mRender3D;
 		bool mModal;
@@ -106,10 +108,12 @@ namespace fastbird
 
 		Vec2I mTextGap;
 
+		float mAlpha;
 		// for highlight
 		float mHighlightSpeed;
 		float mCurHighlightTime;
 		bool mGoingBright;
+		bool mShowingTooltip;
 
 	public:
 		WinBase();
@@ -137,6 +141,7 @@ namespace fastbird
 		virtual void RemoveAllChild(bool immediately = false) {}
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) { return 0; }
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
+		virtual IWinBase* GetParent() { return (IWinBase*)mParent; }
 		virtual unsigned GetNumChildren() const { return 0; }
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual void SetName(const char* name);
@@ -180,6 +185,7 @@ namespace fastbird
 		virtual bool GetUseAbsYSize() const { return mUseAbsoluteXSize; }
 
 		virtual bool SetVisible(bool show);
+		virtual bool SetVisibleChildren(bool show){ return false; }
 		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible) {}
 		virtual bool GetVisible() const;
@@ -196,7 +202,9 @@ namespace fastbird
 		virtual void SetText(const wchar_t* szText);
 		virtual const wchar_t* GetText() const;
 		virtual void SetPasswd(bool passwd) {};
+		virtual IUIAnimation* GetOrCreateUIAnimation(const char* name);
 		virtual IUIAnimation* GetUIAnimation(const char* name);
+		virtual void SetUIAnimation(IUIAnimation* anim);
 		virtual void ClearAnimationResult();
 
 		virtual IEventHandler* GetEventHandler() const { return (IEventHandler*)this; }
@@ -204,6 +212,8 @@ namespace fastbird
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
 		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false);
+		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f);
+		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0);
 
 		virtual void Scrolled(){}
 		virtual void SetNPosOffset(const Vec2& offset);
@@ -212,7 +222,6 @@ namespace fastbird
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
 		virtual void SetPivotToUIObject(const Vec2& pivot);
 		virtual Vec2 GetPivotWNPos();
-		virtual void SetScissorRect(bool use, const RECT& rect);
 		virtual const RECT& GetRegion() const;
 		// OWN
 		// local space.
@@ -255,6 +264,7 @@ namespace fastbird
 		virtual int LocalNPosYToPixel(float nposy) const;
 		virtual Vec2I LocalNPosToPixel(const Vec2& npos) const;
 
+		virtual int GetTextWidth() const { return mTextWidth; }
 		virtual float GetTextWidthLocal() const;
 		virtual float GetTextEndWLocal() const;
 
@@ -277,6 +287,7 @@ namespace fastbird
 		void UpdateAlignedPos();
 		void UpdateWorldSize(bool settingSize = false);
 		void UpdateWorldPos(bool settingPos = false);
+		void UpdateNPos();
 
 		virtual int GetSpecialOrder() const { return mSpecialOrder; }
 		virtual bool GetInheritVisibleTrue() const { return mInheritVisibleTrue; }
@@ -300,10 +311,17 @@ namespace fastbird
 		virtual void StartHighlight(float speed);
 		virtual void StopHighlight();
 
+		virtual bool GetNoBackground() const;
+		virtual const Color GetBackColor();
+
+		virtual float GetAlpha() const;
+		virtual void OnAlphaChanged();
+
 	protected:
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
 		virtual void OnEnableChanged(){}
+
 		virtual void AlignText();
 		RECT GetScissorRegion();
 		void GetScissorIntersection(RECT& region);
@@ -322,5 +340,6 @@ namespace fastbird
 		int ParseIntPosY(const std::string& posY);
 
 		void ProcessHighlight(float dt);
+		void ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos, bool& hasScale);
 	};
 }

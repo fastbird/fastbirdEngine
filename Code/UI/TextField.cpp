@@ -35,7 +35,7 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	bool mouseIn = __super::OnInputFromHandler(mouse, keyboard);
 
-	if (!mVisible || !GetFocus(false))
+	if (!mVisibility.IsVisible() || !GetFocus(false))
 		return mouseIn;
 
 	if (keyboard->IsValid())

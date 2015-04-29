@@ -9,6 +9,7 @@ class PhyObj : public fastbird::IPhysicsInterface
 {
 	fastbird::Transformation mTransform;
 	fastbird::BoxShape mColShape;
+	std::vector<fastbird::CollisionShape*> mDummy;
 	float mMass;
 	unsigned mColGroup;
 	unsigned mColMask;
@@ -36,6 +37,9 @@ public:
 	// col shape provider
 	virtual unsigned GetNumColShapes() const { return 1; }
 	virtual fastbird::CollisionShape* GetShape(unsigned i) { return &mColShape; }
+	virtual const std::vector<fastbird::CollisionShape*>& GetShapes() const { 
+		return  mDummy;
+	}
 	virtual float GetMass() const { return mMass; }
 	virtual int GetCollisionGroup() const { return mColGroup; }
 	virtual int GetCollisionMask() const { return mColMask; }

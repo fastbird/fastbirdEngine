@@ -14,10 +14,10 @@ const float WinBase::NotDefined = 12345.6f;
 const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
+Vec2I WinBase::sLastPos(0, 0);
 
 WinBase::WinBase()
-: mVisible(false)
-, mAlignH(ALIGNH::LEFT)
+: mAlignH(ALIGNH::LEFT)
 , mAlignV(ALIGNV::TOP)
 , mParent(0)
 , mNPosAligned(0, 0)
@@ -51,6 +51,7 @@ WinBase::WinBase()
 , mUseAbsoluteYSize(false)
 , mAbsTempLock(false)
 , mAbsOffset(0, 0)
+, mNOffset(0, 0)
 , mSizeMod(0, 0)
 , mManualParent(0)
 , mCustomContent(0)
@@ -63,22 +64,25 @@ WinBase::WinBase()
 , mNSize(NotDefined, NotDefined)
 , mWNPos(NotDefined, NotDefined)
 , mWNSize(NotDefined, NotDefined)
-, mShowAnimation(false)
-, mHideAnimation(false)
 , mHideCounter(0), mPivot(false)
 , mRender3D(false), mTextGap(0, 0)
 , mModal(false), mDragable(0, 0), mEnable(true)
 , mCurHighlightTime(0)
 , mHighlightSpeed(0.f)
-, mGoingBright(true)
+, mGoingBright(true), mAlpha(1.f), mShowingTooltip(false)
 {
+	mVisibility.SetWinBase(this);
 }
 
 WinBase::~WinBase()
 {
+	if (mShowingTooltip)
+	{
+		IUIManager::GetUIManager().CleanTooltip();
+	}
 	if (mModal)
 	{
-		if (mVisible)
+		if (mVisibility.IsVisible())
 		{
 			IUIManager::GetUIManager().IgnoreInput(false, this);
 		}
@@ -385,20 +389,16 @@ void WinBase::SetPosY(int y)
 
 void WinBase::SetInitialOffset(Vec2I offset)
 {
-	Vec2 noffset;
 	mAbsOffset = offset;
 	if (mParent)
 	{
-		noffset = mParent->PixelToLocalNPos(offset);
+		mNOffset = mParent->PixelToLocalNPos(offset);
 	}
 	else
 	{
 		auto rtSize = GetRenderTargetSize();
-		noffset = Vec2(offset.x / (float)rtSize.x, offset.y / (float)rtSize.y);
+		mNOffset = Vec2(offset.x / (float)rtSize.x, offset.y / (float)rtSize.y);
 	}
-	mAbsTempLock = true;
-	//SetNPos(mNPos + noffset);
-	mAbsTempLock = false;
 }
 
 
@@ -462,15 +462,21 @@ void WinBase::UpdateWorldPos(bool settingPos)
 	{
 		// not setting position.
 		// maybe resolution is changed or parent pos changed.
-		if (mUseAbsoluteXPos)
+		if (mUseAbsoluteXPos && mUseAbsoluteYPos)
 		{
-			SetPosX(mPos.x);
+			SetPos(mPos);
 		}
-		if (mUseAbsoluteYPos)
+		else
 		{
-			SetPosY(mPos.y);
+			if (mUseAbsoluteXPos)
+			{
+				SetPosX(mPos.x);
+			}
+			if (mUseAbsoluteYPos)
+			{
+				SetPosY(mPos.y);
+			}
 		}
-
 		mAbsTempLock = true;
 		SetNPos(mNPos);
 		mAbsTempLock = false;
@@ -492,6 +498,29 @@ void WinBase::UpdateWorldPos(bool settingPos)
 	}*/
 
 	OnPosChanged();
+}
+
+void WinBase::UpdateNPos()
+{
+	if (mUseAbsoluteXPos && mUseAbsoluteYPos)
+	{
+		SetPos(mPos);
+	}
+	else
+	{
+		if (mUseAbsoluteXPos)
+		{
+			SetPosX(mPos.x);
+		}
+		if (mUseAbsoluteYPos)
+		{
+			SetPosY(mPos.y);
+		}
+	}
+
+	mAbsTempLock = true;
+	SetNPos(mNPos);
+	mAbsTempLock = false;
 }
 
 //---------------------------------------------------------------------------
@@ -521,21 +550,7 @@ void WinBase::SetAlign(ALIGNH::Enum h, ALIGNV::Enum v)
 
 void WinBase::UpdateAlignedPos()
 {
-	Vec2 noffset(0, 0);
-	if (mAbsOffset != Vec2I::ZERO)
-	{
-		if (mParent)
-		{
-			noffset = mParent->PixelToLocalNPos(mAbsOffset);
-		}
-		else
-		{
-			auto rtSize = GetRenderTargetSize();
-			noffset = Vec2(mAbsOffset.x / (float)rtSize.x, mAbsOffset.y / (float)rtSize.y);
-		}
-	}
-
-	mNPosAligned = mNPos + noffset;
+	mNPosAligned = mNPos + mNOffset;
 	switch(mAlignH)
 	{
 	case ALIGNH::LEFT: /*nothing todo*/ break;
@@ -551,99 +566,45 @@ void WinBase::UpdateAlignedPos()
 }
 
 //---------------------------------------------------------------------------
+// returning true, when visibility changed.
 bool WinBase::SetVisible(bool show)
 {
-	if (mVisible == show && mHideCounter == 0.f)
-	{
-		return false;
-	}
-		
-
-	if (mHideCounter != 0.f)
-	{
-		if (show)
-		{
-			mHideCounter = 0.f;
-			if (mHideAnimation)
-			{
-				mAnimations[sHideAnim]->SetActivated(false);
-			}
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	mVisible = show;
-
-	if (mVisible)
-	{
-	
-		if (mShowAnimation)
-		{
-			mAnimations[sShowAnim]->SetActivated(true);
-		}
-
-		if (!mBorders.empty())
-		{
-			for (auto var : mBorders)
-			{
-				var->SetVisible(show);
-			}
-		}
-		if (mModal)
-		{
-			IUIManager::GetUIManager().IgnoreInput(true, this);
-		}
-		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
-	}
-	else
-	{
-		if (mHideAnimation)
-		{
-			auto anim = mAnimations[sHideAnim];
-			
-			mHideCounter = anim->GetLength();
-			anim->SetActivated(true);
-			mVisible = true;
-			if (mShowAnimation)
-			{
-				mAnimations[sShowAnim]->SetActivated(false);
-			}
-			return false;
-		}
-
-		if (!mBorders.empty())
-		{
-			for (auto var : mBorders)
-			{
-				var->SetVisible(show);
-			}
-		}
-		if (mModal)
-		{
-			IUIManager::GetUIManager().IgnoreInput(false, this);
-		}
-		OnEvent(IEventHandler::EVENT_ON_HIDE);
-	}
-
-	IUIManager::GetUIManager().DirtyRenderList();
-	return true;
+	return mVisibility.SetVisible(show);
 }
 
 void WinBase::SetVisibleInternal(bool visible)
 {
-	assert(!visible); // using only for hiding for now.
-	mVisible = visible;
 	IUIManager::GetUIManager().DirtyRenderList();
-	if (!visible)
+	if (visible)
+	{
+		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
+		if (mModal)
+		{
+			IUIManager::GetUIManager().IgnoreInput(true, this);
+		}
+	}
+	else
+	{
 		OnEvent(IEventHandler::EVENT_ON_HIDE);
+		if (mModal)
+		{
+			IUIManager::GetUIManager().IgnoreInput(false, this);
+		}
+		mVisibility.Hided();
+	}
+
+	if (!mBorders.empty())
+	{
+		for (auto borderImage : mBorders)
+		{
+			borderImage->SetVisible(visible);
+		}
+	}
 }
 
 bool WinBase::GetVisible() const
 {
-	return mVisible;
+	return mVisibility.IsVisible();
 }
 
 
@@ -687,7 +648,7 @@ bool WinBase::IsIn(IMouse* mouse)
 //---------------------------------------------------------------------------
 bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return false;
 
 	if (mNoMouseEvent || mNoMouseEventAlone)
@@ -773,7 +734,9 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					mouse->Invalidate();
 			}
 			if (invalidate)
+			{
 				mouse->Invalidate();
+			}
 		}		
 		else if (mMouseInPrev)
 		{
@@ -891,7 +854,7 @@ void WinBase::AlignText()
 
 		case ALIGNH::CENTER:
 			{
-							   startPos.x += mWNSize.x*.5f - nwidth*.5f + mTextGap.x / (float)rtSize.x;
+							startPos.x += mWNSize.x*.5f - nwidth*.5f + mTextGap.x / (float)rtSize.x;;
 			}
 			break;
 
@@ -965,8 +928,8 @@ void WinBase::OnSizeChanged()
 	{
 		mUIObject->SetNSize(mWNSize);
 		const auto& region = mUIObject->GetRegion();
-		assert(region.right - region.left == mSize.x);
-		assert(!mUseAbsoluteYSize || region.bottom - region.top == mSize.y);
+		//assert(region.right - region.left == Round(mSize.x * mUIObject->GetAnimScale().x));
+		assert(!mUseAbsoluteYSize || region.bottom - region.top == Round(mSize.y * mUIObject->GetAnimScale().y));
 
 		if (!mFixedTextSize)
 		{
@@ -981,6 +944,15 @@ void WinBase::OnSizeChanged()
 	// we need this for alignment
 	UpdateWorldPos(true);
 	RefreshBorder();
+	RefreshScissorRects();
+}
+
+void WinBase::OnAlphaChanged()
+{
+	if (mUIObject)
+	{
+		mUIObject->SetAlpha(GetAlpha());
+	}
 }
 
 std::string WinBase::TranslateText(const char* text)
@@ -1023,7 +995,7 @@ const wchar_t* WinBase::GetText() const
 	return mTextw.c_str();
 }
 
-IUIAnimation* WinBase::GetUIAnimation(const char* name)
+IUIAnimation* WinBase::GetOrCreateUIAnimation(const char* name)
 {
 	auto itfind = mAnimations.Find(name);
 	if (itfind == mAnimations.end())
@@ -1033,6 +1005,31 @@ IUIAnimation* WinBase::GetUIAnimation(const char* name)
 		mAnimations[name]->SetTargetUI(this);
 	}
 	return mAnimations[name];
+}
+
+IUIAnimation* WinBase::GetUIAnimation(const char* name)
+{
+	auto itfind = mAnimations.Find(name);
+	if (itfind == mAnimations.end())
+	{
+		return 0;
+	}
+	return itfind->second;
+}
+
+void WinBase::SetUIAnimation(IUIAnimation* anim)
+{
+	const char* name = anim->GetName();
+	assert(name && strlen(name) != 0);
+
+	auto itfind = mAnimations.Find(name);
+	if (itfind != mAnimations.end())
+	{
+		FB_DELETE(itfind->second);
+		Log("(Info) Animation (%s) in Comp(%s) is replaced.", name, mName.c_str());
+	}
+	mAnimations[name] = anim;
+	anim->SetTargetUI(this);
 }
 
 void WinBase::ClearAnimationResult()
@@ -1087,12 +1084,14 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::OFFSETX:
 	{
 								mAbsOffset.x = StringConverter::parseInt(val);
+								SetInitialOffset(mAbsOffset);
 								UpdateWorldPos();
 								return true;
 	}
 	case UIProperty::OFFSETY:
 	{
 								mAbsOffset.y = StringConverter::parseInt(val);
+								SetInitialOffset(mAbsOffset);
 								UpdateWorldPos();
 								return true;
 	}
@@ -1113,12 +1112,23 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::NSIZEX:
 	{
-		SetNSizeX(StringConverter::parseReal(val));
+		float size = 1.f;
+		if (_stricmp(val, "fill") == 0)
+			size = 1.0f - mNPos.x;
+		else
+			size = StringConverter::parseReal(val);
+		SetNSizeX(size);
 		return true;
 	}
 	case UIProperty::NSIZEY:
 	{
-		SetNSizeY(StringConverter::parseReal(val));
+		float size = 1.f;
+		if (_stricmp(val, "fill") == 0)
+			size = 1.0f - mNPos.y;
+		else
+			size = StringConverter::parseReal(val);
+
+		SetNSizeY(size);
 		return true;
 	}
 	case UIProperty::BACK_COLOR:
@@ -1281,12 +1291,13 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::USE_SCISSOR:
 		{
 										mUseScissor = StringConverter::parseBool(val);
-										if (!mUseScissor)
+										RefreshScissorRects();
+										/*if (!mUseScissor)
 										{
 											mUIObject->SetUseScissor(false, RECT());
 										}
 										else if (mParent && mUIObject)
-											mUIObject->SetUseScissor(mUseScissor, mParent->GetRegion());
+											mUIObject->SetUseScissor(mUseScissor, mParent->GetRegion());*/
 										return true;
 		}
 
@@ -1318,26 +1329,34 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 		case UIProperty::SHOW_ANIMATION:
 		{
-										   auto anim = GetUIAnimation(sShowAnim);
+											auto anim = FB_NEW(UIAnimation);
+											anim->SetName(sShowAnim);											   
+											anim->SetTargetUI(this);
 										   anim->ClearData();
-										   anim->AddScale(0.0f, Vec2(0.001f, 0.001f));
+										   anim->AddScale(0.0f, Vec2(0.1f, 0.1f));
 										   anim->AddScale(sFadeInOutTime, Vec2(1.0f, 1.0f));
+										   anim->AddAlpha(0.0f, 0.0f);
+										   anim->AddAlpha(sFadeInOutTime, 1.0f);
 										   anim->SetLength(sFadeInOutTime);
 										   anim->SetLoop(false);
-										   mShowAnimation = true;
+										   mVisibility.AddShowAnimation(anim);
 										   mPivot = true;
 										   return true;
 		}
 
 		case UIProperty::HIDE_ANIMATION:
 		{
-										   auto anim = GetUIAnimation(sHideAnim);
+											auto anim = FB_NEW(UIAnimation);
+											anim->SetName(sHideAnim);
+											anim->SetTargetUI(this);
 										   anim->ClearData();
 										   anim->AddScale(0.0f, Vec2(1.0f, 1.0f));
 										   anim->AddScale(sFadeInOutTime, Vec2(0.001f, 0.001f));
+										   anim->AddAlpha(0.0f, 1.0f);
+										   anim->AddAlpha(sFadeInOutTime, 0.0f);
 										   anim->SetLength(sFadeInOutTime);
 										   anim->SetLoop(false);
-										   mHideAnimation = true;
+										   mVisibility.AddHideAnimation(anim);
 										   mPivot = true;
 										   return true;
 		}
@@ -1360,8 +1379,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			return true;
 		}
 	}
-
-	assert(0 && "Not processed property found");
+	Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
 	return false;
 }
 
@@ -1388,6 +1406,28 @@ bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
 	if (get)
 	{
 		return StringConverter::parseBool(buf);
+	}
+	return defaultVal;
+}
+
+float WinBase::GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal)
+{
+	char buf[256];
+	bool get = GetProperty(prop, buf);
+	if (get)
+	{
+		return StringConverter::parseReal(buf);
+	}
+	return defaultVal;
+}
+
+int WinBase::GetPropertyAsInt(UIProperty::Enum prop, int defaultVal)
+{
+	char buf[256];
+	bool get = GetProperty(prop, buf);
+	if (get)
+	{
+		return StringConverter::parseInt(buf);
 	}
 	return defaultVal;
 }
@@ -1460,6 +1500,7 @@ void WinBase::SetUseBorder(bool use)
 		RB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RB");
 		
 		RefreshBorder();
+		RefreshScissorRects();
 		IUIManager::GetUIManager().DirtyRenderList();
 	}
 	else if (!use && !mBorders.empty())
@@ -1492,6 +1533,7 @@ void WinBase::RefreshBorder()
 
 	assert(mBorders.size() == ORDER_NUM);
 
+	Vec2 offsetTwo = Vec2(3.0f, 3.0f) / (float)GetRenderTargetSize().x;
 	const Vec2 finalPos = GetFinalPos();
 	mBorders[ORDER_T]->SetNSizeX(mWNSize.x);
 	mBorders[ORDER_T]->SetWNPos(finalPos);
@@ -1521,6 +1563,36 @@ void WinBase::RefreshBorder()
 
 	wnpos = finalPos + mWNSize;
 	mBorders[ORDER_RB]->SetWNPos(wnpos);
+	/*mBorders[ORDER_T]->SetNSizeX(mWNSize.x + offsetTwo.x*2.f);
+	mBorders[ORDER_T]->SetWNPos(Vec2(finalPos.x, finalPos.y - offsetTwo.y));
+
+	mBorders[ORDER_L]->SetNSizeY(mWNSize.y + offsetTwo.y*2.f);
+	mBorders[ORDER_L]->SetWNPos(Vec2(finalPos.x - offsetTwo.x, finalPos.y));
+
+	mBorders[ORDER_R]->SetNSizeY(mWNSize.y + offsetTwo.y*2.f);
+	Vec2 wnpos = finalPos;
+	wnpos.x += mWNSize.x + offsetTwo.x;
+	mBorders[ORDER_R]->SetWNPos(wnpos);
+
+	mBorders[ORDER_B]->SetNSizeX(mWNSize.x + offsetTwo.x*2.f);
+	wnpos = finalPos;
+	wnpos.y += mWNSize.y + offsetTwo.y;
+	mBorders[ORDER_B]->SetWNPos(wnpos);
+
+	mBorders[ORDER_LT]->SetWNPos(finalPos - offsetTwo);
+
+	wnpos = finalPos;
+	wnpos.x += mWNSize.x + offsetTwo.x;
+	wnpos.y -= offsetTwo.y;
+	mBorders[ORDER_RT]->SetWNPos(wnpos);
+
+	wnpos = finalPos;
+	wnpos.y += mWNSize.y + offsetTwo.y;
+	wnpos.x -= offsetTwo.x;
+	mBorders[ORDER_LB]->SetWNPos(wnpos);
+
+	wnpos = finalPos + mWNSize + offsetTwo;
+	mBorders[ORDER_RB]->SetWNPos(wnpos);*/
 }
 
 void WinBase::SetNPosOffset(const Vec2& offset)
@@ -1577,15 +1649,6 @@ void WinBase::SetPivotToUIObject(const Vec2& pivot)
 		mUIObject->SetPivot(pivot);
 }
 
-void WinBase::SetScissorRect(bool use, const RECT& rect)
-{
-	mUseScissor = use;
-	if (mUIObject)
-	{
-		mUIObject->SetUseScissor(use, rect);
-	}
-}
-
 const RECT& WinBase::GetRegion() const
 {
 	static RECT r;
@@ -1606,17 +1669,39 @@ void WinBase::PosAnimationTo(const Vec2& destNPos, float speed)
 	}
 }
 
-void WinBase::OnStartUpdate(float elapsedTime)
+void WinBase::ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos, bool& hasScale)
 {
-	if (mHideCounter > 0.f)
+	if (anim->HasPosAnim())
 	{
-		mHideCounter -= elapsedTime;
-		if (mHideCounter <= 0.f)
+		hasPos = true;
+		pos += anim->GetCurrentPos();
+	}
+	if (anim->HasScaleAnim())
+	{
+		hasScale = true;
+		scale *= anim->GetCurrentScale();
+	}
+	if (anim->HasBackColorAnim())
+	{
+		SetProperty(UIProperty::BACK_COLOR, StringConverter::toString(anim->GetCurrentBackColor()).c_str());
+	}
+
+	if (anim->HasTextColorAnim())
+	{
+		SetProperty(UIProperty::TEXT_COLOR, StringConverter::toString(anim->GetCurrentTextColor()).c_str());
+	}
+	if (anim->HasAlphaAnim())
+	{
+		if (mUIObject)
 		{
-			mHideCounter = 0.f;
-			SetVisibleInternal(false);
+			mAlpha = anim->GetCurrentAlpha();
+			OnAlphaChanged();
 		}
 	}
+}
+
+void WinBase::OnStartUpdate(float elapsedTime)
+{
 	// Static Animation.
 	if (mSimplePosAnimEnabled)
 	{
@@ -1641,29 +1726,38 @@ void WinBase::OnStartUpdate(float elapsedTime)
 	Vec2 evaluatedScale(1, 1);
 	bool hasPos = false;
 	bool hasScale = false;
-	FB_FOREACH(it, mAnimations)
+	for(auto& it: mAnimations)
 	{
-		if (it->second->IsActivated())
-		{
-			IUIAnimation* anim = it->second;
+		IUIAnimation* anim = it.second;
+		if (anim->IsActivated())
+		{			
 			anim->Update(elapsedTime);
-			if (anim->HasPosAnim())
-			{
-				evaluatedPos += anim->GetCurrentPos();
-				hasPos = true;
-			}
-
-			if (anim->HasScaleAnim())
-			{
-				evaluatedScale = evaluatedScale * anim->GetCurrentScale();
-				hasScale = true;
-			}
-			if (anim->HasBackColorAnim())
-				SetProperty(UIProperty::BACK_COLOR, StringConverter::toString(anim->GetCurrentBackColor()).c_str());
-			if (anim->HasTextColorAnim())
-				SetProperty(UIProperty::TEXT_COLOR, StringConverter::toString(anim->GetCurrentTextColor()).c_str());
+			ApplyAnim(anim, evaluatedPos, evaluatedScale, hasPos, hasScale);
 		}
 	}
+	if (mVisibility.IsShowing())
+	{
+		for (auto anim : mVisibility.mShowAnimations)
+		{
+			if (anim->IsActivated())
+			{
+				anim->Update(elapsedTime);
+				ApplyAnim(anim, evaluatedPos, evaluatedScale, hasPos, hasScale);
+			}
+		}
+	}
+	if (mVisibility.IsHiding())
+	{
+		for (auto anim : mVisibility.mHideAnimations)
+		{
+			if (anim->IsActivated())
+			{
+				anim->Update(elapsedTime);
+				ApplyAnim(anim, evaluatedPos, evaluatedScale, hasPos, hasScale);
+			}
+		}
+	}
+
 	if (hasPos)
 		SetAnimNPosOffset(evaluatedPos);
 	if (hasScale)
@@ -1673,6 +1767,8 @@ void WinBase::OnStartUpdate(float elapsedTime)
 	{
 		ProcessHighlight(elapsedTime);
 	}
+
+	mVisibility.Update(elapsedTime);
 }
 
 void WinBase::SetAlphaBlending(bool set)
@@ -1843,22 +1939,12 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		SetPosY(y);
 	}
 
-
-	Vec2 noffset(0, 0);
 	sz = pelem->Attribute("offset");
 	{
 		if (sz)
 		{
 			Vec2I offset = StringConverter::parseVec2I(sz);
-			mAbsOffset = offset;
-			if (mParent)
-			{
-				noffset = mParent->PixelToLocalNPos(offset);
-			}
-			else
-			{
-				noffset = Vec2(offset.x / (float)rtSize.x, offset.y / (float)rtSize.y);
-			}
+			SetInitialOffset(offset);
 		}
 	}
 	sz = pelem->Attribute("offsetX");
@@ -1866,10 +1952,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	{
 		int x = StringConverter::parseInt(sz);
 		mAbsOffset.x = x;
-		if (mParent)
-			noffset.x = mParent->PixelToLocalNPosX(x);
-		else
-			noffset.x = (float)x / (float)rtSize.x;
+		SetInitialOffset(mAbsOffset);
 	}
 
 	sz = pelem->Attribute("offsetY");
@@ -1877,15 +1960,10 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	{
 		int y = StringConverter::parseInt(sz);
 		mAbsOffset.y = y;
-		if (mParent)
-			noffset.y = mParent->PixelToLocalNPosY(y);
-		else
-			noffset.y = y / (float)rtSize.y;
+		SetInitialOffset(mAbsOffset);
 	}
-	//mNPos += noffset;
 
-	//size
-	
+	//size	
 	sz = pelem->Attribute("nsize");
 	if (sz)
 	{
@@ -2054,10 +2132,8 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		{
 			FB_DELETE(pAnim);
 		}
-		else
-		{
-			mAnimations[pAnim->GetName()] = pAnim;
-		}
+		mAnimations[pAnim->GetName()] = pAnim;
+		
 		pElem = pElem->NextSiblingElement("Animation");
 	}
 
@@ -2097,7 +2173,10 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	// positions
 	auto pos = compTable.GetField("pos").GetVec2I(success);
 	if (success)
+	{
+		sLastPos = pos;
 		SetPos(pos);
+	}
 
 	auto nPosX = compTable.GetField("nposX").GetFloat(success);
 	if (success)
@@ -2110,25 +2189,22 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 
 	int x = compTable.GetField("posX").GetInt(success);
 	if (success)
+	{
+		sLastPos.x = x;
 		SetPosX(x);
+	}
 
 	int y = compTable.GetField("posY").GetInt(success);
 	if (success)
+	{
+		sLastPos.y = y;
 		SetPosY(y);
+	}
 
-	Vec2 noffset(0, 0);
 	auto offset = compTable.GetField("offset").GetVec2I(success);
 	if (success)
 	{
-		mAbsOffset = offset;
-		if (mParent)
-		{
-			noffset = mParent->PixelToLocalNPos(offset);
-		}
-		else
-		{
-			noffset = Vec2(offset.x / (float)rtSize.x, offset.y / (float)rtSize.y);
-		}
+		SetInitialOffset(offset);
 	}
 	
 	{
@@ -2136,10 +2212,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		if (success)
 		{
 			mAbsOffset.x = x;
-			if (mParent)
-				noffset.x = mParent->PixelToLocalNPosX(x);
-			else
-				noffset.x = (float)x / (float)rtSize.x;
+			SetInitialOffset(mAbsOffset);
 		}
 
 
@@ -2147,16 +2220,11 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		if (success)
 		{
 			mAbsOffset.y = y;
-			if (mParent)
-				noffset.y = mParent->PixelToLocalNPosY(y);
-			else
-				noffset.y = y / (float)rtSize.y;
+			SetInitialOffset(mAbsOffset);
 		}
-		//mNPos += noffset;
 	}
 
 	//size
-
 	Vec2 nsize = compTable.GetField("nsize").GetVec2(success);
 	if (success)
 	{
@@ -2306,7 +2374,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	{
 		auto field = compTable.GetField(UIProperty::ConvertToString((UIProperty::Enum)i));
 		if (field.IsValid())
-		{
+		{			
 			std::string v = field.GetString(success);
 			if (success)
 			{
@@ -2377,16 +2445,19 @@ void WinBase::ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos)
 										  IUIManager::GetUIManager().SetTooltipString(mTooltipText);
 
 										  IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+										  mShowingTooltip = true;
 	}
 		break;
 
 	case IEventHandler::EVENT_MOUSE_HOVER:
 		IUIManager::GetUIManager().SetTooltipString(mTooltipText);
 		IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+		mShowingTooltip = true;
 		break;
 
 	case IEventHandler::EVENT_MOUSE_OUT:
 		IUIManager::GetUIManager().SetTooltipString(std::wstring());
+		mShowingTooltip = false;
 		break;
 	}
 }
@@ -2397,42 +2468,49 @@ void WinBase::RefreshScissorRects()
 	{
 		mUIObject->SetUseScissor(true, GetScissorRegion());
 	}
+	else
+	{
+		mUIObject->SetUseScissor(false, RECT());
+	}
 }
 
 RECT WinBase::GetScissorRegion()
 {
+	RECT scissor = GetRegion();
+	/*if (!mBorders.empty())
+	{
+		ExpandRect(scissor, 3);
+	}*/
 	if (mUseScissor)
 	{
 		if (mParent)
-		{
-			RECT scissor = mParent->GetRegion();
+		{			
 			mParent->GetScissorIntersection(scissor);
 			return scissor;
 		}
 		if (mManualParent)
 		{
-			RECT scissor = mManualParent->GetRegion();
 			mManualParent->GetScissorIntersection(scissor);
 			return scissor;
 		}
 	}
 
-	return mUIObject->GetRegion();
+	return scissor;
 }
 
 void WinBase::GetScissorIntersection(RECT& scissor)
 {
 	if (mUIObject)
 	{
-		const auto& parentRegion = mUIObject->GetRegion();
-		if (scissor.left < parentRegion.left)
-			scissor.left = parentRegion.left;
-		if (scissor.right > parentRegion.right)
-			scissor.right = parentRegion.right;
-		if (scissor.top < parentRegion.top)
-			scissor.top = parentRegion.top;
-		if (scissor.bottom > parentRegion.bottom)
-			scissor.bottom = parentRegion.bottom;
+		const auto& myRegion = mUIObject->GetRegion();
+		if (scissor.left < myRegion.left)
+			scissor.left = myRegion.left;
+		if (scissor.right > myRegion.right)
+			scissor.right = myRegion.right;
+		if (scissor.top < myRegion.top)
+			scissor.top = myRegion.top;
+		if (scissor.bottom > myRegion.bottom)
+			scissor.bottom = myRegion.bottom;
 	}
 	if (mParent)
 		mParent->GetScissorIntersection(scissor);
@@ -2476,7 +2554,7 @@ void WinBase::RemoveAllEvents(bool includeChildren)
 
 void WinBase::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 	if (!mBorders.empty())
 	{
@@ -2553,17 +2631,16 @@ int WinBase::ParseIntPosX(const std::string& posX)
 	if_assert_fail(!posX.empty())
 		return 0;
 
-	static int lastPos = 0;
 	if (posX[0] == '+')
 	{
 		int val = StringConverter::parseInt(&posX[1]);
-		lastPos = val + lastPos;
-		return lastPos;
+		sLastPos.x = val + sLastPos.x;
+		return sLastPos.x;
 	}
 	else
 	{
 		int val = StringConverter::parseInt(posX);
-		lastPos = val;
+		sLastPos.x = val;
 		return val;
 	}
 }
@@ -2573,17 +2650,16 @@ int WinBase::ParseIntPosY(const std::string& posY)
 	if_assert_fail(!posY.empty())
 		return 0;
 
-	static int lastPos = 0;
 	if (posY[0] == '+')
 	{
 		int val = StringConverter::parseInt(&posY[1]);
-		lastPos = val + lastPos;
-		return lastPos;
+		sLastPos.y = val + sLastPos.y;
+		return sLastPos.y;
 	}
 	else
 	{
 		int val = StringConverter::parseInt(posY);
-		lastPos = val;
+		sLastPos.y = val;
 		return val;
 	}
 }
@@ -2639,6 +2715,38 @@ void WinBase::ProcessHighlight(float dt)
 			mat->SetAmbientColor(Lerp(Vec4(0, 0, 0, 1), Vec4(0, 1, 1, 1), mCurHighlightTime));
 		}
 	}
+}
+
+bool WinBase::GetNoBackground() const
+{
+	if (mUIObject)
+	{
+		return mUIObject->GetNoDrawBackground();
+	}
+	return false;
+}
+
+const Color WinBase::GetBackColor()
+{
+	if (mUIObject)
+	{
+		auto mat = mUIObject->GetMaterial();
+		if (mat)
+		{
+			return mat->GetDiffuseColor();
+		}
+	}
+
+	return Color::Zero;
+}
+
+float WinBase::GetAlpha() const
+{
+	if (mParent)
+	{
+		return mParent->GetAlpha() * mAlpha;
+	}
+	return mAlpha;
 }
 
 }

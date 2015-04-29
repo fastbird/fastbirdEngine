@@ -28,3 +28,6 @@
 #include <LinearMath/btTransform.h>
 
 #include <Physics/mathConv.h>
+
+
+#define DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__

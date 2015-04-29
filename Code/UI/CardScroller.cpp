@@ -4,6 +4,8 @@
 
 using namespace fastbird;
 
+unsigned CardItem::NextCardId = 1;
+
 CardScroller::CardScroller()
 :mNextEmptySlot(-1)
 , mRatio(-1)
@@ -12,8 +14,8 @@ CardScroller::CardScroller()
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mUIObject->GetMaterial()->SetDiffuseColor(Vec4(0.1f, 0.1f, 0, 1));
 	mUseScrollerV = true;
+	mUIObject->SetNoDrawBackground(true);
 }
 
 CardScroller::~CardScroller()
@@ -21,10 +23,28 @@ CardScroller::~CardScroller()
 
 }
 
-void CardScroller::GatherVisit(std::vector<IUIObject*>& v)
+void CardScroller::OnSizeChanged()
 {
-	/*__super::GatherVisitAlpha(v);*/
-	__super::GatherVisit(v);
+	__super::OnSizeChanged();
+	mWidth = 1.0f - PixelToLocalNWidth(4);
+}
+
+bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
+{
+	switch (prop)
+	{
+	case UIProperty::CARD_SIZEY:
+	{
+		SetCardSizeY(StringConverter::parseInt(val));
+		return true;
+	}
+	case UIProperty::CARD_OFFSETY:
+	{
+		SetCardOffset(StringConverter::parseInt(val));
+		return true;
+	}
+	}
+	return __super::SetProperty(prop, val);
 }
 
 void CardScroller::SetCardSize_Offset(const Vec2& x_ratio, int offset)
@@ -72,16 +92,16 @@ void CardScroller::SetCardOffset(int offset)
 	mNYOffset = this->PixelToLocalNHeight(offset);
 }
 
-IWinBase* CardScroller::AddCard()
+CardScroller::Slot* CardScroller::GetNextCardPos(Vec2& pos)
 {
 	float posX = 0.f;
 	float posY;
 	Slot* pDestSlot = 0;
-	if (mNextEmptySlot!=-1)
+	if (mNextEmptySlot != -1)
 	{
 		if (mNextEmptySlot > 0)
 		{
-			posY = mSlots[mNextEmptySlot].mNYPos = 
+			posY = mSlots[mNextEmptySlot].mNYPos =
 				mSlots[mNextEmptySlot - 1].mNYPos + mHeight + mNYOffset;
 		}
 		else
@@ -103,7 +123,7 @@ IWinBase* CardScroller::AddCard()
 		mSlots.back().mOccupied = true;
 		pDestSlot = &mSlots.back();
 		if (empty)
-		{			
+		{
 			posY = mSlots.back().mNYPos = 0.0f;
 		}
 		else
@@ -112,10 +132,30 @@ IWinBase* CardScroller::AddCard()
 			posY = mSlots.back().mNYPos = prev->mNYPos + mHeight + mNYOffset;
 		}
 	}
-	IWinBase* card = __super::AddChild(posX, posY, mWidth, mHeight, ComponentType::CardItem);
+	pos.x = posX;
+	pos.y = posY;
+	return pDestSlot;
+}
+
+IWinBase* CardScroller::AddCard()
+{
+	Vec2 pos;
+	Slot* pDestSlot = GetNextCardPos(pos);
 	assert(pDestSlot);
+	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);	
 	pDestSlot->mCard = card;
 	return card;
+}
+
+void CardScroller::AddCard(LuaObject& obj)
+{
+	Vec2 pos;
+	Slot* pDestSlot = GetNextCardPos(pos);
+	assert(pDestSlot);
+	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);
+	pDestSlot->mCard = card;
+
+	card->ParseLua(obj);
 }
 
 void CardScroller::DeleteCard(IWinBase* card)
@@ -190,10 +230,11 @@ void CardScroller::ArrangeSlots()
 CardItem::CardItem()
 : mCardData(0)
 {
+	mCardId = NextCardId++;
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mUIObject->GetMaterial()->SetDiffuseColor(Vec4(1, 0, 0, 1));
+	mUIObject->SetNoDrawBackground(true);
 }
 CardItem::~CardItem()
 {

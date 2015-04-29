@@ -8,6 +8,7 @@
 #include <UI/NumericUpDown.h>
 #include <UI/DropDown.h>
 #include <UI/ColorRampComp.h>
+#include <UI/CardScroller.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -23,9 +24,13 @@ namespace fastbird
 	int ToggleVisibleLuaUI(lua_State* L);
 	int CloseAllLuaUI(lua_State* L);
 	int SetVisibleComponent(lua_State* L);
+	int SetVisibleChildrenComponent(lua_State* L);
 	int GetVisibleLuaUI(lua_State* L);
 	int RemoveAllChildrenOf(lua_State* L);
+	int RemoveComponent(lua_State* L);
 	int AddComponent(lua_State* L);
+	int CreateNewCard(lua_State* L);
+	int GetCardUIId(lua_State* L);
 	int BlinkButton(lua_State* L);
 	int UpdateButtonProgressBar(lua_State* L);
 	int StartButtonProgressBar(lua_State* L);
@@ -43,12 +48,15 @@ namespace fastbird
 	int SetActivationUIAnim(lua_State* L);
 	int SetFocusUI(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
+	int SelectListBoxItems(lua_State* L);
 	int GetListBoxItemText(lua_State* L);
 	int AddListItem(lua_State* L);
 	int SetListItemProperty(lua_State* L);
 	int IsButtonActivated(lua_State* L);
 	int StartUIAnimation(lua_State* L);
 	int StopUIAnimation(lua_State* L);
+	int StartUIAnimationForListItem(lua_State* L);
+	int StopUIAnimationForListItem(lua_State* L);
 	int MatchUIHeight(lua_State* L);
 	int CacheListBox(lua_State* L);
 	int InsertCachedListItemCheckBox(lua_State* L);
@@ -72,9 +80,11 @@ namespace fastbird
 	int HideUIsExcept(lua_State* L);
 	int StartHighlightUI(lua_State* L);
 	int StopHighlightUI(lua_State* L);
+	int SetEnableComponent(lua_State* L);
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetEnableComponent);
 		LUA_SETCFUNCTION(mL, StartHighlightUI);
 		LUA_SETCFUNCTION(mL, StopHighlightUI);
 		LUA_SETCFUNCTION(mL, HideUIsExcept);
@@ -102,6 +112,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, CloseAllLuaUI);
 		LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
 		LUA_SETCFUNCTION(mL, SetVisibleComponent);
+		LUA_SETCFUNCTION(mL, SetVisibleChildrenComponent);
 		LUA_SETCFUNCTION(mL, LoadLuaUI);
 		LUA_SETCFUNCTION(mL, IsLoadedUI);
 		LUA_SETCFUNCTION(mL, CloneLuaUI);
@@ -110,7 +121,10 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, ClearListBox);
 		LUA_SETCFUNCTION(mL, SetStaticText);
 		LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
+		LUA_SETCFUNCTION(mL, RemoveComponent);
 		LUA_SETCFUNCTION(mL, AddComponent);
+		LUA_SETCFUNCTION(mL, CreateNewCard);
+		LUA_SETCFUNCTION(mL, GetCardUIId);
 		LUA_SETCFUNCTION(mL, BlinkButton);
 		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
 		LUA_SETCFUNCTION(mL, StartButtonProgressBar);
@@ -128,12 +142,15 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetActivationUIAnim);
 		LUA_SETCFUNCTION(mL, SetFocusUI);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);
+		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, GetListBoxItemText);
 		LUA_SETCFUNCTION(mL, AddListItem);
 		LUA_SETCFUNCTION(mL, SetListItemProperty);
 		LUA_SETCFUNCTION(mL, IsButtonActivated);
 		LUA_SETCFUNCTION(mL, StartUIAnimation);
 		LUA_SETCFUNCTION(mL, StopUIAnimation);
+		LUA_SETCFUNCTION(mL, StartUIAnimationForListItem);
+		LUA_SETCFUNCTION(mL, StopUIAnimationForListItem);
 		LUA_SETCFUNCTION(mL, GetListItemText);
 	}
 
@@ -286,6 +303,22 @@ namespace fastbird
 		return 0;
 	}
 
+	int SetVisibleChildrenComponent(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		luaL_checktype(L, 3, LUA_TBOOLEAN);
+		bool visible = lua_toboolean(L, 3) != 0;
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		if (comp)
+		{
+			comp->SetVisibleChildren(visible);
+			return 0;
+		}
+
+		return 0;
+	}
+
 	int RemoveAllChildrenOf(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
@@ -303,9 +336,28 @@ namespace fastbird
 		return 1;
 	}
 
+	int RemoveComponent(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		if (comp)
+		{
+			auto parent = comp->GetParent();
+			if (parent)
+			{
+				parent->RemoveChild(comp);
+			}
+			else
+			{
+				Error(DEFAULT_DEBUG_ARG, "Cannot remove root component.");
+			}
+		}
+		return 0;
+	}
+
 	int AddComponent(lua_State* L)
 	{
-		Profiler p("AddComponent_Lua");
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
@@ -325,6 +377,44 @@ namespace fastbird
 		}
 
 		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	int CreateNewCard(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* cardScrollerName = luaL_checkstring(L, 2);
+		LuaObject card(L, 3);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
+		if (!comp)
+		{
+			Error(DEFAULT_DEBUG_ARG, "No card scroller found!");
+			return 0;
+		}
+
+		CardScroller* cardScroller = (CardScroller*)comp;
+		cardScroller->AddCard(card);
+		return 0;
+	}
+
+	int GetCardUIId(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* cardScrollerName = luaL_checkstring(L, 2);
+		const char* cardName = luaL_checkstring(L, 3);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
+		if (comp)
+		{
+			auto cardComp = comp->GetChild(cardName);
+			if (cardComp)
+			{
+				CardItem* card = (CardItem*)cardComp;
+				lua_pushunsigned(L, card->GetCardId());
+				return 1;
+			}
+		}		
+
+		lua_pushunsigned(L, -1);
 		return 1;
 	}
 
@@ -591,7 +681,7 @@ namespace fastbird
 		const char* animName = luaL_checkstring(L, 3);
 		bool active = lua_toboolean(L, 4) != 0;
 
-		auto anim = comp->GetUIAnimation(animName);
+		auto anim = comp->GetOrCreateUIAnimation(animName);
 		anim->SetActivated(active);
 		return 0;
 	}
@@ -626,6 +716,36 @@ namespace fastbird
 				listbox->SelectRow(row);
 			}
 
+		}
+
+		return 0;
+	}
+
+	int SelectListBoxItems(lua_State* L)
+	{
+		const char* wnd = luaL_checkstring(L, 1);
+		const char* comp = luaL_checkstring(L, 2);
+		if (lua_isnil(L, 3))
+		{
+			return 0;
+		}
+		LuaObject rows(L, 3);
+		if (!rows.IsTable())
+		{
+			Error(DEFAULT_DEBUG_ARG, "Invalid Param.");
+			return 0;
+		}
+		auto winbase = IUIManager::GetUIManager().FindComp(wnd, comp);
+		ListBox* listbox = dynamic_cast<ListBox*>(winbase);
+		if (listbox)
+		{
+			listbox->ClearSelection();
+			unsigned len = rows.GetLen();
+			for (unsigned i = 1; i <= len; ++i)
+			{
+				unsigned row = rows.GetUnsignedAt(i);
+				listbox->SelectRow(row);
+			}
 		}
 
 		return 0;
@@ -732,7 +852,18 @@ namespace fastbird
 
 		if (comp)
 		{
+			if (comp->GetNoBackground())
+			{
+				comp->SetProperty(UIProperty::NO_BACKGROUND, "false");
+				comp->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0");
+			}
 			auto uiAnimation = comp->GetUIAnimation(animName);
+			if (!uiAnimation)
+			{
+				auto ganim = IUIManager::GetUIManager().GetGlobalAnimation(animName);
+				uiAnimation = ganim->Clone();
+				comp->SetUIAnimation(uiAnimation);
+			}
 			if (uiAnimation)
 			{
 				uiAnimation->SetActivated(true);
@@ -751,6 +882,68 @@ namespace fastbird
 		if (comp)
 		{
 			auto uiAnimation = comp->GetUIAnimation(animName);
+			if (uiAnimation)
+			{
+				uiAnimation->SetActivated(false);
+			}
+		}
+		return 0;
+	}
+
+	int StartUIAnimationForListItem(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
+		if (!comp || comp->GetType() != ComponentType::ListBox)
+			return 0;
+		unsigned index = luaL_checkunsigned(L, 3);
+		const char* animName = luaL_checkstring(L, 4);
+
+		ListBox* listbox = (ListBox*)comp;
+		unsigned numCols = listbox->GetNumCols();
+		for (unsigned c = 0; c < numCols; ++c)
+		{
+			auto item = listbox->GetItem(index, c);
+			if (item)
+			{
+				if (item->GetNoBackground())
+				{
+					item->SetProperty(UIProperty::NO_BACKGROUND, "false");
+					item->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0");
+				}
+				auto uiAnimation = item->GetUIAnimation(animName);
+				if (!uiAnimation)
+				{
+					auto ganim = IUIManager::GetUIManager().GetGlobalAnimation(animName);
+					uiAnimation = ganim->Clone();
+					item->SetUIAnimation(uiAnimation);
+				}
+				if (uiAnimation)
+				{
+					uiAnimation->SetActivated(true);
+				}
+			}
+		}
+		return 0;
+	}
+
+	int StopUIAnimationForListItem(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = IUIManager::GetUIManager().FindComp(uiname, compName);
+		if (!comp || comp->GetType() != ComponentType::ListBox)
+			return 0;
+		unsigned index = luaL_checkunsigned(L, 3);
+		const char* animName = luaL_checkstring(L, 4);
+
+		ListBox* listbox = (ListBox*)comp;
+		unsigned numCols = listbox->GetNumCols();
+		for (unsigned c = 0; c < numCols; ++c)
+		{
+			auto item = listbox->GetItem(index, c);
+			auto uiAnimation = item->GetUIAnimation(animName);
 			if (uiAnimation)
 			{
 				uiAnimation->SetActivated(false);
@@ -799,7 +992,7 @@ namespace fastbird
 		unsigned row = listbox->InsertCheckBoxItem(checked);
 		CheckBox* checkbox = listbox->GetCheckBox(row, 0);
 		checkbox->SetName(name);
-		checkbox->RegisterEventLuaFunc(IEventHandler::EVENT_CHECKBOX_CLICKED, eventFunc);
+		checkbox->RegisterEventLuaFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, eventFunc);
 		lua_pushunsigned(L, row);
 		return 1;
 	}
@@ -1083,6 +1276,24 @@ namespace fastbird
 	{
 		auto uiname = luaL_checkstring(L, 1);
 		IUIManager::GetUIManager().StopHighlightUI(uiname);
+		return 0;
+	}
+
+	int SetEnableComponent(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		if (!lua_isboolean(L, 3))
+		{
+			Error(DEFAULT_DEBUG_ARG, "Invalid param.");
+			return 0;
+		}
+		bool enable = lua_toboolean(L, 3)!=0;
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		if (comp)
+		{
+			comp->SetEnable(enable);
+		}
 		return 0;
 	}
 }

@@ -30,6 +30,7 @@ namespace fastbird
 		virtual void RemoveAllChild(bool immediately = false) = 0;
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
 		virtual IWinBase* GetChild(unsigned idx) = 0;
+		virtual IWinBase* GetParent() = 0;
 		virtual unsigned GetNumChildren() const = 0;
 		virtual void RemoveAllEvents(bool includeChildren) = 0;
 
@@ -64,6 +65,7 @@ namespace fastbird
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
 		virtual bool SetVisible(bool show) = 0;
+		virtual bool SetVisibleChildren(bool show) = 0;
 		virtual void SetVisibleInternal(bool visible) = 0;
 		virtual void OnParentVisibleChanged(bool visible) = 0;
 		virtual bool GetVisible() const = 0;
@@ -93,6 +95,8 @@ namespace fastbird
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) = 0;
 		virtual bool GetProperty(UIProperty::Enum prop, char val[]) = 0;
 		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false) = 0;
+		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f) = 0;
+		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0) = 0;
 
 		virtual void Scrolled() = 0;
 		virtual void SetNPosOffset(const Vec2& offset) = 0;
@@ -100,7 +104,6 @@ namespace fastbird
 		virtual void SetAnimNPosOffset(const Vec2& offset) = 0;
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot) = 0;
 		virtual void SetPivotToUIObject(const Vec2& pivot) = 0;
-		virtual void SetScissorRect(bool use, const RECT& rect) = 0;
 		virtual const RECT& GetRegion() const = 0;
 		virtual Vec2 GetPivotWNPos() = 0;
 
@@ -111,7 +114,9 @@ namespace fastbird
 		virtual float PixelToLocalNPosY(int pixel) const = 0;
 		virtual Vec2 PixelToLocalNPos(const Vec2I& pixel) const = 0;
 
+		virtual IUIAnimation* GetOrCreateUIAnimation(const char* name) = 0;
 		virtual IUIAnimation* GetUIAnimation(const char* name) = 0;
+		virtual void SetUIAnimation(IUIAnimation* anim) = 0;
 		virtual void ClearAnimationResult() = 0;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem) = 0;
@@ -141,6 +146,7 @@ namespace fastbird
 		virtual void SetAlphaBlending(bool set) = 0;
 		/*virtual bool GetAlphaBlending() const = 0;*/
 
+		virtual int GetTextWidth() const = 0;
 		virtual float GetTextWidthLocal() const = 0;
 		virtual float GetTextEndWLocal() const = 0;
 
@@ -183,6 +189,10 @@ namespace fastbird
 		virtual void StartHighlight(float speed)=0;
 		virtual void StopHighlight()=0;
 
+		virtual bool GetNoBackground() const = 0;
+		virtual const Color GetBackColor() = 0;
+		virtual float GetAlpha() const = 0;
+		virtual void OnAlphaChanged() = 0;
 	protected:
 		virtual void OnPosChanged() = 0;
 		virtual void OnSizeChanged() = 0;

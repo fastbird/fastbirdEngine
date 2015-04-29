@@ -9,6 +9,7 @@ namespace fastbird
 {
 	class IWinBase;
 	class ListBox;
+	class IUIAnimation;
 
 	class CLASS_DECLSPEC_UI IUIManager : public IInputListener
 	{
@@ -74,6 +75,10 @@ namespace fastbird
 
 		virtual void HighlightUI(const char* uiname)=0;
 		virtual void StopHighlightUI(const char* uiname)=0;
+
+		virtual IUIAnimation* GetGlobalAnimation(const char* animName) = 0;
+		virtual IUIAnimation* GetGlobalAnimationOrCreate(const char* animName) = 0;
+		virtual void PrepareTooltipUI() = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

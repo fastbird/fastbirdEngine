@@ -74,6 +74,11 @@ namespace fastbird
 
 	Vec3 FBCollisionShape::GetRandomPosInVolume(const Vec3* nearWorld, const Transformation& objT) const
 	{
+		if (!mBV)
+		{
+			return Vec3(0, 0, 0);
+		}
+
 		if (nearWorld)
 		{
 			Vec3 nearLocal = objT.ApplyInverse(*nearWorld);

@@ -1,5 +1,5 @@
 #pragma once
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
 namespace fastbird
 {
 	class ILaserRenderer : public SpatialObject

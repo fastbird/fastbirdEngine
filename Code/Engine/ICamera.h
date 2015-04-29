@@ -3,7 +3,7 @@
 #define _ICamera_header_included_
 
 #include <CommonLib/SmartPtr.h>
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
 
 namespace fastbird
 {

@@ -28,11 +28,11 @@ namespace fastbird
 		float elapsedTime = (float)(gpTimer->GetTickCount() - mStartTick) / (float)gpTimer->GetFreq();
 		char sp[10];
 		memset(sp, '\t', 10);
-		if (indent>9)
+		if (indent > 9)
 			sp[9] = 0;
 		else
 			sp[indent] = 0;
-		if (indent!=0)
+		if (indent != 0)
 		{
 			char buffer[255];
 			sprintf_s(buffer, 255, "%s[Profiler] %s takes %f secs.", sp, mName.c_str(), elapsedTime);
@@ -42,15 +42,40 @@ namespace fastbird
 		{
 			DebugOutput("%s[Profiler] %s takes %f secs.", sp, mName.c_str(), elapsedTime);
 			// print stack
-			while(!msgs.empty())
+			while (!msgs.empty())
 			{
 				DebugOutput(msgs.top().c_str());
 				assert(profileLogFile.is_open());
 				profileLogFile << msgs.top().c_str();
 				msgs.pop();
-			}		
+			}
 		}
 		if (mAccumulator)
 			*mAccumulator += elapsedTime;
+	}
+
+	//-----------------------------------------------------------------------
+	// Profile simple
+	ProfilerSimple::ProfilerSimple(const wchar_t* name)
+		:mName(name)
+	{
+		mStartTick = gpTimer->GetTickCount();
+	}
+
+	float ProfilerSimple::GetDT()
+	{
+		float dt = (float)(gpTimer->GetTickCount() - mStartTick) / (float)gpTimer->GetFreq();
+		mPrevDT = (dt + mPrevDT)* .5f;
+		return mPrevDT;
+	}
+
+	const wchar_t* ProfilerSimple::GetName() const
+	{
+		return mName;
+	}
+
+	void ProfilerSimple::Reset()
+	{
+		mStartTick = gpTimer->GetTickCount();
 	}
 }

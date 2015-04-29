@@ -17,6 +17,8 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::RadioBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void SetText(const wchar_t* szText);
+	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[]);
 
 	// IRadioBox
 	virtual void SetCheck(bool check);
@@ -25,10 +27,13 @@ public:
 	virtual int GetGroupID() const { return mGroupID; }
 
 	// event
+	void OnChildrenClicked(void* arg);
 	void OnClicked(void* arg);
 
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();
+
+	void OnMouseHover(void* arg);
 
 private:
 	void UpdateImage();

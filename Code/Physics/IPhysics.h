@@ -26,8 +26,9 @@ namespace fastbird
 			//btCollisionShape)
 
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj) = 0;
-		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider, float mass) = 0;
-		virtual RigidBody* CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass) = 0;
+		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider) = 0;
+		virtual RigidBody* CreateTempRigidBody(CollisionShape* colShape) = 0;
+		virtual RigidBody* CreateTempRigidBody(const std::vector<CollisionShape*>& colShape) = 0;
 		virtual void DeleteRigidBody(RigidBody* rigidBody) = 0;
 		virtual void AddRef(btCollisionShape* colShape) = 0;
 		virtual void Release(btCollisionShape* colShape) = 0;
@@ -43,7 +44,7 @@ namespace fastbird
 		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
 		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result) = 0;
 
-		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;
+		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;		
 
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
 	};

@@ -77,8 +77,8 @@ extern "C" {
 #include <Engine/IInputLayout.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IShader.h>
-#include <Engine/Renderer/IRenderState.h>
+#include <Engine/IRenderState.h>
 #include <Engine/IKeyboard.h>
 #include <Engine/IMouse.h>
-#include <Engine/Renderer/D3DEventMarker.h>
+#include <Engine/D3DEventMarker.h>
 #include <Engine/IConsole.h>

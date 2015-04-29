@@ -51,33 +51,54 @@ namespace fastbird
 	{
 		CollisionShape()
 		:mPos(0, 0, 0), mUserPtr(0)
+		, mScale(1, 1, 1)
 		{
 			
 		}
+
+		virtual void ChangeScale(const Vec3& scale){}
 		virtual ~CollisionShape(){}
 		CollisionShapes::Enum mType;
 		Vec3 mPos;
 		Quat mRot;
+		Vec3 mScale;
 		void* mUserPtr;
 	};
 
 	struct BoxShape : public CollisionShape
 	{
+		virtual void ChangeScale(const Vec3& scale)
+		{
+			mScale = scale;
+		}
 		Vec3 mExtent;		
 	};
 
 	struct SphereShape : public CollisionShape
 	{
+		virtual void ChangeScale(const Vec3& scale)
+		{
+			mScale = scale;
+		}
 		float mRadius;
 	};
 
 	struct CylinderShape : public CollisionShape
 	{
+		virtual void ChangeScale(const Vec3& scale)
+		{
+			mScale = scale;
+		}
 		Vec3 mExtent;
 	};
 
 	struct CapsuleShape : public CollisionShape
 	{
+		virtual void ChangeScale(const Vec3& scale)
+		{
+			mRadius *= scale.x;
+			mHeight *= scale.y;
+		}
 		float mRadius;
 		float mHeight;
 	};
@@ -85,15 +106,16 @@ namespace fastbird
 	struct MeshShape : public CollisionShape
 	{
 		MeshShape()
-		:mTriangleMesh(0), mNumVertices(0), mScale(1, 1, 1)
+		:mTriangleMesh(0), mNumVertices(0)
 		{
 
 		}
 		~MeshShape();
 		
+		virtual void ChangeScale(const Vec3& scale);
+
 		Vec3* mVertices;
 		unsigned mNumVertices;
-		Vec3 mScale;
 		btTriangleMesh* GetTriangleMesh();
 
 	private:
@@ -104,10 +126,10 @@ namespace fastbird
 	class CLASS_DECLSPEC_PHYSICS CollisionShapeMan
 	{
 	public:
-		static BoxShape* CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& extent, void* userPtr = 0);
-		static SphereShape* CreateSphereShape(const Vec3& pos, const Quat& rot, float radius, void* userPtr = 0);
-		static CylinderShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& extent, void* userPtr = 0);
-		static CapsuleShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, float radius, float height, void* userPtr = 0);
+		static BoxShape* CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale,const Vec3& extent, void* userPtr = 0);
+		static SphereShape* CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr = 0);
+		static CylinderShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0);
+		static CapsuleShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr = 0);
 		static MeshShape* CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
 			bool staticObj, void* userPtr = 0);
 		static MeshShape* CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, 

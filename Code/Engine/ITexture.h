@@ -2,8 +2,8 @@
 
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/VectorMap.h>
-#include <Engine/Renderer/RendererEnums.h>
-#include <Engine/Renderer/RendererStructs.h>
+#include <Engine/RendererEnums.h>
+#include <Engine/RendererStructs.h>
 
 namespace fastbird
 {
@@ -123,5 +123,7 @@ namespace fastbird
 				return 0;
 			}
 		}
+
+		bool ReloadTextureAtlas();
 	};
 }
