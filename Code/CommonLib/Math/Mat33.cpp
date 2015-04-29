@@ -108,3 +108,9 @@ Mat33 Mat33::ScaleAxis(const Vec3& scale) const
 					m[1][0] * scale.x, m[1][1] * scale.y, m[1][2] * scale.z,
 					m[2][0] * scale.x, m[2][1] * scale.y, m[2][2] * scale.z	);
 }
+
+//----------------------------------------------------------------------------
+bool Mat33::operator==(const Mat33& other) const
+{
+	return memcmp(m, other.m, sizeof(36))==0;
+}

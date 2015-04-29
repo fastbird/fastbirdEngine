@@ -4,7 +4,7 @@
 
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/Math/Vec3.h>
-#include <Engine/Renderer/RendererStructs.h>
+#include <Engine/RendererStructs.h>
 #include <Engine/IEngineEventListener.h>
 
 namespace fastbird
@@ -34,10 +34,6 @@ namespace fastbird
 		virtual void SetMaterial(const char* name, int pass = 0) = 0;
 		virtual void SetMaterial(IMaterial* pMat, int pass = 0) = 0;
 		virtual IMaterial* GetMaterial(int pass = 0) const = 0;
-		virtual void SetRasterizerState(const RASTERIZER_DESC& desc) = 0;
-		virtual void SetBlendState(const BLEND_DESC& desc) = 0;
-		virtual void SetDepthStencilState(const DEPTH_STENCIL_DESC& desc) = 0;
-		virtual void ClearRenderStates() = 0;
 		virtual void SetVertexBuffer(IVertexBuffer* pVertexBuffer) = 0;
 		virtual void SetIndexBuffer(IIndexBuffer* pIndexBuffer) = 0;
 		// override the input layout defined in material
@@ -54,7 +50,7 @@ namespace fastbird
 		virtual void* GetGamePtr() const = 0;
 		virtual void SetRadius(float r) = 0;
 		virtual void AttachToScene() = 0;
-		virtual void DetachFromScene() = 0;
+		virtual void DetachFromScene(bool includingRtt = false) = 0;
 		virtual bool IsAttached(IScene* pScene=0) const = 0;
 		virtual void SetName(const char* name) {}
 		virtual const char* GetName() const { return ""; }

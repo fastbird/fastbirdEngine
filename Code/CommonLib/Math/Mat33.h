@@ -90,6 +90,7 @@ namespace fastbird
 			m[2][index] = v.z;
 		}
 
+		bool operator==(const Mat33& other) const;
 		static const Mat33 IDENTITY;
 		static const Mat33 ZERO;
 

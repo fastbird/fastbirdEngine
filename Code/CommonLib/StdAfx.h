@@ -13,6 +13,7 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <regex>
 
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/Math/fbMath.h>

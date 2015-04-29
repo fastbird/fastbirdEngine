@@ -121,6 +121,14 @@ namespace fastbird
 		return exist;
 	}
 
+	void PrintLuaErrorString(lua_State* L, const char* luaString)
+	{
+		std::regex e(":(\\d+):");
+		char buf[1024];
+		sprintf_s(buf, "\n%s/%s", GetCWD(), std::regex_replace(luaString, e, "($1):").c_str());
+		fastbird::Error(buf);
+	}
+
 	void PrintLuaDebugInfo(lua_State* L, int level)
 	{
 		luaL_traceback(L, L, 0, 0);
@@ -203,11 +211,32 @@ namespace fastbird
 		return std::string();
 	}
 
+	std::string GetLuaVarAsString(lua_State* L, const char* varName, const char* luaFile)
+	{
+		auto luaObj = GetLuaVar(L, varName, luaFile);
+		if (luaObj.IsValid())
+		{
+			return luaObj.GetString();
+		}
+		return std::string();
+	}
+
 	bool GetLuaVarAsBoolean(lua_State* L, const char* varName)
 	{
 		LUA_STACK_CLIPPER w(L);
 		lua_getglobal(L, varName);
 		return lua_toboolean(L, -1)!=0;
+	}
+
+	Vec2I GetLuaVarAsVec2I(lua_State* L, const char* varname)
+	{
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varname);
+		assert(lua_istable(L, -1));
+		Vec2I ret = luaU_check<Vec2I>(L, -1);
+
+		lua_pop(L, 1);
+		return ret;
 	}
 
 	void SetLuaVar(lua_State* L, const char* varName, bool value)

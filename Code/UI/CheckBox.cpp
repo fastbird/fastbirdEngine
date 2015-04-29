@@ -14,6 +14,7 @@ CheckBox::CheckBox()
 	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+	mUIObject->SetNoDrawBackground(true);
 	mTextGap.x = 28;
 }
 
@@ -25,20 +26,20 @@ void CheckBox::OnCreated()
 {
 	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
+		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
-		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
+		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
+	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
 	mCheckImageBox->SetSize(Vec2I(24, 24));
 	mCheckImageBox->SetNPos(Vec2(0.0, 0.5f));
 
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
-
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
-		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
+	
 
 	if (mChecked)
 		mCheckImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "checkbox_checked");
@@ -71,7 +72,11 @@ void CheckBox::OnClicked(void* arg)
 {
 	mChecked = !mChecked;
 	UpdateImage();
-	OnEvent(IEventHandler::EVENT_CHECKBOX_CLICKED);
+}
+
+void CheckBox::OnClickedChildren(void* arg)
+{
+	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void CheckBox::UpdateImage()

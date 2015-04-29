@@ -1,17 +1,18 @@
 #pragma once
 #include <CommonLib/SmartPtr.h>
-#include <Engine/Renderer/RendererEnums.h>
+#include <Engine/RendererEnums.h>
 namespace fastbird
 {
 	class ITexture;
 	class IScene;
 	class ICamera;
 	class ILight;
+
 	class IRenderToTexture : public ReferenceCounter
 	{
 	public:
 		virtual const Vec2I& GetSize() const = 0;
-		virtual bool CheckOptions(const Vec2I& size, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap, bool hasDepth) = 0;
+		virtual bool CheckOptions(const RenderToTextureParam& param) = 0;
 		virtual void SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap) = 0;
 		virtual void SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap) = 0;
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil) = 0;
@@ -28,6 +29,8 @@ namespace fastbird
 		virtual bool GetEnable() const = 0;
 
 		virtual void SetEnvTexture(ITexture* texture) = 0;
+		virtual void SetUsePool(bool usePool) = 0;
+		virtual bool GetUsePool() const = 0;
 
 		// simple camera operation
 		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard) = 0;

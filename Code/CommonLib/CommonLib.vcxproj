@@ -84,7 +84,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_COMMON_LIB_;_WINLIB;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_COMMON_LIB_;_WINLIB;_MBCS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -184,6 +184,7 @@
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="StringUtils.h" />
     <ClInclude Include="Task.h" />
+    <ClInclude Include="Time.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="tinydir.h" />
     <ClInclude Include="tinyxml2.h" />
@@ -227,6 +228,7 @@
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="SpinLock.cpp" />
     <ClCompile Include="StdOutRedirect.cpp" />
+    <ClCompile Include="System.cpp" />
     <ClCompile Include="TaskScheduler.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -238,6 +240,7 @@
     <ClCompile Include="threads.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
     </ClCompile>
+    <ClCompile Include="Time.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="tinyxml2.cpp">
       <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>

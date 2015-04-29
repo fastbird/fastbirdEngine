@@ -3,11 +3,13 @@
 
 using namespace fastbird;
 
-BoxShape* CollisionShapeMan::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& extent, void* userPtr)
+//---------------------------------------------------------------------------
+BoxShape* CollisionShapeMan::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr)
 {
 	auto shape = FB_NEW(BoxShape);
 	shape->mPos = pos;
 	shape->mRot = rot;
+	shape->mScale = actorScale;
 	shape->mType = CollisionShapes::Box;
 	shape->mUserPtr = userPtr;
 
@@ -15,11 +17,14 @@ BoxShape* CollisionShapeMan::CreateBoxShape(const Vec3& pos, const Quat& rot, co
 
 	return shape;
 }
-SphereShape* CollisionShapeMan::CreateSphereShape(const Vec3& pos, const Quat& rot, float radius, void* userPtr)
+
+//---------------------------------------------------------------------------
+SphereShape* CollisionShapeMan::CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr)
 {
 	auto shape = FB_NEW(SphereShape);
 	shape->mPos = pos;
 	shape->mRot = rot;
+	shape->mScale = actorScale;
 	shape->mType = CollisionShapes::Sphere;
 	shape->mUserPtr = userPtr;
 
@@ -27,11 +32,14 @@ SphereShape* CollisionShapeMan::CreateSphereShape(const Vec3& pos, const Quat& r
 
 	return shape;
 }
-CylinderShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& extent, void* userPtr)
+
+//---------------------------------------------------------------------------
+CylinderShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr)
 {
 	auto shape = FB_NEW(CylinderShape);
 	shape->mPos = pos;
 	shape->mRot = rot;
+	shape->mScale = actorScale;
 	shape->mType = CollisionShapes::Cylinder;
 	shape->mUserPtr = userPtr;
 
@@ -39,11 +47,14 @@ CylinderShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Qua
 
 	return shape;
 }
-CapsuleShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Quat& rot, float radius, float height, void* userPtr)
+
+//---------------------------------------------------------------------------
+CapsuleShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr)
 {
 	auto shape = FB_NEW(CapsuleShape);
 	shape->mPos = pos;
 	shape->mRot = rot;
+	shape->mScale = actorScale;
 	shape->mType = CollisionShapes::Capsule;
 	shape->mUserPtr = userPtr;
 
@@ -52,6 +63,8 @@ CapsuleShape* CollisionShapeMan::CreateCylinderShape(const Vec3& pos, const Quat
 
 	return shape;
 }
+
+//---------------------------------------------------------------------------
 MeshShape* CollisionShapeMan::CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
 	bool staticObj, void* userPtr)
 {
@@ -93,7 +106,7 @@ void MeshShape::CreateTriangleMesh()
 	assert(mNumVertices % 3 == 0);
 	for (unsigned i = 0; i < mNumVertices; i += 3)
 	{
-		mTriangleMesh->addTriangle(FBToBullet(mVertices[i]), FBToBullet(mVertices[i + 1]), FBToBullet(mVertices[i + 2]));
+		mTriangleMesh->addTriangle(FBToBullet(mVertices[i]), FBToBullet(mVertices[i + 2]), FBToBullet(mVertices[i + 1]));
 	}
 }
 
@@ -113,6 +126,14 @@ btTriangleMesh* MeshShape::GetTriangleMesh()
 		mTriangleMesh->setScaling(FBToBullet(mScale));
 	}
 	return mTriangleMesh;
+}
+
+void MeshShape::ChangeScale(const Vec3& scale)
+{
+	mScale = scale;
+	mTriangleMesh->setScaling(FBToBullet(mScale));
+	//FB_DEL_ALIGNED(mTriangleMesh);
+	//mTriangleMesh = 0;
 }
 
 MeshShape::~MeshShape()

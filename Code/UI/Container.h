@@ -26,6 +26,7 @@ namespace fastbird
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual void RefreshVScrollbar();
 		virtual bool SetVisible(bool visible);
+		virtual bool SetVisibleChildren(bool show);
 		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
@@ -34,6 +35,7 @@ namespace fastbird
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
 
 		void OnClickRadio(RadioBox* pRadio);
 
@@ -55,7 +57,7 @@ namespace fastbird
 
 		virtual void StartHighlight(float speed);
 		virtual void StopHighlight();
-		
+		virtual void OnAlphaChanged();
 	private:
 		friend class WinBase;
 

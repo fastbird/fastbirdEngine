@@ -141,8 +141,16 @@ int main()
 	//----------------------------------------------------------------------------
 	if (gMeshObject)
 	{
-		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(
-			false, Vec2I(1024, 1024), PIXEL_FORMAT_R8G8B8A8_UNORM, true, false, false, false);
+		RenderToTextureParam param;
+		param.mEveryFrame = false;
+		param.mSize = Vec2I(1024, 1024);
+		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
+		param.mShaderResourceView = true;
+		param.mMipmap = false;
+		param.mCubemap = false;
+		param.mHasDepth = false;
+		param.mUsePool = false;
+		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(param);
 		rtt->GetScene()->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
@@ -224,6 +232,7 @@ int main()
 		obj->SetMeshObj((IMeshObject*)gMeshObject->Clone());
 		obj->CreateRigidBody();
 		auto rigidBody = obj->GetRigidBody();
+		rigidBody->RegisterToWorld();
 		rigidBody->ApplyCentralImpulse(Random(Vec3(10, -10, -10), Vec3(10, 10, 10)));
 
 	}
@@ -241,6 +250,7 @@ int main()
 		obj->SetMeshObj((IMeshObject*)gMeshObject->Clone());
 		obj->CreateRigidBody();
 		auto rigidBody = obj->GetRigidBody();
+		rigidBody->RegisterToWorld();
 		rigidBody->ApplyCentralImpulse(Random(Vec3(-10, -10, -10), Vec3(-10, 10, 10)));
 
 	}

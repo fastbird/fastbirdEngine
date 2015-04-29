@@ -68,6 +68,7 @@ namespace fastbird
 		bool IsString() const;
 		bool IsNumber() const;
 		bool IsBool() const;
+		bool IsNil() const;
 		bool IsValid(bool nilIsValid = false) const;
 		unsigned GetType() const { return mType; }
 		LuaObject GetField(const char* fieldName) const;
@@ -87,9 +88,19 @@ namespace fastbird
 		LuaObject SetSeqTable(int n) const;
 		LuaObject GetSeqTable(int n);
 		void SetSeq(int n, const char* str);
+		void SetSeq(int n, char* str);
 		void SetSeq(int n, unsigned num);
 		void SetSeq(int n, float num);
 		void SetSeq(int n, const Vec4& val);
+		template<class T>
+		void SetSeq(int n, T* val)
+		{
+			LUA_STACK_WATCHER w(mL, "void SetSeq(int n, T* val)");
+			PushToStack();
+			luaW_push(mL, val);
+			lua_rawseti(mL, -2, n);
+			lua_pop(mL, 1);
+		}
 		template <class T>
 		void SetSeqTemplate(int n, T v)
 		{
@@ -101,6 +112,8 @@ namespace fastbird
 		}
 
 		double GetNumberAt(int index) const;
+		unsigned GetUnsignedAt(int index) const;
+		LuaObject GetTableAt(int index) const;
 		std::string GetString(std::string& def = std::string()) const;		
 		float GetFloat(float def = 0.f) const;
 		int GetInt(int def = 0) const;
@@ -134,6 +147,8 @@ namespace fastbird
 		void Clear();
 
 		unsigned GetLen() const;
+
+		bool operator==(const LuaObject& other) const;
 
 	private:
 		void CheckType();

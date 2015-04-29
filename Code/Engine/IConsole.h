@@ -2,7 +2,7 @@
 #include <functional>
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/StringUtils.h>
-#include <Engine/Misc/EngineCommand.h>
+#include <Engine/EngineCommand.h>
 #include <sstream>
 
 #define REGISTER_CVAR(name, def, category, desc) \

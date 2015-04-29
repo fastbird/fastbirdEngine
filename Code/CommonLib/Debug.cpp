@@ -1,6 +1,5 @@
 #include <CommonLib/StdAfx.h>
 #include "Timer.h"
-
 namespace fastbird
 {
 void DebugOutput(const char* fmt, ...)

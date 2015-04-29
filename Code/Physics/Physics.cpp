@@ -42,6 +42,7 @@ void TickCallback(btDynamicsWorld *world, btScalar timeStep)
 {
 	auto physics = (Physics*)IPhysics::GetPhysics();
 	physics->_ReportCollisions();
+	physics->_CheckCollisionShapeForDel(timeStep);
 }
 
 void Physics::Initilaize()
@@ -91,6 +92,27 @@ void Physics::Deinitilaize()
 			mDynamicsWorld->removeCollisionObject(obj);
 			FB_DEL_ALIGNED(obj);
 		}
+
+		for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
+		{
+			auto colShape = it->first;
+			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
+			it = mColShapePendingDelete.erase(it);
+			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
+			{
+				btCompoundShape* compound = (btCompoundShape*)(colShape);
+				unsigned num = compound->getNumChildShapes();
+				int idx = num - 1;
+				while (idx >= 0)
+				{
+					auto shape = compound->getChildShape(idx);
+					compound->removeChildShapeByIndex(idx);
+					FB_DEL_ALIGNED(shape);
+					--idx;
+				}
+			}
+			FB_DEL_ALIGNED(colShape);
+		}
 	}
 	//delete collision shapes
 	/*for (int j = 0; j<mCollisionShapes.size(); j++)
@@ -122,7 +144,7 @@ void Physics::Update(float dt)
 {
 	if (mDynamicsWorld)
 	{
-		mDynamicsWorld->stepSimulation(dt, 2);
+		mDynamicsWorld->stepSimulation(dt, 8);
 		if (mDebugDrawer.getDebugMode() != 0)
 		{
 			mDynamicsWorld->debugDrawWorld();
@@ -133,8 +155,7 @@ void Physics::Update(float dt)
 void Physics::_ReportCollisions()
 {
 	// manifolds
-	int numManifolds = mDynamicsWorld->getDispatcher()->getNumManifolds();
-	for (int i = 0; i<numManifolds; i++)
+	for (int i = 0; i<mDynamicsWorld->getDispatcher()->getNumManifolds(); i++)
 	{
 		btPersistentManifold* contactManifold = mDynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
 		auto colObjA = contactManifold->getBody0();
@@ -192,34 +213,86 @@ void Physics::_ReportCollisions()
 	}
 }
 
+void Physics::_CheckCollisionShapeForDel(float timeStep)
+{
+	for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end(); )
+	{
+		auto colShape = it->first;
+		it->second -= timeStep;
+		if (it->second <= 0)
+		{
+			it = mColShapePendingDelete.erase(it);
+			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
+			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
+			{
+				btCompoundShape* compound = (btCompoundShape*)(colShape);
+				unsigned num = compound->getNumChildShapes();
+				int idx = num - 1;
+				while (idx >= 0)
+				{
+					auto shape = compound->getChildShape(idx);
+					compound->removeChildShapeByIndex(idx);
+					FB_DEL_ALIGNED(shape);
+					--idx;
+				}
+			}
+			FB_DEL_ALIGNED(colShape);
+		}
+		else
+		{
+			it++;
+		}
+	}
+}
+
 RigidBody* Physics::CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj)
 {
 	btCollisionShape* colShape = ParseCollisionFile(collisionFile);
 	return _CreateRigidBodyInternal(colShape, mass, obj);
 }
 
-RigidBody* Physics::CreateRigidBody(IPhysicsInterface* obj, float mass)
+RigidBody* Physics::CreateRigidBody(IPhysicsInterface* obj)
 {
+	if (!obj)
+	{
+		Error(DEFAULT_DEBUG_ARG, "no physics interface is provided!");
+		return 0;
+	}
 	auto colShape = CreateColShape(obj);
 	if (!colShape)
 		return 0;
-	return _CreateRigidBodyInternal(colShape, mass, obj);
+	return _CreateRigidBodyInternal(colShape, obj->GetMass(), obj);
 }
 
-RigidBody* Physics::CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass)
+RigidBody* Physics::CreateTempRigidBody(CollisionShape* colShape)
 {
+	btVector3 localInertia(0, 0, 0);
 	auto btcol = CreateBulletColShape(colShape);
-	return _CreateRigidBodyInternal(btcol, mass, obj);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
+	RigidBody* rigidBody = FB_NEW_ALIGNED(RigidBodyImpl, MemAlign)(rbInfo, 0, 0);
+	return rigidBody;
+}
+
+RigidBody* Physics::CreateTempRigidBody(const std::vector<CollisionShape*>& colShape)
+{
+	btVector3 localInertia(0, 0, 0);
+	auto btcol = CreateColShape(colShape);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
+	RigidBody* rigidBody = FB_NEW_ALIGNED(RigidBodyImpl, MemAlign)(rbInfo, 0, 0);
+	return rigidBody;
 }
 
 RigidBody* Physics::_CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj)
 {
-	fbMotionState* motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);
-	bool dynamic = mass != 0.0f;
+	fbMotionState* motionState = 0;
+	bool dynamic = mass != 0.0f;		
 	btVector3 localInertia(0, 0, 0);
 	if (dynamic)
 	{
 		colShape->calculateLocalInertia(mass, localInertia);
+		if (obj)
+			motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);
+		
 	}
 	
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(
@@ -239,26 +312,26 @@ btCollisionShape* Physics::CreateBulletColShape(CollisionShape* colShape)
 	case CollisionShapes::Box:
 	{
 								 auto shape = (BoxShape*)colShape;
-								 auto e = FBToBullet(shape->mExtent);
+								 auto e = FBToBullet(shape->mExtent * shape->mScale);
 								 return FB_NEW_ALIGNED(btBoxShape, MemAlign)(e);
 								 break;
 	}
 	case CollisionShapes::Sphere:
 	{
 									auto shape = (SphereShape*)colShape;
-									return FB_NEW_ALIGNED(btSphereShape, MemAlign)(shape->mRadius);
+									return FB_NEW_ALIGNED(btSphereShape, MemAlign)(shape->mRadius * shape->mScale.x);
 									break;
 	}
 	case CollisionShapes::Cylinder:
 	{
 									  auto shape = (CylinderShape*)colShape;
-									  return FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(shape->mExtent));
+									  return FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(shape->mExtent * shape->mScale));
 									  break;
 	}
 	case CollisionShapes::Capsule:
 	{
 									 auto shape = (CapsuleShape*)colShape;
-									 return FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(shape->mRadius, shape->mHeight);
+									 return FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(shape->mRadius * shape->mScale.x, shape->mHeight * shape->mScale.x);
 									 break;
 	}
 	case CollisionShapes::StaticMesh:
@@ -291,19 +364,25 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 	if_assert_fail(shapeProvider)
 		return 0;
 
-	auto num = shapeProvider->GetNumColShapes();
-	if (num == 0)
+	return CreateColShape(shapeProvider->GetShapes());
+}
+
+btCollisionShape* Physics::CreateColShape(const std::vector<CollisionShape*>& shapes)
+{
+	if (shapes.empty())
+	{
+		Error(DEFAULT_DEBUG_ARG, "No collision shapes!");
 		return 0;
-	if (num > 1)
+	}
+	if (shapes.size() > 1 || shapes[0]->mPos != Vec3::ZERO || shapes[0]->mRot != Quat::IDENTITY)
 	{
 		btCompoundShape* compound = FB_NEW_ALIGNED(btCompoundShape, MemAlign);
-		for (unsigned i = 0; i < num; ++i)
+		for (auto& colShape : shapes)
 		{
-			auto colShape = shapeProvider->GetShape(i);
 			if (colShape)
 			{
 				btCollisionShape* btshape = CreateBulletColShape(colShape);
-				
+
 				btTransform t;
 				t.setIdentity();
 				t.setRotation(FBToBullet(colShape->mRot));
@@ -319,11 +398,9 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 	}
 	else
 	{
-		auto colShape = shapeProvider->GetShape(0);
+		auto colShape = shapes[0];
 		return CreateBulletColShape(colShape);
 	}
-	assert(0);
-	return 0;
 }
 
 void Physics::DeleteRigidBody(RigidBody* rigidBody)
@@ -485,20 +562,7 @@ void Physics::Release(btCollisionShape* colShape)
 	if (it->second == 0)
 	{
 		mColShapesRefs.erase(it);
-		if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
-		{
-			btCompoundShape* compound = (btCompoundShape*)(colShape);
-			unsigned num = compound->getNumChildShapes();
-			int idx = num - 1;
-			while (idx >= 0)
-			{
-				auto shape = compound->getChildShape(idx);
-				compound->removeChildShapeByIndex(idx);
-				FB_DEL_ALIGNED(shape);
-				--idx;
-			}
-		}
-		FB_DEL_ALIGNED(colShape);
+		mColShapePendingDelete.Insert(std::make_pair(colShape, 3.f));		
 	}
 }
 
@@ -872,8 +936,8 @@ float Physics::GetDistanceBetween(RigidBody* a, RigidBody* b)
 
 	else if (!aCompound && !bCompound)
 	{
-		assert(aColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && aColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
-		assert(bColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && bColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
+		//assert(aColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && aColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
+		//assert(bColShape->getShapeType() >= BOX_SHAPE_PROXYTYPE && bColShape->getShapeType() < CONCAVE_SHAPES_START_HERE);
 		btVoronoiSimplexSolver sGjkSimplexSolver;
 		btGjkEpaPenetrationDepthSolver epaSolver;
 		btPointCollector gjkOutput;

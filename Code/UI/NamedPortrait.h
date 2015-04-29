@@ -17,9 +17,10 @@ namespace fastbird
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 
 		virtual void SetTexture(ITexture* texture);
+		virtual void GatherVisit(std::vector<IUIObject*>& v);
 
 	private:
 		IWinBase* mImageBox;
-		IWinBase* mStaticText;
+		IWinBase* mTextBox;
 	};
 }

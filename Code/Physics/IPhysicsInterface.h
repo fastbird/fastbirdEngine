@@ -33,6 +33,7 @@ namespace fastbird
 		// col shape provider
 		virtual unsigned GetNumColShapes() const = 0;
 		virtual fastbird::CollisionShape* GetShape(unsigned i) = 0;
+		virtual const std::vector<CollisionShape*>& GetShapes() const = 0;
 		virtual float GetMass() const = 0;
 		virtual int GetCollisionGroup() const = 0;
 		virtual int GetCollisionMask() const = 0;

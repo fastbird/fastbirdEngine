@@ -21,6 +21,7 @@ PhyObj::PhyObj(const Transformation& transform, float mass, unsigned colGroup, u
 	mColShape.mType = CollisionShapes::Box;
 	mColShape.mUserPtr = this;
 	mColShape.mExtent = Vec3(1, 1, 1);
+	mDummy.push_back(&mColShape);
 }
 
 PhyObj::~PhyObj()
@@ -36,7 +37,7 @@ PhyObj::~PhyObj()
 void PhyObj::CreateRigidBody()
 {
 	assert(!mRigidBody);
-	mRigidBody = IPhysics::GetPhysics()->CreateRigidBody(this, mMass);
+	mRigidBody = IPhysics::GetPhysics()->CreateRigidBody(this);
 	assert(mRigidBody);
 }
 

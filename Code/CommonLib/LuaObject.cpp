@@ -248,6 +248,11 @@ bool LuaObject::IsBool() const
 	return mType == LUA_TBOOLEAN;
 }
 
+bool LuaObject::IsNil() const
+{
+	return mType == LUA_TNIL;
+}
+
 void LuaObject::CheckType()
 {
 	mType = lua_type(mL, -1);
@@ -403,6 +408,15 @@ void LuaObject::SetSeq(int n, const char* str)
 	lua_pop(mL, 1);
 }
 
+void LuaObject::SetSeq(int n, char* str)
+{
+	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, char* str)");
+	PushToStack();
+	lua_pushstring(mL, str);
+	lua_rawseti(mL, -2, n);
+	lua_pop(mL, 1);
+}
+
 void LuaObject::SetSeq(int n, unsigned num)
 {
 	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, unsigned num)");
@@ -438,6 +452,36 @@ double LuaObject::GetNumberAt(int index) const
 	double number = lua_tonumber(mL, -1);
 	lua_pop(mL, 2);
 	return number;
+}
+
+unsigned LuaObject::GetUnsignedAt(int index) const
+{
+	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedAt(int index) const");
+	PushToStack();
+	lua_rawgeti(mL, -1, index);
+	if_assert_pass(lua_isnumber(mL, -1))
+	{
+		unsigned v = lua_tounsigned(mL, -1);
+		lua_pop(mL, 2);
+		return v;
+	}
+	return 0;
+}
+
+LuaObject LuaObject::GetTableAt(int index) const
+{
+	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedAt(int index) const");
+	PushToStack();
+	lua_rawgeti(mL, -1, index);
+	if(lua_istable(mL, -1))
+	{
+		LuaObject table(mL, -1);
+		unsigned v = lua_tounsigned(mL, -1);
+		lua_pop(mL, 2);
+		return table;
+	}
+	lua_pop(mL, 2);
+	return LuaObject();
 }
 
 //----------------------------------------------------------------
@@ -805,6 +849,23 @@ unsigned LuaObject::GetLen() const
 	lua_len(mL, -1);
 	unsigned len = luaL_checkunsigned(mL, -1);
 	return len;	
+}
+
+bool LuaObject::operator == (const LuaObject& other) const
+{
+	if (mRef == other.mRef && mType == other.mType)
+	{
+		return true;
+	}
+	if (mRef == LUA_NOREF || other.mRef == LUA_NOREF)
+		return false;
+
+	lua_rawgeti(mL, LUA_REGISTRYINDEX, mRef);
+	lua_rawgeti(mL, LUA_REGISTRYINDEX, other.mRef);
+	bool equal = lua_rawequal(mL, -1, -2) == 1;
+	lua_pop(mL, 2);
+
+	return equal;
 }
 
 //---------------------------------------------------------------------------

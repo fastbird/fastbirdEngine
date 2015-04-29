@@ -1,4 +1,7 @@
 <Material transparent="true">
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
+	<DepthStencilDesc DepthEnable="true" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	
 	<ShaderFile>es/Shaders/DebugDraw.hlsl</ShaderFile>
 	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>

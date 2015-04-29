@@ -1,6 +1,8 @@
 <Material>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
+	<DepthStencilDesc DepthEnable="false" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
 	<ShaderFile>es/Shaders/Mark.hlsl</ShaderFile>
-	<Shaders>VS|GS|PS</Shaders>
+	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
@@ -10,8 +12,14 @@
 	<Textures>
 	</Textures>
 	<MaterialParameters>
+		<Param desc="uvstart_end">0, 0, 1, 1</Param>
+		<Param desc="offset, scale">1, 1, 0, 0</Param>
 	</MaterialParameters>
-	<!--InputLayout>
+	<ShaderDefines>
+	
+	</ShaderDefines>
+	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-	</InputLayout-->
+		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
 </Material>

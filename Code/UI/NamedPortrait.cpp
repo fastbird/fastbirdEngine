@@ -6,13 +6,13 @@ namespace fastbird
 {
 
 	NamedPortrait::NamedPortrait()
-		: mImageBox(0), mStaticText(0)
 	{
 		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());		
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mImageBox = AddChild(0.5f, 0.0f, 1.0f, 0.8f, ComponentType::ImageBox);
-		mStaticText = AddChild(0.5f, 1.0f, 1.f, 0.2f, ComponentType::StaticText);
+		mTextBox = AddChild(0.5f, 1.0f, 1.f, 0.2f, ComponentType::TextBox);
+		mTextBox->SetProperty(UIProperty::TEXT_SIZE, "22");
 	}
 
 	NamedPortrait::~NamedPortrait()
@@ -24,11 +24,20 @@ namespace fastbird
 		assert(mImageBox);
 		mImageBox->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);	
 		mImageBox->SetProperty(UIProperty::OFFSETY, "2");
-		assert(mStaticText);
-		mStaticText->SetProperty(UIProperty::TEXT_ALIGN, "center");
-		mStaticText->SetProperty(UIProperty::OFFSETY, "-2");
-		mStaticText->SetAlign(ALIGNH::CENTER, ALIGNV::BOTTOM);
+		assert(mTextBox);		
+		mTextBox->SetPosY(mImageBox->GetSize().y+2);
+		mTextBox->SetProperty(UIProperty::TEXT_GAP, "2");
+		mTextBox->SetProperty(UIProperty::NSIZEY, "fill");
+		mTextBox->SetProperty(UIProperty::TEXT_ALIGN, "center");
+		mTextBox->SetProperty(UIProperty::TEXT_VALIGN, "top");
+		mTextBox->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
 		
+	}
+
+	void NamedPortrait::GatherVisit(std::vector<IUIObject*>& v)
+	{
+		v.push_back(mUIObject);
+		__super::GatherVisit(v);
 	}
 
 	bool NamedPortrait::SetProperty(UIProperty::Enum prop, const char* val)
@@ -54,10 +63,10 @@ namespace fastbird
 			return mImageBox->SetProperty(UIProperty::SIZE, val);
 
 		case UIProperty::NAMED_PORTRAIT_TEXT:
-			return mStaticText->SetProperty(UIProperty::TEXT, val);
+			return mTextBox->SetProperty(UIProperty::TEXT, val);
 
 		case UIProperty::NAMED_PORTRAIT_TEXT_COLOR:
-			return mStaticText->SetProperty(UIProperty::TEXT_COLOR, val);
+			return mTextBox->SetProperty(UIProperty::TEXT_COLOR, val);
 		}
 
 		return __super::SetProperty(prop, val);

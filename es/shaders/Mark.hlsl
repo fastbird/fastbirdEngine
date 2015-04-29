@@ -3,71 +3,53 @@
 struct a2v
 {
 	float3 Position : POSITION;
+	float2 UV : TEXCOORD0;
 };
 
-struct v2g
-{
-	float4 NDCPos : POSITION;
-};
-
-struct g2p
+struct v2p
 {
 	float4 Position : SV_Position;
 	float2 UV : TEXCOORD0;
 };
 
+Texture2D  gDiffuseTexture : register(t0);
+
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2g mark_VertexShader(uint id : SV_VertexID)
+v2p mark_VertexShader(in a2v INPUT)
 {
-	v2g OUTPUT;
-	OUTPUT.NDCPos = mul(gWorldViewProj, float4(0, 0, 0, 1)); // in ndc space
+	v2p OUTPUT;
+	float3 center = {gWorld[0][3], gWorld[1][3], gWorld[2][3]};
+	float4x4 vp = mul(gProj,gView);
+	float3 camUp = {gCamTransform[0][2], gCamTransform[1][2], gCamTransform[2][2]};
+	float radius = gMaterialParam[1].x;
+	float scale = gMaterialParam[1].y;
+	
+	// up
+	float3 barPos = center + camUp * radius;
+	float4 ndcBarPos = mul(vp, float4(barPos, 1.0f));
+	ndcBarPos.xy = ndcBarPos.xy / ndcBarPos.w;
+	ndcBarPos.y += 34 / gScreenSize.y;	
+	
+	OUTPUT.Position = float4(INPUT.Position.xy, 0, 1.0);
+	OUTPUT.Position.xy *= scale;
+	OUTPUT.Position.xy += ndcBarPos.xy;
+	OUTPUT.UV = INPUT.UV;
+
 	return OUTPUT;
-}
-
-
-//--------------------------------------------------------------------------------------
-// Geometry Shader
-//--------------------------------------------------------------------------------------
-cbuffer cbImmutable
-{
-	static float2 gUVs[3] = 
-	{
-		{0.0, 0.0},
-		{1.0, 0.0},
-		{0.5, 0.6}
-	};
-}
-[maxvertexcount(3)]
-void mark_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
-{
-	g2p OUTPUT;
-	float scale = gWorld[0][0];
-	float u = scale;
-	float v = -scale*gScreenRatio;
-	float2 pivot = {0.5, 1.0};
-	float2 NDCPos = INPUT[0].NDCPos.xy/INPUT[0].NDCPos.w;
-	for (int i=0; i<3; i++)
-	{		
-		float2 newpos;
-		newpos.x = NDCPos.x + u * (gUVs[i].x-pivot.x);
-		newpos.y = NDCPos.y + v * (gUVs[i].y-pivot.y);
-
-		OUTPUT.Position = float4(newpos, 0, 1);
-		OUTPUT.UV = gUVs[i];
-
-		stream.Append(OUTPUT);			
-	}
-	stream.RestartStrip();
 }
 
 //---------------------------------------------------------------------------
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 
-float4 mark_PixelShader(in g2p INPUT) : SV_Target
+float4 mark_PixelShader(in v2p INPUT) : SV_Target
 {
+#if DIFFUSE_TEXTURE
+	return gDiffuseTexture.Sample(gLinearSampler, 
+		gMaterialParam[0].xy + INPUT.UV*gMaterialParam[0].zw);
+#else
 	float3 color = gDiffuseColor;
 	float alpha = gDiffuseColor.w;
 	float3 highlightedColor = color+gEmissiveColor;
@@ -80,4 +62,5 @@ float4 mark_PixelShader(in g2p INPUT) : SV_Target
 	float3 finalColor = lerp(color, highlightedColor, sin(gTime*4.0)*.5+.5);
 	
 	return float4(finalColor, alpha);
+#endif	
 }

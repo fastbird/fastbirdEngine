@@ -24,6 +24,7 @@ public:
 
 	// event
 	void OnClicked(void* arg);
+	void OnClickedChildren(void* arg);
 
 	void OnMouseHover(void* arg);
 

@@ -32,8 +32,12 @@ namespace fastbird
 		
 		bool operator< (const CardItem& other) const;
 
+		unsigned GetCardId() const { return mCardId; }
+
 
 	private:
+		static unsigned NextCardId;
+		unsigned mCardId;
 		ICardData* mCardData; // custom class;
 	};
 
@@ -46,7 +50,8 @@ namespace fastbird
 
 		// IWinBase
 		virtual ComponentType::Enum GetType() const { return ComponentType::CardScroller; }
-		virtual void GatherVisit(std::vector<IUIObject*>& v);
+		virtual void OnSizeChanged();
+		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual void Sort();
 		virtual void SetCardSize_Offset(const Vec2& x_ratio, int offset);
 		virtual void SetCardSize(const Vec2I& size);
@@ -54,10 +59,12 @@ namespace fastbird
 		virtual void SetCardSizeY(int y);
 		virtual void SetCardOffset(int offset);
 		virtual IWinBase* AddCard();
+		void AddCard(LuaObject& obj);
 		virtual void DeleteCard(IWinBase* card);
 		virtual void ArrangeSlots();
 
 	private:
+
 		std::vector<Vec2> mCurrentPos;
 
 		struct Slot
@@ -66,8 +73,10 @@ namespace fastbird
 			bool mOccupied;
 			IWinBase* mCard;
 			bool operator< (const Slot& other) const;
-		};
+		};		
 		std::vector<Slot> mSlots;
+		Slot* GetNextCardPos(Vec2& outPos);
+
 		int mNextEmptySlot;
 		float mWidth;
 		float mHeight;

@@ -1,4 +1,8 @@
 <Material>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA" 
+		RenderTargetWriteMask="COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE"/>
+	<DepthStencilDesc DepthEnable="false" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	
 	<ShaderFile>es/Shaders/UI.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0., 0., 0., 1</AmbientColor>
@@ -10,6 +14,10 @@
 	</Textures>
 	<MaterialParameters>
 		<param comment="uStep, vStep, uStart, vStart">0, 0, 0, 0</param>
+		<param comment="0, 0, 0, 0">0, 0, 0, 0</param>
+		<param comment="0, 0, 0, 0">0, 0, 0, 0</param>
+		<param comment="0, 0, 0, 0">0, 0, 0, 0</param>
+		<param comment="0, 0, 0, alpha">0, 0, 0, 1</param>
 	</MaterialParameters>
 	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>

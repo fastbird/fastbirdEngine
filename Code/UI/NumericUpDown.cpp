@@ -12,6 +12,8 @@ namespace fastbird
 		:mValue(0)
 		, mMin(0)
 		, mMax(100)
+		, mUp(0)
+		, mDown(0)
 	{
 		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
@@ -26,7 +28,7 @@ namespace fastbird
 
 	void NumericUpDown::GatherVisit(std::vector<IUIObject*>& v)
 	{
-		if (!mVisible)
+		if (!mVisibility.IsVisible())
 			return;
 		v.push_back(mUIObject);
 
@@ -53,7 +55,8 @@ namespace fastbird
 		mDown->SetText(L"-");		
 		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mDown->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-		std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
+				std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
+		mDown->SetEnable(mValue >= mMin);
 
 		mUp->SetNSizeY(1.0f);
 		mUp->SetSizeX(12);
@@ -62,9 +65,8 @@ namespace fastbird
 		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mUp->SetText(L"+");		
 		mUp->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
-		std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
-
-		SetProperty(UIProperty::ALIGNH, "center");
+				std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
+		mUp->SetEnable(mValue <= mMax);
 		SetProperty(UIProperty::TEXT_ALIGN, "center");
 
 		WCHAR buffer[100];
@@ -75,12 +77,16 @@ namespace fastbird
 	void NumericUpDown::SetNumber(int number)
 	{
 		mValue = number;
+		mValue = std::min(mMax, mValue);
+		mValue = std::max(mMin, mValue);
 		WCHAR buffer[100];
 		swprintf_s(buffer, L"%d", mValue);
 		SetText(buffer);
-
-		mUp->SetEnable(mValue < mMax);
-		mDown->SetEnable(mValue > mMin);
+		if (mUp)
+			mUp->SetEnable(mValue <= mMax);
+		if (mDown)
+			mDown->SetEnable(mValue >= mMin);
+		OnEvent(EVENT_NUMERIC_SET);
 	}
 	
 	void NumericUpDown::SetMinMax(int min, int max)
@@ -97,11 +103,6 @@ namespace fastbird
 		if (mValue > mMin)
 		{
 			SetNumber(mValue - 1);
-			if (mValue == mMin)
-				mDown->SetEnable(false);
-			
-			mUp->SetEnable(mValue < mMax);
-
 			OnEvent(EVENT_NUMERIC_DOWN);
 		}
 	}
@@ -111,10 +112,6 @@ namespace fastbird
 		if (mValue < mMax)
 		{
 			SetNumber(mValue + 1);
-			if (mValue == mMax)
-				mUp->SetEnable(false);
-			
-			mDown->SetEnable(mValue > mMin);
 			OnEvent(EVENT_NUMERIC_UP);
 		}
 	}
@@ -139,8 +136,28 @@ namespace fastbird
 												  SetMinMax(minmax.x, minmax.y);
 												  return true;
 		}
+		case UIProperty::NUMERIC_UPDOWN_NUMBER:
+		{
+			int num = StringConverter::parseInt(val);
+			SetNumber(num);
+			return true;
+		}
 		}
 
 		return __super::SetProperty(prop, val);
+	}
+
+	bool NumericUpDown::GetProperty(UIProperty::Enum prop, char val[])
+	{
+		switch (prop)
+		{
+		case UIProperty::NUMERIC_UPDOWN_NUMBER:
+		{
+			sprintf_s(val, 256, "%d", mValue);
+			return true;
+		}
+		}
+
+		return __super::GetProperty(prop, val);
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
-#include <Engine/SceneGraph/SpatialObject.h>
-#include <Engine/Renderer/RendererEnums.h>
+#include <Engine/SpatialObject.h>
+#include <Engine/RendererEnums.h>
 #include <Engine/CollisionInfo.h>
 #include <CommonLib/Math/GeomUtils.h>
 #include <CommonLib/FBColShape.h>
@@ -74,6 +74,9 @@ namespace fastbird
 		virtual void RenderSimple() = 0;
 
 		virtual BoundingVolume* GetAABB() const = 0;
+
+		virtual void SetAlpha(float alpha) = 0;
+		virtual void SetAmbientColor(const Color& color) = 0;
 
 	private:
 		friend class Engine;

@@ -17,6 +17,7 @@ UIAnimation::UIAnimation()
 , mActivate(false)
 , mID(-1)
 , mTargetUI(0)
+, mCurAlpha(0)
 {
 }
 
@@ -79,6 +80,13 @@ void UIAnimation::AddMaterialColor(float time, const Color& color)
 	mKeyMaterialColor[time] = color;
 }
 
+void UIAnimation::AddAlpha(float time, float alpha)
+{
+	if (mKeyAlpha.empty())
+		mKeyAlpha[0.f] = 1.f;
+	mKeyAlpha[time] = alpha;
+}
+
 //---------------------------------------------------------------------------
 void UIAnimation::Update(float deltaTime)
 {
@@ -107,6 +115,27 @@ void UIAnimation::Update(float deltaTime)
 				if (HasScaleAnim())
 				{
 					mCurScale = (mKeyScale.end() - 1)->second;
+				}
+				// textcolor
+				if (!mKeyTextColor.empty())
+				{
+					mCurTextColor = (mKeyTextColor.end() - 1)->second;
+				}
+
+				// backcolor
+				if (!mKeyBackColor.empty())
+				{
+					mCurBackColor = (mKeyBackColor.end() - 1)->second;
+				}
+
+				if (!mKeyMaterialColor.empty())
+				{
+					mCurMaterialColor = (mKeyMaterialColor.end() - 1)->second;
+				}
+
+				if (!mKeyAlpha.empty())
+				{
+					mCurAlpha = (mKeyAlpha.end() - 1)->second;
 				}
 			}
 			mActivate = false;
@@ -144,6 +173,11 @@ void UIAnimation::Update(float deltaTime)
 		mCurMaterialColor = Animate(mKeyMaterialColor, mCurTime, normTime);
 	}
 
+	if (!mKeyAlpha.empty())
+	{
+		mCurAlpha = Animate(mKeyAlpha, mCurTime, normTime);
+	}
+
 	
 }
 
@@ -173,6 +207,11 @@ const Color& UIAnimation::GetCurrentMaterialColor() const
 	return mCurMaterialColor;
 }
 
+float UIAnimation::GetCurrentAlpha() const
+{
+	return mCurAlpha;
+}
+
 //---------------------------------------------------------------------------
 bool UIAnimation::HasScaleAnim() const
 {
@@ -193,6 +232,11 @@ bool UIAnimation::HasBackColorAnim() const
 bool UIAnimation::HasMaterialColorAnim() const
 {
 	return !mKeyMaterialColor.empty();
+}
+
+bool UIAnimation::HasAlphaAnim() const
+{
+	return !mKeyAlpha.empty();
 }
 
 void UIAnimation::LoadFromXML(tinyxml2::XMLElement* elem)
@@ -368,6 +412,11 @@ void UIAnimation::SetActivated(bool activate)
 		if (!mActivate)
 		{
 			mTargetUI->ClearAnimationResult();
+			if (!mKeyBackColor.empty())
+			{
+				auto backColor = StringConverter::toString(mInitialBackColor);
+				mTargetUI->SetProperty(UIProperty::BACK_COLOR, backColor.c_str());
+			}
 		}
 		else if (mActivate)
 		{
@@ -375,6 +424,11 @@ void UIAnimation::SetActivated(bool activate)
 			{
 				mCurScale = mKeyScale.begin()->second;
 				mTargetUI->SetAnimScale(mCurScale, mTargetUI->GetPivotWNPos());
+			}
+
+			if (!mKeyBackColor.empty())
+			{
+				mInitialBackColor = mTargetUI->GetBackColor();
 			}
 		}
 	}
@@ -394,6 +448,29 @@ void UIAnimation::ClearData()
 	mKeyTextColor.clear();
 	mKeyBackColor.clear();
 	mKeyMaterialColor.clear();
+	mKeyAlpha.clear();
 }
 
+
+IUIAnimation* UIAnimation::Clone() const
+{
+	UIAnimation* newAnim = FB_NEW(UIAnimation);
+	newAnim->mID = mID;
+	newAnim->mName = mName;
+	newAnim->mKeyPos = mKeyPos;
+	newAnim->mKeyScale = mKeyScale;
+	newAnim->mKeyTextColor = mKeyTextColor;
+	newAnim->mKeyBackColor = mKeyBackColor;
+	newAnim->mKeyMaterialColor = mKeyMaterialColor;
+	newAnim->mKeyAlpha = mKeyAlpha;
+	newAnim->mLength = mLength;
+	newAnim->mLoop = mLoop;
+	newAnim->mCurPos = mCurPos;
+	newAnim->mCurScale = mCurScale;
+	newAnim->mCurTextColor = mCurTextColor;
+	newAnim->mCurBackColor = mCurBackColor;
+	newAnim->mCurMaterialColor = mCurMaterialColor;
+	newAnim->mCurAlpha = mCurAlpha;
+	return newAnim;
+}
 }

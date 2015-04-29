@@ -18,4 +18,18 @@ namespace fastbird
 		float* mAccumulator;
 		
 	};
+
+	class ProfilerSimple
+	{
+	public:
+		ProfilerSimple(const wchar_t* name);
+		float GetDT();
+		const wchar_t* GetName() const;
+		void Reset();
+
+	private:
+		const wchar_t* mName;
+		__int64 mStartTick;
+		float mPrevDT;
+	};
 }

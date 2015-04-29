@@ -16,11 +16,13 @@ namespace fastbird
 
 		VectorMap<std::string, btCollisionShape*> mColShapes;
 		VectorMap<btCollisionShape*, unsigned> mColShapesRefs;
+		VectorMap<btCollisionShape*, float> mColShapePendingDelete;
 
 		// private functions
 		friend class RigidBody;
 		friend class RigidBodyImpl;
 		btCollisionShape* CreateColShape(IPhysicsInterface* shapeProvider);
+		btCollisionShape* CreateColShape(const std::vector<CollisionShape*>& shapes);
 		RigidBody* _CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj);
 		BulletDebugDraw mDebugDrawer;
 
@@ -39,9 +41,14 @@ namespace fastbird
 		virtual void Update(float dt);
 		// internal only.
 		void _ReportCollisions();
+		void _CheckCollisionShapeForDel(float timeStep);
+		btDynamicsWorld* _GetDynamicWorld() const { return mDynamicsWorld; }
+
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj);
-		virtual RigidBody* CreateRigidBody(IPhysicsInterface* obj, float mass);
-		virtual RigidBody* CreateRigidBody(CollisionShape* colShape, IPhysicsInterface* obj, float mass);
+		virtual RigidBody* CreateRigidBody(IPhysicsInterface* obj);
+		virtual RigidBody* CreateTempRigidBody(CollisionShape* colShape);
+		virtual RigidBody* CreateTempRigidBody(const std::vector<CollisionShape*>& colShape);
+
 		virtual void DeleteRigidBody(RigidBody* rigidBody);
 		btCollisionShape* ParseCollisionFile(const char* collisionFile);
 		

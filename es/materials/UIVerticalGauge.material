@@ -1,4 +1,7 @@
 <Material>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA" 
+		RenderTargetWriteMask="COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE"/>
+	<DepthStencilDesc DepthEnable="false" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
 	<ShaderFile>es/shaders/UIVerticalGauge.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0, 0, 0, 1</AmbientColor>

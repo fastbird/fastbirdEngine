@@ -95,7 +95,8 @@ float4 module_PixelShader( in v2p INPUT ) : SV_Target
 	float3 lightColor2 = gDirectionalLightDiffuse[1].xyz * gDirectionalLightDir_Intensity[1].w;
 	float3 toLightDir = gDirectionalLightDir_Intensity[0].xyz;
 	float3 toLightDir2 = gDirectionalLightDir_Intensity[0].xyz;
-	float3 toViewDir = normalize(gCameraPos - INPUT.WorldPos);
+	float3 camPos = { gCamTransform[0][3], gCamTransform[1][3], gCamTransform[2][3] };
+	float3 toViewDir = normalize(camPos - INPUT.WorldPos);
 
 	float dotNL = dot(normal, toLightDir);
 	float ndl = max(dotNL, 0);

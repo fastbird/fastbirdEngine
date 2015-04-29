@@ -1,8 +1,11 @@
 <Material>
-	<ShaderFile>Code/Engine/Renderer/Shaders/Quad.hlsl</ShaderFile>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA" 
+		RenderTargetWriteMask="COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE"/>
+	<DepthStencilDesc DepthEnable="false" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	<ShaderFile>Code/Engine/Shaders/Quad.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
-		<DiffuseColor_Alpha>1, 1, 1, 0</DiffuseColor_Alpha>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
 		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>

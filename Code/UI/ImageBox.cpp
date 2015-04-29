@@ -78,7 +78,7 @@ void ImageBox::CalcUV(const Vec2I& textureSize)
 void ImageBox::OnStartUpdate(float elapsedTime)
 {
 	__super::OnStartUpdate(elapsedTime);
-	if (!mAnimation || !mVisible)
+	if (!mAnimation || !mVisibility.IsVisible())
 		return;
 
 	mPlayingTime += elapsedTime;
@@ -112,6 +112,7 @@ void ImageBox::SetTexture(const char* file)
 
 void ImageBox::SetTexture(ITexture* pTexture)
 {
+	mImageFile.clear();
 	mTexture = pTexture;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;
@@ -213,7 +214,7 @@ void ImageBox::ChangeRegion(const char* region)
 
 void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 {
-	if (!mVisible)
+	if (!mVisibility.IsVisible())
 		return;
 
 	if (!mTexture && mImageFile.empty())
@@ -361,10 +362,10 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::IMAGE_COLOR_OVERLAY:
 	{
-											Vec4 color = StringConverter::parseVec4(val);
+											Color color = Color(val);
 											if (mUIObject)
 											{
-												mUIObject->GetMaterial()->SetDiffuseColor(color);
+												mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
 											}
 											return true;
 

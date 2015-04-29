@@ -131,6 +131,7 @@
       <Filter>Collision</Filter>
     </ClInclude>
     <ClInclude Include="ClipboardData.h" />
+    <ClInclude Include="Time.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -221,5 +222,7 @@
     <ClCompile Include="StdOutRedirect.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ClipboardData.cpp" />
+    <ClCompile Include="Time.cpp" />
+    <ClCompile Include="System.cpp" />
   </ItemGroup>
 </Project>

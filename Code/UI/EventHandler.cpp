@@ -8,7 +8,7 @@ namespace fastbird
 {
 
 size_t EventHandler::UNIQUE_ID = 0;
-
+unsigned EventHandler::sLastEventProcess = 0;
 EventHandler::EventHandler()
 : mEventEnable(true)
 {
@@ -91,8 +91,8 @@ bool EventHandler::OnEvent(EVENT e)
 		}
 		
 	}
-
-
+	if (processed)
+		sLastEventProcess = gpTimer->GetFrame();
 
 	return processed;
 }

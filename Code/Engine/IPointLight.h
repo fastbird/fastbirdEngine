@@ -1,6 +1,6 @@
 #pragma once
 #include <CommonLib/SmartPtr.h>
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
 
 namespace fastbird
 {

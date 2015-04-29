@@ -75,7 +75,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_UI;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_UI;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>UI/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -129,6 +129,7 @@
     <ClInclude Include="UIManager.h" />
     <ClInclude Include="UIProperty.h" />
     <ClInclude Include="VerticalGauge.h" />
+    <ClInclude Include="VisibleStatus.h" />
     <ClInclude Include="WinBase.h" />
     <ClInclude Include="Wnd.h" />
   </ItemGroup>
@@ -162,6 +163,7 @@
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="UIManagerLua.cpp" />
     <ClCompile Include="VerticalGauge.cpp" />
+    <ClCompile Include="VisibleStatus.cpp" />
     <ClCompile Include="WinBase.cpp" />
     <ClCompile Include="Wnd.cpp" />
   </ItemGroup>

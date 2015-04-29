@@ -33,7 +33,7 @@ namespace fastbird
 
 	void TextBox::GatherVisit(std::vector<IUIObject*>& v)
 	{
-		if (!mVisible)
+		if (!mVisibility.IsVisible())
 			return;
 
 		if (mImage)
@@ -80,9 +80,7 @@ namespace fastbird
 	{
 		// analyze the text length
 		IFont* pFont = gEnv->pRenderer->GetFont();
-		const auto& region = GetRegion();
-		unsigned width = region.right - region.left;
-
+		unsigned width = mSize.x;
 		pFont->SetHeight(mTextSize);
 		float textWidth;
 		mTextw = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
@@ -147,7 +145,11 @@ namespace fastbird
 
 	unsigned TextBox::GetTextBoxHeight() const
 	{
-		return (unsigned)(mTextSize * (mNumTextLines));
+		IFont* pFont = gEnv->pRenderer->GetFont();
+		pFont->SetHeight(mTextSize);
+		float height = pFont->GetBaseHeight();
+		pFont->SetBackToOrigHeight();
+		return (unsigned)(height * mNumTextLines) + 16;
 	}
 
 }

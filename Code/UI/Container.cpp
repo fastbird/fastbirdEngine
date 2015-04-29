@@ -110,7 +110,9 @@ IWinBase* Container::AddChild(float posX, float posY, const Vec2& width_aspectRa
 	if (pWinBase)
 		pWinBase->SetAspectRatio(ratio);
 
+	pWinBase->RefreshScissorRects();
 	pWinBase->OnCreated();
+	SetChildrenPosSizeChanged();
 
 	return pWinBase;
 }
@@ -124,13 +126,15 @@ IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
 	IWinBase* p = AddChild(type);
 	assert(p);
 	p->ParseLua(compTable);
-	p->OnCreated();
+	p->RefreshScissorRects(); // for scissor
+	p->OnCreated();	
 
 	if (dropdown)
 	{
 		DropDown* dd = (DropDown*)this;
 		dd->AddDropDownItem(p);
 	}
+	SetChildrenPosSizeChanged();
 	return p;
 }
 
@@ -153,6 +157,7 @@ void Container::RemoveChild(IWinBase* child, bool immediately)
 		if (ValueNotExistInVector(mPendingDelete, child))
 			mPendingDelete.push_back(child);
 	}
+	SetChildrenPosSizeChanged();
 }
 
 void Container::RemoveAllChild(bool immediately)
@@ -186,6 +191,7 @@ void Container::RemoveAllChild(bool immediately)
 				mPendingDelete.push_back(child);
 		}
 	}
+	SetChildrenPosSizeChanged();
 }
 
 IWinBase* Container::GetChild(const char* name, bool includeSubChildren/*= false*/)
@@ -267,6 +273,7 @@ void Container::OnStartUpdate(float elapsedTime)
 		{
 			assert(0);
 		}
+		mChildrenPosSizeChanged = true;
 	}
 	mPendingDelete.clear();
 	if (deleted)
@@ -312,10 +319,19 @@ void Container::OnSizeChanged()
 	{
 		WinBase* pWinBase = (WinBase*)i;
 		pWinBase->UpdateWorldSize();
+		pWinBase->UpdateNPos();
 		pWinBase->OnSizeChanged();
-		pWinBase->RefreshScissorRects();
 	}
 	RefreshVScrollbar();
+}
+
+void Container::OnAlphaChanged()
+{
+	__super::OnAlphaChanged();
+	for (auto i : mChildren)
+	{
+		i->OnAlphaChanged();
+	}
 }
 
 void Container::GatherVisit(std::vector<IUIObject*>& v)
@@ -457,7 +473,6 @@ void Container::RefreshVScrollbar()
 	float length = contentWNEnd - boxWNEnd;
 	if (length > 0.0001f)
 	{
-		float ;
 		float visableRatio = mWNSize.y / (mWNSize.y + length);
 
 		if (!mScrollerV && mUseScrollerV)
@@ -465,6 +480,10 @@ void Container::RefreshVScrollbar()
 			mScrollerV = static_cast<Scroller*>(AddChild(1.0f, 0.0f, 0.01f, 1.0f, ComponentType::Scroller));
 			mScrollerV->SetRender3D(mRender3D, GetRenderTargetSize());
 			mScrollerV->SetSizeX(4);
+			if (!mBorders.empty())
+			{
+				mScrollerV->SetProperty(UIProperty::OFFSETX, "-4");
+			}
 			mScrollerV->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			mScrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");
 			mScrollerV->SetOwner(this);
@@ -480,7 +499,20 @@ void Container::RefreshVScrollbar()
 	else
 	{
 		if (mScrollerV)
+		{
 			mScrollerV->SetVisible(false);
+			mScrollerV->ResetScroller();
+			if (mScrollerV->GetVisible())
+			{
+				for (auto child : mChildren)
+				{
+					if (child->GetType() != ComponentType::Scroller)
+					{
+						child->SetNPosOffset(Vec2(0, 0));
+					}
+				}
+			}
+		}
 	}
 	
 }
@@ -506,12 +538,21 @@ bool Container::SetVisible(bool visible)
 	return changed;
 }
 
+bool Container::SetVisibleChildren(bool show)
+{
+	for (auto var : mChildren)
+	{
+		var->SetVisible(show);
+	}
+	return true;
+}
+
 void Container::SetVisibleInternal(bool visible)
 {
 	__super::SetVisibleInternal(visible);
 	for (auto var : mChildren)
 	{
-		if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
+		if ((visible && var->GetInheritVisibleTrue()) || !visible)
 		{
 			var->SetVisibleInternal(visible);
 		}
@@ -705,6 +746,16 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 								  mUseScrollerV = b;
 								  return true;
 	}
+	case UIProperty::SCROLLERV_OFFSET:
+	{
+		RefreshVScrollbar();
+		if (mScrollerV)
+		{
+			auto offset = mScrollerV->GetOffset();
+			offset.y = StringConverter::parseReal(val);
+			mScrollerV->SetOffset(offset);
+		}
+	}
 	case UIProperty::SCROLLERH:
 	{
 								  bool b = StringConverter::parseBool(val);
@@ -721,6 +772,27 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	return __super::SetProperty(prop, val);
+}
+
+bool Container::GetProperty(UIProperty::Enum prop, char val[])
+{
+	switch (prop)
+	{
+	case UIProperty::SCROLLERV_OFFSET:
+	{
+		if (mScrollerV)
+		{
+			sprintf_s(val, 256, "%.4f", mScrollerV->GetOffset().y);
+			return true;
+		}
+		else
+		{
+			sprintf_s(val, 256, "%.4f", 0.f);
+			return true;
+		}
+	}
+	}
+	return __super::GetProperty(prop, val);
 }
 
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Foundation/Object.h>
+#include <Engine/Object.h>
 
 namespace fastbird
 {

@@ -1,6 +1,6 @@
 #pragma once
-#include <Engine/SceneGraph/SpatialObject.h>
-#include <Engine/Renderer/RendererEnums.h>
+#include <Engine/SpatialObject.h>
+#include <Engine/RendererEnums.h>
 
 namespace fastbird
 {

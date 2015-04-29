@@ -274,6 +274,7 @@ namespace fastbird
 		static const Vec3 UNIT_Y;
 		static const Vec3 UNIT_Z;
 		static const Vec3 ZERO;
+		static const Vec3 ONE;
 		static const Vec3 MAX;
 		static const Vec3 MIN;
 	};

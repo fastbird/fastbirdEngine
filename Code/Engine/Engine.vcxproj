@@ -101,7 +101,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -153,16 +153,30 @@
     <None Include="Documents\terrain.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Animation\Animation.h" />
-    <ClInclude Include="Animation\AnimationData.h" />
+    <ClInclude Include="Animation.h" />
+    <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="BillboardQuad.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="CandidatesData.h" />
+    <ClInclude Include="CloudManager.h" />
+    <ClInclude Include="CloudParticle.h" />
+    <ClInclude Include="CloudSimulation.h" />
+    <ClInclude Include="ColladaImporter.h" />
     <ClInclude Include="CollisionInfo.h" />
+    <ClInclude Include="ColorRamp.h" />
+    <ClInclude Include="Console.h" />
+    <ClInclude Include="ConvertEnumD3D11.h" />
+    <ClInclude Include="ConvertStructD3D11.h" />
+    <ClInclude Include="D3DEventMarker.h" />
+    <ClInclude Include="DebugHud.h" />
     <ClInclude Include="DllMain.h" />
+    <ClInclude Include="DustRenderer.h" />
+    <ClInclude Include="Engine.h" />
+    <ClInclude Include="EngineCommand.h" />
     <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="IEngineEventListener.h" />
-    <ClInclude Include="Foundation\Engine.h" />
-    <ClInclude Include="Foundation\Keyboard.h" />
-    <ClInclude Include="Foundation\Mouse.h" />
-    <ClInclude Include="Foundation\Object.h" />
     <ClInclude Include="GlobalEnv.h" />
     <ClInclude Include="IBillboardQuad.h" />
     <ClInclude Include="ICamera.h" />
@@ -183,10 +197,14 @@
     <ClInclude Include="IMeshGroup.h" />
     <ClInclude Include="IMeshObject.h" />
     <ClInclude Include="IMouse.h" />
+    <ClInclude Include="IndexBufferD3D11.h" />
+    <ClInclude Include="Inputlayout.h" />
+    <ClInclude Include="InputLayoutD3D11.h" />
     <ClInclude Include="IObject.h" />
     <ClInclude Include="IParticleEmitter.h" />
     <ClInclude Include="IPointLight.h" />
     <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="IRenderState.h" />
     <ClInclude Include="IRenderToTexture.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="ISceneListener.h" />
@@ -201,167 +219,127 @@
     <ClInclude Include="IUIObject.h" />
     <ClInclude Include="IVertexBuffer.h" />
     <ClInclude Include="IVoxelizer.h" />
-    <ClInclude Include="Misc\CandidatesData.h" />
-    <ClInclude Include="Misc\ColladaImporter.h" />
-    <ClInclude Include="Misc\ColorRamp.h" />
-    <ClInclude Include="Misc\Console.h" />
-    <ClInclude Include="Misc\EngineCommand.h" />
-    <ClInclude Include="Misc\ToolConn.h" />
-    <ClInclude Include="Misc\Voxelizer.h" />
-    <ClInclude Include="Renderer\Camera.h" />
-    <ClInclude Include="Renderer\CloudManager.h" />
-    <ClInclude Include="Renderer\CloudParticle.h" />
-    <ClInclude Include="Renderer\CloudSimulation.h" />
-    <ClInclude Include="Renderer\PointLight.h" />
-    <ClInclude Include="Renderer\PointLightMan.h" />
+    <ClInclude Include="Keyboard.h" />
+    <ClInclude Include="LaserRenderer.h" />
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="MeshGroup.h" />
+    <ClInclude Include="MeshObject.h" />
+    <ClInclude Include="Mouse.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="ParticleEmitter.h" />
+    <ClInclude Include="ParticleEnum.h" />
+    <ClInclude Include="ParticleManager.h" />
+    <ClInclude Include="ParticleRenderObject.h" />
+    <ClInclude Include="PointLight.h" />
+    <ClInclude Include="PointLightMan.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="RendererD3D11.h" />
+    <ClInclude Include="RendererD3D9.h" />
+    <ClInclude Include="RendererEnums.h" />
+    <ClInclude Include="RendererStructs.h" />
+    <ClInclude Include="RenderStateD3D11.h" />
+    <ClInclude Include="RenderToTexture.h" />
+    <ClInclude Include="RenderToTextureD3D11.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="ScriptSystem.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderD3D11.h" />
+    <None Include="Shaders\CommonDefines.h" />
+    <None Include="Shaders\CommonFunctions.h" />
+    <None Include="Shaders\CommonLighting.h" />
+    <None Include="Shaders\Constants.h" />
+    <None Include="Shaders\ModulesImmutable.h" />
+    <None Include="Shaders\ShaderCommon.h" />
+    <ClInclude Include="SkyBox.h" />
+    <ClInclude Include="SkySphere.h" />
+    <ClInclude Include="SpatialObject.h" />
+    <ClInclude Include="StarDef.h" />
+    <ClInclude Include="Terrain.h" />
+    <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="TextTags.h" />
-    <None Include="Renderer\Shaders\CommonDefines.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </None>
-    <None Include="Renderer\Shaders\CommonFunctions.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </None>
-    <None Include="Renderer\Shaders\CommonLighting.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </None>
-    <ClInclude Include="Renderer\StarDef.h" />
-    <ClInclude Include="Renderer\VolumetricCloud.h" />
-    <ClInclude Include="Renderer\D3D11\ConvertEnumD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\IndexBufferD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\InputLayoutD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\RendererD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\RenderStateD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\RenderToTextureD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\ShaderD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\TextureD3D11.h" />
-    <ClInclude Include="Renderer\D3D11\VertexBufferD3D11.h" />
-    <ClInclude Include="Renderer\D3D9\RendererD3D9.h" />
-    <ClInclude Include="Renderer\D3DEventMarker.h" />
-    <ClInclude Include="Renderer\Font.h" />
-    <ClInclude Include="Renderer\Inputlayout.h" />
-    <ClInclude Include="Renderer\Light.h" />
-    <ClInclude Include="Renderer\Material.h" />
-    <ClInclude Include="Renderer\ParticleEmitter.h" />
-    <ClInclude Include="Renderer\ParticleEnum.h" />
-    <ClInclude Include="Renderer\ParticleManager.h" />
-    <ClInclude Include="Renderer\Renderer.h" />
-    <ClInclude Include="Renderer\RendererEnums.h" />
-    <ClInclude Include="Renderer\RendererStructs.h" />
-    <ClInclude Include="Renderer\IRenderState.h" />
-    <ClInclude Include="Renderer\RenderToTexture.h" />
-    <ClInclude Include="Renderer\Shader.h" />
-    <None Include="Renderer\Shaders\Constants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
-    </None>
-    <None Include="Renderer\Shaders\ShaderCommon.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
-    </None>
-    <None Include="Renderer\Shaders\ModulesImmutable.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
-    </None>
-    <ClInclude Include="Renderer\Texture.h" />
-    <ClInclude Include="Renderer\TextureUtil.h" />
-    <ClInclude Include="Renderer\VertexBuffer.h" />
-    <ClInclude Include="RenderObjects\BillboardQuad.h" />
-    <ClInclude Include="RenderObjects\DebugHud.h" />
-    <ClInclude Include="RenderObjects\DustRenderer.h" />
-    <ClInclude Include="RenderObjects\GeometryRenderer.h" />
-    <ClInclude Include="RenderObjects\LaserRenderer.h" />
-    <ClInclude Include="RenderObjects\MeshGroup.h" />
-    <ClInclude Include="RenderObjects\MeshObject.h" />
-    <ClInclude Include="RenderObjects\ParticleRenderObject.h" />
-    <ClInclude Include="RenderObjects\SkyBox.h" />
-    <ClInclude Include="RenderObjects\SkySphere.h" />
-    <ClInclude Include="RenderObjects\Terrain.h" />
-    <ClInclude Include="RenderObjects\TerrainPatch.h" />
-    <ClInclude Include="RenderObjects\UI3DObj.h" />
-    <ClInclude Include="RenderObjects\UIObject.h" />
-    <ClInclude Include="SceneGraph\Scene.h" />
-    <ClInclude Include="SceneGraph\SpatialObject.h" />
-    <ClInclude Include="ScriptSystem\ScriptSystem.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureD3D11.h" />
+    <ClInclude Include="TextureUtil.h" />
+    <ClInclude Include="ToolConn.h" />
+    <ClInclude Include="UI3DObj.h" />
+    <ClInclude Include="UIObject.h" />
+    <ClInclude Include="VertexBuffer.h" />
+    <ClInclude Include="VertexBufferD3D11.h" />
+    <ClInclude Include="VolumetricCloud.h" />
+    <ClInclude Include="Voxelizer.h" />
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Animation\Animation.cpp" />
-    <ClCompile Include="Animation\AnimationData.cpp" />
+    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="AnimationData.cpp" />
+    <ClCompile Include="BillboardQuad.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CandidatesData.cpp" />
+    <ClCompile Include="CloudManager.cpp" />
+    <ClCompile Include="CloudParticle.cpp" />
+    <ClCompile Include="CloudSimulation.cpp" />
+    <ClCompile Include="ColladaImporter.cpp" />
+    <ClCompile Include="ColorRamp.cpp" />
+    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="D3DEventMarker.cpp" />
+    <ClCompile Include="DebugHud.cpp" />
     <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="DustRenderer.cpp" />
+    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="EngineCommand.cpp" />
     <ClCompile Include="FBCollisionShape.cpp" />
-    <ClCompile Include="Foundation\Engine.cpp" />
-    <ClCompile Include="Foundation\Keyboard.cpp" />
-    <ClCompile Include="Foundation\Mouse.cpp" />
-    <ClCompile Include="Foundation\Object.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    <ClCompile Include="Font.cpp" />
+    <ClCompile Include="GeometryRenderer.cpp" />
+    <ClCompile Include="IndexBufferD3D11.cpp" />
+    <ClCompile Include="InputLayout.cpp" />
+    <ClCompile Include="InputLayoutD3D11.cpp" />
+    <ClCompile Include="IRenderState.cpp" />
+    <ClCompile Include="Keyboard.cpp" />
+    <ClCompile Include="LaserRenderer.cpp" />
+    <ClCompile Include="Light.cpp" />
+    <ClCompile Include="LuaExports.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="MeshGroup.cpp" />
+    <ClCompile Include="MeshObject.cpp" />
+    <ClCompile Include="Mouse.cpp" />
+    <ClCompile Include="Object.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Misc\CandidatesData.cpp" />
-    <ClCompile Include="Misc\ColladaImporter.cpp" />
-    <ClCompile Include="Misc\ColorRamp.cpp" />
-    <ClCompile Include="Misc\Console.cpp" />
-    <ClCompile Include="Misc\EngineCommand.cpp">
-      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
-    </ClCompile>
-    <ClCompile Include="Misc\ToolConn.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Misc\Voxelizer.cpp" />
-    <ClCompile Include="Renderer\Camera.cpp" />
-    <ClInclude Include="Renderer\D3D11\ConvertStructD3D11.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClCompile Include="Renderer\CloudManager.cpp" />
-    <ClCompile Include="Renderer\CloudParticle.cpp" />
-    <ClCompile Include="Renderer\CloudSimulation.cpp" />
-    <ClCompile Include="Renderer\PointLight.cpp" />
-    <ClCompile Include="Renderer\PointLightMan.cpp" />
-    <ClCompile Include="Renderer\StarDef.cpp" />
-    <ClCompile Include="Renderer\VolumetricCloud.cpp" />
-    <ClCompile Include="Renderer\D3D11\IndexBufferD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\InputLayoutD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\RendererD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\RenderStateD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\RenderToTextureD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\ShaderD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\TextureD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D11\VertexBufferD3D11.cpp" />
-    <ClCompile Include="Renderer\D3D9\RendererD3D9.cpp" />
-    <ClCompile Include="Renderer\D3DEventMarker.cpp" />
-    <ClCompile Include="Renderer\Font.cpp" />
-    <ClCompile Include="Renderer\InputLayout.cpp" />
-    <ClCompile Include="Renderer\Light.cpp" />
-    <ClCompile Include="Renderer\Material.cpp" />
-    <ClCompile Include="Renderer\ParticleEmitter.cpp" />
-    <ClCompile Include="Renderer\ParticleManager.cpp" />
-    <ClCompile Include="Renderer\Renderer.cpp" />
-    <ClCompile Include="Renderer\RenderToTexture.cpp" />
-    <ClCompile Include="Renderer\Shader.cpp" />
-    <ClCompile Include="Renderer\Texture.cpp" />
-    <ClCompile Include="Renderer\TextureUtil.cpp" />
-    <ClCompile Include="Renderer\VertexBuffer.cpp" />
-    <ClCompile Include="RenderObjects\BillboardQuad.cpp" />
-    <ClCompile Include="RenderObjects\DebugHud.cpp" />
-    <ClCompile Include="RenderObjects\DustRenderer.cpp" />
-    <ClCompile Include="RenderObjects\GeometryRenderer.cpp" />
-    <ClCompile Include="RenderObjects\LaserRenderer.cpp" />
-    <ClCompile Include="RenderObjects\MeshGroup.cpp" />
-    <ClCompile Include="RenderObjects\MeshObject.cpp" />
-    <ClCompile Include="RenderObjects\ParticleRenderObject.cpp" />
-    <ClCompile Include="RenderObjects\SkyBox.cpp" />
-    <ClCompile Include="RenderObjects\SkySphere.cpp" />
-    <ClCompile Include="RenderObjects\Terrain.cpp" />
-    <ClCompile Include="RenderObjects\TerrainPatch.cpp" />
-    <ClCompile Include="RenderObjects\UI3DObj.cpp" />
-    <ClCompile Include="RenderObjects\UIObject.cpp" />
-    <ClCompile Include="SceneGraph\Scene.cpp" />
-    <ClCompile Include="SceneGraph\SpatialObject.cpp" />
-    <ClCompile Include="ScriptSystem\LuaExports.cpp" />
-    <ClCompile Include="ScriptSystem\ScriptSystem.cpp" />
+    <ClCompile Include="ParticleEmitter.cpp" />
+    <ClCompile Include="ParticleManager.cpp" />
+    <ClCompile Include="ParticleRenderObject.cpp" />
+    <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="PointLightMan.cpp" />
+    <ClCompile Include="RendererEnums.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RendererD3D11.cpp" />
+    <ClCompile Include="RendererD3D9.cpp" />
+    <ClCompile Include="RenderStateD3D11.cpp" />
+    <ClCompile Include="RenderToTexture.cpp" />
+    <ClCompile Include="RenderToTextureD3D11.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="ScriptSystem.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderD3D11.cpp" />
+    <ClCompile Include="SkyBox.cpp" />
+    <ClCompile Include="SkySphere.cpp" />
+    <ClCompile Include="SpatialObject.cpp" />
+    <ClCompile Include="StarDef.cpp" />
+    <ClCompile Include="Terrain.cpp" />
+    <ClCompile Include="TerrainPatch.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureD3D11.cpp" />
+    <ClCompile Include="TextureUtil.cpp" />
+    <ClCompile Include="ToolConn.cpp" />
+    <ClCompile Include="UI3DObj.cpp" />
+    <ClCompile Include="UIObject.cpp" />
+    <ClCompile Include="VertexBuffer.cpp" />
+    <ClCompile Include="VertexBufferD3D11.cpp" />
+    <ClCompile Include="VolumetricCloud.cpp" />
+    <ClCompile Include="Voxelizer.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -375,263 +353,131 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Renderer\Shaders\dust.hlsl">
+    <None Include="Shaders\BillboardQuad.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\font.hlsl">
+    <None Include="Shaders\BloomPS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\HelpMesh.hlsl">
+    <None Include="Shaders\BrightPassPS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\HighlightMesh.hlsl">
+    <None Include="Shaders\CalculateAdaptedLum.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\Line.hlsl">
+    <None Include="Shaders\CopyPS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\locator.hlsl">
+    <None Include="Shaders\depth.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\Mesh.hlsl">
+    <None Include="Shaders\depth_cloud.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\MeshPBR.hlsl">
+    <None Include="Shaders\DownScale2x2.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\module.hlsl">
+    <None Include="Shaders\DownScale2x2_Lum.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\modules.hlsl">
+    <None Include="Shaders\DownScale3x3.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\particle.hlsl">
+    <None Include="Shaders\dust.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\Quad.hlsl">
+    <None Include="Shaders\font.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\skybox.hlsl">
+    <None Include="Shaders\FullScreenQuadVS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\SkySphere.hlsl">
+    <None Include="Shaders\GaussBlur5x5.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\star.hlsl">
+    <None Include="Shaders\GodRayPS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\terrain.hlsl">
+    <None Include="Shaders\HdrLine.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\UI.hlsl">
+    <None Include="Shaders\HighlightMesh.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\UIHexagonal.hlsl">
+    <None Include="Shaders\line.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\DownScale2x2_Lum.hlsl">
+    <None Include="Shaders\locator.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\DownScale3x3.hlsl">
+    <None Include="Shaders\LuminanceAvgPS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\FullScreenQuadVS.hlsl">
+    <None Include="Shaders\MergeTextures2PS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\ToneMapping.hlsl">
+    <None Include="Shaders\mesh.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\BrightPassPS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\MeshPBR.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\BloomPS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\OccPrePass.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\LuminanceAvgPS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\OccPrePassGS.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\GodRayPS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\particle.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\OccPrePass.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\quad.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\OccPrePassGS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumFinal.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\CopyPS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumFinalNew.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\DownScale2x2.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumInitial.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\GaussBlur5x5.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumInitialNew.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\MergeTextures2PS.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumIterative.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\StarGlare.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SampleLumIterativeNew.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\CalculateAdaptedLum.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\shadowdepth.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\SampleLumFinal.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\silouette.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\SampleLumInitial.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\skybox.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\SampleLumIterative.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SkySphere.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Renderer\Shaders\depth.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\SkySphere_notusing.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
     </None>
-    <None Include="Renderer\Shaders\depth_cloud.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    <None Include="Shaders\star.hlsl">
       <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shaders\StarGlare.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Shaders\terrain.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Shaders\ToneMapping.hlsl">
+      <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

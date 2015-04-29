@@ -16,9 +16,11 @@ public:
 	virtual void OnStartUpdate(float elapsedTime);
 
 	// Own
-	void SetMaxOffset(const Vec2& maxOffset) { mMaxOffset = maxOffset;}
+	void SetMaxOffset(const Vec2& maxOffset);
 	const Vec2& GetMaxOffset() const { return mMaxOffset; }
 	const Vec2& GetOffset() const { return mOffset; }
+	void SetOffset(const Vec2& offset);
+	void ResetScroller();
 	void SetOwner(IWinBase* p) { mOwner = p; }
 
 private:

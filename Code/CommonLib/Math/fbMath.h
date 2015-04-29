@@ -358,4 +358,6 @@ namespace fastbird
 	// outPos and TimeToTarget have to be specified both if you need.
 	void CalcInterceptPosition(const Vec3& firePos, float ammoSpeed, const Vec3& toTargetDir, float distance, const Vec3& targetVel,
 		Vec3& outVelocity, Vec3* outPos = 0, float* timeToTarget = 0);
+
+	void ExpandRect(RECT& r, int size);
 }

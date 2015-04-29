@@ -19,6 +19,7 @@ namespace fastbird
 	const char* StripPath(const char* s);
 	const char* GetFileExtension(const char* s);
 	bool CheckExtension(const char* filename, const char* extension);
+	std::string ReplaceExtension(const char* s, const char* newExtension);
 	void StepToDigit(char** ppch);
 	// if outPath is zero, you have to free the returned pointer.
 	char* UnifyFilepath(char* outPath, const char* szPath);
@@ -33,6 +34,7 @@ namespace fastbird
 	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase( std::string& str );
 	bool IsNumeric(const char* str);
+	const char* FormatString(const char* str, ...);
 
 	//-----------------------------------------------------------------
 	class StringConverter

@@ -81,6 +81,11 @@ namespace fastbird
 			return !operator==(v);
 		}
 
+		bool operator<(const Vec3I& other) const
+		{
+			return memcmp(this, &other, sizeof(Vec3I)) < 0;
+		}
+
 		float length() const
 		{
 			return (float)sqrt(x*x + y*y + z*z);

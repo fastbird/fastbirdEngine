@@ -5,8 +5,8 @@
 
 #include <Engine/IVertexBuffer.h>
 #include <Engine/IIndexBuffer.h>
-#include <Engine/Renderer/RendererStructs.h>
-#include <Engine/Renderer/RendererEnums.h>
+#include <Engine/RendererStructs.h>
+#include <Engine/RendererEnums.h>
 #include <Engine/IInputLayout.h>
 #include <Engine/IScene.h>
 #include <Engine/IShader.h>
@@ -43,6 +43,7 @@ class ISamplerState;
 class IFont;
 class IRenderToTexture;
 class ILight;
+class PointLightMan;
 struct CloudProperties
 {
 	float		fLength;
@@ -52,6 +53,17 @@ struct CloudProperties
 	float		fEvolvingSpeed;
 	Vec3		vCloudPos;
 	unsigned	particleID;
+};
+struct RenderToTextureParam
+{
+	bool mEveryFrame;
+	Vec2I mSize;
+	PIXEL_FORMAT mPixelFormat;
+	bool mShaderResourceView;
+	bool mMipmap;
+	bool mCubemap;
+	bool mHasDepth; // set true, and call IRenderToTexture::SetDepthStencilDesc().
+	bool mUsePool;
 };
 
 class IRenderer : public ReferenceCounter
@@ -68,8 +80,7 @@ public:
 	virtual int InitSwapChain(HWND handle, int width, int height) = 0;
 	virtual void Deinit() = 0;
 	virtual void ProcessRenderToTexture() = 0;
-	virtual IRenderToTexture* CreateRenderToTexture(bool everyframe, Vec2I size, PIXEL_FORMAT format, 
-		bool srv, bool miplevel, bool cubeMap, bool willCreateDepth) = 0;
+	virtual IRenderToTexture* CreateRenderToTexture(const RenderToTextureParam& param) = 0;
 	virtual void DeleteRenderToTexture(IRenderToTexture*) = 0;
 	virtual void SetClearColor(float r, float g, float b, float a=1.f) = 0;
 	virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
@@ -222,9 +233,9 @@ public:
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
-	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture) = 0;
+	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
 	virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
-		const Color& color, ITexture* texture) = 0;
+		const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
 	virtual void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, 
 		DWORD color, IMaterial* pMat) = 0;
 	virtual void DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, IMaterial* mat) = 0;
@@ -308,6 +319,9 @@ public:
 	virtual void DeletePointLight(IPointLight* pointLight) = 0;
 
 	virtual void SetFadeAlpha(float alpha) = 0;
+	virtual PointLightMan* GetPointLightMan() const = 0;
+
+	virtual IMaterial* GetMaterial(DEFAULT_MATERIALS::Enum type) = 0;
 	
 };
 

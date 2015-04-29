@@ -1,5 +1,5 @@
 #pragma once
-#include <Engine/SceneGraph/SpatialObject.h>
+#include <Engine/SpatialObject.h>
 #include <Engine/IMeshObject.h>
 #include <Engine/IPointLight.h>
 #include <CommonLib/CircularBuffer.h>
@@ -18,7 +18,7 @@ namespace fastbird
 			, mIntensity(1.0f)
 			, mMeshObject(0)
 			, mPointLight(0)
-			, mPendulumBackward(false)
+			, mPendulumBackward(false), mParticleEmitter(0)
 			{
 			}
 			bool IsAvailable() const
@@ -55,6 +55,7 @@ namespace fastbird
 			DWORD mColor;
 			SmartPtr<IMeshObject> mMeshObject;
 			IPointLight* mPointLight;
+			IParticleEmitter* mParticleEmitter;
 			bool mPendulumBackward;
 		};
 
@@ -62,7 +63,7 @@ namespace fastbird
 		virtual unsigned GetEmitterID() const = 0;
 		virtual bool Load(const char* filepath) = 0;
 		virtual bool Update(float elapsedTime)= 0;
-		virtual void Active(bool a) = 0;
+		virtual void Active(bool a, bool pending = false) = 0;
 		virtual bool IsActive() const = 0;
 		virtual void Stop() = 0;
 		virtual void StopImmediate() = 0;

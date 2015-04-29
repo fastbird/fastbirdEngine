@@ -51,7 +51,7 @@ namespace fastbird
 
 	void HexagonalContextMenu::GatherVisit(std::vector<IUIObject*>& v)
 	{
-		if (!mVisible)
+		if (!mVisibility.IsVisible())
 			return;
 		/*__super::GatherVisitAlpha(v);*/
 		v.push_back(mUIObject);

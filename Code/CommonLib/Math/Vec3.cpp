@@ -10,6 +10,7 @@ namespace fastbird
 	const Vec3 Vec3::UNIT_Y(0, 1.f, 0);
 	const Vec3 Vec3::UNIT_Z(0, 0, 1.f);
 	const Vec3 Vec3::ZERO(0, 0, 0);
+	const Vec3 Vec3::ONE(1.f, 1.f, 1.f);
 	const Vec3 Vec3::MAX(FLT_MAX, FLT_MAX, FLT_MAX);
 	const Vec3 Vec3::MIN(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 

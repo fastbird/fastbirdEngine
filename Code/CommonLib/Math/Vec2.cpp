@@ -6,6 +6,7 @@ namespace fastbird
 	const Vec2 Vec2::UNIT_X(1.f, 0);
 	const Vec2 Vec2::UNIT_Y(0, 1.f);
 	const Vec2 Vec2::ZERO(0, 0);
+	const Vec2 Vec2::ONE(1, 1);
 
 	bool Vec2::operator<(const Vec2& other) const
 	{
