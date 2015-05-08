@@ -81,5 +81,5 @@ float4 skysphere_PixelShader(in v2p INPUT) : SV_Target
 	
 	return float4(lerp(starRing, vec3(0.1, 0.25, 0.25), fogIntencity), 1);
 	//float2 uv = SphericalCoord2(dir);
-	//return gEnvMap.Sample(gEnvSampler, uv);	
+	//return gFBEnvMap.Sample(gFBEnvSampler, uv);	
 }

@@ -61,9 +61,6 @@
     <ClCompile Include="fbMotionState.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DLLMain.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="BulletDebugDraw.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -71,6 +68,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="RigidBodyImpl.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics_DLLMain.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

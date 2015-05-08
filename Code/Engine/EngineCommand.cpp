@@ -93,6 +93,41 @@ EngineCommand::EngineCommand()
 	r_Shadow = gFBEnv->pScriptSystem->GetIntVariable("r_Shadow", 1);
 	REGISTER_CVAR(r_Shadow, r_Shadow, CVAR_CATEGORY_CLIENT, "enable shadow");
 
+	r_ShadowMapWidth = gFBEnv->pScriptSystem->GetIntVariable(
+		"r_ShadowMapWidth", 4096);
+	REGISTER_CVAR(r_ShadowMapWidth, r_ShadowMapWidth, CVAR_CATEGORY_CLIENT,
+		"ShadowMap width");
+
+	r_ShadowMapHeight = gFBEnv->pScriptSystem->GetIntVariable(
+		"r_ShadowMapHeight", 4096);
+	REGISTER_CVAR(r_ShadowMapHeight, r_ShadowMapHeight, CVAR_CATEGORY_CLIENT,
+		"ShadowMap height");
+
+	r_ShadowCamWidth = gFBEnv->pScriptSystem->GetRealVariable(
+		"r_ShadowCamWidth", 150.f);
+	REGISTER_CVAR(r_ShadowCamWidth, r_ShadowCamWidth, CVAR_CATEGORY_CLIENT,
+		"ShadowMap width");
+
+	r_ShadowCamHeight = gFBEnv->pScriptSystem->GetRealVariable(
+		"r_ShadowCamHeight", 150.f);
+	REGISTER_CVAR(r_ShadowCamHeight, r_ShadowCamHeight, CVAR_CATEGORY_CLIENT,
+		"ShadowMap height");
+
+	r_ShadowNear = gFBEnv->pScriptSystem->GetRealVariable(
+		"r_ShadowNear", 10.0f);
+	REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT, 
+		"Shadow camera near.");
+
+	r_ShadowFar = gFBEnv->pScriptSystem->GetRealVariable(
+		"r_ShadowFar", 200.0f);
+	REGISTER_CVAR(r_ShadowFar, r_ShadowFar, CVAR_CATEGORY_CLIENT, 
+		"Shadow camera far");
+
+	r_ShadowCamDist = gFBEnv->pScriptSystem->GetRealVariable(
+		"r_ShadowCamDist", 100.f);
+	REGISTER_CVAR(r_ShadowCamDist, r_ShadowCamDist, CVAR_CATEGORY_CLIENT,
+		"Shadow camera far");
+
 	REGISTER_CVAR(MoveEditParticle, 0, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
 
 	r_UseShaderCache = gFBEnv->pScriptSystem->GetIntVariable("r_UseShaderCache", 1);
@@ -186,6 +221,9 @@ void Clear(StringVector& arg)
 {
 	gFBEnv->pConsole->Clear();
 }
+
+
+
 
 }
 

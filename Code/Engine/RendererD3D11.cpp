@@ -70,7 +70,7 @@ RendererD3D11::RendererD3D11()
 RendererD3D11::~RendererD3D11()
 {
 	Deinit();	
-	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is destroyed.");
+	gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is destroyed.");
 }
 
 //----------------------------------------------------------------------------
@@ -130,7 +130,7 @@ void RendererD3D11::Deinit()
 	
 	SAFE_RELEASE(m_pDevice);
 
-	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is deinitilized.");
+	gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "DirectX11 is deinitilized.");
 }
 
 //----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ bool RendererD3D11::Init(int threadPool)
 
 	if (FAILED( hr ))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
 		return false;
 	}
 	
@@ -213,7 +213,7 @@ bool RendererD3D11::Init(int threadPool)
 		}
 	}
 	/*RECT rc;
-	GetClientRect(gEnv->pEngine->GetWindowHandle(), &rc);
+	GetClientRect(gFBEnv->pEngine->GetWindowHandle(), &rc);
 	int width = rc.right - rc.left;
 	int height = rc.bottom - rc.top;
 	InitSwapChain(0, width, height);*/
@@ -229,7 +229,7 @@ bool RendererD3D11::Init(int threadPool)
 	}
 	if (FAILED( hr ))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to initialize D3D11!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to initialize D3D11!");
 		return false;
 	}
 	*/
@@ -247,7 +247,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateBuffer( &Desc, NULL, &m_pFrameConstantsBuffer );
 	if (FAILED( hr ) )
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(FrameConstants)!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(FrameConstants)!");
 		assert(0);
 	}
 	mFrameConstants.gView.MakeIdentity();
@@ -277,7 +277,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateBuffer( &Desc, NULL, &m_pObjectConstantsBuffer );
 	if ( FAILED( hr ) )
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(ObjectConstants)!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(ObjectConstants)!");
 		assert(0);
 	}
 
@@ -287,7 +287,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pPointLightConstantsBuffer);
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(PointLightConstants)!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(PointLightConstants)!");
 		assert(0);
 	}
 
@@ -297,7 +297,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateBuffer( &Desc, NULL, &m_pMaterialConstantsBuffer );
 	if ( FAILED( hr ) )
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(MaterialConstants)!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(MaterialConstants)!");
 		assert(0);
 	}
 
@@ -307,7 +307,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateBuffer( &Desc, NULL, &m_pMaterialParametersBuffer );
 	if ( FAILED( hr ) )
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(MaterialParameters)!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(MaterialParameters)!");
 		assert(0);
 	}
 
@@ -365,7 +365,7 @@ bool RendererD3D11::Init(int threadPool)
 	hr = m_pDevice->CreateRasterizerState( &RasterizerDesc, &m_pWireframeRasterizeState );
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create an wireframe rasterizer state!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create an wireframe rasterizer state!");
 		assert(0);
 	}
 
@@ -465,7 +465,7 @@ int RendererD3D11::InitSwapChain(HWND hwnd, int width, int height)
 		hr = m_pDevice->CreateDepthStencilView(pDepthStencil, &viewDesc, &pDepthStencilView);
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil view!");
+			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil view!");
 		}
 		else
 		{
@@ -905,7 +905,7 @@ IVertexBuffer* RendererD3D11::CreateVertexBuffer(void* data, unsigned stride,
 {
 	if (usage == BUFFER_USAGE_IMMUTABLE && data==0)
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create vertex buffer! "
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create vertex buffer! "
 			"Immutable needs data pointer.");
 		assert(0);
 		return 0;		
@@ -939,7 +939,7 @@ IVertexBuffer* RendererD3D11::CreateVertexBuffer(void* data, unsigned stride,
 
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a vertex buffer!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a vertex buffer!");
 	}
 	else
 	{
@@ -983,7 +983,7 @@ IIndexBuffer* RendererD3D11::CreateIndexBuffer(void* data, unsigned int numIndic
 	HRESULT hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &pHardwareBuffer);
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a index buffer!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a index buffer!");
 	}
 	
 	pIndexBufferD3D11->SetHardwareBuffer(pHardwareBuffer);
@@ -1018,8 +1018,7 @@ public:
 		fopen_s(&file, filepath.c_str(), "rb");
 		if (file == 0)
 		{
-			const char* paths[] = { "code/engine/shaders/",
-									"es/shaders/" 
+			const char* paths[] = { "es/shaders/" 
 								};
 			for (int i = 0; i < ARRAYCOUNT(paths); i++)
 			{
@@ -1085,8 +1084,8 @@ HRESULT CompileShaderFromFile(const char* filename, const char* entryPoint,
 	{
 		if (pErrorBlob)
 		{
-			IEngine::Error("[Error] CompileShaderFromFile %s failed!", filename);
-			IEngine::Error((const char*)pErrorBlob->GetBufferPointer());
+			Error("[Error] CompileShaderFromFile %s failed!", filename);
+			Error((const char*)pErrorBlob->GetBufferPointer());
 			Beep(100, 50);
 		}
 		else
@@ -1210,7 +1209,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			if (pVSBlob)
 			{
-				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pVSBlob->GetBufferPointer());
+				gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, pVSBlob->GetBufferPointer());
 				SAFE_RELEASE(pVSBlob);
 			}
 			pShader->SetCompileFailed(true);
@@ -1282,7 +1281,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			if (pGSBlob)
 			{
-				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pGSBlob->GetBufferPointer());
+				gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, pGSBlob->GetBufferPointer());
 				SAFE_RELEASE(pGSBlob);
 			}
 			pShader->SetCompileFailed(true);
@@ -1339,7 +1338,7 @@ IShader* RendererD3D11::CreateShader(const char* path, int shaders,
 		{
 			if (pPSBlob)
 			{
-				IEngine::Log(FB_DEFAULT_DEBUG_ARG, pPSBlob->GetBufferPointer());
+				gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, pPSBlob->GetBufferPointer());
 				SAFE_RELEASE(pPSBlob);
 			}
 			pShader->SetCompileFailed(true);
@@ -1616,7 +1615,7 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 	HRESULT hr;
 	if (FAILED(hr = m_pDevice->CreateTexture2D( &desc, data ? &sds[0]: 0, &pTextureD3D11 )))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to CreateTexture from memory!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to CreateTexture from memory!");
 		assert(0);
 		return 0;
 	}
@@ -1963,7 +1962,7 @@ IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 		byteCode, byteLength, &pHardwareInputLayout);
 	if (FAILED(hr))
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create input layout!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create input layout!");
 	}
 	else
 	{
@@ -2140,7 +2139,7 @@ void RendererD3D11::SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt)
 		d3d11PT = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 		break;
 	default:
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Undefined primitive topology!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Undefined primitive topology!");
 		assert(0);
 		d3d11PT = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	}
@@ -2317,7 +2316,7 @@ IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& de
 		HRESULT hr = m_pDevice->CreateRasterizerState( &d3d11desc, &pRasterizerState );
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create an rasterizer state!");
+			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create an rasterizer state!");
 			assert(0);
 			return 0;
 		}
@@ -2350,7 +2349,7 @@ IBlendState* RendererD3D11::CreateBlendState(const BLEND_DESC& desc)
 		HRESULT hr = m_pDevice->CreateBlendState( &d3d11desc, &pBlendState );
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a blend state!");
+			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a blend state!");
 			assert(0);
 			return 0;
 		}
@@ -2383,7 +2382,7 @@ IDepthStencilState* RendererD3D11::CreateDepthStencilState( const DEPTH_STENCIL_
 		HRESULT hr = m_pDevice->CreateDepthStencilState( &d3d11desc, &pHardwareState );
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a depth stencil state!");
+			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create a depth stencil state!");
 			assert(0);
 			return 0;
 		}
@@ -2415,7 +2414,7 @@ ISamplerState* RendererD3D11::CreateSamplerState(const SAMPLER_DESC& desc)
 		HRESULT hr = m_pDevice->CreateSamplerState(&d3d11desc, &pSamplerState);
 		if (FAILED(hr))
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create sampler state!");
+			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create sampler state!");
 			assert(0);
 		}
 		pSSD3D11 = FB_NEW(SamplerStateD3D11);

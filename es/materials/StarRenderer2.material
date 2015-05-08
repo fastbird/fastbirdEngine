@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Shaders/star.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/star.hlsl</ShaderFile>
 	<Shaders>VS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.0, 0.0, 0.0, 1</AmbientColor>

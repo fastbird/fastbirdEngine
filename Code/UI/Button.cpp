@@ -26,7 +26,7 @@ Button::Button()
 		mImages[i] = 0;
 	}
 
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIButton.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -208,7 +208,7 @@ void Button::OnMouseHover(void* arg)
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColorOver.GetVec4());
 	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 
 	if (mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -236,7 +236,7 @@ void Button::OnMouseOut(void* arg)
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 
 	
 
@@ -453,7 +453,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											 mImages[ButtonImages::FrameImage]->SetVisible(true);
 										 }
 										 
-										 IUIManager::GetUIManager().DirtyRenderList();
+										 gFBEnv->pUIManager->DirtyRenderList();
 										 return true;
 	}
 
@@ -475,7 +475,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											mImages[ButtonImages::FrameImageDisabled]->SetVisible(true);
 										}
 
-										IUIManager::GetUIManager().DirtyRenderList();
+										gFBEnv->pUIManager->DirtyRenderList();
 										return true;
 	}
 
@@ -544,7 +544,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											 {
 												 mImages[ButtonImages::ActiveImage]->SetVisible(false);
 											 }
-											 IUIManager::GetUIManager().DirtyRenderList();
+											 gFBEnv->pUIManager->DirtyRenderList();
 										 }
 
 										 if (mImages[ButtonImages::DeactiveImage])
@@ -667,7 +667,7 @@ ImageBox* Button::CreateImageBox()
 	image->SetParent(this);
 	image->SetWNPos(mWNPos);
 	image->SetSize(mSize);
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 	return image;
 }
 
@@ -695,7 +695,7 @@ void Button::StartProgress()
 		mProgressBar->SetVisible(true);
 	}
 
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 }
 
 void Button::SetPercentage(float p) // progress bar
@@ -726,7 +726,7 @@ void Button::EndProgress()
 	mInProgress = false;
 	if (mProgressBar)
 		mProgressBar->SetVisible(false);
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 }
 
 void Button::Highlight(bool highlight)

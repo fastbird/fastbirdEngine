@@ -125,8 +125,9 @@ namespace fastbird
 	{
 		std::regex e(":(\\d+):");
 		char buf[1024];
-		sprintf_s(buf, "\n%s/%s", GetCWD(), std::regex_replace(luaString, e, "($1):").c_str());
+		sprintf_s(buf, "\n%s/%s %s", GetCWD(), std::regex_replace(luaString, e, "($1):").c_str(), "Error");
 		fastbird::Error(buf);
+		PrintLuaDebugInfo(L, 0);
 	}
 
 	void PrintLuaDebugInfo(lua_State* L, int level)
@@ -144,7 +145,7 @@ namespace fastbird
 				const char* name = lua_getlocal(L, &ar, i++);
 				if (!name)
 					break;
-				Error("[local variable] name = %s, value = %s \n", name, GetLuaValueAsString(L, -1).c_str());
+				Error("[local variable] name = %s, value = %s", name, GetLuaValueAsString(L, -1).c_str());
 				lua_pop(L, 1);
 			}
 		}

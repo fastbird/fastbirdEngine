@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Shaders/Mesh.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/Mesh.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>

@@ -42,9 +42,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -61,7 +63,7 @@
       <AdditionalDependencies>lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) $(SolutionDir)..\</Command>
+      <Command>copy "$(TargetPath)" "$(SolutionDir).."</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>taskkill /f /fi "pid gt 0" /im Game_Debug.exe</Command>
@@ -86,7 +88,7 @@
       <AdditionalDependencies>lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) $(SolutionDir)..\</Command>
+      <Command>copy "$(TargetPath)" "$(SolutionDir).."</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>taskkill /f /fi "pid gt 0" /im Game_Release.exe</Command>
@@ -126,6 +128,7 @@
     <ClInclude Include="TextBox.h" />
     <ClInclude Include="TextField.h" />
     <ClInclude Include="UIAnimation.h" />
+    <ClInclude Include="UICommands.h" />
     <ClInclude Include="UIManager.h" />
     <ClInclude Include="UIProperty.h" />
     <ClInclude Include="VerticalGauge.h" />
@@ -139,7 +142,7 @@
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
-    <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />
     <ClCompile Include="EventHandler.cpp" />
     <ClCompile Include="FileSelector.cpp" />
@@ -160,6 +163,7 @@
     <ClCompile Include="TextBox.cpp" />
     <ClCompile Include="TextField.cpp" />
     <ClCompile Include="UIAnimation.cpp" />
+    <ClCompile Include="UICommands.cpp" />
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="UIManagerLua.cpp" />
     <ClCompile Include="VerticalGauge.cpp" />
@@ -170,9 +174,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CommonLib\CommonLib.vcxproj">
       <Project>{af027364-5028-433c-8f67-a120c053c977}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Engine\Engine.vcxproj">
-      <Project>{13356807-5ace-4e77-930a-cb196e3d78c4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

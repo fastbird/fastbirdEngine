@@ -108,6 +108,8 @@ namespace fastbird
 		SmartPtr<IDepthStencilState> mDepthDisabledState;
 		SmartPtr<IDepthStencilState> mDepthEnabledState;
 		SmartPtr<IBlendState> mBlendState;
+		SmartPtr<IRasterizerState> mRasterizerWithScissor;
+		SmartPtr<IRasterizerState> mRasterizerWithoutScissor;
 		SmartPtr<IMaterial> mTextureMaterial;
 
 		bool mInitialized;

@@ -38,8 +38,7 @@ extern "C" {
 #include <Engine/ICamera.h>
 #include <Engine/IScriptSystem.h>
 #include <Engine/GlobalEnv.h>
-extern fastbird::GlobalEnv* gEnv;
-#include <Engine/DllMain.h>
+extern fastbird::GlobalEnv* gFBEnv;
 #include <Engine/IMouse.h>
 #include <Engine/IKeyboard.h>
 #include <Engine/IConsole.h>

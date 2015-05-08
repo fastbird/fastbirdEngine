@@ -8,6 +8,6 @@ namespace fastbird
 }
 extern "C"
 {
-	CLASS_DECLSPEC_ENGINE fastbird::IEngine* _cdecl Create_fastbird_Engine();
-	CLASS_DECLSPEC_ENGINE void _cdecl Destroy_fastbird_Engine();
+	__declspec(dllexport) fastbird::IEngine* _cdecl Create_fastbird_Engine();
+	__declspec(dllexport) void _cdecl Destroy_fastbird_Engine();
 }

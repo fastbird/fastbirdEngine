@@ -8,7 +8,7 @@ namespace fastbird
 	struct RotationInfo;
 
 	
-	class CLASS_DECLSPEC_PHYSICS RigidBody
+	class RigidBody
 	{
 	public:
 		RigidBody() {}

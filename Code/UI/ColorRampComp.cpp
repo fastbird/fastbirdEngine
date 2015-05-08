@@ -7,7 +7,7 @@ using namespace fastbird;
 
 ColorRampComp::ColorRampComp()
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }

@@ -21,42 +21,19 @@
 #include <UI/ColorRampComp.h>
 #include <UI/NamedPortrait.h>
 #include <UI/UIAnimation.h>
+#include <UI/UICommands.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
 #include <Engine/IUIObject.h>
 #include <Engine/IScriptSystem.h>
 
+fastbird::GlobalEnv* gFBEnv = 0;
+
 namespace fastbird
 {
 
-IUIManager* IUIManager::mUIManager = 0;
 
-void IUIManager::InitializeUIManager(lua_State* L)
-{
-	assert(!mUIManager);
-	mUIManager = FB_NEW(UIManager)(L);
-	mUIManager->PrepareTooltipUI();
-	WinBase::InitMouseCursor();
-	
-}
-
-void IUIManager::FinalizeUIManager()
-{
-	WinBase::FinalizeMouseCursor();
-	assert(mUIManager);
-	FB_SAFE_DEL(mUIManager);
-
-#ifdef USING_FB_MEMORY_MANAGER
-	FBReportMemoryForModule();
-#endif
-}
-
-IUIManager& IUIManager::GetUIManager()
-{
-	assert(mUIManager);
-	return *mUIManager;
-}
 static float gTooltipFontSize = 26;
 static float gDelayForTooltip = 0.7f;
 //---------------------------------------------------------------------------
@@ -72,18 +49,29 @@ UIManager::UIManager(lua_State* L)
 	, mPosSizeEventEnabled(true), mIgnoreInput(false)
 	, mCachedListBox(0)
 	, mModelWindow(0), mLockFocus(false), mDelayForTooltip(0)
+	, mUIEditorModuleHandle(0)
 {
-	gpTimer = gEnv->pTimer;
+	gFBUIManager = gFBEnv->pUIManager = this;
+	gpTimer = gFBEnv->pTimer;
 	FileSystem::Initialize();
-	gEnv->pEngine->AddInputListener(this,
+	gFBEnv->pEngine->AddInputListener(this,
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
 	RegisterLuaFuncs(L);	
+	mUICommands = FB_NEW(UICommands);
+	PrepareTooltipUI();
+	WinBase::InitMouseCursor();
 }
 
 UIManager::~UIManager()
 {
-
+	WinBase::FinalizeMouseCursor();
+	if (mUIEditorModuleHandle)
+	{
+		FreeLibrary(mUIEditorModuleHandle);
+		mUIEditorModuleHandle = 0;
+	}
+	FB_DELETE(mUICommands);
 	for (auto it : mAnimations)
 	{
 		FB_DELETE(it.second);
@@ -100,20 +88,40 @@ UIManager::~UIManager()
 		}
 	}
 	assert(mWindows.empty());
-	gEnv->pEngine->RemoveInputListener(this);
+	gFBEnv->pEngine->RemoveInputListener(this);
 	KeyboardCursor::FinalizeKeyboardCursor();
 	FileSystem::Finalize();
+	gFBEnv->pUIManager = 0;
 }
 
 void UIManager::Shutdown()
 {
-	gEnv->pEngine->UnregisterUIs();
+	gFBEnv->pEngine->UnregisterUIs();
 	WINDOWS::iterator it = mWindows.begin(), itEnd = mWindows.end();
 	for (; it!=itEnd; it++)
 	{
 		FB_SAFE_DEL(*it);
 	}
 	mWindows.clear();
+}
+
+void Log(const char* szFmt, ...)
+{
+	char buf[2048];
+	va_list args;
+	va_start(args, szFmt);
+	vsprintf_s(buf, 2048, szFmt, args);
+	va_end(args);
+	gFBEnv->pEngine->Log(buf);
+}
+void Error(const char* szFmt, ...)
+{
+	char buf[2048];
+	va_list args;
+	va_start(args, szFmt);
+	vsprintf_s(buf, 2048, szFmt, args);
+	va_end(args);
+	gFBEnv->pEngine->Error(buf);
 }
 
 //---------------------------------------------------------------------------
@@ -231,10 +239,10 @@ void UIManager::GatherRenderList()
 			mPopup->GatherVisit(uiObjects);
 
 		// rendering order : reverse.
-		gEnv->pEngine->RegisterUIs(uiObjects);
+		gFBEnv->pEngine->RegisterUIs(uiObjects);
 		for (auto it : render3DList)
 		{
-			gEnv->pEngine->Register3DUIs(it.first.c_str(), it.second);
+			gFBEnv->pEngine->Register3DUIs(it.first.c_str(), it.second);
 		}
 		//uiObjects is invalidated.
 	}
@@ -843,7 +851,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	if (mMouseIn && EventHandler::sLastEventProcess != gpTimer->GetFrame() && pMouse->IsLButtonClicked())
 	{		
 		LuaObject mouseInvalided;
-		mouseInvalided.FindFunction(IUIManager::GetUIManager().GetLuaState(), "OnMouseInvalidatedInUI");
+		mouseInvalided.FindFunction(gFBEnv->pUIManager->GetLuaState(), "OnMouseInvalidatedInUI");
 		if (mouseInvalided.IsValid())
 		{
 			mouseInvalided.Call();
@@ -884,9 +892,9 @@ void UIManager::DisplayMsg(const std::string& msg, ...)
 	if (strlen(buf)>0)
 	{
 		Log(buf);
-		if (gEnv->pRenderer)
+		if (gFBEnv->pRenderer)
 		{
-			gEnv->pRenderer->DrawTextForDuration(4.0f, Vec2I(100, 200), 
+			gFBEnv->pRenderer->DrawTextForDuration(4.0f, Vec2I(100, 200), 
 				buf, fastbird::Color::White);
 		}
 	}
@@ -918,11 +926,10 @@ void UIManager::SetTooltipString(const std::wstring& ts)
 
 void UIManager::ShowTooltip()
 {
-	Log("Info: void UIManager::ShowTooltip()");
 	assert(!mTooltipText.empty());	
-	IFont* pFont = gEnv->pRenderer->GetFont();
+	IFont* pFont = gFBEnv->pRenderer->GetFont();
 	pFont->SetHeight(gTooltipFontSize);
-	int width = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+	int width = (int)gFBEnv->pRenderer->GetFont()->GetTextWidth(
 		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
 	pFont->SetBackToOrigHeight();
 
@@ -947,14 +954,14 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 	Vec2 backPos = npos;
 	if (backPos.y > 0.9f)
 	{
-		backPos.y -= (gTooltipFontSize * 2.0f+10) / (float)gEnv->pRenderer->GetHeight();
+		backPos.y -= (gTooltipFontSize * 2.0f+10) / (float)gFBEnv->pRenderer->GetHeight();
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
 	if (backPos.x + nSize.x>1.0f)
 	{
 		backPos.x -= backPos.x + nSize.x - 1.0f;
 	}
-	backPos.y += gTooltipFontSize / (float)gEnv->pRenderer->GetHeight();
+	backPos.y += gTooltipFontSize / (float)gFBEnv->pRenderer->GetHeight();
 	mTooltipUI->SetNPos(backPos);
 }
 
@@ -1083,7 +1090,7 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 		// unregistering 3d uis should be handled in the game code.
 		/*if (comp->GetRender3D() && !visible)
 		{
-			gEnv->pEngine->Unregister3DUIs(comp->GetName());
+			gFBEnv->pEngine->Unregister3DUIs(comp->GetName());
 		}*/
 	}
 
@@ -1230,7 +1237,7 @@ void UIManager::OnUIFileChanged(const char* file)
 
 UIManager* UIManager::GetUIManagerStatic()
 {
-	return (UIManager*)&IUIManager::GetUIManager();
+	return (UIManager*)gFBEnv->pUIManager;
 }
 
 void UIManager::RegisterAlwaysOnTopWnd(IWinBase* win)

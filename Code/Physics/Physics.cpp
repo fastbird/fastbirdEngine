@@ -13,20 +13,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 
-using namespace fastbird;
-
-IPhysics* IPhysics::GetPhysics()
-{
-	static Physics* sp = 0;
-	
-	if (!sp)
-	{
-		sp = FB_NEW(Physics);
-		sp->Initilaize();
-	}
-
-	return sp;
-}
+namespace fastbird{
 
 Physics::Physics()
 	: mRayGroup(0x40) // default of the current game under development
@@ -38,9 +25,33 @@ Physics::~Physics()
 {
 }
 
-void TickCallback(btDynamicsWorld *world, btScalar timeStep) 
+
+void Log(const char* szFmt, ...)
 {
-	auto physics = (Physics*)IPhysics::GetPhysics();
+	char buf[2048];
+	va_list args;
+	va_start(args, szFmt);
+	vsprintf_s(buf, 2048, szFmt, args);
+	va_end(args);
+	OutputDebugString(buf);
+	OutputDebugString("\n");
+	std::cout << buf << std::endl;
+}
+void Error(const char* szFmt, ...)
+{
+	char buf[2048];
+	va_list args;
+	va_start(args, szFmt);
+	vsprintf_s(buf, 2048, szFmt, args);
+	va_end(args);
+	OutputDebugString(buf);
+	OutputDebugString("\n");
+	std::cout << buf << std::endl;
+}
+
+void TickCallback(btDynamicsWorld *world, btScalar timeStep)
+{
+	auto physics = (Physics*)gFBPhysics;
 	physics->_ReportCollisions();
 	physics->_CheckCollisionShapeForDel(timeStep);
 }
@@ -117,8 +128,8 @@ void Physics::Deinitilaize()
 	//delete collision shapes
 	/*for (int j = 0; j<mCollisionShapes.size(); j++)
 	{
-		btCollisionShape* shape = mCollisionShapes[j];
-		delete shape;
+	btCollisionShape* shape = mCollisionShapes[j];
+	delete shape;
 	}
 	mCollisionShapes.clear();*/
 
@@ -136,8 +147,6 @@ void Physics::Deinitilaize()
 	FB_DEL_ALIGNED(mDispatcher);
 
 	FB_DEL_ALIGNED(mCollisionConfiguration);
-
-	FB_DELETE(IPhysics::GetPhysics());
 }
 
 void Physics::Update(float dt)
@@ -155,7 +164,7 @@ void Physics::Update(float dt)
 void Physics::_ReportCollisions()
 {
 	// manifolds
-	for (int i = 0; i<mDynamicsWorld->getDispatcher()->getNumManifolds(); i++)
+	for (int i = 0; i < mDynamicsWorld->getDispatcher()->getNumManifolds(); i++)
 	{
 		btPersistentManifold* contactManifold = mDynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
 		auto colObjA = contactManifold->getBody0();
@@ -168,9 +177,9 @@ void Physics::_ReportCollisions()
 
 		const RigidBodyImpl* obA = (RigidBodyImpl*)colObjA->getUserPointer();
 		const RigidBodyImpl* obB = (RigidBodyImpl*)colObjB->getUserPointer();
-		
+
 		if (!obA || !obB)
-		{ 
+		{
 			continue;
 		}
 
@@ -185,8 +194,8 @@ void Physics::_ReportCollisions()
 		{
 			continue;
 		}
-		
-		for (int j = 0; j<numContacts; j++)
+
+		for (int j = 0; j < numContacts; j++)
 		{
 			btManifoldPoint& pt = contactManifold->getContactPoint(j);
 
@@ -195,11 +204,11 @@ void Physics::_ReportCollisions()
 			btVector3 normal = ptA - ptB;
 			normal.safeNormalize();
 			float impulse = pt.getAppliedImpulse();
-			if (impulse>0)
-			{				
+			if (impulse > 0)
+			{
 				IPhysicsInterface::CollisionContactInfo contactInfo(obB->GetGamePtr(), BulletToFB(ptB), BulletToFB(normal),
 					impulse, pt.m_index0, pt.m_index1);
-						
+
 				bool processed = a->OnCollision(contactInfo);
 				if (!processed)
 				{
@@ -215,7 +224,7 @@ void Physics::_ReportCollisions()
 
 void Physics::_CheckCollisionShapeForDel(float timeStep)
 {
-	for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end(); )
+	for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
 	{
 		auto colShape = it->first;
 		it->second -= timeStep;
@@ -285,16 +294,16 @@ RigidBody* Physics::CreateTempRigidBody(const std::vector<CollisionShape*>& colS
 RigidBody* Physics::_CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj)
 {
 	fbMotionState* motionState = 0;
-	bool dynamic = mass != 0.0f;		
+	bool dynamic = mass != 0.0f;
 	btVector3 localInertia(0, 0, 0);
 	if (dynamic)
 	{
 		colShape->calculateLocalInertia(mass, localInertia);
 		if (obj)
 			motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);
-		
+
 	}
-	
+
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(
 		mass, motionState, colShape, localInertia);
 	rbInfo.m_angularDamping = obj->GetAngularDamping();
@@ -311,47 +320,47 @@ btCollisionShape* Physics::CreateBulletColShape(CollisionShape* colShape)
 	{
 	case CollisionShapes::Box:
 	{
-								 auto shape = (BoxShape*)colShape;
-								 auto e = FBToBullet(shape->mExtent * shape->mScale);
-								 return FB_NEW_ALIGNED(btBoxShape, MemAlign)(e);
-								 break;
+		auto shape = (BoxShape*)colShape;
+		auto e = FBToBullet(shape->mExtent * shape->mScale);
+		return FB_NEW_ALIGNED(btBoxShape, MemAlign)(e);
+		break;
 	}
 	case CollisionShapes::Sphere:
 	{
-									auto shape = (SphereShape*)colShape;
-									return FB_NEW_ALIGNED(btSphereShape, MemAlign)(shape->mRadius * shape->mScale.x);
-									break;
+		auto shape = (SphereShape*)colShape;
+		return FB_NEW_ALIGNED(btSphereShape, MemAlign)(shape->mRadius * shape->mScale.x);
+		break;
 	}
 	case CollisionShapes::Cylinder:
 	{
-									  auto shape = (CylinderShape*)colShape;
-									  return FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(shape->mExtent * shape->mScale));
-									  break;
+		auto shape = (CylinderShape*)colShape;
+		return FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(shape->mExtent * shape->mScale));
+		break;
 	}
 	case CollisionShapes::Capsule:
 	{
-									 auto shape = (CapsuleShape*)colShape;
-									 return FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(shape->mRadius * shape->mScale.x, shape->mHeight * shape->mScale.x);
-									 break;
+		auto shape = (CapsuleShape*)colShape;
+		return FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(shape->mRadius * shape->mScale.x, shape->mHeight * shape->mScale.x);
+		break;
 	}
 	case CollisionShapes::StaticMesh:
 	{
-									auto shape = (MeshShape*)colShape;
-									auto btshape = FB_NEW_ALIGNED(btBvhTriangleMeshShape, MemAlign)(shape->GetTriangleMesh(), true);
-									return btshape;
+		auto shape = (MeshShape*)colShape;
+		auto btshape = FB_NEW_ALIGNED(btBvhTriangleMeshShape, MemAlign)(shape->GetTriangleMesh(), true);
+		return btshape;
 	}
 	case CollisionShapes::DynamicMesh:
 	{
-										auto shape = (MeshShape*)colShape;
-										auto btshape = FB_NEW_ALIGNED(btGImpactMeshShape, MemAlign)(shape->GetTriangleMesh());
-										return btshape;
+		auto shape = (MeshShape*)colShape;
+		auto btshape = FB_NEW_ALIGNED(btGImpactMeshShape, MemAlign)(shape->GetTriangleMesh());
+		return btshape;
 	}
 	case CollisionShapes::Convex:
 	{
-									auto shape = (MeshShape*)colShape;
-									auto btshape = FB_NEW_ALIGNED(btConvexHullShape, MemAlign)(&shape->mVertices[0].x,
-										shape->mNumVertices, 12);
-									return btshape;
+		auto shape = (MeshShape*)colShape;
+		auto btshape = FB_NEW_ALIGNED(btConvexHullShape, MemAlign)(&shape->mVertices[0].x,
+			shape->mNumVertices, 12);
+		return btshape;
 	}
 	default:
 		assert(0);
@@ -467,40 +476,40 @@ btCollisionShape* Physics::ParseCollisionFile(const char* collisionFile)
 			{
 			case CollisionShapes::Box:
 			{
-								   Vec3 extent(1, 1, 1);
-								   sz = shapeElem->Attribute("extent");
-								   extent = StringConverter::parseVec3(sz);
-								   btColShape = FB_NEW_ALIGNED(btBoxShape, MemAlign)(FBToBullet(extent));
-								   break;
+				Vec3 extent(1, 1, 1);
+				sz = shapeElem->Attribute("extent");
+				extent = StringConverter::parseVec3(sz);
+				btColShape = FB_NEW_ALIGNED(btBoxShape, MemAlign)(FBToBullet(extent));
+				break;
 			}
 			case CollisionShapes::Sphere:
 			{
-									  float radius = 1.0f;
-									  sz = shapeElem->Attribute("radius");
-									  radius = StringConverter::parseReal(sz);
-									  btColShape = FB_NEW_ALIGNED(btSphereShape, MemAlign)(radius);
-									  break;
-									  
+				float radius = 1.0f;
+				sz = shapeElem->Attribute("radius");
+				radius = StringConverter::parseReal(sz);
+				btColShape = FB_NEW_ALIGNED(btSphereShape, MemAlign)(radius);
+				break;
+
 			}
 			case CollisionShapes::Cylinder:
 			{
-										Vec3 extent(1, 1, 1);
-										sz = shapeElem->Attribute("extent");
-										extent = StringConverter::parseVec3(sz);
-										btColShape = FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(extent));
-										
-										break;
+				Vec3 extent(1, 1, 1);
+				sz = shapeElem->Attribute("extent");
+				extent = StringConverter::parseVec3(sz);
+				btColShape = FB_NEW_ALIGNED(btCylinderShape, MemAlign)(FBToBullet(extent));
+
+				break;
 			}
 			case CollisionShapes::Capsule:
 			{
-									   float radius = 1.0f;
-									   float height = 1.0f;
-									   sz = shapeElem->Attribute("radius");
-									   radius = StringConverter::parseReal(sz);
-									   sz = shapeElem->Attribute("height");
-									   height = StringConverter::parseReal(sz);
-									   btColShape = FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(radius, height);
-									   break;
+				float radius = 1.0f;
+				float height = 1.0f;
+				sz = shapeElem->Attribute("radius");
+				radius = StringConverter::parseReal(sz);
+				sz = shapeElem->Attribute("height");
+				height = StringConverter::parseReal(sz);
+				btColShape = FB_NEW_ALIGNED(btCapsuleShape, MemAlign)(radius, height);
+				break;
 			}
 
 			}
@@ -518,12 +527,12 @@ btCollisionShape* Physics::ParseCollisionFile(const char* collisionFile)
 				return btColShape;
 			}
 		}
-		
+
 		shapeElem = csElem->FirstChildElement("Shape");
 	}
 	assert(compoundShape);
 	return compoundShape;
-		
+
 }
 
 void Physics::RemoveConstraint(btTypedConstraint* constraint)
@@ -562,7 +571,7 @@ void Physics::Release(btCollisionShape* colShape)
 	if (it->second == 0)
 	{
 		mColShapesRefs.erase(it);
-		mColShapePendingDelete.Insert(std::make_pair(colShape, 3.f));		
+		mColShapePendingDelete.Insert(std::make_pair(colShape, 3.f));
 	}
 }
 
@@ -612,14 +621,14 @@ void Physics::AttachBodies(const std::vector<RigidBody*>& bodies)
 
 	ContactCallBack ccallback(mDynamicsWorld);
 	unsigned numBodies = bodies.size();
-	for (unsigned i = 0; i < numBodies-1; ++i)
+	for (unsigned i = 0; i < numBodies - 1; ++i)
 	{
 		RigidBodyImpl* body = (RigidBodyImpl*)bodies[i];
 		for (unsigned t = i + 1; t < numBodies; ++t)
 		{
 			mDynamicsWorld->contactPairTest(body, (RigidBodyImpl*)bodies[t], ccallback);
 		}
-	}	
+	}
 }
 
 void Physics::SetRayCollisionGroup(int group)
@@ -636,8 +645,8 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 		int mIndex;
 
 		MyclosestRayResultCallBack(const btVector3&	rayFromWorld, const btVector3&	rayToWorld)
-		:btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
-		, mIndex(-1)
+			:btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
+			, mIndex(-1)
 		{}
 
 		virtual	btScalar	addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
@@ -682,7 +691,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 }
 
 bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result)
-{	
+{
 	struct ObjectHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback
 	{
 		int mIndex;
@@ -694,10 +703,10 @@ bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayRe
 		ObjectHitsRayResultCallback(const btVector3&	rayFromWorld, const btVector3&	rayToWorld, RigidBody* targetObj)
 			:btCollisionWorld::AllHitsRayResultCallback(rayFromWorld, rayToWorld)
 		{
-				mTarget = (RigidBodyImpl*)targetObj;
-				mHitFraction = 1.0f;
-				mIndex = -1;
-				assert(mTarget);
+			mTarget = (RigidBodyImpl*)targetObj;
+			mHitFraction = 1.0f;
+			mIndex = -1;
+			assert(mTarget);
 		}
 
 		virtual	btScalar	addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
@@ -725,7 +734,7 @@ bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayRe
 				else
 					mIndex = -1;
 			}
-			
+
 			return mHitFraction;
 		}
 	};
@@ -807,8 +816,8 @@ bool Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, R
 		unsigned numObjects = cb.m_collisionObjects.size();
 		for (unsigned i = 0; i < numObjects; i++)
 		{
-			result.AddResult((RigidBody*)cb.m_collisionObjects[i]->getUserPointer(), 
-				BulletToFB(cb.m_hitPointWorld[i]), 
+			result.AddResult((RigidBody*)cb.m_collisionObjects[i]->getUserPointer(),
+				BulletToFB(cb.m_hitPointWorld[i]),
 				BulletToFB(cb.m_hitNormalWorld[i]), cb.mIndex[i]);
 		}
 		return true;
@@ -853,7 +862,7 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 			{
 				mRet.push_back(gamePtr);
 			}
-		}		
+		}
 		return true;
 	}
 };
@@ -949,7 +958,40 @@ float Physics::GetDistanceBetween(RigidBody* a, RigidBody* b)
 		convexConvex.getClosestPoints(input, gjkOutput, 0);
 		distance = std::min(gjkOutput.m_distance, distance);
 	}
-	
+
 
 	return distance;
+}
+
+BoxShape* Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr)
+{
+	return CollisionShapeMan::CreateBoxShape(pos, rot, actorScale, extent, userPtr);
+}
+SphereShape* Physics::CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr)
+{
+	return CollisionShapeMan::CreateSphereShape(pos, rot, actorScale, radius, userPtr);
+}
+CylinderShape* Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr)
+{
+	return CollisionShapeMan::CreateCylinderShape(pos, rot, actorScale, extent, userPtr);
+}
+CapsuleShape* Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr )
+{
+	return CollisionShapeMan::CreateCylinderShape(pos, rot, actorScale, radius, height, userPtr);
+}
+MeshShape* Physics::CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
+	bool staticObj, void* userPtr)
+{
+	return CollisionShapeMan::CreateMeshShape(pos, rot, vertices, numVertices, scale, staticObj, userPtr);
+}
+MeshShape* Physics::CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,
+	const Vec3& scale, void* userPtr)
+{
+	return CollisionShapeMan::CreateConvexMeshShape(pos, rot, vertices, numVertices, scale, userPtr);
+}
+void Physics::DestroyShape(CollisionShape* shape)
+{
+	CollisionShapeMan::DestroyShape(shape);
+}
+
 }

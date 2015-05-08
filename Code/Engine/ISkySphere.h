@@ -2,7 +2,7 @@
 #include <Engine/Object.h>
 namespace fastbird
 {
-class CLASS_DECLSPEC_ENGINE ISkySphere : public Object
+class ISkySphere : public Object
 {
 public:
 	static ISkySphere* CreateSkySphere(bool usingSmartPointer);

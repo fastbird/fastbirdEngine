@@ -76,7 +76,7 @@
 //	0, -1, -1, 1
 //};
 //
-//fastbird::GlobalEnv* gEnv = 0;
+//fastbird::GlobalEnv* gFBEnv = 0;
 //void main()
 //{
 //
@@ -99,16 +99,16 @@
 //	using namespace fastbird;
 //	
 //	fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
-//	pEngine->GetGlobalEnv(&gEnv);
+//	pEngine->GetGlobalEnv(&gFBEnv);
 //	//pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
 //	pEngine->InitEngine(fastbird::IEngine::D3D11);
-//	//pEngine->InitSwapChain(gEnv->pEngine->GetWindowHandle(), 1600, 900);
+//	//pEngine->InitSwapChain(gFBEnv->pEngine->GetWindowHandle(), 1600, 900);
 //
 //	SmartPtr<ITexture> pTexture = 
-//		gEnv->pRenderer->CreateTexture(g, 16, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
+//		gFBEnv->pRenderer->CreateTexture(g, 16, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
 //	pTexture->SaveToFile("data/textures/gradient.dds");
 //	SmartPtr<ITexture> pTexture2 =
-//		gEnv->pRenderer->CreateTexture(permutation, 256, 1, PIXEL_FORMAT_R8_UNORM, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
+//		gFBEnv->pRenderer->CreateTexture(permutation, 256, 1, PIXEL_FORMAT_R8_UNORM, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
 //	pTexture2->SaveToFile("data/textures/permutation.dds");
 //	Destroy_fastbird_Engine();
 //

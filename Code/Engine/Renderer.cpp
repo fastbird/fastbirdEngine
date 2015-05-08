@@ -445,18 +445,18 @@ bool Renderer::OnPrepared()
 
 
 	IMaterial::SHADER_DEFINES emptyShaderDefines;
-	mFullscreenQuadVSNear = CreateShader("code/engine/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
+	mFullscreenQuadVSNear = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
 		emptyShaderDefines);
 	IMaterial::SHADER_DEFINES shaderDefinesFar;
 	shaderDefinesFar.push_back(IMaterial::ShaderDefine("_FAR_SIDE_QUAD", "1"));
-	mFullscreenQuadVSFar = CreateShader("code/engine/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
+	mFullscreenQuadVSFar = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
 		shaderDefinesFar);
 
-	mCopyPS = CreateShader("code/engine/shaders/copyps.hlsl", BINDING_SHADER_PS,
+	mCopyPS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
 		emptyShaderDefines);
 	IMaterial::SHADER_DEFINES multiSampleSD;
 	multiSampleSD.push_back(IMaterial::ShaderDefine("_MULTI_SAMPLE", "1"));
-	mCopyPSMS = CreateShader("code/engine/shaders/copyps.hlsl", BINDING_SHADER_PS,
+	mCopyPSMS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
 		multiSampleSD);
 
 	SkySphere::CreateSharedEnvRT();
@@ -469,13 +469,13 @@ bool Renderer::OnPrepared()
 	sdesc.Filter = TEXTURE_FILTER_ANISOTROPIC;
 	mDefaultSamplers[SAMPLERS::ANISOTROPIC] = CreateSamplerState(sdesc);
 
-	sdesc.Filter = TEXTURE_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+	sdesc.Filter = TEXTURE_FILTER_COMPARISON_ANISOTROPIC;
 	sdesc.AddressU = TEXTURE_ADDRESS_BORDER;
 	sdesc.AddressV = TEXTURE_ADDRESS_BORDER;
 	sdesc.AddressW = TEXTURE_ADDRESS_BORDER;
 	for (int i = 0; i < 4; i++)
 		sdesc.BorderColor[i] = 1.0f;
-	sdesc.ComparisonFunc = COMPARISON_LESS;
+	sdesc.ComparisonFunc = COMPARISON_LESS_EQUAL;
 	mDefaultSamplers[SAMPLERS::SHADOW] = CreateSamplerState(sdesc);
 
 	sdesc.ComparisonFunc = COMPARISON_ALWAYS;
@@ -1022,6 +1022,10 @@ void Renderer::SetEnvironmentTextureOverride(ITexture* texture)
 			mEnvironmentTexture->SetSlot(4); // hardcoded environment slot.
 			mEnvironmentTexture->Bind();
 		}
+		else
+		{
+			SetTexture(0, BINDING_SHADER_PS, 4);
+		}
 	}
 }
 
@@ -1355,14 +1359,14 @@ void Renderer::MeasureLuminanceOfHDRTargetNew()
 			shaderDefines.back().name = "_MULTI_SAMPLE";
 			shaderDefines.back().value = "1";
 		}
-		/*mDownScale2x2LumPS = CreateShader("code/engine/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mDownScale3x3PS = CreateShader("code/engine/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
-		mLuminanceAvgPS = CreateShader("code/engine/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
+		/*mDownScale2x2LumPS = CreateShader("es/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mDownScale3x3PS = CreateShader("es/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
+		mLuminanceAvgPS = CreateShader("es/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
 
-		mSampleLumInitialShader = CreateShader("code/engine/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mSampleLumIterativeShader = CreateShader("code/engine/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
-		mSampleLumFinalShader = CreateShader("code/engine/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
-		mCalcAdaptedLumShader = CreateShader("code/engine/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
+		mSampleLumInitialShader = CreateShader("es/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mSampleLumIterativeShader = CreateShader("es/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
+		mSampleLumFinalShader = CreateShader("es/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
+		mCalcAdaptedLumShader = CreateShader("es/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
 	}
 
 	D3DEventMarker mark("Luminance");
@@ -1474,14 +1478,14 @@ void Renderer::MeasureLuminanceOfHDRTarget()
 			shaderDefines.back().name = "_MULTI_SAMPLE";
 			shaderDefines.back().value = "1";
 		}
-		/*mDownScale2x2LumPS = CreateShader("code/engine/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mDownScale3x3PS = CreateShader("code/engine/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
-		mLuminanceAvgPS = CreateShader("code/engine/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
+		/*mDownScale2x2LumPS = CreateShader("es/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mDownScale3x3PS = CreateShader("es/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
+		mLuminanceAvgPS = CreateShader("es/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
 
-		mSampleLumInitialShader = CreateShader("code/engine/shaders/SampleLumInitial.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mSampleLumIterativeShader = CreateShader("code/engine/shaders/SampleLumIterative.hlsl", BINDING_SHADER_PS);
-		mSampleLumFinalShader = CreateShader("code/engine/shaders/SampleLumFinal.hlsl", BINDING_SHADER_PS);
-		mCalcAdaptedLumShader = CreateShader("code/engine/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
+		mSampleLumInitialShader = CreateShader("es/shaders/SampleLumInitial.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mSampleLumIterativeShader = CreateShader("es/shaders/SampleLumIterative.hlsl", BINDING_SHADER_PS);
+		mSampleLumFinalShader = CreateShader("es/shaders/SampleLumFinal.hlsl", BINDING_SHADER_PS);
+		mCalcAdaptedLumShader = CreateShader("es/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
 	}
 
 	D3DEventMarker mark("Luminance");
@@ -1569,7 +1573,7 @@ void Renderer::BrightPass()
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		FB_SET_DEVICE_DEBUG_NAME(mBrightPassTexture, "BrightPass");
 
-		const char* bpPath = "code/engine/shaders/brightpassps.hlsl";
+		const char* bpPath = "es/shaders/brightpassps.hlsl";
 		IMaterial::SHADER_DEFINES shaderDefines;
 		if (GetMultiSampleCount() != 1)
 		{
@@ -1624,7 +1628,7 @@ void Renderer::BrightPassToStarSource()
 			shaderDefines.back().name = "_MULTI_SAMPLE";
 			shaderDefines.back().value = "1";
 		}
-		mBlur5x5 = CreateShader("code/engine/shaders/gaussblur5x5.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mBlur5x5 = CreateShader("es/shaders/gaussblur5x5.hlsl", BINDING_SHADER_PS, shaderDefines);
 	}
 
 	Vec4* pOffsets = 0;
@@ -1720,7 +1724,7 @@ void Renderer::Bloom()
 			FB_SET_DEVICE_DEBUG_NAME(mBloomTexture[i], buff);
 		}
 		
-		const char* blPath = "code/engine/shaders/bloomps.hlsl";		
+		const char* blPath = "es/shaders/bloomps.hlsl";		
 		mBloomPS = CreateShader(blPath, BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
 	}	
 	// blur
@@ -1839,8 +1843,8 @@ void Renderer::RenderStarGlare()
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		}
 
-		mStarGlareShader = CreateShader("code/engine/shaders/starglare.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-		mMergeTexture2 = CreateShader("code/engine/shaders/mergetextures2ps.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+		mStarGlareShader = CreateShader("es/shaders/starglare.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+		mMergeTexture2 = CreateShader("es/shaders/mergetextures2ps.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
 	}
 
 	ITexture* rts[] = { mStarTextures[0] };
@@ -2202,6 +2206,44 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	{
 		mGaussianDistCalculated = false;
 	}
+	else if (pCVar->mName == "r_shadowmapwidth" ||
+		pCVar->mName == "r_shadowmapheight")
+	{
+		if (mShadowMap) {
+			mShadowMap = 0;
+		}
+	}
+	else if (pCVar->mName == "r_shadowcamwidth" )
+	{
+		auto lightCam = GetDirectionalLight(0)->GetCamera();
+		if (lightCam) {
+			lightCam->SetWidth(pCVar->GetFloat());
+		}
+	}
+	else if (pCVar->mName == "r_shadowcamheight")
+	{
+		auto lightCam = GetDirectionalLight(0)->GetCamera();
+		if (lightCam)
+			lightCam->SetHeight(pCVar->GetFloat());
+	}
+	else if (pCVar->mName == "r_shadownear")
+	{
+		auto lightCam = GetDirectionalLight(0)->GetCamera();
+		float n, f;
+		if (lightCam) {
+			lightCam->GetNearFar(n, f);
+			lightCam->SetNearFar(pCVar->GetFloat(), f);
+		}
+	}
+	else if (pCVar->mName == "r_shadowfar")
+	{
+		auto lightCam = GetDirectionalLight(0)->GetCamera();
+		float n, f;
+		if (lightCam) {
+			lightCam->GetNearFar(n, f);
+			lightCam->SetNearFar(n, pCVar->GetFloat());
+		}
+	}
 
 	return false;
 }
@@ -2289,9 +2331,9 @@ void Renderer::SetGodRayRenderTarget()
 		mNoMSDepthStencil = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_D24_UNORM_S8_UINT,
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
 
-		const char* godray = "code/engine/shaders/GodRayPS.hlsl";
-		const char* occpre = "code/engine/shaders/OccPrePass.hlsl";
-		const char* occpregs = "code/engine/shaders/OccPrePassGS.hlsl";
+		const char* godray = "es/shaders/GodRayPS.hlsl";
+		const char* occpre = "es/shaders/OccPrePass.hlsl";
+		const char* occpregs = "es/shaders/OccPrePassGS.hlsl";
 		mGodRayPS = CreateShader(godray, BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
 		mOccPrePassShader = CreateShader(occpre, BINDING_SHADER_VS | BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
@@ -2395,7 +2437,7 @@ void Renderer::SetGlowRenderTarget()
 			shaderDefines.back().name = "_MULTI_SAMPLE";
 			shaderDefines.back().value = "1";
 		}
-		mGlowPS = CreateShader("code/engine/shaders/BloomPS.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mGlowPS = CreateShader("es/shaders/BloomPS.hlsl", BINDING_SHADER_PS, shaderDefines);
 		FB_SET_DEVICE_DEBUG_NAME(mGlowPS, "GlowPS");
 	}
 }
@@ -2497,7 +2539,7 @@ void Renderer::SetDepthWriteShader()
 	{
 		if (!mCloudDepthWriteShader)
 		{
-			mCloudDepthWriteShader = CreateShader("code/engine/shaders/depth_cloud.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			mCloudDepthWriteShader = CreateShader("es/shaders/depth_cloud.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 				IMaterial::SHADER_DEFINES());
 			if (!mPositionInputLayout)
 				mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mCloudDepthWriteShader);
@@ -2510,7 +2552,7 @@ void Renderer::SetDepthWriteShader()
 	{
 		if (!mDepthWriteShader)
 		{
-			mDepthWriteShader = CreateShader("code/engine/shaders/depth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			mDepthWriteShader = CreateShader("es/shaders/depth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 				IMaterial::SHADER_DEFINES());
 			if (!mPositionInputLayout)
 				mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mDepthWriteShader);
@@ -2629,9 +2671,13 @@ void Renderer::SetCloudRendering(bool rendering)
 //---------------------------------------------------------------------------
 void Renderer::PrepareShadowMapRendering()
 {
+	auto cmd = gFBEnv->pConsole->GetEngineCommand();
 	if (!mShadowMap)
 	{
-		mShadowMap = CreateTexture(0, 4096, 4096, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
+		mShadowMap = CreateTexture(0, 
+			cmd->r_ShadowMapWidth, 
+			cmd->r_ShadowMapHeight, 
+			PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
 	}
 
@@ -2640,7 +2686,10 @@ void Renderer::PrepareShadowMapRendering()
 	SetRenderTarget(rts, index, 1, mShadowMap, 0);
 	gFBEnv->mRenderPass = PASS_SHADOW;
 	SetShadowMapShader();
-	Viewport vp = { 0, 0, 2048, 2048, 0.f, 1.f };
+	Viewport vp = { 0, 0,
+		(float)cmd->r_ShadowMapWidth,
+		(float)cmd->r_ShadowMapHeight,
+		0.f, 1.f };
 	SetViewports(&vp, 1);
 	mCameraBackup = GetCamera();
 	SetCamera(GetDirectionalLight(0)->GetCamera());
@@ -2670,7 +2719,7 @@ void Renderer::SetShadowMapShader()
 {
 	if (!mShadowMapShader)
 	{
-		mShadowMapShader = CreateShader("code/engine/shaders/shadowdepth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+		mShadowMapShader = CreateShader("es/shaders/shadowdepth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
 	}
 	mShadowMapShader->Bind();
@@ -2681,7 +2730,7 @@ void Renderer::SetSilouetteShader()
 	assert(0);
 	/*if (!mSilouetteShader)
 	{
-		mSilouetteShader = CreateShader("code/engine/shaders/silouette.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+		mSilouetteShader = CreateShader("es/shaders/silouette.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
 	}
 
@@ -2729,7 +2778,7 @@ void Renderer::DrawSilouette()
 {
 	if (!mSilouetteShader)
 	{
-		mSilouetteShader = CreateShader("code/engine/shaders/silouette.hlsl", BINDING_SHADER_PS,
+		mSilouetteShader = CreateShader("es/shaders/silouette.hlsl", BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
 	}
 
@@ -2899,7 +2948,7 @@ void Renderer::CreateToneMappingShader()
 	if (mUseFilmicToneMapping)
 		shaderDefines.push_back(IMaterial::ShaderDefine("_FILMIC_TONEMAP", "1"));
 
-	mToneMappingPS = CreateShader("code/engine/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+	mToneMappingPS = CreateShader("es/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
 }
 
 void Renderer::SetFadeAlpha(float alpha)

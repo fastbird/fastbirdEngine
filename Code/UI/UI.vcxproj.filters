@@ -88,6 +88,7 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="VisibleStatus.h" />
+    <ClInclude Include="UICommands.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -99,7 +100,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
-    <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="TextField.cpp">
       <Filter>Components</Filter>
     </ClCompile>
@@ -173,5 +173,7 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="VisibleStatus.cpp" />
+    <ClCompile Include="UICommands.cpp" />
+    <ClCompile Include="UI_DLLMain.cpp" />
   </ItemGroup>
 </Project>

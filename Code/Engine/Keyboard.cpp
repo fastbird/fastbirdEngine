@@ -10,6 +10,7 @@ namespace fastbird
 	//--------------------------------------------------------------------------
 	Keyboard::Keyboard()
 		:mValid(true)
+		, mLastPushKeyTime(0)
 	{
 		memset(mKeyDown, 0, sizeof(mKeyDown));
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
@@ -58,7 +59,12 @@ namespace fastbird
 
 	void Keyboard::PushChar(unsigned keycode)
 	{
-		mCurrentChar = keycode;
+		mCurrentChar.push(keycode);
+		while (mCurrentChar.size() > 10)
+		{
+			mCurrentChar.pop();
+		}
+		mLastPushKeyTime = gpTimer->GetTime();
 	}
 
 	//--------------------------------------------------------------------------
@@ -67,7 +73,12 @@ namespace fastbird
 		mValid = true;
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
 		memset(mKeyUp, 0, sizeof(mKeyUp));
-		mCurrentChar = 0;
+		if (!mCurrentChar.empty()){
+			if (gpTimer->GetTime() - mLastPushKeyTime > 2.0f)
+			{
+				ClearWithSwap(mCurrentChar);
+			}
+		}
 	}
 
 	//--------------------------------------------------------------------------
@@ -94,7 +105,11 @@ namespace fastbird
 
 	unsigned Keyboard::GetChar()
 	{
-		return mCurrentChar;
+		if (mCurrentChar.empty())
+			return 0;
+		unsigned ret = mCurrentChar.front();
+		mCurrentChar.pop();
+		return ret;
 	}
 
 	//--------------------------------------------------------------------------

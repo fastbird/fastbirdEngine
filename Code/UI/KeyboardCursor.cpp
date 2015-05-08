@@ -28,14 +28,14 @@ void KeyboardCursor::FinalizeKeyboardCursor()
 KeyboardCursor::KeyboardCursor()
 	: mVisible(false)
 {
-	mUIObject = IUIObject::CreateUIObject(false, Vec2I(gEnv->pRenderer->GetWidth(), gEnv->pRenderer->GetHeight()));
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight()));
 	mUIObject->SetMaterial("es/materials/KeyboardCursor.material");
 	mUIObject->SetDebugString("KeyboardCursor");
 }
 
 KeyboardCursor::~KeyboardCursor()
 {
-	FB_RELEASE(mUIObject);
+	gFBEnv->pEngine->DeleteUIObject(mUIObject);
 }
 
 //---------------------------------------------------------------------------------------

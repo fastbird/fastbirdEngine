@@ -16,6 +16,8 @@ namespace fastbird
 
 		virtual lua_State* GetLuaState() const;
 		virtual bool RunScript(const char* filename);
+		// _ENV is empty.
+		virtual bool LoadConfig(const char* filename);
 		virtual bool ExecuteLua(const std::string& chunk);
 
 		virtual std::string GetStringVariable(const char* name, 

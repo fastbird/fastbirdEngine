@@ -11,7 +11,7 @@ namespace fastbird
 
 	typedef std::vector< std::pair<std::string, Transformation> > AUXILIARIES;
 	class IMaterial;
-	class CLASS_DECLSPEC_ENGINE IMeshObject : public SpatialObject
+	class IMeshObject : public SpatialObject
 	{
 	public:
 		static IMeshObject* CreateMeshObject();

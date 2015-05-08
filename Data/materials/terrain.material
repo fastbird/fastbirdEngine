@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Shaders/terrain.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/terrain.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>1, 1, 1, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>

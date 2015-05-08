@@ -5,7 +5,7 @@
 namespace fastbird
 {
 	class IMeshObject;
-	class CLASS_DECLSPEC_ENGINE IVoxelizer: public ReferenceCounter
+	class IVoxelizer: public ReferenceCounter
 	{
 	public:
 		static IVoxelizer* CreateVoxelizer();

@@ -15,8 +15,6 @@ namespace fastbird
 		char unified[MAX_PATH];
 		UnifyFilepath(unified, absbuf);
 		mRootAbs = unified;
-		Log("Current working directory: %s", mRootAbs.c_str());
-
 	}
 	void FileSystem::Finalize()
 	{

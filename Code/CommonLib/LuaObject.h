@@ -84,6 +84,7 @@ namespace fastbird
 		void SetField(const char* fieldName, const Vec3& v);
 		void SetField(const char* fieldName, const Vec3I& v);
 		void SetField(const char* fieldName, const Vec2& v);
+		void SetField(const char* fieldName, const Transformation& t);
 
 		LuaObject SetSeqTable(int n) const;
 		LuaObject GetSeqTable(int n);
@@ -139,6 +140,7 @@ namespace fastbird
 		Vec2 GetVec2(bool& success) const;
 		Vec2I GetVec2I(bool& success) const;
 		Quat GetQuat(bool& success)const;
+		Transformation GetTransformation(bool& success) const;
 
 		void PushToStack() const;
 		bool Call();
@@ -149,6 +151,8 @@ namespace fastbird
 		unsigned GetLen() const;
 
 		bool operator==(const LuaObject& other) const;
+
+		bool HasFunction() const;
 
 	private:
 		void CheckType();

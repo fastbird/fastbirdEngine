@@ -161,7 +161,7 @@ namespace fastbird
 			mButtonsDown &= ~MOUSE_BUTTON_LEFT;			
 
 			float doubleClickElapsedTime = curTime - mLastClickTime;
-			bool doubleClickMouseNotMoved = abs((mLastClickPos.x - mAbsX)) < 2 && abs((mLastClickPos.y - mAbsY)) < 2;
+			bool doubleClickMouseNotMoved = abs((mLastClickPos.x - mAbsX)) < 3 && abs((mLastClickPos.y - mAbsY)) < 3;
 			if (doubleClickElapsedTime< mDoubleClickSpeed && doubleClickMouseNotMoved)
 			{
 				mLButtonDoubleClicked = true;

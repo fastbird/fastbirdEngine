@@ -5,7 +5,7 @@
 namespace fastbird
 {
 	class IMaterial;
-	class CLASS_DECLSPEC_ENGINE IBillboardQuad : public SpatialObject
+	class IBillboardQuad : public SpatialObject
 	{
 	public:
 		static IBillboardQuad* CreateBillboardQuad();

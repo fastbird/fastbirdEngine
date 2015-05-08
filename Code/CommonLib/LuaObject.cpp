@@ -378,6 +378,16 @@ void LuaObject::SetField(const char* fieldName, const Vec2& v)
 	lua_pop(mL, 1);
 }
 
+void LuaObject::SetField(const char* fieldName, const Transformation& t)
+{
+	assert(fieldName);
+	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	PushToStack();
+	luaU_push(mL, t);
+	lua_setfield(mL, -2, fieldName);
+	lua_pop(mL, 1);
+}
+
 LuaObject LuaObject::SetSeqTable(int n) const
 {
 	LUA_STACK_WATCHER w(mL, "LuaObject LuaObject::SetSeqTable(int n) const");
@@ -834,6 +844,22 @@ Quat LuaObject::GetQuat(bool& success)const
 	return ret;
 }
 
+Transformation LuaObject::GetTransformation(bool& success) const
+{
+	if (!IsTable())
+	{
+		success = false;
+		return Transformation();
+	}
+	LUA_STACK_WATCHER watcher(mL, "Transformation LuaObject::GetTransformation(bool& success) const");
+	PushToStack();
+	Transformation ret = luaU_check<Transformation>(mL, -1);
+	lua_pop(mL, 1);
+	success = true;
+
+	return ret;
+}
+
 void LuaObject::Clear()
 {
 	if (ReleaseUsedCount(mRef))
@@ -957,4 +983,38 @@ fastbird::LuaObject fastbird::GetLuaVar(lua_State* L, const char* var, const cha
 		}
 	}
 	return ret;
+}
+
+bool LuaObject::HasFunction() const
+{
+	if (IsFunction())
+		return true;
+
+	if (!IsTable())
+		return false;
+
+	auto it = GetTableIterator();
+	LuaTableIterator::KeyValue kv;
+	while (it.GetNext(kv))
+	{
+		if (kv.first.IsFunction())
+			return true;
+		if (kv.second.IsFunction())
+			return true;
+
+		if (kv.first.IsTable())
+		{
+			bool has = kv.first.HasFunction();
+			if (has)
+				return true;
+		}
+
+		if (kv.second.IsTable())
+		{
+			bool has = kv.second.HasFunction();
+			if (has)
+				return true;
+		}
+	}
+	return false;
 }

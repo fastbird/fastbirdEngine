@@ -20,6 +20,9 @@
 #include <Engine/Scene.h>
 #include <Engine/SkySphere.h>
 #include <Engine/IRenderToTexture.h>
+#include <Engine/IVoxelizer.h>
+#include <Engine/IBillboardQuad.h>
+#include <Engine/IDustRenderer.h>
 #include <CommonLib/Math/Vec2I.h>
 #include <Engine/UIObject.h>
 #include <CommonLib/INIReader.h>
@@ -137,9 +140,9 @@ namespace fastbird
 	}
 
 	//------------------------------------------------------------------------
-	void Engine::GetGlobalEnv(GlobalEnv** outGlobalEnv)
+	GlobalEnv* Engine::GetGlobalEnv() const
 	{
-		*outGlobalEnv = gFBEnv;
+		return gFBEnv;
 	}
 
 	//------------------------------------------------------------------------
@@ -186,7 +189,7 @@ namespace fastbird
 		mINI = FB_NEW(INIReader)("Engine.ini");
 		if (mINI->GetError())
 		{
-			IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Could not parse the Engine.ini file!");
+			Log(FB_DEFAULT_DEBUG_ARG, "Could not parse the Engine.ini file!");
 			assert(0);
 		}
 		int threadPool = mINI->GetInteger("Render", "ThreadPool", 0);
@@ -222,7 +225,6 @@ namespace fastbird
 			mRenderer->SetCamera(mEngineCamera);
 		RegisterMouseAndKeyboard();
 
-		//mShaderWatchDir = "code/engine/shaders";
 		mShaderWatchDir = ".";
 
 		mFileMonitorThread = CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)FileChangeMonitorProc, 0, 0, 0) ;
@@ -795,6 +797,12 @@ namespace fastbird
 	}
 
 	//---------------------------------------------------------------------------
+	IMeshObject* Engine::CreateMeshObject()
+	{
+		return IMeshObject::CreateMeshObject();
+	}
+
+	//---------------------------------------------------------------------------
 	IMeshGroup* Engine::GetMeshGroup(const char* daeFilePath, 
 			bool reload, const MeshImportDesc& desc)
 	{
@@ -962,7 +970,7 @@ namespace fastbird
 				}
 				else if (a->mFBInputListenerPriority == b->mFBInputListenerPriority)
 				{
-					IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Input listeners has the same priority. sorted by address.");
+					Log(FB_DEFAULT_DEBUG_ARG, "Input listeners has the same priority. sorted by address.");
 					return a<b;
 				}
 				else
@@ -1057,7 +1065,6 @@ namespace fastbird
 			}
 		}
 		mUI3DObjects[name].swap(objects);
-		Render3DUIsToTexture();
 	}
 
 	void Engine::Unregister3DUIs(const char* name)
@@ -1100,14 +1107,6 @@ namespace fastbird
 
 	//--------------------------------------------------------------------------
 #ifdef _FBENGINE_FOR_WINDOWS_
-	LRESULT IEngine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
-	{
-		if (gFBEnv && gFBEnv->pEngine)
-			return Engine::WinProc(window, msg, wp, lp);
-		else
-			return DefWindowProc(window, msg, wp, lp); // not processed
-	}
-
 	LRESULT Engine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 	{
 		Engine* pEngine = (Engine*)gFBEnv->pEngine;
@@ -1494,7 +1493,7 @@ namespace fastbird
 
 
 	//------------------------------------------------------------------------
-	void IEngine::Log(const char* szFmt, ...)
+	void Engine::Log(const char* szFmt, ...)
 	{
 		char buf[2048];
 
@@ -1502,7 +1501,7 @@ namespace fastbird
 		if (gFBEnv && gFBEnv->pTimer)
 		{
 			Timer::TIME_PRECISION time = gFBEnv->pTimer->GetTime();
-			sprintf_s(buf, "[%.3f] ", time);
+			sprintf_s(buf, "[%.3f] \n", time);
 			len = strlen(buf);
 		}
 		
@@ -1519,7 +1518,7 @@ namespace fastbird
 	}
 
 	//------------------------------------------------------------------------
-	void IEngine::Error(const char* szFmt, ...)
+	void Engine::Error(const char* szFmt, ...)
 	{
 		char buf[2048];
 
@@ -1529,8 +1528,8 @@ namespace fastbird
 			char timebuf[128];
 			Timer::TIME_PRECISION time = gFBEnv->pTimer->GetTime();
 			sprintf_s(timebuf, "Error [%.3f] : \n", time);
-			std::cout << timebuf;
-			std::cerr << timebuf;
+			//std::cout << timebuf;
+			//std::cerr << timebuf;
 			OutputDebugString(timebuf);
 		}
 				
@@ -1541,10 +1540,10 @@ namespace fastbird
 		
 		strcat_s(buf, 2048, "\n");
 
-		std::cout << buf;
-		std::cerr << buf;
-		std::cout.flush();
-		std::cerr.flush();
+		//std::cout << buf;
+		//std::cout.flush();
+		//std::cerr << buf;		
+		//std::cerr.flush();
 		OutputDebugString(buf);
 
 		if (gFBEnv && gFBEnv->pConsole)
@@ -1552,7 +1551,7 @@ namespace fastbird
 	}
 
 	//------------------------------------------------------------------------
-	void IEngine::LogLastError(const char* file, int line, const char* function)
+	void Engine::LogLastError(const char* file, int line, const char* function)
 	{
 		char buf[2048];
 
@@ -1598,5 +1597,64 @@ namespace fastbird
 		if (gFBEnv && gFBEnv->pEngine)
 			gFBEnv->pEngine->Log(buf);
 	}
+
+
+	IVoxelizer* Engine::CreateVoxelizer()
+	{
+		return IVoxelizer::CreateVoxelizer();
+	}
+
+	void Engine::DeleteVoxelizer(IVoxelizer* voxelizer)
+	{
+		if (voxelizer)
+			IVoxelizer::DeleteVoxelizer(voxelizer);
+	}
+
+	IUIObject* Engine::CreateUIObject(bool usingSmartPtr, const Vec2I& renderTargetSize)
+	{
+		return IUIObject::CreateUIObject(usingSmartPtr, renderTargetSize);
+	}
+	void Engine::DeleteUIObject(IUIObject* uiObject)
+	{
+		if (uiObject)
+		{
+			FB_RELEASE(uiObject);
+		}
+	}
+
+	ISkySphere* Engine::CreateSkySphere(bool usingSmartPointer)
+	{
+		return ISkySphere::CreateSkySphere(usingSmartPointer);
+	}
+
+	void Engine::DeleteSkySphere(ISkySphere* skySphere)
+	{
+		if (skySphere)
+			skySphere->Delete();
+	}
+
+	IBillboardQuad* Engine::CreateBillboardQuad()
+	{
+		return IBillboardQuad::CreateBillboardQuad();
+	}
+
+	void Engine::DeleteBillboardQuad(IBillboardQuad* quad)
+	{
+		if (quad)
+		{
+			FB_DELETE(quad);
+		}
+	}
+
+	IDustRenderer* Engine::CreateDustRenderer()
+	{
+		return IDustRenderer::CreateDustRenderer();
+	}
+
+	void Engine::DeleteDustRenderer(IDustRenderer* dust)
+	{
+		FB_DELETE(dust);
+	}
+
 
 } // namespace fastbird

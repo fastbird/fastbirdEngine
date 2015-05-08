@@ -62,7 +62,7 @@ void Terrain::Init(int numVertX, int numVertY, float distance,
 	const char* heightmapFile)
 {
 	Profiler profiler("'Terrain Init'");
-	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Initializing Terrain...");
+	gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Initializing Terrain...");
 	// Num Patches
 	assert(IsPowerOfTwo(numVertX-1));
 	assert(IsPowerOfTwo(numVertY-1));
@@ -182,7 +182,7 @@ void Terrain::Init(int numVertX, int numVertY, float distance,
 		mPatches[i]->SetIndexBuffer(mIndexBuffers[0]);
 	}
 
-	IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Terrain Initialized.");
+	gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Terrain Initialized.");
 }
 
 //----------------------------------------------------------------------------

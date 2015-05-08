@@ -1,25 +1,41 @@
 #include "StdAfx.h"
 #include "EngineBridge.h"
 #include <Engine/GlobalEnv.h>
-#include <Engine/DllMain.h>
 #include <CommonLib/PerlinNoise.h>
 
+fastbird::GlobalEnv* gFBEnv;
+HMODULE gEngineModule = 0;
 namespace Controllers
 {
 	void EngineBridge::InitializeNativeEngine()
 	{		
-		fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
+		gEngineModule = fastbird::LoadFBLibrary("Engine.dll");
+		if (!gEngineModule)
+			return;
+		typedef fastbird::IEngine* (__cdecl *CreateEngineProc)();
+		CreateEngineProc createEngineProc = (CreateEngineProc)GetProcAddress(gEngineModule, "Create_fastbird_Engine");
+		if (!createEngineProc)
+			return;
+
+		fastbird::IEngine* pEngine = createEngineProc();
+		gFBEnv = pEngine->GetGlobalEnv();
+
 		pEngine->InitEngine(fastbird::IEngine::D3D11);
 	}
 
 	void EngineBridge::FinalizeNativeEngine()
 	{
-		::Destroy_fastbird_Engine();
+		typedef void(__cdecl *DestroyEngineProc)();
+		DestroyEngineProc destroyEngineProc = (DestroyEngineProc)GetProcAddress(gEngineModule, "Destroy_fastbird_Engine");
+		if (!destroyEngineProc)
+			return;
+		destroyEngineProc();
+		fastbird::FreeFBLibrary(gEngineModule);
 	}
 
 	int EngineBridge::InitSwapChain(HANDLE hwnd, int width, int height)
 	{
-		//return gEnv->pEngine->InitSwapChain((HWND)hwnd, width, height);
+		//return gFBEnv->pEngine->InitSwapChain((HWND)hwnd, width, height);
 		return 0;
 	}
 
@@ -47,7 +63,7 @@ namespace fastbird
 		va_start(args, szFmt);
 		vsprintf_s(buf, 2048, szFmt, args);
 		va_end(args);
-		//gEnv->pEngine->Error(buf);
+		//gFBEnv->pEngine->Error(buf);
 		//assert(0);
 	}
 
@@ -58,6 +74,6 @@ namespace fastbird
 		va_start(args, szFmt);
 		vsprintf_s(buf, 2048, szFmt, args);
 		va_end(args);
-		//gEnv->pEngine->Log(buf);
+		//gFBEnv->pEngine->Log(buf);
 	}
 }

@@ -19,7 +19,7 @@ namespace fastbird
 		mTextures[i] = 0;
 	}
 
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIVerticalGauge.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -54,7 +54,7 @@ void VerticalGauge::OnStartUpdate(float elapsedTime)
 	if (mBlink)
 	{
 		IMaterial* mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameters(3, Vec4(sin(gEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+		mat->SetMaterialParameters(3, Vec4(sin(gFBEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
 	}
 }
 
@@ -189,7 +189,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 		assert(0);
 	}
 
-	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(mTextureAtlasFile.c_str());
+	mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(mTextureAtlasFile.c_str());
 	if (mTextureAtlas)
 	{
 		if (!mMaterialUsingImage)

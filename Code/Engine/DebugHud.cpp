@@ -24,7 +24,7 @@ DebugHud::DebugHud()
 	mObjectConstants_WorldLine.gWorldViewProj.MakeIdentity();
 
 	mLineShader = gFBEnv->pEngine->GetRenderer()->CreateShader(
-		"Code/Engine/Shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+		"es/shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 		IMaterial::SHADER_DEFINES());
 	
 	mInputLayout = gFBEnv->pRenderer->GetInputLayout(

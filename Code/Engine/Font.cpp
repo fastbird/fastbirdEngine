@@ -121,7 +121,7 @@ int Font::Init(const char *fontFile)
 #endif
 	if( f == 0 )
 	{
-		IEngine::Log("Failed to open font file '%s'!", fontFile);
+		gFBEnv->pEngine->Log("Failed to open font file '%s'!", fontFile);
 		return -1;
 	}
 
@@ -148,7 +148,7 @@ int Font::Init(const char *fontFile)
 
 	// init shader
 	mShader = gFBEnv->pEngine->GetRenderer()->CreateShader(
-		"Code/Engine/Shaders/font.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+		"es/shaders/font.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 		IMaterial::SHADER_DEFINES());
 	mInputLayout = gFBEnv->pEngine->GetRenderer()->GetInputLayout(
 		DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES, mShader);
@@ -168,6 +168,11 @@ int Font::Init(const char *fontFile)
 	desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
 	desc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE;
 	mBlendState = gFBEnv->pRenderer->CreateBlendState(desc);
+
+	RASTERIZER_DESC rdesc;
+	mRasterizerWithoutScissor = gFBEnv->pRenderer->CreateRasterizerState(rdesc);
+	rdesc.ScissorEnable = true;
+	mRasterizerWithScissor = gFBEnv->pRenderer->CreateRasterizerState(rdesc);
 
 	mRenderTargetSize.x = gFBEnv->pRenderer->GetWidth();
 	mRenderTargetSize.y = gFBEnv->pRenderer->GetHeight();
@@ -651,10 +656,12 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 		RASTERIZER_DESC rd;
 		rd.ScissorEnable = true;
 		mTextureMaterial->SetRasterizerState(rd);
+		mRasterizerWithScissor->Bind();
 	}
 	else
 	{
 		mTextureMaterial = gFBEnv->pRenderer->GetMaterial(DEFAULT_MATERIALS::QUAD_TEXTURE)->Clone();
+		mRasterizerWithoutScissor->Bind();
 	}
 	
 	mBlendState->Bind();	
@@ -876,7 +883,7 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 	//font->mPages[id]->SetSamplerDesc(SAMPLER_DESC());
 	
 	if( font->mPages[id]==0 )
-		IEngine::Log("Failed to load font page '$s'!", str.c_str());
+		gFBEnv->pEngine->Log("Failed to load font page '$s'!", str.c_str());
 }
 
 void FontLoader::SetFontInfo(int outlineThickness)
@@ -1338,7 +1345,7 @@ int FontLoaderBinaryFormat::Load()
 			ReadKerningPairsBlock(blockSize);
 			break;
 		default:
-			IEngine::Log("Unexpected block type (%d)", blockType);
+			gFBEnv->pEngine->Log("Unexpected block type (%d)", blockType);
 			fclose(f);
 			return -1;
 		}

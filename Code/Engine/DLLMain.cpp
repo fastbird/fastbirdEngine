@@ -5,10 +5,10 @@
 
 extern "C"
 {
-	CLASS_DECLSPEC_ENGINE fastbird::GlobalEnv* gFBEnv = 0;
+	fastbird::GlobalEnv* gFBEnv = 0;
 
 	//-------------------------------------------------------------------------
-	CLASS_DECLSPEC_ENGINE fastbird::IEngine* _cdecl Create_fastbird_Engine()
+	__declspec(dllexport) fastbird::IEngine* _cdecl Create_fastbird_Engine()
 	{
 		static bool engineCreated = false;
 		if (engineCreated)
@@ -22,24 +22,12 @@ extern "C"
 	}
 	
 	//-------------------------------------------------------------------------
-	CLASS_DECLSPEC_ENGINE void _cdecl Destroy_fastbird_Engine()
+	__declspec(dllexport) void _cdecl Destroy_fastbird_Engine()
 	{
-		gFBEnv->mExiting = true;		
 		if (gFBEnv)
+		{
+			gFBEnv->mExiting = true;
 			fastbird::IEngine::DeleteInstance(gFBEnv->pEngine);
-	}
-
-	//-------------------------------------------------------------------------
-	CLASS_DECLSPEC_ENGINE void _cdecl OutputDebug(const char* szFmt, ...)
-	{
-		static char buf[2048];
-
-		va_list args;
-		va_start(args, szFmt);
-		vsprintf_s(buf, 2048, szFmt, args);
-		va_end(args);
-		strcat_s(buf, 2048, "\n");
-
-		fastbird::IEngine::Log(buf);
+		}
 	}
 }

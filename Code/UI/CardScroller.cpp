@@ -11,7 +11,7 @@ CardScroller::CardScroller()
 , mRatio(-1)
 , mNYOffset(0.f)
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUseScrollerV = true;
@@ -231,7 +231,7 @@ CardItem::CardItem()
 : mCardData(0)
 {
 	mCardId = NextCardId++;
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);

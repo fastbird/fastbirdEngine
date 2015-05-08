@@ -46,7 +46,7 @@ void EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
 	}
 	std::string funcName = StripBoth(luaFuncName);
 	LuaObject func;
-	func.FindFunction(IUIManager::GetUIManager().GetLuaState(), funcName.c_str());
+	func.FindFunction(gFBEnv->pUIManager->GetLuaState(), funcName.c_str());
 	if_assert_pass(func.IsFunction())
 		mLuaFuncMap[e] = func;	
 }
@@ -81,7 +81,7 @@ bool EventHandler::OnEvent(EVENT e)
 		{
 			assert(it->second.IsFunction());
 
-			lua_State* L = IUIManager::GetUIManager().GetLuaState();
+			lua_State* L = gFBEnv->pUIManager->GetLuaState();
 			LUA_STACK_CLIPPER lsc(L);
 			it->second.PushToStack();
 			WinBase* pComp = dynamic_cast<WinBase*>(this);

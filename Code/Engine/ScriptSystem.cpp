@@ -2,6 +2,7 @@
 #include <Engine/ScriptSystem.h>
 #include <Engine/GlobalEnv.h>
 #include <CommonLib/LuaUtils.h>
+#include <CommonLib/LuaObject.h>
 
 int _FBPrint(lua_State* L)
 {
@@ -21,7 +22,7 @@ ScriptSystem::ScriptSystem()
 	luaL_openlibs(mLuaState);
 	assert(mLuaState);
 	ExportsDefaultFunctions();
-	RunScript("configEngine.lua");
+	LoadConfig("configEngine.lua");
 	InitEngineLuaFuncs(mLuaState);
 }
 
@@ -47,6 +48,52 @@ bool ScriptSystem::RunScript(const char* filename)
 		gFBEnv->pEngine->Error("RunScript error!");
 		return false;
 	}
+	return true;
+}
+
+//--------------------------------------------------------------------------
+bool ScriptSystem::LoadConfig(const char* filename)
+{
+	// load the chunk and then change the value of its first upvalue
+	luaL_loadfile(mLuaState, filename); // func.
+	lua_createtable(mLuaState, 0, 0); // func. {}
+	const char* upvaluName = lua_setupvalue(mLuaState, -2, 1); // func.
+	lua_pushvalue(mLuaState, -1); //func. func.
+	
+	// now the function has empty _ENV
+	int error = lua_pcall(mLuaState, 0, 0, 0); // func.
+	if (error)
+	{
+		// func. error
+		const char* errorString = lua_tostring(mLuaState, -1);
+		lua_pop(mLuaState, 1);
+		if (gFBEnv->pEngine)
+		{
+			PrintLuaErrorString(mLuaState, errorString);
+		}
+		else
+		{
+			std::cerr << errorString << std::endl;
+		}
+		return false;
+	}
+
+	const char* name = lua_getupvalue(mLuaState, -1, 1); // func. _ENV
+	LuaObject env(mLuaState, -1);
+	auto it = env.GetTableIterator();
+	LuaTableIterator::KeyValue kv;
+	while (it.GetNext(kv)){
+		if (!kv.first.IsString())
+			continue;
+		// for security.
+		if (kv.second.HasFunction())
+			continue;
+
+		kv.second.PushToStack();
+		lua_setglobal(mLuaState, kv.first.GetString().c_str());
+	}
+	lua_pop(mLuaState, 2); // pop func. and _ENV
+
 	return true;
 }
 
