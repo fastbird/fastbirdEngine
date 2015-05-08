@@ -16,7 +16,7 @@ namespace fastbird
 		, mCurFrame(0), mImageFixedSize(false)
 		, mTexture(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -105,9 +105,9 @@ void ImageBox::SetTexture(const char* file)
 	{
 		mImageFile = "data/textures/empty_transparent.dds";
 	}
-	ITexture* pTexture = gEnv->pRenderer->CreateTexture(mImageFile.c_str());
+	ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
 	SetTexture(pTexture);
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)
@@ -125,7 +125,7 @@ void ImageBox::SetTexture(ITexture* pTexture)
 
 void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 {
-	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(atlas);
+	mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
 		// need to set to material. matarial will hold its reference counter
@@ -156,7 +156,7 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 
 void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
 {
-	mTextureAtlas = gEnv->pRenderer->GetTextureAtlas(atlas);
+	mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
 		// need to set to material. matarial will hold its reference counter

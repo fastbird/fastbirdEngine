@@ -10,7 +10,13 @@ namespace fastbird
 	class RigidBody;
 	class IPhysicsInterface;
 	struct CollisionShape;
-	class CLASS_DECLSPEC_PHYSICS IPhysics
+	struct BoxShape;
+	struct SphereShape;
+	struct CylinderShape;
+	struct CapsuleShape;
+	struct MeshShape;
+
+	class IPhysics
 	{
 	public:
 		static IPhysics* GetPhysics();
@@ -47,5 +53,20 @@ namespace fastbird
 		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;		
 
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
+
+		//-------------------------------------------------------------------
+		// collision shape manager
+		//-------------------------------------------------------------------
+		virtual BoxShape* CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0) = 0;
+		virtual SphereShape* CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr = 0) = 0;
+		virtual CylinderShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0) = 0;
+		virtual CapsuleShape* CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr = 0) = 0;
+		virtual MeshShape* CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
+			bool staticObj, void* userPtr = 0) = 0;
+		virtual MeshShape* CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,
+			const Vec3& scale, void* userPtr = 0) = 0;
+		virtual void DestroyShape(CollisionShape* shape) = 0;
 	};
 }
+
+extern fastbird::IPhysics* gFBPhysics;

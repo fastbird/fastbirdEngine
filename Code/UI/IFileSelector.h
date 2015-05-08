@@ -2,7 +2,7 @@
 
 namespace fastbird
 {
-class CLASS_DECLSPEC_UI IFileSelector
+class IFileSelector
 {
 public:
 	virtual void SetTitle(const wchar_t* szTitle) = 0;

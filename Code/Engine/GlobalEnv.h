@@ -8,6 +8,7 @@ namespace fastbird
 	class IScriptSystem;
 	class Timer;
 	class RenderToTexture;
+	class IUIManager;
 
 	struct GlobalEnv
 	{
@@ -19,6 +20,7 @@ namespace fastbird
 			pConsole = 0;
 			mFrameCounter = 0;
 			pScriptSystem = 0;
+			pUIManager = 0;
 			mExiting = false;
 			pTimer = 0;
 			mRenderPass = 0;
@@ -31,6 +33,7 @@ namespace fastbird
 		Renderer* _pInternalRenderer;
 		IConsole* pConsole;
 		IScriptSystem* pScriptSystem;
+		IUIManager* pUIManager;
 		unsigned mFrameCounter;
 		bool mExiting;
 		Timer* pTimer;
@@ -38,7 +41,8 @@ namespace fastbird
 		bool mGodRayInScreen;
 		bool mSilouetteRendered;
 		RenderToTexture* mRenderToTexture;
+
 	};
 }
 
-extern "C" CLASS_DECLSPEC_ENGINE fastbird::GlobalEnv* gFBEnv;
+extern fastbird::GlobalEnv* gFBEnv;

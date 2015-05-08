@@ -17,7 +17,7 @@ DropDown::DropDown()
 	, mReservedIdx(-1)
 	, mButton(0)
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
@@ -35,13 +35,13 @@ DropDown::~DropDown()
 {
 	if (sCurrentDropDown == this)
 		sCurrentDropDown = 0;
-	IUIManager::GetUIManager().DeleteComponent(mButton);
+	gFBEnv->pUIManager->DeleteComponent(mButton);
 	mDropDownItems.clear();
 }
 
 void DropDown::OnCreated()
 {
-	mButton = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+	mButton = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
 	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
 	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
@@ -152,7 +152,7 @@ void DropDown::OnMouseClick(void* arg)
 	{
 		var->SetVisible(!vis);
 	}
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 }
 
 void DropDown::CloseOptions()
@@ -199,7 +199,7 @@ void DropDown::OnItemSelected(void* arg)
 	assert(index != -1);
 	mCurIdx = index; 
 	OnEvent(IEventHandler::EVENT_DROP_DOWN_SELECTED);
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 }
 
 size_t DropDown::AddDropDownItem(WCHAR* szString)

@@ -24,7 +24,7 @@ GeometryRenderer::GeometryRenderer()
 	mObjectConstants_WorldLine.gWorldViewProj.MakeIdentity();
 
 	mLineShader = gFBEnv->pEngine->GetRenderer()->CreateShader(
-		"Code/Engine/Shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+		"es/shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
 
 	mInputLayout = gFBEnv->pRenderer->GetInputLayout(
 		DEFAULT_INPUTS::POSITION_COLOR, mLineShader);

@@ -35,12 +35,21 @@ public:
 	int r_Glow;
 	int r_ReportDeviceObjectLeak;
 	int r_Shadow;
+	int r_ShadowMapWidth;
+	int r_ShadowMapHeight;
+	float r_ShadowCamWidth;
+	float r_ShadowCamHeight;
+	float r_ShadowNear;
+	float r_ShadowFar;
+	float r_ShadowCamDist;
+
 	int r_UseShaderCache;
 	int r_GenerateShaderCache;
 	int r_numRenderTargets;
 	int r_numPointLights;
 	int r_numParticleEmitters;
 	int r_debugDraw;
+	
 
 private:
 	std::vector<CVar*> mCVars;

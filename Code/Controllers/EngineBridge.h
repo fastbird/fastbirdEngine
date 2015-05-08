@@ -76,6 +76,6 @@ namespace Controllers {
 		bool _initilaized;
 		fastbird::IEngine* _engine;
 	};
-
-	//extern fastbird::GlobalEnv* gEnv;
 }
+
+extern fastbird::GlobalEnv* gFBEnv;

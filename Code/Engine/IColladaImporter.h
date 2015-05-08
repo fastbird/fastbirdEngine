@@ -4,7 +4,7 @@ namespace fastbird
 {
 	class IMeshObject;
 	class MeshGroup;
-	class CLASS_DECLSPEC_ENGINE IColladaImporter : public ReferenceCounter
+	class IColladaImporter : public ReferenceCounter
 	{
 	public:
 		typedef std::map<std::string, SmartPtr<IMeshObject>> MeshObjects;

@@ -65,19 +65,19 @@ void CameraMan::Update(float elapsedTime)
 		int y = 150;
 		
 		int yStep = 16;
-		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
+		gFBEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
 		y+=yStep;
 
 		sprintf_s(buffer, "Cam matrix[1] = %s", StringConverter::toString(row1, 10, 4).c_str());
-		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
+		gFBEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
 		y+=yStep;
 
 		sprintf_s(buffer, "Cam matrix[2] = %s", StringConverter::toString(row2, 10, 4).c_str());
-		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
+		gFBEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
 		y+=yStep;
 
 		sprintf_s(buffer, "Cam matrix[3] = %s", StringConverter::toString(row3, 10, 4).c_str());		
-		gEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
+		gFBEnv->pRenderer->DrawText(Vec2I(x, y), buffer, Color::White);
 		y+=yStep;
 	}
 }
@@ -89,7 +89,7 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 	float mouseSens = 0.01f;
 	float wheelSens = 0.001f;
 
-	float deltaTime =  gEnv->pTimer->GetDeltaTime();
+	float deltaTime =  gFBEnv->pTimer->GetDeltaTime();
 	if (pKeyboard && pKeyboard->IsValid())
 	{
 		if (pKeyboard->IsKeyDown('W'))
@@ -137,7 +137,7 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 
 	//	float time;
 	//	mThirdPerson = pMouse->IsRButtonDown(&time);
-	//	mThirdPersonOffset = mThirdPerson && (gEnv->pTimer->GetTime() - time > 0.3f);
+	//	mThirdPersonOffset = mThirdPerson && (gFBEnv->pTimer->GetTime() - time > 0.3f);
 	//	if (pMouse->IsLButtonDown() || mThirdPerson)
 	//	{			
 	//		if (dx!=0)
@@ -178,8 +178,8 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 void CalcTrackball(fastbird::Quat& outQuat, long prevX, long prevY, long x, long y)
 {
 	using namespace fastbird;
-	Vec2 prev = gEnv->pRenderer->ToNdcPos(fastbird::Vec2I(prevX, prevY));
-	Vec2 cur = gEnv->pRenderer->ToNdcPos(fastbird::Vec2I(x, y));
+	Vec2 prev = gFBEnv->pRenderer->ToNdcPos(fastbird::Vec2I(prevX, prevY));
+	Vec2 cur = gFBEnv->pRenderer->ToNdcPos(fastbird::Vec2I(x, y));
 	
 	// Calc two points on the trackball
 	fastbird::Vec3 point1(prev.x, prev.y, ProjectToSphere(TRACKBALLSIZE, prev.x, prev.y));

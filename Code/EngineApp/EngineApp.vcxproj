@@ -58,7 +58,8 @@
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+      <Command>xcopy "$(SolutionDir)$(Configuration)\*.dll" "$(SolutionDir)..\" /D /Y
+xcopy "$(SolutionDir)$(Configuration)\*.exe" "$(SolutionDir)..\" /D /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -78,7 +79,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+      <Command>xcopy "$(SolutionDir)$(Configuration)\*.dll" "$(SolutionDir)..\" /D /Y
+xcopy "$(SolutionDir)$(Configuration)\*.exe" "$(SolutionDir)..\" /D /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -103,12 +105,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CommonLib\CommonLib.vcxproj">
       <Project>{af027364-5028-433c-8f67-a120c053c977}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Engine\Engine.vcxproj">
-      <Project>{13356807-5ace-4e77-930a-cb196e3d78c4}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Physics\Physics.vcxproj">
-      <Project>{7e8d892e-c60b-4e86-9e83-9cd7a75ec3b7}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

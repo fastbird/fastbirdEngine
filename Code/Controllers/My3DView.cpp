@@ -11,17 +11,17 @@ namespace Controllers
 {
 	void My3DView::InitSwapChain()
 	{
-		//_swapChain = gEnv->pRenderer->InitSwapChain((HWND)this->Handle.ToPointer(), this->Width, this->Height);
+		//_swapChain = gFBEnv->pRenderer->InitSwapChain((HWND)this->Handle.ToPointer(), this->Width, this->Height);
 	}
 
 	void My3DView::OnPaint()
 	{
-		/*static __int64 lastTick = gEnv->pTimer->GetTickCount();
+		/*static __int64 lastTick = gFBEnv->pTimer->GetTickCount();
 
-		if (gEnv)
+		if (gFBEnv)
 			this->Invalidate();
 
-		__int64 currentTick = gEnv->pTimer->GetTickCount();
+		__int64 currentTick = gFBEnv->pTimer->GetTickCount();
 		__int64 elapsed = currentTick - lastTick;
 		lastTick = currentTick;*/
 	}

@@ -1,8 +1,8 @@
 #include "CommonDefines.h"
 
 #ifdef ENV_TEXTURE
-TextureCube gEnvTexture : register(t4);
-//Texture2D gEnvTexture : register(t4);
+TextureCube gFBEnvTexture : register(t4);
+//Texture2D gFBEnvTexture : register(t4);
 #endif
 
 Texture2D gDepthMap : register(t5);
@@ -28,7 +28,7 @@ float2 SphericalCoord(float3 dir)
 #ifdef ENV_TEXTURE
 float3 SampleEnvironmentMap(float3 dir, float lod)
 {
-	float3 color = gEnvTexture.SampleLevel(gAnisotropicSampler, dir, lod).rgb *2.0;
+	float3 color = gFBEnvTexture.SampleLevel(gAnisotropicSampler, dir, lod).rgb *2.0;
 	return color;
 }
 #endif

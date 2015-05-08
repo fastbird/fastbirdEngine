@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Shaders/BillboardQuad.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/BillboardQuad.hlsl</ShaderFile>
 	<Shaders>VS|GS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>

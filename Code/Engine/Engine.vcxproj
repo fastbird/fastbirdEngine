@@ -88,7 +88,7 @@
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+      <Command>copy "$(TargetPath)" "$(SolutionDir).."</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>taskkill /f /fi "pid gt 0" /im Game_Debug.exe</Command>
@@ -115,7 +115,7 @@
       <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(SolutionDir)..\"</Command>
+      <Command>copy "$(TargetPath)" "$(SolutionDir).."</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>taskkill /f /fi "pid gt 0" /im Game_Release.exe</Command>
@@ -142,7 +142,7 @@
       <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetPath) $(SolutionDir)..\</Command>
+      <Command>copy "$(TargetPath)" "$(SolutionDir).."</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>taskkill /f /fi "pid gt 0" /im Game_Profile.exe</Command>

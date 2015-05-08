@@ -437,7 +437,7 @@ template <typename T>
 int luaW_newindex(lua_State* L)
 {
     // obj key value
-    T* obj = luaW_check<T>(L, 1);
+    T* obj = luaW_check<T>(L, 1);	
     luaW_wrapperfield<T>(L, LUAW_STORAGE_KEY); // obj key value storage
     LuaWrapper<T>::identifier(L, obj); // obj key value storage id
     lua_pushvalue(L, -1); // obj key value storage id id
@@ -691,7 +691,7 @@ void luaW_extend(lua_State* L)
     {
         // mt emt mt.extends emt.extends k v
         lua_pushvalue(L, -2); // mt emt mt.extends emt.extends k v k
-        lua_pushvalue(L, -2); // mt emt mt.extends emt.extends k v k
+        lua_pushvalue(L, -2); // mt emt mt.extends emt.extends k v k v
         lua_rawset(L, -6); // mt emt mt.extends emt.extends k v
 		lua_pop(L, 1);
     }

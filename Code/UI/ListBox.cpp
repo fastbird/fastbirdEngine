@@ -19,7 +19,7 @@ ListItem::ListItem()
 , mBackColor("0.1, 0.3, 0.3, 0.7")
 {
 	assert(mUIObject);
-	//mUIObject = IUIObject::CreateUIObject(false);
+	//mUIObject = gFBEnv->pEngine->CreateUIObject(false);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
@@ -361,7 +361,7 @@ void ListBox::OnItemClicked(void* arg)
 	size_t colindex = pItem->GetColIndex();
 	if (rowindex != ListItem::INVALID_INDEX)
 	{
-		auto keyboard = gEnv->pEngine->GetKeyboard();
+		auto keyboard = gFBEnv->pEngine->GetKeyboard();
 		if (keyboard->IsKeyDown(VK_CONTROL))
 		{			
 			if (ValueNotExistInVector(mSelectedRows, rowindex))

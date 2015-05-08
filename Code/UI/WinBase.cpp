@@ -78,13 +78,13 @@ WinBase::~WinBase()
 {
 	if (mShowingTooltip)
 	{
-		IUIManager::GetUIManager().CleanTooltip();
+		gFBEnv->pUIManager->CleanTooltip();
 	}
 	if (mModal)
 	{
 		if (mVisibility.IsVisible())
 		{
-			IUIManager::GetUIManager().IgnoreInput(false, this);
+			gFBEnv->pUIManager->IgnoreInput(false, this);
 		}
 	}
 	FB_FOREACH(it, mAnimations)
@@ -94,10 +94,10 @@ WinBase::~WinBase()
 
 	for (auto ib : mBorders)
 	{
-		IUIManager::GetUIManager().DeleteComponent(ib);
+		gFBEnv->pUIManager->DeleteComponent(ib);
 	}
 	
-	FB_RELEASE(mUIObject);
+	gFBEnv->pEngine->DeleteUIObject(mUIObject);
 }
 
 //---------------------------------------------------------------------------
@@ -574,13 +574,13 @@ bool WinBase::SetVisible(bool show)
 
 void WinBase::SetVisibleInternal(bool visible)
 {
-	IUIManager::GetUIManager().DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList();
 	if (visible)
 	{
 		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
 		if (mModal)
 		{
-			IUIManager::GetUIManager().IgnoreInput(true, this);
+			gFBEnv->pUIManager->IgnoreInput(true, this);
 		}
 	}
 	else
@@ -588,7 +588,7 @@ void WinBase::SetVisibleInternal(bool visible)
 		OnEvent(IEventHandler::EVENT_ON_HIDE);
 		if (mModal)
 		{
-			IUIManager::GetUIManager().IgnoreInput(false, this);
+			gFBEnv->pUIManager->IgnoreInput(false, this);
 		}
 		mVisibility.Hided();
 	}
@@ -610,7 +610,7 @@ bool WinBase::GetVisible() const
 
 bool WinBase::GetFocus(bool includeChildren /*= false*/) const
 {
-	return IUIManager::GetUIManager().IsFocused(this);
+	return gFBEnv->pUIManager->IsFocused(this);
 }
 
 //---------------------------------------------------------------------------
@@ -670,7 +670,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				)
 			{
 				mMouseDragStartInHere = true;
-				IUIManager::GetUIManager().SetFocusUI(GetRootWnd());
+				gFBEnv->pUIManager->SetFocusUI(GetRootWnd());
 				invalidate = true;
 			}
 			else
@@ -724,7 +724,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				if (OnEvent(EVENT_MOUSE_LEFT_DOUBLE_CLICK))
 				{
 					mouse->Invalidate();
-					IUIManager::GetUIManager().CleanTooltip();
+					gFBEnv->pUIManager->CleanTooltip();
 				}
 
 			}
@@ -913,9 +913,9 @@ void WinBase::CalcTextWidth()
 {
 	if (mTextw.empty())
 		return;
-	IFont* pFont = gEnv->pRenderer->GetFont();
+	IFont* pFont = gFBEnv->pRenderer->GetFont();
 	pFont->SetHeight(mTextSize);
-	mTextWidth = (int)gEnv->pRenderer->GetFont()->GetTextWidth(
+	mTextWidth = (int)gFBEnv->pRenderer->GetFont()->GetTextWidth(
 		(const char*)mTextw.c_str(), mTextw.size() * 2);
 	pFont->SetBackToOrigHeight();
 }
@@ -963,7 +963,7 @@ std::string WinBase::TranslateText(const char* text)
 	{
 		char varName[255];
 		sprintf_s(varName, "msg.%s", text+1);
-		auto var = GetLuaVar(IUIManager::GetUIManager().GetLuaState(), varName, "msg.lua");
+		auto var = GetLuaVar(gFBEnv->pUIManager->GetLuaState(), varName, "msg.lua");
 		if (var.IsString())
 		{
 			return var.GetString();
@@ -1261,7 +1261,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							  bool b = StringConverter::parseBool(val);
 							  if (mUIObject)
 								  mUIObject->SetAlphaBlending(b);
-							  IUIManager::GetUIManager().DirtyRenderList();
+							  gFBEnv->pUIManager->DirtyRenderList();
 							  return true;
 	}
 
@@ -1436,7 +1436,7 @@ void WinBase::SetUseBorder(bool use)
 {
 	if (use && mBorders.empty())
 	{
-		ImageBox* T = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(T);
 		T->SetRender3D(mRender3D, GetRenderTargetSize());
 		T->SetManualParent(this);
@@ -1444,14 +1444,14 @@ void WinBase::SetUseBorder(bool use)
 		T->SetTextureAtlasRegion("es/textures/ui.xml", "Box_T");	
 		
 
-		ImageBox* L = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(L);
 		L->SetRender3D(mRender3D, GetRenderTargetSize());
 		L->SetManualParent(this);
 		L->SetSizeX(3);		
 		L->SetTextureAtlasRegion("es/textures/ui.xml", "Box_L");		
 
-		ImageBox* R = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(R);
 		R->SetRender3D(mRender3D, GetRenderTargetSize());
 		R->SetManualParent(this);
@@ -1460,7 +1460,7 @@ void WinBase::SetUseBorder(bool use)
 		R->SetTextureAtlasRegion("es/textures/ui.xml", "Box_R");
 		
 
-		ImageBox* B = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(B);
 		B->SetRender3D(mRender3D, GetRenderTargetSize());
 		B->SetManualParent(this);
@@ -1468,14 +1468,14 @@ void WinBase::SetUseBorder(bool use)
 		B->SetSizeY(3);
 		B->SetTextureAtlasRegion("es/textures/ui.xml", "Box_B");
 
-		ImageBox* LT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(LT);
 		LT->SetRender3D(mRender3D, GetRenderTargetSize());
 		LT->SetManualParent(this);
 		LT->SetSize(Vec2I(6, 6));
 		LT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LT");		
 
-		ImageBox* RT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(RT);
 		RT->SetRender3D(mRender3D, GetRenderTargetSize());
 		RT->SetManualParent(this);
@@ -1483,7 +1483,7 @@ void WinBase::SetUseBorder(bool use)
 		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 		RT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RT");		
 
-		ImageBox* LB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);;
+		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
 		mBorders.push_back(LB);
 		LB->SetRender3D(mRender3D, GetRenderTargetSize());
 		LB->SetManualParent(this);
@@ -1491,7 +1491,7 @@ void WinBase::SetUseBorder(bool use)
 		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		LB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LB");
 
-		ImageBox* RB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 		mBorders.push_back(RB);
 		RB->SetRender3D(mRender3D, GetRenderTargetSize());
 		RB->SetManualParent(this);
@@ -1501,16 +1501,16 @@ void WinBase::SetUseBorder(bool use)
 		
 		RefreshBorder();
 		RefreshScissorRects();
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 	}
 	else if (!use && !mBorders.empty())
 	{
 		for (auto ib : mBorders)
 		{
-			IUIManager::GetUIManager().DeleteComponent(ib);
+			gFBEnv->pUIManager->DeleteComponent(ib);
 		}
 		mBorders.clear();
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 	}
 }
 void WinBase::RefreshBorder()
@@ -2442,21 +2442,21 @@ void WinBase::ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos)
 	{
 	case IEventHandler::EVENT_MOUSE_IN:
 	{
-										  IUIManager::GetUIManager().SetTooltipString(mTooltipText);
+										  gFBEnv->pUIManager->SetTooltipString(mTooltipText);
 
-										  IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+										  gFBEnv->pUIManager->SetTooltipPos(mouseNPos);
 										  mShowingTooltip = true;
 	}
 		break;
 
 	case IEventHandler::EVENT_MOUSE_HOVER:
-		IUIManager::GetUIManager().SetTooltipString(mTooltipText);
-		IUIManager::GetUIManager().SetTooltipPos(mouseNPos);
+		gFBEnv->pUIManager->SetTooltipString(mTooltipText);
+		gFBEnv->pUIManager->SetTooltipPos(mouseNPos);
 		mShowingTooltip = true;
 		break;
 
 	case IEventHandler::EVENT_MOUSE_OUT:
-		IUIManager::GetUIManager().SetTooltipString(std::wstring());
+		gFBEnv->pUIManager->SetTooltipString(std::wstring());
 		mShowingTooltip = false;
 		break;
 	}
@@ -2583,7 +2583,7 @@ Vec2I WinBase::GetRenderTargetSize() const
 	}
 	else
 	{
-		return Vec2I(gEnv->pRenderer->GetWidth(), gEnv->pRenderer->GetHeight());
+		return Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight());
 	}
 }
 

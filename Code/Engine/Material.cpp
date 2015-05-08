@@ -787,7 +787,7 @@ ITexture* Material::CreateColorRampTexture(ColorRamp& cr)
 	FIBITMAP* bitmap = FreeImage_Allocate(128, 1, 32);
 	if (!bitmap)
 	{
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Failed to create freeimage!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create freeimage!");
 		assert(0);
 		return 0;
 	}

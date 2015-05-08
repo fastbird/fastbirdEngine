@@ -14,7 +14,7 @@ namespace fastbird
 	class IEventHandler;
 	class IUIAnimation;
 
-	class CLASS_DECLSPEC_UI IWinBase
+	class IWinBase
 	{
 	public:
 		IWinBase() {}

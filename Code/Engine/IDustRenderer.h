@@ -3,7 +3,7 @@
 #include <Engine/SpatialObject.h>
 namespace fastbird
 {
-	class CLASS_DECLSPEC_ENGINE IDustRenderer : public SpatialObject
+	class IDustRenderer : public SpatialObject
 	{
 	public:
 		static IDustRenderer* CreateDustRenderer();

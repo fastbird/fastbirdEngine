@@ -1,5 +1,4 @@
 #include <UnitTest/StdAfx.h>
-#include <Engine/DllMain.h>
 
 // Verifies that the command line flag variables can be accessed
 // in code once <gtest/gtest.h> has been #included.
@@ -34,15 +33,28 @@ TEST(CommandLineFlagsTest, CanBeAccessedInCodeOnceGTestHIsIncluded) {
 int main(int argc, char** argv) 
 {
 	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-		
-	fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
+	
+	HMODULE engineModule = fastbird::LoadFBLibrary("Engine.dll");
+	if (!engineModule)
+		return 1;
+	typedef fastbird::IEngine* (__cdecl *CreateEngineProc)();
+	CreateEngineProc proc = (CreateEngineProc)GetProcAddress(engineModule, "Create_fastbird_Engine");
+	if (!proc)
+		return 2;
+	
+	fastbird::IEngine* pEngine = proc();
 	
     testing::InitGoogleTest(&argc, argv); 
     RUN_ALL_TESTS(); 
     std::getchar(); // keep console window open until Return keystroke
 	FB_SAFE_DEL(fastbird::gpTimer);
 
-	::Destroy_fastbird_Engine();
+	typedef void (__cdecl *DestroyEngineProc)();
+	DestroyEngineProc destroyEngineProc = (DestroyEngineProc)GetProcAddress(engineModule, "Destroy_fastbird_Engine");
+	if (!destroyEngineProc)
+		return 3;
+	destroyEngineProc();
+	fastbird::FreeFBLibrary(engineModule);
 }
 
 namespace fastbird

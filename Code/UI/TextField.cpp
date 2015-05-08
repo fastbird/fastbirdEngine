@@ -13,7 +13,7 @@ TextField::TextField()
 	, mCursorPos(0)
 	, mPasswd(false)
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UITextField.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -61,12 +61,12 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					if (keyboard->IsKeyDown(VK_SHIFT))
 					{
 						if (mPrev)
-							IUIManager::GetUIManager().SetFocusUI(mPrev);
+							gFBEnv->pUIManager->SetFocusUI(mPrev);
 					}
 					else
 					{
 						if (mNext)
-							IUIManager::GetUIManager().SetFocusUI(mNext);
+							gFBEnv->pUIManager->SetFocusUI(mNext);
 					}
 				}
 				break;
@@ -132,10 +132,10 @@ void TextField::OnFocusLost()
 
 void TextField::OnFocusGain()
 {
-	gEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+	gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
 	float width;
-	width = gEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-	gEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+	width = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
+	gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
 
 	Vec2 size = ConvertToNormalized(Vec2I((int)width, 2));
 	KeyboardCursor::GetKeyboardCursor().SetNSize(size);
@@ -155,21 +155,21 @@ void TextField::MoveCursor(int move)
 	float xpos = 0.f;
 	if (!mTextw.empty())
 	{
-		gEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
 		float width;
 		if (mPasswd)
 		{
 			std::wstring asterisks(mTextw.size(), L'*');
-			width = gEnv->pRenderer->GetFont()->GetTextWidth(
+			width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
 				(const char*)asterisks.c_str(), asterisks.size()*2);
 		}
 		else
 		{
-			width = gEnv->pRenderer->GetFont()->GetTextWidth(
+			width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
 				(const char*)mTextw.c_str(), mTextw.size()*2);
 		}
 		xpos = ConvertToNormalized(Vec2I((int)width, (int)width)).x;
-		gEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
 	}
 
 	KeyboardCursor::GetKeyboardCursor().SetNPos(

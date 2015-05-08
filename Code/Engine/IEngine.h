@@ -29,8 +29,8 @@
 #include <Engine/IInputListener.h>
 
 #define FB_DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__
-#define FB_LOG(msg) fastbird::IEngine::Log(FB_DEFAULT_DEBUG_ARG, (msg));
-#define FB_LOG_LAST_ERROR_ENG() fastbird::IEngine::LogLastError(__FILE__, __LINE__, __FUNCTION__)
+#define FB_LOG(msg) gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, (msg));
+#define FB_LOG_LAST_ERROR_ENG() gFBEnv->pEngine->LogLastError(__FILE__, __LINE__, __FUNCTION__)
 namespace fastbird
 {
 	struct GlobalEnv;
@@ -48,15 +48,19 @@ namespace fastbird
 	class IFileChangeListener;
 	class IObject;
 	class ProfilerSimple;
+	class IVoxelizer;
+	class ISkySphere;
+	class IBillboardQuad;
+	class IDustRenderer;
 
-	class CLASS_DECLSPEC_ENGINE IEngine : public ReferenceCounter
+	class IEngine : public ReferenceCounter
 	{
 	public:
 		static IEngine* CreateInstance();
 		static void DeleteInstance(IEngine* e);
 
 		virtual ~IEngine(){}
-		virtual void GetGlobalEnv(GlobalEnv** outGloblEnv) = 0;
+		virtual GlobalEnv* GetGlobalEnv() const = 0;
 		virtual HWND CreateEngineWindow(int x, int y, int width, int height, 
 			const char* title, WNDPROC winProc)
 		{
@@ -123,6 +127,7 @@ namespace fastbird
 		};
 		virtual IMeshObject* GetMeshObject(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
+		virtual IMeshObject* CreateMeshObject() = 0;
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc()) = 0;
 		virtual void GetFractureMeshObjects(const char* daeFilePath, std::vector<IMeshObject*>& objects, bool reload=false) = 0;
@@ -160,14 +165,29 @@ namespace fastbird
 
 #ifdef _FBENGINE_FOR_WINDOWS_
 		// return processed
-		static LRESULT WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp );
+		virtual LRESULT WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp ) = 0;
 #elif _FBENGINE_FOR_LINUX_
 
 #endif
 
-		static void Log(const char* szFmt, ...);
-		static void Error(const char* szFmt, ...);
-		static void LogLastError(const char* file, int line, const char* function);
+		virtual void Log(const char* szFmt, ...) = 0;
+		virtual void Error(const char* szFmt, ...) = 0;
+		virtual void LogLastError(const char* file, int line, const char* function) = 0;
+
+		virtual IVoxelizer* CreateVoxelizer() = 0;
+		virtual void DeleteVoxelizer(IVoxelizer* voxelizer) = 0;
+
+		virtual IUIObject* CreateUIObject(bool usingSmartPtr, const Vec2I& renderTargetSize) = 0;
+		virtual void DeleteUIObject(IUIObject* uiObject) = 0;
+
+		virtual ISkySphere* CreateSkySphere(bool usingSmartPointer) = 0;
+		virtual void DeleteSkySphere(ISkySphere* skySphere) = 0;
+
+		virtual IBillboardQuad* CreateBillboardQuad() = 0;
+		virtual void DeleteBillboardQuad(IBillboardQuad* quad) = 0;
+
+		virtual IDustRenderer* CreateDustRenderer() = 0;
+		virtual void DeleteDustRenderer(IDustRenderer* dust) = 0;
 	};
 
 	//--------------------------------------------------------------------------------

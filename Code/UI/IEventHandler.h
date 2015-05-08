@@ -1,7 +1,7 @@
 #pragma once
 namespace fastbird
 {
-	class CLASS_DECLSPEC_UI IEventHandler
+	class IEventHandler
 	{
 	public:
 		typedef size_t FunctionID;

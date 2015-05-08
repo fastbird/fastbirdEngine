@@ -8,7 +8,7 @@
 
 namespace fastbird
 {
-	class CLASS_DECLSPEC_ENGINE IShader : public ReferenceCounter
+	class IShader : public ReferenceCounter
 	{
 	public:
 		static void ReloadShader(const char* name);

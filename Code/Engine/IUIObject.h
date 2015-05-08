@@ -5,7 +5,7 @@
 namespace fastbird
 {
 	class IWinBase;
-	class CLASS_DECLSPEC_ENGINE IUIObject : public Object
+	class IUIObject : public Object
 	{
 	public:
 		static IUIObject* CreateUIObject(bool usingSmartPtr, const Vec2I& renderTargetSize);

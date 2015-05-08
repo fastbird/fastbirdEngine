@@ -13,7 +13,11 @@ using namespace fastbird;
 
 #define RUN_PARALLEL_EXAMPLE 0
 
-fastbird::GlobalEnv* gEnv = 0;
+fastbird::GlobalEnv* gFBEnv = 0;
+fastbird::IPhysics* gFBPhysics = 0;
+HMODULE gEngineModule = 0;
+HMODULE gPhysicsModule = 0;
+
 CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
 TaskScheduler* gTaskSchedular = 0;
@@ -23,12 +27,12 @@ std::vector< IMeshObject* > gVoxels;
 //-----------------------------------------------------------------------------
 void UpdateFrame()
 {
-	gEnv->pTimer->Tick();
+	gFBEnv->pTimer->Tick();
 	float elapsedTime = gpTimer->GetDeltaTime();
-	gEnv->pEngine->UpdateInput();
-	IPhysics::GetPhysics()->Update(elapsedTime);
+	gFBEnv->pEngine->UpdateInput();
+	gFBPhysics->Update(elapsedTime);
 	gCameraMan->Update(elapsedTime);
-	gEnv->pEngine->UpdateFrame(elapsedTime);
+	gFBEnv->pEngine->UpdateFrame(elapsedTime);
 }
 
 //-----------------------------------------------------------------------------
@@ -61,28 +65,77 @@ LRESULT CALLBACK WinProc(HWND window, UINT msg, WPARAM wp, LPARAM lp)
 		break;
 
 	}
-	return IEngine::WinProc(window, msg, wp, lp);
+	return gFBEnv->pEngine->WinProc(window, msg, wp, lp);
 }
 
+
+
 //-----------------------------------------------------------------------------
-void InitEngine()
+bool InitEngine()
 {
-	fastbird::IEngine* pEngine = ::Create_fastbird_Engine();
-	gEnv = gFBEnv;
+	//-------------------------------------------------------------------------
+	// Engine
+	//-------------------------------------------------------------------------
+	gEngineModule = fastbird::LoadFBLibrary("Engine.dll");
+	if (!gEngineModule)
+		return false;
+	typedef fastbird::IEngine* (__cdecl *CreateEngineProc)();
+	CreateEngineProc createEngineProc = (CreateEngineProc)GetProcAddress(gEngineModule, "Create_fastbird_Engine");
+	if (!createEngineProc)
+		return false;
+
+	fastbird::IEngine* pEngine = createEngineProc();
+	gFBEnv = pEngine->GetGlobalEnv();
 	pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
 	pEngine->InitEngine(fastbird::IEngine::D3D11);
-	pEngine->InitSwapChain(gEnv->pEngine->GetWindowHandle(), 1600, 900);
-	gpTimer = gEnv->pTimer;
+	pEngine->InitSwapChain(gFBEnv->pEngine->GetWindowHandle(), 1600, 900);
+	gpTimer = gFBEnv->pTimer;
 
-	if (gEnv->pRenderer)
+	if (gFBEnv->pRenderer)
 	{
-		gEnv->pRenderer->SetClearColor(0, 0, 0, 1);
+		gFBEnv->pRenderer->SetClearColor(0, 0, 0, 1);
 	}
 	gInputHandler = FB_NEW(InputHandler)();
-	gCameraMan = FB_NEW(CameraMan)(gEnv->pRenderer->GetCamera());
-	gEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
+	gCameraMan = FB_NEW(CameraMan)(gFBEnv->pRenderer->GetCamera());
+	gFBEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
 
 	gTaskSchedular = FB_NEW(TaskScheduler)(6);
+
+
+	//-------------------------------------------------------------------------
+	// Physics
+	//-------------------------------------------------------------------------
+	gPhysicsModule = fastbird::LoadFBLibrary("Physics.dll");
+	if (!gPhysicsModule)
+		return false;
+	
+	typedef fastbird::IPhysics* (__cdecl *CreatePhysicsProc)();
+	CreatePhysicsProc createPhysicsProc = (CreatePhysicsProc)GetProcAddress(gPhysicsModule, "Create_fastbird_Physics");
+	if (!createPhysicsProc)
+		return false;
+
+	gFBPhysics = createPhysicsProc();
+
+	return true;
+}
+
+void FinalizeEngine()
+{
+	typedef void(__cdecl *DestroyPhysicsProc)();
+	DestroyPhysicsProc destroyPhysicsProc = (DestroyPhysicsProc)GetProcAddress(gPhysicsModule, "Destroy_fastbird_Physics");
+	if (!destroyPhysicsProc)
+		return;
+	destroyPhysicsProc();
+	fastbird::FreeFBLibrary(gPhysicsModule);
+
+
+	typedef void(__cdecl *DestroyEngineProc)();
+	DestroyEngineProc destroyEngineProc = (DestroyEngineProc)GetProcAddress(gEngineModule, "Destroy_fastbird_Engine");
+	if (!destroyEngineProc)
+		return;
+	destroyEngineProc();
+	fastbird::FreeFBLibrary(gEngineModule);
+	gFBEnv = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -98,17 +151,23 @@ int main()
 	//----------------------------------------------------------------------------
 	// 1. How to init engine.
 	//----------------------------------------------------------------------------
-	InitEngine();
+	bool succ = InitEngine();
+
+	if (!succ)
+	{
+		// failed to initialize!
+		return 1;
+	}
 
 	//----------------------------------------------------------------------------
 	// 2. How to create sky -  see Data/Materials/skybox.material
 	//----------------------------------------------------------------------------
-	gEnv->pEngine->CreateSkyBox();
+	gFBEnv->pEngine->CreateSkyBox();
 
 	//----------------------------------------------------------------------------
 	// 3. How to load model file and material.
 	//----------------------------------------------------------------------------
-	gMeshObject = gEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
+	gMeshObject = gFBEnv->pEngine->GetMeshObject("data/objects/CommandModule/CommandModule.dae"); // using collada file.
 	if (gMeshObject)
 	{
 		//gMeshObject->AttachToScene();
@@ -119,10 +178,10 @@ int main()
 	//----------------------------------------------------------------------------
 	// 4. How to use voxelizer (Need to include <Engine/IVoxelizer.h>)
 	//----------------------------------------------------------------------------
-	IVoxelizer* voxelizer = IVoxelizer::CreateVoxelizer();
+	IVoxelizer* voxelizer = gFBEnv->pEngine->CreateVoxelizer();
 	bool ret = voxelizer->RunVoxelizer("data/objects/etc/spaceship.dae", 64, false, true);
 	assert(ret);
-	IMeshObject* voxelObject = gEnv->pEngine->GetMeshObject("data/objects/etc/cube.dae");
+	IMeshObject* voxelObject = gFBEnv->pEngine->GetMeshObject("data/objects/etc/cube.dae");
 	const IVoxelizer::HULLS& h = voxelizer->GetHulls();
 	Vec3 offset(30, 0, 0);
 	for (const auto& v : h)
@@ -132,8 +191,8 @@ int main()
 		m->SetPos(offset + v*2.0f);
 		//m->AttachToScene();
 	}
-	IVoxelizer::DeleteVoxelizer(voxelizer);
-	gEnv->pEngine->ReleaseMeshObject(voxelObject);
+	gFBEnv->pEngine->DeleteVoxelizer(voxelizer);
+	gFBEnv->pEngine->ReleaseMeshObject(voxelObject);
 	voxelObject = 0;
 
 	//----------------------------------------------------------------------------
@@ -150,14 +209,14 @@ int main()
 		param.mCubemap = false;
 		param.mHasDepth = false;
 		param.mUsePool = false;
-		IRenderToTexture* rtt = gEnv->pRenderer->CreateRenderToTexture(param);
+		IRenderToTexture* rtt = gFBEnv->pRenderer->CreateRenderToTexture(param);
 		rtt->GetScene()->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
 		pRTTCam->SetDir(Vec3(1, 0, 0));
 		rtt->Render();
 		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
-		gEnv->pRenderer->DeleteRenderToTexture(rtt);
+		gFBEnv->pRenderer->DeleteRenderToTexture(rtt);
 	}
 
 #if RUN_PARALLEL_EXAMPLE
@@ -263,10 +322,10 @@ int main()
 	RunGame();
 	gTaskSchedular->Finalize();
 
-	gEnv->pEngine->ReleaseMeshObject(gMeshObject);
+	gFBEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	for (auto& m : gVoxels)
 	{
-		gEnv->pEngine->ReleaseMeshObject(m);
+		gFBEnv->pEngine->ReleaseMeshObject(m);
 	}
 	for (auto obj : PhyObjs)
 	{
@@ -276,11 +335,9 @@ int main()
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
 	FB_SAFE_DEL(gTaskSchedular);
-	IPhysics::GetPhysics()->Deinitilaize();
-	if (gEnv)
+	if (gFBEnv)
 	{
-		Destroy_fastbird_Engine();
-		Log("Engine Destroyed.");
+		FinalizeEngine();
 	}
 }
 
@@ -294,7 +351,7 @@ namespace fastbird
 		va_start(args, szFmt);
 		vsprintf_s(buf, 2048, szFmt, args);
 		va_end(args);
-		gEnv->pEngine->Error(buf);
+		gFBEnv->pEngine->Error(buf);
 		//assert(0);
 	}
 
@@ -305,6 +362,6 @@ namespace fastbird
 		va_start(args, szFmt);
 		vsprintf_s(buf, 2048, szFmt, args);
 		va_end(args);
-		gEnv->pEngine->Log(buf);
+		gFBEnv->pEngine->Log(buf);
 	}
 } // namespace fastbird

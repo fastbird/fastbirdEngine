@@ -31,7 +31,8 @@ namespace fastbird
 		bool mKeyDown[255];
 		bool mKeyPressed[255]; // Down - up
 		bool mKeyUp[255];
-		unsigned mCurrentChar;
+		std::queue<unsigned> mCurrentChar;
+		float mLastPushKeyTime;
 		float mKeyDownDuration[255];
 
 

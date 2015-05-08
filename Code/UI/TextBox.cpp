@@ -16,7 +16,7 @@ namespace fastbird
 		, mImage(0)
 		, mMatchHeight(false)
 	{
-		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mUIObject->SetTextColor(mTextColor);
@@ -79,7 +79,7 @@ namespace fastbird
 	void TextBox::CalcTextWidth()
 	{
 		// analyze the text length
-		IFont* pFont = gEnv->pRenderer->GetFont();
+		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		unsigned width = mSize.x;
 		pFont->SetHeight(mTextSize);
 		float textWidth;
@@ -103,7 +103,7 @@ namespace fastbird
 				mImage->SetWNPos(mWNPos);
 				mImage->SetWNSize(mWNSize);
 			}
-			IUIManager::GetUIManager().DirtyRenderList();
+			gFBEnv->pUIManager->DirtyRenderList();
 
 			mImage->SetTexture(val);
 			return true;
@@ -119,7 +119,7 @@ namespace fastbird
 												 mImage->SetWNPos(mWNPos);
 												 mImage->SetWNSize(mWNSize);
 											 }
-											 IUIManager::GetUIManager().DirtyRenderList();
+											 gFBEnv->pUIManager->DirtyRenderList();
 											 mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 											 
 											 return true;
@@ -145,7 +145,7 @@ namespace fastbird
 
 	unsigned TextBox::GetTextBoxHeight() const
 	{
-		IFont* pFont = gEnv->pRenderer->GetFont();
+		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		pFont->SetHeight(mTextSize);
 		float height = pFont->GetBaseHeight();
 		pFont->SetBackToOrigHeight();

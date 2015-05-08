@@ -26,18 +26,18 @@ PhyObj::PhyObj(const Transformation& transform, float mass, unsigned colGroup, u
 
 PhyObj::~PhyObj()
 {
-	IPhysics::GetPhysics()->DeleteRigidBody(mRigidBody);
+	gFBPhysics->DeleteRigidBody(mRigidBody);
 	mRigidBody = 0;
 	if (mMesh)
 	{
-		gEnv->pEngine->ReleaseMeshObject(mMesh);
+		gFBEnv->pEngine->ReleaseMeshObject(mMesh);
 	}
 }
 
 void PhyObj::CreateRigidBody()
 {
 	assert(!mRigidBody);
-	mRigidBody = IPhysics::GetPhysics()->CreateRigidBody(this);
+	mRigidBody = gFBPhysics->CreateRigidBody(this);
 	assert(mRigidBody);
 }
 
@@ -70,7 +70,7 @@ void PhyObj::SetMeshObj(IMeshObject* mesh)
 {
 	if (mMesh)
 	{
-		gEnv->pEngine->ReleaseMeshObject(mMesh);
+		gFBEnv->pEngine->ReleaseMeshObject(mMesh);
 	}
 
 	mMesh = mesh;

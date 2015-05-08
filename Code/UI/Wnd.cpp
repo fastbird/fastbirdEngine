@@ -16,7 +16,7 @@ Wnd::Wnd()
 , mAlwaysOnTop(false)
 , mCloseByEsc(false)
 {
-	mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);
@@ -28,15 +28,15 @@ Wnd::~Wnd()
 {
 	if (mAlwaysOnTop)
 	{
-		IUIManager::GetUIManager().UnRegisterAlwaysOnTopWnd(this);
+		gFBEnv->pUIManager->UnRegisterAlwaysOnTopWnd(this);
 	}
 	FB_DELETE(mBackgroundImage);
 	for (auto var : mFrames)
 	{
-		IUIManager::GetUIManager().DeleteComponent(var);
+		gFBEnv->pUIManager->DeleteComponent(var);
 	}
 	mFrames.clear();
-	IUIManager::GetUIManager().DeleteComponent(mTitlebar);
+	gFBEnv->pUIManager->DeleteComponent(mTitlebar);
 	mTitlebar = 0;
 }
 
@@ -98,7 +98,7 @@ void Wnd::RefreshFrame()
 	{
 		if (mFrames.empty())
 		{
-			ImageBox* T = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			T->SetRender3D(mRender3D, GetRenderTargetSize());
 			T->SetSizeY(16);
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
@@ -108,7 +108,7 @@ void Wnd::RefreshFrame()
 			T->SetVisible(true);
 			mFrames.push_back(T);			
 
-			ImageBox* L = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			L->SetRender3D(mRender3D, GetRenderTargetSize());
 			L->SetSizeX(16);
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
@@ -118,7 +118,7 @@ void Wnd::RefreshFrame()
 			L->SetVisible(true);
 			mFrames.push_back(L);			
 
-			ImageBox* R = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			R->SetRender3D(mRender3D, GetRenderTargetSize());
 			R->SetSizeX(16);
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
@@ -129,7 +129,7 @@ void Wnd::RefreshFrame()
 			R->SetVisible(true);
 			mFrames.push_back(R);
 
-			ImageBox* B = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			B->SetSizeY(20);
@@ -140,7 +140,7 @@ void Wnd::RefreshFrame()
 			B->SetVisible(true);
 			mFrames.push_back(B);
 
-			ImageBox* LT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			LT->SetRender3D(mRender3D, GetRenderTargetSize());
 			LT->SetSize(Vec2I(40, 44));
 			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
@@ -149,7 +149,7 @@ void Wnd::RefreshFrame()
 			LT->SetVisible(true);
 			mFrames.push_back(LT);
 
-			ImageBox* RT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			RT->SetRender3D(mRender3D, GetRenderTargetSize());
 			RT->SetSize(Vec2I(40, 44));
 			RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
@@ -159,7 +159,7 @@ void Wnd::RefreshFrame()
 			RT->SetVisible(true);
 			mFrames.push_back(RT);
 
-			ImageBox* MT = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* MT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			MT->SetRender3D(mRender3D, GetRenderTargetSize());
 			MT->SetSize(Vec2I(302, 44));
 			MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
@@ -169,7 +169,7 @@ void Wnd::RefreshFrame()
 			MT->SetVisible(true);
 			mFrames.push_back(MT);
 
-			ImageBox* LB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			LB->SetRender3D(mRender3D, GetRenderTargetSize());
 			LB->SetSize(Vec2I(40, 44));
 			LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
@@ -179,7 +179,7 @@ void Wnd::RefreshFrame()
 			LB->SetVisible(true);
 			mFrames.push_back(LB);
 
-			ImageBox* RB = (ImageBox*)IUIManager::GetUIManager().CreateComponent(ComponentType::ImageBox);
+			ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			RB->SetRender3D(mRender3D, GetRenderTargetSize());
 			RB->SetSize(Vec2I(40, 44));
 			RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
@@ -243,7 +243,7 @@ void Wnd::RefreshFrame()
 		{
 			for (auto var : mFrames)
 			{
-				IUIManager::GetUIManager().DeleteComponent(var);
+				gFBEnv->pUIManager->DeleteComponent(var);
 			}
 			mFrames.clear();
 		}
@@ -264,7 +264,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 								 if (!mTitlebar)
 								 {
-									 mTitlebar = (Button*)IUIManager::GetUIManager().CreateComponent(ComponentType::Button);
+									 mTitlebar = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
 									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
 									 mTitlebar->SetVisible(mVisibility.IsVisible());
 									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
@@ -319,7 +319,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 													 mBackgroundImage->SetWNSize(mWNSize);
 													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 												 }
-												 IUIManager::GetUIManager().DirtyRenderList();
+												 gFBEnv->pUIManager->DirtyRenderList();
 
 												 mBackgroundImage->SetTexture(val);
 												 return true;
@@ -336,7 +336,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 											 mBackgroundImage->SetWNSize(mWNSize);
 											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 										 }
-										 IUIManager::GetUIManager().DirtyRenderList();
+										 gFBEnv->pUIManager->DirtyRenderList();
 										 mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 										 return true;
 	}
@@ -345,9 +345,9 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 									  mAlwaysOnTop = StringConverter::parseBool(val);
 									  if (mAlwaysOnTop)
-										  IUIManager::GetUIManager().RegisterAlwaysOnTopWnd(this);
+										  gFBEnv->pUIManager->RegisterAlwaysOnTopWnd(this);
 									  else
-										  IUIManager::GetUIManager().UnRegisterAlwaysOnTopWnd(this);
+										  gFBEnv->pUIManager->UnRegisterAlwaysOnTopWnd(this);
 									  return true;
 	}
 
@@ -365,7 +365,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 void Wnd::OnTitlebarDrag(void *arg)
 {
 	long x, y;
-	gEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
+	gFBEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
 	auto rtSize = GetRenderTargetSize();
 	Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
 	mAbsTempLock = true;
@@ -379,7 +379,7 @@ bool Wnd::SetVisible(bool show)
 	if (changed)
 	{
 		if (!mParent && !mManualParent)
-			IUIManager::GetUIManager().SetFocusUI(this);
+			gFBEnv->pUIManager->SetFocusUI(this);
 
 		if (mTitlebar)
 			mTitlebar->SetVisible(show);

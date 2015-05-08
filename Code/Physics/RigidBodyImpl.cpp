@@ -15,7 +15,7 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 {
 	auto colShape = getCollisionShape();
 	if (colShape)
-		IPhysics::GetPhysics()->AddRef(colShape);
+		gFBPhysics->AddRef(colShape);
 	mRotationInfo = FB_NEW(RotationInfo);
 	setUserPointer(0);
 }
@@ -28,13 +28,13 @@ RigidBodyImpl::~RigidBodyImpl()
 	while(getNumConstraintRefs()>0)
 	{
 		btTypedConstraint* pConstraint = getConstraintRef(0);
-		IPhysics::GetPhysics()->RemoveConstraint(pConstraint);
+		gFBPhysics->RemoveConstraint(pConstraint);
 		
 	}
 
 	auto colShape = getCollisionShape();
 	if (colShape)
-		IPhysics::GetPhysics()->Release(colShape);
+		gFBPhysics->Release(colShape);
 
 	if (mWorld)
 		mWorld->removeRigidBody(this);
@@ -51,9 +51,9 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 	mWorld->removeRigidBody(this);
 	auto prevColShape = getCollisionShape();
 	if (prevColShape)
-		IPhysics::GetPhysics()->Release(prevColShape);
+		gFBPhysics->Release(prevColShape);
 
-	auto physics = (Physics*)IPhysics::GetPhysics();
+	auto physics = (Physics*)gFBPhysics;
 	auto numColShapes = colProvider->GetNumColShapes();
 	if (numColShapes == 0)
 	{
@@ -63,7 +63,7 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 	assert(colShape);
 	setCollisionShape(colShape);
 	if (colShape)
-		IPhysics::GetPhysics()->AddRef(colShape);
+		gFBPhysics->AddRef(colShape);
 
 
 	float mass = colProvider->GetMass();
@@ -211,7 +211,7 @@ void* RigidBodyImpl::GetColShapeUserPtr(int idx)
 	if (colShape->isCompound())
 	{
 		btCompoundShape* compound = (btCompoundShape*)colShape;
-		if_assert_pass(idx < compound->getNumChildShapes() && idx>=0)
+		if(idx < compound->getNumChildShapes() && idx>=0)
 		{
 			auto child = compound->getChildShape(idx);
 			if (child)
@@ -335,7 +335,7 @@ bool RigidBodyImpl::HasContact(void** gamePtr)
 		}
 	};
 	Callback callback(this);
-	Physics* physics = (Physics*)IPhysics::GetPhysics();
+	Physics* physics = (Physics*)gFBPhysics;
 	physics->_GetDynamicWorld()->contactTest(this, callback);
 	if (gamePtr && callback.mCollided)
 	{

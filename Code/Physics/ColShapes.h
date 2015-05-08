@@ -123,7 +123,7 @@ namespace fastbird
 		btTriangleMesh* mTriangleMesh;
 	};
 
-	class CLASS_DECLSPEC_PHYSICS CollisionShapeMan
+	class CollisionShapeMan
 	{
 	public:
 		static BoxShape* CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale,const Vec3& extent, void* userPtr = 0);

@@ -22,14 +22,73 @@ namespace fastbird
 
 	class Engine : public IEngine
 	{
+		HWND m_hWnd;
+		SmartPtr<IConsole> mConsole;
+		SmartPtr<Renderer> mRenderer;
+		SmartPtr<ITerrain> mTerrain;
+		SmartPtr<ISkyBox> mSkyBox;
+		typedef std::vector<SmartPtr<ICamera>> CAMERA_VECTOR;
+		CAMERA_VECTOR mCameras;
+		int mEngineCamIdx;
+		ICamera* mEngineCamera;
+		ICamera* mCurrentCamera;
+		typedef std::vector<IInputListener*> INPUT_LISTENER_VECTOR;
+		INPUT_LISTENER_VECTOR mInputListeners;
+		SmartPtr<IMouse> mMouse;
+		SmartPtr<IKeyboard> mKeyboard;
+		SmartPtr<IScene> mScene;
+		IScene* mSceneOverride; // life time should be managed manually.
+		INIReader* mINI;
+		SmartPtr<IScriptSystem> mScriptSystem;
+
+		typedef std::vector<IUIObject*> UI_OBJECTS;
+		UI_OBJECTS mUIObjectsToRender;
+
+		typedef VectorMap<std::string, UI_OBJECTS> UI_3DOBJECTS;
+		UI_3DOBJECTS mUI3DObjects;
+		VectorMap<std::string, IRenderToTexture*> mUI3DObjectsRTs;
+
+		VectorMap<std::string, UI3DObj*> mUI3DRenderObjs;
+
+		std::string mShaderWatchDir;
+		HANDLE mFileMonitorThread;
+		HANDLE mFileChangeThreadFinished;
+		HANDLE mExitFileChangeThread;
+		OVERLAPPED	mOverlapped;
+		std::vector<BYTE> mFileChangeBuffer;
+		HANDLE mMonitoringDirectory;
+		std::ofstream mErrorStream;
+		std::streambuf* mStdErrorStream;
+
+		std::map<std::string, SmartPtr<IMeshObject> > mMeshObjects;
+		std::map<std::string, SmartPtr<IMeshGroup> > mMeshGroups;
+		std::map<std::string, std::vector< SmartPtr<IMeshObject> >  > mFractureObjects;
+
+		std::set<std::string> mChangedFiles;
+		float mLastChangedTime;
+		std::vector<IFileChangeListener*> mFileChangeListeners;
+
+		// todo: generalize. layer 1~4.
+		std::vector<IObject*> mMarkObjects;
+		std::vector<IObject*> mHPBarObjects;
+
+		bool mExiting;
+		bool m3DUIEnabled;
+		bool mLockSceneOverride;
+
 	public:
+
 		Engine();
 
+
 	protected:
+
 		virtual ~Engine();
 
+
 	public:
-		virtual void GetGlobalEnv(GlobalEnv** outGloblEnv);
+
+		virtual GlobalEnv* GetGlobalEnv() const;
 
 		virtual HWND CreateEngineWindow(int x, int y, int width, int height, 
 			const char* title, WNDPROC winProc);
@@ -61,6 +120,7 @@ namespace fastbird
 		//---------------------------------------------------------------------
 		virtual IMeshObject* GetMeshObject(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
+		virtual IMeshObject* CreateMeshObject();
 		virtual IMeshGroup* GetMeshGroup(const char* daeFilePath, 
 			bool reload = false, const MeshImportDesc& desc = MeshImportDesc());
 
@@ -101,11 +161,6 @@ namespace fastbird
 		virtual int GetConfigIntValue(const char* section, const char* name);
 		virtual bool GetConfigBoolValue(const char* section, const char* name);
 
-#ifdef _FBENGINE_FOR_WINDOWS_
-		static LRESULT WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp );
-#elif _FBENGINE_FOR_LINUX_
-
-#endif
 		virtual void DrawProfileResult(ProfilerSimple& p, const char* posVarName, int tab = 0);
 		virtual void DrawProfileResult(wchar_t* buf, const char* posVarName, int tab = 0);
 
@@ -142,60 +197,30 @@ namespace fastbird
 		virtual IScene* CreateScene();
 		virtual void DeleteScene(IScene* p);
 
-	private:
-		HWND m_hWnd;
-		SmartPtr<IConsole> mConsole;
-		SmartPtr<Renderer> mRenderer;
-		SmartPtr<ITerrain> mTerrain;
-		SmartPtr<ISkyBox> mSkyBox;
-		typedef std::vector<SmartPtr<ICamera>> CAMERA_VECTOR;
-		CAMERA_VECTOR mCameras;
-		int mEngineCamIdx;
-		ICamera* mEngineCamera;
-		ICamera* mCurrentCamera;
-		typedef std::vector<IInputListener*> INPUT_LISTENER_VECTOR;
-		INPUT_LISTENER_VECTOR mInputListeners;
-		SmartPtr<IMouse> mMouse;
-		SmartPtr<IKeyboard> mKeyboard;
-        SmartPtr<IScene> mScene;
-		IScene* mSceneOverride; // life time should be managed manually.
-		INIReader* mINI;
-		SmartPtr<IScriptSystem> mScriptSystem;
+#ifdef _FBENGINE_FOR_WINDOWS_
+		virtual LRESULT WinProc(HWND window, UINT msg, WPARAM wp, LPARAM lp);
+#else
+#endif
 
-		typedef std::vector<IUIObject*> UI_OBJECTS;
-		UI_OBJECTS mUIObjectsToRender;
+		virtual void Log(const char* szFmt, ...);
+		virtual void Error(const char* szFmt, ...);
+		virtual void LogLastError(const char* file, int line, const char* function);
 
-		typedef VectorMap<std::string, UI_OBJECTS> UI_3DOBJECTS;
-		UI_3DOBJECTS mUI3DObjects;
-		VectorMap<std::string, IRenderToTexture*> mUI3DObjectsRTs;
 
-		VectorMap<std::string, UI3DObj*> mUI3DRenderObjs;
+		virtual IVoxelizer* CreateVoxelizer();
+		virtual void DeleteVoxelizer(IVoxelizer* voxelizer);
 
-		std::string mShaderWatchDir;
-		HANDLE mFileMonitorThread;
-		HANDLE mFileChangeThreadFinished;
-		HANDLE mExitFileChangeThread;
-		OVERLAPPED	mOverlapped;
-		std::vector<BYTE> mFileChangeBuffer;
-		HANDLE mMonitoringDirectory;
-		std::ofstream mErrorStream;
-		std::streambuf* mStdErrorStream; 
+		virtual IUIObject* CreateUIObject(bool usingSmartPtr, const Vec2I& renderTargetSize);
+		virtual void DeleteUIObject(IUIObject* uiObject);
 
-		std::map<std::string, SmartPtr<IMeshObject> > mMeshObjects;
-		std::map<std::string, SmartPtr<IMeshGroup> > mMeshGroups;
-		std::map<std::string, std::vector< SmartPtr<IMeshObject> >  > mFractureObjects;
+		virtual ISkySphere* CreateSkySphere(bool usingSmartPointer);
+		virtual void DeleteSkySphere(ISkySphere* skySphere);
 
-		std::set<std::string> mChangedFiles;
-		float mLastChangedTime;
-		std::vector<IFileChangeListener*> mFileChangeListeners;
-
-		// todo: generalize. layer 1~4.
-		std::vector<IObject*> mMarkObjects;
-		std::vector<IObject*> mHPBarObjects;
-
-		bool mExiting;
-		bool m3DUIEnabled;
-		bool mLockSceneOverride;
+		virtual IBillboardQuad* CreateBillboardQuad();
+		virtual void DeleteBillboardQuad(IBillboardQuad* quad);
+	
+		virtual IDustRenderer* CreateDustRenderer();
+		virtual void DeleteDustRenderer(IDustRenderer* dust);
 	};
 };
 

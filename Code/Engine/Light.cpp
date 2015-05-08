@@ -14,7 +14,7 @@ ILight* ILight::CreateLight(LIGHT_TYPE lt)
 		return FB_NEW(DirectionalLight);
 		break;
 	default:
-		IEngine::Log(FB_DEFAULT_DEBUG_ARG, "Creating unidentified light type!");
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Creating unidentified light type!");
 		assert(0);
 	};
 	assert(0);
@@ -29,10 +29,11 @@ DirectionalLight::DirectionalLight()
 , mDuplicatedLightCamera(false)
 {
 	mLightCamera = FB_NEW(Camera);
+	auto cmd = gFBEnv->pConsole->GetEngineCommand();
 	mLightCamera->SetOrthogonal(true);
-	mLightCamera->SetWidth(200.0f);
-	mLightCamera->SetHeight(200.0f);
-	mLightCamera->SetNearFar(1.0f, 300.0f);
+	mLightCamera->SetWidth(cmd->r_ShadowCamWidth);
+	mLightCamera->SetHeight(cmd->r_ShadowCamHeight);
+	mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
 	gFBEnv->pEngine->GetCamera(0)->RegisterCamListener(this);
 }
 
@@ -199,13 +200,15 @@ void DirectionalLight::SetUpCamera()
 	ICamera* pCam = gFBEnv->pEngine->GetCamera(0);
 	assert(pCam);
 	auto target = pCam->GetTarget();
-	if (target)
+	float shadowCamDist = 
+		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
+	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
 	{
-		mLightCamera->SetPos(target->GetPos() + mDirection * 200.0f);
+		mLightCamera->SetPos(target->GetPos() + mDirection * shadowCamDist);
 	}
 	else
 	{
-		mLightCamera->SetPos(pCam->GetPos() + mDirection * 200.0f);
+		mLightCamera->SetPos(pCam->GetPos() + mDirection * shadowCamDist);
 	}
 	mLightCamera->SetDir(-mDirection);
 }

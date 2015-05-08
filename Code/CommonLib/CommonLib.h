@@ -1,15 +1,23 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <functional>
 #include <assert.h>
 #include <Engine/GlobalEnv.h>
 
-extern fastbird::GlobalEnv* gEnv;
+extern fastbird::GlobalEnv* gFBEnv;
 namespace fastbird
 {	
 	void Log(const char* szFmt, ...);
 	void Error(const char* szFmt, ...);
 	typedef std::vector<char> BYTE_BUFFER;
+
+	// name : like Engine.dll or UI.dll etc..
+	// this function will append postfix. so the final name will be
+	// Engine_Debug.dll or UI_Debug.dll in Debug build.
+	// Engine_Release.dll or Engine_Release.dll in Release build.
+	HMODULE LoadFBLibrary(const char* name);
+	void FreeFBLibrary(HMODULE module);
 }
 
 #define ARRAYCOUNT(A)       (sizeof(A) / sizeof(A[0]))
@@ -39,6 +47,13 @@ if (!(V))
 #define VERIFY(exp)         (exp)
 #endif
 
+template <class T>
+void ClearWithSwap(T& m)
+{
+	T empty;
+	std::swap(m, empty);
+}
+
 template <typename T>
 bool operator == (const std::weak_ptr<T>& a, const std::weak_ptr<T>& b)
 {
@@ -65,3 +80,5 @@ bool operator != (const std::weak_ptr<T>& a, const std::shared_ptr<T>& b)
 
 // not change often.
 #include <CommonLib/System.h>
+#include <CommonLib/Math/fbMath.h>
+#include <CommonLib/tinyxml2.h>

@@ -116,7 +116,7 @@ void FileSelector::OnListDoubleClick(void* pList)
 	if ( tinydir_isdir(unifiedPath) )
 	{
 		ListFiles( unifiedPath, std::string(mFilter.c_str()).c_str() );
-		IUIManager::GetUIManager().SetFocusUI(mListBox);
+		gFBEnv->pUIManager->SetFocusUI(mListBox);
 	}
 	else
 	{
@@ -154,7 +154,7 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 	if (tinydir_open(&dir, folder) == -1)
 	{
 		Error("Iterating dir is failed!");
-		IUIManager::GetUIManager().DisplayMsg("Cannot open the directory.");
+		gFBEnv->pUIManager->DisplayMsg("Cannot open the directory.");
 		mFolder = folderBackup;
 		return;
 	}

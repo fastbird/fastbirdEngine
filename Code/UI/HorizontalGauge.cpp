@@ -11,7 +11,7 @@ namespace fastbird
 		, mBlinkSpeed(3.f)
 		, mGaugeColorEmptySet(false)
 	{
-		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());
+		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->SetMaterial("es/Materials/UIHorizontalGauge.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -51,7 +51,7 @@ namespace fastbird
 		if (mBlink)
 		{
 			IMaterial* mat = mUIObject->GetMaterial();
-			mat->SetMaterialParameters(3, Vec4(sin(gEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+			mat->SetMaterialParameters(3, Vec4(sin(gFBEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
 		}
 	}
 

@@ -26,7 +26,7 @@ Container::~Container()
 			if (*it == mScrollerV)
 				mScrollerV = 0;
 			mChildren.erase(it);
-			IUIManager::GetUIManager().DeleteComponent(winBase);
+			gFBEnv->pUIManager->DeleteComponent(winBase);
 		}
 		else
 		{
@@ -38,7 +38,7 @@ Container::~Container()
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
 	for (; it!=itEnd; it++)
 	{
-		IUIManager::GetUIManager().DeleteComponent(*it);
+		gFBEnv->pUIManager->DeleteComponent(*it);
 	}
 }
 
@@ -49,7 +49,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 	{
 		return mWndContentUI->AddChild(type);
 	}
-	WinBase* pWinBase = (WinBase*)IUIManager::GetUIManager().CreateComponent(type);
+	WinBase* pWinBase = (WinBase*)gFBEnv->pUIManager->CreateComponent(type);
 	if (pWinBase)
 	{
 		mChildren.push_back(pWinBase);
@@ -58,7 +58,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 			pWinBase->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 		}
 		pWinBase->SetParent(this);
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 	}
 	SetChildrenPosSizeChanged();
 	return pWinBase;
@@ -72,7 +72,7 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 		return mWndContentUI->AddChild(posX, posY, width, height, type);
 	}
 
-	WinBase* pWinBase = (WinBase*)IUIManager::GetUIManager().CreateComponent(type);
+	WinBase* pWinBase = (WinBase*)gFBEnv->pUIManager->CreateComponent(type);
 	if (pWinBase)
 	{
 		mChildren.push_back(pWinBase);
@@ -85,7 +85,7 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 		pWinBase->SetNPos(fastbird::Vec2(posX, posY));
 		pWinBase->RefreshScissorRects(); // for scissor
 		pWinBase->OnCreated();
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 	}
 	SetChildrenPosSizeChanged();
 	return pWinBase;
@@ -149,7 +149,7 @@ void Container::RemoveChild(IWinBase* child, bool immediately)
 	{
 		if (mScrollerV == child)
 			mScrollerV = 0;
-		IUIManager::GetUIManager().DeleteComponent(child);
+		gFBEnv->pUIManager->DeleteComponent(child);
 		DeleteValuesInVector(mChildren, child);
 	}
 	else
@@ -174,7 +174,7 @@ void Container::RemoveAllChild(bool immediately)
 			{
 				mScrollerV = 0;
 			}
-			IUIManager::GetUIManager().DeleteComponent(*mChildren.begin());
+			gFBEnv->pUIManager->DeleteComponent(*mChildren.begin());
 			mChildren.erase(mChildren.begin());
 		}
 		mChildrenChanged = true;
@@ -266,7 +266,7 @@ void Container::OnStartUpdate(float elapsedTime)
 			if (*it == mScrollerV)
 				mScrollerV = 0;
 			mChildren.erase(it);
-			IUIManager::GetUIManager().DeleteComponent(winBase);
+			gFBEnv->pUIManager->DeleteComponent(winBase);
 			deleted = true;
 		}
 		else
@@ -277,7 +277,7 @@ void Container::OnStartUpdate(float elapsedTime)
 	}
 	mPendingDelete.clear();
 	if (deleted)
-		IUIManager::GetUIManager().DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList();
 
 	if (mChildrenPosSizeChanged)
 	{

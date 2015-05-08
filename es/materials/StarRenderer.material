@@ -1,5 +1,5 @@
 <Material>
-	<ShaderFile>Code/Engine/Shaders/dust.hlsl</ShaderFile>
+	<ShaderFile>es/shaders/dust.hlsl</ShaderFile>
 	<Shaders>VS|GS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>0.0, 0.0, 0.0, 1</AmbientColor>

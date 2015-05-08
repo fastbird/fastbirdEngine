@@ -7,7 +7,7 @@ namespace fastbird
 
 	NamedPortrait::NamedPortrait()
 	{
-		mUIObject = IUIObject::CreateUIObject(false, GetRenderTargetSize());		
+		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());		
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mImageBox = AddChild(0.5f, 0.0f, 1.0f, 0.8f, ComponentType::ImageBox);

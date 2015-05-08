@@ -11,14 +11,75 @@ namespace fastbird
 	class IWinBase;
 	class IUIObject;
 	class ListBox;
+	class UICommands;
 	class UIManager : public IUIManager
 	{
-		friend class IUIManager;
-		UIManager(lua_State* L);
-		virtual ~UIManager();	
+		friend class DropDown;
+	public:
+
+		typedef std::vector<IWinBase*> WinBases;
+
+
+	private:
+
+		bool mInputListenerEnable;
+
+		typedef std::list<IWinBase*> WINDOWS;
+		WINDOWS mWindows;
+		IWinBase* mFocusWnd;
+		bool mNeedToRegisterUIObject;
+		bool mMouseIn;
+		IWinBase* mTooltipUI;
+		IWinBase* mTooltipTextBox;
+		std::wstring mTooltipText;
+
+		IWinBase* mPopup;
+		std::function< void(void*) > mPopupCallback;
+		int mPopupResult;
+
+		lua_State* mL;
+
+		std::map<std::string, WinBases> mLuaUIs;
+		bool mPosSizeEventEnabled;
+		bool mLockFocus;
+		int mIgnoreInput;
+		IWinBase* mModelWindow;
+
+		ListBox* mCachedListBox;
+		WinBases mAlwaysOnTopWindows;
+		WINDOWS mMoveToBottomReserved;
+		WINDOWS mSetFocusReserved;
+
+		std::vector<std::string> mHideUIExcepts;
+
+		VectorMap<std::string, IUIAnimation*> mAnimations;
+		float mDelayForTooltip;
+
+		UICommands* mUICommands;
+		HMODULE mUIEditorModuleHandle;
+
+
+	protected:
+
+		virtual void OnDeleteWinBase(IWinBase* winbase);
+
+
+	private:
+
+		virtual IWinBase* CreateComponent(ComponentType::Enum type);
+		virtual void DeleteComponent(IWinBase* com);
+		void OnPopupYes(void* arg);
+		void OnPopupNo(void* arg);
+		const char* FindUIFilenameWithLua(const char* luafilepath);
+		const char* FindUINameWithLua(const char* luafilepath);
+		void ShowTooltip();
+
 
 	public:
-		typedef std::vector<IWinBase*> WinBases;
+
+		UIManager(lua_State* L);
+		virtual ~UIManager();
+
 		static UIManager* GetUIManagerStatic();
 
 		virtual void Shutdown();
@@ -93,51 +154,9 @@ namespace fastbird
 		virtual IUIAnimation* GetGlobalAnimationOrCreate(const char* animName);
 		virtual void PrepareTooltipUI();
 
-	protected:
-		virtual void OnDeleteWinBase(IWinBase* winbase);
-
-	private:
-		virtual IWinBase* CreateComponent(ComponentType::Enum type);
-		virtual void DeleteComponent(IWinBase* com);
-		void OnPopupYes(void* arg);
-		void OnPopupNo(void* arg);
-		const char* FindUIFilenameWithLua(const char* luafilepath);
-		const char* FindUINameWithLua(const char* luafilepath);
-		void ShowTooltip();
-
-	private:
-		bool mInputListenerEnable;
-
-		typedef std::list<IWinBase*> WINDOWS;
-		 WINDOWS mWindows;		 
-		 IWinBase* mFocusWnd;
-		 bool mNeedToRegisterUIObject;
-		 bool mMouseIn;
-		 IWinBase* mTooltipUI;
-		 IWinBase* mTooltipTextBox;
-		 std::wstring mTooltipText;
-
-		 IWinBase* mPopup;
-		 std::function< void(void*) > mPopupCallback;
-		 int mPopupResult;
-
-		 lua_State* mL;
-
-		 std::map<std::string, WinBases> mLuaUIs;
-		 bool mPosSizeEventEnabled;
-		 bool mLockFocus;
-		 int mIgnoreInput;
-		 IWinBase* mModelWindow;
-
-		 ListBox* mCachedListBox;
-		 WinBases mAlwaysOnTopWindows;
-		 WINDOWS mMoveToBottomReserved;
-		 WINDOWS mSetFocusReserved;
-
-		 std::vector<std::string> mHideUIExcepts;
-
-		 VectorMap<std::string, IUIAnimation*> mAnimations;
-		 float mDelayForTooltip;
+		virtual UICommands* GetUICommands() const { return mUICommands; }
+		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle){ mUIEditorModuleHandle = moduleHandle; }
+		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
 	};
 }
 

@@ -13,7 +13,7 @@ namespace fastbird
 	class ISkyBox;
 	class ISkySphere;
 	class IMeshObject;
-	class CLASS_DECLSPEC_ENGINE IScene : public ReferenceCounter
+	class IScene : public ReferenceCounter
 	{
 	public:
 		typedef std::vector<IObject*> OBJECTS;

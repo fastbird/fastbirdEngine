@@ -10,14 +10,10 @@ namespace fastbird
 	class IWinBase;
 	class ListBox;
 	class IUIAnimation;
-
-	class CLASS_DECLSPEC_UI IUIManager : public IInputListener
+	class UICommands;
+	class IUIManager : public IInputListener
 	{
 	public:
-		static void InitializeUIManager(lua_State* L);
-		static void FinalizeUIManager();
-		static IUIManager& GetUIManager();
-
 		virtual void Shutdown() = 0;
 		virtual void Update(float elapsedTime) = 0;
 		virtual void GatherRenderList() = 0;
@@ -79,13 +75,14 @@ namespace fastbird
 		virtual IUIAnimation* GetGlobalAnimation(const char* animName) = 0;
 		virtual IUIAnimation* GetGlobalAnimationOrCreate(const char* animName) = 0;
 		virtual void PrepareTooltipUI() = 0;
+		virtual UICommands* GetUICommands() const = 0;
+		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle) = 0;
+		virtual HMODULE GetUIEditorModuleHandle() const = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;
 
 	private:
-		static IUIManager* mUIManager;
-
 		friend class Container;
 		friend class WinBase;
 		friend class Wnd;
@@ -94,3 +91,5 @@ namespace fastbird
 		virtual void DeleteComponent(IWinBase* com) = 0;
 	};
 }
+
+extern fastbird::IUIManager* gFBUIManager;
