@@ -178,8 +178,8 @@ void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard
 void CalcTrackball(fastbird::Quat& outQuat, long prevX, long prevY, long x, long y)
 {
 	using namespace fastbird;
-	Vec2 prev = gFBEnv->pRenderer->ToNdcPos(fastbird::Vec2I(prevX, prevY));
-	Vec2 cur = gFBEnv->pRenderer->ToNdcPos(fastbird::Vec2I(x, y));
+	Vec2 prev = gFBEnv->pRenderer->ToNdcPos(gFBEnv->pEngine->GetMainWndHandleId(), fastbird::Vec2I(prevX, prevY));
+	Vec2 cur = gFBEnv->pRenderer->ToNdcPos(gFBEnv->pEngine->GetMainWndHandleId(), fastbird::Vec2I(x, y));
 	
 	// Calc two points on the trackball
 	fastbird::Vec3 point1(prev.x, prev.y, ProjectToSphere(TRACKBALLSIZE, prev.x, prev.y));

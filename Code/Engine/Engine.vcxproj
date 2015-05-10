@@ -175,6 +175,7 @@
     <ClInclude Include="EngineCommand.h" />
     <ClInclude Include="FBCollisionShape.h" />
     <ClInclude Include="Font.h" />
+    <ClInclude Include="GaussianDist.h" />
     <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="IEngineEventListener.h" />
     <ClInclude Include="GlobalEnv.h" />
@@ -205,7 +206,7 @@
     <ClInclude Include="IPointLight.h" />
     <ClInclude Include="IRenderer.h" />
     <ClInclude Include="IRenderState.h" />
-    <ClInclude Include="IRenderToTexture.h" />
+    <ClInclude Include="IRenderTarget.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="ISceneListener.h" />
     <ClInclude Include="ISceneManager.h" />
@@ -238,9 +239,11 @@
     <ClInclude Include="RendererD3D9.h" />
     <ClInclude Include="RendererEnums.h" />
     <ClInclude Include="RendererStructs.h" />
+    <ClInclude Include="RenderPipeline.h" />
     <ClInclude Include="RenderStateD3D11.h" />
-    <ClInclude Include="RenderToTexture.h" />
-    <ClInclude Include="RenderToTextureD3D11.h" />
+    <ClInclude Include="RenderSteps.h" />
+    <ClInclude Include="RenderTarget.h" />
+    <ClInclude Include="RenderTargetD3D11.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="ScriptSystem.h" />
     <ClInclude Include="Shader.h" />
@@ -290,6 +293,7 @@
     <ClCompile Include="EngineCommand.cpp" />
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="Font.cpp" />
+    <ClCompile Include="GaussianDist.cpp" />
     <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="IndexBufferD3D11.cpp" />
     <ClCompile Include="InputLayout.cpp" />
@@ -317,9 +321,10 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererD3D11.cpp" />
     <ClCompile Include="RendererD3D9.cpp" />
+    <ClCompile Include="RenderPipeline.cpp" />
     <ClCompile Include="RenderStateD3D11.cpp" />
-    <ClCompile Include="RenderToTexture.cpp" />
-    <ClCompile Include="RenderToTextureD3D11.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
+    <ClCompile Include="RenderTargetD3D11.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="ScriptSystem.cpp" />
     <ClCompile Include="Shader.cpp" />

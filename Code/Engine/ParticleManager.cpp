@@ -3,6 +3,7 @@
 #include <Engine/ParticleEmitter.h>
 #include <Engine/ParticleRenderObject.h>
 #include <Engine/ICamera.h>
+#include <Engine/IRenderTarget.h>
 #include <CommonLib/tinydir.h>
 namespace fastbird
 {
@@ -58,7 +59,6 @@ std::string ParticleManager::FindParticleNameWithID(const char* particlefolder, 
 
 //---------------------------------------------------------------------------
 ParticleManager::ParticleManager()
-:mEditCamIdx(-1)
 {
 }
 
@@ -112,7 +112,10 @@ void ParticleManager::Update(float elapsedTime)
 			Vec3 oldPos = mEditingParticle->GetPos();
 			mEditingParticle->SetPos(pos);
 			Vec3 dir = pos - oldPos;
-			ICamera* pcam = gFBEnv->pEngine->GetCamera(mEditCamIdx);
+			auto const renderer = gFBEnv->pRenderer;
+			auto mainRT = renderer->GetMainRenderTarget();
+			assert(mainRT);
+			ICamera* pcam = mainRT->GetCamera();
 			Vec3 campos = pcam->GetPos();
 			pcam->SetPos(campos + dir);
 			float len = dir.Normalize();
@@ -260,7 +263,9 @@ void ParticleManager::ReloadParticle(const char* file)
 			{
 				mEditingParticle->StopImmediate();
 				mEditingParticle = (IParticleEmitter*)p.second->Clone();
-				ICamera* pCam = gFBEnv->pEngine->GetCamera(mEditCamIdx);
+				auto const renderer = gFBEnv->pRenderer;
+				auto mainRT = renderer->GetMainRenderTarget();
+				ICamera* pCam = mainRT->GetCamera();
 				if (pCam)
 					pCam->SetTarget(mEditingParticle);
 				mEditingParticle->Active(true);
@@ -291,26 +296,28 @@ void ParticleManager::EditThisParticle(const char* file)
 	if (strcmp(file, "0"))
 		pnew = GetParticleEmitter(fullpath.c_str());
 	 
+	auto const renderer = gFBEnv->pRenderer;
 	if (pnew)
 	{
+		
 		mEditingParticle = pnew;
 		Log("Editing : %s", fullpath.c_str());
-		ICamera* oldCam = gFBEnv->pRenderer->GetCamera();
+		auto rt = renderer->GetMainRenderTarget();
+		assert(rt);
+		auto oldCam = rt->GetCamera();
 		mEditingParticle->SetPos(oldCam->GetPos() + oldCam->GetDir() * 4.f);
 		mEditingParticle->Active(true);
-		if (mEditCamIdx == -1)
-			mEditCamIdx = gFBEnv->pEngine->CreateCameraAndRegister("ParticleEditCam");
-		gFBEnv->pEngine->SetActiveCamera(mEditCamIdx);
-		ICamera* pCam = gFBEnv->pEngine->GetCamera(mEditCamIdx);
-		mEditingPos = oldCam->GetPos();
-		pCam->SetPos(oldCam->GetPos());
-		pCam->SetDir(oldCam->GetDir());
-		pCam->SetTarget(mEditingParticle);
-		pCam->SetEnalbeInput(true);
+		auto newCam = rt->GetOrCreateOverridingCamera();
+		newCam->SetPos(oldCam->GetPos());
+		newCam->SetDir(oldCam->GetDir());
+		newCam->SetTarget(mEditingParticle);
+		newCam->SetEnalbeInput(true);
 	}
 	else if (strcmp(file,"0")==0)
 	{
-		gFBEnv->pEngine->SetActiveCamera(0);
+		auto rt = renderer->GetMainRenderTarget();
+		assert(rt);
+		rt->RemoveOverridingCamera();
 		Log("Exit particle editor");
 	}
 	else

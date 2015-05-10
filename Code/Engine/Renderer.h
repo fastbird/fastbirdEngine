@@ -1,6 +1,7 @@
 #pragma once
 #include <Engine/IRenderer.h>
 #include <Engine/IConsole.h>
+#include <Engine/UI3DObj.h>
 #include <Engine/StarDef.h>
 
 namespace fastbird
@@ -9,25 +10,30 @@ struct POINT_LIGHT_CONSTANTS;
 class ILight;
 class DebugHud;
 class IFont;
-class RenderToTexture;
+class RenderTarget;
 class CloudManager;
 class GeometryRenderer;
 class PointLightMan;
+class IShader;
 #define FB_NUM_TONEMAP_TEXTURES  4
 #define FB_NUM_TONEMAP_TEXTURES_NEW 5
 #define FB_NUM_LUMINANCE_TEXTURES 3
-#define FB_NUM_BLOOM_TEXTURES 3
-#define FB_NUM_STAR_TEXTURES     12 
 #define FB_MAX_SAMPLES           16      // Maximum number of texture grabs
 class Renderer : public IRenderer, public ICVarListener
 {
 protected:
-	unsigned				mWidth;
-	unsigned				mHeight;
-	Vec2I mCurRTSize;
+	VectorMap<HWND_ID, unsigned> mWidth;
+	VectorMap<HWND_ID, unsigned> mHeight;
+	VectorMap<HWND_ID, SmartPtr<RenderTarget>> mSwapChainRenderTargets;
+	SmartPtr<IRenderTarget> mCurRenderTarget;
+	std::vector<IRenderTarget*> mRenderTargetPool;
 
-	unsigned mCropWidth;
-	unsigned mCropHeight;
+	// every frame render targets
+	std::vector< IRenderTarget* > mRenderTargets;
+
+	IScene* mSceneOverride; // life time should be managed manually.
+
+	Vec2I mCurRTSize;
 
 	SmartPtr<ILight>		mDirectionalLight[2];
 	SmartPtr<ILight>		mDirectionalLightOverride[2];
@@ -55,15 +61,11 @@ protected:
 
 	SmartPtr<ITexture> mEnvironmentTexture;
 	SmartPtr<ITexture> mEnvironmentTextureOverride;
-	std::vector< IRenderToTexture* > mRenderToTextures;
-
-	std::vector<IRenderToTexture*> mRenderToTexturePool;
 
 	Color mClearColor;
 	float mDepthClear;
 	UINT8 mStencilClear;
 	bool					mForcedWireframe;
-	bool					mDepthStencilCreated;
 
 	ICamera*				mCamera;
 	RENDERER_FRAME_PROFILER		mFrameProfiler;
@@ -90,8 +92,7 @@ protected:
 	SmartPtr<IShader> mFullscreenQuadVSNear;
 	SmartPtr<IShader> mFullscreenQuadVSFar;
 
-	SmartPtr<ITexture> mTempDepthBufferHalf; // for depth writing and clouds
-	SmartPtr<ITexture> mTempDepthBuffer;
+	VectorMap<Vec2I, SmartPtr<ITexture>> mTempDepthBuffers;
 
 	// linear sampler
 	SmartPtr<IShader> mCopyPS;
@@ -104,68 +105,34 @@ protected:
 	SmartPtr<IBlendState> mMinBlendState;
 
 	// HDR resources.
-	SmartPtr<ITexture> mHDRTarget;
+	
 	SmartPtr<ITexture> mToneMap[FB_NUM_TONEMAP_TEXTURES_NEW];
 	SmartPtr<ITexture> mLuminanceMap[FB_NUM_LUMINANCE_TEXTURES];
-	int mLuminanceIndex;
-	SmartPtr<IShader> mDownScale2x2LumPS;
+
 	SmartPtr<IShader> mSampleLumInitialShader;
 	SmartPtr<IShader> mSampleLumIterativeShader;
 	SmartPtr<IShader> mSampleLumFinalShader;
 	SmartPtr<IShader> mCalcAdaptedLumShader;
-	SmartPtr<IShader> mDownScale3x3PS;
 	SmartPtr<IShader> mToneMappingPS;
-	SmartPtr<IShader> mLuminanceAvgPS;
-	SmartPtr<ITexture> mBrightPassTexture;
-	SmartPtr<ITexture> mBloomSourceTex;
-	SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
 	SmartPtr<IShader> mBrightPassPS;
 	SmartPtr<IShader> mBloomPS;
 
 	// 1/4
-
 	// x, y,    offset, weight;
 	VectorMap< std::pair<DWORD, DWORD>, std::pair<std::vector<Vec4>, std::vector<Vec4> > > mGauss5x5;
 
-	Vec4 mGaussianOffsetsDownScale2x2[4];
-	bool mGaussianDownScale2x2Calculated;
-
 	// Star
-	StarDef mStarDef;
-	SmartPtr<ITexture> mStarSourceTex;
-	SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
 	SmartPtr<IShader> mBlur5x5;
 	SmartPtr<IShader> mStarGlareShader;
 	SmartPtr<IShader> mMergeTexture2;
-	float m_fChromaticAberration;
-	float m_fStarInclination;
 
 	// GodRay resources.
-	SmartPtr<ITexture> mGodRayTarget[2]; // half resolution; could be shared.
 	SmartPtr<IShader> mOccPrePassShader;
 	SmartPtr<IShader> mOccPrePassGSShader;
 	SmartPtr<IShader> mGodRayPS;
-	SmartPtr<ITexture> mNoMSDepthStencil;
 	SmartPtr<IInputLayout> mPositionInputLayout;
-	// for bloom
-	bool mGaussianDistCalculated; // should recalculate when the screen resolution changed
-	Vec4 mGaussianDistOffsetX[15];
-	Vec4 mGaussianDistWeightX[15];
-	Vec4 mGaussianDistOffsetY[15];
-	Vec4 mGaussianDistWeightY[15];
-
-	// Glow
-	SmartPtr<ITexture> mGlowTarget;
-	SmartPtr<ITexture> mGlowTexture[2];
 	SmartPtr<IShader> mGlowPS;
-	bool mGlowSet;
 
-	// for glow
-	bool mGaussianDistGlowCalculated; // should recalculate when the screen resolution changed
-	Vec4 mGaussianDistGlowOffsetX[15];
-	Vec4 mGaussianDistGlowWeightX[15];
-	Vec4 mGaussianDistGlowOffsetY[15];
-	Vec4 mGaussianDistGlowWeightY[15];
 
 	// for Cloud Volumes;
 	SmartPtr<ITexture> mCloudVolumeDepth;
@@ -185,7 +152,6 @@ protected:
 	SmartPtr<IBlendState> mBlueMaskBlend;
 	SmartPtr<IRasterizerState> mRSCloudFar;
 	SmartPtr<IRasterizerState> mRSCloudNear;
-	bool mCloudRendering;
 
 	SmartPtr<ITexture> mNoiseMap;
 
@@ -195,12 +161,10 @@ protected:
 	bool mLockBlendState;
 
 	// shadow
-	SmartPtr<ITexture> mShadowMap;
 	SmartPtr<IShader> mShadowMapShader;
 	ICamera* mCameraBackup;
 
-	SmartPtr<ITexture> mSmallSilouetteBuffer;
-	SmartPtr<ITexture> mBigSilouetteBuffer;
+	
 	SmartPtr<IShader> mSilouetteShader;
 
 	float mMiddleGray;
@@ -225,6 +189,25 @@ protected:
 	unsigned mFrameLuminanceCalced;
 	float mFadeAlpha;
 
+	RenderPipeline* mDefaultPipeline;
+	RenderPipeline* mMinimumPipeline;
+
+	typedef std::vector<IUIObject*> UI_OBJECTS;
+	UI_OBJECTS mUIObjectsToRender;
+
+	typedef VectorMap<std::string, UI_OBJECTS> UI_3DOBJECTS;
+	UI_3DOBJECTS mUI3DObjects;
+	VectorMap<std::string, IRenderTarget*> mUI3DObjectsRTs;
+
+	VectorMap<std::string, UI3DObj*> mUI3DRenderObjs;
+	bool m3DUIEnabled;
+
+	// todo: generalize. layer 1~4.
+	std::vector<IObject*> mMarkObjects;
+	std::vector<IObject*> mHPBarObjects;
+
+	bool mLockSceneOverride;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -234,22 +217,33 @@ public:
 	void CleanHDRResources();
 	void CleanGodRayResources();
 
+	IRenderTarget* GetMainRenderTarget() const;
+	virtual IScene* GetMainScene() const;
+	virtual IScene* GetScene() const;
+	const Vec2I& GetMainRTSize() const;
+	virtual void SetSceneOverride(IScene* pScene);
+	virtual void LockSceneOverride(bool lock);
+	virtual IScene* GetSceneOverride() const;
+
 	bool OnPrepared();
 	
-	virtual void ProcessRenderToTexture();
+	virtual void ProcessRenderTarget();
 
-	virtual Vec2I ToSreenPos(const Vec3& ndcPos) const;
-	virtual Vec2 ToNdcPos(const Vec2I& screenPos) const;
-	virtual unsigned GetWidth() const { return mWidth; }
-	virtual unsigned GetHeight() const { return mHeight; }
-	virtual unsigned GetCropWidth() const { return mCropWidth; }
-	virtual unsigned GetCropHeight() const { return mCropHeight; }
+	virtual Vec2I ToSreenPos(HWND_ID id, const Vec3& ndcPos) const;
+	virtual Vec2 ToNdcPos(HWND_ID id, const Vec2I& screenPos) const;
+	virtual unsigned GetWidth(HWND_ID id) const;
+	virtual unsigned GetHeight(HWND_ID id) const;
+	virtual unsigned GetWidth(HWND hWnd) const;
+	virtual unsigned GetHeight(HWND hWnd) const;
+	virtual unsigned GetCropWidth(HWND hWnd) const;
+	virtual unsigned GetCropHeight(HWND hWnd) const;
 	//virtual void SetWireframe(bool enable); // see RendererD3D11
 	virtual bool GetWireframe() const { return mForcedWireframe; }
 	virtual void SetClearColor(float r, float g, float b, float a=1.f);
 	virtual void SetClearDepthStencil(float z, UINT8 stencil);
 	virtual void SetCamera(ICamera* pCamera);
 	virtual ICamera* GetCamera() const;
+	virtual ICamera* GetMainCamera() const;
 	virtual void InitFrameProfiler(float dt);
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
 	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24);
@@ -277,9 +271,11 @@ public:
 	virtual void RenderGeoms();
 	virtual inline IFont* GetFont() const;
 
+	virtual void SetCurRenderTarget(IRenderTarget* renderTarget);
+	virtual bool IsMainRenderTarget() const;
+	virtual IRenderTarget* GetCurRendrTarget() const;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
-		ITexture* pDepthStencil, size_t dsIndex);
-	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num);
+		ITexture* pDepthStencil, size_t dsViewIndex);
 	virtual const Vec2I& GetRenderTargetSize() const;
 	virtual void RestoreRenderTarget();
 	
@@ -314,8 +310,8 @@ public:
 	virtual void SetEnvironmentTextureOverride(ITexture* texture);
 
 	// Render to Texture Pool handling
-	virtual IRenderToTexture* CreateRenderToTexture(const RenderToTextureParam& param);
-	virtual void DeleteRenderToTexture(IRenderToTexture*);
+	virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param);
+	virtual void DeleteRenderTarget(IRenderTarget*);
 
 
 	//-------------------------------------------------------------------------
@@ -356,8 +352,9 @@ public:
 	virtual void SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot);
 
 	virtual void SetDepthWriteShader();
-	
-	
+	virtual void SetDepthWriteShaderCloud();
+
+	virtual ITexture* GetTemporalDepthBuffer(const Vec2I& size);	
 
 	virtual void SetPositionInputLayout();
 	virtual void SetOccPreShader();
@@ -374,15 +371,6 @@ public:
 	void Update(float dt);
 	void UpdateLights(float dt);
 
-	virtual void SetHDRTarget();
-	void MeasureLuminanceOfHDRTarget();
-	void MeasureLuminanceOfHDRTargetNew();
-	void BrightPass();
-	void BrightPassToStarSource();
-	void StarSourceToBloomSource();
-	void Bloom();
-	void RenderStarGlare();
-	void ToneMapping();
 	bool GetSampleOffsets_Bloom(DWORD dwTexSize,
 		float afTexCoordOffset[15],
 		Vec4* avColorWeight,
@@ -391,34 +379,48 @@ public:
 	void GetSampleOffsets_DownScale2x2(DWORD texWidth, DWORD texHeight, Vec4* avTexCoordOffset);
 
 	ITexture* FindRenderTarget(const Vec2I& size);
+	IShader* GetGodRayPS();
+	IShader* GetGlowShader();
+	void SetShadowMapShader();
+	IShader* GetSilouetteShader();
+	IShader* GetCopyPS();
+	IShader* GetCopyPSMS();
+	ITexture* GetToneMap(unsigned idx);
+	IShader* GetSampleLumInitialShader();
+	IShader* GetSampleLumIterativeShader();
+	IShader* GetSampleLumFinalShader();
+	void SwapLuminanceMap();
+	ITexture* GetLuminanceMap(unsigned idx);
+	IShader* GetCalcAdapedLumShader();
+	IShader* GetBrightPassPS();
+	IShader* GetBlur5x5PS();
+	IShader* GetBloomPS();
+	IShader* GetStarGlareShader();
+	IShader* GetMergeTexturePS();
+	IShader* GetToneMappingPS();
 
-	void SetDepthRenderTarget(bool clear);
-	void UnsetDepthRenderTarget();
-
-	void SetGodRayRenderTarget();
+	void Render(float dt);
+	/*void SetGodRayRenderTarget();
 	void GodRay();
-	void BlendGodRay();
+	void BlendGodRay();*/
 	
-	virtual void SetGlowRenderTarget();
-	void BlendGlow();
+	
+
+	//void BlendGlow();
+	
 
 	virtual void BindDepthTexture(bool set);
-	void SetCloudVolumeTarget();
+	/*void SetCloudVolumeTarget();
 	void SetCloudVolumeTexture(bool set);
-	virtual void SetCloudRendering(bool rendering);
+	virtual void SetCloudRendering(bool rendering);*/
 
 	void BindNoiseMap();
-
+	bool IsLuminanceOnCpu() const { return mLuminanceOnCpu; }
 	// shadow
-	void PrepareShadowMapRendering();
+	
+	/*void PrepareShadowMapRendering();
 	void EndShadowMapRendering();
-	void BindShadowMap(bool bind);
-	virtual void SetShadowMapShader();
-
-	virtual void SetSilouetteShader();
-	virtual void SetSamllSilouetteBuffer();
-	virtual void SetBigSilouetteBuffer();
-	virtual void DrawSilouette();
+	void BindShadowMap(bool bind);*/
 
 	void RenderDebugRenderTargets();
 	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName);
@@ -433,7 +435,7 @@ public:
 
 	void CalcLuminance();
 	void ToneMapLuminanceOnCpu(bool oncpu);
-	bool IsLuminanceOnCpu() const { return mLuminanceOnCpu; }
+	
 	void UseFilmicToneMapping(bool filmic);
 	void CreateToneMappingShader();
 
@@ -443,6 +445,31 @@ public:
 	PointLightMan* GetPointLightMan() const { return mPointLightMan; }
 	virtual IMaterial* GetMaterial(DEFAULT_MATERIALS::Enum type);
 
+	RenderPipeline* GetDefaultPipeline() const;
+	RenderPipeline* GetMinimumPipeline() const;
+
+	void ProcessInputData();
+	void OnInputFromEngineForCamera(IMouse* mouse, IKeyboard* keyboard);
+
+	virtual int CropSize8(int size) const;
+	void Render3DUIsToTexture();
+	void RenderMarks();
+	void RenderUI();
+	void RenderFrameProfiler();
+
+	virtual void RegisterUIs(std::vector<IUIObject*>& uiobj);
+	virtual void UnregisterUIs();
+	virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects);
+	virtual void Unregister3DUIs(const char* name);
+	virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld);
+	virtual void Reset3DUI(const char* name);
+	virtual void SetEnable3DUIs(bool enable);
+
+
+	virtual void AddMarkObject(IObject* mark);
+	virtual void RemoveMarkObject(IObject* mark);
+	virtual void AddHPBarObject(IObject* hpBar);
+	virtual void RemoveHPBarObject(IObject* hpBar);
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

@@ -19,7 +19,7 @@ namespace fastbird
 	}
 
 	//--------------------------------------------------------------------------
-	void Keyboard::PushEvent(const KeyboardEvent& keyboardEvent)
+	void Keyboard::PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent)
 	{
 		/*DebugOutput("MakeCode = %d, Flags = %x, VKey = %d, Message = %d, ExtraInformation = %d",
 			keyboardEvent.MakeCode, keyboardEvent.Flags, keyboardEvent.VKey, keyboardEvent.Message, keyboardEvent.ExtraInformation);*/
@@ -57,7 +57,7 @@ namespace fastbird
 		}
 	}
 
-	void Keyboard::PushChar(unsigned keycode)
+	void Keyboard::PushChar(HWND hWnd, unsigned keycode)
 	{
 		mCurrentChar.push(keycode);
 		while (mCurrentChar.size() > 10)

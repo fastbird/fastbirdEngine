@@ -9,12 +9,14 @@ namespace fastbird
 	class Mouse : public IMouse
 	{
 	public:
-		static void GetCurrentMousePos(long& x, long& y);
-		static void SetCurrentMousePos(long x, long y);
+		static void GetCurrentMousePos(HWND_ID hwndId, long& x, long& y);
+		static void GetCurrentMousePos(HWND hwnd, long& x, long& y);
+		static void SetCurrentMousePos(HWND_ID hwndId, long x, long y);
+		static void SetCurrentMousePos(HWND hwnd, long x, long y);
 
 		Mouse();
 
-		virtual void PushEvent(const MouseEvent& mouseEvent);
+		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
 		virtual bool IsValid() const { return mValid; }
@@ -46,7 +48,7 @@ namespace fastbird
 
 		virtual void LockMousePos(bool lock);
 		virtual void OnKillFocus();
-		virtual void OnSetFocus();
+		virtual void OnSetFocus(HWND hWnd);
 
 		virtual const Ray3& GetWorldRay();
 		

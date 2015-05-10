@@ -41,9 +41,12 @@ class IBlendState;
 class IDepthStencilState;
 class ISamplerState;
 class IFont;
-class IRenderToTexture;
+class IRenderTarget;
 class ILight;
 class PointLightMan;
+class RenderPipeline;
+class IScene;
+
 struct CloudProperties
 {
 	float		fLength;
@@ -54,7 +57,7 @@ struct CloudProperties
 	Vec3		vCloudPos;
 	unsigned	particleID;
 };
-struct RenderToTextureParam
+struct RenderTargetParam
 {
 	bool mEveryFrame;
 	Vec2I mSize;
@@ -62,7 +65,7 @@ struct RenderToTextureParam
 	bool mShaderResourceView;
 	bool mMipmap;
 	bool mCubemap;
-	bool mHasDepth; // set true, and call IRenderToTexture::SetDepthStencilDesc().
+	bool mHasDepth; // set true, and call IRenderTarget::SetDepthStencilDesc().
 	bool mUsePool;
 };
 
@@ -77,11 +80,11 @@ public:
 
 	// threadPool 0 : no thread pool
 	virtual bool Init(int threadPool) = 0;
-	virtual int InitSwapChain(HWND handle, int width, int height) = 0;
+	virtual int InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void Deinit() = 0;
-	virtual void ProcessRenderToTexture() = 0;
-	virtual IRenderToTexture* CreateRenderToTexture(const RenderToTextureParam& param) = 0;
-	virtual void DeleteRenderToTexture(IRenderToTexture*) = 0;
+	virtual void ProcessRenderTarget() = 0;
+	virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param) = 0;
+	virtual void DeleteRenderTarget(IRenderTarget*) = 0;
 	virtual void SetClearColor(float r, float g, float b, float a=1.f) = 0;
 	virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
 	virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil) = 0;
@@ -90,7 +93,8 @@ public:
 	// do not use if possible.
 	virtual void ClearState() = 0;
 	virtual void SetCamera(ICamera* pCamera) = 0;
-	virtual ICamera* GetCamera() const = 0;
+	virtual ICamera* GetCamera() const = 0; // this is for current carmera.
+	virtual ICamera* GetMainCamera() const = 0;
 	virtual void UpdateFrameConstantsBuffer() = 0;
 	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
 	virtual void UpdatePointLightConstantsBuffer(void* pData) = 0;
@@ -118,8 +122,10 @@ public:
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
 	virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) = 0;
 	virtual void Draw(unsigned int vertexCount, unsigned int startVertexLocation) = 0;
-	virtual unsigned GetWidth() const = 0;
-	virtual unsigned GetHeight() const=0;
+	virtual unsigned GetWidth(HWND hWnd) const = 0;
+	virtual unsigned GetHeight(HWND hWnd) const = 0;
+	virtual unsigned GetWidth(HWND_ID hWnd) const = 0;
+	virtual unsigned GetHeight(HWND_ID hWnd) const = 0;
 	virtual void SetWireframe(bool enable) = 0;
 	virtual bool GetWireframe() const = 0;
 	virtual unsigned GetMultiSampleCount() const = 0;
@@ -147,20 +153,20 @@ public:
 	virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) = 0;
 
-	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num, 
-		ITexture* pDepthStencil, size_t dsIndex) = 0;
-	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num) = 0;
+	virtual IRenderTarget* GetMainRenderTarget() const = 0;
+	virtual IScene* GetMainScene() const = 0;	
+	virtual const Vec2I& GetMainRTSize() const = 0;
+	virtual void SetSceneOverride(IScene* pScene) = 0;
+	virtual void LockSceneOverride(bool lock) = 0;
+	virtual IScene* GetSceneOverride() const = 0;
+
+	virtual void SetCurRenderTarget(IRenderTarget* renderTarget) = 0;
+	virtual IRenderTarget* GetCurRendrTarget() const = 0;
+	virtual bool IsMainRenderTarget() const = 0;
+	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num,
+		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
 	virtual const Vec2I& GetRenderTargetSize() const = 0;
 	virtual void RestoreRenderTarget() = 0;
-	virtual void SetHDRTarget() = 0;
-	// internal use
-	// after called:
-	// 0 : current rendertarget
-	// 1 : glow rendertarget
-	// 2 : not changed
-	// 3 : not changed
-	virtual void SetGlowRenderTarget() = 0;
-	virtual void UnSetGlowRenderTarget() = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
 	virtual void RestoreViewports() = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
@@ -201,8 +207,8 @@ public:
 	virtual void InitFrameProfiler(float dt) = 0;
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const = 0;
 
-	virtual Vec2I ToSreenPos(const Vec3& ndcPos) const = 0;
-	virtual Vec2 ToNdcPos(const Vec2I& screenPos) const = 0;
+	virtual Vec2I ToSreenPos(HWND_ID id, const Vec3& ndcPos) const = 0;
+	virtual Vec2 ToNdcPos(HWND_ID id, const Vec2I& screenPos) const = 0;
 
 	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24) = 0;
 	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 24) = 0;
@@ -283,7 +289,10 @@ public:
 	// sampler
 	virtual void SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot) = 0;
 
+	virtual ITexture* GetTemporalDepthBuffer(const Vec2I& size) = 0;
+
 	virtual void SetDepthWriteShader() = 0;
+	virtual void SetDepthWriteShaderCloud() = 0;
 	virtual void SetOccPreShader() = 0;
 	virtual void SetOccPreGSShader() = 0;
 	virtual void SetPositionInputLayout() = 0;
@@ -292,11 +301,6 @@ public:
 
 	virtual void InitCloud(unsigned numThreads, unsigned numCloud, CloudProperties* clouds) = 0;
 	virtual void CleanCloud() = 0;
-
-	virtual void SetCloudRendering(bool rendering) = 0;
-	virtual void SetShadowMapShader() = 0;
-
-	virtual void SetSilouetteShader() = 0;
 
 	// internal only
 	virtual void SetSamllSilouetteBuffer() = 0;
@@ -322,7 +326,23 @@ public:
 	virtual PointLightMan* GetPointLightMan() const = 0;
 
 	virtual IMaterial* GetMaterial(DEFAULT_MATERIALS::Enum type) = 0;
+
+	virtual RenderPipeline* GetDefaultPipeline() const = 0;
+	virtual RenderPipeline* GetMinimumPipeline() const = 0;
+	virtual int CropSize8(int size) const = 0;
 	
+	virtual void RegisterUIs(std::vector<IUIObject*>& uiobj) = 0;
+	virtual void UnregisterUIs() = 0;
+	virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects) = 0;
+	virtual void Unregister3DUIs(const char* name) = 0;
+	virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld) = 0;
+	virtual void Reset3DUI(const char* name) = 0;
+	virtual void SetEnable3DUIs(bool enable) = 0;
+
+	virtual void AddMarkObject(IObject* mark) = 0;
+	virtual void RemoveMarkObject(IObject* mark) = 0;
+	virtual void AddHPBarObject(IObject* hpBar) = 0;
+	virtual void RemoveHPBarObject(IObject* hpBar) = 0;
 };
 
 }

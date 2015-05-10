@@ -86,6 +86,8 @@ namespace fastbird
 		float mWindVelocity;
 		Vec3 mWindVector;
 		Color mFogColor;
+		VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
+		unsigned mLastPreRenderFrame;
 		bool mDrawClouds;
 		bool mRttScene;
     };

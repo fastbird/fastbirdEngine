@@ -1,5 +1,5 @@
 #include <Engine/StdAfx.h>
-#include <Engine/IRenderToTexture.h>
+#include <Engine/IRenderTarget.h>
 #include <Engine/ICamera.h>
 #include <Engine/SkySphere.h>
 
@@ -8,7 +8,7 @@
 namespace fastbird
 {
 
-fastbird::SmartPtr<fastbird::IRenderToTexture> SkySphere::mRT;
+fastbird::SmartPtr<fastbird::IRenderTarget> SkySphere::mRT;
 
 ISkySphere* ISkySphere::CreateSkySphere(bool usingSmartPointer)
 {
@@ -50,7 +50,7 @@ void SkySphere::CreateSharedEnvRT()
 {
 	if (!mRT)
 	{
-		RenderToTextureParam param;
+		RenderTargetParam param;
 		param.mEveryFrame = false;
 		param.mSize = Vec2I(ENV_SIZE, ENV_SIZE);
 		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
@@ -59,7 +59,7 @@ void SkySphere::CreateSharedEnvRT()
 		param.mCubemap = true;
 		param.mHasDepth = false;
 		param.mUsePool = true;
-		mRT = gFBEnv->pRenderer->CreateRenderToTexture(param);
+		mRT = gFBEnv->pRenderer->CreateRenderTarget(param);
 		mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
 	}
 }

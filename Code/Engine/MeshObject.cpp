@@ -7,6 +7,7 @@
 #include <Engine/IConsole.h>
 #include <Engine/Animation.h>
 #include <Engine/FBCollisionShape.h>
+#include <Engine/IRenderTarget.h>
 
 namespace fastbird
 {
@@ -103,18 +104,18 @@ namespace fastbird
 			return;
 
 		D3DEventMarker mark("MeshObject");
-		IRenderer* pRenderer = gFBEnv->pRenderer;
+		auto const renderer = gFBEnv->pRenderer;
 		
-		mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
-		mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
+		mObjectConstants.gWorldView = renderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
+		mObjectConstants.gWorldViewProj = renderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
 
 
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
-			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+			renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
-		pRenderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
+		renderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
 
-		pRenderer->SetPrimitiveTopology(mTopology);
+		renderer->SetPrimitiveTopology(mTopology);
 
 		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW && !HasObjFlag(OF_HIGHLIGHT_DEDI))
 		{
@@ -124,8 +125,8 @@ namespace fastbird
 					continue;
 				if (!it->mMaterial->BindSubPass(RENDER_PASS::PASS_SHADOW, true))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
-					gFBEnv->pRenderer->SetShadowMapShader();
+					renderer->SetPositionInputLayout();
+					renderer->SetShadowMapShader();
 				}
 				RenderMaterialGroup(&(*it), true);
 			}
@@ -141,13 +142,13 @@ namespace fastbird
 				bool materialReady = false;
 				if (it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
+					renderer->SetPositionInputLayout();
 					materialReady = true;
 				}
 				else if (!(mObjFlag & OF_NO_DEPTH_PASS))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
-					gFBEnv->pRenderer->SetDepthWriteShader();
+					renderer->SetPositionInputLayout();
+					renderer->SetDepthWriteShader();
 					materialReady = true;
 				}
 				if (materialReady)
@@ -160,17 +161,17 @@ namespace fastbird
 		// PASS_GODRAY_OCC_PRE
 		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI))
 		{
-			gFBEnv->pRenderer->SetPositionInputLayout();
+			renderer->SetPositionInputLayout();
 			FB_FOREACH(it, mMaterialGroups)
 			{
 				if (!it->mMaterial || !it->mVBPos || it->mMaterial->IsNoShadowCast())
 					continue;
 
 				if (it->mMaterial->GetBindingShaders() & BINDING_SHADER_GS) {
-					gFBEnv->pRenderer->SetOccPreGSShader();
+					renderer->SetOccPreGSShader();
 				}
 				else {
-					gFBEnv->pRenderer->SetOccPreShader();
+					renderer->SetOccPreShader();
 				}
 				it->mMaterial->BindMaterialParams();
 
@@ -201,12 +202,14 @@ namespace fastbird
 					it->mMaterial->Unbind();
 				}
 			}
-
+			bool mainRt = renderer->IsMainRenderTarget();
 			// HIGHLIGHT
-			if (mRenderHighlight && !gFBEnv->mRenderToTexture)
+			if (mRenderHighlight && mainRt)
 			{
 				// draw silhouett to samll buffer
-				pRenderer->SetSamllSilouetteBuffer();
+				auto rt = renderer->GetCurRendrTarget();
+				assert(rt);
+				rt->SetSmallSilouetteBuffer();
 				{
 					FB_FOREACH(it, mMaterialGroups)
 					{
@@ -215,13 +218,13 @@ namespace fastbird
 						bool materialReady = false;
 						if (it->mMaterial && it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
+							renderer->SetPositionInputLayout();
 							materialReady = true;
 						}
 						else
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
-							gFBEnv->pRenderer->SetDepthWriteShader();
+							renderer->SetPositionInputLayout();
+							renderer->SetDepthWriteShader();
 							materialReady = true;
 						}
 						if (materialReady)
@@ -230,7 +233,7 @@ namespace fastbird
 						}
 					}
 				}
-				pRenderer->SetBigSilouetteBuffer();
+				rt->SetBigSilouetteBuffer();
 				{
 					FB_FOREACH(it, mMaterialGroups)
 					{
@@ -239,13 +242,13 @@ namespace fastbird
 						bool materialReady = false;
 						if (it->mMaterial && it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
+							renderer->SetPositionInputLayout();
 							materialReady = true;
 						}
 						else
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
-							gFBEnv->pRenderer->SetDepthWriteShader();
+							renderer->SetPositionInputLayout();
+							renderer->SetDepthWriteShader();
 							materialReady = true;
 						}
 						if (materialReady)
@@ -254,15 +257,11 @@ namespace fastbird
 						}
 					}
 				}
-
-				gFBEnv->mSilouetteRendered = true;
-				//mRenderHighlight = false;
-
+				gFBEnv->mSilouetteRendered = true;				
 				if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-					pRenderer->SetHDRTarget();
+					rt->SetHDRTarget();
 				else
-					pRenderer->RestoreRenderTarget();
-				pRenderer->RestoreViewports();
+					rt->BindTargetOnly();
 			}
 		}
 	}

@@ -53,7 +53,7 @@ namespace fastbird
 		bool mInterpolating;
 		SmartPtr<IBlendState> mAlphaBlend;
 		bool mUseAlphaBlend;
-		static fastbird::SmartPtr<fastbird::IRenderToTexture> mRT;
+		static fastbird::SmartPtr<fastbird::IRenderTarget> mRT;
 		float mAlpha;
 
 		static const unsigned NumConsts = 7;

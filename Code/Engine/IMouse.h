@@ -62,7 +62,7 @@ namespace fastbird
 			MOUSE_BUTTON_5 = 0x10,
 		};
 
-		virtual void PushEvent(const MouseEvent& mouseEvent) = 0;
+		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent) = 0;
 		virtual void GetHDDeltaXY(long &x, long &y) const = 0;
 		virtual void GetDeltaXY(long &x, long &y) const = 0;
 		virtual void GetPos(long &x, long &y) const = 0;
@@ -90,7 +90,7 @@ namespace fastbird
 
 		virtual void LockMousePos(bool lock) = 0;
 		virtual void OnKillFocus() = 0;
-		virtual void OnSetFocus() = 0;
+		virtual void OnSetFocus(HWND hWnd) = 0;
 
 		virtual const Ray3& GetWorldRay() = 0;
 	};

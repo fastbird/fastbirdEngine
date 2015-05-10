@@ -3,7 +3,7 @@
 #define __Rendererd3d11_header_included__
 
 #include <Engine/Renderer.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/RendererStructs.h>
 #include <Engine/RenderStateD3D11.h>
 #include <CommonLib/Color.h>
@@ -21,7 +21,7 @@ namespace fastbird
 		RendererD3D11();
 		virtual ~RendererD3D11();
 		virtual bool Init(int threadPool);
-		virtual int InitSwapChain(HWND hwnd, int width, int height);
+		virtual int InitSwapChain(HWND_ID id, int width, int height);
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
 		virtual void Clear();
@@ -39,8 +39,8 @@ namespace fastbird
 		virtual void UnmapBigBuffer();
 		virtual unsigned GetMultiSampleCount() const;
 
-		virtual IRenderToTexture* CreateRenderToTexture(const RenderToTextureParam& param);
-		virtual void DeleteRenderToTexture(IRenderToTexture*);
+		virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param);
+		virtual void DeleteRenderTarget(IRenderTarget*);
 		
 		virtual void SetWireframe(bool enable);
 		virtual void Present();
@@ -61,10 +61,8 @@ namespace fastbird
 			BUFFER_USAGE usage, int  buffer_cpu_access, int  type);
 
 		virtual void SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, 
-			ITexture* pDepthStencil, size_t dsIndex);
-		virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num);
-		virtual void SetGlowRenderTarget();
-		virtual void UnSetGlowRenderTarget();
+			ITexture* pDepthStencil, size_t dsViewIndex);
+		
 		virtual void RestoreRenderTarget();
 		void OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView);
 		void OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView);
@@ -135,7 +133,9 @@ namespace fastbird
 	private:
 		ID3D11Device*			m_pDevice; // free-threaded
 		IDXGIFactory1*			m_pFactory;
-		IDXGISwapChain*			m_pSwapChain;
+		VectorMap<HWND_ID, IDXGISwapChain*> mSwapChains;
+		//VectorMap<HWND_ID, SmartPtr<RenderTarget>> mSwapChainRenderTargets;  -- move to Renderer.h
+		
 		ID3D11DeviceContext*	m_pImmediateContext; //  not free-threaded
 		ID3D11RenderTargetView* m_pRenderTargetView;
 		ID3D11Texture2D*		m_pDepthStencil;
@@ -156,7 +156,7 @@ namespace fastbird
 
 		D3D_DRIVER_TYPE			mDriverType;
 		D3D_FEATURE_LEVEL		mFeatureLevel;
-		DXGI_FORMAT				mDepthStencilFormat;
+		PIXEL_FORMAT			mDepthStencilFormat;
 
 		FRAME_CONSTANTS			mFrameConstants;
 		
@@ -171,7 +171,6 @@ namespace fastbird
 		typedef std::map<SAMPLER_DESC, SmartPtr<SamplerStateD3D11> > SAMPLER_MAP;
 		SAMPLER_MAP mSamplerMap;
 
-		std::vector<IDXGISwapChain*> mSwapChains;
 		typedef std::vector<ID3D11RenderTargetView*> RTViews;
 		RTViews mRenderTargetViews;
 		RTViews mCurrentRTViews;
@@ -181,8 +180,6 @@ namespace fastbird
 		std::vector<D3D11_VIEWPORT> mViewports;
 
 		std::vector<TextureD3D11*> mCheckTextures;
-		
-		std::vector<ID3D11Texture2D*> mRenderTargetTextures;
 	};
 }
 

@@ -54,7 +54,13 @@ namespace fastbird
 		b = GenerateCloudParticles();
 		assert(b);
 
-		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
+		auto scene = gFBEnv->pRenderer->GetMainScene();
+		if (scene) {
+			mWind = scene->GetWindVector();
+		}
+		else {
+			Error(FB_DEFAULT_DEBUG_ARG, "No scene found!");
+		}
 		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
 		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
 		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPosition();
@@ -107,7 +113,11 @@ namespace fastbird
 	//-----------------------------------------------------------------------
 	void VolumetricCloud::PrepareRender()
 	{
-		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
+		auto scene = gFBEnv->pRenderer->GetMainScene();
+		if (scene) {
+			mWind = scene->GetWindVector();			
+		}
+		
 		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
 		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
 		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPos();

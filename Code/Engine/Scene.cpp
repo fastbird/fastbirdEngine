@@ -14,6 +14,7 @@
 #include <Engine/FBCollisionShape.h>
 #include <Engine/Renderer.h>
 #include <Engine/ParticleRenderObject.h>
+#include <Engine/IRenderTarget.h>
 using namespace fastbird;
 
 IScene* IScene::CreateScene()
@@ -27,6 +28,7 @@ Scene::Scene()
 , mSkipSpatialObjects(false)
 , mDrawClouds(true)
 , mRttScene(false)
+, mLastPreRenderFrame(-1)
 {
 	mVisibleObjectsMain.reserve(1000);
 	mVisibleObjectsLight.reserve(1000);
@@ -266,8 +268,11 @@ void Scene::MakeVisibleSet()
 	mVisibleObjectsLight.clear();
 	mVisibleTransparentObjects.clear();
 	mPreRenderList.clear();
-	auto mainCam = gFBEnv->pRenderer->GetCamera();
-	auto lightCamera = gFBEnv->pRenderer->GetDirectionalLight(0)->GetCamera();
+	auto const renderer = gFBEnv->pRenderer;	
+	auto mainCam = renderer->GetCamera();
+	auto curTarget = renderer->GetCurRendrTarget();
+	assert(curTarget);
+	auto lightCamera = curTarget->GetLightCamera();
 	auto it = mSpatialObjects.begin(), itEnd = mSpatialObjects.end();
 	for (; it!=itEnd; it++)
 	{
@@ -288,14 +293,13 @@ void Scene::MakeVisibleSet()
 			inserted = true;
 		}
 		
-		if (!lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
+		if (lightCamera && !lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
 		{
 			mVisibleObjectsLight.push_back((*it));
 			inserted = true;
 		}
 		if (inserted)
-			mPreRenderList.push_back((*it));
-		
+			mPreRenderList.push_back((*it));		
 	}
 
 	const fastbird::Vec3& camPos = gFBEnv->pRenderer->GetCamera()->GetPos();
@@ -336,51 +340,66 @@ void Scene::MakeVisibleSet()
 //----------------------------------------------------------------------------
 void Scene::PreRender()
 {
+	bool runnedAlready = mLastPreRenderFrame == gFBEnv->mFrameCounter;		
+
 	if (!mSkipSpatialObjects)
 	{
-		MakeVisibleSet();
-		auto it = mPreRenderList.begin(), itEnd = mPreRenderList.end();
-		for (; it != itEnd; it++)
-		{
-			(*it)->PreRender();
-		}
-	}
-	if (mSkyRendering)
-	{
-		if (mSkySphere)
-		{
-			if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
-			{
-				mSkySphereBlend->PreRender();
-			}
-			else
-			{
-				mSkySphere->PreRender();
-				if (mSkySphereBlend && mSkySphereBlend->GetAlpha()!=0.f)
-					mSkySphereBlend->PreRender();
-			}
-			
-		}
-		if (mSkyBox)
-		{
-			mSkyBox->PreRender();
-		}			
-	}
-	
+		auto cam = gFBEnv->pRenderer->GetCamera();
+		assert(cam);
+		
+		auto it = mLastPreRenderFramePerCam.Find(cam);
+		if (it != mLastPreRenderFramePerCam.end() && it->second == gFBEnv->mFrameCounter)
+			return;
+		mLastPreRenderFramePerCam[cam] = gFBEnv->mFrameCounter;
 
+		MakeVisibleSet();
+
+		if (!runnedAlready)
+		{
+			auto objIt = mPreRenderList.begin(), objItEnd = mPreRenderList.end();
+			for (; objIt != objItEnd; objIt++)
+			{
+				(*objIt)->PreRender();
+			}
+		}
+	}	
+	if (!runnedAlready)
 	{
+		if (mSkyRendering)
+		{
+			if (mSkySphere)
+			{
+				if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
+				{
+					mSkySphereBlend->PreRender();
+				}
+				else
+				{
+					mSkySphere->PreRender();
+					if (mSkySphereBlend && mSkySphereBlend->GetAlpha() != 0.f)
+						mSkySphereBlend->PreRender();
+				}
+
+			}
+			if (mSkyBox)
+			{
+				mSkyBox->PreRender();
+			}
+		}
+
 		FB_FOREACH(it, mObjects)
 		{
 			(*it)->PreRender();
 		}
+
+		mLastPreRenderFrame = gFBEnv->mFrameCounter;
 	}
-	
 }
 
 //----------------------------------------------------------------------------
 void Scene::Render()
 {
-	Renderer* pRenderer = (Renderer*)gFBEnv->pRenderer;
+	auto const renderer = (Renderer*)gFBEnv->pRenderer;
 	if (!mSkipSpatialObjects)
 	{
 		D3DEventMarker mark("VisibleObjects - Opaque");
@@ -434,10 +453,11 @@ void Scene::Render()
 		for (const auto& l : mListeners)
 			l->OnBeforeRenderingTransparents();
 
-		if (!gFBEnv->mRenderToTexture)
-			pRenderer->RenderGeoms();
+		bool mainRt = renderer->IsMainRenderTarget();
+		if (mainRt)
+			renderer->RenderGeoms();
 
-		pRenderer->BindDepthTexture(true);
+		renderer->GetCurRendrTarget()->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
 		{
 			{
@@ -488,14 +508,14 @@ void Scene::RenderCloudVolumes()
 {	
 	if (!mDrawClouds)
 		return;
-	// render obstacles
-	gFBEnv->pRenderer->LockDepthStencilState();
-	gFBEnv->pRenderer->SetBlueMask();
-	Render();
-	gFBEnv->pRenderer->UnlockDepthStencilState();
 
-	gFBEnv->pRenderer->SetCloudRendering(true);
-	gFBEnv->pRenderer->SetDepthWriteShader();
+	auto const renderer = gFBEnv->_pInternalRenderer;
+	// render obstacles
+	renderer->LockDepthStencilState();
+	renderer->SetBlueMask();
+	Render();
+	renderer->UnlockDepthStencilState();
+	renderer->SetDepthWriteShaderCloud();
 	// far side
 	gFBEnv->pRenderer->SetFrontFaceCullRS();
 	gFBEnv->pRenderer->SetNoDepthWriteLessEqual();
@@ -513,7 +533,6 @@ void Scene::RenderCloudVolumes()
 	{
 		var->Render();
 	}	
-	gFBEnv->pRenderer->SetCloudRendering(false);
 	gFBEnv->pRenderer->RestoreRasterizerState();
 	gFBEnv->pRenderer->RestoreBlendState();
 	gFBEnv->pRenderer->RestoreDepthStencilState();

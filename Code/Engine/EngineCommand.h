@@ -24,7 +24,6 @@ public:
 	float r_HDRMiddleGray;
 	int r_HDRCpuLuminance;
 	int r_HDRFilmic;
-	float r_BloomGaussianWeight;
 	float r_BloomPower;
 	float r_StarPower;
 	int r_GodRay;

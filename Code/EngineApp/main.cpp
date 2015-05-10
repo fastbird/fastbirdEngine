@@ -4,7 +4,7 @@
 #include "QuickSortTask.h"
 #include "PhyObj.h"
 #include <Engine/IVoxelizer.h>
-#include <Engine/IRenderToTexture.h>
+#include <Engine/IRenderTarget.h>
 #include <CommonLib/threads.h>
 #include <CommonLib/Profiler.h>
 #include <Physics/IPhysics.h>
@@ -86,9 +86,9 @@ bool InitEngine()
 
 	fastbird::IEngine* pEngine = createEngineProc();
 	gFBEnv = pEngine->GetGlobalEnv();
-	pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
 	pEngine->InitEngine(fastbird::IEngine::D3D11);
-	pEngine->InitSwapChain(gFBEnv->pEngine->GetWindowHandle(), 1600, 900);
+	fastbird::HWND_ID id = pEngine->CreateEngineWindow(0, 0, 1600, 900, "EngineApp", "Game powered by fastbird engine", WinProc);	
+	pEngine->InitSwapChain(id, 1600, 900);
 	gpTimer = gFBEnv->pTimer;
 
 	if (gFBEnv->pRenderer)
@@ -196,11 +196,11 @@ int main()
 	voxelObject = 0;
 
 	//----------------------------------------------------------------------------
-	// 5. How to use Render To Texture (Need to include <Engine/IRenderToTexture.h>)
+	// 5. How to use Render To Texture (Need to include <Engine/IRenderTarget.h>)
 	//----------------------------------------------------------------------------
 	if (gMeshObject)
 	{
-		RenderToTextureParam param;
+		RenderTargetParam param;
 		param.mEveryFrame = false;
 		param.mSize = Vec2I(1024, 1024);
 		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
@@ -209,14 +209,14 @@ int main()
 		param.mCubemap = false;
 		param.mHasDepth = false;
 		param.mUsePool = false;
-		IRenderToTexture* rtt = gFBEnv->pRenderer->CreateRenderToTexture(param);
+		IRenderTarget* rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
 		rtt->GetScene()->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
 		pRTTCam->SetDir(Vec3(1, 0, 0));
 		rtt->Render();
 		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
-		gFBEnv->pRenderer->DeleteRenderToTexture(rtt);
+		gFBEnv->pRenderer->DeleteRenderTarget(rtt);
 	}
 
 #if RUN_PARALLEL_EXAMPLE

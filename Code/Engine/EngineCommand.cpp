@@ -57,9 +57,6 @@ EngineCommand::EngineCommand()
 	r_HDRFilmic = gFBEnv->pScriptSystem->GetIntVariable("r_HDRFilmic", 1);
 	REGISTER_CVAR(r_HDRFilmic, r_HDRFilmic, CVAR_CATEGORY_CLIENT, "Use Filmic tone mapping");
 
-	r_BloomGaussianWeight = gFBEnv->pScriptSystem->GetRealVariable("r_BloomGaussianWeight", 1.3f);
-	REGISTER_CVAR(r_BloomGaussianWeight, r_BloomGaussianWeight, CVAR_CATEGORY_CLIENT, "bloom gaussian weight");
-
 	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.2f);
 	REGISTER_CVAR(r_BloomPower, r_BloomPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 

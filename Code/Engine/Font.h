@@ -2,7 +2,7 @@
 
 #include <Engine/IFont.h>
 #include <Engine/RendererStructs.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/Object.h>
 #include <Engine/TextTags.h>
 

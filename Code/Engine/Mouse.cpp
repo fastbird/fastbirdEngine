@@ -9,12 +9,20 @@
 
 namespace fastbird
 {
-	void Mouse::GetCurrentMousePos(long& x, long& y)
+	void Mouse::GetCurrentMousePos(HWND_ID hwndId, long& x, long& y)
+	{
+		auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
+		GetCurrentMousePos(hWnd, x, y);
+
+	}
+
+	void Mouse::GetCurrentMousePos(HWND hWnd, long& x, long& y)
 	{
 #ifdef _FBENGINE_FOR_WINDOWS_
 		POINT cursor;
 		GetCursorPos(&cursor);
-		ScreenToClient(gFBEnv->pEngine->GetWindowHandle(), &cursor);
+		assert(hWnd);
+		ScreenToClient(hWnd, &cursor);
 		x = cursor.x;
 		y = cursor.y;
 #else
@@ -22,14 +30,20 @@ namespace fastbird
 #endif _FBENGINE_FOR_WINDOWS_
 	}
 
-	void Mouse::SetCurrentMousePos(long x, long y)
+	void Mouse::SetCurrentMousePos(HWND_ID hwndId, long x, long y)
+	{
+		auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
+		SetCurrentMousePos(hWnd, x, y);
+	}
+
+	void Mouse::SetCurrentMousePos(HWND hWnd, long x, long y)
 	{
 #ifdef _FBENGINE_FOR_WINDOWS_
 		POINT cursor;
 		cursor.x = x;
 		cursor.y = y;
-		ClientToScreen(gFBEnv->pEngine->GetWindowHandle(), &cursor);
-		SetCursorPos(cursor.x,cursor.y);
+		ClientToScreen(hWnd, &cursor);
+		SetCursorPos(cursor.x, cursor.y);
 #else
 		assert(0);
 #endif _FBENGINE_FOR_WINDOWS_
@@ -53,9 +67,12 @@ namespace fastbird
 		mButtonsDownPrev = 0;
 		mButtonsClicked = 0;
 		mButtonsDoubleClicked = 0;
-		GetCurrentMousePos(mAbsX, mAbsY);
-		mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
-		mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+		GetCurrentMousePos(gFBEnv->pEngine->GetMainWndHandleId(), mAbsX, mAbsY);
+		auto hWnd = gFBEnv->pEngine->GetMainWndHandle();
+		Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+
+		mNPosX = (float)mAbsX / (float)size.x;
+		mNPosY = (float)mAbsY / (float)size.y;
 
 		mAbsXPrev = mAbsX;
 		mAbsYPrev = mAbsY;
@@ -68,7 +85,7 @@ namespace fastbird
 		mDoubleClickSpeed = (float)GetDoubleClickTime() / 1000.0f;
 	}
 
-	void Mouse::PushEvent(const MouseEvent& mouseEvent)
+	void Mouse::PushEvent(HWND handle, const MouseEvent& mouseEvent)
 	{
 		/*DebugOutput("usFlags = %x, usButtonFlags = %x, usButtonData = %x, ulRawButtons = %x, lLastX = %d, lLastY = %d, ulExtraInformation = %d",
 						mouseEvent.usFlags,
@@ -81,10 +98,10 @@ namespace fastbird
 
 		if (!mLockMouse)
 		{
-			GetCurrentMousePos(mAbsX, mAbsY);
-
-			mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
-			mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+			GetCurrentMousePos(handle, mAbsX, mAbsY);
+			const auto& size = gFBEnv->pEngine->GetRequestedWndSize(handle);
+			mNPosX = (float)mAbsX / (float)size.x;
+			mNPosY = (float)mAbsY / (float)size.y;
 		}
 			
 		mLastX = mouseEvent.lLastX;
@@ -230,7 +247,8 @@ namespace fastbird
 		mLastY = 0;
 		if (mLockMouse)
 		{
-			SetCurrentMousePos(mAbsXPrev, mAbsYPrev);
+			SetCurrentMousePos(gFBEnv->pEngine->GetForgroundWindow(),
+				mAbsXPrev, mAbsYPrev);
 		}
 		else
 		{
@@ -289,8 +307,10 @@ namespace fastbird
 
 	Vec2 Mouse::GetNPos() const
 	{
-		return Vec2((float)mAbsX / (float)gFBEnv->pRenderer->GetWidth(),
-			(float)mAbsY / (float)gFBEnv->pRenderer->GetHeight());
+		auto hWnd = gFBEnv->pEngine->GetForgroundWindow();
+		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+		return Vec2((float)mAbsX / (float)size.x,
+			(float)mAbsY / (float)size.y);
 	}
 
 	//-------------------------------------------------------------------------
@@ -401,7 +421,7 @@ namespace fastbird
 
 		if (lock)
 		{
-			if (GetFocus() == gFBEnv->pEngine->GetWindowHandle())
+			if (GetFocus() == gFBEnv->pEngine->GetMainWndHandle())
 			{
 				if (!mLockMouse)
 				{
@@ -427,11 +447,12 @@ namespace fastbird
 		mLockMouse = false;
 	}
 
-	void Mouse::OnSetFocus()
+	void Mouse::OnSetFocus(HWND hWnd)
 	{
-		GetCurrentMousePos(mAbsX, mAbsY);
-		mNPosX = (float)mAbsX / (float)gFBEnv->pRenderer->GetWidth();
-		mNPosY = (float)mAbsY / (float)gFBEnv->pRenderer->GetHeight();
+		GetCurrentMousePos(hWnd, mAbsX, mAbsY);
+		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+		mNPosX = (float)mAbsX / (float)size.x;
+		mNPosY = (float)mAbsY / (float)size.y;
 		mAbsXPrev = mAbsX;
 		mAbsYPrev = mAbsY;
 
