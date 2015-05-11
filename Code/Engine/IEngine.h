@@ -53,6 +53,7 @@ namespace fastbird
 	class IBillboardQuad;
 	class IDustRenderer;
 	typedef unsigned HWND_ID;
+	static const HWND_ID INVALID_WND_HANDLE = (HWND_ID)-1;
 	class IEngine : public ReferenceCounter
 	{
 	public:
@@ -64,12 +65,15 @@ namespace fastbird
 		virtual HWND_ID CreateEngineWindow(int x, int y, int width, int height,
 			const char* wndClass, const char* title, WNDPROC winProc) = 0;
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const = 0;
+		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const = 0;
 		virtual HWND GetWindowHandle(HWND_ID id) const = 0;
 		virtual HWND_ID GetWindowHandleId(HWND hWnd) const = 0;
+		virtual HWND_ID GetWindowHandleIdWithMousePoint() const = 0;
 		virtual HWND GetMainWndHandle() const = 0;
-		virtual HWND GetForgroundWindow() const = 0;
+		virtual HWND GetForgroundWindow(HWND_ID* id = 0) const = 0;
+		virtual HWND_ID GetForgroundWindowId() const = 0;
 		virtual HWND_ID GetMainWndHandleId() const = 0;
-		virtual int InitSwapChain(HWND_ID id, int width, int height) = 0;
+		virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 		enum RENDERER_TYPE 
 		{ 
 			D3D9=0, 

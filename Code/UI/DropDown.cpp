@@ -152,7 +152,7 @@ void DropDown::OnMouseClick(void* arg)
 	{
 		var->SetVisible(!vis);
 	}
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void DropDown::CloseOptions()
@@ -199,7 +199,7 @@ void DropDown::OnItemSelected(void* arg)
 	assert(index != -1);
 	mCurIdx = index; 
 	OnEvent(IEventHandler::EVENT_DROP_DOWN_SELECTED);
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 size_t DropDown::AddDropDownItem(WCHAR* szString)

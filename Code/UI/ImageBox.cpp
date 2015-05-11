@@ -107,7 +107,7 @@ void ImageBox::SetTexture(const char* file)
 	}
 	ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
 	SetTexture(pTexture);
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)

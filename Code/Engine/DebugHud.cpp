@@ -2,6 +2,7 @@
 #include <Engine/DebugHud.h>
 #include <Engine/ICamera.h>
 #include <Engine/IMeshObject.h>
+#include <Engine/Renderer.h>
 
 using namespace fastbird;
 
@@ -14,9 +15,10 @@ const unsigned DebugHud::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 DebugHud::DebugHud()
 {
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)size.x,
+		(float)size.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
@@ -41,8 +43,9 @@ DebugHud::DebugHud()
 	ddesc.DepthEnable = false;
 	mRenderStates = FB_NEW(RenderStates);
 	mRenderStates->CreateDepthStencilState(ddesc);
-
-	gFBEnv->pEngine->GetScene()->AddListener(this);
+	
+	
+	gFBEnv->_pInternalRenderer->GetMainScene()->AddListener(this);
 	
 	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugSphere.dae");
 	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugBox.dae");
@@ -53,8 +56,8 @@ DebugHud::DebugHud()
 //----------------------------------------------------------------------------
 DebugHud::~DebugHud()
 {
-	if (gFBEnv->pEngine->GetScene())
-		gFBEnv->pEngine->GetScene()->RemoveListener(this);
+	if (gFBEnv->_pInternalRenderer->GetMainScene())
+		gFBEnv->_pInternalRenderer->GetMainScene()->RemoveListener(this);
 
 	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
@@ -251,9 +254,10 @@ void DebugHud::Render()
 		mWorldLines.clear();
 	}
 
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)size.x,
+		(float)size.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 	pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);

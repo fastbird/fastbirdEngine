@@ -13,6 +13,7 @@
 #include <Engine/ITexture.h>
 #include <Engine/IObject.h>
 #include <Engine/IMaterial.h>
+#include <Engine/IEngine.h>
 #include <CommonLib/Math/Vec2I.h>
 #include <CommonLib/Math/Vec2.h>
 
@@ -80,15 +81,14 @@ public:
 
 	// threadPool 0 : no thread pool
 	virtual bool Init(int threadPool) = 0;
-	virtual int InitSwapChain(HWND_ID id, int width, int height) = 0;
+	virtual bool InitSwapChain(fastbird::HWND_ID id, int width, int height) = 0;
 	virtual void Deinit() = 0;
 	virtual void ProcessRenderTarget() = 0;
 	virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param) = 0;
 	virtual void DeleteRenderTarget(IRenderTarget*) = 0;
-	virtual void SetClearColor(float r, float g, float b, float a=1.f) = 0;
-	virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
+	virtual void SetClearColor(HWND_ID id, const Color& color) = 0;
+	virtual void SetClearDepthStencil(HWND_ID id, float z, UINT8 stencil) = 0;
 	virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil) = 0;
-	virtual void Clear() = 0;
 	virtual void Clear(float r, float g, float b, float a) = 0;// only color
 	// do not use if possible.
 	virtual void ClearState() = 0;
@@ -156,9 +156,6 @@ public:
 	virtual IRenderTarget* GetMainRenderTarget() const = 0;
 	virtual IScene* GetMainScene() const = 0;	
 	virtual const Vec2I& GetMainRTSize() const = 0;
-	virtual void SetSceneOverride(IScene* pScene) = 0;
-	virtual void LockSceneOverride(bool lock) = 0;
-	virtual IScene* GetSceneOverride() const = 0;
 
 	virtual void SetCurRenderTarget(IRenderTarget* renderTarget) = 0;
 	virtual IRenderTarget* GetCurRendrTarget() const = 0;
@@ -166,7 +163,6 @@ public:
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
 	virtual const Vec2I& GetRenderTargetSize() const = 0;
-	virtual void RestoreRenderTarget() = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
 	virtual void RestoreViewports() = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
@@ -302,11 +298,6 @@ public:
 	virtual void InitCloud(unsigned numThreads, unsigned numCloud, CloudProperties* clouds) = 0;
 	virtual void CleanCloud() = 0;
 
-	// internal only
-	virtual void SetSamllSilouetteBuffer() = 0;
-	virtual void SetBigSilouetteBuffer() = 0;
-	virtual void DrawSilouette() = 0;
-
 	virtual void SetDebugRenderTarget(unsigned idx, const char* textureName) = 0;
 
 	virtual unsigned GetNumLoadingTexture() const = 0;
@@ -331,9 +322,9 @@ public:
 	virtual RenderPipeline* GetMinimumPipeline() const = 0;
 	virtual int CropSize8(int size) const = 0;
 	
-	virtual void RegisterUIs(std::vector<IUIObject*>& uiobj) = 0;
-	virtual void UnregisterUIs() = 0;
-	virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects) = 0;
+	virtual void RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj) = 0;
+	virtual void UnregisterUIs(HWND_ID hwndId) = 0;
+	virtual void Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIObject*>& objects) = 0;
 	virtual void Unregister3DUIs(const char* name) = 0;
 	virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld) = 0;
 	virtual void Reset3DUI(const char* name) = 0;

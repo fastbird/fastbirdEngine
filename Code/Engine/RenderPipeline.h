@@ -10,9 +10,11 @@ class RenderPipeline : public ReferenceCounter
 
 public:
 	RenderPipeline();
+	RenderPipeline(const RenderPipeline& other);
 	RenderPipeline(bool steps[]);
 	~RenderPipeline();
 
+	RenderPipeline* Clone() const;
 	void SetStep(RenderSteps::Enum step, bool enable);
 	bool GetStep(RenderSteps::Enum step) const;
 

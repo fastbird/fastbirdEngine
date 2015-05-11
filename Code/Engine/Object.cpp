@@ -150,7 +150,7 @@ void Object::SetRadius(float r)
 
 void Object::AttachToScene()
 {
-	IScene* pScene = gFBEnv->pEngine->GetScene();
+	IScene* pScene = gFBEnv->pRenderer->GetMainScene();
 	if (!IsAttached(pScene))
 		pScene->AttachObject(this);
 }

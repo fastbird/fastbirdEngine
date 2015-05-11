@@ -5,6 +5,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/ParticleManager.h>
 #include <Engine/IScriptSystem.h>
+#pragma init_seg(user) 
 namespace fastbird
 {
 static void EditParticle(StringVector& arg);
@@ -211,7 +212,8 @@ void SetFov(StringVector& arg)
 {
 	if (arg.size() < 2)
 		return;
-	gFBEnv->pEngine->GetCamera(0)->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
+
+	gFBEnv->pRenderer->GetMainCamera()->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
 }
 
 void Clear(StringVector& arg)

@@ -9,6 +9,7 @@ namespace fastbird
 {
 	class RenderPipeline;
 	struct GaussianDist;
+	class Scene;
 
 	class RenderTarget : public IRenderTarget
 	{
@@ -25,12 +26,12 @@ namespace fastbird
 		bool mHasDepth;
 		SmartPtr<ITexture> mRenderTargetTexture;
 		SmartPtr<ITexture> mDepthStencilTexture;
-		SmartPtr<IScene> mScene;
+		SmartPtr<Scene> mScene;
+		IScene* mSceneOverride;
+		bool mLockSceneOverride;
 		SmartPtr<ICamera> mCamera;
-		SmartPtr<ICamera> mOverridingCam;
-		SmartPtr<ICamera> mLightCamera;
-		SmartPtr<ILight> mLight[2];
-		SmartPtr<ITexture> mEnvTexture;
+		SmartPtr<ICamera> mOverridingCam;		
+		
 		Color mClearColor;
 		float mDepthClear;
 		UINT8 mStencilClear;
@@ -49,6 +50,7 @@ namespace fastbird
 		bool mGlowSet;
 
 		// Shadow
+		SmartPtr<ICamera> mLightCamera;
 		SmartPtr<ITexture> mShadowMap;
 
 		// Cloud
@@ -73,9 +75,9 @@ namespace fastbird
 		SmartPtr<ITexture> mBloomTexture[FB_NUM_BLOOM_TEXTURES];
 		SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
 
-	private:
+		SmartPtr<ITexture> mEnvTexture;
 
-		void UpdateLightCamera();
+	private:
 
 
 	public:
@@ -85,19 +87,25 @@ namespace fastbird
 		
 		const Vec2I& GetSize() const;
 		virtual bool CheckOptions(const RenderTargetParam& param);
-		virtual void SetRenderPipeline(RenderPipeline* pipeline);
+		virtual RenderPipeline* GetRenderPipeline() const;
 
 		virtual void SetScene(IScene* scene);
-		virtual IScene* GetScene() const{ return mScene; }
+		virtual IScene* GetScene() const;
+		Scene* GetSceneInternal() const;
+		virtual void SetSceneOverride(IScene* scene);
+		virtual IScene* GetSceneOverride() const { return mSceneOverride; }
+		virtual void LockSceneOverride(bool lock) { mLockSceneOverride = lock; }
+
 		virtual IScene* CreateScene();
 		virtual ICamera* GetCamera() const;
 		virtual ICamera* GetOrCreateOverridingCamera();
 		virtual void RemoveOverridingCamera();
-		virtual ILight* GetLight(int idx);
 
 		virtual ITexture* GetRenderTargetTexture() { return mRenderTargetTexture; }
 		virtual ITexture* GetDepthStencilTexture() { return mDepthStencilTexture; }
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil);
+		virtual void SetClearColor(const Color& color);
+		virtual void SetClearDepthStencil(float z, UINT8 stencil);
 
 		virtual void Bind(size_t face = 0);
 		virtual void BindTargetOnly();
@@ -113,7 +121,6 @@ namespace fastbird
 		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
 
 		void SetColorTexture(ITexture* pTexture);
-
 		virtual ICamera* GetLightCamera() const { return mLightCamera; }
 
 		//-------------------------------------------------------------------
@@ -162,7 +169,8 @@ namespace fastbird
 		void SetLightCamHeight(float height);
 		void SetLightCamNear(float n);
 		void SetLightCamFar(float f);
+		void UpdateLightCamera();
 
-
+		static void ReleaseStarDef();
 	};
 }

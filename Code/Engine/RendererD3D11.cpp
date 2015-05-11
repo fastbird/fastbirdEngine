@@ -40,7 +40,6 @@ RendererD3D11::RendererD3D11()
 {
 	m_pDevice = 0;
 	m_pFactory = 0;
-	m_pSwapChain = 0;
 	m_pImmediateContext = 0;
 	m_pRenderTargetView = 0;
 	m_pDepthStencil = 0;
@@ -104,17 +103,12 @@ void RendererD3D11::Deinit()
 	SAFE_RELEASE(m_pDepthStencilView);
 	SAFE_RELEASE(m_pDepthStencil);
 	SAFE_RELEASE(m_pRenderTargetView);
-	SAFE_RELEASE(m_pSwapChain);
 	// 0 is already released
-	for (size_t i = 1; i<mSwapChains.size(); i++)
+	for (auto it : mSwapChains)
 	{
-		SAFE_RELEASE(mSwapChains[i]);
-		SAFE_RELEASE(mRenderTargetViews[i]);
-		SAFE_RELEASE(mDepthStencilViews[i]);
+		SAFE_RELEASE(it.second);
 	}
-	mSwapChains.clear();
-	mRenderTargetViews.clear();
-	mDepthStencilViews.clear();
+	mSwapChains.clear();	
 	SAFE_RELEASE(m_pImmediateContext);
 
 	if (gFBEnv->pConsole->GetEngineCommand()->r_ReportDeviceObjectLeak)
@@ -346,9 +340,14 @@ bool RendererD3D11::Init(int threadPool)
 }
 
 //----------------------------------------------------------------------------
-int RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
+bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 {
 	HWND hwnd = gFBEnv->pEngine->GetWindowHandle(id);
+	if (!hwnd)
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "Not vaild window.");
+		return false;
+	}
 	DXGI_SWAP_CHAIN_DESC sd={};
 	sd.BufferCount = 1;
 	sd.BufferDesc.Width = width;
@@ -382,7 +381,6 @@ int RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	}
 	ID3D11RenderTargetView* pRenderTargetView = NULL;
 	hr = m_pDevice->CreateRenderTargetView( pBackBuffer, NULL, &pRenderTargetView);
-	pBackBuffer->Release();
 	if (FAILED(hr))
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create a render target view!");
@@ -393,81 +391,18 @@ int RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	TextureD3D11* pColorTexture = TextureD3D11::CreateInstance();
 	pColorTexture->SetHardwareTexture(pBackBuffer);
 	pColorTexture->AddRenderTargetView(pRenderTargetView);
+	pColorTexture->SetSize(Vec2I(width, height));
 
 	RenderTarget* pRenderTarget = FB_NEW(RenderTargetD3D11);
 	pRenderTarget->SetColorTexture(pColorTexture);
 	pRenderTarget->SetDepthStencilDesc(width, height, mDepthStencilFormat, false, false);
 
-	/* //DepthStencilView
-	D3D11_TEXTURE2D_DESC depthStencilDesc;
-	depthStencilDesc.Width = width;
-	depthStencilDesc.Height = height;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.Format = mDepthStencilFormat;
-	depthStencilDesc.SampleDesc = mMultiSampleDesc;
-	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilDesc.CPUAccessFlags = 0;
-	depthStencilDesc.MiscFlags = 0;	
-	ID3D11Texture2D *pDepthStencil = 0;
-	hr = m_pDevice->CreateTexture2D(&depthStencilDesc, 0, &pDepthStencil);
-	mRenderTargetTextures.push_back(pDepthStencil);*/
+	mSwapChains[id] = pSwapChain;
+	mSwapChainRenderTargets[id] = pRenderTarget;
 
-	/*ID3D11DepthStencilView* pDepthStencilView = 0;
-	if (FAILED(hr))
-	{
-		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil texture!");
-		assert(0);
-	}
-	else
-	{
-		D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
-		viewDesc.Format = mDepthStencilFormat;
-		if (mMultiSampleDesc.Count==1)
-		{
-			viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-		}
-		else
-		{
-			viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
-		}
-		viewDesc.Flags = 0;
-		viewDesc.Texture2D.MipSlice = 0;
-		hr = m_pDevice->CreateDepthStencilView(pDepthStencil, &viewDesc, &pDepthStencilView);
-		if (FAILED(hr))
-		{
-			gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the depth stencil view!");
-		}
-		else
-		{
-			mDepthStencilCreated = true;
-		}
-	}*/
-
-	if (mSwapChains.empty())
-	{
-		mSwapChains[id] = pSwapChain;
-		mSwapChainRenderTargets[id] = pRenderTarget;
-		pRenderTarget->Bind();	
-		m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthStencilView);
-		mCurrentRTViews.clear();
-		mCurrentRTViews.push_back(m_pRenderTargetView);
-		mCurrentDSView = m_pDepthStencilView;
-		m_pImmediateContext->RSSetViewports(1, &mViewPort);
-		ICamera* pCamera = gFBEnv->pEngine->GetCamera(0);
-		if (pCamera)
-		{
-			pCamera->SetWidth((float)width);
-			pCamera->SetHeight((float)height);
-		}
-		OnPrepared();
-	}
-	mSwapChains.push_back(pSwapChain);
-	mRenderTargetViews.push_back(pRenderTargetView);
-	mDepthStencilViews.push_back(pDepthStencilView);
-	mViewports.push_back(vp);
-	return mSwapChains.size()-1;
+	OnSwapchainCreated(id);
+	
+	return true;
 }
 
 //----------------------------------------------------------------------------
@@ -481,13 +416,6 @@ void RendererD3D11::Clear(float r, float g, float b, float a, float z, UINT8 ste
 	}
 	if (mCurrentDSView)
 		m_pImmediateContext->ClearDepthStencilView( mCurrentDSView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, z, stencil );
-}
-
-//----------------------------------------------------------------------------
-void RendererD3D11::Clear()
-{
-	Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
-		mDepthClear, mStencilClear);
 }
 
 //----------------------------------------------------------------------------
@@ -513,13 +441,12 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 	mFrameConstants.gViewProj = mCamera->GetViewProjMat();
 	mFrameConstants.gInvViewProj = mCamera->GetInvViewProjMat();
 	mCamera->GetTransform().GetHomogeneous(mFrameConstants.gCamTransform);
-	ILight* pLight = GetDirectionalLight(0);
-	ICamera* pLightCam = pLight ? pLight->GetCamera() : 0;
+	ICamera* pLightCam = mCurRenderTarget->GetLightCamera();
 	if (pLightCam)
 		mFrameConstants.gLightViewProj = pLightCam->GetViewProjMat();
 	for (int i = 0; i < 2; i++)
 	{
-		ILight* pLight = mDirectionalLightOverride[i] ? mDirectionalLightOverride[i] : mDirectionalLight[i];
+		ILight* pLight = mDirectionalLight[i];
 		mFrameConstants.gDirectionalLightDir_Intensity[i] = float4(pLight->GetPosition(), pLight->GetIntensity());
 		mFrameConstants.gDirectionalLightDiffuse[i] = float4(pLight->GetDiffuse(), 1.0f);
 		mFrameConstants.gDirectionalLightSpecular[i] = float4(pLight->GetSpecular(), 1.0f);
@@ -609,14 +536,15 @@ void RendererD3D11::UpdateRareConstantsBuffer()
 	pRareConstants->gProj = mCamera->GetProjMat();
 	pRareConstants->gInvProj = pRareConstants->gProj.Inverse();
 	mCamera->GetNearFar(pRareConstants->gNearFar.x, pRareConstants->gNearFar.y);
-	pRareConstants->gScreenSize.x = (float)mWidth;
-	pRareConstants->gScreenSize.y = (float)mHeight;
+	const auto& size = mCurRenderTarget->GetSize();
+	pRareConstants->gScreenSize.x = (float)size.x;
+	pRareConstants->gScreenSize.y = (float)size.y;
 	pRareConstants->gTangentTheta = tan(mCamera->GetFOV()/2.0f);
-	pRareConstants->gScreenRatio = mWidth / (float)mHeight;
+	pRareConstants->gScreenRatio = size.x / (float)size.y;
 	pRareConstants->gMiddleGray = mMiddleGray;
 	pRareConstants->gStarPower = mStarPower;
 	pRareConstants->gBloomPower = mBloomPower;
-	pRareConstants->gFogColor = gFBEnv->pEngine->GetScene()->GetFogColor().GetVec4();
+	pRareConstants->gFogColor = mCurRenderTarget->GetScene()->GetFogColor().GetVec4();
 	m_pImmediateContext->Unmap(m_pRareConstantsBuffer, 0);
 	m_pImmediateContext->VSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	m_pImmediateContext->GSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
@@ -713,9 +641,12 @@ void RendererD3D11::DeleteRenderTarget(IRenderTarget* removeRT)
 //----------------------------------------------------------------------------
 void RendererD3D11::Present()
 {
-	HRESULT hr = m_pSwapChain->Present(1, 0);
-	assert(!FAILED(hr));
-
+	for (auto& it : mSwapChains)
+	{
+		HRESULT hr = it.second->Present(1, 0);
+		assert(!FAILED(hr));
+	}
+	
 	if (m_pThreadPump)
 	{
 		//UINT io, process, device;
@@ -1488,6 +1419,11 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 	BUFFER_USAGE usage, int  buffer_cpu_access, int type)
 {
+	if (width == 0 || height == 0)
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "width and height cannot be 0.");
+		return 0;
+	}
 	bool engineUsingMS = mMultiSampleDesc.Count != 1;
 	bool cubeMap = (type & TEXTURE_TYPE_CUBE_MAP) != 0;
 
@@ -1726,34 +1662,6 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewInd
 	
 	mCurrentRTViews = rtviews;
 	mCurrentDSView = pDepthStencilView;
-}
-
-//----------------------------------------------------------------------------
-void RendererD3D11::RestoreRenderTarget()
-{
-	__super::RestoreRenderTarget();
-	m_pImmediateContext->OMSetRenderTargets(mRenderTargetViews.size(), &mRenderTargetViews[0], mDepthStencilViews[0]);
-	mCurrentRTViews = mRenderTargetViews;
-	mCurrentDSView = mDepthStencilViews[0];
-}
-
-//----------------------------------------------------------------------------
-void RendererD3D11::OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView)
-{
-	if (mCurrentRTViews.end() !=
-		std::find(mCurrentRTViews.begin(), mCurrentRTViews.end(), pRTView))
-	{
-		RestoreRenderTarget();
-	}
-}
-
-//----------------------------------------------------------------------------
-void RendererD3D11::OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView)
-{
-	if (mCurrentDSView == pDSView)
-	{
-		RestoreRenderTarget();
-	}
 }
 
 void RendererD3D11::SetViewports(Viewport viewports[], int num)
@@ -2389,10 +2297,11 @@ void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER
 
 void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color)
 {
+	const auto& rtSize = mCurRenderTarget->GetSize();
 	static OBJECT_CONSTANTS constants =
 	{
-		Mat44(2.f / mWidth, 0, 0, -1.f,
-		0.f, -2.f / mHeight, 0, 1.f,
+		Mat44(2.f / rtSize.x, 0, 0, -1.f,
+		0.f, -2.f / rtSize.y, 0, 1.f,
 		0, 0, 1.f, 0.f,
 		0, 0, 0, 1.f),
 		Mat44(),
@@ -2434,10 +2343,11 @@ void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, con
 void RendererD3D11::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 	const Color& color, ITexture* texture, IMaterial* materialOverride)
 {
+	const auto& rtSize = mCurRenderTarget->GetSize();
 	static OBJECT_CONSTANTS constants =
 	{
-		Mat44(2.f / mWidth, 0, 0, -1.f,
-		0.f, -2.f / mHeight, 0, 1.f,
+		Mat44(2.f / rtSize.x, 0, 0, -1.f,
+		0.f, -2.f / rtSize.y, 0, 1.f,
 		0, 0, 1.f, 0.f,
 		0, 0, 0, 1.f),
 		Mat44(),

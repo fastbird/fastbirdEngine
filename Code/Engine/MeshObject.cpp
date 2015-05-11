@@ -1,7 +1,6 @@
-
 #include <Engine/StdAfx.h>
 #include <Engine/MeshObject.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ICamera.h>
 #include <Engine/IConsole.h>
@@ -104,7 +103,7 @@ namespace fastbird
 			return;
 
 		D3DEventMarker mark("MeshObject");
-		auto const renderer = gFBEnv->pRenderer;
+		auto const renderer = gFBEnv->_pInternalRenderer;
 		
 		mObjectConstants.gWorldView = renderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		mObjectConstants.gWorldViewProj = renderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;

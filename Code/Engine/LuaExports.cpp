@@ -18,7 +18,8 @@ namespace fastbird
 
 	int GetResolution(lua_State* L)
 	{
-		luaU_push<Vec2I>(L, Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight()));
+		const auto& size = gFBEnv->pRenderer->GetMainRTSize();
+		luaU_push<Vec2I>(L, size);
 		return 1;
 	}
 
@@ -32,7 +33,7 @@ namespace fastbird
 	{
 		if (gFBEnv)
 		{
-			auto scene = gFBEnv->pEngine->GetScene();
+			auto scene = gFBEnv->pRenderer->GetMainScene();
 			if (scene)
 			{
 				scene->PrintSpatialObject();

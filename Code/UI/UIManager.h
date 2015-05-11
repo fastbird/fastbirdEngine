@@ -25,9 +25,11 @@ namespace fastbird
 		bool mInputListenerEnable;
 
 		typedef std::list<IWinBase*> WINDOWS;
-		WINDOWS mWindows;
+		VectorMap<HWND_ID, WINDOWS> mWindows;
+		std::map<std::string, WinBases> mLuaUIs;
+
 		IWinBase* mFocusWnd;
-		bool mNeedToRegisterUIObject;
+		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
 		IWinBase* mTooltipUI;
 		IWinBase* mTooltipTextBox;
@@ -39,11 +41,11 @@ namespace fastbird
 
 		lua_State* mL;
 
-		std::map<std::string, WinBases> mLuaUIs;
+		
 		bool mPosSizeEventEnabled;
 		bool mLockFocus;
 		int mIgnoreInput;
-		IWinBase* mModelWindow;
+		IWinBase* mModalWindow;
 
 		ListBox* mCachedListBox;
 		WinBases mAlwaysOnTopWindows;
@@ -87,19 +89,21 @@ namespace fastbird
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
 		virtual void GatherRenderList();
-		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, bool luaUI = false);
-		virtual bool AddLuaUI(const char* uiName, LuaObject& data);
+		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId, bool luaUI = false);
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId);
 		virtual void DeleteLuaUI(const char* uiName);
 		virtual bool IsLoadedUI(const char* uiName);
-		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type);
-		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type);
-		virtual IWinBase* AddWindow(ComponentType::Enum type);
+
+		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId);
+		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId);
+		virtual IWinBase* AddWindow(ComponentType::Enum type, HWND_ID hwndId);
+
 		virtual void DeleteWindow(IWinBase* pWnd);
 		virtual void SetFocusUI(IWinBase* pWnd);
 		virtual IWinBase* GetFocusUI() const;
 		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
-		virtual void DirtyRenderList();
+		virtual void DirtyRenderList(HWND_ID hwndId);
 
 		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val);
 		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val);

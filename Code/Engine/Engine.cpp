@@ -24,11 +24,13 @@
 #include <Engine/IBillboardQuad.h>
 #include <Engine/IDustRenderer.h>
 #include <Engine/ScriptSystem.h>
+#include <Engine/Material.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
 #include <FreeImage.h>
 #include <libxml/parser.h>
+#include <COLLADASaxFWLLoader.h>
 
 
 namespace fastbird
@@ -132,8 +134,16 @@ GlobalEnv* Engine::GetGlobalEnv() const
 HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 	const char* wndClass, const char* title, WNDPROC winProc)
 {
-	int eWidth = width + 16;
-	int eHeight = height + 38;
+	unsigned style = WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
+	RECT rect;
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = width;
+	rect.bottom = height;
+	AdjustWindowRect(&rect, style, false);
+
+	int eWidth = rect.right - rect.left;
+	int eHeight = rect.bottom - rect.top;
 	const char* myclass = "FBEngineClass" ;
 	WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
 							0, 0, GetModuleHandle(0), LoadIcon(0,IDI_APPLICATION),
@@ -143,12 +153,12 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 	if( RegisterClassEx(&wndclass) )
 	{
 		auto hWnd = CreateWindowEx( 0, myclass, title,
-			WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, x, y,
+			style, x, y,
 			eWidth, eHeight, 0, 0, GetModuleHandle(0), 0);
 		auto id = FindEmptyHwndId();
-		m_hWnd[id] = hWnd;
-		m_hWndId[hWnd] = id;
-
+		mWindowHandles[id] = hWnd;
+		mWindowHandleIds[hWnd] = id;
+		mRequestedWndSize[hWnd] = Vec2I(width, height);
 		RegisterMouseAndKeyboard(hWnd);
 
 		/*HWND console = GetConsoleWindow();
@@ -158,7 +168,7 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 			consoleRect.bottom-consoleRect.top, TRUE);*/
 
 		ShowWindow(hWnd, TRUE);
-		mRequestedWndSize[hWnd] = Vec2I(width, height);
+		
 
 		return id;
 	}
@@ -178,11 +188,17 @@ const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
 	return Vec2I::ZERO;
 }
 
+const Vec2I& Engine::GetRequestedWndSize(HWND_ID hWndId) const
+{
+	auto hWnd = GetWindowHandle(hWndId);
+	return GetRequestedWndSize(hWnd);
+}
+
 //------------------------------------------------------------------------
 HWND Engine::GetWindowHandle(HWND_ID id) const
 {
-	auto itFound = m_hWnd.Find(id);
-	if (itFound != m_hWnd.end())
+	auto itFound = mWindowHandles.Find(id);
+	if (itFound != mWindowHandles.end())
 	{
 		return itFound->second;
 	}
@@ -191,43 +207,63 @@ HWND Engine::GetWindowHandle(HWND_ID id) const
 
 HWND_ID Engine::GetWindowHandleId(HWND hWnd) const
 {
-	auto itFound = m_hWndId.Find(hWnd);
-	if (itFound != m_hWndId.end())
+	auto itFound = mWindowHandleIds.Find(hWnd);
+	if (itFound != mWindowHandleIds.end())
 	{
 		return itFound->second;
 	}
 	return 0;
 }
 
+HWND_ID Engine::GetWindowHandleIdWithMousePoint() const{
+	POINT pt;
+	GetCursorPos(&pt);
+	auto hwnd = WindowFromPoint(pt);
+	if (hwnd){
+		auto it = mWindowHandleIds.Find(hwnd);
+		if ( it != mWindowHandleIds.end() )
+			return it->second;
+	}
+	return INVALID_WND_HANDLE;
+}
 //------------------------------------------------------------------------
 HWND Engine::GetMainWndHandle() const
 {
-	if (m_hWnd.empty()){
+	if (mWindowHandles.empty()){
 		Error(FB_DEFAULT_DEBUG_ARG, "No window!");
 		return 0;
 	}
-	assert(m_hWnd.begin()->first == 1);
-	return m_hWnd.begin()->second; // the first window
+	assert(mWindowHandles.begin()->first == 1);
+	return mWindowHandles.begin()->second; // the first window
 }
 
 //------------------------------------------------------------------------
 HWND_ID Engine::GetMainWndHandleId() const{
-	if (m_hWnd.empty()){
+	if (mWindowHandles.empty()){
 		Error(FB_DEFAULT_DEBUG_ARG, "No window!");
 		return 0;
 	}
-	assert(m_hWnd.begin()->first == 1);
-	return m_hWnd.begin()->first; // the first window
+	assert(mWindowHandles.begin()->first == 1);
+	return mWindowHandles.begin()->first; // the first window
 }
 
-HWND Engine::GetForgroundWindow() const{
+HWND Engine::GetForgroundWindow(HWND_ID* id) const{
 	HWND hwnd = GetForgroundWindow();
-	if (hwnd)
+	if (hwnd) {
+		if (id) {
+			*id = mWindowHandleIds[hwnd];
+		}
 		return hwnd;
+	}
 
 	return GetMainWndHandle();
 }
 
+HWND_ID Engine::GetForgroundWindowId() const
+{
+	HWND hwnd = GetForgroundWindow();
+	return GetWindowHandleId(hwnd);
+}
 
 //------------------------------------------------------------------------
 bool Engine::InitEngine(int rendererType)
@@ -277,7 +313,7 @@ bool Engine::InitEngine(int rendererType)
 }
 //width height are set here. need initialize fone and debug hud after it.
 //-------------------------------------------------------------------------
-int Engine::InitSwapChain(HWND_ID id, int width, int height)
+bool Engine::InitSwapChain(HWND_ID id, int width, int height)
 {
 	auto hWnd = GetWindowHandle(id);
 	if (!hWnd)
@@ -285,16 +321,16 @@ int Engine::InitSwapChain(HWND_ID id, int width, int height)
 		Error(FB_DEFAULT_DEBUG_ARG, "Invalid window id");
 		return 0;
 	}
-	int index = -1;
+	bool succ = true;
 	if (mRenderer)
 	{
-		index = mRenderer->InitSwapChain(id, width, height);
+		succ =  mRenderer->InitSwapChain(id, width, height);
 	}
 	else
 	{
 		Error("No Renderer while init swap chain.");
 	}
-	return index;
+	return succ;
 }
 
 //-------------------------------------------------------------------------
@@ -916,7 +952,7 @@ LRESULT Engine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		{
 			if (WA_ACTIVE==LOWORD(wp))
 			{
-				BringWindowToTop(m_hWnd);
+				BringWindowToTop(mWindowHandles);
 			}
 		}
 		return 0; // processed
@@ -1289,7 +1325,7 @@ HWND_ID Engine::FindEmptyHwndId() const
 	while (count--)
 	{
 		bool used = false;
-		for (auto& it : m_hWnd)
+		for (auto& it : mWindowHandles)
 		{
 			if (it.first == id)
 			{

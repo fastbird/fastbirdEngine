@@ -60,7 +60,6 @@ void SkySphere::CreateSharedEnvRT()
 		param.mHasDepth = false;
 		param.mUsePool = true;
 		mRT = gFBEnv->pRenderer->CreateRenderTarget(param);
-		mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
 	}
 }
 //static 

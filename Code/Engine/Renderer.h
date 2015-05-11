@@ -15,6 +15,7 @@ class CloudManager;
 class GeometryRenderer;
 class PointLightMan;
 class IShader;
+class IScene;
 #define FB_NUM_TONEMAP_TEXTURES  4
 #define FB_NUM_TONEMAP_TEXTURES_NEW 5
 #define FB_NUM_LUMINANCE_TEXTURES 3
@@ -25,18 +26,16 @@ protected:
 	VectorMap<HWND_ID, unsigned> mWidth;
 	VectorMap<HWND_ID, unsigned> mHeight;
 	VectorMap<HWND_ID, SmartPtr<RenderTarget>> mSwapChainRenderTargets;
-	SmartPtr<IRenderTarget> mCurRenderTarget;
+	IRenderTarget* mCurRenderTarget;
 	std::vector<IRenderTarget*> mRenderTargetPool;
 
 	// every frame render targets
 	std::vector< IRenderTarget* > mRenderTargets;
-
 	IScene* mSceneOverride; // life time should be managed manually.
 
 	Vec2I mCurRTSize;
 
 	SmartPtr<ILight>		mDirectionalLight[2];
-	SmartPtr<ILight>		mDirectionalLightOverride[2];
 	SmartPtr<DebugHud>		mDebugHud;
 	SmartPtr<GeometryRenderer> mGeomRenderer;
 	SmartPtr<IFont> mFont;
@@ -62,9 +61,6 @@ protected:
 	SmartPtr<ITexture> mEnvironmentTexture;
 	SmartPtr<ITexture> mEnvironmentTextureOverride;
 
-	Color mClearColor;
-	float mDepthClear;
-	UINT8 mStencilClear;
 	bool					mForcedWireframe;
 
 	ICamera*				mCamera;
@@ -192,21 +188,19 @@ protected:
 	RenderPipeline* mDefaultPipeline;
 	RenderPipeline* mMinimumPipeline;
 
-	typedef std::vector<IUIObject*> UI_OBJECTS;
+	typedef VectorMap<HWND_ID, std::vector<IUIObject*> > UI_OBJECTS;
 	UI_OBJECTS mUIObjectsToRender;
 
-	typedef VectorMap<std::string, UI_OBJECTS> UI_3DOBJECTS;
+	typedef VectorMap< std::pair<HWND_ID, std::string>, std::vector<IUIObject*>> UI_3DOBJECTS;
 	UI_3DOBJECTS mUI3DObjects;
 	VectorMap<std::string, IRenderTarget*> mUI3DObjectsRTs;
-
 	VectorMap<std::string, UI3DObj*> mUI3DRenderObjs;
+
 	bool m3DUIEnabled;
 
 	// todo: generalize. layer 1~4.
 	std::vector<IObject*> mMarkObjects;
 	std::vector<IObject*> mHPBarObjects;
-
-	bool mLockSceneOverride;
 
 public:
 	Renderer();
@@ -221,11 +215,9 @@ public:
 	virtual IScene* GetMainScene() const;
 	virtual IScene* GetScene() const;
 	const Vec2I& GetMainRTSize() const;
-	virtual void SetSceneOverride(IScene* pScene);
-	virtual void LockSceneOverride(bool lock);
-	virtual IScene* GetSceneOverride() const;
 
 	bool OnPrepared();
+	void OnSwapchainCreated(HWND_ID id);
 	
 	virtual void ProcessRenderTarget();
 
@@ -239,8 +231,8 @@ public:
 	virtual unsigned GetCropHeight(HWND hWnd) const;
 	//virtual void SetWireframe(bool enable); // see RendererD3D11
 	virtual bool GetWireframe() const { return mForcedWireframe; }
-	virtual void SetClearColor(float r, float g, float b, float a=1.f);
-	virtual void SetClearDepthStencil(float z, UINT8 stencil);
+	virtual void SetClearColor(HWND_ID id, const Color& color);
+	virtual void SetClearDepthStencil(HWND_ID id, float z, UINT8 stencil);
 	virtual void SetCamera(ICamera* pCamera);
 	virtual ICamera* GetCamera() const;
 	virtual ICamera* GetMainCamera() const;
@@ -277,7 +269,6 @@ public:
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex);
 	virtual const Vec2I& GetRenderTargetSize() const;
-	virtual void RestoreRenderTarget();
 	
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e);
@@ -454,12 +445,12 @@ public:
 	virtual int CropSize8(int size) const;
 	void Render3DUIsToTexture();
 	void RenderMarks();
-	void RenderUI();
+	void RenderUI(HWND_ID hwndId);
 	void RenderFrameProfiler();
 
-	virtual void RegisterUIs(std::vector<IUIObject*>& uiobj);
-	virtual void UnregisterUIs();
-	virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects);
+	virtual void RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj);
+	virtual void UnregisterUIs(HWND_ID hwndId);
+	virtual void Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIObject*>& objects);
 	virtual void Unregister3DUIs(const char* name);
 	virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld);
 	virtual void Reset3DUI(const char* name);
@@ -470,6 +461,8 @@ public:
 	virtual void RemoveMarkObject(IObject* mark);
 	virtual void AddHPBarObject(IObject* hpBar);
 	virtual void RemoveHPBarObject(IObject* hpBar);
+
+	void OnRenderTargetDeleted(RenderTarget* renderTarget);
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

@@ -17,6 +17,7 @@ namespace fastbird
 		static Vec2I sLastPos;
 
 		friend class VisibleStatus;
+		HWND_ID mHwndId;
 		VisibleStatus mVisibility;
 		std::string mName;
 		std::string mScriptPath;
@@ -119,6 +120,8 @@ namespace fastbird
 		WinBase();
 		virtual ~WinBase();
 
+		virtual void SetHwndId(HWND_ID hwndId);
+		virtual HWND_ID GetHwndId() const;
 		virtual void OnCreated(){}
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type)

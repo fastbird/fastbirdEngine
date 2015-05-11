@@ -20,6 +20,8 @@ namespace fastbird
 		IWinBase() {}
 		virtual ~IWinBase() {}
 
+		virtual void SetHwndId(HWND_ID hwndId) = 0;
+		virtual HWND_ID GetHwndId() const = 0;
 		virtual void OnCreated() = 0;
 		virtual ComponentType::Enum GetType() const = 0;
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;

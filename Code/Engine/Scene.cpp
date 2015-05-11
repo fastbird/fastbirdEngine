@@ -15,6 +15,7 @@
 #include <Engine/Renderer.h>
 #include <Engine/ParticleRenderObject.h>
 #include <Engine/IRenderTarget.h>
+#include <Engine/Camera.h>
 using namespace fastbird;
 
 IScene* IScene::CreateScene()
@@ -39,6 +40,21 @@ Scene::Scene()
 	mWindDir = Vec3(1, 0, 0);
 	mWindVelocity = 0.0f;
 	mWindVector = mWindDir * mWindVelocity;
+
+	// Light
+	for (int i = 0; i < 2; ++i)
+	{
+		mDirectionalLight[i] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
+		mDirectionalLight[i]->SetIntensity(1.0f);
+	}
+
+	mDirectionalLight[0]->SetPosition(Vec3(-3, 1, 1));
+	mDirectionalLight[0]->SetDiffuse(Vec3(1, 1, 1));
+	mDirectionalLight[0]->SetSpecular(Vec3(1, 1, 1));
+
+	mDirectionalLight[1]->SetPosition(Vec3(3, 1, -1));
+	mDirectionalLight[1]->SetDiffuse(Vec3(0.8f, 0.4f, 0.1f));
+	mDirectionalLight[1]->SetSpecular(Vec3(0, 0, 0));
 }
 
 //----------------------------------------------------------------------------
@@ -599,4 +615,31 @@ void Scene::PrintSpatialObject()
 void Scene::SetRttScene(bool set)
 {
 	mRttScene = set;
+}
+
+
+
+void Scene::SetLightToRenderer()
+{
+	auto const renderer = gFBEnv->_pInternalRenderer;
+	for (int i = 0; i < 2; i++)
+	{
+		if (mDirectionalLight[i])
+			renderer->SetDirectionalLight(mDirectionalLight[i], i);
+	}
+}
+
+ILight* Scene::GetLight(unsigned idx)
+{
+	assert(idx < 2);
+	if (!mDirectionalLight[idx])
+	{
+		mDirectionalLight[idx] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
+		mDirectionalLight[idx]->SetPosition(Vec3(1, 1, 1));
+		mDirectionalLight[idx]->SetDiffuse(Vec3(1, 1, 1));
+		mDirectionalLight[idx]->SetSpecular(Vec3(1, 1, 1));
+		mDirectionalLight[idx]->SetIntensity(1.0f);
+	}
+
+	return mDirectionalLight[idx];
 }

@@ -175,8 +175,13 @@ namespace fastbird
 	int AddLuaUI(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
+		HWND_ID hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+		if (lua_gettop(L) == 2)
+		{
+			hwndId = luaL_checkunsigned(L, 2);
+		}
 		LuaObject ui(L, 2);
-		UIManager::GetUIManagerStatic()->AddLuaUI(uiname, ui);
+		UIManager::GetUIManagerStatic()->AddLuaUI(uiname, ui, hwndId);
 		UIManager::GetUIManagerStatic()->SetVisible(uiname, false);
 		return 0;
 	}

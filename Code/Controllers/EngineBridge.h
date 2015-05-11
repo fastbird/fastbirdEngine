@@ -34,7 +34,7 @@ namespace Controllers {
 			InitializeNativeEngine();
 		}
 
-		int InitSwapChain(HWND_ID id, int width, int height);
+		int InitSwapChain(fastbird::HWND_ID id, int width, int height);
 		array<Byte, 2>^ GeneratePerlin(int width, int height, float persistence, float size);
 
 	protected:

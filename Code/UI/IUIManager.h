@@ -18,19 +18,21 @@ namespace fastbird
 		virtual void Update(float elapsedTime) = 0;
 		virtual void GatherRenderList() = 0;
 
-		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, bool luaUI = false) = 0;
-		virtual bool AddLuaUI(const char* uiName, LuaObject& data) = 0;
+		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, HWND_ID hwndId, bool luaUI = false) = 0;
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId) = 0;
 		virtual void DeleteLuaUI(const char* uiName) = 0;
+
 		// in screenspace
-		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type) = 0;
+		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId) = 0;
 		// in normalized space 0.0f~1.0f
-		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;
+		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId) = 0;
+
 		virtual void DeleteWindow(IWinBase* pWnd) = 0;
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
-		virtual void DirtyRenderList() = 0;
+		virtual void DirtyRenderList(HWND_ID hwndId) = 0;
 		virtual HCURSOR GetMouseCursorOver() const = 0;
 		virtual void SetMouseCursorOver() = 0;
 		virtual bool IsMouseInUI() const = 0;

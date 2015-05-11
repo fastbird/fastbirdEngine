@@ -21,10 +21,9 @@ namespace fastbird
 		RendererD3D11();
 		virtual ~RendererD3D11();
 		virtual bool Init(int threadPool);
-		virtual int InitSwapChain(HWND_ID id, int width, int height);
+		virtual bool InitSwapChain(HWND_ID id, int width, int height);
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
-		virtual void Clear();
 		virtual void Clear(float r, float g, float b, float a);// only color
 		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
@@ -61,11 +60,8 @@ namespace fastbird
 			BUFFER_USAGE usage, int  buffer_cpu_access, int  type);
 
 		virtual void SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, 
-			ITexture* pDepthStencil, size_t dsViewIndex);
+			ITexture* pDepthStencil, size_t dsViewIndex);		
 		
-		virtual void RestoreRenderTarget();
-		void OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView);
-		void OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView);
 		virtual void SetViewports(Viewport viewports[], int num);
 		virtual void RestoreViewports();
 		virtual void SetScissorRects(RECT rects[], int num);
@@ -171,15 +167,11 @@ namespace fastbird
 		typedef std::map<SAMPLER_DESC, SmartPtr<SamplerStateD3D11> > SAMPLER_MAP;
 		SAMPLER_MAP mSamplerMap;
 
-		typedef std::vector<ID3D11RenderTargetView*> RTViews;
-		RTViews mRenderTargetViews;
-		RTViews mCurrentRTViews;
-		RTViews mRTViewsBeforeGlow;
-		std::vector<ID3D11DepthStencilView*> mDepthStencilViews;
-		ID3D11DepthStencilView* mCurrentDSView;
 		std::vector<D3D11_VIEWPORT> mViewports;
-
 		std::vector<TextureD3D11*> mCheckTextures;
+
+		std::vector<ID3D11RenderTargetView*> mCurrentRTViews;
+		ID3D11DepthStencilView* mCurrentDSView;
 	};
 }
 

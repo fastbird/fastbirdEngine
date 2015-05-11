@@ -11,6 +11,7 @@
 #include <Physics/RigidBody.h>
 using namespace fastbird;
 
+
 #define RUN_PARALLEL_EXAMPLE 0
 
 fastbird::GlobalEnv* gFBEnv = 0;
@@ -86,15 +87,15 @@ bool InitEngine()
 
 	fastbird::IEngine* pEngine = createEngineProc();
 	gFBEnv = pEngine->GetGlobalEnv();
-	pEngine->InitEngine(fastbird::IEngine::D3D11);
+	bool succ = pEngine->InitEngine(fastbird::IEngine::D3D11);
+	if (!succ)
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "Init engine error!");
+		return false;
+	}
 	fastbird::HWND_ID id = pEngine->CreateEngineWindow(0, 0, 1600, 900, "EngineApp", "Game powered by fastbird engine", WinProc);	
 	pEngine->InitSwapChain(id, 1600, 900);
 	gpTimer = gFBEnv->pTimer;
-
-	if (gFBEnv->pRenderer)
-	{
-		gFBEnv->pRenderer->SetClearColor(0, 0, 0, 1);
-	}
 	gInputHandler = FB_NEW(InputHandler)();
 	gCameraMan = FB_NEW(CameraMan)(gFBEnv->pRenderer->GetCamera());
 	gFBEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
@@ -143,11 +144,6 @@ int main()
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-	std::vector<int> test;
-	test.push_back(0);
-	test.push_back(0);
-
-
 	//----------------------------------------------------------------------------
 	// 1. How to init engine.
 	//----------------------------------------------------------------------------
@@ -158,7 +154,6 @@ int main()
 		// failed to initialize!
 		return 1;
 	}
-
 	//----------------------------------------------------------------------------
 	// 2. How to create sky -  see Data/Materials/skybox.material
 	//----------------------------------------------------------------------------
@@ -210,7 +205,8 @@ int main()
 		param.mHasDepth = false;
 		param.mUsePool = false;
 		IRenderTarget* rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
-		rtt->GetScene()->AttachObject(gMeshObject);
+		auto scene = rtt->CreateScene();
+		scene->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
 		pRTTCam->SetDir(Vec3(1, 0, 0));
@@ -315,14 +311,11 @@ int main()
 	}
 
 	//----------------------------------------------------------------------------
-
-	//----------------------------------------------------------------------------
 	// Entering game loop.
 	//----------------------------------------------------------------------------
 	RunGame();
 	gTaskSchedular->Finalize();
 
-	gFBEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	for (auto& m : gVoxels)
 	{
 		gFBEnv->pEngine->ReleaseMeshObject(m);
@@ -332,6 +325,7 @@ int main()
 		FB_DELETE(obj);
 	}
 	PhyObjs.clear();
+	gFBEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
 	FB_SAFE_DEL(gTaskSchedular);

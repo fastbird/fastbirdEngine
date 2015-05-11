@@ -4,6 +4,7 @@
 #include <Engine/EngineCommand.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ScriptSystem.h>
+#include <Engine/Renderer.h>
 #include <CommonLib/StdOutRedirect.h>
 #include <CommonLib/ClipboardData.h>
 
@@ -192,7 +193,8 @@ void Console::Log(const char* szFmt, ...)
 	{
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		int textWidth = (int)pFont->GetTextWidth((char*)strw.c_str());
-		int consoleWidth = gFBEnv->pRenderer->GetWidth();
+		const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+		int consoleWidth = size.x;
 		if (textWidth > consoleWidth)
 		{
 			strw = pFont->StripTags(strw.c_str());
@@ -309,7 +311,8 @@ void Console::Render()
 	}
 
 	// Draw Background
-	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(pRenderer->GetWidth(), mHeight),
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
 		Color::DarkGray);
 
 	

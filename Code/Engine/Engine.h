@@ -20,8 +20,8 @@ namespace fastbird
 	class ParticleManager;
 	class Engine : public IEngine
 	{
-		VectorMap<HWND_ID, HWND> m_hWnd;
-		VectorMap<HWND, HWND_ID> m_hWndId;
+		VectorMap<HWND_ID, HWND> mWindowHandles;
+		VectorMap<HWND, HWND_ID> mWindowHandleIds;
 		VectorMap<HWND, Vec2I> mRequestedWndSize;
 		HWND_ID FindEmptyHwndId() const;
 
@@ -77,13 +77,16 @@ namespace fastbird
 		virtual HWND_ID CreateEngineWindow(int x, int y, int width, int height,
 			const char* wndClass, const char* title, WNDPROC winProc);
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const;
+		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const;
 		virtual HWND GetWindowHandle(HWND_ID id) const;
 		virtual HWND_ID GetWindowHandleId(HWND hWnd) const;
+		virtual HWND_ID GetWindowHandleIdWithMousePoint() const;
 		virtual HWND GetMainWndHandle() const;
 		virtual HWND_ID GetMainWndHandleId() const;
-		virtual HWND GetForgroundWindow() const;
+		virtual HWND GetForgroundWindow(HWND_ID* id = 0) const;
+		virtual HWND_ID GetForgroundWindowId() const;
 		virtual bool InitEngine(int rendererType);
-		virtual int InitSwapChain(HWND_ID id, int width, int height);
+		virtual bool InitSwapChain(HWND_ID id, int width, int height);
 		virtual inline IRenderer* GetRenderer() const;
 		virtual void UpdateInput();
 		virtual void UpdateFrame(float dt);

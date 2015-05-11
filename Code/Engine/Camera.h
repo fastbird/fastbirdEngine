@@ -57,10 +57,10 @@ namespace fastbird
 		virtual void SetNearFar(float nearPlane, float farPlane);
 		virtual void GetNearFar(float& nearPlane, float& farPlane) const;
 		// width and height of the view volume at the near view-plane
-		virtual void SetWidth(float width) { mWidth = width; mProjPropertyChanged = true;}
-		virtual void SetHeight(float height) { mHeight = height; mProjPropertyChanged = true;}
-		virtual float GetWidth() const { return mWidth; }
-		virtual float GetHeight() const { return mHeight; }
+		virtual void SetWidth(int width) { mWidth = width; mProjPropertyChanged = true;}
+		virtual void SetHeight(int height) { mHeight = height; mProjPropertyChanged = true;}
+		virtual float GetWidth() const { return (float)mWidth; }
+		virtual float GetHeight() const { return (float)mHeight; }
 		virtual void SetName(const char* name) { mName = name; }
 		virtual const char* GetName() const { return mName.c_str(); }
 		virtual void Update();
@@ -131,8 +131,8 @@ namespace fastbird
 		float mAspectRatio;
 		float mNear;
 		float mFar;
-		float mWidth;
-		float mHeight;
+		int mWidth;
+		int mHeight;
 		std::string mName;
 		Plane3 mPlanes[6];
 		SpatialObject* mTarget;

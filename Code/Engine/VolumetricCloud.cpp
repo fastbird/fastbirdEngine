@@ -61,9 +61,11 @@ namespace fastbird
 		else {
 			Error(FB_DEFAULT_DEBUG_ARG, "No scene found!");
 		}
-		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
-		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
-		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPosition();
+		auto light = gFBEnv->pRenderer->GetDirectionalLight(0);
+		assert(light);
+		mLightIntensity = light->GetIntensity();
+		mLightColor = light->GetDiffuse() * mLightIntensity;
+		mLightDir = light->GetPosition();
 		mCamPos = gFBEnv->pRenderer->GetCamera()->GetPos();
 		m_ParticlePool.m_vWindVelocity = mWind;
 

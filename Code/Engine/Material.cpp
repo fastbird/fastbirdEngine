@@ -3,10 +3,11 @@
 #include <Engine/IShader.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IEngine.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/ITexture.h>
 #include <Engine/Shader.h>
 #include <Engine/RendererStructs.h>
+#include <Engine/RenderTarget.h>
 #include <FreeImage.h>
 
 using namespace fastbird;
@@ -14,9 +15,9 @@ using namespace fastbird;
 //---------------------------------------------------------------------------
 IMaterial* IMaterial::CreateMaterial(const char* file)
 {
-	if (gFBEnv && gFBEnv->pRenderer)
+	if (gFBEnv && gFBEnv->_pInternalRenderer)
 	{
-		IMaterial* pMat = gFBEnv->pRenderer->CreateMaterial(file);
+		IMaterial* pMat = gFBEnv->_pInternalRenderer->CreateMaterial(file);
 		assert(pMat);
 		return pMat;
 	}
@@ -952,7 +953,7 @@ void Material::Bind(bool inputLayout, unsigned stencilRef)
 {
 	mRenderStates->Bind(stencilRef);
 
-	auto renderer = gFBEnv->pRenderer;
+	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (mReloading && mReloadingTryCount < 10)
 	{
 		if (LoadFromFile(mName.c_str()))
@@ -998,14 +999,16 @@ void Material::Bind(bool inputLayout, unsigned stencilRef)
 
 	if (mGlow)
 	{
-		renderer->SetGlowRenderTarget();
+		renderer->GetCurRendrTarget()->SetGlowRenderTarget();
 	}
 }
 
 void Material::Unbind()
 {
 	if (mGlow)
-		gFBEnv->pRenderer->UnSetGlowRenderTarget();
+	{
+		gFBEnv->_pInternalRenderer->GetCurRendrTarget()->UnSetGlowRenderTarget();
+	}
 }
 
 //------------------------------------------------------

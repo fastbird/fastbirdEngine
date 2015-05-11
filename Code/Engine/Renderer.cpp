@@ -28,10 +28,6 @@ namespace fastbird
 		: DEFAULT_DYN_VERTEX_COUNTS(100)
 		, mCurRTSize(100, 100)
 		, mSceneOverride(0)
-		, mLockSceneOverride(false)
-		, mClearColor(0.0f, 0.0f, 0.0f)
-		, mDepthClear(1.f)
-		, mStencilClear(0)
 		, mCamera(0)
 		, mForcedWireframe(false)
 		, mNextEnvUpdateSkySphere(0)
@@ -68,22 +64,6 @@ namespace fastbird
 	mDefaultPipeline = FB_NEW(RenderPipeline);
 	mDefaultPipeline->EnableAll();
 	mMinimumPipeline = FB_NEW(RenderPipeline);
-
-	// Light
-	for (int i = 0; i < 2; ++i)
-	{
-		mDirectionalLight[i] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-		mDirectionalLight[i]->SetIntensity(1.0f);
-	}
-
-	mDirectionalLight[0]->SetPosition(Vec3(-3, 1, 1));
-	mDirectionalLight[0]->SetDiffuse(Vec3(1, 1, 1));
-	mDirectionalLight[0]->SetSpecular(Vec3(1, 1, 1));
-
-	mDirectionalLight[1]->SetPosition(Vec3(3, 1, -1));
-	mDirectionalLight[1]->SetDiffuse(Vec3(0.8f, 0.4f, 0.1f));
-	mDirectionalLight[1]->SetSpecular(Vec3(0, 0, 0));
-
 }
 Renderer::~Renderer()
 {
@@ -98,6 +78,7 @@ Renderer::~Renderer()
 // called from inherited classes.
 void Renderer::Deinit()
 {
+	RenderTarget::ReleaseStarDef();
 	for (auto it : mUI3DObjectsRTs)
 	{
 		gFBEnv->pRenderer->DeleteRenderTarget(it.second);
@@ -142,8 +123,6 @@ void Renderer::Deinit()
 
 	mDirectionalLight[0] = 0;
 	mDirectionalLight[1] = 0;
-	mDirectionalLightOverride[0] = 0;
-	mDirectionalLightOverride[1] = 0;
 	mDebugHud = 0;
 	mGeomRenderer = 0;
 	mFont = 0;
@@ -404,8 +383,8 @@ bool Renderer::OnPrepared()
 	}
 	mFont->SetTextEncoding(IFont::UTF16);
 
-	mDebugHud = FB_NEW(DebugHud);
-	mGeomRenderer = FB_NEW(GeometryRenderer);
+	//mDebugHud = FB_NEW(DebugHud);
+	//mGeomRenderer = FB_NEW(GeometryRenderer);
 
 	if (gFBEnv->pConsole)
 		gFBEnv->pConsole->Init();
@@ -487,7 +466,21 @@ bool Renderer::OnPrepared()
 	mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
 	mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
 
+
 	return true;
+}
+
+void Renderer::OnSwapchainCreated(HWND_ID id)
+{
+	auto rt = mSwapChainRenderTargets[id];
+	auto scene = gFBEnv->pEngine->CreateScene();
+	rt->SetScene(scene);
+
+	if (id==1) // main
+	{
+		rt->Bind();
+		OnPrepared();
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -500,16 +493,27 @@ void Renderer::ProcessRenderTarget()
 }
 
 //----------------------------------------------------------------------------
-void Renderer::SetClearColor(float r, float g, float b, float a/*=1.f*/)
+void Renderer::SetClearColor(HWND_ID id, const Color& color)
 {
-	mClearColor.SetColor(r, g, b, a);
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the render target(%u).", id));
+		return;
+	}
+	it->second->SetClearColor(color);
 }
 
 //----------------------------------------------------------------------------
-void Renderer::SetClearDepthStencil(float z, UINT8 stencil)
+void Renderer::SetClearDepthStencil(HWND_ID id, float z, UINT8 stencil)
 {
-	mDepthClear = z;
-	mStencilClear = stencil;
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the render target(%u).", id));
+		return;
+	}
+	it->second->SetClearDepthStencil(z, stencil);
 }
 
 //----------------------------------------------------------------------------
@@ -645,7 +649,8 @@ void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* tex
 
 void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->DrawText(pos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->DrawText(pos, text, color, size);
 }
 
 void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color, float size)
@@ -703,12 +708,16 @@ void Renderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const C
 
 void Renderer::RenderGeoms()
 {
+	if (!mGeomRenderer)
+		return;
 	mGeomRenderer->PreRender();
 	mGeomRenderer->Render();
 }
 
 void Renderer::RenderDebugHud()
 {
+	if (!mDebugHud)
+		return;
 	D3DEventMarker devent("RenderDebugHud");
 	bool backup = GetWireframe();
 	SetWireframe(false);
@@ -772,16 +781,8 @@ const Vec2I& Renderer::GetRenderTargetSize() const
 	return mCurRTSize;
 }
 
-void Renderer::RestoreRenderTarget()
-{
-	auto renderTarget = GetMainRenderTarget();
-	if (renderTarget)
-		renderTarget->Bind();
-}
-
 IRenderTarget* Renderer::GetMainRenderTarget() const
 {
-	assert(!mSwapChainRenderTargets.empty());
 	if (mSwapChainRenderTargets.empty())
 		return 0;
 
@@ -797,7 +798,8 @@ IScene* Renderer::GetMainScene() const
 	{
 		return rt->GetScene();
 	}
-	Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
+	if (!gFBEnv->mExiting)
+		Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
 	return 0;
 }
 
@@ -832,7 +834,8 @@ const Vec2I& Renderer::GetMainRTSize() const
 	{
 		return rt->GetSize();
 	}
-	Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
+	if (!gFBEnv->mExiting)
+		Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
 	return Vec2I::ZERO;
 }
 
@@ -1106,12 +1109,12 @@ IMaterial* Renderer::GetMissingMaterial()
 
 void Renderer::SetDirectionalLight(ILight* pLight, int idx)
 {
-	mDirectionalLightOverride[idx] = pLight;
+	mDirectionalLight[idx] = pLight;
 }
 
 ILight* Renderer::GetDirectionalLight(int idx) const
 {
-	return mDirectionalLightOverride[idx] ? mDirectionalLightOverride[idx] : mDirectionalLight[idx];
+	return mDirectionalLight[idx];
 }
 
 void Renderer::SetEnvironmentTexture(ITexture* pTexture)
@@ -1890,7 +1893,7 @@ ITexture* Renderer::GetToneMap(unsigned idx)
 		ITexture* textures[] = { mLuminanceMap[0], mLuminanceMap[1] };
 		size_t index[] = { 0, 0 };
 		SetRenderTarget(textures, index, 2, 0, 0);
-		Clear();
+		Clear(0, 0, 0, 1);
 
 		IMaterial::SHADER_DEFINES shaderDefines;
 		if (GetMultiSampleCount() != 1)
@@ -2017,13 +2020,20 @@ void Renderer::Render(float dt)
 	InitFrameProfiler(dt);
 	ProcessRenderTarget();
 	Render3DUIsToTexture();
+	auto mainRT = GetMainRenderTarget();
 	for (auto it : mSwapChainRenderTargets)
 	{
 		D3DEventMarker mark(FormatString("Processing render target for %u", it.first));
 		auto rt = (RenderTarget*)it.second;
 		assert(rt);
 		rt->Render();
+		if (rt == mainRT)
+		{
+			RenderMarks();
+		}
+		RenderUI(it.first);		
 	}
+	mainRT->BindTargetOnly();
 	RenderDebugHud();
 	RenderDebugRenderTargets();
 	RenderFade();
@@ -2212,40 +2222,44 @@ void Renderer::Render3DUIsToTexture()
 		return;
 
 	D3DEventMarker mark("Render3DUIsToTexture");
-	for (auto rtIt :  mUI3DObjectsRTs)
-	{
-		if (!rtIt.second->GetEnable())
-			continue;
-		auto objIt = mUI3DObjects.Find(rtIt.first);
-		assert(objIt != mUI3DObjects.end());
-		auto& rt = rtIt.second;
-		auto& list = objIt->second;
-		rt->Bind();
+	for (auto scIt : mSwapChainRenderTargets) {
+		for (auto rtIt : mUI3DObjectsRTs) {
+			if (!rtIt.second->GetEnable())
+				continue;
+			auto& uiObjectsIt = mUI3DObjects.Find(std::make_pair(scIt.first, rtIt.first));
+			if (uiObjectsIt != mUI3DObjects.end()){
+				auto& uiObjects = uiObjectsIt->second;				
+				auto& rt = rtIt.second;
+				rt->Bind();
 
-		for (auto& uiobj : list)
-		{
-			uiobj->PreRender();
-			uiobj->Render();
-			uiobj->PostRender();
+				for (auto& uiobj : uiObjects)
+				{
+					uiobj->PreRender();
+					uiobj->Render();
+					uiobj->PostRender();
+				}
+
+				rt->Unbind();
+				rt->GetRenderTargetTexture()->GenerateMips();
+			}
 		}
-
-		rt->Unbind();
-		rt->GetRenderTargetTexture()->GenerateMips();
 	}
 }
 
 //--------------------------------------------------------------------------
-void Renderer::RegisterUIs(std::vector<IUIObject*>& uiobj)
+void Renderer::RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj)
 {
-	mUIObjectsToRender.swap(uiobj);
+	auto& objectsToRender = mUIObjectsToRender[hwndId];
+	objectsToRender.swap(uiobj);
 }
 
-void Renderer::UnregisterUIs()
+void Renderer::UnregisterUIs(HWND_ID hwndId)
 {
-	mUIObjectsToRender.clear();
+	auto& objectsToRender = mUIObjectsToRender[hwndId];
+	objectsToRender.clear();
 }
 
-void Renderer::Register3DUIs(const char* name, std::vector<IUIObject*>& objects)
+void Renderer::Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIObject*>& objects)
 {
 	assert(!objects.empty());
 
@@ -2284,15 +2298,17 @@ void Renderer::Register3DUIs(const char* name, std::vector<IUIObject*>& objects)
 			}
 		}
 	}
-	mUI3DObjects[name].swap(objects);
+	mUI3DObjects[std::make_pair(hwndId, name)].swap(objects);
 }
 
+// the IWinbase is deleted.
 void Renderer::Unregister3DUIs(const char* name)
 {
 	auto it = mUI3DRenderObjs.Find(name);
 	if (it != mUI3DRenderObjs.end())
 	{
-		it->second->ModifyObjFlag(IObject::OF_HIDE, true);
+		FB_DELETE(it->second);
+		mUI3DRenderObjs.erase(it);
 	}
 
 	auto it2 = mUI3DObjectsRTs.Find(name);
@@ -2371,10 +2387,11 @@ void Renderer::RenderMarks()
 }
 
 //----------------------------------------------------------------------------
-void Renderer::RenderUI()
+void Renderer::RenderUI(HWND_ID hwndId)
 {
 	D3DEventMarker mark("RenderUI");
-	UI_OBJECTS::iterator it = mUIObjectsToRender.begin(), itEnd = mUIObjectsToRender.end();
+	auto& uiobjects = mUIObjectsToRender[hwndId];
+	auto it = uiobjects.begin(), itEnd = uiobjects.end();
 	for (; it != itEnd; it++)
 	{
 		(*it)->PreRender(); // temporary :)
@@ -2436,4 +2453,15 @@ void Renderer::RenderFrameProfiler()
 	mRenderer->DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));		*/
 }
 
+
+void Renderer::OnRenderTargetDeleted(RenderTarget* renderTarget)
+{
+	if (mCurRenderTarget == renderTarget)
+	{
+		mCurRenderTarget = GetMainRenderTarget();
+		mCamera = mCurRenderTarget->GetCamera();
+		for (int i = 0; i < 2; i++)
+			mDirectionalLight[i] = mCurRenderTarget->GetScene()->GetLight(i);
+	}
+}
 }

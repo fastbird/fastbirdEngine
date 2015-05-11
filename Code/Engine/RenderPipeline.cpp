@@ -17,9 +17,20 @@ RenderPipeline::RenderPipeline(bool steps[])
 	memcpy(mSteps, steps, sizeof(mSteps));
 }
 
+RenderPipeline::RenderPipeline(const RenderPipeline& other)
+{
+	memcpy(mSteps, other.mSteps, sizeof(mSteps));
+}
+
 RenderPipeline::~RenderPipeline()
 {
 
+}
+
+RenderPipeline* RenderPipeline::Clone() const
+{
+	auto newPipeline = FB_NEW(RenderPipeline)(*this);
+	return newPipeline;
 }
 
 void RenderPipeline::SetStep(RenderSteps::Enum step, bool enable)

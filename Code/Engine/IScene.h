@@ -13,6 +13,7 @@ namespace fastbird
 	class ISkyBox;
 	class ISkySphere;
 	class IMeshObject;
+	class ILight;
 	class IScene : public ReferenceCounter
 	{
 	public:
@@ -66,6 +67,7 @@ namespace fastbird
 		virtual void PrintSpatialObject() = 0;
 		virtual void SetRttScene(bool set) = 0;
 		virtual bool IsRttScene() const = 0;
+		virtual ILight* GetLight(unsigned idx) = 0;
 	};
 }
 

@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/RenderTargetD3D11.h>
 #include <Engine/ILight.h>
+#include <Engine/RenderPipeline.h>
 
 namespace fastbird
 {
@@ -23,15 +24,20 @@ void RenderTargetD3D11::SetColorTextureDesc(int width, int height, PIXEL_FORMAT 
 		type |= TEXTURE_TYPE_CUBE_MAP;
 	mRenderTargetTexture = gFBEnv->pRenderer->CreateTexture(0, width, height, format,
 		BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
-	mCamera->SetWidth((float)width);
-	mCamera->SetHeight((float)height);
+	mCamera->SetWidth(width);
+	mCamera->SetHeight(height);
 
 	mViewport.mTopLeftX = 0;
 	mViewport.mTopLeftY = 0;
-	mViewport.mWidth = mSize.x;
-	mViewport.mHeight = mSize.y;
+	mViewport.mWidth = (float)mSize.x;
+	mViewport.mHeight = (float)mSize.y;
 	mViewport.mMinDepth = 0.f;
 	mViewport.mMaxDepth = 1.0f;
+
+	if (mSize.x < 100 || mSize.y < 100)
+	{
+		mRenderPipeline->SetStep(RenderSteps::HDR, false);
+	}
 }
 
 void RenderTargetD3D11::SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap)

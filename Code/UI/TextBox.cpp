@@ -103,7 +103,7 @@ namespace fastbird
 				mImage->SetWNPos(mWNPos);
 				mImage->SetWNSize(mWNSize);
 			}
-			gFBEnv->pUIManager->DirtyRenderList();
+			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 			mImage->SetTexture(val);
 			return true;
@@ -119,7 +119,7 @@ namespace fastbird
 												 mImage->SetWNPos(mWNPos);
 												 mImage->SetWNSize(mWNSize);
 											 }
-											 gFBEnv->pUIManager->DirtyRenderList();
+											 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 											 mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 											 
 											 return true;

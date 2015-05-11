@@ -27,15 +27,6 @@ Camera::Camera()
 {
 	// proj properties
 	SetFOV(Radian(70));
-	if (IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer())
-	{
-		mWidth = (float)pRenderer->GetWidth();
-		mHeight = (float)pRenderer->GetHeight();
-	}
-	else
-	{
-		Error("No Renderer found while creating the camera.");
-	}
 	mNear = 1.3f;
 	mFar = 2000.0f;
 }
@@ -201,7 +192,7 @@ void Camera::Update()
 	bool projChanged = mProjPropertyChanged;
 	if (mProjPropertyChanged)
 	{
-		mAspectRatio = mWidth / mHeight;
+		mAspectRatio = mWidth / (float)mHeight;
 		mProjPropertyChanged = false;
 		if (!mOrthogonal)
 		{

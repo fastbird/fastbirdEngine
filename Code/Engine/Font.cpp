@@ -3,7 +3,7 @@
 #include <Engine/ITexture.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IEngine.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/ICamera.h>
 #include <Engine/RendererEnums.h>
 #include <Engine/IVertexBuffer.h>
@@ -174,8 +174,7 @@ int Font::Init(const char *fontFile)
 	rdesc.ScissorEnable = true;
 	mRasterizerWithScissor = gFBEnv->pRenderer->CreateRasterizerState(rdesc);
 
-	mRenderTargetSize.x = gFBEnv->pRenderer->GetWidth();
-	mRenderTargetSize.y = gFBEnv->pRenderer->GetHeight();
+	mRenderTargetSize = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
 		(float)mRenderTargetSize.x,
 		(float)mRenderTargetSize.y,
@@ -808,7 +807,8 @@ void Font::SetRenderTargetSize(const Vec2I& rtSize)
 
 void Font::RestoreRenderTargetSize()
 {
-	mRenderTargetSize = Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight());
+	const auto& rtSize = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	mRenderTargetSize = rtSize;
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
 		(float)mRenderTargetSize.x,
 		(float)mRenderTargetSize.y,

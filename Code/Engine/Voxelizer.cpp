@@ -87,11 +87,12 @@ void Voxelizer::CalcDistanceMap()
 	pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 	ICamera* pCam = pDepthRT->GetCamera();
 	pCam->SetOrthogonal(true);
-	pCam->SetWidth((float)radius*2.0f);
-	pCam->SetHeight((float)radius*2.0f);
+	pCam->SetWidth((int)(radius*2.0f));
+	pCam->SetHeight((int)(radius*2.0f));
 	pCam->SetNearFar(-radius, radius);
 	pCam->SetPos(Vec3(0, 0, 0));
-	pDepthRT->GetScene()->AttachObject(pMeshObject);
+	auto scene = pDepthRT->CreateScene();
+	scene->AttachObject(pMeshObject);
 	pMeshObject->SetMaterial("es/materials/collada_mesh.material");
 	auto material = pMeshObject->GetMaterial();
 	material->SetRasterizerState(rd_cull_back);

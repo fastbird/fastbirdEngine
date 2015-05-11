@@ -17,7 +17,8 @@ const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
 
 WinBase::WinBase()
-: mAlignH(ALIGNH::LEFT)
+: mHwndId(-1)
+,mAlignH(ALIGNH::LEFT)
 , mAlignV(ALIGNV::TOP)
 , mParent(0)
 , mNPosAligned(0, 0)
@@ -98,6 +99,18 @@ WinBase::~WinBase()
 	}
 	
 	gFBEnv->pEngine->DeleteUIObject(mUIObject);
+}
+
+void WinBase::SetHwndId(HWND_ID hwndId)
+{
+	mHwndId = hwndId;
+}
+
+HWND_ID WinBase::GetHwndId() const
+{
+	auto root = GetRootWnd();
+	assert(root);
+	return root->GetHwndId();
 }
 
 //---------------------------------------------------------------------------
@@ -574,7 +587,7 @@ bool WinBase::SetVisible(bool show)
 
 void WinBase::SetVisibleInternal(bool visible)
 {
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	if (visible)
 	{
 		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
@@ -1261,7 +1274,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							  bool b = StringConverter::parseBool(val);
 							  if (mUIObject)
 								  mUIObject->SetAlphaBlending(b);
-							  gFBEnv->pUIManager->DirtyRenderList();
+							  gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 							  return true;
 	}
 
@@ -1501,7 +1514,7 @@ void WinBase::SetUseBorder(bool use)
 		
 		RefreshBorder();
 		RefreshScissorRects();
-		gFBEnv->pUIManager->DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 	else if (!use && !mBorders.empty())
 	{
@@ -1510,7 +1523,7 @@ void WinBase::SetUseBorder(bool use)
 			gFBEnv->pUIManager->DeleteComponent(ib);
 		}
 		mBorders.clear();
-		gFBEnv->pUIManager->DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 }
 void WinBase::RefreshBorder()
@@ -2583,7 +2596,10 @@ Vec2I WinBase::GetRenderTargetSize() const
 	}
 	else
 	{
-		return Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight());
+		auto root = GetRootWnd();
+		assert(root);
+		auto hwndId = root->GetHwndId();
+		return gFBEnv->pEngine->GetRequestedWndSize(hwndId);
 	}
 }
 

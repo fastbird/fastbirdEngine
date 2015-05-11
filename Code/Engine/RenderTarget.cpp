@@ -5,7 +5,6 @@
 #include <Engine/Scene.h>
 #include <Engine/Light.h>
 #include <Engine/GaussianDist.h>
-#include <Engine/RenderPipeline.h>
 #include <Engine/StarDef.h>
 #include <../es/shaders/Constants.h>
 
@@ -24,22 +23,29 @@ RenderTarget::RenderTarget()
 	, mSRV(false)
 	, mMiplevel(false)
 	, mCubeMap(false)
-	, mHasDepth(false), mUsePool(true), mGlowSet(false), mLightCamera(0)
+	, mHasDepth(false), mUsePool(true), mGlowSet(false)
 	, mFrameLuminanceCalced(0)
 	, mGaussianDistBlendGlow(0)
+	, mGaussianDistBloom(0), mSceneOverride(0), mLockSceneOverride(false)
 {
 	mId = NextRenderTargetId++;
 
 	mCamera = FB_NEW(Camera);
-	mRenderPipeline = gFBEnv->pRenderer->GetDefaultPipeline();
+	mRenderPipeline = gFBEnv->pRenderer->GetDefaultPipeline()->Clone();
 }
 
 RenderTarget::~RenderTarget()
 {
+	gFBEnv->_pInternalRenderer->OnRenderTargetDeleted(this);
 	if (mGaussianDistBlendGlow)
 	{
 		FB_DELETE(mGaussianDistBlendGlow);
 		mGaussianDistBlendGlow = 0;
+	}
+	if (mGaussianDistBloom)
+	{
+		FB_DELETE(mGaussianDistBloom);
+		mGaussianDistBloom = 0;
 	}
 }
 
@@ -50,14 +56,31 @@ bool RenderTarget::CheckOptions(const RenderTargetParam& param)
 		param.mMipmap == mMiplevel && param.mCubemap == mCubeMap && param.mHasDepth == mHasDepth && param.mUsePool == mUsePool;
 }
 
-void RenderTarget::SetRenderPipeline(RenderPipeline* pipeline)
+RenderPipeline* RenderTarget::GetRenderPipeline() const
 {
-	mRenderPipeline = pipeline;
+	return mRenderPipeline;
 }
 
 void RenderTarget::SetScene(IScene* scene)
 {
-	mScene = scene;
+	mScene = (Scene*)scene;
+}
+
+void RenderTarget::SetSceneOverride(IScene* scene)
+{
+	if (mLockSceneOverride)
+		return;
+	mSceneOverride = scene;
+}
+
+IScene* RenderTarget::GetScene() const
+{
+	return mSceneOverride ? mSceneOverride : mScene;
+}
+
+Scene* RenderTarget::GetSceneInternal() const
+{
+	return mSceneOverride ? (Scene*)mSceneOverride : (Scene*)mScene;
 }
 
 IScene* RenderTarget::CreateScene()
@@ -103,29 +126,15 @@ void RenderTarget::SetClearValues(const Color& color, float z, UINT8 stencil)
 	mStencilClear = stencil;
 }
 
-void RenderTarget::UpdateLightCamera()
+void RenderTarget::SetClearColor(const Color& color)
 {
-	if (!mRenderPipeline->GetStep(RenderSteps::ShadowMap))
-		return;
+	mClearColor = color;
+}
 
-	auto const renderer = gFBEnv->pRenderer;
-	auto cam = GetCamera();
-	auto target = cam->GetTarget();
-	
-	float shadowCamDist =
-		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
-	
-	auto light = renderer->GetDirectionalLight(0);
-	assert(light);
-	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
-	{
-		mLightCamera->SetPos(target->GetPos() + light->GetPosition() *shadowCamDist);
-	}
-	else
-	{
-		mLightCamera->SetPos(cam->GetPos() + light->GetPosition() * shadowCamDist);
-	}
-	mLightCamera->SetDir(-light->GetPosition());
+void RenderTarget::SetClearDepthStencil(float z, UINT8 stencil)
+{
+	mDepthClear = z;
+	mStencilClear = stencil;
 }
 
 void RenderTarget::Bind(size_t face)
@@ -134,16 +143,6 @@ void RenderTarget::Bind(size_t face)
 		return;
 
 	auto const renderer = gFBEnv->pRenderer;
-
-	if (mRenderTargetTexture && !mLightCamera && mRenderPipeline->GetStep(RenderSteps::ShadowMap) )
-	{
-		mLightCamera = FB_NEW(Camera);
-		mLightCamera->SetOrthogonal(true);
-		auto cmd = gFBEnv->pConsole->GetEngineCommand();
-		mLightCamera->SetWidth( std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600)) );
-		mLightCamera->SetHeight(std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight/900)) );
-		mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
-	}
 	
 	if (mRenderTargetTexture)
 		mRenderTargetTexture->Unbind();
@@ -156,11 +155,8 @@ void RenderTarget::Bind(size_t face)
 	renderer->Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
 		mDepthClear, mStencilClear);
 
-	for (int i = 0; i < 2; i++)
-	{
-		if (mLight[i])
-			renderer->SetDirectionalLight(mLight[i], i);
-	}
+	GetSceneInternal()->SetLightToRenderer();
+	
 	auto cam = GetCamera();
 	renderer->SetCamera(cam);
 	cam->ProcessInputData();
@@ -201,30 +197,31 @@ void RenderTarget::Render(size_t face)
 
 	Bind(face);
 
-	mScene->PreRender();
+	GetSceneInternal()->PreRender();
 	
+	auto const engineCmd = gFBEnv->pConsole->GetEngineCommand();
 	if (mRenderPipeline->GetStep(RenderSteps::Glow))
 	{
 		SetGlowRenderTarget();
-		renderer->Clear();
+		renderer->Clear(0.f, 0.f, 0.f, 1.f);
 	}
 
 	if (mRenderPipeline->GetStep(RenderSteps::ShadowMap))
 	{
-		D3DEventMarker mark(FormatString("Shadow pass(%u)", mId));
+		D3DEventMarker mark("Shadow pass");
 		UpdateLightCamera();		
 		BindShadowMap(false);
 		PrepareShadowMapRendering();
-		mScene->Render();
+		GetSceneInternal()->Render();
 		EndShadowMapRendering();
 	}
 
 	if (mRenderPipeline->GetStep(RenderSteps::Depth))
 	{
-		D3DEventMarker mark(FormatString("Depth pass(%u)", mId));
+		D3DEventMarker mark("Depth pass");
 		SetDepthRenderTarget(true);
 		gFBEnv->mRenderPass = RENDER_PASS::PASS_DEPTH;
-		mScene->Render();
+		GetSceneInternal()->Render();
 		UnsetDepthRenderTarget();
 		BindDepthTexture(true);
 	}
@@ -233,7 +230,7 @@ void RenderTarget::Render(size_t face)
 	{
 		D3DEventMarker mark("Cloud Volumes");
 		SetCloudVolumeTarget();
-		mScene->RenderCloudVolumes();
+		GetSceneInternal()->RenderCloudVolumes();
 
 		BindTargetOnly();
 		SetCloudVolumeTexture(true);
@@ -242,25 +239,28 @@ void RenderTarget::Render(size_t face)
 	}
 
 	// god ray pre pass
-	if (gFBEnv->pConsole->GetEngineCommand()->r_GodRay && 
+	if (engineCmd->r_GodRay && 
 		mRenderPipeline->GetStep(RenderSteps::GodRay))
 	{
 		D3DEventMarker mark("GodRay pre occlusion pass");
 		SetGodRayRenderTarget();
 		gFBEnv->mRenderPass = RENDER_PASS::PASS_GODRAY_OCC_PRE;
-		mScene->Render();
+		GetSceneInternal()->Render();
 		GodRay();
 		gFBEnv->mRenderPass = RENDER_PASS::PASS_NORMAL;
 	}
 
-	auto const engineCmd = gFBEnv->pConsole->GetEngineCommand();
-	if (engineCmd->r_HDR)
+	if (engineCmd->r_HDR && mRenderPipeline->GetStep(RenderSteps::HDR))
 	{
 		// Set HDR RenderTarget
 		SetHDRTarget();
 		BindDepthTexture(true);
 		SetCloudVolumeTexture(true);
-		renderer->Clear();
+		renderer->Clear(0.f, 0.f, 0.f, 1.f);
+	}
+	else
+	{
+		BindTargetOnly();
 	}
 
 	// RENDER
@@ -268,23 +268,23 @@ void RenderTarget::Render(size_t face)
 		// Bind Shadow map
 		BindShadowMap(true);
 		gFBEnv->mSilouetteRendered = false;
-		mScene->Render();
+		GetSceneInternal()->Render();
 		if (gFBEnv->mSilouetteRendered)
 			DrawSilouette();
 	}
 
-	if (engineCmd->r_HDR && renderer->IsLuminanceOnCpu())
+	if (mRenderPipeline->GetStep(RenderSteps::HDR) && engineCmd->r_HDR)
 	{
-		CalcLuminance();
-	}
+		if (renderer->IsLuminanceOnCpu())
+		{
+			CalcLuminance();
+		}
 
-	if (engineCmd->r_Glow && mRenderPipeline->GetStep(RenderSteps::Glow))
-		BlendGlow();
-	if (engineCmd->r_GodRay)
-		BlendGodRay();
+		if (engineCmd->r_Glow && mRenderPipeline->GetStep(RenderSteps::Glow))
+			BlendGlow();
+		if (engineCmd->r_GodRay)
+			BlendGodRay();
 
-	if (engineCmd->r_HDR)
-	{
 		BindTargetOnly();
 		MeasureLuminanceOfHDRTargetNew();
 
@@ -295,44 +295,15 @@ void RenderTarget::Render(size_t face)
 		RenderStarGlare();
 		ToneMapping();
 	}
-	
-	mScene->Render();
-	gFBEnv->mRenderTarget = 0;
-	Unbind();	
 }
 
 void RenderTarget::Unbind()
 {
-	auto const renderer = gFBEnv->pRenderer;
-	gFBEnv->pRenderer->RestoreRenderTarget();
-	gFBEnv->pRenderer->RestoreViewports();
-	gFBEnv->pRenderer->SetCamera(renderer->GetMainCamera());
-
-	for (int i = 0; i < 2; i++)
-	{
-		if (mLight[i])
-			gFBEnv->pRenderer->SetDirectionalLight(0, i);
-	}
-
-
+	auto const renderer = gFBEnv->pRenderer;	
 	if (mEnvTexture)
 	{
 		gFBEnv->pRenderer->SetEnvironmentTextureOverride(0);
 	}
-}
-
-ILight* RenderTarget::GetLight(int idx)
-{
-	if (!mLight[idx])
-	{
-		mLight[idx] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-		mLight[idx]->SetPosition(Vec3(1, 1, 1));
-		mLight[idx]->SetDiffuse(Vec3(1, 1, 1));
-		mLight[idx]->SetSpecular(Vec3(1, 1, 1));
-		mLight[idx]->SetIntensity(1.0f);
-	}
-
-	return mLight[idx];
 }
 
 void RenderTarget::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)
@@ -368,6 +339,12 @@ void RenderTarget::SetColorTexture(ITexture* pTexture)
 	mViewport.mHeight = (float)mSize.y;
 	mViewport.mMinDepth = 0.f;
 	mViewport.mMaxDepth = 1.0f;
+	mCamera->SetWidth(mSize.x);
+	mCamera->SetHeight(mSize.y);
+	if (mSize.x < 100 || mSize.y < 100)
+	{
+		mRenderPipeline->SetStep(RenderSteps::HDR, false);
+	}
 }
 
 
@@ -479,10 +456,13 @@ void RenderTarget::PrepareShadowMapRendering()
 	if (!mShadowMap)
 	{
 		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x / 1600.f * cmd->r_ShadowCamWidth);
-		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.x / 900.f * cmd->r_ShadowCamHeight);
-		
+		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.x / 900.f * cmd->r_ShadowCamHeight);		
 		width = renderer->CropSize8(width);
 		height = renderer->CropSize8(height);
+		
+		width = std::max(16, width);
+		height = std::max(16, height);
+
 		mShadowMap = renderer->CreateTexture(0, 
 			width, height, 
 			PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
@@ -504,7 +484,6 @@ void RenderTarget::PrepareShadowMapRendering()
 		(float)size.y,
 		0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
-	assert(mLightCamera);
 	renderer->SetCamera(mLightCamera);
 	renderer->Clear(0, 0, 0, 0, 1.0f, 0);
 }
@@ -577,7 +556,7 @@ void RenderTarget::SetGodRayRenderTarget()
 	renderer->SetRenderTarget(rts, index, 1, mNoMSDepthStencil, 0);
 	Viewport vp = { 0, 0, (float)mSize.x*.5f, (float)mSize.y*.5f, 0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
-	renderer->Clear();
+	renderer->Clear(0.f, 0.f, 0.f, 1.f, 1.f, 0);
 }
 
 void RenderTarget::GodRay()
@@ -791,7 +770,7 @@ void RenderTarget::BlendGlow()
 	}
 
 	{
-		D3DEventMarker mark(FormatString("Glow Blend %u", mId));
+		D3DEventMarker mark("Glow Blend");
 		if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
 		{
 			SetHDRTarget();
@@ -814,7 +793,7 @@ void RenderTarget::BlendGlow()
 ////---------------------------------------------------------------------------
 void RenderTarget::BlendGodRay()
 {
-	D3DEventMarker mark(FormatString("GodRay Blending %u", mId));
+	D3DEventMarker mark("GodRay Blending");
 	assert(mGodRayTarget[0]);
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	renderer->SetTexture(mGodRayTarget[0], BINDING_SHADER_PS, 0);
@@ -832,7 +811,7 @@ void RenderTarget::MeasureLuminanceOfHDRTargetNew()
 	renderer->SetNoDepthStencil();
 	
 
-	D3DEventMarker mark(FormatString("Luminance %u", mId));
+	D3DEventMarker mark("Luminance");
 	assert(mHDRTarget);
 	int dwCurTexture = FB_NUM_TONEMAP_TEXTURES_NEW - 1;
 	ITexture* renderTarget = renderer->GetToneMap(dwCurTexture);
@@ -975,7 +954,7 @@ void RenderTarget::BrightPassToStarSource()
 	renderer->SetRenderTarget(rts, index, 1, 0, 0);
 	Viewport vp = { 0, 0, (float)mStarSourceTex->GetWidth(), (float)mStarSourceTex->GetHeight(), 0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
-	renderer->Clear();
+	renderer->Clear(0.f, 0.f, 0.f, 1.f);
 	renderer->SetTexture(mGlowTarget, BINDING_SHADER_PS, 0);
 	if (renderer->GetMultiSampleCount() != 1)
 	{
@@ -994,7 +973,7 @@ void RenderTarget::BrightPassToStarSource()
 //---------------------------------------------------------------------------
 void RenderTarget::StarSourceToBloomSource()
 {
-	D3DEventMarker mark(FormatString("StarSourceToBloomSource %u", mId));
+	D3DEventMarker mark("StarSourceToBloomSource");
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mBloomSourceTex)
 	{
@@ -1139,7 +1118,12 @@ static const int starGlareMaxPasses = 3;
 static const int starGlareSamples = 8;
 static const float starGlareChromaticAberration = 0.5f;
 static const float starGlareInclination = HALF_PI;
-static StarDef starGlareDef;
+static StarDef* starGlareDef = 0;
+//static  function
+void RenderTarget::ReleaseStarDef()
+{
+	FB_DELETE(starGlareDef);
+}
 void CalcStarGlareConst(Vec4 s_aaColor[starGlareMaxPasses][starGlareSamples])
 {
 	static const Color s_colorWhite(0.63f, 0.63f, 0.63f, 0.0f);
@@ -1155,7 +1139,8 @@ void CalcStarGlareConst(Vec4 s_aaColor[starGlareMaxPasses][starGlareSamples])
 		}
 	}
 	StarDef::InitializeStatic();
-	starGlareDef.Initialize(STLT_VERTICAL);
+	starGlareDef = FB_NEW(StarDef);
+	starGlareDef->Initialize(STLT_VERTICAL);
 }
 
 //---------------------------------------------------------------------------
@@ -1178,7 +1163,7 @@ void RenderTarget::RenderStarGlare()
 	renderer->SetRenderTarget(rts, index, 1, 0, 0);
 	Viewport vp = { 0, 0, (float)mStarTextures[0]->GetWidth(), (float)mStarTextures[0]->GetHeight(), 0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
-	renderer->Clear();
+	renderer->Clear(0.f, 0.f, 0.f, 1.f);
 	const float fTanFoV = GetCamera()->GetFOV();
 	const Color vWhite(1.0f, 1.0f, 1.0f, 1.0f);
 	
@@ -1201,15 +1186,15 @@ void RenderTarget::RenderStarGlare()
 
 	
 	float radOffset;
-	radOffset = starGlareInclination + starGlareDef.m_fInclination;
+	radOffset = starGlareInclination + starGlareDef->m_fInclination;
 	
 	ITexture* pSrcTexture = 0;
 	ITexture* pDestTexture = 0;
 
 	// Direction loop
-	for (int d = 0; d < starGlareDef.m_nStarLines; ++d)
+	for (int d = 0; d < starGlareDef->m_nStarLines; ++d)
 	{
-		CONST STARLINE& starLine = starGlareDef.m_pStarLine[d];
+		CONST STARLINE& starLine = starGlareDef->m_pStarLine[d];
 
 		pSrcTexture = mStarSourceTex;
 
@@ -1292,11 +1277,11 @@ void RenderTarget::RenderStarGlare()
 	pDestTexture = mStarTextures[0];
 
 	std::vector<ITexture*> textures;
-	textures.reserve(starGlareDef.m_nStarLines);
-	for (int i = 0; i < starGlareDef.m_nStarLines; i++)
+	textures.reserve(starGlareDef->m_nStarLines);
+	for (int i = 0; i < starGlareDef->m_nStarLines; i++)
 	{
 		textures.push_back(mStarTextures[i + 4]);
-		avSampleWeights[i] = vWhite.GetVec4() * (1.0f / (FLOAT)starGlareDef.m_nStarLines);
+		avSampleWeights[i] = vWhite.GetVec4() * (1.0f / (FLOAT)starGlareDef->m_nStarLines);
 	}
 
 	{
@@ -1306,7 +1291,7 @@ void RenderTarget::RenderStarGlare()
 	}
 	renderer->SetTextures(&textures[0], textures.size(), BINDING_SHADER_PS, 0);
 	
-	switch (starGlareDef.m_nStarLines)
+	switch (starGlareDef->m_nStarLines)
 	{
 	case 2:
 		renderer->DrawFullscreenQuad(renderer->GetMergeTexturePS(), false);
@@ -1317,11 +1302,11 @@ void RenderTarget::RenderStarGlare()
 	}
 
 	textures.clear();
-	for (int i = 0; i < starGlareDef.m_nStarLines; i++)
+	for (int i = 0; i < starGlareDef->m_nStarLines; i++)
 	{
 		textures.push_back(0);
 	}
-	renderer->SetTextures(&textures[0], starGlareDef.m_nStarLines, BINDING_SHADER_PS, 0);
+	renderer->SetTextures(&textures[0], starGlareDef->m_nStarLines, BINDING_SHADER_PS, 0);
 }
 
 //---------------------------------------------------------------------------
@@ -1352,11 +1337,45 @@ void RenderTarget::DeleteShadowMap()
 	mShadowMap = 0;
 }
 
+void RenderTarget::UpdateLightCamera()
+{
+	auto const renderer = gFBEnv->_pInternalRenderer;
+	auto cam = renderer->GetCamera();
+	if (!mLightCamera)
+	{
+		mLightCamera = FB_NEW(Camera);
+		mLightCamera->SetOrthogonal(true);
+		auto cmd = gFBEnv->pConsole->GetEngineCommand();
+		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600));
+		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900));
+		width = std::max(16, width);
+		height = std::max(16, height);
+		mLightCamera->SetWidth(width);
+		mLightCamera->SetHeight(height);
+		mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
+	}
+
+	auto target = cam->GetTarget();
+	float shadowCamDist =
+		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
+	auto light = GetSceneInternal()->GetLight(0);
+	assert(light);
+	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
+	{
+		mLightCamera->SetPos(target->GetPos() + light->GetPosition() *shadowCamDist);
+	}
+	else
+	{
+		mLightCamera->SetPos(cam->GetPos() + light->GetPosition() * shadowCamDist);
+	}
+	mLightCamera->SetDir(-light->GetPosition());
+}
+
 void RenderTarget::SetLightCamWidth(float width)
 {
 	if (mLightCamera)
 	{
-		mLightCamera->SetWidth(std::min(width, mSize.x * (width / 1600)));
+		mLightCamera->SetWidth((int)std::min(width, mSize.x * (width / 1600)));
 	}
 }
 
@@ -1364,7 +1383,7 @@ void RenderTarget::SetLightCamHeight(float height)
 {
 	if (mLightCamera)
 	{
-		mLightCamera->SetHeight(std::min(height, mSize.y * (height / 900)));
+		mLightCamera->SetHeight((int)std::min(height, mSize.y * (height / 900)));
 	}
 }
 

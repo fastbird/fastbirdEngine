@@ -38,22 +38,15 @@ TextureD3D11::TextureD3D11()
 //----------------------------------------------------------------------------
 TextureD3D11::~TextureD3D11()
 {
-	if (gFBEnv && gFBEnv->pRenderer)
+	for (auto v : mRTViews)
 	{
-		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
-		for (auto v : mRTViews)
-		{
-			pRenderer->OnReleaseRenderTarget(v);
-			SAFE_RELEASE(v);
-		}		
-		for (auto v : mDSViews)
-		{
-			pRenderer->OnReleaseDepthStencil(v);
-			SAFE_RELEASE(v);
-		}
+		SAFE_RELEASE(v);
+	}		
+	for (auto v : mDSViews)
+	{
+		SAFE_RELEASE(v);
 	}
 
-	//SAFE_RELEASE(mSamplerState);
 	SAFE_RELEASE(mSRView);	
 	SAFE_RELEASE(mTexture);	
 }
@@ -157,7 +150,6 @@ void TextureD3D11::ClearRenderTargetViews()
 	for (auto v : mRTViews)
 	{
 		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
-		pRenderer->OnReleaseRenderTarget(v);
 		SAFE_RELEASE(v);
 	}
 	mRTViews.clear();
@@ -172,8 +164,6 @@ void TextureD3D11::ClearDepthStencilViews()
 {
 	for (auto v : mDSViews)
 	{
-		RendererD3D11* pRenderer = static_cast<RendererD3D11*>(gFBEnv->pRenderer);
-		pRenderer->OnReleaseDepthStencil(v);
 		SAFE_RELEASE(v);
 	}
 

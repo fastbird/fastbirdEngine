@@ -319,7 +319,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 													 mBackgroundImage->SetWNSize(mWNSize);
 													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 												 }
-												 gFBEnv->pUIManager->DirtyRenderList();
+												 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 												 mBackgroundImage->SetTexture(val);
 												 return true;
@@ -336,7 +336,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 											 mBackgroundImage->SetWNSize(mWNSize);
 											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 										 }
-										 gFBEnv->pUIManager->DirtyRenderList();
+										 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 										 mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 										 return true;
 	}

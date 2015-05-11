@@ -8,6 +8,36 @@ namespace fastbird
 {
     class Scene : public IScene
     {
+		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
+
+		OBJECTS mObjects;
+		SPATIAL_OBJECTS mSpatialObjects;
+		SPATIAL_OBJECTS mVisibleObjectsMain;
+		SPATIAL_OBJECTS mVisibleObjectsLight;
+		SPATIAL_OBJECTS mPreRenderList; // VisibleObjectsMain + VisibleObjectsLight
+		SPATIAL_OBJECTS mVisibleTransparentObjects;
+		SmartPtr<ISkyBox> mSkyBox;
+		SmartPtr<ISkySphere> mSkySphere;
+		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
+		
+		SmartPtr<ILight> mDirectionalLight[2];
+
+		bool mSkipSpatialObjects;
+		bool mSkyRendering;
+		FB_CRITICAL_SECTION mSpatialObjectsCS;
+
+		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
+
+		std::vector<ISceneListener*> mListeners;
+		Vec3 mWindDir;
+		float mWindVelocity;
+		Vec3 mWindVector;
+		Color mFogColor;
+		VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
+		unsigned mLastPreRenderFrame;
+		bool mDrawClouds;
+		bool mRttScene;
+
     public:
         Scene();
         virtual ~Scene();
@@ -60,36 +90,13 @@ namespace fastbird
 		virtual void SetRttScene(bool set);
 		virtual bool IsRttScene() const{ return mRttScene; }
 
+		virtual ILight* GetLight(unsigned idx);
+		
+		// internal use
+		void UpdateLightCamera();
+		void SetLightToRenderer();
 
-	protected:
-		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
-
-
-    private:
-        OBJECTS mObjects;
-		SPATIAL_OBJECTS mSpatialObjects;
-		SPATIAL_OBJECTS mVisibleObjectsMain;
-		SPATIAL_OBJECTS mVisibleObjectsLight;
-		SPATIAL_OBJECTS mPreRenderList; // VisibleObjectsMain + VisibleObjectsLight
-		SPATIAL_OBJECTS mVisibleTransparentObjects;
-		SmartPtr<ISkyBox> mSkyBox;
-		SmartPtr<ISkySphere> mSkySphere;
-		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
-		bool mSkipSpatialObjects;
-		bool mSkyRendering;
-		FB_CRITICAL_SECTION mSpatialObjectsCS;
-
-		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
-
-		std::vector<ISceneListener*> mListeners;
-		Vec3 mWindDir;
-		float mWindVelocity;
-		Vec3 mWindVector;
-		Color mFogColor;
-		VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
-		unsigned mLastPreRenderFrame;
-		bool mDrawClouds;
-		bool mRttScene;
+        
     };
 }
 

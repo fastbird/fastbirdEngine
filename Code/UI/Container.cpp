@@ -58,7 +58,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 			pWinBase->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 		}
 		pWinBase->SetParent(this);
-		gFBEnv->pUIManager->DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 	SetChildrenPosSizeChanged();
 	return pWinBase;
@@ -85,7 +85,7 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 		pWinBase->SetNPos(fastbird::Vec2(posX, posY));
 		pWinBase->RefreshScissorRects(); // for scissor
 		pWinBase->OnCreated();
-		gFBEnv->pUIManager->DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 	SetChildrenPosSizeChanged();
 	return pWinBase;
@@ -277,7 +277,7 @@ void Container::OnStartUpdate(float elapsedTime)
 	}
 	mPendingDelete.clear();
 	if (deleted)
-		gFBEnv->pUIManager->DirtyRenderList();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 	if (mChildrenPosSizeChanged)
 	{

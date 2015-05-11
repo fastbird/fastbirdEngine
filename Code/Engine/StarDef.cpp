@@ -16,7 +16,7 @@ namespace fastbird
 	};
 	int                      s_nLibStarDefs = sizeof(s_aLibStarDef) / sizeof(STARDEF);
 
-	StarDef* StarDef::s_pStarLib[NUM_STARLIBTYPES];
+	StarDef* StarDef::s_pStarLib[NUM_STARLIBTYPES] = { 0 };
 
 	//-----------------------------------------------------------------------
 	void StarDef::InitializeStatic()
