@@ -242,6 +242,7 @@ void TextureD3D11::SetDebugName(const char* name)
 	{
 		char buff[255];
 		sprintf_s(buff, "%s SRV", name);
+		mSRView->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		mSRView->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
 	}
 	int i = 0;
@@ -249,6 +250,7 @@ void TextureD3D11::SetDebugName(const char* name)
 	{
 		char buff[255];
 		sprintf_s(buff, "%s RTV %d", name, i++);
+		it->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		it->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
 	}
 
@@ -257,6 +259,7 @@ void TextureD3D11::SetDebugName(const char* name)
 	{
 		char buff[255];
 		sprintf_s(buff, "%s DSV %d", name, i++);
+		it->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		it->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buff), buff);
 	}
 }

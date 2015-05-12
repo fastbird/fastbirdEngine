@@ -20,6 +20,7 @@ namespace fastbird
 		virtual void SetText(const wchar_t* szText);
 		void SetNPosOffset(const Vec2& offset);
 		virtual unsigned GetTextBoxHeight() const;
+		virtual void SetHwndId(HWND_ID hwndId);
 
 	protected:
 		const static float LEFT_GAP;

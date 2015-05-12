@@ -31,6 +31,8 @@ public:
 	virtual void StartHighlight(float speed);
 	virtual void StopHighlight();
 
+	virtual void SetHwndId(HWND_ID hwndId);
+
 protected:
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();

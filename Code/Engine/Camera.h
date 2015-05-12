@@ -45,6 +45,7 @@ namespace fastbird
 		virtual const Mat44& GetInvViewMat();
 		virtual const Mat44& GetInvViewProjMat();
 		virtual const Mat44& GetProjMat();
+		virtual const Mat44& GetInvProjMat();
 		virtual const Mat44& GetViewProjMat();
 		// field of view in the y direction, in radians.
 		virtual void SetFOV(float fov);
@@ -124,6 +125,7 @@ namespace fastbird
 		Mat44 mViewMat;
 		Mat44 mInvViewMat;
 		Mat44 mProjMat;
+		Mat44 mInvProjMat;
 		Mat44 mViewProjMat;
 		Mat44 mInvViewProjMat;
 		float mFov;

@@ -29,6 +29,9 @@ namespace fastbird
 		virtual void UpdateFrameConstantsBuffer();
 		virtual void UpdateObjectConstantsBuffer(void* pData);
 		virtual void UpdatePointLightConstantsBuffer(void* pData);
+		virtual void UpdateCameraConstantsBuffer();
+		virtual void UpdateRenderTargetConstantsBuffer();
+		virtual void UpdateSceneConstantsBuffer();
 		virtual void UpdateMaterialConstantsBuffer(void* pData);
 		virtual void UpdateRareConstantsBuffer();
 		virtual void UpdateRadConstantsBuffer(void* pData);
@@ -63,7 +66,6 @@ namespace fastbird
 			ITexture* pDepthStencil, size_t dsViewIndex);		
 		
 		virtual void SetViewports(Viewport viewports[], int num);
-		virtual void RestoreViewports();
 		virtual void SetScissorRects(RECT rects[], int num);
 		virtual void RestoreScissorRects();
 
@@ -137,14 +139,19 @@ namespace fastbird
 		ID3D11Texture2D*		m_pDepthStencil;
 		ID3D11DepthStencilView* m_pDepthStencilView;
 		D3D11_VIEWPORT			mViewPort;
-		ID3D11Buffer*			m_pFrameConstantsBuffer;
-		ID3D11Buffer*			m_pObjectConstantsBuffer;
-		ID3D11Buffer*			m_pPointLightConstantsBuffer;
-		ID3D11Buffer*			m_pMaterialConstantsBuffer;
-		ID3D11Buffer*			m_pMaterialParametersBuffer;
-		ID3D11Buffer*			m_pRareConstantsBuffer;
-		ID3D11Buffer*			m_pBigBuffer;
-		ID3D11Buffer*			m_pImmutableConstantsBuffer;
+		
+		ID3D11Buffer*			m_pFrameConstantsBuffer; // b0
+		ID3D11Buffer*			m_pObjectConstantsBuffer; // b1
+		ID3D11Buffer*			m_pMaterialConstantsBuffer; // b2
+		ID3D11Buffer*			m_pMaterialParametersBuffer; // b3
+		ID3D11Buffer*			m_pRareConstantsBuffer; // b4
+		ID3D11Buffer*			m_pBigBuffer; // b5
+		ID3D11Buffer*			m_pImmutableConstantsBuffer; // b6
+		ID3D11Buffer*			m_pPointLightConstantsBuffer; //b7
+		ID3D11Buffer*			m_pCameraConstantsBuffer; //b8
+		ID3D11Buffer*			m_pRenderTargetConstantsBuffer; //b9
+		ID3D11Buffer*			m_pSceneConstantsBuffer; // b10
+
 		ID3D11RasterizerState*	m_pWireframeRasterizeState;
 		ID3DX11ThreadPump*		m_pThreadPump;
 
@@ -155,6 +162,9 @@ namespace fastbird
 		PIXEL_FORMAT			mDepthStencilFormat;
 
 		FRAME_CONSTANTS			mFrameConstants;
+		CAMERA_CONSTANTS		mCameraConstants;
+		RENDERTARGET_CONSTANTS mRenderTargetConstants;
+		SCENE_CONSTANTS	mSceneConstants;
 		
 		
 

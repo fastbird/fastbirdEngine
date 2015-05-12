@@ -103,13 +103,35 @@ WinBase::~WinBase()
 
 void WinBase::SetHwndId(HWND_ID hwndId)
 {
+	if (mHwndId != hwndId)
+	{
+		if (mUIObject)
+		{
+			mUIObject->SetRenderTargetSize(
+				gFBEnv->pEngine->GetRequestedWndSize(hwndId)
+				);
+		}
+	}
 	mHwndId = hwndId;
+
+	for (auto win : mBorders)
+	{
+		if (win)
+		{
+			win->SetHwndId(hwndId);
+		}
+	}
 }
 
 HWND_ID WinBase::GetHwndId() const
 {
 	auto root = GetRootWnd();
-	assert(root);
+	assert(root);	
+	if (root == this)
+	{
+		return mHwndId;
+	}
+
 	return root->GetHwndId();
 }
 
@@ -1450,6 +1472,7 @@ void WinBase::SetUseBorder(bool use)
 	if (use && mBorders.empty())
 	{
 		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		T->SetHwndId(GetHwndId());
 		mBorders.push_back(T);
 		T->SetRender3D(mRender3D, GetRenderTargetSize());
 		T->SetManualParent(this);
@@ -1458,6 +1481,7 @@ void WinBase::SetUseBorder(bool use)
 		
 
 		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		L->SetHwndId(GetHwndId());
 		mBorders.push_back(L);
 		L->SetRender3D(mRender3D, GetRenderTargetSize());
 		L->SetManualParent(this);
@@ -1465,6 +1489,7 @@ void WinBase::SetUseBorder(bool use)
 		L->SetTextureAtlasRegion("es/textures/ui.xml", "Box_L");		
 
 		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		R->SetHwndId(GetHwndId());
 		mBorders.push_back(R);
 		R->SetRender3D(mRender3D, GetRenderTargetSize());
 		R->SetManualParent(this);
@@ -1474,6 +1499,7 @@ void WinBase::SetUseBorder(bool use)
 		
 
 		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		B->SetHwndId(GetHwndId());
 		mBorders.push_back(B);
 		B->SetRender3D(mRender3D, GetRenderTargetSize());
 		B->SetManualParent(this);
@@ -1482,6 +1508,7 @@ void WinBase::SetUseBorder(bool use)
 		B->SetTextureAtlasRegion("es/textures/ui.xml", "Box_B");
 
 		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		LT->SetHwndId(GetHwndId());
 		mBorders.push_back(LT);
 		LT->SetRender3D(mRender3D, GetRenderTargetSize());
 		LT->SetManualParent(this);
@@ -1489,6 +1516,7 @@ void WinBase::SetUseBorder(bool use)
 		LT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LT");		
 
 		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RT->SetHwndId(GetHwndId());
 		mBorders.push_back(RT);
 		RT->SetRender3D(mRender3D, GetRenderTargetSize());
 		RT->SetManualParent(this);
@@ -1497,6 +1525,7 @@ void WinBase::SetUseBorder(bool use)
 		RT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RT");		
 
 		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
+		LB->SetHwndId(GetHwndId());
 		mBorders.push_back(LB);
 		LB->SetRender3D(mRender3D, GetRenderTargetSize());
 		LB->SetManualParent(this);
@@ -1505,6 +1534,7 @@ void WinBase::SetUseBorder(bool use)
 		LB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LB");
 
 		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RB->SetHwndId(GetHwndId());
 		mBorders.push_back(RB);
 		RB->SetRender3D(mRender3D, GetRenderTargetSize());
 		RB->SetManualParent(this);

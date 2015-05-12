@@ -349,7 +349,7 @@ void Scene::MakeVisibleSet()
 
 	for (auto l : mListeners)
 	{
-		l->OnAfterMakeVisibleSet();
+		l->OnAfterMakeVisibleSet(this);
 	}
 }
 
@@ -430,7 +430,7 @@ void Scene::Render()
 		{
 			for (const auto& l : mListeners)
 			{
-				l->OnBeforeRenderingOpaques();
+				l->OnBeforeRenderingOpaques(this);
 			}
 
 			for (auto& obj : mVisibleObjectsMain)
@@ -467,11 +467,13 @@ void Scene::Render()
 		}
 
 		for (const auto& l : mListeners)
-			l->OnBeforeRenderingTransparents();
+			l->OnBeforeRenderingTransparents(this);
 
 		bool mainRt = renderer->IsMainRenderTarget();
-		if (mainRt)
+		if (mainRt && gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL)
+		{
 			renderer->RenderGeoms();
+		}
 
 		renderer->GetCurRendrTarget()->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
@@ -557,7 +559,6 @@ void Scene::RenderCloudVolumes()
 void Scene::SetFogColor(const Color& c)
 {
 	mFogColor = c;
-	gFBEnv->pRenderer->UpdateRareConstantsBuffer();
 }
 
 void Scene::SetDrawClouds(bool e)

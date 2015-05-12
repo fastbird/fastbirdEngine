@@ -38,6 +38,8 @@ public:
 	bool IsActivated() const { return mActivated; }
 	void AlignIconText();
 
+	virtual void SetHwndId(HWND_ID hwndId);
+
 private:
 
 	ImageBox* CreateImageBox();

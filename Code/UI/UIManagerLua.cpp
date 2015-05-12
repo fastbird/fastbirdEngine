@@ -157,9 +157,18 @@ namespace fastbird
 	int LoadLuaUI(lua_State* L)
 	{
 		const char* uiFile = luaL_checkstring(L, 1);
+		HWND_ID id = INVALID_HWND_ID;
+		if (lua_gettop(L) == 2)
+		{
+			id = luaL_checkunsigned(L, 2);
+		}
+		else
+		{
+			id = gFBEnv->pEngine->GetMainWndHandleId();
+		}
 		std::vector<IWinBase*> temp;
 		std::string name;
-		UIManager::GetUIManagerStatic()->ParseUI(uiFile, temp, name, true);
+		UIManager::GetUIManagerStatic()->ParseUI(uiFile, temp, name, id, true);
 		UIManager::GetUIManagerStatic()->SetVisible(name.c_str(), false);
 		return 0;
 	}
@@ -175,12 +184,16 @@ namespace fastbird
 	int AddLuaUI(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
-		HWND_ID hwndId = gFBEnv->pEngine->GetMainWndHandleId();
-		if (lua_gettop(L) == 2)
+		LuaObject ui(L, 2);
+		HWND_ID hwndId = INVALID_HWND_ID;
+		if (lua_gettop(L) == 3)
 		{
 			hwndId = luaL_checkunsigned(L, 2);
 		}
-		LuaObject ui(L, 2);
+		else
+		{
+			hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+		}
 		UIManager::GetUIManagerStatic()->AddLuaUI(uiname, ui, hwndId);
 		UIManager::GetUIManagerStatic()->SetVisible(uiname, false);
 		return 0;

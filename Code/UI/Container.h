@@ -58,6 +58,9 @@ namespace fastbird
 		virtual void StartHighlight(float speed);
 		virtual void StopHighlight();
 		virtual void OnAlphaChanged();
+
+		virtual void SetHwndId(HWND_ID hwndId);
+
 	private:
 		friend class WinBase;
 

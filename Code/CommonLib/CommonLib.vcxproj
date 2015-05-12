@@ -157,6 +157,10 @@
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="SpinLock.h" />
+    <ClInclude Include="StackTracer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="StdOutRedirect.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="threads.h" />
@@ -227,6 +231,10 @@
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="Profiler.cpp" />
     <ClCompile Include="SpinLock.cpp" />
+    <ClCompile Include="StackTracer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="StdOutRedirect.cpp" />
     <ClCompile Include="System.cpp" />
     <ClCompile Include="TaskScheduler.cpp" />

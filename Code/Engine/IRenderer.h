@@ -45,7 +45,6 @@ class IFont;
 class IRenderTarget;
 class ILight;
 class PointLightMan;
-class RenderPipeline;
 class IScene;
 
 struct CloudProperties
@@ -86,6 +85,7 @@ public:
 	virtual void ProcessRenderTarget() = 0;
 	virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param) = 0;
 	virtual void DeleteRenderTarget(IRenderTarget*) = 0;
+	virtual IRenderTarget* GetRenderTarget(HWND_ID id) const = 0;
 	virtual void SetClearColor(HWND_ID id, const Color& color) = 0;
 	virtual void SetClearDepthStencil(HWND_ID id, float z, UINT8 stencil) = 0;
 	virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil) = 0;
@@ -95,12 +95,8 @@ public:
 	virtual void SetCamera(ICamera* pCamera) = 0;
 	virtual ICamera* GetCamera() const = 0; // this is for current carmera.
 	virtual ICamera* GetMainCamera() const = 0;
-	virtual void UpdateFrameConstantsBuffer() = 0;
 	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
 	virtual void UpdatePointLightConstantsBuffer(void* pData) = 0;
-	virtual void UpdateMaterialConstantsBuffer(void* pData) = 0;
-	virtual void UpdateRareConstantsBuffer() = 0;
-	virtual void UpdateRadConstantsBuffer(void* pData) = 0;
 	virtual void* MapMaterialParameterBuffer() = 0;
 	virtual void UnmapMaterialParameterBuffer() = 0;
 	virtual void* MapBigBuffer() = 0;
@@ -164,7 +160,6 @@ public:
 		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
 	virtual const Vec2I& GetRenderTargetSize() const = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
-	virtual void RestoreViewports() = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
 	virtual void RestoreScissorRects() = 0;
 	// to restore directionalLight call this function with null light.
@@ -254,6 +249,7 @@ public:
 	virtual void BindDepthTexture(bool set) = 0;
 	//-------------------------------------------------------------------------
 	// Render States
+	virtual void RestoreRenderStates() = 0;
 	virtual void RestoreRasterizerState() = 0;
 	virtual void RestoreBlendState() = 0;
 	virtual void RestoreDepthStencilState() = 0;
@@ -318,8 +314,6 @@ public:
 
 	virtual IMaterial* GetMaterial(DEFAULT_MATERIALS::Enum type) = 0;
 
-	virtual RenderPipeline* GetDefaultPipeline() const = 0;
-	virtual RenderPipeline* GetMinimumPipeline() const = 0;
 	virtual int CropSize8(int size) const = 0;
 	
 	virtual void RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj) = 0;

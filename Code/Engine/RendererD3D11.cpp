@@ -20,6 +20,7 @@
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/Hammersley.h>
 #include <CommonLib/tinydir.h>
+#include <CommonLib/StackTracer.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <d3dcompiler.h>
@@ -47,6 +48,10 @@ RendererD3D11::RendererD3D11()
 	m_pFrameConstantsBuffer = 0;
 	m_pObjectConstantsBuffer = 0;
 	m_pPointLightConstantsBuffer = 0;
+	m_pCameraConstantsBuffer = 0;
+	m_pRenderTargetConstantsBuffer = 0;
+	m_pSceneConstantsBuffer = 0;
+
 	m_pMaterialConstantsBuffer = 0;
 	m_pMaterialParametersBuffer = 0;
 	m_pRareConstantsBuffer = 0;
@@ -58,8 +63,21 @@ RendererD3D11::RendererD3D11()
 	mMultiSampleDesc.Quality = 0;
 	
 	mDepthStencilFormat = PIXEL_FORMAT_D24_UNORM_S8_UINT;
-	mFrameConstants.gViewProj.MakeIdentity();
-	mFrameConstants.gView.MakeIdentity();
+
+	mCameraConstants.gView.MakeIdentity();
+	mCameraConstants.gInvView.MakeIdentity();
+	mCameraConstants.gViewProj.MakeIdentity();
+	mCameraConstants.gInvViewProj.MakeIdentity();
+	mCameraConstants.gCamTransform.MakeIdentity();
+	mCameraConstants.gProj.MakeIdentity();
+	mCameraConstants.gInvProj.MakeIdentity();
+	mCameraConstants.gNearFar = Vec2(1.f, 500.f);
+	mCameraConstants.gTangentTheta = Radian(45);
+	mCameraConstants.camera_dummy = 0.f;
+
+	mRenderTargetConstants.gScreenSize = Vec2(1600.f, 900.f);
+	mRenderTargetConstants.gScreenRatio = 1600.f / 900.f;
+	mRenderTargetConstants.rendertarget_dummy = 0;
 
 	mBindedShader = 0;
 	mBindedInputLayout = 0;
@@ -93,6 +111,9 @@ void RendererD3D11::Deinit()
 	SAFE_RELEASE(m_pMaterialConstantsBuffer);
 	SAFE_RELEASE(m_pObjectConstantsBuffer);
 	SAFE_RELEASE(m_pPointLightConstantsBuffer);
+	SAFE_RELEASE(m_pCameraConstantsBuffer);
+	SAFE_RELEASE(m_pRenderTargetConstantsBuffer);
+	SAFE_RELEASE(m_pSceneConstantsBuffer);
 	SAFE_RELEASE(m_pFrameConstantsBuffer);
 	SAFE_RELEASE(m_pRareConstantsBuffer);
 	SAFE_RELEASE(m_pBigBuffer);
@@ -218,18 +239,6 @@ bool RendererD3D11::Init(int threadPool)
 		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(FrameConstants)!");
 		assert(0);
 	}
-	mFrameConstants.gView.MakeIdentity();
-	mFrameConstants.gInvView.MakeIdentity();
-	mFrameConstants.gViewProj.MakeIdentity();
-	mFrameConstants.gInvViewProj.MakeIdentity();
-	mFrameConstants.gLightViewProj.MakeIdentity();
-	mFrameConstants.gCamTransform.MakeIdentity();
-	mFrameConstants.gDirectionalLightDir_Intensity[0] = Vec4(1.f, -.5f, .5f, 1.f);
-	mFrameConstants.gDirectionalLightDir_Intensity[1] = Vec4(-1.f, -.5f, .5f, 0.5f);
-	mFrameConstants.gDirectionalLightDiffuse[0] = Vec4(1.f, 1.f, 1.f, 1.f);
-	mFrameConstants.gDirectionalLightDiffuse[1] = Vec4(0.8f, 0.4f, 0.3f, 1.f);
-	mFrameConstants.gDirectionalLightSpecular[0] = Vec4(1.f, 1.f, 1.f, 1.f);
-	mFrameConstants.gDirectionalLightSpecular[1] = Vec4(0.f, 0.f, 0.f, 0.f);
 	
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	hr = m_pImmediateContext->Map(m_pFrameConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 
@@ -250,12 +259,42 @@ bool RendererD3D11::Init(int threadPool)
 	}
 
 	//------------------------------------------------------------------------
-	// OBJECT CONSTANT
+	// POINT_LIGHT CONSTANT
 	Desc.ByteWidth = sizeof(POINT_LIGHT_CONSTANTS);
 	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pPointLightConstantsBuffer);
 	if (FAILED(hr))
 	{
 		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(PointLightConstants)!");
+		assert(0);
+	}
+
+	//------------------------------------------------------------------------
+	// Camera CONSTANT
+	Desc.ByteWidth = sizeof(CAMERA_CONSTANTS);
+	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pCameraConstantsBuffer);
+	if (FAILED(hr))
+	{
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(CameraConstants)!");
+		assert(0);
+	}
+
+	//------------------------------------------------------------------------
+	// Render target CONSTANT
+	Desc.ByteWidth = sizeof(RENDERTARGET_CONSTANTS);
+	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pRenderTargetConstantsBuffer);
+	if (FAILED(hr))
+	{
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(RenderTargetConstants)!");
+		assert(0);
+	}
+
+	//------------------------------------------------------------------------
+	// Scene CONSTANT
+	Desc.ByteWidth = sizeof(SCENE_CONSTANTS);
+	hr = m_pDevice->CreateBuffer(&Desc, NULL, &m_pSceneConstantsBuffer);
+	if (FAILED(hr))
+	{
+		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "Failed to create constant buffer(SceneConstants)!");
 		assert(0);
 	}
 
@@ -429,49 +468,6 @@ void RendererD3D11::Clear(float r, float g, float b, float a)// only color
 	}
 }
 
-//----------------------------------------------------------------------------
-void RendererD3D11::UpdateFrameConstantsBuffer()
-{
-	if (!mCamera)
-	{
-		Error(FB_DEFAULT_DEBUG_ARG, "No camera Info in renderer!");
-	}
-	mFrameConstants.gView = mCamera->GetViewMat();
-	mFrameConstants.gInvView = mCamera->GetInvViewMat();
-	mFrameConstants.gViewProj = mCamera->GetViewProjMat();
-	mFrameConstants.gInvViewProj = mCamera->GetInvViewProjMat();
-	mCamera->GetTransform().GetHomogeneous(mFrameConstants.gCamTransform);
-	ICamera* pLightCam = mCurRenderTarget->GetLightCamera();
-	if (pLightCam)
-		mFrameConstants.gLightViewProj = pLightCam->GetViewProjMat();
-	for (int i = 0; i < 2; i++)
-	{
-		ILight* pLight = mDirectionalLight[i];
-		mFrameConstants.gDirectionalLightDir_Intensity[i] = float4(pLight->GetPosition(), pLight->GetIntensity());
-		mFrameConstants.gDirectionalLightDiffuse[i] = float4(pLight->GetDiffuse(), 1.0f);
-		mFrameConstants.gDirectionalLightSpecular[i] = float4(pLight->GetSpecular(), 1.0f);
-	}
-	mFrameConstants.gTime = gFBEnv->pTimer->GetTime();
-	mFrameConstants.gDeltaTime.x = gFBEnv->pTimer->GetDeltaTime();
-	long x, y;
-	gFBEnv->pEngine->GetMousePos(x, y);
-	mFrameConstants.gMousePos.x = (float)x;
-	mFrameConstants.gMousePos.y = (float)y;
-	bool lbuttonDown = gFBEnv->pEngine->IsMouseLButtonDown();
-	mFrameConstants.gMousePos.z = lbuttonDown ? (float)x : 0;
-	mFrameConstants.gMousePos.w = lbuttonDown ? (float)y : 0;
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	m_pImmediateContext->Map( m_pFrameConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
-	memcpy(mappedResource.pData, &mFrameConstants, sizeof(FRAME_CONSTANTS));
-	m_pImmediateContext->Unmap(m_pFrameConstantsBuffer, 0);
-	m_pImmediateContext->VSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
-	m_pImmediateContext->GSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
-	m_pImmediateContext->PSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
-
-	if (m_pImmutableConstantsBuffer)
-		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
-}
-
 void RendererD3D11::ClearState()
 {
 	// do not use if possible.
@@ -487,6 +483,33 @@ void RendererD3D11::ClearState()
 }
 
 //----------------------------------------------------------------------------
+// Update constants buffers
+//----------------------------------------------------------------------------
+void RendererD3D11::UpdateFrameConstantsBuffer()
+{
+	long x, y;
+	gFBEnv->pEngine->GetMousePos(x, y);
+	mFrameConstants.gMousePos.x = (float)x;
+	mFrameConstants.gMousePos.y = (float)y;
+	bool lbuttonDown = gFBEnv->pEngine->IsMouseLButtonDown();
+	mFrameConstants.gMousePos.z = lbuttonDown ? (float)x : 0;
+	mFrameConstants.gMousePos.w = lbuttonDown ? (float)y : 0;
+	mFrameConstants.gTime = gFBEnv->pTimer->GetTime();
+	mFrameConstants.gDeltaTime = gFBEnv->pTimer->GetDeltaTime();
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map( m_pFrameConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
+	memcpy(mappedResource.pData, &mFrameConstants, sizeof(FRAME_CONSTANTS));
+	m_pImmediateContext->Unmap(m_pFrameConstantsBuffer, 0);
+	
+	m_pImmediateContext->VSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
+	m_pImmediateContext->GSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
+	m_pImmediateContext->PSSetConstantBuffers(0, 1, &m_pFrameConstantsBuffer);
+
+	if (m_pImmutableConstantsBuffer)
+		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
+}
+//----------------------------------------------------------------------------
 void RendererD3D11::UpdateObjectConstantsBuffer(void* pData)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -496,7 +519,7 @@ void RendererD3D11::UpdateObjectConstantsBuffer(void* pData)
 	m_pImmediateContext->VSSetConstantBuffers(1, 1, &m_pObjectConstantsBuffer);
 	m_pImmediateContext->GSSetConstantBuffers(1, 1, &m_pObjectConstantsBuffer);
 }
-
+//----------------------------------------------------------------------------
 void RendererD3D11::UpdatePointLightConstantsBuffer(void* pData)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -505,7 +528,65 @@ void RendererD3D11::UpdatePointLightConstantsBuffer(void* pData)
 	m_pImmediateContext->Unmap(m_pPointLightConstantsBuffer, 0);
 	m_pImmediateContext->PSSetConstantBuffers(7, 1, &m_pPointLightConstantsBuffer);
 }
+//----------------------------------------------------------------------------
+void RendererD3D11::UpdateCameraConstantsBuffer()
+{
+	mCameraConstants.gView = mCamera->GetViewMat();
+	mCameraConstants.gInvView = mCamera->GetInvViewMat();
+	mCameraConstants.gViewProj = mCamera->GetViewProjMat();
+	mCameraConstants.gInvViewProj = mCamera->GetInvViewProjMat();
+	mCamera->GetTransform().GetHomogeneous(mCameraConstants.gCamTransform);
+	mCameraConstants.gProj = mCamera->GetProjMat();
+	mCameraConstants.gInvProj = mCamera->GetInvProjMat();
+	mCamera->GetNearFar(mCameraConstants.gNearFar.x, mCameraConstants.gNearFar.y);
+	mCameraConstants.gTangentTheta = tan(mCamera->GetFOV() / 2.0f);	
 
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map(m_pCameraConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &mCameraConstants, sizeof(CAMERA_CONSTANTS));
+	m_pImmediateContext->Unmap(m_pCameraConstantsBuffer, 0);
+	m_pImmediateContext->VSSetConstantBuffers(8, 1, &m_pCameraConstantsBuffer);
+	m_pImmediateContext->GSSetConstantBuffers(8, 1, &m_pCameraConstantsBuffer);
+	m_pImmediateContext->PSSetConstantBuffers(8, 1, &m_pCameraConstantsBuffer);
+}
+//----------------------------------------------------------------------------
+void RendererD3D11::UpdateRenderTargetConstantsBuffer()
+{
+	mRenderTargetConstants.gScreenSize.x = (float)mCurRTSize.x;
+	mRenderTargetConstants.gScreenSize.y = (float)mCurRTSize.y;
+	mRenderTargetConstants.gScreenRatio = (float)mCurRTSize.x / (float)mCurRTSize.y;
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map(m_pRenderTargetConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &mRenderTargetConstants, sizeof(RENDERTARGET_CONSTANTS));
+	m_pImmediateContext->Unmap(m_pRenderTargetConstantsBuffer, 0);
+	m_pImmediateContext->VSSetConstantBuffers(9, 1, &m_pRenderTargetConstantsBuffer);
+	m_pImmediateContext->GSSetConstantBuffers(9, 1, &m_pRenderTargetConstantsBuffer);
+	m_pImmediateContext->PSSetConstantBuffers(9, 1, &m_pRenderTargetConstantsBuffer);
+}
+//----------------------------------------------------------------------------
+void RendererD3D11::UpdateSceneConstantsBuffer()
+{
+	ICamera* pLightCam = mCurRenderTarget->GetLightCamera();
+	if (pLightCam)
+		mSceneConstants.gLightViewProj = pLightCam->GetViewProjMat();
+	for (int i = 0; i < 2; i++)
+	{
+		ILight* pLight = mDirectionalLight[i];
+		mSceneConstants.gDirectionalLightDir_Intensity[i] = float4(pLight->GetPosition(), pLight->GetIntensity());
+		mSceneConstants.gDirectionalLightDiffuse[i] = float4(pLight->GetDiffuse(), 1.0f);
+		mSceneConstants.gDirectionalLightSpecular[i] = float4(pLight->GetSpecular(), 1.0f);
+	}
+	mSceneConstants.gFogColor = mCurRenderTarget->GetScene()->GetFogColor().GetVec4();	
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	m_pImmediateContext->Map(m_pSceneConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &mSceneConstants, sizeof(SCENE_CONSTANTS));
+	m_pImmediateContext->Unmap(m_pSceneConstantsBuffer, 0);
+	m_pImmediateContext->VSSetConstantBuffers(10, 1, &m_pSceneConstantsBuffer);
+	m_pImmediateContext->GSSetConstantBuffers(10, 1, &m_pSceneConstantsBuffer);
+	m_pImmediateContext->PSSetConstantBuffers(10, 1, &m_pSceneConstantsBuffer);
+}
 //----------------------------------------------------------------------------
 void RendererD3D11::UpdateMaterialConstantsBuffer(void* pData)
 {
@@ -521,35 +602,20 @@ void RendererD3D11::UpdateMaterialConstantsBuffer(void* pData)
 //----------------------------------------------------------------------------
 void RendererD3D11::UpdateRareConstantsBuffer()
 {
-	static int entered = 0;
-	++entered;
-	if (entered != 1)
-	{
-		--entered;
-		return;
-	}
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT hr;
 	hr = m_pImmediateContext->Map( m_pRareConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 	assert(hr == S_OK);
-	RARE_CONSTANTS* pRareConstants = (RARE_CONSTANTS*)mappedResource.pData;
-	pRareConstants->gProj = mCamera->GetProjMat();
-	pRareConstants->gInvProj = pRareConstants->gProj.Inverse();
-	mCamera->GetNearFar(pRareConstants->gNearFar.x, pRareConstants->gNearFar.y);
-	const auto& size = mCurRenderTarget->GetSize();
-	pRareConstants->gScreenSize.x = (float)size.x;
-	pRareConstants->gScreenSize.y = (float)size.y;
-	pRareConstants->gTangentTheta = tan(mCamera->GetFOV()/2.0f);
-	pRareConstants->gScreenRatio = size.x / (float)size.y;
+	RARE_CONSTANTS* pRareConstants = (RARE_CONSTANTS*)mappedResource.pData;	
 	pRareConstants->gMiddleGray = mMiddleGray;
 	pRareConstants->gStarPower = mStarPower;
 	pRareConstants->gBloomPower = mBloomPower;
-	pRareConstants->gFogColor = mCurRenderTarget->GetScene()->GetFogColor().GetVec4();
+	pRareConstants->gRareDummy = 0.f;	
 	m_pImmediateContext->Unmap(m_pRareConstantsBuffer, 0);
+
 	m_pImmediateContext->VSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	m_pImmediateContext->GSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
 	m_pImmediateContext->PSSetConstantBuffers(4, 1, &m_pRareConstantsBuffer);
-	--entered;
 }
 
 //----------------------------------------------------------------------------
@@ -1666,6 +1732,7 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewInd
 
 void RendererD3D11::SetViewports(Viewport viewports[], int num)
 {
+	assert(num > 0);
 	std::vector<D3D11_VIEWPORT> d3d11_viewports;
 	for (int i=0; i<num; i++)
 	{
@@ -1673,14 +1740,6 @@ void RendererD3D11::SetViewports(Viewport viewports[], int num)
 	}
 	if (!d3d11_viewports.empty())
 		m_pImmediateContext->RSSetViewports(d3d11_viewports.size(), &d3d11_viewports[0]);
-	else
-		RestoreViewports();
-
-}
-
-void RendererD3D11::RestoreViewports()
-{
-	m_pImmediateContext->RSSetViewports(mViewports.size(), &mViewports[0]);
 }
 
 void RendererD3D11::SetScissorRects(RECT rects[], int num)
@@ -1966,7 +2025,16 @@ void RendererD3D11::SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt)
 void RendererD3D11::DrawIndexed(unsigned indexCount, 
 	unsigned startIndexLocation, unsigned startVertexLocation)
 {
+#ifdef _DEBUG
+	__try{
+		m_pImmediateContext->DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
+	}
+	__except (StackTracer::Filter(GetExceptionCode(), GetExceptionInformation())) {
+		Log(StackTracer::GetExceptionMsg());
+	}
+#else
 	m_pImmediateContext->DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
+#endif
 
 #ifdef _RENDERER_FRAME_PROFILER_
 	mFrameProfiler.NumDrawIndexedCall++;
@@ -1977,7 +2045,17 @@ void RendererD3D11::DrawIndexed(unsigned indexCount,
 //----------------------------------------------------------------------------
 void RendererD3D11::Draw(unsigned int vertexCount, unsigned int startVertexLocation)
 {
+#ifdef _DEBUG
+	__try{
+		m_pImmediateContext->Draw(vertexCount, startVertexLocation);
+	}
+	__except (StackTracer::Filter(GetExceptionCode(), GetExceptionInformation()))	{
+		auto msg = StackTracer::GetExceptionMsg();
+		Log(StackTracer::GetExceptionMsg());
+	}
+#else
 	m_pImmediateContext->Draw(vertexCount, startVertexLocation);
+#endif
 
 #ifdef _RENDERER_FRAME_PROFILER_
 	mFrameProfiler.NumDrawCall++;

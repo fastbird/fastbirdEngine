@@ -99,6 +99,7 @@ void Wnd::RefreshFrame()
 		if (mFrames.empty())
 		{
 			ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			T->SetHwndId(GetHwndId());
 			T->SetRender3D(mRender3D, GetRenderTargetSize());
 			T->SetSizeY(16);
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
@@ -109,6 +110,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(T);			
 
 			ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			L->SetHwndId(GetHwndId());
 			L->SetRender3D(mRender3D, GetRenderTargetSize());
 			L->SetSizeX(16);
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
@@ -119,6 +121,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(L);			
 
 			ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			R->SetHwndId(GetHwndId());
 			R->SetRender3D(mRender3D, GetRenderTargetSize());
 			R->SetSizeX(16);
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
@@ -130,6 +133,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(R);
 
 			ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			B->SetHwndId(GetHwndId());
 			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			B->SetSizeY(20);
@@ -141,6 +145,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(B);
 
 			ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			LT->SetHwndId(GetHwndId());
 			LT->SetRender3D(mRender3D, GetRenderTargetSize());
 			LT->SetSize(Vec2I(40, 44));
 			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
@@ -150,6 +155,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LT);
 
 			ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			RT->SetHwndId(GetHwndId());
 			RT->SetRender3D(mRender3D, GetRenderTargetSize());
 			RT->SetSize(Vec2I(40, 44));
 			RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
@@ -160,6 +166,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(RT);
 
 			ImageBox* MT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			MT->SetHwndId(GetHwndId());
 			MT->SetRender3D(mRender3D, GetRenderTargetSize());
 			MT->SetSize(Vec2I(302, 44));
 			MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
@@ -170,6 +177,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(MT);
 
 			ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			LB->SetHwndId(GetHwndId());
 			LB->SetRender3D(mRender3D, GetRenderTargetSize());
 			LB->SetSize(Vec2I(40, 44));
 			LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
@@ -180,6 +188,7 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LB);
 
 			ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			RB->SetHwndId(GetHwndId());
 			RB->SetRender3D(mRender3D, GetRenderTargetSize());
 			RB->SetSize(Vec2I(40, 44));
 			RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
@@ -265,6 +274,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 								 if (!mTitlebar)
 								 {
 									 mTitlebar = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
+									 mTitlebar->SetHwndId(GetHwndId());
 									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
 									 mTitlebar->SetVisible(mVisibility.IsVisible());
 									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
@@ -313,6 +323,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 												 if (!mBackgroundImage)
 												 {
 													 mBackgroundImage = FB_NEW(ImageBox);
+													 mBackgroundImage->SetHwndId(GetHwndId());
 													 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
 													 mBackgroundImage->SetParent(this);
 													 mBackgroundImage->SetWNPos(GetFinalPos());
@@ -330,6 +341,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 										 if (!mBackgroundImage)
 										 {
 											 mBackgroundImage = FB_NEW(ImageBox);
+											 mBackgroundImage->SetHwndId(GetHwndId());
 											 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
 											 mBackgroundImage->SetParent(this);
 											 mBackgroundImage->SetWNPos(GetFinalPos());
@@ -437,6 +449,24 @@ void Wnd::StopHighlight()
 	}
 
 	__super::StopHighlight();
+}
+
+void Wnd::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	if (mTitlebar)
+	{
+		mTitlebar->SetHwndId(hwndId);
+	}
+	for (auto win : mFrames)
+	{
+		if (win)
+		{
+			win->SetHwndId(hwndId);
+		}
+	}
+	if (mBackgroundImage)
+		mBackgroundImage->SetHwndId(hwndId);
 }
 
 }

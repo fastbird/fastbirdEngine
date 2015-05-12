@@ -39,6 +39,8 @@ void InputLayoutD3D11::Bind()
 
 void InputLayoutD3D11::SetDebugName(const char* name)
 {
-	if (m_pInputLayout)
+	if (m_pInputLayout){
+		m_pInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	}
 }

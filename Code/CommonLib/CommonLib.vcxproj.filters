@@ -132,6 +132,7 @@
     </ClInclude>
     <ClInclude Include="ClipboardData.h" />
     <ClInclude Include="Time.h" />
+    <ClInclude Include="StackTracer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -224,5 +225,6 @@
     <ClCompile Include="ClipboardData.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="System.cpp" />
+    <ClCompile Include="StackTracer.cpp" />
   </ItemGroup>
 </Project>

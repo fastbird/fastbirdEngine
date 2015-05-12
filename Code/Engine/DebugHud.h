@@ -87,7 +87,7 @@ public:
 	//--------------------------------------------------------------------
 	// ISceneListener
 	//--------------------------------------------------------------------
-	virtual void OnBeforeRenderingTransparents();
+	virtual void OnBeforeRenderingTransparents(IScene* scene);
 
 	//--------------------------------------------------------------------
 	// Own

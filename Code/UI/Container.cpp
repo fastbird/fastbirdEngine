@@ -52,6 +52,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 	WinBase* pWinBase = (WinBase*)gFBEnv->pUIManager->CreateComponent(type);
 	if (pWinBase)
 	{
+		pWinBase->SetHwndId(GetHwndId());
 		mChildren.push_back(pWinBase);
 		if (mNoMouseEvent)
 		{
@@ -75,6 +76,7 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 	WinBase* pWinBase = (WinBase*)gFBEnv->pUIManager->CreateComponent(type);
 	if (pWinBase)
 	{
+		pWinBase->SetHwndId(GetHwndId());
 		mChildren.push_back(pWinBase);
 		if (mNoMouseEvent)
 		{
@@ -872,6 +874,15 @@ void Container::StopHighlight()
 		child->StopHighlight();
 	}
 	__super::StopHighlight();
+}
+
+void Container::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	for (auto child : mChildren)
+	{
+		child->SetHwndId(hwndId);
+	}
 }
 
 }

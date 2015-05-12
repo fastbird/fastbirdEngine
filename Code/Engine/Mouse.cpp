@@ -247,7 +247,7 @@ namespace fastbird
 		mLastY = 0;
 		if (mLockMouse)
 		{
-			SetCurrentMousePos(gFBEnv->pEngine->GetForgroundWindow(),
+			SetCurrentMousePos(gFBEnv->pEngine->GetForegroundWindow(),
 				mAbsXPrev, mAbsYPrev);
 		}
 		else
@@ -307,7 +307,7 @@ namespace fastbird
 
 	Vec2 Mouse::GetNPos() const
 	{
-		auto hWnd = gFBEnv->pEngine->GetForgroundWindow();
+		auto hWnd = gFBEnv->pEngine->GetForegroundWindow();
 		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
 		return Vec2((float)mAbsX / (float)size.x,
 			(float)mAbsY / (float)size.y);

@@ -2,6 +2,7 @@
 #include <Engine/IRenderTarget.h>
 #include <Engine/ICamera.h>
 #include <Engine/SkySphere.h>
+#include <Engine/Renderer.h>
 
 #include <CommonLib/Math/GeomUtils.h>
 
@@ -60,6 +61,8 @@ void SkySphere::CreateSharedEnvRT()
 		param.mHasDepth = false;
 		param.mUsePool = true;
 		mRT = gFBEnv->pRenderer->CreateRenderTarget(param);
+		mRT->CreateScene();
+		mRT->GetRenderPipeline().SetMinimum();
 	}
 }
 //static 
@@ -200,7 +203,9 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 		Error("void SkySphere::UpdateEnvironmentMap(const Vec3& origin) : No mRT");
 		return;
 	}
-		
+
+	auto const renderer = gFBEnv->_pInternalRenderer;
+
 	ITexture* pTexture = mRT->GetRenderTargetTexture();
 	mRT->GetScene()->AttachSkySphere(this);
 	mRT->GetCamera()->SetPos(origin);
@@ -216,14 +221,16 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 		mRT->GetCamera()->SetDir(dirs[i]);
 		mRT->Render(i);
 	}
+	// this is for unbind the environment map from the output slot.
+	renderer->GetMainRenderTarget()->BindTargetOnly();
 
 	pTexture->GenerateMips();
 	//pTexture->SaveToFile("environment.dds");
 	// for bight test.
 	//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 	GenerateRadianceCoef(pTexture);
-	gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
-	gFBEnv->pRenderer->UpdateRadConstantsBuffer(mIrradCoeff);
+	renderer->SetEnvironmentTexture(pTexture);
+	renderer->UpdateRadConstantsBuffer(mIrradCoeff);
 	mRT->GetScene()->DetachSkySphere();
 }
 

@@ -75,7 +75,7 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		// ISceneListener
 		//--------------------------------------------------------------------
-		virtual void OnBeforeRenderingTransparents();
+		virtual void OnBeforeRenderingTransparents(IScene* scene);
 
 		//--------------------------------------------------------------------
 		// Own

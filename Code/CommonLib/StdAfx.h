@@ -14,6 +14,7 @@
 #include <atomic>
 #include <mutex>
 #include <regex>
+#include <stdlib.h>
 
 #include <CommonLib/CommonLib.h>
 #include <CommonLib/Math/fbMath.h>

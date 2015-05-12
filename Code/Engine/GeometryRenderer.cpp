@@ -149,7 +149,7 @@ void GeometryRenderer::PreRender()
 		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 }
 
-void GeometryRenderer::OnBeforeRenderingTransparents()
+void GeometryRenderer::OnBeforeRenderingTransparents(IScene* scene)
 {
 	if (!gFBEnv->pConsole->GetEngineCommand()->r_debugDraw)
 		return;

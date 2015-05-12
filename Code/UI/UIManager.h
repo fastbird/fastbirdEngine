@@ -14,7 +14,6 @@ namespace fastbird
 	class UICommands;
 	class UIManager : public IUIManager
 	{
-		friend class DropDown;
 	public:
 
 		typedef std::vector<IWinBase*> WinBases;
@@ -89,14 +88,14 @@ namespace fastbird
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
 		virtual void GatherRenderList();
-		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId, bool luaUI = false);
-		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId);
+		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false);
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID);
 		virtual void DeleteLuaUI(const char* uiName);
 		virtual bool IsLoadedUI(const char* uiName);
 
-		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId);
-		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId);
-		virtual IWinBase* AddWindow(ComponentType::Enum type, HWND_ID hwndId);
+		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+		virtual IWinBase* AddWindow(ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
 
 		virtual void DeleteWindow(IWinBase* pWnd);
 		virtual void SetFocusUI(IWinBase* pWnd);

@@ -19,7 +19,7 @@ namespace fastbird
 	public:
 		virtual const Vec2I& GetSize() const = 0;
 		virtual bool CheckOptions(const RenderTargetParam& param) = 0;
-		virtual RenderPipeline* GetRenderPipeline() const = 0;
+		virtual RenderPipeline& GetRenderPipeline() const = 0;
 
 		virtual void SetColorTextureDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool miplevel, bool cubeMap) = 0;
 		virtual void SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap) = 0;
@@ -27,8 +27,10 @@ namespace fastbird
 		virtual void SetClearColor(const Color& color) = 0;
 		virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
 		virtual IScene* GetScene() const = 0;
-		virtual void SetSceneOverride(IScene* override) = 0;
+		virtual void SetSceneOverride(IScene* scene) = 0;
 		virtual IScene* GetSceneOverride() const = 0;
+		virtual void LockSceneOverride(bool lock) = 0;
+
 		virtual IScene* CreateScene() = 0;
 		virtual ICamera* GetCamera() const = 0;
 		virtual ICamera* GetOrCreateOverridingCamera() = 0;

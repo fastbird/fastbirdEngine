@@ -29,7 +29,7 @@ namespace fastbird
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnParentVisibleChanged(bool show);
 		virtual bool SetVisible(bool show);
-
+		virtual void SetHwndId(HWND_ID hwndId);
 
 	protected:
 		void SetCommonProperty(IWinBase* item, size_t index);

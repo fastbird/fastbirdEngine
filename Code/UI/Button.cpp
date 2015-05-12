@@ -590,7 +590,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::PROGRESSBAR:
 	{
 									FB_DELETE(mProgressBar);
-									mProgressBar = FB_NEW(HorizontalGauge);
+									mProgressBar = (HorizontalGauge*)gFBEnv->pUIManager->CreateComponent(ComponentType::HorizontalGauge);
+									mProgressBar->SetHwndId(GetHwndId());
 									mProgressBar->SetRender3D(mRender3D, GetRenderTargetSize());
 									mProgressBar->SetParent(this);
 									mProgressBar->SetWNSize(mWNSize);
@@ -662,6 +663,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 ImageBox* Button::CreateImageBox()
 {
 	auto image = FB_NEW(ImageBox);
+	image->SetHwndId(GetHwndId());
 	image->SetRender3D(mRender3D, GetRenderTargetSize());
 	image->SetVisible(true);
 	image->SetParent(this);
@@ -798,5 +800,22 @@ void Button::AlignIconText()
 		mTextGap.x = Round(textCenter - buttonCenter);
 		AlignText();		
 	}	
+}
+
+void Button::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	for (int i = 0; i < ButtonImages::Num; ++i)
+	{
+		if (mImages[i])
+		{
+			mImages[i]->SetHwndId(hwndId);
+		}
+	}
+
+	if (mProgressBar)
+		mProgressBar->SetHwndId(hwndId);
+
+
 }
 }

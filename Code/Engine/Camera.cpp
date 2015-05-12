@@ -211,8 +211,7 @@ void Camera::Update()
 				0, 0, 0, 1); 
 			mProjMat = mProjMat * swapMat;
 		}
-
-		gFBEnv->pRenderer->UpdateRareConstantsBuffer();
+		mInvProjMat = mProjMat.Inverse();
 	}
 
 	if (projChanged || viewChanged)
@@ -299,7 +298,12 @@ const Mat44& Camera::GetProjMat()
 {
 	Update();
 	return mProjMat;
+}
 
+const Mat44& Camera::GetInvProjMat()
+{
+	Update();
+	return mInvProjMat;
 }
 
 //----------------------------------------------------------------------------

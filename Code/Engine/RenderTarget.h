@@ -87,7 +87,7 @@ namespace fastbird
 		
 		const Vec2I& GetSize() const;
 		virtual bool CheckOptions(const RenderTargetParam& param);
-		virtual RenderPipeline* GetRenderPipeline() const;
+		virtual RenderPipeline& GetRenderPipeline() const;
 
 		virtual void SetScene(IScene* scene);
 		virtual IScene* GetScene() const;

@@ -156,30 +156,35 @@ void ShaderD3D11::SetDebugName(const char* name)
 	if (m_pVertexShader)
 	{
 		sprintf_s(buf, "%s VS", name);
+		m_pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 	}
 
 	if (m_pGeometryShader)
 	{
 		sprintf_s(buf, "%s GS", name);
+		m_pGeometryShader->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pGeometryShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 	}
 
 	if (m_pHullShader)
 	{
 		sprintf_s(buf, "%s HS", name);
+		m_pHullShader->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pHullShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 	}
 
 	if (m_pDomainShader)
 	{
 		sprintf_s(buf, "%s DS", name);
+		m_pDomainShader->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pDomainShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 	}
 
 	if (m_pPixelShader)
 	{
 		sprintf_s(buf, "%s PS", name);
+		m_pPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		m_pPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
 	}
 		

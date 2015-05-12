@@ -31,7 +31,9 @@ RenderTarget::RenderTarget()
 	mId = NextRenderTargetId++;
 
 	mCamera = FB_NEW(Camera);
-	mRenderPipeline = gFBEnv->pRenderer->GetDefaultPipeline()->Clone();
+	mRenderPipeline = FB_NEW(RenderPipeline);
+	mRenderPipeline->SetMinimum();
+
 }
 
 RenderTarget::~RenderTarget()
@@ -56,9 +58,10 @@ bool RenderTarget::CheckOptions(const RenderTargetParam& param)
 		param.mMipmap == mMiplevel && param.mCubemap == mCubeMap && param.mHasDepth == mHasDepth && param.mUsePool == mUsePool;
 }
 
-RenderPipeline* RenderTarget::GetRenderPipeline() const
+RenderPipeline& RenderTarget::GetRenderPipeline() const
 {
-	return mRenderPipeline;
+	assert(mRenderPipeline);
+	return *mRenderPipeline;
 }
 
 void RenderTarget::SetScene(IScene* scene)
@@ -142,15 +145,17 @@ void RenderTarget::Bind(size_t face)
 	if (!mEnabled)
 		return;
 
-	auto const renderer = gFBEnv->pRenderer;
-	
+	auto const renderer = gFBEnv->_pInternalRenderer;
+	renderer->SetCurRenderTarget(this);
+	gFBEnv->mRenderTarget = this;
+
 	if (mRenderTargetTexture)
 		mRenderTargetTexture->Unbind();
 	ITexture* rt[] = { mRenderTargetTexture };	
 	size_t rtViewIndex[] = { face };
+	// will update RenderTargetConstants
 	renderer->SetRenderTarget(rt, rtViewIndex, 1, mDepthStencilTexture, face);
-	renderer->SetCurRenderTarget(this);	
-	gFBEnv->mRenderTarget = this;
+	renderer->SetViewports(&mViewport, 1);
 
 	renderer->Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
 		mDepthClear, mStencilClear);
@@ -159,13 +164,21 @@ void RenderTarget::Bind(size_t face)
 	
 	auto cam = GetCamera();
 	renderer->SetCamera(cam);
-	cam->ProcessInputData();
-	renderer->SetViewports(&mViewport, 1);
-	renderer->UpdateFrameConstantsBuffer();
+	
+	if (mRenderPipeline->GetStep(RenderSteps::ShadowMap))
+	{
+		UpdateLightCamera();
+	}
+
+	renderer->SetScene(GetScene()); // will update scene constants
+
+	cam->ProcessInputData();	
+	
 	if (mEnvTexture)
 	{
 		renderer->SetEnvironmentTextureOverride(mEnvTexture);
 	}
+	renderer->RestoreRenderStates();
 }
 
 void RenderTarget::BindTargetOnly()
@@ -204,12 +217,13 @@ void RenderTarget::Render(size_t face)
 	{
 		SetGlowRenderTarget();
 		renderer->Clear(0.f, 0.f, 0.f, 1.f);
+		UnSetGlowRenderTarget();
 	}
 
 	if (mRenderPipeline->GetStep(RenderSteps::ShadowMap))
 	{
 		D3DEventMarker mark("Shadow pass");
-		UpdateLightCamera();		
+		//UpdateLightCamera is performed in the Bind()
 		BindShadowMap(false);
 		PrepareShadowMapRendering();
 		GetSceneInternal()->Render();
@@ -295,6 +309,7 @@ void RenderTarget::Render(size_t face)
 		RenderStarGlare();
 		ToneMapping();
 	}
+	Unbind();
 }
 
 void RenderTarget::Unbind()
@@ -414,15 +429,18 @@ void RenderTarget::SetGlowRenderTarget()
 		*/
 		mGlowTarget = renderer->CreateTexture(0, mSize.x, mSize.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTarget, FormatString("rt%u_GlowTarget", mId));
+		const char* szStr = FormatString("rt%u_%u_%u_GlowTarget", mId, mSize.x, mSize.y);
+		FB_SET_DEVICE_DEBUG_NAME(mGlowTarget, szStr);
 		
 		mGlowTexture[0] = renderer->CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], FormatString("rt%u_GlowTexture0", mId));
+		szStr = FormatString("rt%u_%u_%u_GlowTexture0", mId, mSize.x, mSize.y);
+		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], szStr);
 		
 		mGlowTexture[1] = renderer->CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], FormatString("rt%u_GlowTexture1", mId));
+		szStr = FormatString("rt%u_%u_%u_GlowTexture1", mId, mSize.x, mSize.y);
+		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], szStr);
 	}
 
 	ITexture* rt[] = { mRenderTargetTexture, mGlowTarget };
@@ -430,8 +448,10 @@ void RenderTarget::SetGlowRenderTarget()
 	// but don't need to.
 	assert(mFace == 0);
 	size_t rtViewIndex[] = { mFace, 0 }; 
-	renderer->SetRenderTarget(rt, rtViewIndex, 1, mDepthStencilTexture, mFace);
-
+	renderer->SetRenderTarget(rt, rtViewIndex, 2, mDepthStencilTexture, mFace);
+	Viewport viewports[] = { mViewport, mViewport };
+	renderer->SetViewports(viewports, 2);
+	mGlowSet = true;
 
 }
 
@@ -456,7 +476,7 @@ void RenderTarget::PrepareShadowMapRendering()
 	if (!mShadowMap)
 	{
 		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x / 1600.f * cmd->r_ShadowCamWidth);
-		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.x / 900.f * cmd->r_ShadowCamHeight);		
+		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y / 900.f * cmd->r_ShadowCamHeight);		
 		width = renderer->CropSize8(width);
 		height = renderer->CropSize8(height);
 		
@@ -468,7 +488,8 @@ void RenderTarget::PrepareShadowMapRendering()
 			PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
 		assert(mShadowMap);
-		FB_SET_DEVICE_DEBUG_NAME(mShadowMap, FormatString("rt%u_ShadowMap", mId));
+		const char* szStr = FormatString("rt%u_%u_%u_ShadowMap", mId, width, height);
+		FB_SET_DEVICE_DEBUG_NAME(mShadowMap, szStr);
 	}
 	
 	ITexture* rts[] = { 0 };
@@ -500,7 +521,7 @@ void RenderTarget::EndShadowMapRendering()
 void RenderTarget::BindShadowMap(bool bind)
 {
 	auto const renderer = gFBEnv->pRenderer;
-	if (bind)
+	if (bind && mShadowMap)
 		renderer->SetTexture(mShadowMap, BINDING_SHADER_PS, 8);
 	else
 		renderer->SetTexture(0, BINDING_SHADER_PS, 8);
@@ -607,7 +628,8 @@ void RenderTarget::SetHDRTarget()
 			Error("Cannot create HDR RenderTarget.");
 			return;
 		}
-		FB_SET_DEVICE_DEBUG_NAME(mHDRTarget, FormatString("HDRTargetTexture_%u", mId));
+		const char* szStr = FormatString("rt%u_%u_%u_HDRTargetTexture", mId, mSize.x, mSize.y);
+		FB_SET_DEVICE_DEBUG_NAME(mHDRTarget, szStr);
 	}
 
 	ITexture* rts[] = { mHDRTarget };
@@ -717,15 +739,18 @@ void RenderTarget::CalcLuminance()
 void RenderTarget::BlendGlow()
 {
 	auto const renderer = gFBEnv->_pInternalRenderer;
+	Vec2I size((int)(mSize.x*0.25f), (int)(mSize.y*0.25f));
 	if (!mGlowTexture[0])
 	{
-		mGlowTexture[0] = renderer->CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
+		mGlowTexture[0] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], FormatString("GlowTexture0 %u", mId));
+		const char* szStr = FormatString("rt%u_%u_%u_GlowTexture0", mId, size.x, size.y);
+		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], szStr);
 			
-		mGlowTexture[1] = renderer->CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
+		mGlowTexture[1] = renderer->CreateTexture(0, (int)size.x, (int)size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], FormatString("GlowTexture1 %u", mId));
+		szStr = FormatString("rt%u_%u_%u_GlowTexture1", mId, size.x, size.y);
+		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], szStr);
 	}
 
 	{
@@ -890,11 +915,11 @@ void RenderTarget::BrightPass()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mBrightPassTexture)
 	{
-		Vec2I brightTextureSize((int)(renderer->CropSize8(mSize.x) * 0.25f),
-			(int)(renderer->CropSize8(mSize.y) * 0.25f));
-		mBrightPassTexture = renderer->CreateTexture(0, brightTextureSize.x, brightTextureSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
+		Vec2I size((int)(renderer->CropSize8(mSize.x) * 0.25f), (int)(renderer->CropSize8(mSize.y) * 0.25f));
+		mBrightPassTexture = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		FB_SET_DEVICE_DEBUG_NAME(mBrightPassTexture, "BrightPass");
+		const char* szStr = FormatString("rt%u_%u_%u_BrightPass", mId, size.x, size.y);
+		FB_SET_DEVICE_DEBUG_NAME(mBrightPassTexture, szStr);
 	}
 
 	const Vec2I& resol = mBrightPassTexture->GetSize();
@@ -1030,7 +1055,7 @@ void RenderTarget::Bloom()
 			mBloomTexture[i] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 			char buff[255];
-			sprintf_s(buff, "Bloom(%d) %u", i, mId);
+			sprintf_s(buff, "rt%u_%u_%u_Bloom(%d) %u", mId, size.x, size.y, i);
 			FB_SET_DEVICE_DEBUG_NAME(mBloomTexture[i], buff);
 		}
 	}
@@ -1149,8 +1174,7 @@ void RenderTarget::RenderStarGlare()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (mStarTextures[0] == 0)
 	{
-		Vec2I size((int)(mSizeCropped.x * 0.25f),
-			(int)(mSizeCropped.y*0.25f));
+		Vec2I size( (int)(mSizeCropped.x * 0.25f), (int)(mSizeCropped.y*0.25f));
 		for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
 		{
 			mStarTextures[i] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,

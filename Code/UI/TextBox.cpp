@@ -98,6 +98,7 @@ namespace fastbird
 			if (!mImage)
 			{
 				mImage = FB_NEW(ImageBox);
+				mImage->SetHwndId(GetHwndId());
 				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 				mImage->SetParent(this);
 				mImage->SetWNPos(mWNPos);
@@ -114,6 +115,7 @@ namespace fastbird
 											 if (!mImage)
 											 {
 												 mImage = FB_NEW(ImageBox);
+												 mImage->SetHwndId(GetHwndId());
 												 mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 												 mImage->SetParent(this);
 												 mImage->SetWNPos(mWNPos);
@@ -150,6 +152,15 @@ namespace fastbird
 		float height = pFont->GetBaseHeight();
 		pFont->SetBackToOrigHeight();
 		return (unsigned)(height * mNumTextLines) + 16;
+	}
+
+	void TextBox::SetHwndId(HWND_ID hwndId)
+	{
+		__super::SetHwndId(hwndId);
+		if (mImage)
+		{
+			mImage->SetHwndId(hwndId);
+		}
 	}
 
 }

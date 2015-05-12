@@ -168,7 +168,7 @@ void DebugHud::PreRender()
 		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 }
 
-void DebugHud::OnBeforeRenderingTransparents()
+void DebugHud::OnBeforeRenderingTransparents(IScene* scene)
 {
 	if (!gFBEnv->pConsole->GetEngineCommand()->r_debugDraw)
 		return;

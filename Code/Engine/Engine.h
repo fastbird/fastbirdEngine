@@ -36,7 +36,6 @@ namespace fastbird
 		SmartPtr<ITerrain> mTerrain;
 		SmartPtr<ISkyBox> mSkyBox;	
 		
-		IScene* mSceneOverride; // life time should be managed manually.
 		INIReader* mINI;
 		SmartPtr<IScriptSystem> mScriptSystem;	
 
@@ -83,8 +82,8 @@ namespace fastbird
 		virtual HWND_ID GetWindowHandleIdWithMousePoint() const;
 		virtual HWND GetMainWndHandle() const;
 		virtual HWND_ID GetMainWndHandleId() const;
-		virtual HWND GetForgroundWindow(HWND_ID* id = 0) const;
-		virtual HWND_ID GetForgroundWindowId() const;
+		virtual HWND GetForegroundWindow(HWND_ID* id = 0) const;
+		virtual HWND_ID GetForegroundWindowId() const;
 		virtual bool InitEngine(int rendererType);
 		virtual bool InitSwapChain(HWND_ID id, int width, int height);
 		virtual inline IRenderer* GetRenderer() const;

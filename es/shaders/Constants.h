@@ -11,19 +11,10 @@ cbuffer FRAME_CONSTANTS
 		: register(b0)
 	#endif
 {
-	float4x4 gView;
-	float4x4 gInvView;
-	float4x4 gViewProj;
-	float4x4 gInvViewProj;
-	float4x4 gLightViewProj;
-	float4x4 gCamTransform;
-	float4 gDirectionalLightDir_Intensity[2];
-	float4 gDirectionalLightDiffuse[2];
-	float4 gDirectionalLightSpecular[2];
-	float4 gMousePos; // x, y : current pos   z, w: down pos
-	float4 gDeltaTime;
-	float gTime;
-	float3 gFrameConstDummy;
+	float4 gMousePos; // x, y : current pos   z, w: button down pos // per frame	
+	float gDeltaTime; // per frame
+	float gTime; // per frame
+	float2 gFrameConstDummy;
 };
 
 cbuffer OBJECT_CONSTANTS
@@ -59,18 +50,11 @@ cbuffer RARE_CONSTANTS
 #ifndef CPP
 	: register (b4)
 #endif
-{
-	float4x4 gProj;
-	float4x4 gInvProj;
-	float2 gNearFar;
-	float2 gScreenSize;
-	float4 gFogColor;
-	float gTangentTheta;
-	float gScreenRatio;
+{	
 	float gMiddleGray;
 	float gStarPower;	
 	float gBloomPower;
-	float3 gEmpty;
+	float gRareDummy;
 };
 
 cbuffer BIG_BUFFER
@@ -108,8 +92,48 @@ cbuffer POINT_LIGHT_CONSTANTS
 #endif
 	};
 
+cbuffer CAMERA_CONSTANTS
+	#ifndef CPP
+		: register(b8)
+	#endif
+{
+	float4x4 gView;
+	float4x4 gInvView;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	float4x4 gCamTransform;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float2 gNearFar;
+	float gTangentTheta;
+	float camera_dummy;
+};
+
+cbuffer RENDERTARGET_CONSTANTS
+	#ifndef CPP
+		: register(b9)
+	#endif
+{	
+	float2 gScreenSize;
+	float gScreenRatio;
+	float rendertarget_dummy;
+};
+
+cbuffer SCENE_CONSTANTS
+	#ifndef CPP
+		: register(b10)
+	#endif
+{	
+	float4x4 gLightViewProj;	
+	float4 gDirectionalLightDir_Intensity[2]; // per render target(actually per scene
+	float4 gDirectionalLightDiffuse[2]; // per render target(actually per scene
+	float4 gDirectionalLightSpecular[2]; // per render target(actually per scene	
+	float4 gFogColor;
+};
+	
 #ifdef CPP
 } // namespace
 #endif
+
 
 #endif //__SHADER_CONSTANTS_H_

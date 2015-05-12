@@ -42,6 +42,7 @@ DropDown::~DropDown()
 void DropDown::OnCreated()
 {
 	mButton = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
+	mButton->SetHwndId(GetHwndId());
 	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
 	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
@@ -321,6 +322,14 @@ bool DropDown::SetVisible(bool show)
 	}
 	mButton->SetVisible(show);
 	return ret;
+}
+
+void DropDown::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	if (mButton)
+		mButton->SetHwndId(hwndId);
+
 }
 
 }

@@ -27,7 +27,7 @@ namespace fastbird
 	Renderer::Renderer()
 		: DEFAULT_DYN_VERTEX_COUNTS(100)
 		, mCurRTSize(100, 100)
-		, mSceneOverride(0)
+		, mCurProcessingScene(0)
 		, mCamera(0)
 		, mForcedWireframe(false)
 		, mNextEnvUpdateSkySphere(0)
@@ -60,15 +60,9 @@ namespace fastbird
 		y += 0.25f;
 	}
 	mPointLightMan = FB_NEW(PointLightMan);
-
-	mDefaultPipeline = FB_NEW(RenderPipeline);
-	mDefaultPipeline->EnableAll();
-	mMinimumPipeline = FB_NEW(RenderPipeline);
 }
 Renderer::~Renderer()
 {
-	FB_DELETE(mMinimumPipeline);
-	FB_DELETE(mDefaultPipeline);
 	FB_DELETE(mPointLightMan);
 	StarDef::FinalizeStatic();
 	if (gFBEnv->pConsole)
@@ -383,13 +377,11 @@ bool Renderer::OnPrepared()
 	}
 	mFont->SetTextEncoding(IFont::UTF16);
 
-	//mDebugHud = FB_NEW(DebugHud);
-	//mGeomRenderer = FB_NEW(GeometryRenderer);
+	mDebugHud = FB_NEW(DebugHud);
+	mGeomRenderer = FB_NEW(GeometryRenderer);
 
 	if (gFBEnv->pConsole)
 		gFBEnv->pConsole->Init();
-
-	UpdateRareConstantsBuffer();
 
 	mDefaultRasterizerState = CreateRasterizerState(RASTERIZER_DESC());
 	mDefaultBlendState = CreateBlendState(BLEND_DESC());
@@ -465,6 +457,7 @@ bool Renderer::OnPrepared()
 	mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
 	mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
 	mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
+	UpdateRareConstantsBuffer();
 
 
 	return true;
@@ -475,6 +468,7 @@ void Renderer::OnSwapchainCreated(HWND_ID id)
 	auto rt = mSwapChainRenderTargets[id];
 	auto scene = gFBEnv->pEngine->CreateScene();
 	rt->SetScene(scene);
+	rt->GetRenderPipeline().SetMaximum();
 
 	if (id==1) // main
 	{
@@ -525,7 +519,7 @@ void Renderer::SetCamera(ICamera* pCamera)
 	mCamera = pCamera;
 	mCamera->SetCurrent(true);
 	if (prev != mCamera)
-		UpdateRareConstantsBuffer();
+		UpdateCameraConstantsBuffer();
 }
 
 //----------------------------------------------------------------------------
@@ -638,7 +632,8 @@ unsigned Renderer::GetCropHeight(HWND hWnd) const
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 	const Color& color, float size)
 {
-	mDebugHud->DrawTextForDuration(secs, pos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->DrawTextForDuration(secs, pos, text, color, size);
 }
 
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
@@ -660,7 +655,8 @@ void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color, 
 
 void Renderer::Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->Draw3DText(worldpos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->Draw3DText(worldpos, text, color, size);
 }
 
 void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size)
@@ -671,39 +667,46 @@ void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& c
 void Renderer::DrawLine(const Vec3& start, const Vec3& end, 
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLine(start, end, color0, color1);
+	if (mDebugHud)
+		mDebugHud->DrawLine(start, end, color0, color1);
 }
 
 void Renderer::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLineBeforeAlphaPass(start, end, color0, color1);
+	if (mDebugHud)
+		mDebugHud->DrawLineBeforeAlphaPass(start, end, color0, color1);
 }
 
 void Renderer::DrawLine(const Vec2I& start, const Vec2I& end, 
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLine(start, end, color0, color0);
+	if (mDebugHud)
+		mDebugHud->DrawLine(start, end, color0, color0);
 }
 
 void Renderer::DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
 	const char* texture, bool textureFlow)
 {
-	mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
 }
 
 
 void Renderer::DrawSphere(const Vec3& pos, float radius, const Color& color)
 {
-	mGeomRenderer->DrawSphere(pos, radius, color);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawSphere(pos, radius, color);
 }
 void Renderer::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha)
 {
-	mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
 }
 void Renderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha)
 {
-	mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
 }
 
 void Renderer::RenderGeoms()
@@ -774,6 +777,8 @@ void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int
 	}
 	if (mFont)
 		mFont->SetRenderTargetSize(mCurRTSize);
+
+	UpdateRenderTargetConstantsBuffer();
 }
 
 const Vec2I& Renderer::GetRenderTargetSize() const
@@ -791,6 +796,17 @@ IRenderTarget* Renderer::GetMainRenderTarget() const
 	return it->second;
 }
 
+IRenderTarget* Renderer::GetRenderTarget(HWND_ID id) const
+{
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("No render target is found for the hwnd id %u", id));
+		return 0;
+	}
+	return it->second;
+}
+
 IScene* Renderer::GetMainScene() const
 {
 	auto rt = GetMainRenderTarget();
@@ -805,18 +821,11 @@ IScene* Renderer::GetMainScene() const
 
 IScene* Renderer::GetScene() const
 {
-	auto hwnd = gFBEnv->pEngine->GetForgroundWindow();
-	auto mainHwnd = gFBEnv->pEngine->GetMainWndHandle();
-	if (hwnd == mainHwnd)
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
+	auto rt = GetRenderTarget(hwndId);
+	if (rt)
 	{
-		if (mSceneOverride)
-			return mSceneOverride;
-	}
-	auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hwnd);
-	auto it = mSwapChainRenderTargets.Find(hwndId);
-	if (it != mSwapChainRenderTargets.end())
-	{
-		return it->second->GetScene();
+		return rt->GetScene();
 	}
 
 	// fall back
@@ -837,23 +846,6 @@ const Vec2I& Renderer::GetMainRTSize() const
 	if (!gFBEnv->mExiting)
 		Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
 	return Vec2I::ZERO;
-}
-
-void Renderer::SetSceneOverride(IScene* pScene)
-{
-	if (mLockSceneOverride)
-		return;
-	mSceneOverride = pScene;
-}
-
-void Renderer::LockSceneOverride(bool lock)
-{
-	mLockSceneOverride = lock;
-}
-
-IScene* Renderer::GetSceneOverride() const
-{
-	return mSceneOverride;
 }
 
 const INPUT_ELEMENT_DESCS& Renderer::GetInputElementDesc(
@@ -1150,21 +1142,36 @@ void Renderer::SetEnvironmentTextureOverride(ITexture* texture)
 }
 
 //---------------------------------------------------------------------------
+void Renderer::RestoreRenderStates()
+{
+	RestoreBlendState();
+	RestoreRasterizerState();
+	RestoreDepthStencilState();
+}
+
+//---------------------------------------------------------------------------
 void Renderer::RestoreRasterizerState()
 {
-	mDefaultRasterizerState->Bind();
+	if (mDefaultRasterizerState)
+		mDefaultRasterizerState->Bind();
 }
 
 //---------------------------------------------------------------------------
 void Renderer::RestoreBlendState()
 {
-	mDefaultBlendState->Bind();
+	if (mLockBlendState)
+		return;
+	if (mDefaultBlendState)
+		mDefaultBlendState->Bind();
 }
 
 //---------------------------------------------------------------------------
 void Renderer::RestoreDepthStencilState()
 {
-	mDefaultDepthStencilState->Bind(0);
+	if (mLockDepthStencil)
+		return;
+	if (mDefaultDepthStencilState)
+		mDefaultDepthStencilState->Bind(0);
 }
 
 //---------------------------------------------------------------------------
@@ -1583,6 +1590,7 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	else if (pCVar->mName == "r_hdrmiddlegray")
 	{
 		mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
+		UpdateRareConstantsBuffer();
 	}
 	else if (pCVar->mName == "r_bloompower")
 	{
@@ -2018,6 +2026,8 @@ IShader* Renderer::GetToneMappingPS()
 void Renderer::Render(float dt)
 {
 	InitFrameProfiler(dt);
+	UpdateFrameConstantsBuffer();
+
 	ProcessRenderTarget();
 	Render3DUIsToTexture();
 	auto mainRT = GetMainRenderTarget();
@@ -2031,12 +2041,12 @@ void Renderer::Render(float dt)
 		{
 			RenderMarks();
 		}
-		RenderUI(it.first);		
+		RenderUI(it.first);
 	}
 	mainRT->BindTargetOnly();
 	RenderDebugHud();
 	RenderDebugRenderTargets();
-	RenderFade();
+	RenderFade();	
 }
 
 void Renderer::RenderDebugRenderTargets()
@@ -2181,17 +2191,6 @@ IMaterial* Renderer::GetMaterial(DEFAULT_MATERIALS::Enum type)
 {
 	assert(type < DEFAULT_MATERIALS::COUNT);
 	return mMaterials[type];
-}
-
-
-RenderPipeline* Renderer::GetDefaultPipeline() const
-{
-	return mDefaultPipeline;
-}
-
-RenderPipeline* Renderer::GetMinimumPipeline() const
-{
-	return mMinimumPipeline;
 }
 
 
@@ -2462,6 +2461,14 @@ void Renderer::OnRenderTargetDeleted(RenderTarget* renderTarget)
 		mCamera = mCurRenderTarget->GetCamera();
 		for (int i = 0; i < 2; i++)
 			mDirectionalLight[i] = mCurRenderTarget->GetScene()->GetLight(i);
+	}
+}
+
+void Renderer::SetScene(IScene* scene)
+{
+	if (scene != mCurProcessingScene){
+		mCurProcessingScene = scene;
+		UpdateSceneConstantsBuffer();
 	}
 }
 }

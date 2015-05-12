@@ -31,7 +31,7 @@ protected:
 
 	// every frame render targets
 	std::vector< IRenderTarget* > mRenderTargets;
-	IScene* mSceneOverride; // life time should be managed manually.
+	IScene* mCurProcessingScene;
 
 	Vec2I mCurRTSize;
 
@@ -185,9 +185,6 @@ protected:
 	unsigned mFrameLuminanceCalced;
 	float mFadeAlpha;
 
-	RenderPipeline* mDefaultPipeline;
-	RenderPipeline* mMinimumPipeline;
-
 	typedef VectorMap<HWND_ID, std::vector<IUIObject*> > UI_OBJECTS;
 	UI_OBJECTS mUIObjectsToRender;
 
@@ -212,6 +209,7 @@ public:
 	void CleanGodRayResources();
 
 	IRenderTarget* GetMainRenderTarget() const;
+	virtual IRenderTarget* GetRenderTarget(HWND_ID id) const;
 	virtual IScene* GetMainScene() const;
 	virtual IScene* GetScene() const;
 	const Vec2I& GetMainRTSize() const;
@@ -307,6 +305,7 @@ public:
 
 	//-------------------------------------------------------------------------
 	// Render States
+	virtual void RestoreRenderStates();
 	virtual void RestoreRasterizerState();
 	virtual void RestoreBlendState();
 	virtual void RestoreDepthStencilState();
@@ -436,9 +435,6 @@ public:
 	PointLightMan* GetPointLightMan() const { return mPointLightMan; }
 	virtual IMaterial* GetMaterial(DEFAULT_MATERIALS::Enum type);
 
-	RenderPipeline* GetDefaultPipeline() const;
-	RenderPipeline* GetMinimumPipeline() const;
-
 	void ProcessInputData();
 	void OnInputFromEngineForCamera(IMouse* mouse, IKeyboard* keyboard);
 
@@ -463,6 +459,16 @@ public:
 	virtual void RemoveHPBarObject(IObject* hpBar);
 
 	void OnRenderTargetDeleted(RenderTarget* renderTarget);
+
+	void SetScene(IScene* scene);
+
+	virtual void UpdateFrameConstantsBuffer() = 0;
+	virtual void UpdateMaterialConstantsBuffer(void* pData) = 0;
+	virtual void UpdateCameraConstantsBuffer() = 0;
+	virtual void UpdateRenderTargetConstantsBuffer() = 0;
+	virtual void UpdateSceneConstantsBuffer() = 0;
+	virtual void UpdateRareConstantsBuffer() = 0;
+	virtual void UpdateRadConstantsBuffer(void* pData) = 0;
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

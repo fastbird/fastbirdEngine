@@ -31,6 +31,7 @@ namespace fastbird
 		virtual const Mat44& GetInvViewMat() = 0;
 		virtual const Mat44& GetInvViewProjMat() = 0;
 		virtual const Mat44& GetProjMat() = 0;
+		virtual const Mat44& GetInvProjMat() = 0;
 		virtual const Mat44& GetViewProjMat() = 0;
 		
 		// field of view in the y direction, in radians.

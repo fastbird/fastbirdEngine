@@ -86,6 +86,7 @@ UIManager::~UIManager()
 			DeleteWindow(ui);
 		}
 	}
+	Shutdown();
 	assert(mWindows.empty());
 	gFBEnv->pEngine->RemoveInputListener(this);
 	KeyboardCursor::FinalizeKeyboardCursor();
@@ -256,8 +257,11 @@ void UIManager::GatherRenderList()
 //---------------------------------------------------------------------------
 bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId, bool luaUI)
 {
-
 	LUA_STACK_CLIPPER c(mL);
+	if (hwndId == INVALID_HWND_ID)
+	{
+		hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	}
 	tinyxml2::XMLDocument doc;
 	int err = doc.LoadFile(filepath);
 	if (err)
@@ -538,6 +542,10 @@ void UIManager::ToggleVisibleLuaUI(const char* uiname)
 //---------------------------------------------------------------------------
 bool UIManager::AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId)
 {
+	if (hwndId == INVALID_HWND_ID)
+	{
+		hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	}
 	std::string lower = uiName;
 	ToLowerCase(lower);
 	auto it = mLuaUIs.find(uiName);
@@ -585,7 +593,11 @@ bool UIManager::IsLoadedUI(const char* uiName)
 //---------------------------------------------------------------------------
 IWinBase* UIManager::AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId)
 {
-	assert(hwndId != -1 && hwndId != 0);
+	assert(hwndId != 0);
+	if (hwndId == INVALID_HWND_ID)
+	{
+		hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	}	
 
 	IWinBase* pWnd = CreateComponent(type);	
 	if (pWnd !=0)
@@ -603,6 +615,11 @@ IWinBase* UIManager::AddWindow(int posX, int posY, int width, int height, Compon
 
 IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId)
 {
+	assert(hwndId != 0);
+	if (hwndId == INVALID_HWND_ID)
+	{
+		hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	}
 	IWinBase* pWnd = CreateComponent(type);
 	if (pWnd!=0)
 	{
@@ -618,6 +635,12 @@ IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height
 
 IWinBase* UIManager::AddWindow(ComponentType::Enum type, HWND_ID hwndId)
 {
+	assert(hwndId != 0);
+	if (hwndId == INVALID_HWND_ID)
+	{
+		hwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	}
+
 	IWinBase* pWnd = CreateComponent(type);
 
 	if (pWnd != 0)
@@ -704,7 +727,7 @@ bool UIManager::IsFocused(const IWinBase* pWnd) const
 
 void UIManager::DirtyRenderList(HWND_ID hwndId)
 {
-	if (hwndId == INVALID_WND_HANDLE){
+	if (hwndId == INVALID_HWND_ID){
 		for (auto& it : mNeedToRegisterUIObject)
 		{
 			it.second = true;
@@ -822,7 +845,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	if (!pMouse->IsValid() && !pKeyboard->IsValid())
 		return;
 
-	auto hwndId = gFBEnv->pEngine->GetForgroundWindowId();
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
 
 	if (pKeyboard->IsValid() && pKeyboard->IsKeyPressed(VK_ESCAPE))	{
@@ -930,8 +953,8 @@ void UIManager::SetTooltipString(const std::wstring& ts)
 	}
 	mTooltipText = ts;	
 	HWND_ID hwndId = gFBEnv->pEngine->GetWindowHandleIdWithMousePoint();
-	if (hwndId != INVALID_WND_HANDLE)
-		mTooltipUI->SetHwndId(gFBEnv->pEngine->GetForgroundWindowId());
+	if (hwndId != INVALID_HWND_ID)
+		mTooltipUI->SetHwndId(gFBEnv->pEngine->GetForegroundWindowId());
 
 	if (mTooltipText.empty())
 	{
@@ -1009,6 +1032,7 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 	if (!mPopup)
 	{
 		mPopup = CreateComponent(ComponentType::Window);
+		mPopup->SetHwndId(gFBEnv->pEngine->GetMainWndHandleId());
 		mPopup->SetNPos(Vec2(0.5f, 0.5f));
 		mPopup->SetNSize(Vec2(0.3f, 0.1f));
 		mPopup->SetProperty(UIProperty::ALIGNH, "center");
@@ -1236,8 +1260,7 @@ void UIManager::OnUIFileChanged(const char* file)
 		return;
 	}
 		
-
-
+	HWND_ID hwndId = -1;
 	auto itFind = mLuaUIs.find(uiname);
 	if (itFind != mLuaUIs.end())
 	{
@@ -1246,15 +1269,20 @@ void UIManager::OnUIFileChanged(const char* file)
 			SetVisible(uiname.c_str(), false);
 		}
 
-		for (const auto& ui : itFind->second)
+		auto& windows = itFind->second;
+		if (!windows.empty())
 		{
-			DeleteWindow(ui);
+			hwndId = windows[0]->GetHwndId();
+			for (const auto& ui : itFind->second)
+			{
+				DeleteWindow(ui);
+			}
 		}
 		mLuaUIs.erase(itFind);
 	}
 	std::vector<IWinBase*> temp;
 	std::string name;
-	UIManager::GetUIManagerStatic()->ParseUI(filepath.c_str(), temp, name, true);
+	UIManager::GetUIManagerStatic()->ParseUI(filepath.c_str(), temp, name, hwndId, true);
 	mLuaUIs[uiname] = temp;
 	UIManager::GetUIManagerStatic()->SetVisible(uiname.c_str(), false);
 	UIManager::GetUIManagerStatic()->SetVisible(uiname.c_str(), true); // for OnVisible UI Event.
@@ -1289,7 +1317,7 @@ void UIManager::MoveToBottom(const char* moveToBottom)
 void UIManager::HideUIsExcept(const std::vector<std::string>& excepts)
 {
 	mHideUIExcepts = excepts;
-	DirtyRenderList(INVALID_WND_HANDLE);
+	DirtyRenderList(INVALID_HWND_ID);
 }
 
 

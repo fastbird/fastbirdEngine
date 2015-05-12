@@ -6,10 +6,7 @@ namespace fastbird
 
 RenderPipeline::RenderPipeline()
 {
-	memset(mSteps, 0, sizeof(mSteps));
-	mSteps[RenderSteps::ShadowMap] = true;
-	mSteps[RenderSteps::Depth] = true;
-	mSteps[RenderSteps::Silouette] = true;
+	SetMinimum();
 }
 
 RenderPipeline::RenderPipeline(bool steps[])
@@ -43,12 +40,19 @@ bool RenderPipeline::GetStep(RenderSteps::Enum step) const
 	return mSteps[step];
 }
 
-void RenderPipeline::EnableAll()
+void RenderPipeline::SetMaximum()
 {
 	for (unsigned i = 0; i < RenderSteps::Num; ++i)
 	{
 		mSteps[i] = true;
 	}
+}
+
+void RenderPipeline::SetMinimum()
+{
+	memset(mSteps, 0, sizeof(mSteps));
+	mSteps[RenderSteps::ShadowMap] = true;
+	mSteps[RenderSteps::Depth] = true;
 }
 
 }

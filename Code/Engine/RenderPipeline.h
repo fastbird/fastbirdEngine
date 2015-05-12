@@ -18,7 +18,8 @@ public:
 	void SetStep(RenderSteps::Enum step, bool enable);
 	bool GetStep(RenderSteps::Enum step) const;
 
-	void EnableAll();
+	virtual void SetMaximum();
+	virtual void SetMinimum();
 
 };
 

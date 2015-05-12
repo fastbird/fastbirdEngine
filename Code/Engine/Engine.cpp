@@ -48,9 +48,7 @@ void IEngine::DeleteInstance(IEngine* e)
 }
 
 //------------------------------------------------------------------------
-Engine::Engine()
-	: mSceneOverride(0)
-	
+Engine::Engine()	
 {
 	FileSystem::Initialize();
 	mErrorStream.open("error.log");
@@ -183,9 +181,8 @@ const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
 	{
 		return it->second;
 	}
-
-	Error(FB_DEFAULT_DEBUG_ARG, "Cannot find the requested window size.");
-	return Vec2I::ZERO;
+	static Vec2I def(1000, 1000);
+	return def;
 }
 
 const Vec2I& Engine::GetRequestedWndSize(HWND_ID hWndId) const
@@ -224,7 +221,7 @@ HWND_ID Engine::GetWindowHandleIdWithMousePoint() const{
 		if ( it != mWindowHandleIds.end() )
 			return it->second;
 	}
-	return INVALID_WND_HANDLE;
+	return INVALID_HWND_ID;
 }
 //------------------------------------------------------------------------
 HWND Engine::GetMainWndHandle() const
@@ -247,8 +244,14 @@ HWND_ID Engine::GetMainWndHandleId() const{
 	return mWindowHandles.begin()->first; // the first window
 }
 
-HWND Engine::GetForgroundWindow(HWND_ID* id) const{
-	HWND hwnd = GetForgroundWindow();
+HWND Engine::GetForegroundWindow(HWND_ID* id) const{
+	
+	HWND hwnd = ::GetForegroundWindow();
+	if (mWindowHandleIds.Find(hwnd) == mWindowHandleIds.end())
+	{
+		hwnd = GetMainWndHandle();
+	}
+
 	if (hwnd) {
 		if (id) {
 			*id = mWindowHandleIds[hwnd];
@@ -259,9 +262,9 @@ HWND Engine::GetForgroundWindow(HWND_ID* id) const{
 	return GetMainWndHandle();
 }
 
-HWND_ID Engine::GetForgroundWindowId() const
+HWND_ID Engine::GetForegroundWindowId() const
 {
-	HWND hwnd = GetForgroundWindow();
+	HWND hwnd = GetForegroundWindow();
 	return GetWindowHandleId(hwnd);
 }
 
@@ -473,12 +476,12 @@ void Engine::HandleUserInput()
 
 		if (mKeyboard->IsKeyPressed('S') && mKeyboard->IsKeyDown(VK_CONTROL) && mKeyboard->IsKeyDown(VK_LMENU))
 		{
-			
-			auto scene = mRenderer->GetScene();
-			if (scene)
+			auto hwndId = GetForegroundWindowId();
+			auto rt = mRenderer->GetRenderTarget(hwndId);
+			if (rt)
 			{
-				scene->ToggleSkyRendering();
-			}
+				rt->GetScene()->ToggleSkyRendering();
+			}			
 		}
 
 		if (mKeyboard->IsKeyPressed(VK_OEM_3)) // `
