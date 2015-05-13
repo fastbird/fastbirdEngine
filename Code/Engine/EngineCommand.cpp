@@ -61,7 +61,7 @@ EngineCommand::EngineCommand()
 	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.2f);
 	REGISTER_CVAR(r_BloomPower, r_BloomPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
-	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.2f);
+	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.4f);
 	REGISTER_CVAR(r_StarPower, r_StarPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
 	r_GodRay = gFBEnv->pScriptSystem->GetIntVariable("r_GodRay", 1);

@@ -108,7 +108,7 @@ namespace fastbird
 		virtual void SetClearDepthStencil(float z, UINT8 stencil);
 
 		virtual void Bind(size_t face = 0);
-		virtual void BindTargetOnly();
+		virtual void BindTargetOnly(bool hdr);
 		virtual void Render(size_t face=0);
 		virtual void Unbind();
 

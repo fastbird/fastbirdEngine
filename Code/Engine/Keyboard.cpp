@@ -119,6 +119,11 @@ namespace fastbird
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
 	}
 
+	void Keyboard::ClearBuffer()
+	{
+		ClearWithSwap(mCurrentChar);
+	}
+
 	bool Keyboard::IsPairedKey(unsigned short keycode) const
 	{
 		return keycode == VK_SHIFT || keycode == VK_CONTROL || keycode == VK_MENU;

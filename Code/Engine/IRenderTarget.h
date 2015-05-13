@@ -38,7 +38,7 @@ namespace fastbird
 		virtual ITexture* GetRenderTargetTexture() = 0;
 		virtual ITexture* GetDepthStencilTexture() = 0;
 		virtual void Bind(size_t face = 0) = 0;
-		virtual void BindTargetOnly() = 0;
+		virtual void BindTargetOnly(bool hdr) = 0;
 		virtual void Render(size_t face = 0) = 0;
 		virtual void Unbind() = 0;
 		// for every frame render

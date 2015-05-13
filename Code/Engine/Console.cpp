@@ -255,6 +255,7 @@ void Console::Log(const char* szFmt, ...)
 void Console::ToggleOpen()
 {
 	mOpen = !mOpen;
+	gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
 }
 
 //--------------------------------------------------------------------------

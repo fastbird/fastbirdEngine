@@ -256,11 +256,8 @@ namespace fastbird
 						}
 					}
 				}
-				gFBEnv->mSilouetteRendered = true;				
-				if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-					rt->SetHDRTarget();
-				else
-					rt->BindTargetOnly();
+				gFBEnv->mSilouetteRendered = true;
+				rt->BindTargetOnly(true);
 			}
 		}
 	}

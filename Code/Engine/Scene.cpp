@@ -30,6 +30,7 @@ Scene::Scene()
 , mDrawClouds(true)
 , mRttScene(false)
 , mLastPreRenderFrame(-1)
+, mFogColor(0, 0, 0)
 {
 	mVisibleObjectsMain.reserve(1000);
 	mVisibleObjectsLight.reserve(1000);

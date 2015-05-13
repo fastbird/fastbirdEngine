@@ -3,6 +3,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/SkySphere.h>
 #include <Engine/Renderer.h>
+#include <Engine/ILight.h>
 
 #include <CommonLib/Math/GeomUtils.h>
 
@@ -207,6 +208,10 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 	auto const renderer = gFBEnv->_pInternalRenderer;
 
 	ITexture* pTexture = mRT->GetRenderTargetTexture();
+	auto dest = mRT->GetScene()->GetLight(0);
+	auto src = renderer->GetMainRenderTarget()->GetScene()->GetLight(0);
+	dest->CopyLight(src);
+
 	mRT->GetScene()->AttachSkySphere(this);
 	mRT->GetCamera()->SetPos(origin);
 	mRT->GetCamera()->SetFOV(HALF_PI);
@@ -222,10 +227,10 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 		mRT->Render(i);
 	}
 	// this is for unbind the environment map from the output slot.
-	renderer->GetMainRenderTarget()->BindTargetOnly();
+	renderer->GetMainRenderTarget()->BindTargetOnly(false);
 
 	pTexture->GenerateMips();
-	//pTexture->SaveToFile("environment.dds");
+	pTexture->SaveToFile("environment.dds");
 	// for bight test.
 	//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 	GenerateRadianceCoef(pTexture);

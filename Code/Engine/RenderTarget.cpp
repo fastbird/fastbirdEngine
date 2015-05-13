@@ -181,18 +181,23 @@ void RenderTarget::Bind(size_t face)
 	renderer->RestoreRenderStates();
 }
 
-void RenderTarget::BindTargetOnly()
+void RenderTarget::BindTargetOnly(bool hdr)
 {
-	auto const renderer = gFBEnv->pRenderer;
-	if (mRenderTargetTexture)
-		mRenderTargetTexture->Unbind();
-	ITexture* rt[] = { mRenderTargetTexture };
-	// we need to have 6 glow textures to support for cube map.
-	// but don't need to.
-	size_t rtViewIndex[] = { mFace };
-	renderer->SetRenderTarget(rt, rtViewIndex, 1, mDepthStencilTexture, mFace);
-	renderer->SetViewports(&mViewport, 1);
-
+	if (hdr && mRenderPipeline->GetStep(RenderSteps::HDR) &&
+			gFBEnv->pConsole->GetEngineCommand()->r_HDR ){
+		SetHDRTarget();
+	}
+	else{
+		auto const renderer = gFBEnv->pRenderer;
+		if (mRenderTargetTexture)
+			mRenderTargetTexture->Unbind();
+		ITexture* rt[] = { mRenderTargetTexture };
+		// we need to have 6 glow textures to support for cube map.
+		// but don't need to.
+		size_t rtViewIndex[] = { mFace };
+		renderer->SetRenderTarget(rt, rtViewIndex, 1, mDepthStencilTexture, mFace);
+		renderer->SetViewports(&mViewport, 1);
+	}
 }
 
 void RenderTarget::Render(size_t face)
@@ -238,15 +243,16 @@ void RenderTarget::Render(size_t face)
 		GetSceneInternal()->Render();
 		UnsetDepthRenderTarget();
 		BindDepthTexture(true);
+		gFBEnv->mRenderPass = RENDER_PASS::PASS_NORMAL;
 	}
 
 	if (mRenderPipeline->GetStep(RenderSteps::CloudVolume))
 	{
 		D3DEventMarker mark("Cloud Volumes");
 		SetCloudVolumeTarget();
+		gFBEnv->mRenderPass = RENDER_PASS::PASS_DEPTH;
 		GetSceneInternal()->RenderCloudVolumes();
-
-		BindTargetOnly();
+		BindTargetOnly(false);
 		SetCloudVolumeTexture(true);
 		//mRenderer->BindNoiseMap();
 		gFBEnv->mRenderPass = RENDER_PASS::PASS_NORMAL;
@@ -274,7 +280,7 @@ void RenderTarget::Render(size_t face)
 	}
 	else
 	{
-		BindTargetOnly();
+		BindTargetOnly(false);
 	}
 
 	// RENDER
@@ -299,7 +305,7 @@ void RenderTarget::Render(size_t face)
 		if (engineCmd->r_GodRay)
 			BlendGodRay();
 
-		BindTargetOnly();
+		BindTargetOnly(false);
 		MeasureLuminanceOfHDRTargetNew();
 
 		BrightPass();
@@ -392,7 +398,7 @@ void RenderTarget::SetDepthRenderTarget(bool clear)
 void RenderTarget::UnsetDepthRenderTarget()
 {
 	auto const renderer = gFBEnv->_pInternalRenderer;
-	BindTargetOnly();
+	BindTargetOnly(false);
 	renderer->UnlockBlendState();
 }
 
@@ -444,6 +450,11 @@ void RenderTarget::SetGlowRenderTarget()
 	}
 
 	ITexture* rt[] = { mRenderTargetTexture, mGlowTarget };
+	if (mHDRTarget && 
+		mRenderPipeline->GetStep(RenderSteps::HDR) && gFBEnv->pConsole->GetEngineCommand()->r_HDR)
+	{
+		rt[0] = mHDRTarget;
+	}
 	// we need to have 6 glow textures to support for cube map.
 	// but don't need to.
 	assert(mFace == 0);
@@ -465,7 +476,7 @@ void RenderTarget::UnSetGlowRenderTarget()
 
 	mGlowSet = false;
 
-	BindTargetOnly();
+	BindTargetOnly(true);
 }
 
 
@@ -475,8 +486,8 @@ void RenderTarget::PrepareShadowMapRendering()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mShadowMap)
 	{
-		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x / 1600.f * cmd->r_ShadowCamWidth);
-		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y / 900.f * cmd->r_ShadowCamHeight);		
+		int width = (int)std::min(cmd->r_ShadowMapWidth, (int)(mSize.x / 1600.f * cmd->r_ShadowMapWidth));
+		int height = (int)std::min(cmd->r_ShadowMapHeight, (int)(mSize.y / 900.f * cmd->r_ShadowMapHeight));
 		width = renderer->CropSize8(width);
 		height = renderer->CropSize8(height);
 		
@@ -513,7 +524,7 @@ void RenderTarget::EndShadowMapRendering()
 {
 	assert(mShadowMap);
 	auto const renderer = gFBEnv->pRenderer;
-	BindTargetOnly();
+	BindTargetOnly(false);
 	gFBEnv->mRenderPass = PASS_NORMAL;
 	renderer->SetCamera(GetCamera());
 }
@@ -611,7 +622,7 @@ void RenderTarget::GodRay()
 	}
 	renderer->DrawFullscreenQuad(renderer->GetGodRayPS(), false);
 
-	BindTargetOnly();
+	BindTargetOnly(false);
 }
 
 
@@ -677,10 +688,8 @@ void RenderTarget::SetBigSilouetteBuffer()
 
 void RenderTarget::DrawSilouette()
 {
-	if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-		SetHDRTarget();
-	else
-		BindTargetOnly();
+
+	BindTargetOnly(true);
 
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	
@@ -742,24 +751,16 @@ void RenderTarget::BlendGlow()
 	Vec2I size((int)(mSize.x*0.25f), (int)(mSize.y*0.25f));
 	if (!mGlowTexture[0])
 	{
-		mGlowTexture[0] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		const char* szStr = FormatString("rt%u_%u_%u_GlowTexture0", mId, size.x, size.y);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], szStr);
-			
-		mGlowTexture[1] = renderer->CreateTexture(0, (int)size.x, (int)size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		szStr = FormatString("rt%u_%u_%u_GlowTexture1", mId, size.x, size.y);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], szStr);
+		return;
 	}
 
 	{
-		D3DEventMarker mark(FormatString("Glowing %u", mId));
+		D3DEventMarker mark("Glowing");
 		assert(mGlowTarget);
-		renderer->SetTexture(mGlowTarget, BINDING_SHADER_PS, 0);
 		ITexture* rt[] = { mGlowTexture[1] };
 		size_t index[] = { 0 };
 		renderer->SetRenderTarget(rt, index, 1, 0, 0);
+		renderer->SetTexture(mGlowTarget, BINDING_SHADER_PS, 0);		
 		renderer->RestoreBlendState();
 		Vec2I resol = mGlowTexture[0]->GetSize();
 		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
@@ -796,14 +797,7 @@ void RenderTarget::BlendGlow()
 
 	{
 		D3DEventMarker mark("Glow Blend");
-		if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-		{
-			SetHDRTarget();
-		}
-		else
-		{
-			BindTargetOnly();
-		}
+		BindTargetOnly(true);
 		renderer->SetTexture(mGlowTexture[0], BINDING_SHADER_PS, 0);
 		renderer->SetAdditiveBlendState();
 		renderer->SetNoDepthStencil();		
@@ -915,7 +909,10 @@ void RenderTarget::BrightPass()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mBrightPassTexture)
 	{
-		Vec2I size((int)(renderer->CropSize8(mSize.x) * 0.25f), (int)(renderer->CropSize8(mSize.y) * 0.25f));
+		Vec2I size( 
+			renderer->CropSize8((int)(mSize.x* 0.25f)), 
+			renderer->CropSize8((int)(mSize.y * 0.25f))
+			);
 		mBrightPassTexture = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		const char* szStr = FormatString("rt%u_%u_%u_BrightPass", mId, size.x, size.y);
@@ -957,11 +954,13 @@ void RenderTarget::BrightPassToStarSource()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mStarSourceTex)
 	{
-		Vec2I starSourceSize((int)(renderer->CropSize8(mSize.x) * 0.25f),
-			(int)(renderer->CropSize8(mSize.y) * 0.25f));
+		Vec2I starSourceSize(renderer->CropSize8( (int)(mSize.x*0.25f) ),
+			renderer->CropSize8( (int)(mSize.y*0.25f) )
+			);
 		mStarSourceTex = renderer->CreateTexture(0, starSourceSize.x, starSourceSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 	}
+	D3DEventMarker mark("BrightPassToStarSource");
 
 	Vec4* pOffsets = 0;
 	Vec4* pWeights = 0;
@@ -1002,8 +1001,8 @@ void RenderTarget::StarSourceToBloomSource()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mBloomSourceTex)
 	{
-		Vec2I bloomSourceSize(renderer->CropSize8(mSize.x) / 8,
-			renderer->CropSize8(mSize.y) / 8);
+		Vec2I bloomSourceSize(renderer->CropSize8(mSize.x/8),
+			renderer->CropSize8(mSize.y/8));
 		mBloomSourceTex = renderer->CreateTexture(0, bloomSourceSize.x, bloomSourceSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_DEFAULT,
 			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 	}
@@ -1023,10 +1022,11 @@ void RenderTarget::StarSourceToBloomSource()
 	ITexture* rts[] = { mBloomSourceTex };
 	size_t index[] = { 0 };
 	renderer->SetRenderTarget(rts, index, 1, 0, 0);
-	renderer->SetTexture(mBrightPassTexture, BINDING_SHADER_PS, 0);
-
+	
 	Viewport vp = { 0, 0, (float)mBloomSourceTex->GetWidth(), (float)mBloomSourceTex->GetHeight(), 0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
+
+	renderer->SetTexture(mBrightPassTexture, BINDING_SHADER_PS, 0);	
 
 	if (renderer->GetMultiSampleCount() != 1)
 	{
@@ -1048,8 +1048,8 @@ void RenderTarget::Bloom()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (!mBloomTexture[0])
 	{
-		Vec2I size(renderer->CropSize8(mSize.x) / 8,
-			renderer->CropSize8(mSize.y) / 8);
+		Vec2I size(renderer->CropSize8(mSize.x/8),
+			renderer->CropSize8(mSize.y/8));
 		for (int i = 0; i < FB_NUM_BLOOM_TEXTURES; i++)
 		{
 			mBloomTexture[i] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
@@ -1174,7 +1174,7 @@ void RenderTarget::RenderStarGlare()
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	if (mStarTextures[0] == 0)
 	{
-		Vec2I size( (int)(mSizeCropped.x * 0.25f), (int)(mSizeCropped.y*0.25f));
+		Vec2I size( renderer->CropSize8((int)(mSize.x * 0.25f)), renderer->CropSize8((int)(mSize.y*0.25f)) );
 		for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
 		{
 			mStarTextures[i] = renderer->CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
@@ -1188,9 +1188,9 @@ void RenderTarget::RenderStarGlare()
 	Viewport vp = { 0, 0, (float)mStarTextures[0]->GetWidth(), (float)mStarTextures[0]->GetHeight(), 0.f, 1.f };
 	renderer->SetViewports(&vp, 1);
 	renderer->Clear(0.f, 0.f, 0.f, 1.f);
+
 	const float fTanFoV = GetCamera()->GetFOV();
-	const Color vWhite(1.0f, 1.0f, 1.0f, 1.0f);
-	
+	const Color vWhite(1.0f, 1.0f, 1.0f, 1.0f);	
 	static Vec4 s_aaColor[starGlareMaxPasses][starGlareSamples];
 	static bool s_aaColorCalced = false;
 	if (!s_aaColorCalced)
@@ -1222,13 +1222,10 @@ void RenderTarget::RenderStarGlare()
 
 		pSrcTexture = mStarSourceTex;
 
-		float rad;
-		rad = radOffset + starLine.fInclination;
-		float sn, cs;
-		sn = sinf(rad), cs = cosf(rad);
-		Vec2 vtStepUV;
-		vtStepUV.x = sn / srcW * starLine.fSampleLength;
-		vtStepUV.y = cs / srcH * starLine.fSampleLength;
+		float rad = radOffset + starLine.fInclination;
+		float sn = sinf(rad), cs = cosf(rad);
+		Vec2 vtStepUV(sn / srcW * starLine.fSampleLength,
+			cs / srcH * starLine.fSampleLength);
 
 		float attnPowScale;
 		attnPowScale = (fTanFoV + 0.1f) * 1.0f *
@@ -1239,7 +1236,6 @@ void RenderTarget::RenderStarGlare()
 		iWorkTexture = 1;
 		for (int p = 0; p < starLine.nPasses; p++)
 		{
-
 			if (p == starLine.nPasses - 1)
 			{
 				// Last pass move to other work buffer
@@ -1339,7 +1335,7 @@ void RenderTarget::ToneMapping()
 	D3DEventMarker mark("ToneMapping");
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	ITexture* textures[] = { mHDRTarget, renderer->GetLuminanceMap(0), mBloomTexture[0], mStarTextures[0] };
-	BindTargetOnly();
+	BindTargetOnly(false);
 	renderer->SetTextures(textures, 4, BINDING_SHADER_PS, 0); 
 	if (renderer->IsLuminanceOnCpu())
 	{
@@ -1370,8 +1366,8 @@ void RenderTarget::UpdateLightCamera()
 		mLightCamera = FB_NEW(Camera);
 		mLightCamera->SetOrthogonal(true);
 		auto cmd = gFBEnv->pConsole->GetEngineCommand();
-		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600));
-		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900));
+		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600.f));
+		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900.f));
 		width = std::max(16, width);
 		height = std::max(16, height);
 		mLightCamera->SetWidth(width);

@@ -468,7 +468,6 @@ void Renderer::OnSwapchainCreated(HWND_ID id)
 	auto rt = mSwapChainRenderTargets[id];
 	auto scene = gFBEnv->pEngine->CreateScene();
 	rt->SetScene(scene);
-	rt->GetRenderPipeline().SetMaximum();
 
 	if (id==1) // main
 	{
@@ -518,8 +517,7 @@ void Renderer::SetCamera(ICamera* pCamera)
 		prev->SetCurrent(false);
 	mCamera = pCamera;
 	mCamera->SetCurrent(true);
-	if (prev != mCamera)
-		UpdateCameraConstantsBuffer();
+	UpdateCameraConstantsBuffer();
 }
 
 //----------------------------------------------------------------------------
@@ -2043,7 +2041,7 @@ void Renderer::Render(float dt)
 		}
 		RenderUI(it.first);
 	}
-	mainRT->BindTargetOnly();
+	mainRT->BindTargetOnly(false);
 	RenderDebugHud();
 	RenderDebugRenderTargets();
 	RenderFade();	
@@ -2466,9 +2464,7 @@ void Renderer::OnRenderTargetDeleted(RenderTarget* renderTarget)
 
 void Renderer::SetScene(IScene* scene)
 {
-	if (scene != mCurProcessingScene){
-		mCurProcessingScene = scene;
-		UpdateSceneConstantsBuffer();
-	}
+	mCurProcessingScene = scene;
+	UpdateSceneConstantsBuffer();
 }
 }
