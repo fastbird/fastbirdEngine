@@ -30,9 +30,10 @@ RenderPipeline* RenderPipeline::Clone() const
 	return newPipeline;
 }
 
-void RenderPipeline::SetStep(RenderSteps::Enum step, bool enable)
+RenderPipeline& RenderPipeline::SetStep(RenderSteps::Enum step, bool enable)
 {
 	mSteps[step] = enable;
+	return *this;
 }
 
 bool RenderPipeline::GetStep(RenderSteps::Enum step) const
@@ -40,19 +41,21 @@ bool RenderPipeline::GetStep(RenderSteps::Enum step) const
 	return mSteps[step];
 }
 
-void RenderPipeline::SetMaximum()
+RenderPipeline& RenderPipeline::SetMaximum()
 {
 	for (unsigned i = 0; i < RenderSteps::Num; ++i)
 	{
 		mSteps[i] = true;
 	}
+	return *this;
 }
 
-void RenderPipeline::SetMinimum()
+RenderPipeline& RenderPipeline::SetMinimum()
 {
 	memset(mSteps, 0, sizeof(mSteps));
 	mSteps[RenderSteps::ShadowMap] = true;
 	mSteps[RenderSteps::Depth] = true;
+	return *this;
 }
 
 }

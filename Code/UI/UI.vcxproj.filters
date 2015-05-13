@@ -89,6 +89,10 @@
     </ClInclude>
     <ClInclude Include="VisibleStatus.h" />
     <ClInclude Include="UICommands.h" />
+    <ClInclude Include="PropertyList.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="IUIEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -175,5 +179,8 @@
     <ClCompile Include="VisibleStatus.cpp" />
     <ClCompile Include="UICommands.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
+    <ClCompile Include="PropertyList.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

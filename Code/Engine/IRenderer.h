@@ -80,7 +80,6 @@ public:
 
 	// threadPool 0 : no thread pool
 	virtual bool Init(int threadPool) = 0;
-	virtual bool InitSwapChain(fastbird::HWND_ID id, int width, int height) = 0;
 	virtual void Deinit() = 0;
 	virtual void ProcessRenderTarget() = 0;
 	virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param) = 0;

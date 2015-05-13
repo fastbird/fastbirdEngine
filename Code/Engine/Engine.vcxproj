@@ -186,6 +186,7 @@
     <ClInclude Include="IDGenerator.h" />
     <ClInclude Include="IDustRenderer.h" />
     <ClInclude Include="IEngine.h" />
+    <ClInclude Include="IFileChangeListener.h" />
     <ClInclude Include="IFont.h" />
     <ClInclude Include="IIndexBuffer.h" />
     <ClInclude Include="IInputDevice.h" />

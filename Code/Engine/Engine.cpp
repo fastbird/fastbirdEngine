@@ -25,6 +25,7 @@
 #include <Engine/IDustRenderer.h>
 #include <Engine/ScriptSystem.h>
 #include <Engine/Material.h>
+#include <Engine/IFileChangeListener.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -130,9 +131,9 @@ GlobalEnv* Engine::GetGlobalEnv() const
 
 //------------------------------------------------------------------------
 HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
-	const char* wndClass, const char* title, WNDPROC winProc)
+	const char* szClassName, const char* title, unsigned style, unsigned exStyle, 
+	WNDPROC winProc)
 {
-	unsigned style = WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
 	RECT rect;
 	rect.left = 0;
 	rect.top = 0;
@@ -142,15 +143,20 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 
 	int eWidth = rect.right - rect.left;
 	int eHeight = rect.bottom - rect.top;
-	const char* myclass = "FBEngineClass" ;
 	WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
 							0, 0, GetModuleHandle(0), LoadIcon(0,IDI_APPLICATION),
 							LoadCursor(0,IDC_ARROW), HBRUSH(COLOR_WINDOW+1),
-							0, myclass, LoadIcon(0,IDI_APPLICATION) } ;
+							0, szClassName, LoadIcon(0, IDI_APPLICATION) };
 
-	if( RegisterClassEx(&wndclass) )
+	WNDCLASSEX classInfo;
+	BOOL registered = GetClassInfoEx(GetModuleHandle(NULL), szClassName, &classInfo);
+	if (!registered)
 	{
-		auto hWnd = CreateWindowEx( 0, myclass, title,
+		registered = RegisterClassEx(&wndclass);
+	}
+	if( registered )
+	{
+		auto hWnd = CreateWindowEx(exStyle, szClassName, title,
 			style, x, y,
 			eWidth, eHeight, 0, 0, GetModuleHandle(0), 0);
 		auto id = FindEmptyHwndId();
@@ -172,6 +178,18 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 	}
 
 	return 0;
+}
+
+void Engine::DestroyEngineWindow(HWND_ID hwndId)
+{
+	auto hwnd = GetWindowHandle(hwndId);
+	if (!hwnd)
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "No window found!");
+		return;
+	}
+	mRenderer->ReleaseSwapChain(hwndId);
+	DestroyWindow(hwnd);
 }
 
 const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
@@ -209,7 +227,7 @@ HWND_ID Engine::GetWindowHandleId(HWND hWnd) const
 	{
 		return itFound->second;
 	}
-	return 0;
+	return INVALID_HWND_ID;
 }
 
 HWND_ID Engine::GetWindowHandleIdWithMousePoint() const{
@@ -268,6 +286,11 @@ HWND_ID Engine::GetForegroundWindowId() const
 	return GetWindowHandleId(hwnd);
 }
 
+bool Engine::IsMainWindowForground() const
+{
+	return GetForegroundWindow() == GetMainWndHandle();
+}
+
 //------------------------------------------------------------------------
 bool Engine::InitEngine(int rendererType)
 {
@@ -275,7 +298,6 @@ bool Engine::InitEngine(int rendererType)
 	if (mINI->GetError())
 	{
 		Log(FB_DEFAULT_DEBUG_ARG, "Could not parse the Engine.ini file!");
-		assert(0);
 	}
 	int threadPool = mINI->GetInteger("Render", "ThreadPool", 0);
 
@@ -378,11 +400,13 @@ bool Engine::InitOpenGL()
 
 bool Engine::RegisterMouseAndKeyboard(HWND hWnd)
 {
-	if (!mMouse)
+	if (mMouse)
 	{
-		mMouse = FB_NEW(Mouse);
-		mKeyboard = FB_NEW(Keyboard);
+		return false;
 	}
+	mMouse = FB_NEW(Mouse);
+	mKeyboard = FB_NEW(Keyboard);
+
 #ifdef _FBENGINE_FOR_WINDOWS_
 	const unsigned short HID_USAGE_PAGE_GENERIC = 0x01;
 	const unsigned short HID_USAGE_GENERIC_MOUSE = 0x02;
@@ -392,11 +416,12 @@ bool Engine::RegisterMouseAndKeyboard(HWND hWnd)
 	Rid[0].usUsagePage = HID_USAGE_PAGE_GENERIC; 
 	Rid[0].usUsage = HID_USAGE_GENERIC_MOUSE; 
 	Rid[0].dwFlags = 0;   
-	Rid[0].hwndTarget = hWnd;
+	Rid[0].hwndTarget = 0;
+
 	Rid[1].usUsagePage = HID_USAGE_PAGE_GENERIC; 
 	Rid[1].usUsage = HID_USAGE_GENERIC_KEYBOARD; 
 	Rid[1].dwFlags = 0;   
-	Rid[1].hwndTarget = hWnd;
+	Rid[1].hwndTarget = 0;
 
 	HRESULT hr = RegisterRawInputDevices(Rid, 2, sizeof(Rid[0]));
 	if (FAILED(hr))
@@ -580,7 +605,9 @@ void Engine::HotReloading()
 
 					FB_FOREACH(listener, mFileChangeListeners)
 					{
-						(*listener)->OnFileChanged(filepath.c_str());
+						bool processed = (*listener)->OnFileChanged(filepath.c_str());
+						if (processed)
+							break;
 					}
 				}
 				else

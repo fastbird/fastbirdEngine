@@ -284,6 +284,10 @@ void Container::OnStartUpdate(float elapsedTime)
 	if (mChildrenPosSizeChanged)
 	{
 		mChildrenPosSizeChanged = false;
+		if (mMatchHeight)
+		{
+			MatchHeight(false);
+		}
 		RefreshVScrollbar();
 	}
 }
@@ -766,9 +770,9 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::MATCH_HEIGHT:
 	{
-									 // call MathUIHeight() lua function instead of using this property.
-							//		 mMatchHeight = StringConverter::parseBool(val);
-									 return true;
+								// call MatchUIHeight() lua function instead of using this property.
+								mMatchHeight = StringConverter::parseBool(val);
+								return true;
 	}
 
 	}

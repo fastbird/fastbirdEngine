@@ -9,8 +9,8 @@ namespace fastbird
 	class Mouse : public IMouse
 	{
 	public:
-		static void GetCurrentMousePos(HWND_ID hwndId, long& x, long& y);
-		static void GetCurrentMousePos(HWND hwnd, long& x, long& y);
+		static void GetCurrentMousePos(HWND_ID hwndId, long& x, long& y, long& physicalX, long& physicalY);
+		static void GetCurrentMousePos(HWND hwnd, long& x, long& y, long& physicalX, long& physicalY);
 		static void SetCurrentMousePos(HWND_ID hwndId, long x, long y);
 		static void SetCurrentMousePos(HWND hwnd, long x, long y);
 
@@ -73,6 +73,9 @@ namespace fastbird
 		long mAbsXPrev;
 		long mAbsY;
 		long mAbsYPrev;
+
+		long mPhysicalX;
+		long mPhysicalY;
 
 		float mNPosX;
 		float mNPosY;

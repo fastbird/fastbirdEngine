@@ -2,6 +2,8 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <set>
+#include <list>
 #include <assert.h>
 #include <Engine/GlobalEnv.h>
 

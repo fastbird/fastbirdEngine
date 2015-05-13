@@ -15,6 +15,7 @@ Wnd::Wnd()
 , mBackgroundImage(0)
 , mAlwaysOnTop(false)
 , mCloseByEsc(false)
+, mSyncWindowPos(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -369,6 +370,18 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 return true;
 	}
 
+	case UIProperty::SYNC_WINDOW_POS:
+	{
+		mSyncWindowPos = StringConverter::parseBool(val);
+		return true;
+	}
+
+	case UIProperty::MSG_TRANSLATION:
+	{
+		mMsgTranslationUnit = val;
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -376,13 +389,28 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 
 void Wnd::OnTitlebarDrag(void *arg)
 {
-	long x, y;
-	gFBEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
-	auto rtSize = GetRenderTargetSize();
-	Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
-	mAbsTempLock = true;
-	SetNPos(GetNPos() + nposOffset);
-	mAbsTempLock = false;
+	if (mSyncWindowPos)
+	{
+		auto mouse = gFBEnv->pEngine->GetMouse();		
+		// move OS window
+		long sx, sy, x, y;
+		mouse->GetDragStart(sx, sy);
+		mouse->GetPos(x, y);
+		auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
+		RECT rect;
+		GetWindowRect(hwnd, &rect);
+		MoveWindow(hwnd, OSWindowPos.x + x - sx, OSWindowPos.y + y - sy, rect.right - rect.left, rect.bottom - rect.top, FALSE);
+	}
+	else
+	{
+		long x, y;
+		gFBEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
+		auto rtSize = GetRenderTargetSize();
+		Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
+		mAbsTempLock = true;
+		SetNPos(GetNPos() + nposOffset);
+		mAbsTempLock = false;
+	}
 }
 
 bool Wnd::SetVisible(bool show)
@@ -467,6 +495,22 @@ void Wnd::SetHwndId(HWND_ID hwndId)
 	}
 	if (mBackgroundImage)
 		mBackgroundImage->SetHwndId(hwndId);
+}
+
+const char* Wnd::GetMsgTranslationUnit() const
+{
+	auto root = GetRootWnd();
+	if (root == this)
+	{
+		if (mMsgTranslationUnit.empty())
+			return "msg";
+		else
+			return mMsgTranslationUnit.c_str();
+	}
+	else
+	{
+		return root->GetMsgTranslationUnit();
+	}
 }
 
 }

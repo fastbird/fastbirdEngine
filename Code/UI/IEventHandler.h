@@ -50,87 +50,87 @@ namespace fastbird
 
 	inline IEventHandler::EVENT ConvertToEventEnum(const char* sz)
 	{
-		if (stricmp(sz, "OnVisible") == 0)
+		if (_stricmp(sz, "OnVisible") == 0)
 		{
 			return IEventHandler::EVENT_ON_VISIBLE;
 		}
-		else if (stricmp(sz, "OnHide") == 0)
+		else if (_stricmp(sz, "OnHide") == 0)
 		{
 			return IEventHandler::EVENT_ON_HIDE;
 		}
-		else if (stricmp(sz, "OnMouseIn") == 0)
+		else if (_stricmp(sz, "OnMouseIn") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_IN;
 		}
-		else if (stricmp(sz, "OnMouseHover") == 0)
+		else if (_stricmp(sz, "OnMouseHover") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_HOVER;
 		}
-		else if (stricmp(sz, "OnMouseOut") == 0)
+		else if (_stricmp(sz, "OnMouseOut") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_OUT;
 		}
-		else if (stricmp(sz, "OnMouseLClick") == 0)
+		else if (_stricmp(sz, "OnMouseLClick") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_LEFT_CLICK;
 		}
-		else if (stricmp(sz, "OnMouseLDClick") == 0)
+		else if (_stricmp(sz, "OnMouseLDClick") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK;
 		}
-		else if (stricmp(sz, "OnMouseRClick") == 0)
+		else if (_stricmp(sz, "OnMouseRClick") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_RIGHT_CLICK;
 		}
-		else if (stricmp(sz, "OnMouseDown") == 0)
+		else if (_stricmp(sz, "OnMouseDown") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_DOWN;
 		}
-		else if (stricmp(sz, "OnMouseDrag") == 0)
+		else if (_stricmp(sz, "OnMouseDrag") == 0)
 		{
 			return IEventHandler::EVENT_MOUSE_DRAG;
 		}
-		else if (stricmp(sz, "OnEnter") == 0)
+		else if (_stricmp(sz, "OnEnter") == 0)
 		{
 			return IEventHandler::EVENT_ENTER;
 		}
-		else if (stricmp(sz, "OnFileSelectorSelected") == 0)
+		else if (_stricmp(sz, "OnFileSelectorSelected") == 0)
 		{
 			return IEventHandler::EVENT_FILE_SELECTOR_SELECTED;
 		}
-		else if (stricmp(sz, "OnFileSelectorOk") == 0)
+		else if (_stricmp(sz, "OnFileSelectorOk") == 0)
 		{
 			return IEventHandler::EVENT_FILE_SELECTOR_OK;
 		}
-		else if (stricmp(sz, "OnFileSelectorCancel") == 0)
+		else if (_stricmp(sz, "OnFileSelectorCancel") == 0)
 		{
 			return IEventHandler::EVENT_FILE_SELECTOR_CANCEL;
 		}
-		else if (stricmp(sz, "OnNumericUp") == 0)
+		else if (_stricmp(sz, "OnNumericUp") == 0)
 		{
 			return IEventHandler::EVENT_NUMERIC_UP;
 		}
-		else if (stricmp(sz, "OnNumericDown") == 0)
+		else if (_stricmp(sz, "OnNumericDown") == 0)
 		{
 			return IEventHandler::EVENT_NUMERIC_DOWN;
 		}
-		else if (stricmp(sz, "OnNumericSet") == 0)
+		else if (_stricmp(sz, "OnNumericSet") == 0)
 		{
 			return IEventHandler::EVENT_NUMERIC_SET;
 		}
-		else if (stricmp(sz, "OnDropDownSelected") == 0)
+		else if (_stricmp(sz, "OnDropDownSelected") == 0)
 		{
 			return IEventHandler::EVENT_DROP_DOWN_SELECTED;
 		}
-		else if (stricmp(sz, "EVENT_ON_LOADED") == 0)
+		else if (_stricmp(sz, "EVENT_ON_LOADED") == 0)
 		{
 			return IEventHandler::EVENT_ON_LOADED;
 		}
-		else if (stricmp(sz, "OnListBoxCleared") == 0)
+		else if (_stricmp(sz, "OnListBoxCleared") == 0)
 		{
 			return IEventHandler::EVENT_LISTBOX_CLEARED;
 		}
-		else if (stricmp(sz, "OnColorRampDragged") == 0)
+		else if (_stricmp(sz, "OnColorRampDragged") == 0)
 		{
 			return IEventHandler::EVENT_COLORRAMP_DRAGGED;
 		}

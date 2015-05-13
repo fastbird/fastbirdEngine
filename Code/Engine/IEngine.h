@@ -52,6 +52,7 @@ namespace fastbird
 	class ISkySphere;
 	class IBillboardQuad;
 	class IDustRenderer;
+	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
 	class IEngine : public ReferenceCounter
@@ -63,7 +64,9 @@ namespace fastbird
 		virtual ~IEngine(){}
 		virtual GlobalEnv* GetGlobalEnv() const = 0;
 		virtual HWND_ID CreateEngineWindow(int x, int y, int width, int height,
-			const char* wndClass, const char* title, WNDPROC winProc) = 0;
+			const char* wndClass, const char* title, unsigned style, unsigned exStyle,
+			WNDPROC winProc) = 0;
+		virtual void DestroyEngineWindow(HWND_ID hwndId) = 0;
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const = 0;
 		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const = 0;
 		virtual HWND GetWindowHandle(HWND_ID id) const = 0;
@@ -73,6 +76,7 @@ namespace fastbird
 		virtual HWND GetForegroundWindow(HWND_ID* id = 0) const = 0;
 		virtual HWND_ID GetForegroundWindowId() const = 0;
 		virtual HWND_ID GetMainWndHandleId() const = 0;
+		virtual bool IsMainWindowForground() const = 0;
 		virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 		enum RENDERER_TYPE 
 		{ 
@@ -169,13 +173,6 @@ namespace fastbird
 
 		virtual IDustRenderer* CreateDustRenderer() = 0;
 		virtual void DeleteDustRenderer(IDustRenderer* dust) = 0;
-	};
-
-	//--------------------------------------------------------------------------------
-	class IFileChangeListener
-	{
-	public:
-		virtual void OnFileChanged(const char* file) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

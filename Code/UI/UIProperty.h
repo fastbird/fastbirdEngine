@@ -118,6 +118,9 @@ namespace fastbird
 			RADIO_GROUP,
 			RADIO_CHECK,
 
+			SYNC_WINDOW_POS,
+			MSG_TRANSLATION,
+
 			COUNT
 		};
 
@@ -234,6 +237,9 @@ namespace fastbird
 			"CARD_OFFSETY",
 			"RADIO_GROUP",
 			"RADIO_CHECK",
+
+			"SYNC_WINDOW_POS",
+			"MSG_TRANSLATION",
 
 			"COUNT"
 		};

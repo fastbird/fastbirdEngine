@@ -3,6 +3,7 @@
 #define _UIManager_header_include__
 
 #include <UI/IUIManager.h>
+#include <Engine/IFileChangeListener.h>
 
 namespace fastbird
 {
@@ -12,7 +13,7 @@ namespace fastbird
 	class IUIObject;
 	class ListBox;
 	class UICommands;
-	class UIManager : public IUIManager
+	class UIManager : public IUIManager, public IFileChangeListener
 	{
 	public:
 
@@ -58,6 +59,8 @@ namespace fastbird
 
 		UICommands* mUICommands;
 		HMODULE mUIEditorModuleHandle;
+		ComponentType::Enum mLocatingComp;
+		IUIEditor* mUIEditor;
 
 
 	protected:
@@ -74,7 +77,7 @@ namespace fastbird
 		const char* FindUIFilenameWithLua(const char* luafilepath);
 		const char* FindUINameWithLua(const char* luafilepath);
 		void ShowTooltip();
-
+		void DeleteLuaUIContaning(IWinBase* wnd);
 
 	public:
 
@@ -84,6 +87,9 @@ namespace fastbird
 		static UIManager* GetUIManagerStatic();
 
 		virtual void Shutdown();
+
+		// IFileChangeListeners
+		virtual bool OnFileChanged(const char* file);
 
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
@@ -98,6 +104,7 @@ namespace fastbird
 		virtual IWinBase* AddWindow(ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
 
 		virtual void DeleteWindow(IWinBase* pWnd);
+		virtual void DeleteWindowsFor(HWND_ID hwndId);
 		virtual void SetFocusUI(IWinBase* pWnd);
 		virtual IWinBase* GetFocusUI() const;
 		virtual void SetFocusUI(const char* uiName);
@@ -138,7 +145,6 @@ namespace fastbird
 		virtual void LockFocus(bool lock);
 		virtual bool GetVisible(const char* uiname) const;
 		virtual void CloseAllLuaUI();
-		virtual void OnUIFileChanged(const char* file);
 
 		virtual void CloneUI(const char* uiname, const char* newUIname);
 		virtual void IgnoreInput(bool ignore, IWinBase* modalWindow);
@@ -160,6 +166,18 @@ namespace fastbird
 		virtual UICommands* GetUICommands() const { return mUICommands; }
 		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle){ mUIEditorModuleHandle = moduleHandle; }
 		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
+
+
+		//-------------------------------------------------------------------
+		// For UI Editing
+		//-------------------------------------------------------------------
+	public:
+		virtual void SetUIEditor(IUIEditor* editor);
+		virtual void StartLocatingComponent(ComponentType::Enum c);
+		virtual void CancelLocatingComponent();
+
+	private:
+		void OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard);
 	};
 }
 

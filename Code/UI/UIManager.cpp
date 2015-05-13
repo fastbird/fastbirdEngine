@@ -22,6 +22,7 @@
 #include <UI/NamedPortrait.h>
 #include <UI/UIAnimation.h>
 #include <UI/UICommands.h>
+#include <UI/PropertyList.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
@@ -48,7 +49,8 @@ UIManager::UIManager(lua_State* L)
 	, mPosSizeEventEnabled(true), mIgnoreInput(false)
 	, mCachedListBox(0)
 	, mModalWindow(0), mLockFocus(false), mDelayForTooltip(0)
-	, mUIEditorModuleHandle(0)
+	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
+	, mUIEditor(0)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -60,10 +62,14 @@ UIManager::UIManager(lua_State* L)
 	mUICommands = FB_NEW(UICommands);
 	PrepareTooltipUI();
 	WinBase::InitMouseCursor();
+	gFBEnv->pEngine->RegisterFileChangeListener(this);
 }
 
 UIManager::~UIManager()
 {
+	gFBEnv->pEngine->RemoveFileChangeListener(this);
+	gFBEnv->pConsole->ProcessCommand("KillUIEditor");
+
 	WinBase::FinalizeMouseCursor();
 	if (mUIEditorModuleHandle)
 	{
@@ -78,14 +84,6 @@ UIManager::~UIManager()
 	mAnimations.clear();
 
 	DeleteWindow(mPopup);
-	// delete lua uis
-	for (const auto& it : mLuaUIs)
-	{
-		for (const auto& ui : it.second)
-		{
-			DeleteWindow(ui);
-		}
-	}
 	Shutdown();
 	assert(mWindows.empty());
 	gFBEnv->pEngine->RemoveInputListener(this);
@@ -198,7 +196,7 @@ void UIManager::Update(float elapsedTime)
 
 void UIManager::GatherRenderList()
 {
-	for (auto it : mNeedToRegisterUIObject){
+	for (auto& it : mNeedToRegisterUIObject){
 		if (it.second){
 			HWND_ID hwndId = it.first;
 			it.second = false;
@@ -250,6 +248,7 @@ void UIManager::GatherRenderList()
 			{
 				gFBEnv->pRenderer->Register3DUIs(hwndId, it.first.c_str(), it.second);
 			}
+			
 		}
 	}	
 }
@@ -667,6 +666,39 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 	DirtyRenderList(hwndId);
 }
 
+void UIManager::DeleteWindowsFor(HWND_ID hwndId)
+{
+	auto it = mWindows.Find(hwndId);
+	if (it == mWindows.end())
+		return;
+	auto& windows = it->second;
+	for (auto wnd : windows)
+	{
+		OnDeleteWinBase(wnd);
+		DeleteLuaUIContaning(wnd);
+		FB_SAFE_DEL(wnd);
+	}
+	windows.clear();
+	mWindows.erase(it);
+	DirtyRenderList(hwndId);
+}
+
+void UIManager::DeleteLuaUIContaning(IWinBase* wnd)
+{
+	for (auto it = mLuaUIs.begin(); it != mLuaUIs.end(); ++it)
+	{
+		auto& uis = it->second;
+		for (auto ui : uis)
+		{
+			if (ui == wnd)
+			{
+				mLuaUIs.erase(it);
+				return;
+			}
+		}
+	}
+}
+
 // deleting component or wnd
 void UIManager::OnDeleteWinBase(IWinBase* winbase)
 {
@@ -827,6 +859,9 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::NamedPortrait:
 		pWnd = FB_NEW(NamedPortrait);
 		break;
+	case ComponentType::PropertyList:
+		pWnd = FB_NEW(PropertyList);
+		break;
 	default:
 		assert(0 && "Unknown component");
 	}
@@ -844,6 +879,11 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 {
 	if (!pMouse->IsValid() && !pKeyboard->IsValid())
 		return;
+	if (mLocatingComp != ComponentType::NUM)
+	{
+		OnInputForLocating(pMouse, pKeyboard);
+		return;
+	}
 
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
@@ -907,6 +947,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 	}
 }
+
 void UIManager::EnableInputListener(bool enable)
 {
 	mInputListenerEnable = enable;
@@ -1212,7 +1253,7 @@ const char* UIManager::FindUINameWithLua(const char* luafilepath)
 	return "";
 }
 
-void UIManager::OnUIFileChanged(const char* file)
+bool UIManager::OnFileChanged(const char* file)
 {
 	assert(file);
 	std::string lower(file);
@@ -1231,7 +1272,7 @@ void UIManager::OnUIFileChanged(const char* file)
 		uiname = GetFileNameWithoutExtension(lower.c_str());
 	}
 	else
-		return;
+		return false;
 
 	if (uiname.empty())
 	{
@@ -1257,7 +1298,7 @@ void UIManager::OnUIFileChanged(const char* file)
 				assert(0);
 			}
 		}
-		return;
+		return true;
 	}
 		
 	HWND_ID hwndId = -1;
@@ -1286,6 +1327,7 @@ void UIManager::OnUIFileChanged(const char* file)
 	mLuaUIs[uiname] = temp;
 	UIManager::GetUIManagerStatic()->SetVisible(uiname.c_str(), false);
 	UIManager::GetUIManagerStatic()->SetVisible(uiname.c_str(), true); // for OnVisible UI Event.
+	return true;
 }
 
 UIManager* UIManager::GetUIManagerStatic()
@@ -1400,4 +1442,26 @@ void UIManager::PrepareTooltipUI()
 	}
 }
 
+//-------------------------------------------------------------------
+// For UI Editing
+//-------------------------------------------------------------------
+void UIManager::SetUIEditor(IUIEditor* editor)
+{
+	mUIEditor = editor;
+}
+
+void UIManager::StartLocatingComponent(ComponentType::Enum c)
+{
+	mLocatingComp = c;
+}
+
+void UIManager::CancelLocatingComponent()
+{
+
+}
+
+void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard)
+{
+
+}
 } // namespace fastbird

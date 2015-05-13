@@ -15,11 +15,11 @@ public:
 	~RenderPipeline();
 
 	RenderPipeline* Clone() const;
-	void SetStep(RenderSteps::Enum step, bool enable);
+	virtual RenderPipeline& SetStep(RenderSteps::Enum step, bool enable);
 	bool GetStep(RenderSteps::Enum step) const;
 
-	virtual void SetMaximum();
-	virtual void SetMinimum();
+	virtual RenderPipeline& SetMaximum();
+	virtual RenderPipeline& SetMinimum();
 
 };
 

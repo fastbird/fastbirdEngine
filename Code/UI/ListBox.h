@@ -44,6 +44,7 @@ protected:
 	bool mNoBackground;
 };
 
+class ITexture;
 //--------------------------------------------------------------------------------
 class ListBox : public Wnd
 {
@@ -92,13 +93,13 @@ public:
 	virtual unsigned FindRowWithId(unsigned id);
 	virtual void DeleteRow(unsigned row);
 
-private:
+protected:
 
 	ListItem* CreateNewItem(int row, int col, const Vec2& npos, const Vec2& nsize);
 	void SetHighlightRow(size_t row, bool highlight);
 	void SetHighlightRowAndSelect(size_t row, bool highlight);
 
-private:
+protected:
 
 	typedef std::vector<ListItem*> ROW;
 	ROW mHeaders;

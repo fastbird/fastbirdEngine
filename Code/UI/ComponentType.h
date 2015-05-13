@@ -29,6 +29,7 @@ namespace fastbird
 			TextBox,
 			ColorRamp,
 			NamedPortrait,
+			PropertyList,
 
 			NUM
 		};
@@ -57,6 +58,7 @@ namespace fastbird
 			"TextBox",
 			"ColorRamp",
 			"NamedPortrait",
+			"PropertyList",
 
 			"NUM",
 		};
@@ -67,6 +69,11 @@ namespace fastbird
 		{
 			assert(e >= Window && e < NUM);
 			return strings[e];
+		}
+
+		inline const char* ConvertToString(unsigned e)
+		{
+			return ConvertToString(ComponentType::Enum(e));
 		}
 
 		inline Enum ConverToEnum(const char* sz)

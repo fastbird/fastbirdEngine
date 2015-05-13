@@ -32,6 +32,7 @@ public:
 	virtual void StopHighlight();
 
 	virtual void SetHwndId(HWND_ID hwndId);
+	virtual const char* GetMsgTranslationUnit() const;
 
 protected:
 	virtual void OnSizeChanged();
@@ -44,8 +45,10 @@ private:
 	std::vector<ImageBox*> mFrames;
 	bool mUseFrame;
 	ImageBox* mBackgroundImage;
+	std::string mMsgTranslationUnit;
 	bool mAlwaysOnTop;
 	bool mCloseByEsc;
+	bool mSyncWindowPos;
 };
 
 }

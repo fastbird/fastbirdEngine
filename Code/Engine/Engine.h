@@ -58,6 +58,7 @@ namespace fastbird
 		std::vector<IFileChangeListener*> mFileChangeListeners;	
 
 		bool mExiting;
+	
 
 	public:
 
@@ -74,7 +75,9 @@ namespace fastbird
 		virtual GlobalEnv* GetGlobalEnv() const;
 
 		virtual HWND_ID CreateEngineWindow(int x, int y, int width, int height,
-			const char* wndClass, const char* title, WNDPROC winProc);
+			const char* wndClass, const char* title, unsigned style, unsigned exStyle, 
+			WNDPROC winProc);
+		virtual void DestroyEngineWindow(HWND_ID hwndId);
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const;
 		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const;
 		virtual HWND GetWindowHandle(HWND_ID id) const;
@@ -84,6 +87,7 @@ namespace fastbird
 		virtual HWND_ID GetMainWndHandleId() const;
 		virtual HWND GetForegroundWindow(HWND_ID* id = 0) const;
 		virtual HWND_ID GetForegroundWindowId() const;
+		virtual bool IsMainWindowForground() const;
 		virtual bool InitEngine(int rendererType);
 		virtual bool InitSwapChain(HWND_ID id, int width, int height);
 		virtual inline IRenderer* GetRenderer() const;

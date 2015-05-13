@@ -115,12 +115,14 @@
     <ClInclude Include="IRadioBox.h" />
     <ClInclude Include="ITitleBar.h" />
     <ClInclude Include="IUIAnimation.h" />
+    <ClInclude Include="IUIEditor.h" />
     <ClInclude Include="IUIManager.h" />
     <ClInclude Include="IWinBase.h" />
     <ClInclude Include="KeyboardCursor.h" />
     <ClInclude Include="ListBox.h" />
     <ClInclude Include="NamedPortrait.h" />
     <ClInclude Include="NumericUpDown.h" />
+    <ClInclude Include="PropertyList.h" />
     <ClInclude Include="RadioBox.h" />
     <ClInclude Include="Scroller.h" />
     <ClInclude Include="StaticText.h" />
@@ -142,6 +144,7 @@
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
+    <ClCompile Include="PropertyList.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />
     <ClCompile Include="EventHandler.cpp" />

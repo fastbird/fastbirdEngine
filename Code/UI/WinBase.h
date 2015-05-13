@@ -13,6 +13,7 @@ namespace fastbird
 	protected:
 		static const float WinBase::LEFT_GAP;
 		static const float NotDefined;
+		static Vec2I OSWindowPos;
 
 		static Vec2I sLastPos;
 
@@ -319,6 +320,7 @@ namespace fastbird
 
 		virtual float GetAlpha() const;
 		virtual void OnAlphaChanged();
+		virtual const char* GetMsgTranslationUnit() const;
 
 	protected:
 		virtual void OnPosChanged();

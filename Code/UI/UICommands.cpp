@@ -25,16 +25,21 @@ bool UICommands::OnChangeCVar(CVar* pCVar)
 }
 
 
-typedef int(__cdecl *StartProc)(GlobalEnv* pEnv, int x, int y);
-
+typedef int(__cdecl *StartProc)(GlobalEnv* pEnv);
+static bool uiEditorInitialized = false;
 void StartUIEditor(StringVector& arg)
 {
-	if (gFBEnv->pUIManager->GetUIEditorModuleHandle())
+	if (uiEditorInitialized)
 	{
 		Log("Alreay started!");
 		return;
 	}
-	auto moduleHandle = LoadLibrary("FBUIEditor.dll");
+	auto moduleHandle = gFBEnv->pUIManager->GetUIEditorModuleHandle();
+	if (!moduleHandle)
+	{
+		moduleHandle = LoadLibrary("FBUIEditor.dll");;
+		gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
+	}
 	if (moduleHandle)
 	{		
 		StartProc startFunc;
@@ -42,16 +47,29 @@ void StartUIEditor(StringVector& arg)
 		if (startFunc)
 		{
 			gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
-			startFunc(gFBEnv, 1620, 0);
+			startFunc(gFBEnv);
+			uiEditorInitialized = true;
 		}
 
 	}
 }
+
+typedef void(__cdecl *FinalizeProc)();
 void KillUIEditor(StringVector& arg)
 {
-	if (gFBEnv->pUIManager->GetUIEditorModuleHandle())
+	if (!uiEditorInitialized)
+		return;
+
+	auto moduleHandle = gFBEnv->pUIManager->GetUIEditorModuleHandle();
+	if (moduleHandle)
 	{
-		FreeLibrary(gFBEnv->pUIManager->GetUIEditorModuleHandle());
-		gFBEnv->pUIManager->SetUIEditorModuleHandle(0);
+		FinalizeProc finalizeFunc;
+		finalizeFunc = (FinalizeProc)GetProcAddress(moduleHandle, "KillUIEditor");
+		if (finalizeFunc)
+			finalizeFunc();
+
+		//FreeLibrary(gFBEnv->pUIManager->GetUIEditorModuleHandle());
+		//gFBEnv->pUIManager->SetUIEditorModuleHandle(0);
 	}
+	uiEditorInitialized = false;
 }

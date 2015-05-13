@@ -85,6 +85,9 @@ void CameraMan::Update(float elapsedTime)
 //---------------------------------------------------------------------------
 void CameraMan::OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)
 {
+	if (!gFBEnv->pEngine->IsMainWindowForground())
+		return;
+
 	float cameraSpeed = 10.0f;
 	float mouseSens = 0.01f;
 	float wheelSens = 0.001f;

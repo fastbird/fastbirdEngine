@@ -3,21 +3,26 @@
 #include "CameraMan.h"
 #include "QuickSortTask.h"
 #include "PhyObj.h"
-#include <Engine/IVoxelizer.h>
-#include <Engine/IRenderTarget.h>
 #include <CommonLib/threads.h>
 #include <CommonLib/Profiler.h>
+#include <Engine/IVoxelizer.h>
+#include <Engine/IRenderTarget.h>
+#include <UI/IUIManager.h>
 #include <Physics/IPhysics.h>
 #include <Physics/RigidBody.h>
 using namespace fastbird;
 
 
 #define RUN_PARALLEL_EXAMPLE 0
+#define PHYSICS_TEST 0
 
 fastbird::GlobalEnv* gFBEnv = 0;
 fastbird::IPhysics* gFBPhysics = 0;
+fastbird::IUIManager* gFBUIManager = 0; // same with the gFBEnv->pUImanager
+
 HMODULE gEngineModule = 0;
 HMODULE gPhysicsModule = 0;
+HMODULE gUIModule = 0;
 
 CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
@@ -31,8 +36,16 @@ void UpdateFrame()
 	gFBEnv->pTimer->Tick();
 	float elapsedTime = gpTimer->GetDeltaTime();
 	gFBEnv->pEngine->UpdateInput();
+
+	if (gFBUIManager)
+		gFBUIManager->Update(elapsedTime);
+
 	gFBPhysics->Update(elapsedTime);
 	gCameraMan->Update(elapsedTime);
+	
+	if (gFBUIManager)
+		gFBUIManager->GatherRenderList();
+
 	gFBEnv->pEngine->UpdateFrame(elapsedTime);
 }
 
@@ -93,7 +106,10 @@ bool InitEngine()
 		Error(FB_DEFAULT_DEBUG_ARG, "Init engine error!");
 		return false;
 	}
-	fastbird::HWND_ID id = pEngine->CreateEngineWindow(0, 0, 1600, 900, "EngineApp", "Game powered by fastbird engine", WinProc);	
+	fastbird::HWND_ID id = pEngine->CreateEngineWindow(0, 0, 1600, 900, "EngineApp", 
+		"Game powered by fastbird engine",
+		WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, 0,
+		WinProc);
 	pEngine->InitSwapChain(id, 1600, 900);
 	gpTimer = gFBEnv->pTimer;
 	gInputHandler = FB_NEW(InputHandler)();
@@ -117,11 +133,34 @@ bool InitEngine()
 
 	gFBPhysics = createPhysicsProc();
 
+	//-------------------------------------------------------------------------
+	// UI
+	//-------------------------------------------------------------------------
+	gUIModule = fastbird::LoadFBLibrary("UI.dll");
+	if (!gUIModule)
+		return false;
+
+	typedef fastbird::IUIManager* (__cdecl *CreateUIProc)(fastbird::GlobalEnv* genv);
+	CreateUIProc createUIProc = (CreateUIProc)GetProcAddress(gUIModule, "Create_fastbird_UIManager");
+	if (!createUIProc)
+		return false;
+	assert(gFBEnv);
+	gFBUIManager = createUIProc(gFBEnv); // also gFBEnv->pUIManager is set.	
+
 	return true;
 }
 
 void FinalizeEngine()
 {
+	if (!gUIModule)
+		return;
+	typedef void(__cdecl *DestroyUIProc)();
+	DestroyUIProc destroyUIProc = (DestroyUIProc)GetProcAddress(gUIModule, "Destroy_fastbird_UIManager");
+	if (!destroyUIProc)
+		return;
+	destroyUIProc();
+	gFBUIManager = 0; // also gFBEnv->pUIManager is zero.
+
 	typedef void(__cdecl *DestroyPhysicsProc)();
 	DestroyPhysicsProc destroyPhysicsProc = (DestroyPhysicsProc)GetProcAddress(gPhysicsModule, "Destroy_fastbird_Physics");
 	if (!destroyPhysicsProc)
@@ -269,10 +308,11 @@ int main()
 #endif // RUN_PARALLEL_EXAMPLE
 	//----------------------------------------------------------------------------
 
+	std::vector<PhyObj*> PhyObjs;
+#if PHYSICS_TEST
 	//----------------------------------------------------------------------------
 	// Physics Test
-	//----------------------------------------------------------------------------
-	std::vector<PhyObj*> PhyObjs;
+	//----------------------------------------------------------------------------	
 	PhyObjs.reserve(200);
 	for (int i = 0; i < 100; i++)
 	{
@@ -309,7 +349,7 @@ int main()
 		rigidBody->ApplyCentralImpulse(Random(Vec3(-10, -10, -10), Vec3(-10, 10, 10)));
 
 	}
-
+#endif
 	//----------------------------------------------------------------------------
 	// Entering game loop.
 	//----------------------------------------------------------------------------

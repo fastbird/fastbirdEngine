@@ -431,6 +431,7 @@
     <ClInclude Include="GaussianDist.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="IFileChangeListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />

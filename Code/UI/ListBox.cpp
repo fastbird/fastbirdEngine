@@ -147,7 +147,7 @@ unsigned ListBox::InsertItem(const wchar_t* szString)
 	row.push_back(pAddedItem);
 	if (szString)
 		pAddedItem->SetText(szString);
-
+	pAddedItem->SetProperty(UIProperty::TEXT_LEFT_GAP, "6");
 	unsigned curRow = mItems.size() - 1;
 	GetRowId(curRow);
 

@@ -15,6 +15,7 @@ const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
+Vec2I WinBase::OSWindowPos;
 
 WinBase::WinBase()
 : mHwndId(-1)
@@ -706,6 +707,11 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			{
 				mMouseDragStartInHere = true;
 				gFBEnv->pUIManager->SetFocusUI(GetRootWnd());
+				auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
+				RECT rect;
+				GetWindowRect(hwnd, &rect);
+				OSWindowPos.x = rect.left;
+				OSWindowPos.y = rect.top;
 				invalidate = true;
 			}
 			else
@@ -997,8 +1003,9 @@ std::string WinBase::TranslateText(const char* text)
 	if (text[0] == '@')
 	{
 		char varName[255];
-		sprintf_s(varName, "msg.%s", text+1);
-		auto var = GetLuaVar(gFBEnv->pUIManager->GetLuaState(), varName, "msg.lua");
+		const char* msgTranslationUnit = GetMsgTranslationUnit();
+		sprintf_s(varName, "%s.%s", msgTranslationUnit, text + 1);
+		auto var = GetLuaVar(gFBEnv->pUIManager->GetLuaState(), varName);
 		if (var.IsString())
 		{
 			return var.GetString();
@@ -2793,6 +2800,20 @@ float WinBase::GetAlpha() const
 		return mParent->GetAlpha() * mAlpha;
 	}
 	return mAlpha;
+}
+
+const char* WinBase::GetMsgTranslationUnit() const
+{
+	auto root = GetRootWnd();
+	if (root == this)
+	{
+		return "msg";
+	}
+	else
+	{
+		return root->GetMsgTranslationUnit();
+	}
+	
 }
 
 }

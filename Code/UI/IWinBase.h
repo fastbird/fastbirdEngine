@@ -195,6 +195,7 @@ namespace fastbird
 		virtual const Color GetBackColor() = 0;
 		virtual float GetAlpha() const = 0;
 		virtual void OnAlphaChanged() = 0;
+		virtual const char* GetMsgTranslationUnit() const = 0;
 	protected:
 		virtual void OnPosChanged() = 0;
 		virtual void OnSizeChanged() = 0;

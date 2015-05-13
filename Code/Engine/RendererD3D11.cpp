@@ -433,6 +433,7 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	pColorTexture->SetSize(Vec2I(width, height));
 
 	RenderTarget* pRenderTarget = FB_NEW(RenderTargetD3D11);
+	pRenderTarget->GetRenderPipeline().SetMaximum();
 	pRenderTarget->SetColorTexture(pColorTexture);
 	pRenderTarget->SetDepthStencilDesc(width, height, mDepthStencilFormat, false, false);
 
@@ -442,6 +443,25 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	OnSwapchainCreated(id);
 	
 	return true;
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::ReleaseSwapChain(HWND_ID id)
+{
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the swap chain with the id %u", id));
+		return;
+	}
+	mSwapChainRenderTargets.erase(it);
+	auto itSwapChain = mSwapChains.Find(id);
+	if (itSwapChain != mSwapChains.end())
+	{
+		SAFE_RELEASE(itSwapChain->second);
+		mSwapChains.erase(itSwapChain);
+	}
+	Log(FormatString("Swap chain %u is released.", id));
 }
 
 //----------------------------------------------------------------------------

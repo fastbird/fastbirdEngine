@@ -9,18 +9,20 @@
 
 namespace fastbird
 {
-	void Mouse::GetCurrentMousePos(HWND_ID hwndId, long& x, long& y)
+	void Mouse::GetCurrentMousePos(HWND_ID hwndId, long& x, long& y, long& physicalX, long& physicalY)
 	{
 		auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
-		GetCurrentMousePos(hWnd, x, y);
+		GetCurrentMousePos(hWnd, x, y, physicalX, physicalY);
 
 	}
 
-	void Mouse::GetCurrentMousePos(HWND hWnd, long& x, long& y)
+	void Mouse::GetCurrentMousePos(HWND hWnd, long& x, long& y, long& physicalX, long& physicalY)
 	{
 #ifdef _FBENGINE_FOR_WINDOWS_
 		POINT cursor;
 		GetCursorPos(&cursor);
+		physicalX = cursor.x;
+		physicalY = cursor.y;
 		assert(hWnd);
 		ScreenToClient(hWnd, &cursor);
 		x = cursor.x;
@@ -60,6 +62,8 @@ namespace fastbird
 		, mLockMouse(false)
 		, mNPosX(0)
 		, mNPosY(0)
+		, mPhysicalX(0)
+		, mPhysicalY(0)
 		, mWorldRayCalculated(false)
 	{
 		mLButtonDoubleClicked = false;
@@ -67,7 +71,7 @@ namespace fastbird
 		mButtonsDownPrev = 0;
 		mButtonsClicked = 0;
 		mButtonsDoubleClicked = 0;
-		GetCurrentMousePos(gFBEnv->pEngine->GetMainWndHandleId(), mAbsX, mAbsY);
+		GetCurrentMousePos(gFBEnv->pEngine->GetMainWndHandleId(), mAbsX, mAbsY, mPhysicalX, mPhysicalY);
 		auto hWnd = gFBEnv->pEngine->GetMainWndHandle();
 		Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
 
@@ -98,11 +102,22 @@ namespace fastbird
 
 		if (!mLockMouse)
 		{
-			GetCurrentMousePos(handle, mAbsX, mAbsY);
+			GetCurrentMousePos(handle, mAbsX, mAbsY, mPhysicalX, mPhysicalY);
 			const auto& size = gFBEnv->pEngine->GetRequestedWndSize(handle);
 			mNPosX = (float)mAbsX / (float)size.x;
 			mNPosY = (float)mAbsY / (float)size.y;
+			auto hwnd = WindowFromPoint({ mPhysicalX, mPhysicalY });
+			if (hwnd != handle)
+			{
+				auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hwnd);
+				if (hwndId != INVALID_HWND_ID)
+				{
+					SetForegroundWindow(hwnd);
+					return;
+				}
+			}
 		}
+
 			
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
@@ -301,8 +316,8 @@ namespace fastbird
 
 	void Mouse::GetDragStart(long &x, long &y) const
 	{
-		x = mAbsX;
-		y = mAbsY;
+		x = mDragStartX;
+		y = mDragStartY;
 	}
 
 	Vec2 Mouse::GetNPos() const
@@ -449,7 +464,7 @@ namespace fastbird
 
 	void Mouse::OnSetFocus(HWND hWnd)
 	{
-		GetCurrentMousePos(hWnd, mAbsX, mAbsY);
+		GetCurrentMousePos(hWnd, mAbsX, mAbsY, mPhysicalX, mPhysicalY);
 		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
 		mNPosX = (float)mAbsX / (float)size.x;
 		mNPosY = (float)mAbsY / (float)size.y;

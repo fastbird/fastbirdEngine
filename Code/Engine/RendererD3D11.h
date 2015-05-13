@@ -22,6 +22,7 @@ namespace fastbird
 		virtual ~RendererD3D11();
 		virtual bool Init(int threadPool);
 		virtual bool InitSwapChain(HWND_ID id, int width, int height);
+		virtual void ReleaseSwapChain(HWND_ID id);
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
 		virtual void Clear(float r, float g, float b, float a);// only color

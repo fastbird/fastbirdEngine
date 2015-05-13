@@ -11,6 +11,7 @@ namespace fastbird
 	class ListBox;
 	class IUIAnimation;
 	class UICommands;
+	class IUIEditor;
 	class IUIManager : public IInputListener
 	{
 	public:
@@ -29,6 +30,7 @@ namespace fastbird
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 
 		virtual void DeleteWindow(IWinBase* pWnd) = 0;
+		virtual void DeleteWindowsFor(HWND_ID hwndId) = 0;
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;
@@ -48,7 +50,6 @@ namespace fastbird
 		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func)=0;
 		virtual int GetPopUpResult() const = 0;
 		virtual lua_State* GetLuaState() const = 0;
-		virtual void OnUIFileChanged(const char* file) = 0;
 		virtual IWinBase* FindComp(const char* uiname, const char* compName) const = 0;
 		virtual bool CacheListBox(const char* uiname, const char* compName) = 0;
 		virtual ListBox* GetCachedListBox() const = 0;
@@ -93,6 +94,16 @@ namespace fastbird
 		friend class Button;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
 		virtual void DeleteComponent(IWinBase* com) = 0;
+
+
+
+		//-------------------------------------------------------------------
+		// For UI Editing
+		//-------------------------------------------------------------------
+	public:
+		virtual void SetUIEditor(IUIEditor* editor) = 0;
+		virtual void StartLocatingComponent(ComponentType::Enum c) = 0;
+		virtual void CancelLocatingComponent() = 0;
 	};
 }
 
