@@ -9,9 +9,11 @@ namespace fastbird
 
 RadioBox::RadioBox()
 	: mChecked(false)
+	, mGroupID(-1)
 {
 	mRadioImageBox = static_cast<ImageBox*>(
 		AddChild(0.f, 0.f, 0.05f, 1.0f, ComponentType::ImageBox));
+	mRadioImageBox->SetRuntimeChild(true);
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
 	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
@@ -20,6 +22,7 @@ RadioBox::RadioBox()
 
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
+	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
 	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
@@ -64,22 +67,34 @@ bool RadioBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool RadioBox::GetProperty(UIProperty::Enum prop, char val[])
+bool RadioBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::RADIO_GROUP:
 	{
-		sprintf_s(val, 256, "%u", mGroupID);
+		if (notDefaultOnly)
+		{
+			if (mGroupID == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mGroupID);
+		strcpy(val, data.c_str());
 		return true;
 	}
 	case UIProperty::RADIO_CHECK:
 	{
-		sprintf_s(val, 256, "%s", StringConverter::toString(mChecked).c_str());
+		if (notDefaultOnly)
+		{
+			if (mChecked == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mChecked);
+		strcpy(val, data.c_str());
 		return true;
 	}
 	}
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 void RadioBox::SetText(const wchar_t* szText)

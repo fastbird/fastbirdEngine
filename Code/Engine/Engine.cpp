@@ -26,6 +26,7 @@
 #include <Engine/ScriptSystem.h>
 #include <Engine/Material.h>
 #include <Engine/IFileChangeListener.h>
+#include <Engine/TextManipulator.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -926,6 +927,17 @@ LRESULT Engine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 	Engine* pEngine = (Engine*)gFBEnv->pEngine;
 	switch(msg)
 	{
+	case WM_PAINT:
+	{
+		auto hwndId = pEngine->GetWindowHandleId(window);
+		auto rt = gFBEnv->pRenderer->GetRenderTarget(hwndId);
+		if (rt)
+		{
+			rt->TriggerDrawEvent();
+		}
+	}
+	break;
+
 
 	case WM_INPUT:
 		{
@@ -1372,6 +1384,16 @@ HWND_ID Engine::FindEmptyHwndId() const
 	Error(FB_DEFAULT_DEBUG_ARG, "Hwnd id is full.");
 	assert(0);
 	return -1;
+}
+
+TextManipulator* Engine::CreateTextManipulator()
+{
+	return FB_NEW(TextManipulator);
+}
+
+void Engine::DeleteTextManipulator(TextManipulator* mani)
+{
+	FB_DELETE(mani);
 }
 
 } // namespace fastbird

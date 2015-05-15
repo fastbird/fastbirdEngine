@@ -9,6 +9,8 @@ namespace fastbird
 		~UIAnimation();
 
 		virtual IUIAnimation* Clone() const;
+		virtual void SetGlobalAnim(bool global);
+		virtual bool IsGlobalAnim() const { return mGlobalAnim; }
 
 		virtual void SetLength(float seconds);
 		virtual float GetLength() const { return mLength; }
@@ -33,6 +35,7 @@ namespace fastbird
 		virtual bool HasMaterialColorAnim() const;
 		virtual bool HasAlphaAnim() const;
 		virtual void LoadFromXML(tinyxml2::XMLElement* elem);
+		virtual void Save(tinyxml2::XMLElement& elem);
 		virtual void ParseLua(LuaObject& data);
 		virtual bool IsActivated() const { return mActivate; }
 		virtual void SetActivated(bool activate);
@@ -89,6 +92,7 @@ namespace fastbird
 		Color mInitialBackColor;
 		Color mCurMaterialColor;
 		float mCurAlpha;
+		bool mGlobalAnim;
 		
 	};
 }

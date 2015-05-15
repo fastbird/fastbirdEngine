@@ -7,6 +7,46 @@
 namespace fastbird
 {
 
+	const char* const EventHandler::StrEVENT[] = {
+		"OnEnter",
+		"OnMouseIn",
+		"OnMouseHover",
+		"OnMouseOut",
+		"OnMouseLClick",
+		"OnMouseLDClick",
+		"OnMouseRClick",
+		"OnMouseDown",
+		"OnMouseDrag",
+		"OnFileSelectorSelected",
+		"OnFileSelectorOk",
+		"OnFileSelectorCancel",
+		"OnNumericUp",
+		"OnNumericDown",
+		"OnNumericSet",
+		"OnDropDownSelected",
+		"OnVisible",
+		"OnHide",
+		"EVENT_ON_LOADED",
+		"OnListBoxCleared",
+		"OnColorRampDragged",
+
+		"EVENT_NUM"
+	};
+	const char* IEventHandler::ConvertToString(EVENT e)
+	{
+		assert(e >= 0 && e < EVENT::EVENT_NUM);
+		return StrEVENT[e];
+	}
+	IEventHandler::EVENT IEventHandler::ConvertToEnum(const char* str)
+	{
+		for (int i = 0; i < EVENT::EVENT_NUM; ++i)
+		{
+			if (_stricmp(str, StrEVENT[i]) == 0)
+				return EVENT(i);
+		}
+		return EVENT_NUM;
+	}
+
 size_t EventHandler::UNIQUE_ID = 0;
 unsigned EventHandler::sLastEventProcess = 0;
 EventHandler::EventHandler()
@@ -37,18 +77,21 @@ void EventHandler::UnregisterAllEventFunc()
 	mEventFuncMap.clear();
 }
 
-void EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
+bool EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
 {
 	if (luaFuncName == 0)
 	{
 		Error("Cannot register null function!");
-		return;
+		return false;
 	}
 	std::string funcName = StripBoth(luaFuncName);
 	LuaObject func;
 	func.FindFunction(gFBEnv->pUIManager->GetLuaState(), funcName.c_str());
-	if_assert_pass(func.IsFunction())
-		mLuaFuncMap[e] = func;	
+	if_assert_pass(func.IsFunction()){
+		mLuaFuncMap[e] = func;
+		return true;
+	}
+	return false;
 }
 
 void EventHandler::UnregisterEventLuaFunc(EVENT e)

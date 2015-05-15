@@ -25,6 +25,7 @@ CheckBox::~CheckBox()
 void CheckBox::OnCreated()
 {
 	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
+	mCheckImageBox->SetRuntimeChild(true);
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
@@ -111,19 +112,24 @@ bool CheckBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool CheckBox::GetProperty(UIProperty::Enum prop, char val[])
+bool CheckBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::CHECKBOX_CHECKED:
 	{
+		if (notDefaultOnly)
+		{
+			if (mChecked == GetDefaultValueBool(prop))
+				return false;
+		}
 		auto data = StringConverter::toString(mChecked);
 		strcpy(val, data.c_str());
 		return true;
 	}
 
 	}
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 }

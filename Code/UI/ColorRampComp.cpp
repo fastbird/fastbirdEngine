@@ -39,7 +39,7 @@ bool ColorRampComp::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool ColorRampComp::GetProperty(UIProperty::Enum prop, char val[])
+bool ColorRampComp::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -50,7 +50,7 @@ bool ColorRampComp::GetProperty(UIProperty::Enum prop, char val[])
 	}
 	}
 
-	return __super::SetProperty(prop, val);
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 void ColorRampComp::SetColorRampValues(const char* values)
@@ -126,6 +126,7 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 		}
 
 		auto bar = AddChild(xPos, 0.5f, 0.05f, 1.0f, ComponentType::Button);
+		bar->SetRuntimeChild(true);
 		mBars.push_back((Button*)bar);
 		bar->SetSizeModificator(Vec2I(0, -10));
 		bar->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
@@ -144,6 +145,7 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 			centerXPos = prevXPos + ratio * .5f;
 		}
 		auto text = AddChild(centerXPos, 0.5f, 1, 1, ComponentType::StaticText);
+		text->SetRuntimeChild(true);
 		text->SetSize(Vec2I(50, 20));
 		text->SetProperty(UIProperty::TEXT_ALIGN, "center");
 		text->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
@@ -157,6 +159,7 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 	float ratio = values.back();
 	float centerXPos = prevXPos + ratio * .5f;
 	auto text = AddChild(centerXPos, 0.5f, 1, 1, ComponentType::StaticText);
+	text->SetRuntimeChild(true);
 	text->SetSize(Vec2I(50, 20));
 	text->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	text->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);

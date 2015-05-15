@@ -77,6 +77,9 @@ namespace fastbird
 
 		SmartPtr<ITexture> mEnvTexture;
 
+		bool mDrawOnEvent;
+		bool mDrawEventTriggered;
+
 	private:
 
 
@@ -109,7 +112,7 @@ namespace fastbird
 
 		virtual void Bind(size_t face = 0);
 		virtual void BindTargetOnly(bool hdr);
-		virtual void Render(size_t face=0);
+		virtual bool Render(size_t face=0);
 		virtual void Unbind();
 
 		virtual void SetEnable(bool enable){ mEnabled = enable; }
@@ -172,5 +175,8 @@ namespace fastbird
 		void UpdateLightCamera();
 
 		static void ReleaseStarDef();
+
+		virtual void DrawOnEvent(bool set);
+		virtual void TriggerDrawEvent();
 	};
 }

@@ -199,6 +199,8 @@ protected:
 	std::vector<IObject*> mMarkObjects;
 	std::vector<IObject*> mHPBarObjects;
 
+	std::vector<IRenderListener*> mRenderListeners;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -472,6 +474,9 @@ public:
 	virtual void UpdateSceneConstantsBuffer() = 0;
 	virtual void UpdateRareConstantsBuffer() = 0;
 	virtual void UpdateRadConstantsBuffer(void* pData) = 0;
+
+	virtual void AddRenderListener(IRenderListener* listener);
+	virtual void RemoveRenderListener(IRenderListener* listener);
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

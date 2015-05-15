@@ -26,7 +26,7 @@ RenderTarget::RenderTarget()
 	, mHasDepth(false), mUsePool(true), mGlowSet(false)
 	, mFrameLuminanceCalced(0)
 	, mGaussianDistBlendGlow(0)
-	, mGaussianDistBloom(0), mSceneOverride(0), mLockSceneOverride(false)
+	, mGaussianDistBloom(0), mSceneOverride(0), mLockSceneOverride(false), mDrawOnEvent(false), mDrawEventTriggered(false)
 {
 	mId = NextRenderTargetId++;
 
@@ -200,10 +200,14 @@ void RenderTarget::BindTargetOnly(bool hdr)
 	}
 }
 
-void RenderTarget::Render(size_t face)
+bool RenderTarget::Render(size_t face)
 {
 	if (!mEnabled || !mScene)
-		return;
+		return false;
+
+	if (mDrawOnEvent && !mDrawEventTriggered)
+		return false;
+	mDrawEventTriggered = false;
 
 	mFace = face;
 	auto renderer = gFBEnv->_pInternalRenderer;
@@ -316,6 +320,8 @@ void RenderTarget::Render(size_t face)
 		ToneMapping();
 	}
 	Unbind();
+
+	return true;
 }
 
 void RenderTarget::Unbind()
@@ -1423,5 +1429,16 @@ void RenderTarget::SetLightCamFar(float f)
 	mLightCamera->GetNearFar(on, of);
 	mLightCamera->SetNearFar(on, f);
 }
+
+void RenderTarget::DrawOnEvent(bool set)
+{
+	mDrawOnEvent = set;
+}
+
+void RenderTarget::TriggerDrawEvent()
+{
+	mDrawEventTriggered = true;
+}
+
 
 }

@@ -2399,9 +2399,9 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 	static OBJECT_CONSTANTS constants =
 	{
 		Mat44(2.f / rtSize.x, 0, 0, -1.f,
-		0.f, -2.f / rtSize.y, 0, 1.f,
-		0, 0, 1.f, 0.f,
-		0, 0, 0, 1.f),
+			0.f, -2.f / rtSize.y, 0, 1.f,
+			0, 0, 1.f, 0.f,
+			0, 0, 0, 1.f),
 		Mat44(),
 	};
 

@@ -109,6 +109,7 @@ std::string ListBox::GetSelectedString()
 ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2& nsize)
 {
 	ListItem* item = (ListItem*)AddChild(npos.x, npos.y, nsize.x, nsize.y, ComponentType::ListItem);
+	item->SetRuntimeChild(true);
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
 	if (col < (int)mTextSizes.size())
@@ -157,7 +158,8 @@ unsigned ListBox::InsertItem(const wchar_t* szString)
 unsigned ListBox::InsertItem(ITexture* texture)
 {
 	auto row = InsertItem(L"");
-	auto imageBox = (ImageBox*)mItems[row][0]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
+	auto imageBox = (ImageBox*)mItems[row][0]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::ImageBox);
+	imageBox->SetRuntimeChild(true);
 	imageBox->SetTexture(texture);
 	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -168,6 +170,7 @@ unsigned ListBox::InsertCheckBoxItem(bool check)
 {
 	auto row = InsertItem(L"");
 	auto checkbox = (CheckBox*)mItems[row][0]->AddChild(0, 0, 1, 1, ComponentType::CheckBox);
+	checkbox->SetRuntimeChild(true);
 	checkbox->SetSize(Vec2I(24, 24));
 	checkbox->SetCheck(check);
 	checkbox->SetVisible(mVisibility.IsVisible());
@@ -262,6 +265,7 @@ void ListBox::SetItemTexture(size_t row, size_t col, ITexture* texture)
 {
 	SetItemString(row, col, L"");
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
+	imageBox->SetRuntimeChild(true);
 	imageBox->SetTexture(texture);
 	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -271,6 +275,7 @@ void ListBox::SetItemTexture(size_t row, size_t col, const char* texturePath)
 {
 	SetItemString(row, col, L"");
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
+	imageBox->SetRuntimeChild(true);
 	imageBox->SetTexture(texturePath);
 	imageBox->SetVisible(mVisibility.IsVisible());
 	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -288,6 +293,7 @@ void ListBox::SetItemTextureRegion(size_t row, size_t col, const char* region)
 	assert(!mTextureAtlas.empty());
 	SetItemString(row, col, L"");
 	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
+	imageBox->SetRuntimeChild(true);
 	imageBox->SetProperty(UIProperty::TEXTUREATLAS, mTextureAtlas.c_str());
 	imageBox->SetProperty(UIProperty::REGION, region);
 	imageBox->SetVisible(mVisibility.IsVisible());
@@ -305,8 +311,10 @@ IWinBase* ListBox::SetItemIconText(size_t row, size_t col, const char* region, c
 	{
 		button = dynamic_cast<Button*>(mItems[row][col]->GetChild((unsigned)0));
 	}
-	if (!button)
+	if (!button) {
 		button = (Button*)mItems[row][col]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Button);
+		button->SetRuntimeChild(true);
+	}
 
 	button->SetVisible(mVisibility.IsVisible());
 	button->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -473,14 +481,15 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::LISTBOX_COL:
 	{
-									mNumCols = StringConverter::parseUnsignedInt(val);
-									float colsize = 1.0f / (float)mNumCols;
-									mColSizes.clear();
-									for (unsigned i = 0; i < mNumCols; ++i)
-									{
-										mColSizes.push_back(colsize);
-									}
-									return true;
+		mStrCols = val;
+		mNumCols = StringConverter::parseUnsignedInt(val);
+		float colsize = 1.0f / (float)mNumCols;
+		mColSizes.clear();
+		for (unsigned i = 0; i < mNumCols; ++i)
+		{
+			mColSizes.push_back(colsize);
+		}
+		return true;
 	}
 	case UIProperty::LISTBOX_ROW_HEIGHT:
 		{
@@ -489,14 +498,15 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 	case UIProperty::LISTBOX_ROW_GAP:
 	{
-										mRowGap = StringConverter::parseInt(val);
-										return true;
+			mRowGap = StringConverter::parseInt(val);
+			return true;
 	}
 
 	case UIProperty::LISTBOX_COL_SIZES:
 		{
 			// set UIProperty::LISTBOX_COL first
 			// don't need to set this property if the num of col is 1.
+			mStrColSizes = val;
 			assert(mNumCols != 1);
 			mColSizes.clear();
 			StringVector strs = Split(val);
@@ -510,6 +520,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_TEXT_SIZES:
 	{
+		mStrTextSizes = val;
 										  // set UIProperty::LISTBOX_COL first
 										  mTextSizes.clear();
 										  StringVector strs = Split(val);
@@ -522,6 +533,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::LISTBOX_COL_ALIGNH:
 		{
+			mStrColAlignH = val;
 			assert(mNumCols != 1);
 			mColAlignes.clear();
 			mColAlignes.reserve(mNumCols);
@@ -544,6 +556,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_COL_HEADERS_TEXT_SIZE:
 	{
+		mStrHeaderTextSizes = val;
 										   assert(mNumCols != 1);
 										   mHeaderTextSize.clear();
 										   StringVector strs = Split(val);
@@ -557,6 +570,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_COL_HEADERS:
 		{
+			mStrHeaders = val;
 			StringVector strs = Split(val, ",");
 			assert(strs.size() == mNumCols);
 			float nh = PixelToLocalNHeight(mRowHeight);
@@ -573,6 +587,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 					mHeaders.push_back(static_cast<ListItem*>(
 						AddChild(posx, 0.0f, mColSizes[i], nh, ComponentType::ListItem)));
 					ListItem* pAddedItem = mHeaders.back();
+					pAddedItem->SetRuntimeChild(true);
 					const RECT& rect = mUIObject->GetRegion();
 					pAddedItem->SetProperty(UIProperty::NO_BACKGROUND, "false");
 					pAddedItem->SetProperty(UIProperty::BACK_COLOR, "0.0, 0.0, 0.0, 0.5");
@@ -591,6 +606,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				}
 				assert(!mWndContentUI);
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
+				mWndContentUI->SetRuntimeChild(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
 				mWndContentUI->SetSizeModificator(sizeMod);
 				mWndContentUI->SetUseAbsYSize(true);
@@ -633,6 +649,123 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
+bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::LISTBOX_HIGHLIGHT_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mHighlightColor == UIProperty::GetDefaultValueString(prop))
+				return false;
+		}
+		strcpy(val, mHighlightColor.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_COL:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrCols.empty())
+				return false;
+		}
+		strcpy(val, mStrCols.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_ROW_HEIGHT:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRowHeight == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mRowHeight);
+		strcpy(val, data.c_str());
+		return true;
+
+		
+	}
+	case UIProperty::LISTBOX_ROW_GAP:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRowGap == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mRowGap);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_SIZES:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrColSizes.empty())
+				return false;
+		}
+		strcpy(val, mStrColSizes.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_TEXT_SIZES:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrTextSizes.empty())
+				return false;
+		}
+		strcpy(val, mStrTextSizes.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_COL_ALIGNH:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrColAlignH.empty())
+				return false;
+		}
+		strcpy(val, mStrColAlignH.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_HEADERS_TEXT_SIZE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrHeaderTextSizes.empty())
+				return false;
+		}
+		strcpy(val, mStrHeaderTextSizes.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_HEADERS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrHeaders.empty())
+				return false;
+		}
+		strcpy(val, mStrHeaders.c_str());
+		return true;
+	}
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTextureAtlas.empty())
+				return false;
+		}
+		strcpy(val, mTextureAtlas.c_str());
+		return true;
+	}
+	}
+
+	return __super::GetProperty(prop, val, notDefaultOnly);
+
+}
 ListItem* ListBox::GetItem(size_t row, size_t col) const
 {
 	assert(row < mItems.size());

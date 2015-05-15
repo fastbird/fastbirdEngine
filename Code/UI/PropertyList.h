@@ -4,6 +4,7 @@ namespace fastbird{
 
 	class PropertyList : public ListBox
 	{
+		unsigned mFocusRow;
 	public:
 		PropertyList();
 		virtual ~PropertyList();
@@ -18,6 +19,11 @@ namespace fastbird{
 		virtual void ClearItems();
 
 		const wchar_t* GetValue(const wchar_t* key);
+		
+		void SetFocusRow(unsigned row) { mFocusRow = row; }
+		unsigned GetFocusRow() const { return mFocusRow; }
+
+		bool GetCurKeyValue(std::string& key, std::string& value);
 		
 	private:
 		ListItem* CreateNewKeyItem(int row, int col, float ny);

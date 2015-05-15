@@ -30,6 +30,7 @@ public:
 	virtual bool IsAnimated() const;
 	virtual void Highlight(bool enable);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 	void OnMouseHover(void* arg);
 	void OnMouseOut(void* arg);
@@ -50,6 +51,9 @@ private:
 
 private:
 	std::string mTextureAtlasFile;
+	std::string mStrRegion;
+	std::string mStrRegions;
+	std::string mStrFrameImage;
 	std::string mImageFile; 
 	TextureAtlas* mTextureAtlas;
 	TextureAtlasRegion* mAtlasRegion;
@@ -65,5 +69,6 @@ private:
 	unsigned mCurFrame;
 	bool mAnimation;
 	bool mImageFixedSize;	
+	bool mColorOveraySet;
 };
 }

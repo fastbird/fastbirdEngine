@@ -8,6 +8,8 @@ namespace fastbird
 	public:
 		virtual ~IUIAnimation() {}
 		virtual IUIAnimation* Clone() const = 0;
+		virtual void SetGlobalAnim(bool global) = 0;
+		virtual bool IsGlobalAnim() const = 0;
 
 		virtual void SetLength(float seconds) = 0;
 		virtual float GetLength() const = 0;
@@ -33,6 +35,7 @@ namespace fastbird
 		virtual bool HasAlphaAnim() const = 0;
 		virtual void LoadFromXML(tinyxml2::XMLElement* elem) = 0;
 		virtual void ParseLua(LuaObject& data) = 0;
+		virtual void Save(tinyxml2::XMLElement& elem) = 0;
 		virtual bool IsActivated() const = 0;
 		virtual void SetActivated(bool activate) = 0;
 		virtual const char* GetName() const = 0;

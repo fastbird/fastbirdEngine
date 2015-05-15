@@ -103,6 +103,7 @@
     <ClInclude Include="ColorRampComp.h" />
     <ClInclude Include="ComponentType.h" />
     <ClInclude Include="Container.h" />
+    <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileSelector.h" />
@@ -144,6 +145,7 @@
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
+    <ClCompile Include="DragBox.cpp" />
     <ClCompile Include="PropertyList.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />

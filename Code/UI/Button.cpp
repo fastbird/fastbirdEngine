@@ -20,6 +20,7 @@ Button::Button()
 	, mIconText(false)
 	, mNoButton(false)
 	, mButtonIconSize(0)
+	, mFps(0), mActivatedRot(false), mImageColorOverlay(1, 1, 1, 1)
 {
 	for (int i = 0; i < ButtonImages::Num; i++)
 	{
@@ -261,12 +262,13 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::BACK_COLOR:
 	{
-								   mBackColor = Color(val);
-								   mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
-								   return true;
+		mBackColor = Color(val);
+		mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
+		return true;
 	}
 	case UIProperty::BACK_COLOR_OVER:
 	{
+
 		mBackColorOver = Color(val);
 										return true;
 	}
@@ -283,6 +285,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::REGION:
 	{
+		mRegionName = val;
 							   if (!mImages[ButtonImages::Image])
 							   {
 								   mImages[ButtonImages::Image]= CreateImageBox();
@@ -305,6 +308,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::REGIONS:
 	{
+		mRegionNames = val;
 							   if (!mImages[ButtonImages::Image])
 							   {
 								   mImages[ButtonImages::Image] = CreateImageBox();
@@ -327,6 +331,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TEXTURE_FILE:
 	{
+		mTextureFile = val;
 									 if (!mImages[ButtonImages::Image])
 									 {
 										 mImages[ButtonImages::Image] = CreateImageBox();
@@ -348,6 +353,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::FPS:
 	{
+		mFps = StringConverter::parseReal(val);
 							if_assert_pass(mImages[ButtonImages::Image])
 							{
 								mImages[ButtonImages::Image]->SetProperty(prop, val);
@@ -356,6 +362,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::HOVER_IMAGE:
 	{
+		mHorverImage = val;
 									if (!mImages[ButtonImages::ImageHover])
 									{
 										mImages[ButtonImages::ImageHover] = CreateImageBox();
@@ -376,6 +383,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::BACKGROUND_IMAGE:
 	{
+		mBackgroundImage = val;
 										 if (!mImages[ButtonImages::BackImage])
 										 {
 											 mImages[ButtonImages::BackImage] = CreateImageBox();
@@ -387,6 +395,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::BACKGROUND_IMAGE_DISABLED:
 	{
+		mBackgroundImageDisabled = val;
 										 if (!mImages[ButtonImages::BackImageDisabled])
 										 {
 											 mImages[ButtonImages::BackImageDisabled] = CreateImageBox();
@@ -399,6 +408,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::BACKGROUND_IMAGE_HOVER:
 	{
+		mBackgoundImageHover = val;
 											   if (!mImages[ButtonImages::BackImageHover])
 											   {
 												   mImages[ButtonImages::BackImageHover] = CreateImageBox();
@@ -412,6 +422,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
+		mBackgroundImageNoAtlas = val;
 										if (!mImages[ButtonImages::BackImage])
 										 {
 											mImages[ButtonImages::BackImage] = CreateImageBox();
@@ -424,6 +435,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::BACKGROUND_IMAGE_HOVER_NOATLAS:
 	{
+		mBackgroundImageHoverNoAtlas = val;
 												if (!mImages[ButtonImages::BackImageHover])
 											   {
 													mImages[ButtonImages::BackImageHover] = CreateImageBox();
@@ -437,6 +449,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::FRAME_IMAGE:
 	{
+		mFrameImage = val;
 										if (!mImages[ButtonImages::FrameImage])
 										 {
 											mImages[ButtonImages::FrameImage] = CreateImageBox();
@@ -459,6 +472,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::FRAME_IMAGE_DISABLED:
 	{
+		mFrameImageDisabled = val;
 										if (!mImages[ButtonImages::FrameImageDisabled])
 										{
 											mImages[ButtonImages::FrameImageDisabled] = CreateImageBox();
@@ -481,6 +495,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::ACTIVATED_IMAGE:
 	{
+		mActivatedImage = val;
 										if (!mImages[ButtonImages::ActiveImage])
 										{
 											mImages[ButtonImages::ActiveImage] = CreateImageBox();
@@ -504,6 +519,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::DEACTIVATED_IMAGE:
 	{
+		mDeactivatedImage = val;
 										  if (!mImages[ButtonImages::DeactiveImage])
 										  {
 											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();
@@ -526,6 +542,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::ACTIVATED_IMAGE_ROT:
 	{
+		mActivatedRot = StringConverter::parseBool(val);
 											assert(mImages[ButtonImages::ActiveImage]);
 											mImages[ButtonImages::ActiveImage]->SetUVRot(StringConverter::parseBool(val));
 											return true;
@@ -563,7 +580,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::BUTTON_ICON_TEXT:
 	{
-										 mButtonIconSize = StringConverter::parseUnsignedInt(val);
+										 mButtonIconSize = StringConverter::parseInt(val);
 										 if (mButtonIconSize == 0)
 										 {
 											 mIconText = false;
@@ -629,7 +646,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::EDGE_COLOR:
 	{
-		mEdgeColor = Color(val);
+									mEdgeColor = Color(val);
 								   assert(mUIObject);
 								   mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 								   return true;
@@ -637,12 +654,13 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::EDGE_COLOR_OVER:
 	{
-		mEdgeColorOver = Color(val);
-										return true;
+									mEdgeColorOver = Color(val);
+									return true;
 	}
 
 	case UIProperty::IMAGE_COLOR_OVERLAY:
 	{
+		mImageColorOverlay = StringConverter::parseColor(val);
 											if (mImages[ButtonImages::Image])
 											{
 												return mImages[ButtonImages::Image]->SetProperty(UIProperty::IMAGE_COLOR_OVERLAY, val);
@@ -659,6 +677,348 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	return __super::SetProperty(prop, val);
 }
+
+bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	/*case UIProperty::BACK_COLOR: -- Will be handled in the WinBase
+	{
+		
+	}*/
+	case UIProperty::BACK_COLOR_OVER:
+	{
+		if (notDefaultOnly){
+			if (mBackColorOver == UIProperty::GetDefaultValueVec4(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mBackColorOver);
+		strcpy(val, data.c_str());		
+		return true;
+	}
+	case UIProperty::BACK_COLOR_DOWN:
+	{
+		if (notDefaultOnly){
+			if (mBackColorDown == UIProperty::GetDefaultValueVec4(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mBackColorDown);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly){
+			if (mImageAtlas.empty())
+			{
+				return false;
+			}
+		}
+		
+		strcpy(val, mImageAtlas.c_str());
+		return true;		
+	}
+	case UIProperty::REGION:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRegionName.empty())
+				return false;
+		}
+
+		strcpy(val, mRegionName.c_str());
+		return true;
+	}
+	case UIProperty::REGIONS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRegionNames.empty())
+				return false;
+		}
+
+		strcpy(val, mRegionNames.c_str());
+		return true;
+	}
+	case UIProperty::TEXTURE_FILE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTextureFile.empty())
+				return false;
+		}
+
+		strcpy(val, mTextureFile.c_str());
+		return true;
+	}
+	case UIProperty::FPS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mFps == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mFps);
+		strcpy(val, data.c_str());
+		return true;
+	}
+	case UIProperty::HOVER_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mHorverImage.empty())
+				return false;
+		}
+
+		strcpy(val, mHorverImage.c_str());
+		return true;		
+	}
+	case UIProperty::BACKGROUND_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBackgroundImage.empty())
+				return false;
+		}
+
+		strcpy(val, mBackgroundImage.c_str());
+		return true;
+	}
+	case UIProperty::BACKGROUND_IMAGE_DISABLED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBackgroundImageDisabled.empty())
+				return false;
+		}
+
+		strcpy(val, mBackgroundImageDisabled.c_str());
+		return true;		
+	}
+
+	case UIProperty::BACKGROUND_IMAGE_HOVER:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBackgoundImageHover.empty())
+				return false;
+		}
+
+		strcpy(val, mBackgoundImageHover.c_str());
+		return true;
+	}
+
+	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBackgroundImageNoAtlas.empty())
+				return false;
+		}
+
+		strcpy(val, mBackgroundImageNoAtlas.c_str());
+		return true;
+	}
+
+	case UIProperty::BACKGROUND_IMAGE_HOVER_NOATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBackgroundImageHoverNoAtlas.empty())
+				return false;
+		}
+
+		strcpy(val, mBackgroundImageHoverNoAtlas.c_str());
+		return true;
+	}
+
+	case UIProperty::FRAME_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mFrameImage.empty())
+				return false;
+		}
+
+		strcpy(val, mFrameImage.c_str());
+		return true;
+		
+	}
+
+	case UIProperty::FRAME_IMAGE_DISABLED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mFrameImageDisabled.empty())
+				return false;
+		}
+
+		strcpy(val, mFrameImageDisabled.c_str());
+		return true;
+	}
+
+	case UIProperty::ACTIVATED_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mActivatedImage.empty())
+				return false;
+		}
+
+		strcpy(val, mActivatedImage.c_str());
+		return true;		
+	}
+
+	case UIProperty::DEACTIVATED_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mDeactivatedImage.empty())
+				return false;
+		}
+
+		strcpy(val, mDeactivatedImage.c_str());
+		return true;
+	}
+
+	case UIProperty::ACTIVATED_IMAGE_ROT:
+	{
+		if (notDefaultOnly)
+		{
+			if (mActivatedRot == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mActivatedRot);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::BUTTON_ACTIVATED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mActivated == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mActivated);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::BUTTON_ICON_TEXT:
+	{
+		if (notDefaultOnly)
+		{
+			if (mButtonIconSize == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mButtonIconSize);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::CHANGE_IMAGE_ACTIVATE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mChangeImageActivation == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mChangeImageActivation);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::PROGRESSBAR:
+	{
+		if (!mProgressBar)
+			return false;
+
+		if (notDefaultOnly)
+		{
+			if (!mProgressBar)
+				return false;
+		}
+		auto data = StringConverter::toString(mProgressBar->GetMaximum());
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::GAUGE_COLOR:
+	case UIProperty::GAUGE_BLINK_COLOR:
+	case UIProperty::GAUGE_BLINK_SPEED:
+	{
+		if (!mProgressBar)
+			return false;
+
+		return mProgressBar->GetProperty(prop, val, notDefaultOnly);
+	}
+
+	case UIProperty::EDGE_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mEdgeColor == UIProperty::GetDefaultValueVec4(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mEdgeColor);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::EDGE_COLOR_OVER:
+	{
+		if (notDefaultOnly)
+		{
+			if (mEdgeColorOver == UIProperty::GetDefaultValueVec4(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mEdgeColorOver);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_COLOR_OVERLAY:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageColorOverlay == UIProperty::GetDefaultValueVec4(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mImageColorOverlay);
+		strcpy(val, data.c_str());
+		return true;
+	}
+	case UIProperty::NO_BUTTON:
+	{
+		if (notDefaultOnly)
+		{
+			if (mNoButton == UIProperty::GetDefaultValueBool(prop))
+			{
+				return false;
+			}
+		}
+		auto data = StringConverter::toString(mNoButton);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, notDefaultOnly);
+}
+
 
 ImageBox* Button::CreateImageBox()
 {

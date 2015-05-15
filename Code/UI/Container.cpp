@@ -10,7 +10,7 @@ namespace fastbird
 
 Container::Container()
 	: mScrollerV(0)
-	, mUseScrollerH(0), mUseScrollerV(0), mChildrenPosSizeChanged(false)
+	, mUseScrollerH(false), mUseScrollerV(false), mChildrenPosSizeChanged(false)
 	, mWndContentUI(0), mChildrenChanged(false), mMatchHeight(false)
 {
 
@@ -73,24 +73,36 @@ IWinBase* Container::AddChild(float posX, float posY, float width, float height,
 		return mWndContentUI->AddChild(posX, posY, width, height, type);
 	}
 
-	WinBase* pWinBase = (WinBase*)gFBEnv->pUIManager->CreateComponent(type);
-	if (pWinBase)
+	auto child = AddChild(type);
+	if (child)
 	{
-		pWinBase->SetHwndId(GetHwndId());
-		mChildren.push_back(pWinBase);
-		if (mNoMouseEvent)
-		{
-			pWinBase->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-		}
-		pWinBase->SetParent(this);
-		pWinBase->SetNSize(fastbird::Vec2(width, height));
-		pWinBase->SetNPos(fastbird::Vec2(posX, posY));
-		pWinBase->RefreshScissorRects(); // for scissor
-		pWinBase->OnCreated();
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+		child->SetNSize(fastbird::Vec2(width, height));
+		child->SetNPos(fastbird::Vec2(posX, posY));
+		child->RefreshScissorRects(); // for scissor
+		child->OnCreated();
 	}
-	SetChildrenPosSizeChanged();
-	return pWinBase;
+
+	return child;
+}
+
+IWinBase* Container::AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type)
+{
+	mChildrenChanged = true; // only detecting addition. not deletion.
+	if (mWndContentUI)
+	{
+		return mWndContentUI->AddChild(pos, size, type);
+	}
+
+	auto child = AddChild(type);
+	if (child)
+	{
+		child->SetSize(size);
+		child->SetPos(pos);
+		child->RefreshScissorRects(); // for scissor
+		child->OnCreated();
+	}
+
+	return child;
 }
 
 IWinBase* Container::AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type)
@@ -108,15 +120,10 @@ IWinBase* Container::AddChild(float posX, float posY, const Vec2& width_aspectRa
 	float iWidth = rtSize.x * worldSize.x;
 	float iHeight = iWidth / ratio;
 	float height = iHeight / (rtSize.y * mWNSize.y);
-	WinBase* pWinBase = (WinBase*)AddChild(posX, posY, width, height, type);
-	if (pWinBase)
-		pWinBase->SetAspectRatio(ratio);
-
-	pWinBase->RefreshScissorRects();
-	pWinBase->OnCreated();
-	SetChildrenPosSizeChanged();
-
-	return pWinBase;
+	WinBase* winbase = (WinBase*)AddChild(posX, posY, width, height, type);
+	if (winbase)
+		winbase->SetAspectRatio(ratio);
+	return winbase;
 }
 
 IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
@@ -414,6 +421,15 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mouse->IsValid() && !keyboard->IsValid())
 		return false;
+	
+	if (keyboard->GetChar() == VK_TAB)
+	{
+		if (gFBUIManager->GetKeyboardFocusUI() == this)
+		{
+			keyboard->PopChar();
+			TabPressed();
+		}
+	}
 
 	bool mouseIn = false;
 	auto it = mChildren.rbegin(), itEnd = mChildren.rend();
@@ -484,6 +500,7 @@ void Container::RefreshVScrollbar()
 		if (!mScrollerV && mUseScrollerV)
 		{
 			mScrollerV = static_cast<Scroller*>(AddChild(1.0f, 0.0f, 0.01f, 1.0f, ComponentType::Scroller));
+			mScrollerV->SetRuntimeChild(true);
 			mScrollerV->SetRender3D(mRender3D, GetRenderTargetSize());
 			mScrollerV->SetSizeX(4);
 			if (!mBorders.empty())
@@ -595,6 +612,7 @@ void Container::Scrolled()
 					
 			}
 		}
+		TriggerRedraw();
 	}
 	else if (mWndContentUI)
 	{
@@ -657,6 +675,21 @@ bool Container::ParseXML(tinyxml2::XMLElement* pelem)
 		pchild = pchild->NextSiblingElement("component");
 	}
 	return true;
+}
+
+void Container::Save(tinyxml2::XMLElement& elem)
+{
+	__super::Save(elem);
+
+	for (auto child : mChildren)
+	{
+		if (!child->IsRuntimeChild())
+		{
+			auto compElem = elem.GetDocument()->NewElement("component");
+			elem.InsertEndChild(compElem);
+			child->Save(*compElem);
+		}
+	}
 }
 
 bool Container::ParseLua(const fastbird::LuaObject& compTable)
@@ -780,12 +813,27 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool Container::GetProperty(UIProperty::Enum prop, char val[])
+bool Container::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 {
+
 	switch (prop)
 	{
+	case UIProperty::SCROLLERV:
+	{
+		if (notDefaultOnly)
+		{
+			if (mUseScrollerV == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mUseScrollerV);
+		strcpy(val, data.c_str());
+		return true;
+	}
 	case UIProperty::SCROLLERV_OFFSET:
 	{
+		if (notDefaultOnly)
+			return false;
+
 		if (mScrollerV)
 		{
 			sprintf_s(val, 256, "%.4f", mScrollerV->GetOffset().y);
@@ -797,8 +845,32 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[])
 			return true;
 		}
 	}
+	case UIProperty::SCROLLERH:
+	{
+		if (notDefaultOnly)
+		{
+			if (mUseScrollerH == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mUseScrollerH);
+		strcpy(val, data.c_str());
+		return true;		
 	}
-	return __super::GetProperty(prop, val);
+	case UIProperty::MATCH_HEIGHT:
+	{
+		if (notDefaultOnly)
+		{
+			if (mMatchHeight == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mMatchHeight);
+		strcpy(val, data.c_str());
+		return true;
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 
@@ -886,6 +958,80 @@ void Container::SetHwndId(HWND_ID hwndId)
 	for (auto child : mChildren)
 	{
 		child->SetHwndId(hwndId);
+	}
+}
+
+IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, bool container) const
+{
+	for (auto child : mChildren)
+	{
+		if (container)
+		{
+			auto cont = dynamic_cast<Container*>(child);
+			if (!cont)
+				continue;
+		}
+		auto found = child->WinBaseWithPoint(pt, container);
+		if (found)
+			return found;
+	}
+
+	if (container)
+		return 0;
+
+	return __super::WinBaseWithPoint(pt, container);
+}
+
+IWinBase* Container::WinBaseWithTabOrder(unsigned tabOrder) const
+{
+	VectorMap<unsigned, IWinBase*> winbases;
+	__super::GatherTabOrder(winbases);
+	for (auto child : mChildren)
+	{
+		child->GatherTabOrder(winbases);
+	}
+	if (winbases.empty())
+		return 0;
+
+	for (auto it : winbases)
+	{
+		if (it.first >= tabOrder)
+		{
+			return it.second;
+		}
+	}
+	return winbases.begin()->second;
+}
+
+void Container::GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const
+{
+	if (!mEnable)
+		return;
+
+	__super::GatherTabOrder(winbases);
+	for (auto child : mChildren)
+	{
+		child->GatherTabOrder(winbases);
+	}
+}
+// you need to check whether current focus has tab order
+void Container::TabPressed()
+{
+	auto root = GetRootWnd();
+	unsigned nextOrder = 0;
+	auto keyfocusWnd = gFBUIManager->GetKeyboardFocusUI();
+	if (keyfocusWnd)
+	{
+		auto tabOrder = keyfocusWnd->GetTabOrder();
+		if (tabOrder != -1)
+		{
+			nextOrder = tabOrder + 1;
+		}
+	}
+	auto win = root->WinBaseWithTabOrder(nextOrder);
+	if (win)
+	{
+		gFBUIManager->SetFocusUI(win);
 	}
 }
 

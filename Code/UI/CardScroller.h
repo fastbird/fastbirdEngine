@@ -52,10 +52,12 @@ namespace fastbird
 		virtual ComponentType::Enum GetType() const { return ComponentType::CardScroller; }
 		virtual void OnSizeChanged();
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 		virtual void Sort();
 		virtual void SetCardSize_Offset(const Vec2& x_ratio, int offset);
 		virtual void SetCardSize(const Vec2I& size);
 		virtual void SetCardSizeNX(float nx);
+		virtual void SetCardSizeX(int x);
 		virtual void SetCardSizeY(int y);
 		virtual void SetCardOffset(int offset);
 		virtual IWinBase* AddCard();
@@ -82,6 +84,10 @@ namespace fastbird
 		float mHeight;
 		float mRatio;
 		float mNYOffset;
+
+		int mCardSizeX;
+		int mCardSizeY;
+		int mCardOffsetY;
 	};
 
 }

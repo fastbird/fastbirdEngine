@@ -18,6 +18,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::Button; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged();
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
@@ -53,9 +54,24 @@ private:
 
 	std::string mImageAtlas;
 	ImageBox* mImages[ButtonImages::Num];
-
+	std::string mRegionName;
+	std::string mRegionNames;
+	std::string mTextureFile;
+	std::string mHorverImage;
+	std::string mBackgroundImage;
+	std::string mBackgroundImageDisabled;
+	std::string mBackgoundImageHover;
+	std::string mBackgroundImageNoAtlas;
+	std::string mBackgroundImageHoverNoAtlas;
+	std::string mFrameImage;
+	std::string mFrameImageDisabled;
+	std::string mActivatedImage;
+	std::string mDeactivatedImage;
+	Color mImageColorOverlay;
+	bool mActivatedRot;
+	float mFps;
 	HorizontalGauge* mProgressBar;
-	unsigned mButtonIconSize;
+	int mButtonIconSize;
 	bool mInProgress;
 	bool mNoBackgroundBackup;
 	bool mActivated;

@@ -25,6 +25,7 @@ public:
 	void SetTextureAtlasRegion(UIProperty::Enum, const char* region);
 
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 private:
 	float mPercentage;
@@ -41,6 +42,10 @@ private:
 
 	bool mMaterialUsingImage;
 	bool mHorizontalFlip;
+
+	std::string mRegionFilled;
+	std::string mRegionNotFilled;
+	std::string mStrGaugeBorderColor;
 
 };
 }

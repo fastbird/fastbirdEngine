@@ -17,6 +17,7 @@ namespace fastbird
 		virtual ComponentType::Enum GetType() const { return ComponentType::TextBox; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 		virtual void SetText(const wchar_t* szText);
 		void SetNPosOffset(const Vec2& offset);
 		virtual unsigned GetTextBoxHeight() const;
@@ -33,6 +34,8 @@ namespace fastbird
 		bool mPasswd;
 		bool mMatchHeight;
 		ImageBox* mImage;
+		std::string mStrBackImage;
+		std::string mStrKeepRatio;
 	};
 
 }

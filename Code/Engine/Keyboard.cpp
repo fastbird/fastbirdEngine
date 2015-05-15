@@ -108,8 +108,13 @@ namespace fastbird
 		if (mCurrentChar.empty())
 			return 0;
 		unsigned ret = mCurrentChar.front();
-		mCurrentChar.pop();
 		return ret;
+	}
+
+	void Keyboard::PopChar()
+	{
+		if (!mCurrentChar.empty())
+			mCurrentChar.pop();
 	}
 
 	//--------------------------------------------------------------------------

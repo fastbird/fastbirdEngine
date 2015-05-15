@@ -272,6 +272,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TITLEBAR:
 	{
+		mTitlebarString = val;
 								 if (!mTitlebar)
 								 {
 									 mTitlebar = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
@@ -293,6 +294,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 mTitlebar->SetName("_@TitleBar");
 									 assert(!mWndContentUI);
 									 mWndContentUI = (Wnd*)AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Window);
+									 mWndContentUI->SetRuntimeChild(true);
 									 mWndContentUI->SetRender3D(mRender3D, GetRenderTargetSize());
 									 Vec2I sizeMod = {
 										 mUseFrame ? -26 : 0,
@@ -321,6 +323,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
+		mStrBackground = val;
 												 if (!mBackgroundImage)
 												 {
 													 mBackgroundImage = FB_NEW(ImageBox);
@@ -339,6 +342,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::KEEP_IMAGE_RATIO:
 	{
+		mStrKeepRatio = val;
 										 if (!mBackgroundImage)
 										 {
 											 mBackgroundImage = FB_NEW(ImageBox);
@@ -385,6 +389,104 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	return __super::SetProperty(prop, val);
+}
+
+bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::USE_WND_FRAME:
+	{
+		if (notDefaultOnly)
+		{
+			if (mUseFrame == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy(val, StringConverter::toString(mUseFrame).c_str());
+		return true;
+	}
+	case UIProperty::TITLEBAR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTitlebarString.empty())
+				return false;
+		}
+		strcpy(val, mTitlebarString.c_str());
+		return true;
+	}
+	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrBackground.empty())
+				return false;
+		}
+		strcpy(val, mStrBackground.c_str());
+		return true;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrKeepRatio.empty())
+				return false;
+		}
+		strcpy(val, mStrKeepRatio.c_str());
+		return true;
+	}
+
+	case UIProperty::ALWAYS_ON_TOP:
+	{
+		if (notDefaultOnly)
+		{
+			if (mAlwaysOnTop == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy(val, StringConverter::toString(mAlwaysOnTop).c_str()); 
+		return true;
+	}
+
+	case UIProperty::CLOSE_BY_ESC:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCloseByEsc == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy(val, StringConverter::toString(mCloseByEsc).c_str());
+		return true;
+	}
+
+	case UIProperty::SYNC_WINDOW_POS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mSyncWindowPos == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy(val, StringConverter::toString(mSyncWindowPos).c_str());
+		return true;
+	}
+
+	case UIProperty::MSG_TRANSLATION:
+	{
+		if (notDefaultOnly)
+		{
+			if (mMsgTranslationUnit.empty())
+				return false;
+		}
+		strcpy(val, mMsgTranslationUnit.c_str());
+		return true;
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 void Wnd::OnTitlebarDrag(void *arg)

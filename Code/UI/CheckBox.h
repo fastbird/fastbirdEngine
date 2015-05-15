@@ -29,7 +29,7 @@ public:
 	void OnMouseHover(void* arg);
 
 	virtual bool SetProperty(UIProperty::Enum, const char*);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 private:
 	void UpdateImage();

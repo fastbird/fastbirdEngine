@@ -13,7 +13,7 @@ namespace fastbird
 		virtual ~EventHandler();
 		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION);
 		virtual void UnregisterEventFunc(EVENT e, FunctionID slot);
-		virtual void RegisterEventLuaFunc(EVENT e, const char* luaFuncName);
+		virtual bool RegisterEventLuaFunc(EVENT e, const char* luaFuncName);
 		virtual void UnregisterEventLuaFunc(EVENT e);
 		virtual void UnregisterAllEventFunc();
 		virtual void DisableEvent(EVENT e);
@@ -22,10 +22,11 @@ namespace fastbird
 
 		virtual void SetEnableEvent(bool enable){ mEventEnable = enable; }
 		virtual bool GetEnableEvent() const { return mEventEnable; }
+		virtual bool OnEvent(EVENT e);
 
 	protected:
 		friend class UIManager;
-		bool OnEvent(EVENT e);
+		
 
 	protected:
 		typedef std::map<FunctionID, EVENT_FUNCTION> FUNC_MAP;

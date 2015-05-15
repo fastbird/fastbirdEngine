@@ -93,6 +93,7 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="IUIEditor.h" />
+    <ClInclude Include="DragBox.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -182,5 +183,6 @@
     <ClCompile Include="PropertyList.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="DragBox.cpp" />
   </ItemGroup>
 </Project>

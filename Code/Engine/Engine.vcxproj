@@ -206,6 +206,7 @@
     <ClInclude Include="IParticleEmitter.h" />
     <ClInclude Include="IPointLight.h" />
     <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="IRenderListener.h" />
     <ClInclude Include="IRenderState.h" />
     <ClInclude Include="IRenderTarget.h" />
     <ClInclude Include="IScene.h" />
@@ -217,6 +218,7 @@
     <ClInclude Include="ISkyBox.h" />
     <ClInclude Include="ISkySphere.h" />
     <ClInclude Include="ITerrain.h" />
+    <ClInclude Include="ITextManipulatorListener.h" />
     <ClInclude Include="ITexture.h" />
     <ClInclude Include="IUIObject.h" />
     <ClInclude Include="IVertexBuffer.h" />
@@ -261,6 +263,7 @@
     <ClInclude Include="StarDef.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="TerrainPatch.h" />
+    <ClInclude Include="TextManipulator.h" />
     <ClInclude Include="TextTags.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureD3D11.h" />
@@ -336,6 +339,7 @@
     <ClCompile Include="StarDef.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TerrainPatch.cpp" />
+    <ClCompile Include="TextManipulator.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureD3D11.cpp" />
     <ClCompile Include="TextureUtil.cpp" />

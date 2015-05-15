@@ -44,10 +44,12 @@ namespace fastbird
 	{
 		//mDown = (Button*)AddChild(0.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
 		mDown = (Button*)AddChild(ComponentType::Button);
+		mDown->SetRuntimeChild(true);
 
 
 		//mUp = (Button*)AddChild(1.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
 		mUp = (Button*)AddChild(ComponentType::Button);
+		mUp->SetRuntimeChild(true);
 
 		mDown->SetNSizeY(1.0);
 		mDown->SetSizeX(12);
@@ -147,17 +149,34 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
-	bool NumericUpDown::GetProperty(UIProperty::Enum prop, char val[])
+	bool NumericUpDown::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 	{
 		switch (prop)
 		{
+		case UIProperty::NUMERIC_UPDOWN_MINMAX:
+		{
+			if (notDefaultOnly)
+			{
+				if (Vec2I(mMin, mMax)== UIProperty::GetDefaultValueVec2I(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(Vec2I(mMin, mMax));
+			strcpy(val, data.c_str());
+			return true;
+		}
 		case UIProperty::NUMERIC_UPDOWN_NUMBER:
 		{
-			sprintf_s(val, 256, "%d", mValue);
+			if (notDefaultOnly)
+			{
+				if (mValue == UIProperty::GetDefaultValueInt(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mValue);
+			strcpy(val, data.c_str());
 			return true;
 		}
 		}
 
-		return __super::GetProperty(prop, val);
+		return __super::GetProperty(prop, val, notDefaultOnly);
 	}
 }

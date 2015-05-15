@@ -46,6 +46,7 @@ class IRenderTarget;
 class ILight;
 class PointLightMan;
 class IScene;
+class IRenderListener;
 
 struct CloudProperties
 {
@@ -327,6 +328,9 @@ public:
 	virtual void RemoveMarkObject(IObject* mark) = 0;
 	virtual void AddHPBarObject(IObject* hpBar) = 0;
 	virtual void RemoveHPBarObject(IObject* hpBar) = 0;
+
+	virtual void AddRenderListener(IRenderListener* listener) = 0;
+	virtual void RemoveRenderListener(IRenderListener* listener) = 0;
 };
 
 }

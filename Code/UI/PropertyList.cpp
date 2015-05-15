@@ -5,9 +5,11 @@ namespace fastbird
 {
 PropertyList::PropertyList()
 	: ListBox()
+	, mFocusRow(-1)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+	mRowHeight = 22;
 }
 PropertyList::~PropertyList()
 {
@@ -16,14 +18,16 @@ PropertyList::~PropertyList()
 
 void PropertyList::OnCreated()
 {
-	auto left = AddChild(0.0f, 0.0f, 0.5f, 1.0f, ComponentType::Window);
+	/*auto left = AddChild(0.0f, 0.0f, 0.5f, 1.0f, ComponentType::Window);
+	left->SetRuntimeChild(true);
 	left->SetName("__Key");
 	left->SetProperty(UIProperty::MATCH_HEIGHT, "true");
 
 	auto right = AddChild(0.5f, 0.0f, 0.5f, 1.0f, ComponentType::Window);
+	right->SetRuntimeChild(true);
 	right->SetName("__Value");
 	right->SetProperty(UIProperty::MATCH_HEIGHT, "true");
-	right->SetSizeModificator(Vec2I(-4, 0));
+	right->SetSizeModificator(Vec2I(-4, 0));*/
 
 	SetProperty(UIProperty::SCROLLERV, "true");
 }
@@ -89,9 +93,9 @@ unsigned PropertyList::InsertItem(const wchar_t* key, const wchar_t* value)
 }
 ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
 {
-	auto keyWnd = GetChild("__Key");
 	float nh = PixelToLocalNHeight(mRowHeight);
-	ListItem* item = (ListItem*)keyWnd->AddChild(0.f, ny, 1.0f, nh, ComponentType::ListItem);
+	ListItem* item = (ListItem*)AddChild(0.f, ny, 0.4f, nh, ComponentType::ListItem);
+	item->SetRuntimeChild(true);
 	
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
@@ -103,14 +107,15 @@ ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
+	item->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
 	return item;
 }
 
 ListItem* PropertyList::CreateNewValueItem(int row, int col, float ny)
 {
-	auto keyWnd = GetChild("__Value");
 	float nh = PixelToLocalNHeight(mRowHeight);
-	ListItem* item = (ListItem*)keyWnd->AddChild(0.f, ny, 1.0f, nh, ComponentType::ListItem);
+	ListItem* item = (ListItem*)AddChild(0.41f, ny, 0.59f, nh, ComponentType::ListItem);
+	item->SetRuntimeChild(true);
 
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
@@ -118,11 +123,14 @@ ListItem* PropertyList::CreateNewValueItem(int row, int col, float ny)
 	if (col < (int)mTextSizes.size())
 		item->SetProperty(UIProperty::TEXT_SIZE, mTextSizes[col].c_str());
 
-	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
-	auto textField = item->AddChild(0.f, 0.f, 0.f, 1.f, ComponentType::TextField);
+	auto textField = item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::TextField);
+	textField->SetRuntimeChild(true);
+	textField->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
+	textField->SetProperty(UIProperty::USE_BORDER, "true");
+	textField->SetVisible(mVisibility.IsVisible());
 	return item;
 }
 
@@ -183,6 +191,16 @@ void PropertyList::ClearItems()
 	right->RemoveAllChild();
 	mItems.clear();
 	mRowIds.clear();
+}
+
+bool PropertyList::GetCurKeyValue(std::string& key, std::string& value)
+{
+	if (mFocusRow == -1)
+		return false;
+	assert(mFocusRow < mItems.size());
+	key = WideToAnsi(mItems[mFocusRow][0]->GetText());
+	value = WideToAnsi(mItems[mFocusRow][1]->GetChild((unsigned)0)->GetText());
+	return true;
 }
 
 }

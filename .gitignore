@@ -13,6 +13,7 @@ Engine.lib
 Physics.dll
 Physics_Debug.dll
 Physics_Release.dll
+FBUIEditor.dll
 LuaInteractive.exe
 UI.dll
 UI_Debug.dll
@@ -33,6 +34,10 @@ EngineApp.exe
 EngineApp_Debug.exe
 LanguageTest.exe
 profile_result.txt
+zlib1.dll
+lua.dll
+FreeImage.dll
+FreeImaged.dll
 /*.dae
 *.dds
 *.bmp

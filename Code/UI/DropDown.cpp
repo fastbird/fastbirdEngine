@@ -111,20 +111,28 @@ bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool DropDown::GetProperty(UIProperty::Enum prop, char val[])
+bool DropDown::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::DROPDOWN_INDEX:
 	{
-		auto data = StringConverter::toString(mCurIdx);
+		std::string data;
+		if (mReservedIdx!=-1)
+		{
+			data = StringConverter::toString(mReservedIdx);
+		}
+		else
+		{
+			data = StringConverter::toString(mCurIdx);
+		}
 		strcpy(val, data.c_str());
 		return true;
 	}
 
 	}
 	
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
 void DropDown::OnMouseClick(void* arg)
@@ -207,6 +215,8 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 {
 	mDropDownItems.push_back((Button*)AddChild(0.0f, 1.0f, 1.0f, 1.0f, ComponentType::Button));
 	Button* pDropDownItem = mDropDownItems.back();
+	// dropdown need to be saved.
+//	pDropDownItem->SetRuntimeChild(true);
 	pDropDownItem->SetText(szString);
 	size_t index = mDropDownItems.size()-1;
 	SetCommonProperty(pDropDownItem, index);

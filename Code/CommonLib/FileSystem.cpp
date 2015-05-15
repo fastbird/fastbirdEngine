@@ -91,7 +91,7 @@ namespace fastbird
 		if (!data || length == 0 || filepath==0)
 			return;
 
-		if (!TestSecurity(filepath))
+		if (!SecurityOK(filepath))
 		{
 			Error("FileSystem: SaveBinaryFile to %s has security violation.", filepath);
 			return;
@@ -105,7 +105,7 @@ namespace fastbird
 		ofs.write(data, length);
 	}
 
-	bool FileSystem::TestSecurity(const char* filepath)
+	bool FileSystem::SecurityOK(const char* filepath)
 	{
 		char absbuf[MAX_PATH];
 		_fullpath(absbuf, filepath, MAX_PATH);
@@ -126,6 +126,48 @@ namespace fastbird
 			FindClose(handle);
 		}
 		return found;
+	}
+
+	void FileSystem::Rename(const char* prev, const char* newname)
+	{
+		if (!SecurityOK(prev) || !SecurityOK(newname))
+			return;
+
+		if (IsFileExisting(prev) && !IsFileExisting(newname))
+		{
+			rename(prev, newname);
+		}
+	}
+
+	void FileSystem::DelFile(const char* file)
+	{
+		if (!SecurityOK(file))
+		{
+			return;
+		}
+		std::string delDir = "data/deleted";
+		std::string delfilePath = delDir + "/" + file;
+		std::string delfileDir = GetDirectoryPath(delfilePath.c_str());
+		CreateFolder(delfileDir.c_str());
+
+		MoveFile(file, delfilePath.c_str());
+	}
+
+	void FileSystem::CreateFolder(const char* folderPath)
+	{
+		char unified[MAX_PATH];
+		UnifyFilepath(unified, folderPath);
+		auto folders = Split(folderPath, "/");
+		std::string path;
+		for (auto& folder : folders)
+		{
+			if (!folder.empty())
+			{
+				path += folder;
+				CreateDirectory(path.c_str(), 0);
+				path += "/";
+			}
+		}
 	}
 
 }

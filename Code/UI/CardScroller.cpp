@@ -8,8 +8,11 @@ unsigned CardItem::NextCardId = 1;
 
 CardScroller::CardScroller()
 :mNextEmptySlot(-1)
-, mRatio(-1)
+, mRatio(1)
 , mNYOffset(0.f)
+, mCardOffsetY(2)
+, mCardSizeY(100)
+, mCardSizeX(200)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -33,30 +36,79 @@ bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	switch (prop)
 	{
+	case UIProperty::CARD_SIZEX:
+	{
+		mCardSizeX = StringConverter::parseInt(val);
+		SetCardSizeX(mCardSizeY);
+		return true;
+	}
 	case UIProperty::CARD_SIZEY:
 	{
-		SetCardSizeY(StringConverter::parseInt(val));
+		mCardSizeY = StringConverter::parseInt(val);
+		SetCardSizeY(mCardSizeY);
 		return true;
 	}
 	case UIProperty::CARD_OFFSETY:
 	{
-		SetCardOffset(StringConverter::parseInt(val));
+		mCardOffsetY = StringConverter::parseInt(val);
+		SetCardOffset(mCardOffsetY);
 		return true;
 	}
 	}
 	return __super::SetProperty(prop, val);
 }
 
+bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::CARD_SIZEX:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCardSizeX == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mCardSizeX);
+		strcpy(val, data.c_str());
+	}
+	case UIProperty::CARD_SIZEY:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCardSizeY == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mCardSizeY);
+		strcpy(val, data.c_str());
+	}
+	case UIProperty::CARD_OFFSETY:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCardOffsetY == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mCardOffsetY);
+		strcpy(val, data.c_str());
+	}
+	}
+	return __super::GetProperty(prop, val, notDefaultOnly);
+}
+
 void CardScroller::SetCardSize_Offset(const Vec2& x_ratio, int offset)
 {
 	mWidth = x_ratio.x;
 	mRatio = x_ratio.y;
+	mCardOffsetY = offset;
 	mNYOffset = this->PixelToLocalNHeight(offset);
 
 	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mWidth));
 	auto rtTarget = GetRenderTargetSize();
 	float iWidth = rtTarget.x * worldSize.x;
+	mCardSizeX = (int)iWidth;
 	float iHeight = iWidth / mRatio;
+	mCardSizeY = (int)iHeight;
 	mHeight = iHeight / (rtTarget.y * mWNSize.y);
 }
 
@@ -73,22 +125,40 @@ void CardScroller::SetCardSize(const Vec2I& size)
 		mWidth = size.x / (float)rtSize.x;
 		mHeight = size.y / (float)rtSize.y;
 	}
-	
+
+	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mHeight));
+	auto rtTarget = GetRenderTargetSize();
+	auto iSize = Vec2(rtTarget) * worldSize;
+	mCardSizeX = (int)iSize.x;
+	mCardSizeY = (int)iSize.y;
 }
 
 void CardScroller::SetCardSizeNX(float nx)
 {
 	mWidth = nx;
+	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mHeight));
+	auto rtTarget = GetRenderTargetSize();
+	auto iSize = Vec2(rtTarget) * worldSize;
+	mCardSizeX = (int)iSize.x;
+}
+
+void CardScroller::SetCardSizeX(int x)
+{
+	mCardSizeX = x;
+	auto rtSize = GetRenderTargetSize();
+	mWidth = x / (rtSize.x * mWNSize.x);
 }
 
 void CardScroller::SetCardSizeY(int y)
 {
+	mCardSizeY = y;
 	auto rtSize = GetRenderTargetSize();
 	mHeight = y / (rtSize.y * mWNSize.y);
 }
 
 void CardScroller::SetCardOffset(int offset)
 {
+	mCardOffsetY = offset;
 	mNYOffset = this->PixelToLocalNHeight(offset);
 }
 
@@ -143,6 +213,7 @@ IWinBase* CardScroller::AddCard()
 	Slot* pDestSlot = GetNextCardPos(pos);
 	assert(pDestSlot);
 	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);	
+	card->SetRuntimeChild(true);
 	pDestSlot->mCard = card;
 	return card;
 }
@@ -153,6 +224,7 @@ void CardScroller::AddCard(LuaObject& obj)
 	Slot* pDestSlot = GetNextCardPos(pos);
 	assert(pDestSlot);
 	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);
+	card->SetRuntimeChild(true);
 	pDestSlot->mCard = card;
 
 	card->ParseLua(obj);

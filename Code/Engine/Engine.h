@@ -180,6 +180,9 @@ namespace fastbird
 	
 		virtual IDustRenderer* CreateDustRenderer();
 		virtual void DeleteDustRenderer(IDustRenderer* dust);
+
+		virtual TextManipulator* CreateTextManipulator();
+		virtual void DeleteTextManipulator(TextManipulator* mani);
 	};
 };
 

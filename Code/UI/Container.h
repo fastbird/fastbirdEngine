@@ -12,6 +12,7 @@ namespace fastbird
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
+		virtual IWinBase* AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type);
 		virtual IWinBase* AddChild(ComponentType::Enum type);
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable);
 		virtual void RemoveChild(IWinBase* child, bool immediately = false);
@@ -35,13 +36,14 @@ namespace fastbird
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 		void OnClickRadio(RadioBox* pRadio);
 
 		virtual void RefreshScissorRects();
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		virtual void Save(tinyxml2::XMLElement& elem);
 		virtual bool ParseLua(const fastbird::LuaObject& compTable);
 
 		void SetChildrenPosSizeChanged() { mChildrenPosSizeChanged = true; }
@@ -61,6 +63,11 @@ namespace fastbird
 
 		virtual void SetHwndId(HWND_ID hwndId);
 
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, bool container) const;
+		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const;
+		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
+		virtual void TabPressed();
+
 	private:
 		friend class WinBase;
 
@@ -69,6 +76,7 @@ namespace fastbird
 		/*virtual void GatherVisitAlpha(std::vector<IUIObject*>& v);*/
 		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
+		friend class UIManager;
 		Vec2 ConvertChildSizeToWorldCoord(const fastbird::Vec2& size) const;
 		Vec2 ConvertChildPosToWorldCoord(const fastbird::Vec2& pos) const;
 		Vec2 ConvertWorldSizeToParentCoord(const fastbird::Vec2& worldSize) const;
@@ -85,6 +93,5 @@ namespace fastbird
 		bool mChildrenPosSizeChanged;
 		bool mChildrenChanged;  // only detecting addition. not deletion.
 		bool mMatchHeight;
-
 	};
 }

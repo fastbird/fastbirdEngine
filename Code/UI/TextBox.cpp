@@ -74,6 +74,7 @@ namespace fastbird
 			unsigned height = GetTextBoxHeight();
 			SetSizeY(height);
 		}
+		TriggerRedraw();
 	}
 
 	void TextBox::CalcTextWidth()
@@ -95,6 +96,7 @@ namespace fastbird
 		{
 		case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 		{
+			mStrBackImage = val;
 			if (!mImage)
 			{
 				mImage = FB_NEW(ImageBox);
@@ -112,19 +114,20 @@ namespace fastbird
 
 		case UIProperty::KEEP_IMAGE_RATIO:
 		{
-											 if (!mImage)
-											 {
-												 mImage = FB_NEW(ImageBox);
-												 mImage->SetHwndId(GetHwndId());
-												 mImage->SetRender3D(mRender3D, GetRenderTargetSize());
-												 mImage->SetParent(this);
-												 mImage->SetWNPos(mWNPos);
-												 mImage->SetWNSize(mWNSize);
-											 }
-											 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-											 mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
+			mStrKeepRatio = val;
+			if (!mImage)
+			{
+				mImage = FB_NEW(ImageBox);
+				mImage->SetHwndId(GetHwndId());
+				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
+				mImage->SetParent(this);
+				mImage->SetWNPos(mWNPos);
+				mImage->SetWNSize(mWNSize);
+			}
+			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+			mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 											 
-											 return true;
+			return true;
 		}
 
 		case UIProperty::TEXTBOX_MATCH_HEIGHT:
@@ -142,6 +145,52 @@ namespace fastbird
 		
 		
 		return __super::SetProperty(prop, val);
+	}
+
+	bool TextBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	{
+		switch (prop)
+		{
+		case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+		{
+			if (notDefaultOnly)
+			{
+				if (mStrBackImage.empty())
+					return false;
+			}
+
+			strcpy(val, mStrBackImage.c_str());
+			return true;
+		}
+
+		case UIProperty::KEEP_IMAGE_RATIO:
+		{
+			if (notDefaultOnly)
+			{
+				if (mStrKeepRatio.empty())
+					return false;
+			}
+
+			strcpy(val, mStrKeepRatio.c_str());
+		}
+
+		case UIProperty::TEXTBOX_MATCH_HEIGHT:
+		{
+			if (notDefaultOnly)
+			{
+				if (mMatchHeight == UIProperty::GetDefaultValueBool(prop))
+					return false;
+			}
+
+			auto data = StringConverter::toString(mMatchHeight);
+			strcpy(val, data.c_str());
+			return true;
+		}
+
+		}
+
+
+		return __super::GetProperty(prop, val, notDefaultOnly);
 	}
 
 

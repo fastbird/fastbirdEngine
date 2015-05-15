@@ -16,9 +16,12 @@ namespace fastbird
 		static BinaryData ReadBinaryFile(const char* filepath, std::streamoff& outLength);
 		static void FinishBinaryFile(BinaryData data);
 		static void SaveBinaryFile(const char* filepath, BinaryData data, size_t length);
-		static bool TestSecurity(const char* filepath);
+		static bool SecurityOK(const char* filepath);
 
 		static bool IsFileExisting(const char* filepath);
+		static void Rename(const char* prev, const char* newname);
+		static void DelFile(const char* file);
+		static void CreateFolder(const char* folderPath);
 		static const char* GetCWD() { return mRootAbs.c_str(); }
 	};
 }

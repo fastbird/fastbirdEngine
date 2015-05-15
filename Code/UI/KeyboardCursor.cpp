@@ -55,4 +55,14 @@ IUIObject* KeyboardCursor::GetUIObject() const
 	return mUIObject;
 }
 
+void KeyboardCursor::SetHwndId(HWND_ID hwndId)
+{
+	mUIObject->SetRenderTargetSize(gFBEnv->pEngine->GetRequestedWndSize(hwndId));
+}
+
+void KeyboardCursor::SetScissorRegion(const RECT& r)
+{
+	mUIObject->SetUseScissor(true, r);
+}
+
 }

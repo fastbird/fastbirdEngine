@@ -351,15 +351,16 @@ void Console::Render()
 
 }
 
-void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
+void Console::OnInput(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mOpen)
 		return;
 
-	if (unsigned int chr = pKeyboard->GetChar())
+	if (unsigned int chr = keyboard->GetChar())
 	{
 		if (chr == 22) // Synchronous idle - ^V
 		{
+			keyboard->PopChar();
 			std::string data = GetClipbardDataAsString();
 			if (!data.empty())
 			{
@@ -374,6 +375,7 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 			{
 			case VK_BACK:
 			{
+				keyboard->PopChar();
 							if (IsHighlighting() && !mInputString.empty())
 							{
 								auto it = mInputString.begin() + mCursorPos;
@@ -396,22 +398,28 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 				break;
 			case VK_TAB:
 			{
+				keyboard->PopChar();
 						   AutoCompletion();
 			}
 				break;
 			case VK_RETURN:
 			{
-							  ProcessCommand(mInputString.c_str());
-							  mInputString.clear();
-							  mCursorPos = 0;
-							  EndHighlighting();
-							  EndAutoCompletion();
+				keyboard->PopChar();
+				if (!mInputString.empty())
+				{
+					ProcessCommand(mInputString.c_str());
+					mInputString.clear();
+					mCursorPos = 0;
+					EndHighlighting();
+					EndAutoCompletion();
+				}
 			}
 				break;
 			default:
 			{
 					   if (IsValidCharForInput(chr))
 					   {
+						   keyboard->PopChar();
 						   if (IsHighlighting())
 						   {
 							   if (!mACMode)
@@ -439,17 +447,17 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 	}
 
-	if (pKeyboard->IsKeyPressed(VK_HOME))
+	if (keyboard->IsKeyPressed(VK_HOME))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		mCursorPos = 0;
 	}
-	else if (pKeyboard->IsKeyPressed(VK_END))
+	else if (keyboard->IsKeyPressed(VK_END))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));	
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));	
 		mCursorPos = mInputString.size();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_DELETE))
+	else if (keyboard->IsKeyPressed(VK_DELETE))
 	{
 		if (!mInputString.empty())
 		{
@@ -472,38 +480,38 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_LEFT))
+	else if (keyboard->IsKeyPressed(VK_LEFT))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		if (mCursorPos>0)
 		{
 			mCursorPos--;
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_RIGHT))
+	else if (keyboard->IsKeyPressed(VK_RIGHT))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		if (mCursorPos < (int)mInputString.size())
 		{
 			mCursorPos++;
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_UP))
+	else if (keyboard->IsKeyPressed(VK_UP))
 	{
 		GetNextHistory();
 
 	}
-	else if (pKeyboard->IsKeyPressed(VK_DOWN))
+	else if (keyboard->IsKeyPressed(VK_DOWN))
 	{
 		GetPrevHistory();		
 	}
 
 	mInputStringw = AnsiToWide(mInputString.c_str(), mInputString.size());
 
-	pKeyboard->Invalidate();
-	pMouse->Invalidate();
+	keyboard->Invalidate();
+	mouse->Invalidate();
 }
 
 void Console::EnableInputListener(bool enable)

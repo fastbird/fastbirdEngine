@@ -105,6 +105,11 @@ namespace fastbird
 		mat->SetMaterialParameters(1, color.GetVec4());
 	}
 
+	const Color& HorizontalGauge::GetGaugeColor() const
+	{
+		return mGaugeColor;
+	}
+
 	void HorizontalGauge::SetGaugeColorEmpty(const Color& color)
 	{
 		mGaugeColorEmpty = color;
@@ -116,6 +121,11 @@ namespace fastbird
 		mBlinkColor = color;
 		IMaterial* mat = mUIObject->GetMaterial();
 		mat->SetMaterialParameters(2, color.GetVec4());
+	}
+
+	const Color& HorizontalGauge::GetBlinkColor() const
+	{
+		return mBlinkColor;
 	}
 
 	bool HorizontalGauge::SetProperty(UIProperty::Enum prop, const char* val)
@@ -172,6 +182,95 @@ namespace fastbird
 		}
 
 		return __super::SetProperty(prop, val);
+	}
+
+	bool HorizontalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	{
+		switch (prop)
+		{
+		case UIProperty::GAUGE_MAX:
+		{
+			if (notDefaultOnly)
+			{
+				if (mMaximum == UIProperty::GetDefaultValueFloat(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mMaximum);
+			strcpy(val, data.c_str());			
+			return true;
+		}
+		case UIProperty::GAUGE_CUR:
+		{
+			if (notDefaultOnly)
+			{
+				if (mPercentage == UIProperty::GetDefaultValueFloat(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mPercentage);
+			strcpy(val, data.c_str());
+			return true;
+			
+		}
+		case UIProperty::GAUGE_COLOR:
+		{
+			if (notDefaultOnly)
+			{
+				if (mGaugeColor == UIProperty::GetDefaultValueVec4(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mGaugeColor);
+			strcpy(val, data.c_str());
+			return true;
+		}
+		case UIProperty::GAUGE_COLOR_EMPTY:
+		{
+			if (mGaugeColorEmptySet)
+			{
+				auto data = StringConverter::toString(mGaugeColorEmpty);
+				strcpy(val, data.c_str());
+				return true;
+			}
+			return false;
+		}
+
+		case UIProperty::GAUGE_BLINK_COLOR:
+		{
+			if (notDefaultOnly)
+			{
+				if (mBlinkColor == UIProperty::GetDefaultValueVec4(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mBlinkColor);
+			strcpy(val, data.c_str());
+			return true;
+		}
+
+		case UIProperty::GAUGE_BLINK_SPEED:
+		{
+			if (notDefaultOnly)
+			{
+				if (mBlinkSpeed == UIProperty::GetDefaultValueFloat(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mBlinkSpeed);
+			strcpy(val, data.c_str());
+			return true;			
+		}
+
+		case UIProperty::GAUGE_BORDER_COLOR:
+		{
+			if (notDefaultOnly)
+			{
+				if (mGaugeBorderColor == UIProperty::GetDefaultValueVec4(prop))
+					return false;
+			}
+			auto data = StringConverter::toString(mGaugeBorderColor);
+			strcpy(val, data.c_str());
+			return true;
+		}
+		}
+
+		return __super::GetProperty(prop, val, notDefaultOnly);
 	}
 
 

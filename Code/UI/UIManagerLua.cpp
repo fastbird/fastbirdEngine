@@ -3,6 +3,7 @@
 #include <UI/StaticText.h>
 #include <UI/Button.h>
 #include <UI/ListBox.h>
+#include <UI/PropertyList.h>
 #include <UI/TextBox.h>
 #include <UI/CheckBox.h>
 #include <UI/NumericUpDown.h>
@@ -51,6 +52,7 @@ namespace fastbird
 	int SelectListBoxItems(lua_State* L);
 	int GetListBoxItemText(lua_State* L);
 	int AddListItem(lua_State* L);
+	int AddPropertyItem(lua_State* L);
 	int SetListItemProperty(lua_State* L);
 	int IsButtonActivated(lua_State* L);
 	int StartUIAnimation(lua_State* L);
@@ -81,9 +83,19 @@ namespace fastbird
 	int StartHighlightUI(lua_State* L);
 	int StopHighlightUI(lua_State* L);
 	int SetEnableComponent(lua_State* L);
+	int GetUIPath(lua_State* L);
+	int GetUIScriptPath(lua_State* L);
+	int GetNumUIProperties(lua_State* L);
+	int GetUIPropertyName(lua_State* L);
+	int GetPropertyCurKeyValue(lua_State* L);
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
+		LUA_SETCFUNCTION(mL, GetUIPropertyName);
+		LUA_SETCFUNCTION(mL, GetNumUIProperties);
+		LUA_SETCFUNCTION(mL, GetUIPath);
+		LUA_SETCFUNCTION(mL, GetUIScriptPath);
 		LUA_SETCFUNCTION(mL, SetEnableComponent);
 		LUA_SETCFUNCTION(mL, StartHighlightUI);
 		LUA_SETCFUNCTION(mL, StopHighlightUI);
@@ -145,6 +157,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, GetListBoxItemText);
 		LUA_SETCFUNCTION(mL, AddListItem);
+		LUA_SETCFUNCTION(mL, AddPropertyItem);
 		LUA_SETCFUNCTION(mL, SetListItemProperty);
 		LUA_SETCFUNCTION(mL, IsButtonActivated);
 		LUA_SETCFUNCTION(mL, StartUIAnimation);
@@ -568,7 +581,7 @@ namespace fastbird
 		{
 			char buf[256];
 
-			bool result = comp->GetProperty(UIProperty::ConverToEnum(prop), buf);
+			bool result = comp->GetProperty(UIProperty::ConverToEnum(prop), buf, false);
 			if (result)
 			{
 				lua_pushstring(L, buf);
@@ -589,7 +602,7 @@ namespace fastbird
 			auto eventHandler = dynamic_cast<EventHandler*>(comp);
 			if (eventHandler)
 			{
-				eventHandler->UnregisterEventLuaFunc(ConvertToEventEnum(eventName));
+				eventHandler->UnregisterEventLuaFunc(IEventHandler::ConvertToEnum(eventName));
 				return 0;
 			}
 		}
@@ -832,6 +845,23 @@ namespace fastbird
 		return 0;
 	}
 
+	int AddPropertyItem(lua_State* L)
+	{
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* listCompName = luaL_checkstring(L, 2);
+		auto comp = gFBEnv->pUIManager->FindComp(uiname, listCompName);
+		PropertyList* propertyList = dynamic_cast<PropertyList*>(comp);
+		if (propertyList)
+		{
+			const char* key = luaL_checkstring(L, 3);
+			const char* value = luaL_checkstring(L, 4);
+			std::wstring wKey = AnsiToWide(key);
+			std::wstring wValue = AnsiToWide(value);
+			propertyList->InsertItem(wKey.c_str(), wValue.c_str());
+		}
+		return 0;
+	}
+
 	int SetListItemProperty(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
@@ -885,6 +915,7 @@ namespace fastbird
 			{
 				auto ganim = gFBEnv->pUIManager->GetGlobalAnimation(animName);
 				uiAnimation = ganim->Clone();
+				uiAnimation->SetGlobalAnim(true);
 				comp->SetUIAnimation(uiAnimation);
 			}
 			if (uiAnimation)
@@ -1318,5 +1349,61 @@ namespace fastbird
 			comp->SetEnable(enable);
 		}
 		return 0;
+	}
+
+	int GetUIPath(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		const char* path = gFBUIManager->GetUIPath(uiname);
+		if (path)
+		{
+			lua_pushstring(L, path);
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetUIScriptPath(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		const char* path = gFBUIManager->GetUIScriptPath(uiname);
+		if (path)
+		{
+			lua_pushstring(L, path);
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetNumUIProperties(lua_State* L)
+	{
+		lua_pushinteger(L, UIProperty::COUNT);
+		return 1;
+	}
+
+	int GetUIPropertyName(lua_State* L)
+	{
+		unsigned i = luaL_checkunsigned(L, 1);
+		assert(i < UIProperty::COUNT);
+		lua_pushstring(L, UIProperty::ConvertToString(i));
+		return 1;
+	}
+
+	int GetPropertyCurKeyValue(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		auto compName = luaL_checkstring(L, 2);
+		auto comp = gFBUIManager->FindComp(uiname, compName);
+		if (comp && comp->GetType() == ComponentType::PropertyList)
+		{
+			auto propertyList = (PropertyList*)comp;
+			std::string key, value;
+			propertyList->GetCurKeyValue(key, value);
+			lua_pushstring(L, key.c_str());
+			lua_pushstring(L, value.c_str());
+			return 2;
+		}
+		return 0;
+
 	}
 }

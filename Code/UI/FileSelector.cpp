@@ -14,6 +14,7 @@ FileSelector::FileSelector()
 	SetProperty(UIProperty::BACK_COLOR, "0.15, 0.15, 0.15, 1.0");
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.05f, 0.01f, 0.9f, 0.05f, ComponentType::StaticText) );
+	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetText(L"Select a file:");
 	char buf[256];
 	DWORD size = GetLogicalDriveStrings(256, buf);
@@ -34,6 +35,7 @@ FileSelector::FileSelector()
 	{
 		mDriveButtons.push_back(static_cast<Button*>(
 			AddChild(xpos, 0.07f, 0.08f, 0.05f, ComponentType::Button)));
+		mDriveButtons.back()->SetRuntimeChild(true);
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
 		mDriveButtons.back()->SetText(AnsiToWide(drives[i].c_str(), drives[i].size()));
@@ -43,10 +45,12 @@ FileSelector::FileSelector()
 	}
 	mFileTextField = static_cast<TextField*>(
 		AddChild(0.05f, 0.13f, 0.9f, 0.05f, ComponentType::TextField) );
+	mFileTextField->SetRuntimeChild(true);
 	mFileTextField->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
 
 	mListBox = static_cast<ListBox*>(
 		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox) );
+	mListBox->SetRuntimeChild(true);
 	mListBox->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
 	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
 		std::bind(&FileSelector::OnListClick, this, std::placeholders::_1));
@@ -55,6 +59,7 @@ FileSelector::FileSelector()
 	
 	mOKButton = static_cast<Button*>(
 		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
+	mOKButton->SetRuntimeChild(true);
 	mOKButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
 		std::bind(&FileSelector::OnOK, this, std::placeholders::_1));
 	mOKButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
@@ -62,6 +67,7 @@ FileSelector::FileSelector()
 
 	mCancelButton = static_cast<Button*>(
 		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
+	mCancelButton->SetRuntimeChild(true);
 	mCancelButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnCancel, this, std::placeholders::_1));
 	mCancelButton->SetProperty(UIProperty::TEXT_ALIGN, "center");

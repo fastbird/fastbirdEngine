@@ -16,6 +16,7 @@
 #include <Engine/RenderPipeline.h>
 #include <Engine/UIObject.h>
 #include <Engine/ParticleManager.h>
+#include <Engine/IRenderListener.h>
 #include <CommonLib/Unicode.h>
 
 namespace fastbird
@@ -2032,14 +2033,24 @@ void Renderer::Render(float dt)
 	for (auto it : mSwapChainRenderTargets)
 	{
 		D3DEventMarker mark(FormatString("Processing render target for %u", it.first));
+		auto hwndId = it.first;
 		auto rt = (RenderTarget*)it.second;
 		assert(rt);
-		rt->Render();
-		if (rt == mainRT)
-		{
-			RenderMarks();
+		bool rendered = rt->Render();
+		if (rendered) {
+			if (rt == mainRT) {
+				RenderMarks();
+			}
+
+			for (auto l : mRenderListeners)	{
+				l->BeforeUIRendering(hwndId);
+			}
+			RenderUI(hwndId);
+
+			for (auto l : mRenderListeners){
+				l->AfterUIRendered(hwndId);
+			}
 		}
-		RenderUI(it.first);
 	}
 	mainRT->BindTargetOnly(false);
 	RenderDebugHud();
@@ -2467,4 +2478,16 @@ void Renderer::SetScene(IScene* scene)
 	mCurProcessingScene = scene;
 	UpdateSceneConstantsBuffer();
 }
+
+void Renderer::AddRenderListener(IRenderListener* listener)
+{
+	if (ValueNotExistInVector(mRenderListeners, listener))
+		mRenderListeners.push_back(listener);
+}
+
+void Renderer::RemoveRenderListener(IRenderListener* listener)
+{
+	DeleteValuesInVector(mRenderListeners, listener);
+}
+
 }

@@ -16,19 +16,23 @@ namespace fastbird
 		static Vec2I OSWindowPos;
 
 		static Vec2I sLastPos;
-
 		friend class VisibleStatus;
+
 		HWND_ID mHwndId;
 		VisibleStatus mVisibility;
 		std::string mName;
 		std::string mScriptPath;
 		std::string mUIPath;
+
 		ALIGNH::Enum mAlignH;
 		ALIGNV::Enum mAlignV;
 		// local
 		Vec2I mSize;
 		Vec2 mNSize; //0.0f~1.0f
+		bool mFillX;
+		bool mFillY;
 		Vec2I mSizeMod;
+		Vec2 mNSizeMod;
 		Vec2I mPos;
 		Vec2 mNPos; // normalized pos 0.f ~ 1.f
 		float mAspectRatio;
@@ -61,6 +65,7 @@ namespace fastbird
 		IWinBase* mNext;
 
 		std::wstring mTextw;
+		std::string mTextBeforeTranslated;
 		Color mTextColor;
 		Color mTextColorHover;
 		Color mTextColorDown;
@@ -80,6 +85,7 @@ namespace fastbird
 		float mAnimationSpeed;
 		VectorMap<std::string, IUIAnimation*> mAnimations;
 		std::wstring mTooltipText;
+		std::string mTooltipTextBeforeT;
 		// this is not related to mAnimation(IUIAnimation)
 		bool mSimplePosAnimEnabled;
 		bool mNoMouseEvent;
@@ -116,6 +122,11 @@ namespace fastbird
 		float mCurHighlightTime;
 		bool mGoingBright;
 		bool mShowingTooltip;
+		int mTabOrder;
+		bool mSaveCheck;
+		bool mRunTimeChild;
+
+		VectorMap<IEventHandler::EVENT, std::string> mEventFuncNames;
 
 	public:
 		WinBase();
@@ -125,20 +136,19 @@ namespace fastbird
 		virtual HWND_ID GetHwndId() const;
 		virtual void OnCreated(){}
 
-		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type)
-		{
+		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type) {
 			return 0;
 		}
-		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type)
-		{
+		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type) {
 			return 0;
 		}
-		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable)
-		{
+		virtual IWinBase* AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type){
 			return 0;
 		}
-		virtual IWinBase* AddChild(ComponentType::Enum type)
-		{
+		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable) {
+			return 0;
+		}
+		virtual IWinBase* AddChild(ComponentType::Enum type) {
 			return 0;
 		}
 		virtual void RemoveChild(IWinBase* child, bool immediately = false) {}
@@ -172,6 +182,7 @@ namespace fastbird
 		virtual void SetSizeModificator(const Vec2I& sizemod);
 
 		virtual const Vec2& GetWNPos() const { return mWNPos; }
+		virtual Vec2I GetWPos() const;
 		virtual Vec2 GetFinalPos() const { return mWNPos + mWNPosOffset; }
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
@@ -196,7 +207,8 @@ namespace fastbird
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v);
 		virtual void OnStartUpdate(float elapsedTime);
-		virtual bool WinBase::IsIn(IMouse* mouse);
+		virtual bool IsIn(IMouse* mouse) const;
+		virtual bool IsIn(const Vec2I& pt) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual void OnFocusLost(){}
@@ -214,7 +226,7 @@ namespace fastbird
 		virtual IEventHandler* GetEventHandler() const { return (IEventHandler*)this; }
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false);
 		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f);
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0);
@@ -273,13 +285,14 @@ namespace fastbird
 		virtual float GetTextEndWLocal() const;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		virtual void Save(tinyxml2::XMLElement& elem);
 		virtual bool ParseLua(const fastbird::LuaObject& compTable);
 		virtual float GetTextBottomGap() const;
 
 		virtual void RefreshScissorRects();
 
 		virtual void SetEnable(bool enable);
-		virtual bool GetEnable(bool enable) const;
+		virtual bool GetEnable() const;
 
 		virtual bool HasUIObject() const { return mUIObject != 0; }
 
@@ -321,6 +334,19 @@ namespace fastbird
 		virtual float GetAlpha() const;
 		virtual void OnAlphaChanged();
 		virtual const char* GetMsgTranslationUnit() const;
+		virtual void TriggerRedraw();
+		virtual IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, bool container) const;
+		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
+		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const{
+			return 0;
+		}
+		virtual int GetTabOrder() const { return mTabOrder; }
+		virtual void TabPressed() {}
+
+		virtual void SetSaveNameCheck(bool set);
+		virtual bool GetSaveNameCheck() const;
+		virtual void SetRuntimeChild(bool runtime) { mRunTimeChild = runtime; }
+		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
 
 	protected:
 		virtual void OnPosChanged();
@@ -328,9 +354,9 @@ namespace fastbird
 		virtual void OnEnableChanged(){}
 
 		virtual void AlignText();
-		RECT GetScissorRegion();
+		RECT GetScissorRegion() const;
 		void GetScissorIntersection(RECT& region);
-		void SetUseBorder(bool use);
+		virtual void SetUseBorder(bool use);
 		void RefreshBorder();
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual void CalcTextWidth(); // virtual for mutiline text

@@ -52,6 +52,7 @@ namespace fastbird
 	class ISkySphere;
 	class IBillboardQuad;
 	class IDustRenderer;
+	class TextManipulator;
 	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
@@ -173,6 +174,9 @@ namespace fastbird
 
 		virtual IDustRenderer* CreateDustRenderer() = 0;
 		virtual void DeleteDustRenderer(IDustRenderer* dust) = 0;
+
+		virtual TextManipulator* CreateTextManipulator() = 0;
+		virtual void DeleteTextManipulator(TextManipulator* mani) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

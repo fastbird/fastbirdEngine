@@ -14,7 +14,7 @@ namespace fastbird
 		, mSecPerFrame(0)
 		, mPlayingTime(0)
 		, mCurFrame(0), mImageFixedSize(false)
-		, mTexture(0)
+		, mTexture(0), mColorOveraySet(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -270,6 +270,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::REGION:
 	{
+		mStrRegion = val;
 							   if (mTextureAtlasFile.empty())
 							   {
 								   mTextureAtlasFile = "data/textures/gameui.xml";
@@ -281,6 +282,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::REGIONS:
 	{
+		mStrRegions = val;
 								mAnimation = true;
 								auto useNumberData = Split(val, ":");
 								if (useNumberData.size() >= 2)
@@ -341,6 +343,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::FRAME_IMAGE:
 	{
+		mStrFrameImage = val;
 									if (!mFrameImage)
 									{
 										mFrameImage = CreateImageBox();
@@ -362,6 +365,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::IMAGE_COLOR_OVERLAY:
 	{
+		mColorOveraySet = true;
 											Color color = Color(val);
 											if (mUIObject)
 											{
@@ -388,6 +392,119 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
+bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly){
+			if (mTextureAtlasFile.empty())
+				return false;
+		}
+		strcpy(val, mTextureAtlasFile.c_str());
+		return true;
+	}
+
+	case UIProperty::REGION:
+	{
+		if (notDefaultOnly){
+			if (mStrRegion.empty())
+				return false;
+		}
+		strcpy(val, mStrRegion.c_str());
+		return true;
+	}
+
+	case UIProperty::REGIONS:
+	{
+		if (notDefaultOnly){
+			if (mStrRegions.empty())
+				return false;
+		}
+		strcpy(val, mStrRegions.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::FPS:
+	{
+		if (notDefaultOnly)	{
+			if (mSecPerFrame == 0.f)
+				return false;
+
+		}
+		auto data = StringConverter::toString(1.f / mSecPerFrame);
+		strcpy(val, data.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::TEXTURE_FILE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageFile.empty())
+				return false;
+		}
+		strcpy(val, mImageFile.c_str());
+		return true;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+		if (notDefaultOnly)
+		{
+			if (mKeepImageRatio == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mKeepImageRatio);
+		strcpy(val, data.c_str());
+		return true;
+	}
+	case UIProperty::FRAME_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrFrameImage.empty())
+				return false;
+		}
+		strcpy(val, mStrFrameImage.c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_COLOR_OVERLAY:
+	{
+		if (notDefaultOnly)
+		{
+			if (!mColorOveraySet)
+				return false;
+		}
+		if (!mUIObject)
+			return false;
+		auto data = StringConverter::toString(mUIObject->GetMaterial()->GetDiffuseColor());
+		strcpy(val, data.c_str());
+	}
+
+	case UIProperty::IMAGE_FIXED_SIZE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageFixedSize == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		auto data = StringConverter::toString(mImageFixedSize);
+		strcpy(val, data.c_str());
+		return true;
+
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, notDefaultOnly);
+}
+
 void ImageBox::SetKeepImageRatio(bool keep)
 {
 	mKeepImageRatio = keep;
@@ -402,6 +519,7 @@ void ImageBox::SetKeepImageRatio(bool keep)
 ImageBox* ImageBox::CreateImageBox()
 {
 	auto image = (ImageBox*)AddChild(0, 0, 1.0f, 1.0f, ComponentType::ImageBox);
+	image->SetRuntimeChild(true);
 	return image;
 }
 

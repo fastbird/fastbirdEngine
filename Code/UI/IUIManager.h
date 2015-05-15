@@ -12,6 +12,7 @@ namespace fastbird
 	class IUIAnimation;
 	class UICommands;
 	class IUIEditor;
+	class TextManipulator;
 	class IUIManager : public IInputListener
 	{
 	public:
@@ -21,11 +22,13 @@ namespace fastbird
 
 		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, 
 			HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false) = 0;
+		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) = 0;
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 		virtual void DeleteLuaUI(const char* uiName) = 0;
 
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;
+		virtual IWinBase* AddWindow(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 		// in normalized space 0.0f~1.0f
 		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 
@@ -33,6 +36,7 @@ namespace fastbird
 		virtual void DeleteWindowsFor(HWND_ID hwndId) = 0;
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
+		virtual IWinBase* GetKeyboardFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
 		virtual void DirtyRenderList(HWND_ID hwndId) = 0;
@@ -82,6 +86,10 @@ namespace fastbird
 		virtual UICommands* GetUICommands() const = 0;
 		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle) = 0;
 		virtual HMODULE GetUIEditorModuleHandle() const = 0;
+		virtual TextManipulator* GetTextManipulator() const = 0;
+
+		virtual const char* GetUIPath(const char* uiname) const = 0;
+		virtual const char* GetUIScriptPath(const char* uiname) const = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;
@@ -92,6 +100,7 @@ namespace fastbird
 		friend class Wnd;
 		friend class DropDown;
 		friend class Button;
+		friend class TextField;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
 		virtual void DeleteComponent(IWinBase* com) = 0;
 
@@ -104,6 +113,8 @@ namespace fastbird
 		virtual void SetUIEditor(IUIEditor* editor) = 0;
 		virtual void StartLocatingComponent(ComponentType::Enum c) = 0;
 		virtual void CancelLocatingComponent() = 0;
+		virtual void ChangeFilepath(IWinBase* root, const char* newfile) = 0;
+
 	};
 }
 

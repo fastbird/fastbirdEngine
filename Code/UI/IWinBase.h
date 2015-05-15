@@ -27,6 +27,7 @@ namespace fastbird
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable) = 0;
+		virtual IWinBase* AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(ComponentType::Enum type) = 0;
 		virtual void RemoveChild(IWinBase* child, bool immediately=false) = 0;
 		virtual void RemoveAllChild(bool immediately = false) = 0;
@@ -59,6 +60,7 @@ namespace fastbird
 		virtual const Vec2& GetNPos() const = 0;
 		virtual const Vec2I& GetPos() const = 0;
 		virtual const Vec2& GetWNPos() const = 0;
+		virtual Vec2I GetWPos() const = 0;
 		virtual Vec2 GetFinalPos() const = 0;
 		virtual const Vec2& GetWNSize() const = 0;
 		virtual const Vec2& GetNSize() const = 0;
@@ -66,6 +68,7 @@ namespace fastbird
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
+		virtual bool IsIn(const Vec2I& pt) const = 0;
 		virtual bool SetVisible(bool show) = 0;
 		virtual bool SetVisibleChildren(bool show) = 0;
 		virtual void SetVisibleInternal(bool visible) = 0;
@@ -95,7 +98,7 @@ namespace fastbird
 		virtual IEventHandler* GetEventHandler() const = 0;
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) = 0;
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]) = 0;
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly) = 0;
 		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false) = 0;
 		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f) = 0;
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0) = 0;
@@ -122,8 +125,13 @@ namespace fastbird
 		virtual void ClearAnimationResult() = 0;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem) = 0;
+		virtual void Save(tinyxml2::XMLElement& elem) = 0;
 		virtual bool ParseLua(const fastbird::LuaObject& compTable) = 0;
 		virtual float GetTextBottomGap() const = 0;
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, bool container) const = 0;
+		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const = 0;
+		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const = 0;
+		virtual void TabPressed() = 0;
 
 		// You usually controll the ui-layer by changing the order of Adding new UI. Later added ui draw first.
 		// But if you use alpha blending, you need to use these enumeration by calling IWinBase::SetLayer()
@@ -155,7 +163,7 @@ namespace fastbird
 		virtual void RefreshScissorRects() = 0;
 
 		virtual void SetEnable(bool enable) = 0;
-		virtual bool GetEnable(bool enable) const = 0;
+		virtual bool GetEnable() const = 0;
 
 		// usually don't need to use this functions
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
@@ -196,6 +204,15 @@ namespace fastbird
 		virtual float GetAlpha() const = 0;
 		virtual void OnAlphaChanged() = 0;
 		virtual const char* GetMsgTranslationUnit() const = 0;
+		virtual int GetTabOrder() const = 0;
+
+		virtual void SetSaveNameCheck(bool set) = 0;
+		virtual bool GetSaveNameCheck() const = 0;
+
+		// runtime child will not be saved.
+		virtual void SetRuntimeChild(bool runtime) = 0;
+		virtual bool IsRuntimeChild() const = 0;
+
 	protected:
 		virtual void OnPosChanged() = 0;
 		virtual void OnSizeChanged() = 0;

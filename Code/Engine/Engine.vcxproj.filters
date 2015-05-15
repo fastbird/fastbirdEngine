@@ -432,6 +432,11 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="IFileChangeListener.h" />
+    <ClInclude Include="IRenderListener.h" />
+    <ClInclude Include="TextManipulator.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ITextManipulatorListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -631,6 +636,9 @@
     </ClCompile>
     <ClCompile Include="GaussianDist.cpp">
       <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="TextManipulator.cpp">
+      <Filter>Misc</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

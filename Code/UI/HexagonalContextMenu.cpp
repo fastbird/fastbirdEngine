@@ -87,8 +87,11 @@ namespace fastbird
 		if (!mHexaEnabled[index])
 			return;
 		if (!mHexaStaticTexts[index])
+		{
 			mHexaStaticTexts[index] = (StaticText*)AddChild(
-			mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.16f, 0.16f, ComponentType::StaticText);
+				mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.16f, 0.16f, ComponentType::StaticText);
+			mHexaStaticTexts[index]->SetRuntimeChild(true);
+		}
 
 		mHexaStaticTexts[index]->SetVisible(true);
 		mHexaStaticTexts[index]->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
@@ -102,6 +105,7 @@ namespace fastbird
 	void HexagonalContextMenu::SetHexaImageIcon(unsigned index, const char* atlas, const char* region)
 	{
 		mHexaImages[index] = (ImageBox*)AddChild(mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.2f, 0.2f, ComponentType::ImageBox);
+		mHexaImages[index]->SetRuntimeChild(true);
 		mHexaImages[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 	}
 

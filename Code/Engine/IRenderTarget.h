@@ -39,7 +39,7 @@ namespace fastbird
 		virtual ITexture* GetDepthStencilTexture() = 0;
 		virtual void Bind(size_t face = 0) = 0;
 		virtual void BindTargetOnly(bool hdr) = 0;
-		virtual void Render(size_t face = 0) = 0;
+		virtual bool Render(size_t face = 0) = 0;
 		virtual void Unbind() = 0;
 		// for every frame render
 		virtual void SetEnable(bool enable) = 0;
@@ -63,5 +63,8 @@ namespace fastbird
 		virtual void SetHDRTarget() = 0;
 		virtual void SetSmallSilouetteBuffer() = 0;
 		virtual void SetBigSilouetteBuffer() = 0;
+
+		virtual void DrawOnEvent(bool set) = 0;
+		virtual void TriggerDrawEvent() = 0;
 	};
 }

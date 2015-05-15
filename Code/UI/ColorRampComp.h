@@ -18,7 +18,7 @@ namespace fastbird
 		virtual ComponentType::Enum GetType() const { return ComponentType::ColorRamp; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 		virtual void OnChildHasDragged();
 		// alread added as a child
 

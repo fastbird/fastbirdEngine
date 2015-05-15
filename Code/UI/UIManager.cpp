@@ -23,11 +23,13 @@
 #include <UI/UIAnimation.h>
 #include <UI/UICommands.h>
 #include <UI/PropertyList.h>
+#include <UI/IUIEditor.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
 #include <Engine/IUIObject.h>
 #include <Engine/IScriptSystem.h>
+#include <Engine/TextManipulator.h>
 
 fastbird::GlobalEnv* gFBEnv = 0;
 
@@ -41,6 +43,7 @@ static float gDelayForTooltip = 0.7f;
 UIManager::UIManager(lua_State* L)
 	: mInputListenerEnable(true)
 	, mFocusWnd(0)
+	, mKeyboardFocus(0)
 	, mMouseIn(false)
 	, mPopup(0)
 	, mPopupCallback(std::function< void(void*) >())
@@ -50,7 +53,8 @@ UIManager::UIManager(lua_State* L)
 	, mCachedListBox(0)
 	, mModalWindow(0), mLockFocus(false), mDelayForTooltip(0)
 	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
-	, mUIEditor(0)
+	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
+	, mUIFolder("data/ui")
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -63,10 +67,15 @@ UIManager::UIManager(lua_State* L)
 	PrepareTooltipUI();
 	WinBase::InitMouseCursor();
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
+	gFBEnv->pRenderer->AddRenderListener(this);
+	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
 }
 
 UIManager::~UIManager()
 {
+	gFBEnv->pEngine->DeleteTextManipulator(mTextManipulator);
+	mTextManipulator = 0;
+	gFBEnv->pRenderer->RemoveRenderListener(this);
 	gFBEnv->pEngine->RemoveFileChangeListener(this);
 	gFBEnv->pConsole->ProcessCommand("KillUIEditor");
 
@@ -130,14 +139,20 @@ void UIManager::Update(float elapsedTime)
 {
 	for (auto ui : mSetFocusReserved)
 	{
+		if (mKeyboardFocus)
+			mKeyboardFocus->OnFocusLost();
 		if (mFocusWnd)
 			mFocusWnd->OnFocusLost();
-		mFocusWnd = ui;
+		auto focusRoot = ui->GetRootWnd();
+		mFocusWnd = focusRoot;
+		mKeyboardFocus = ui;
 		if (mFocusWnd)
 			mFocusWnd->OnFocusGain();
+		if (mKeyboardFocus)
+			mKeyboardFocus->OnFocusGain();
 		auto hwndId = mFocusWnd->GetHwndId();
 		auto windows = mWindows[hwndId];
-		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), ui);
+		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), focusRoot);
 		if (f != windows.end())
 		{
 			// insert f at the mWindows.end().
@@ -192,6 +207,14 @@ void UIManager::Update(float elapsedTime)
 			ShowTooltip();
 		}
 	}
+
+	
+}
+
+void UIManager::BeforeUIRendering(HWND_ID hwndId)
+{
+	if (hwndId==1)
+		mDragBox.Render();
 }
 
 void UIManager::GatherRenderList()
@@ -404,7 +427,45 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 }
 
 //---------------------------------------------------------------------------
+void UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc)
+{
+	std::string lower = uiname;
+	ToLowerCase(lower);
+	auto it = mLuaUIs.find(lower);
+	if (it == mLuaUIs.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("no ui found with the name %s", uiname));
+		return;
+	}
+	if (it->second.empty())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "doesn't have any window!");
+		return;
+	}
+	if (it->second.size() != 0)
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "Only supporting an window per ui.");
+		return;
+	}
+	auto window = it->second[0];
+	tinyxml2::XMLElement* root = doc.NewElement("UI");
+	doc.InsertEndChild(root);
+	if (!root)
+	{
+		assert(0);
+		return;
+	}
 
+	root->SetAttribute("name", uiname);
+	root->SetAttribute("script", window->GetScriptPath());
+
+	
+	tinyxml2::XMLElement* pComp = doc.NewElement("component");
+	root->InsertEndChild(pComp);
+	window->Save(*pComp);
+}
+
+//---------------------------------------------------------------------------
 void UIManager::CloneUI(const char* uiname, const char* newUIname)
 {
 	assert(uiname);
@@ -612,6 +673,11 @@ IWinBase* UIManager::AddWindow(int posX, int posY, int width, int height, Compon
 	return pWnd;
 }
 
+IWinBase* UIManager::AddWindow(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type, HWND_ID hwndId)
+{
+	return AddWindow(pos.x, pos.y, size.x, size.y, type, hwndId);
+}
+
 IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId)
 {
 	assert(hwndId != 0);
@@ -706,7 +772,10 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 		return;
 
 	if (winbase->GetFocus(true))
-		mFocusWnd = 0;
+		mFocusWnd = 0;	
+	
+	if (mMouseOveredContainer == winbase)
+		mMouseOveredContainer = 0;
 
 	if (winbase->GetRender3D())
 	{
@@ -725,6 +794,11 @@ void UIManager::SetFocusUI(IWinBase* ui)
 IWinBase* UIManager::GetFocusUI() const
 {
 	return mFocusWnd;
+}
+
+IWinBase* UIManager::GetKeyboardFocusUI() const
+{
+	return mKeyboardFocus;
 }
 
 void UIManager::SetFocusUI(const char* uiName)
@@ -754,7 +828,7 @@ void UIManager::SetFocusUI(const char* uiName)
 
 bool UIManager::IsFocused(const IWinBase* pWnd) const
 {
-	return pWnd == mFocusWnd;
+	return pWnd == mFocusWnd || pWnd == mKeyboardFocus;
 }
 
 void UIManager::DirtyRenderList(HWND_ID hwndId)
@@ -871,6 +945,8 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 //---------------------------------------------------------------------------
 void UIManager::DeleteComponent(IWinBase* com)
 {
+	if (mKeyboardFocus == com)
+		mKeyboardFocus = 0;
 	FB_DELETE(com);
 }
 
@@ -905,6 +981,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		return;
 	}
 
+	
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {		
 		auto it = windows.rbegin(), itEnd = windows.rend();
 		IWinBase* focusWnd = 0;
@@ -913,7 +990,16 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		{
 			focusWnd = (*it)->FocusTest(pMouse);
 		}
-		if (mFocusWnd!=focusWnd)
+		if (focusWnd && focusWnd->GetEnable())
+		{
+			long x, y;
+			pMouse->GetPos(x, y);
+			focusWnd = focusWnd->WinBaseWithPoint(Vec2I(x, y), false);
+			if (focusWnd && !focusWnd->GetEnable())
+				focusWnd = 0;
+
+		}
+		if (focusWnd && mFocusWnd != focusWnd)
 		{
 			SetFocusUI(focusWnd);
 		}
@@ -1083,6 +1169,7 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 		mPopup->SetText(msg);
 
 		WinBase* yes = (WinBase*)mPopup->AddChild(0.49f, 0.99f, 0.25f, 0.1f, ComponentType::Button);
+		yes->SetRuntimeChild(true);
 		yes->SetName("yes");
 		yes->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 		yes->SetText(L"Yes");
@@ -1090,6 +1177,7 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 			std::bind(&UIManager::OnPopupYes, this, std::placeholders::_1));
 
 		WinBase* no = (WinBase*)mPopup->AddChild(0.51f, 0.99f, 0.25f, 0.1f, ComponentType::Button);
+		no->SetRuntimeChild(true);
 		no->SetName("no");
 		no->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		no->SetText(L"No");
@@ -1462,6 +1550,208 @@ void UIManager::CancelLocatingComponent()
 
 void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard)
 {
+	if (mLocatingComp == ComponentType::NUM)
+		return;
 
+	if (!gFBEnv->pEngine->IsMainWindowForground())
+		return;	
+
+	long x, y;
+	pMouse->GetPos(x, y);
+	Vec2I pt(x, y);
+	mMouseOveredContainer = WinBaseWithPoint(pt, true);
+	if (pMouse->IsLButtonDown())
+	{
+		if (!mDragBox.IsStarted())
+		{
+			mDragBox.Start(pt);
+			mDragBox.SetMouseOveredContainer(mMouseOveredContainer);
+		}
+		else
+		{
+			mDragBox.PushCur(pt);
+		}
+	}
+	else if (mDragBox.IsStarted())
+	{
+		mDragBox.End(pt);
+		if (mLocatingComp!= ComponentType::NUM)
+		{
+			LocateComponent();
+		}
+		mDragBox.SetMouseOveredContainer(0);
+	}
+
+	if (pMouse->IsRButtonClicked())
+	{
+		mDragBox.End(pt);
+		mLocatingComp = ComponentType::NUM;
+		if (mUIEditor)
+			mUIEditor->OnCancelComponent();
+	}
 }
+
+IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, bool container)
+{
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
+	auto windows = mWindows[hwndId];
+	for (auto wnd : windows)
+	{
+		auto cont = dynamic_cast<Container*>(wnd);
+		if (!cont || !cont->GetVisible())
+			continue;
+		auto found = cont->WinBaseWithPoint(pt, container);
+		if (found)
+			return found;
+	}
+
+	return 0;
+}
+
+void UIManager::LocateComponent()
+{
+	if (mLocatingComp == ComponentType::NUM)
+		return;
+
+	if (!gFBEnv->pEngine->IsMainWindowForground())
+		return;
+
+	auto start = mDragBox.GetMin();
+	auto end = mDragBox.GetMax();
+	auto size = end - start;
+	if (size.x == 0 || size.y == 0)
+		return;
+
+	auto cont = (Container*)mDragBox.GetMouseOveredContainer();
+	IWinBase* win = 0;
+	if (cont)
+	{
+		Vec2I pos = cont->GetWPos();
+		pos = start - pos;
+		win = cont->AddChild(pos, size, mLocatingComp);
+	}
+	else
+	{
+		std::string uiname = GetUniqueUIName();
+		ToLowerCase(uiname);
+		win = AddWindow(start, size, mLocatingComp);
+		win->SetName(uiname.c_str());
+		mLuaUIs[uiname].push_back(win);
+		win->SetUIFilePath(FormatString("%s/%s.ui", mUIFolder.c_str(),
+			uiname.c_str()));
+		win->SetSaveNameCheck(true);
+	}
+	
+	win->SetProperty(UIProperty::NO_BACKGROUND, "false");
+	win->SetProperty(UIProperty::BACK_COLOR, "0.3, 0.3, 0.5, 0.4");
+	win->SetProperty(UIProperty::VISIBLE, "true");
+	auto keyboard = gFBEnv->pEngine->GetKeyboard();
+	if (!keyboard->IsKeyPressed(VK_SHIFT))
+	{
+		mLocatingComp = ComponentType::NUM;
+		if (mUIEditor)
+		{
+			mUIEditor->OnComponentSelected(win);
+		}
+	}
+}
+
+
+const char* UIManager::GetUIPath(const char* uiname) const
+{
+	std::string lower = GetFileNameWithoutExtension(uiname);
+	ToLowerCase(lower);
+
+	auto it = mLuaUIs.find(lower.c_str());
+	if (it == mLuaUIs.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("cannot find the ui %s", uiname));
+		return "";
+	}
+	auto& windows = it->second;
+	if (windows.empty())
+		return "";
+	return windows[0]->GetUIFilePath();
+}
+const char*  UIManager::GetUIScriptPath(const char* uiname) const
+{
+	auto it = mLuaUIs.find(uiname);
+	auto& windows = it->second;
+	if (windows.empty())
+		return "";
+	return windows[0]->GetScriptPath();
+}
+
+std::string UIManager::GetUniqueUIName() const
+{
+	std::string candi = "UI1";
+	unsigned index = 1;
+	do{
+		std::string lower(candi);
+		ToLowerCase(lower);
+		auto itFind = mLuaUIs.find(lower);
+		if (itFind == mLuaUIs.end()){
+			if (!FileSystem::IsFileExisting(
+				FormatString("%s/%s.ui", mUIFolder.c_str(), candi.c_str()))){
+				break;
+			}
+		}
+		index += 1;
+		candi = FormatString("UI%u", index);
+	} while (99999999);
+
+	return candi;
+}
+
+void UIManager::ChangeFilepath(IWinBase* root, const char* newfile)
+{
+	auto name = GetFileNameWithoutExtension(root->GetUIFilePath());
+	auto it = mLuaUIs.find(name);
+	if (it == mLuaUIs.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the ui %s", name.c_str()));
+		return;
+	}
+	auto newName = GetFileNameWithoutExtension(newfile);
+	if (name != newName)
+	{
+		auto newIt = mLuaUIs.find(newName);
+		if (newIt != mLuaUIs.end())
+		{
+			Error(FB_DEFAULT_DEBUG_ARG, FormatString("The new name %s is already used.", newName.c_str()));
+			return;
+		}
+		if (FileSystem::IsFileExisting(newfile))
+		{
+			BackupFile(newfile);			
+		}
+
+		auto oldFilepath = root->GetUIFilePath();
+		FileSystem::Rename(oldFilepath, newfile);
+		mLuaUIs[newName].swap(it->second);
+		mLuaUIs.erase(it);
+		root->SetUIFilePath(newfile);
+	}
+}
+
+std::string UIManager::GetBackupName(const std::string& name) const
+{
+	std::string bakName = name + ".bak";
+	if (FileSystem::IsFileExisting(bakName.c_str()))
+	{
+		std::string bakName2 = name + ".bak2";
+		FileSystem::DelFile(bakName2.c_str());
+		FileSystem::Rename(bakName.c_str(), bakName2.c_str());
+	}
+	return bakName;
+}
+
+void UIManager::BackupFile(const char* filename)
+{
+	if (FileSystem::IsFileExisting(filename))
+	{
+		FileSystem::Rename(filename, GetBackupName(filename).c_str());
+	}
+}
+
 } // namespace fastbird

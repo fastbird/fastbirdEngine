@@ -360,4 +360,7 @@ namespace fastbird
 		Vec3& outVelocity, Vec3* outPos = 0, float* timeToTarget = 0);
 
 	void ExpandRect(RECT& r, int size);
+
+	Vec2I GetMinComp(const Vec2I& a, const Vec2I& b);
+	Vec2I GetMaxComp(const Vec2I& a, const Vec2I& b);
 }

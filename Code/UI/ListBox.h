@@ -77,6 +77,7 @@ public:
 	size_t GetNumItems() const { return mItems.size();}
 	unsigned GetNumCols() const { return mNumCols; }
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 	virtual ListItem* GetItem(size_t row, size_t col) const;
 	virtual void SetRowHeight(int rowHeight) { mRowHeight = rowHeight; }
@@ -116,6 +117,13 @@ protected:
 	int mRowGap;
 	std::string mHighlightColor;
 	std::string mTextureAtlas;
+
+	std::string mStrCols;
+	std::string mStrColSizes;
+	std::string mStrTextSizes;
+	std::string mStrColAlignH;
+	std::string mStrHeaderTextSizes;
+	std::string mStrHeaders;
 
 	
 };

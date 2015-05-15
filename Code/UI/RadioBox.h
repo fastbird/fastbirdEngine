@@ -18,7 +18,7 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void SetText(const wchar_t* szText);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 	// IRadioBox
 	virtual void SetCheck(bool check);

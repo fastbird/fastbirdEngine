@@ -17,6 +17,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::Window; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v) ;
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 	virtual bool SetVisible(bool show);
 	virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
 	virtual void RefreshScissorRects();
@@ -42,6 +43,9 @@ protected:
 
 private:
 	Button* mTitlebar;
+	std::string mTitlebarString;
+	std::string mStrBackground;
+	std::string mStrKeepRatio;
 	std::vector<ImageBox*> mFrames;
 	bool mUseFrame;
 	ImageBox* mBackgroundImage;
