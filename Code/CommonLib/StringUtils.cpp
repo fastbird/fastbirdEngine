@@ -440,6 +440,29 @@ void ToUpperCase( std::string& str )
 			toupper);
 }
 
+void ToLowerCase(std::wstring& str)
+{
+	std::transform(
+		str.begin(),
+		str.end(),
+		str.begin(),
+		tolower);
+}
+void ToLowerCaseFirst(std::wstring& str)
+{
+	std::transform(
+		str.begin(), str.begin() + 1, str.begin(), tolower);
+}
+void ToUpperCase(std::wstring& str)
+{
+	std::transform(
+		str.begin(),
+		str.end(),
+		str.begin(),
+		toupper);
+}
+
+
 bool IsNumeric(const char* str)
 {
 	size_t len = strlen(str);

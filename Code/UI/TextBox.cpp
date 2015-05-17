@@ -44,11 +44,11 @@ namespace fastbird
 		__super::GatherVisit(v);
 	}
 
-	void TextBox::SetNPosOffset(const Vec2& offset)
+	void TextBox::SetWNPosOffset(const Vec2& offset)
 	{
-		__super::SetNPosOffset(offset);
+		__super::SetWNPosOffset(offset);
 		if (mImage)
-			mImage->SetNPosOffset(offset);
+			mImage->SetWNPosOffset(offset);
 	}
 
 	void TextBox::OnPosChanged()

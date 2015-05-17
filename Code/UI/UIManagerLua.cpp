@@ -88,9 +88,12 @@ namespace fastbird
 	int GetNumUIProperties(lua_State* L);
 	int GetUIPropertyName(lua_State* L);
 	int GetPropertyCurKeyValue(lua_State* L);
+	int SortPropertyList(lua_State* L);
+
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SortPropertyList);
 		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
 		LUA_SETCFUNCTION(mL, GetUIPropertyName);
 		LUA_SETCFUNCTION(mL, GetNumUIProperties);
@@ -1405,5 +1408,18 @@ namespace fastbird
 		}
 		return 0;
 
+	}
+
+	int SortPropertyList(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		auto compName = luaL_checkstring(L, 2);
+		auto comp = gFBUIManager->FindComp(uiname, compName);
+		if (comp && comp->GetType() == ComponentType::PropertyList)
+		{
+			auto propertyList = (PropertyList*)comp;
+			propertyList->Sort();
+		}
+		return 0;
 	}
 }

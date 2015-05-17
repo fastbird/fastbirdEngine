@@ -1,19 +1,31 @@
 #include <UI/StdAfx.h>
 #include <UI/PropertyList.h>
+#include <UI/Scroller.h>
+#include <UI/IUIManager.h>
+#include <UI/TextField.h>
+#include <Engine/TextManipulator.h>
 
 namespace fastbird
 {
 PropertyList::PropertyList()
 	: ListBox()
 	, mFocusRow(-1)
+	, mStartIndex(0)
+	, mEndIndex(10)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mRowHeight = 22;
+	mNumCols = 2;
 }
 PropertyList::~PropertyList()
 {
-
+	for (auto& item : mRecycleBin)
+	{
+		gFBEnv->pUIManager->DeleteComponent(item.first);
+		gFBEnv->pUIManager->DeleteComponent(item.second);
+	}
+	mRecycleBin.clear();
 }
 
 void PropertyList::OnCreated()
@@ -32,64 +44,29 @@ void PropertyList::OnCreated()
 	SetProperty(UIProperty::SCROLLERV, "true");
 }
 
-
-IWinBase* PropertyList::GetTextField(const wchar_t* key, unsigned* index)
+void PropertyList::OnSizeChanged()
 {
-	for (unsigned row = 0; row < mItems.size(); ++row)
-	{
-		if (mItems[row].empty())
-			continue;
-		if (wcscmp(mItems[row][0]->GetText(), key) == 0)
-		{
-			if (index)
-				*index = row;
-			return mItems[row][1]->GetChild((unsigned)0);
-		}
-	}
-	return 0;
+	__super::OnSizeChanged();
+	Scrolled();
 }
 
 const wchar_t* PropertyList::GetValue(const wchar_t* key)
 {
-	unsigned row;
-	auto textField = GetTextField(key, &row);
-	if (textField)
-		return textField->GetText();
-	return 0;
+	return mData.GetData(key).c_str();
 }
 
 unsigned PropertyList::InsertItem(const wchar_t* key, const wchar_t* value)
 {
-	assert(key && value);
-	if (GetValue(key))
+	unsigned index = mData.AddData(key, value);
+	while (mItems.size() <= index)
 	{
-		ModifyItem(key, value);
-		return -1;
+		mItems.push_back(ROW());
+		mItems.back().push_back(0);
+		mItems.back().push_back(0);
 	}
-	float nh = PixelToLocalNHeight(mRowHeight);
-	float nextPosY = PixelToLocalNHeight(mRowHeight + mRowGap);
-	float nposY = 0.0f;
-	if (!mItems.empty())
-	{
-		auto item = mItems.back();
-		assert(!item.empty());
-		nposY = item[0]->GetNPos().y + nextPosY;
-	}
-
-	mItems.push_back(ROW());
-	ROW& row = mItems.back();
-	ListItem* pKeyItem = CreateNewKeyItem(mItems.size() - 1, 0, nposY);
-	row.push_back(pKeyItem);
-	pKeyItem->SetText(key);
-	unsigned curRow = mItems.size() - 1;
-	GetRowId(curRow);
-
-	ListItem* pValueItem = CreateNewValueItem(pKeyItem->GetRowIndex(), 1, nposY);
-	row.push_back(pValueItem);
-	auto textField = pValueItem->GetChild((unsigned)0);
-	textField->SetText(value);
-
-	return curRow;
+	GetRowId(index);
+	VisualizeData(index);
+	return index;
 }
 ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
 {
@@ -103,7 +80,8 @@ ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
 	if (col < (int)mTextSizes.size())
 		item->SetProperty(UIProperty::TEXT_SIZE, mTextSizes[col].c_str());
 
-	item->SetProperty(UIProperty::NO_BACKGROUND, "false");
+	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
+	item->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.3, 0.3, 0.7");
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
@@ -114,7 +92,7 @@ ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
 ListItem* PropertyList::CreateNewValueItem(int row, int col, float ny)
 {
 	float nh = PixelToLocalNHeight(mRowHeight);
-	ListItem* item = (ListItem*)AddChild(0.41f, ny, 0.59f, nh, ComponentType::ListItem);
+	ListItem* item = (ListItem*)AddChild(0.41f, ny, 0.57f, nh, ComponentType::ListItem);
 	item->SetRuntimeChild(true);
 
 	if (col < (int)mColAlignes.size())
@@ -138,69 +116,318 @@ unsigned PropertyList::ModifyItem(const wchar_t* key, const wchar_t* value)
 {
 	if (!key || !value)
 		return -1;
-
-	unsigned row;
-	auto textField = GetTextField(key, &row);
-	if (textField)
-	{
-		textField->SetText(value);
-		return row;
-	}
-	return -1;
+	
+	unsigned index = mData.AddData(key, value);
+	VisualizeData(index);
+	return index;
 }
 void PropertyList::RemoveItem(const wchar_t* key)
 {
-	unsigned index = -1;
-	for (unsigned row = 0; row < mItems.size(); ++row)
+	unsigned deletedIndex = mData.DelData(key);
+	if (deletedIndex != -1)
 	{
-		if (mItems[row].empty())
-			continue;
-		if (wcscmp(mItems[row][0]->GetText(), key) == 0)
-		{
-			index = row;
-			break;
-		}
+		VisualizeData(deletedIndex);
 	}
-	if (index == -1)
-		return;
-
-	assert(index < mItems.size());
-	float nh = PixelToLocalNHeight(mRowHeight + mRowGap);
-	for (size_t row = index + 1; row < mItems.size(); ++row)
-	{
-		for (size_t col = 0; col < mItems[row].size(); ++col)
-		{
-			Vec2 npos = mItems[row][col]->GetNPos();
-			npos.y -= nh;
-			mItems[row][col]->SetNPos(npos);
-			mItems[row][col]->SetRowIndex(row - 1);
-		}
-	}
-	auto left = GetChild("__Key");
-	left->RemoveChild(mItems[index][0]);
-	auto right = GetChild("__Value");
-	right->RemoveChild(mItems[index][1]);
-	mItems.erase(mItems.begin() + index);
 }
 
 void PropertyList::ClearItems()
 {
-	auto left = GetChild("__Key");
-	auto right = GetChild("__Value");
-	left->RemoveAllChild();
-	right->RemoveAllChild();
+	mData.Clear();
+	for (auto& item : mItems)
+	{
+		RemoveChild(item[0]);
+		RemoveChild(item[1]);
+	}
 	mItems.clear();
 	mRowIds.clear();
+	for (auto& item : mRecycleBin)
+	{
+		gFBEnv->pUIManager->DeleteComponent(item.first);
+		gFBEnv->pUIManager->DeleteComponent(item.second);
+	}
+	mRecycleBin.clear();
 }
 
 bool PropertyList::GetCurKeyValue(std::string& key, std::string& value)
 {
 	if (mFocusRow == -1)
 		return false;
-	assert(mFocusRow < mItems.size());
-	key = WideToAnsi(mItems[mFocusRow][0]->GetText());
-	value = WideToAnsi(mItems[mFocusRow][1]->GetChild((unsigned)0)->GetText());
-	return true;
+	auto pdata = mData.GetData(mFocusRow);
+	if (pdata)
+	{
+		if (mItems[mFocusRow][1])
+		{
+			pdata->second = mItems[mFocusRow][1]->GetChild((unsigned)0)->GetText();
+		}
+		key = WideToAnsi(pdata->first.c_str());
+		value = WideToAnsi(pdata->second.c_str());
+		return true;
+	}
+	return false;
+}
+
+void PropertyList::Scrolled()
+{
+	unsigned prevStart = mStartIndex;
+	unsigned prevEnd = mEndIndex;
+	int hgap = mRowHeight + mRowGap;
+
+	if (mScrollerV)
+	{
+		Vec2 offset = mScrollerV->GetOffset();		
+		int scrolledLen = -Round(offset.y * GetRenderTargetSize().y) - mRowGap;
+		int topToBottom = mSize.y + scrolledLen - mRowGap;
+
+		// decide visual index range		
+		mStartIndex = scrolledLen / hgap;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+	else
+	{
+		// decide visual index range
+		int topToBottom = mSize.y;
+		mStartIndex = 0;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+
+	// to recycle
+	while (prevStart < mStartIndex)
+	{
+		unsigned index = prevStart++;
+		MoveToRecycle(index);
+	}
+
+	while (prevEnd > mEndIndex)
+	{
+		unsigned index = prevEnd--;
+		MoveToRecycle(index);
+	}
+
+	//to visual
+	while (prevStart > mStartIndex)
+	{
+		--prevStart;
+		unsigned visualIndex = prevStart;
+		VisualizeData(visualIndex);
+	}
+
+	while (prevEnd < mEndIndex)
+	{
+		++prevEnd;
+		unsigned visualIndex = prevEnd;
+		VisualizeData(visualIndex);
+	}
+
+	__super::Scrolled();
+}
+
+void PropertyList::VisualizeData(unsigned index)
+{
+	if (index < mStartIndex || index > mEndIndex)
+	{
+		if (mItems[index][0] && mItems[index][1])
+		{
+			MoveToRecycle(index);
+		}
+		return;
+	}
+
+	int hgap = mRowHeight + mRowGap;
+	Vec2 offset(0, 0);
+	if (mScrollerV)
+	{
+		offset = mScrollerV->GetOffset();
+	}
+
+	ListItem *keyItem = 0, *valueItem = 0;
+	const auto pData = mData.GetData(index);
+	if (!pData)
+	{
+		MoveToRecycle(index);
+		return;
+	}
+
+	auto data = *pData;
+	if (mItems[index][0] && mItems[index][1])
+	{
+		keyItem = mItems[index][0];
+		valueItem = mItems[index][1];
+		keyItem->SetRowIndex(index);
+		valueItem->SetRowIndex(index);
+		keyItem->SetText(data.first.c_str());
+		valueItem->GetChild((unsigned)0)->SetText(data.second.c_str());
+	}
+	else
+	{
+
+		if (!mRecycleBin.empty())
+		{
+			auto it = mRecycleBin.back();
+			int y = hgap * index + mRowGap;
+			keyItem = it.first;
+			valueItem = it.second;
+
+			keyItem->SetText(data.first.c_str());
+			keyItem->SetPosY(y);
+			keyItem->SetWNPosOffset(offset);
+			keyItem->SetRowIndex(index);
+
+			valueItem->GetChild((unsigned)0)->SetText(data.second.c_str());
+			valueItem->SetPosY(y);
+			valueItem->SetWNPosOffset(offset);
+			valueItem->SetRowIndex(index);
+
+			mChildren.push_back(keyItem);
+			mChildren.push_back(valueItem);
+			mRecycleBin.pop_back();
+			mItems[index][0] = keyItem;
+			mItems[index][1] = valueItem;
+		}
+		else
+		{
+			int y = hgap * index + mRowGap;
+			float ny = PixelToLocalNHeight(y);
+			keyItem = CreateNewKeyItem(index, 0, ny);
+			keyItem->SetText(data.first.c_str());
+			keyItem->SetWNPosOffset(offset);
+
+			valueItem = CreateNewValueItem(index, 1, ny);
+			valueItem->GetChild((unsigned)0)->SetText(data.second.c_str());
+			valueItem->SetWNPosOffset(offset);
+
+			mItems[index][0] = keyItem;
+			mItems[index][1] = valueItem;
+		}
+	}
+
+	if (index == mFocusRow)
+	{
+		keyItem->SetProperty(UIProperty::NO_BACKGROUND, "false");
+	}
+	else
+	{
+		keyItem->SetProperty(UIProperty::NO_BACKGROUND, "true");
+	}
+}
+
+
+void PropertyList::MoveToRecycle(unsigned row)
+{
+	if (row < mItems.size())
+	{
+		if (mItems[row][0] && mItems[row][1])
+		{
+			mRecycleBin.push_back(std::make_pair(mItems[row][0], mItems[row][1]));
+			RemoveChildNotDelete(mItems[row][0]);
+			RemoveChildNotDelete(mItems[row][1]);
+			mItems[row][0] = 0;
+			mItems[row][1] = 0;
+			gFBUIManager->DirtyRenderList(mHwndId);
+		}		
+	}
+}
+
+
+float PropertyList::GetContentHeight() const
+{
+	unsigned length = mData.Size();
+	unsigned hgap = mRowHeight + mRowGap;
+	unsigned contentLength = hgap * length + mRowGap; // for upper gap
+	return contentLength / (float)GetRenderTargetSize().y;
+}
+
+void PropertyList::Sort()
+{
+	mData.Sort();
+	if (mStartIndex != -1 && mEndIndex != -1) {
+		for (unsigned i = mStartIndex; i <= mEndIndex; i++) {
+			VisualizeData(i);
+		}
+	}
+}
+
+void PropertyList::GoToNext(char c, unsigned curIndex)
+{
+	unsigned index = mData.FindNext(c, curIndex);
+	if (index == -1)
+		return;
+
+	if (mScrollerV)
+	{
+		if (index < mStartIndex || index > (mEndIndex>=3 ? mEndIndex-3: mEndIndex))
+		{
+			unsigned hgap = mRowHeight + mRowGap;
+			unsigned destY = hgap * index + mRowGap;
+
+			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+		}
+	}
+	if (mItems[index][0])
+	{
+		gFBUIManager->SetFocusUI(mItems[index][0]);
+	}
+}
+
+void PropertyList::MoveFocusToEdit(unsigned index)
+{
+	assert(mFocusRow == index);
+		//scroll
+	if (mScrollerV)
+	{
+		if (index < mStartIndex || index >(mEndIndex>=3 ? mEndIndex - 3 : mEndIndex))
+		{
+			unsigned hgap = mRowHeight + mRowGap;
+			unsigned destY = hgap * index + mRowGap;
+
+			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+		}
+	}
+
+	if (mItems[index][1])
+	{
+		gFBUIManager->SetFocusUI(mItems[index][1]->GetChild((unsigned)0),
+
+			std::bind(&TextField::SelectAllAfterGetFocused,
+			(TextField*)mItems[mFocusRow][1]->GetChild((unsigned)0))
+			);
+	}
+}
+
+void PropertyList::MoveToNextLine()
+{
+	// apply value;
+	OnEvent(EVENT_ENTER);
+
+	++mFocusRow;
+	if (mFocusRow >= mData.Size())
+	{
+		mFocusRow = 0;
+	}
+	//scroll
+	if (mScrollerV)
+	{
+		if (mFocusRow < mStartIndex || 
+			(mFocusRow > (mEndIndex>=3 ? mEndIndex - 3 : mEndIndex))
+			)
+		{
+			unsigned hgap = mRowHeight + mRowGap;
+			unsigned destY = hgap * mFocusRow + mRowGap;
+
+				mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+		}
+	}
+
+	if (mItems[mFocusRow][0])
+	{
+		gFBUIManager->SetFocusUI(mItems[mFocusRow][0]);
+	}
+	
 }
 
 }

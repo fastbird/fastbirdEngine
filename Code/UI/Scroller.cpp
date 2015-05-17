@@ -6,7 +6,7 @@ namespace fastbird
 {
 
 Scroller::Scroller()
-	: mScrollAmount(0.001f)
+	: mScrollAmount(0.0015f)
 	, mOffset(0, 0)
 	, mMaxOffset(0, 0)
 	, mOwner(0)
@@ -14,7 +14,7 @@ Scroller::Scroller()
 	, mCurOffset(0)
 	, mScrollAcc(10)
 	, mCurScrollSpeed(0)
-	, mMaxScrollSpeed(30)
+	, mMaxScrollSpeed(50)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;

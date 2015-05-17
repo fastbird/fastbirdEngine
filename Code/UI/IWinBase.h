@@ -30,6 +30,7 @@ namespace fastbird
 		virtual IWinBase* AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type) = 0;
 		virtual IWinBase* AddChild(ComponentType::Enum type) = 0;
 		virtual void RemoveChild(IWinBase* child, bool immediately=false) = 0;
+		virtual void RemoveChildNotDelete(IWinBase* child) = 0;
 		virtual void RemoveAllChild(bool immediately = false) = 0;
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
 		virtual IWinBase* GetChild(unsigned idx) = 0;
@@ -104,8 +105,8 @@ namespace fastbird
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0) = 0;
 
 		virtual void Scrolled() = 0;
-		virtual void SetNPosOffset(const Vec2& offset) = 0;
-		virtual const Vec2& GetNPosOffset() const = 0;
+		virtual void SetWNPosOffset(const Vec2& offset) = 0;
+		virtual const Vec2& GetWNPosOffset() const = 0;
 		virtual void SetAnimNPosOffset(const Vec2& offset) = 0;
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot) = 0;
 		virtual void SetPivotToUIObject(const Vec2& pivot) = 0;
@@ -115,6 +116,11 @@ namespace fastbird
 		virtual float PixelToLocalNWidth(int pixel) const = 0;
 		virtual float PixelToLocalNHeight(int pixel) const = 0;
 		virtual Vec2 PixelToLocalNSize(const Vec2I& pixel) const = 0;
+		
+		virtual int PixelToLocalPixelWidth(int posx) const = 0;
+		virtual int PixelToLocalPixelHeight(int posy) const = 0;
+		virtual void PixelToLocalPixel(Vec2I& pos) const = 0;
+
 		virtual float PixelToLocalNPosX(int pixel) const = 0;
 		virtual float PixelToLocalNPosY(int pixel) const = 0;
 		virtual Vec2 PixelToLocalNPos(const Vec2I& pixel) const = 0;
@@ -212,6 +218,8 @@ namespace fastbird
 		// runtime child will not be saved.
 		virtual void SetRuntimeChild(bool runtime) = 0;
 		virtual bool IsRuntimeChild() const = 0;
+
+		virtual float GetContentHeight() const = 0;
 
 	protected:
 		virtual void OnPosChanged() = 0;

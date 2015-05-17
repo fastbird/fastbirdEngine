@@ -28,7 +28,9 @@ namespace fastbird{
 		virtual void SetText(std::wstring* text);
 		virtual void OnInput(IMouse* mouse, IKeyboard* keyboard);
 		virtual int GetCursorPos() const;
+		virtual void SetCursorPos(int pos);
 		bool IsHighlighting() const { return mHighlightStart != -1; }
 		virtual int GetHighlightStart() const { return mHighlightStart; }
+		virtual void SelectAll();
 	};
 }

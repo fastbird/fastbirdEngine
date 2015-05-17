@@ -574,7 +574,7 @@ void WinBase::UpdateNPos()
 fastbird::Vec2I WinBase::ConvertToScreen(const fastbird::Vec2 npos) const
 {
 	auto rtSize = GetRenderTargetSize();
-	Vec2I screenPos = { (int)(npos.x * rtSize.x), (int)((npos.y) * rtSize.y) };
+	Vec2I screenPos = { Round(npos.x * rtSize.x), Round(npos.y * rtSize.y) };
 
 	return screenPos;
 }
@@ -738,7 +738,6 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				)
 			{
 				mMouseDragStartInHere = true;
-				gFBEnv->pUIManager->SetFocusUI(GetRootWnd());
 				auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
 				RECT rect;
 				GetWindowRect(hwnd, &rect);
@@ -2180,10 +2179,10 @@ void WinBase::RefreshBorder()
 	mBorders[ORDER_RB]->SetWNPos(wnpos);*/
 }
 
-void WinBase::SetNPosOffset(const Vec2& offset)
+void WinBase::SetWNPosOffset(const Vec2& offset)
 {
 	/*char buf[255];
-	sprintf_s(buf, "Winbase SetNPosOffset %s", ComponentType::ConvertToString(GetType()));
+	sprintf_s(buf, "Winbase SetWNPosOffset %s", ComponentType::ConvertToString(GetType()));
 	Profiler p(buf);*/
 	assert(GetType() != ComponentType::Scroller);
 	mWNPosOffset = offset;
@@ -2388,6 +2387,34 @@ float WinBase::PixelToLocalNHeight(int pixel) const
 Vec2 WinBase::PixelToLocalNSize(const Vec2I& pixel) const
 {
 	return Vec2(PixelToLocalNWidth(pixel.x), PixelToLocalNHeight(pixel.y));
+}
+
+//---------------------------------------------------------------------------
+int WinBase::PixelToLocalPixelWidth(int posx) const
+{
+	if (mParent)
+	{
+		posx = mParent->PixelToLocalPixelWidth(posx);
+	}
+	return posx - mPos.x;
+}
+
+int WinBase::PixelToLocalPixelHeight(int posy) const
+{
+	if (mParent)
+	{
+		posy = mParent->PixelToLocalPixelHeight(posy);
+	}
+	return posy - mPos.y;
+}
+
+void WinBase::PixelToLocalPixel(Vec2I& pos) const
+{
+	if (mParent)
+	{
+		mParent->PixelToLocalPixel(pos);
+	}
+	pos -= mPos;
 }
 
 int WinBase::LocalNWidthToPixel(float nwidth) const
@@ -3510,6 +3537,11 @@ void WinBase::SetSaveNameCheck(bool set)
 bool WinBase::GetSaveNameCheck() const
 {
 	return mSaveCheck;
+}
+
+float WinBase::GetContentHeight() const
+{
+	return mWNSize.y;
 }
 
 }

@@ -94,6 +94,7 @@
     </ClInclude>
     <ClInclude Include="IUIEditor.h" />
     <ClInclude Include="DragBox.h" />
+    <ClInclude Include="KeyValueDataSet.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -184,5 +185,6 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="DragBox.cpp" />
+    <ClCompile Include="KeyValueDataSet.cpp" />
   </ItemGroup>
 </Project>

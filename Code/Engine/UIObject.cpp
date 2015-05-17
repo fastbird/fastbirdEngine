@@ -121,7 +121,7 @@ void UIObject::SetNPos(const Vec2& npos)
 	UpdateRegion();
 }
 
-void UIObject::SetNPosOffset(const Vec2& nposOffset)
+void UIObject::SetWNPosOffset(const Vec2& nposOffset)
 {
 	mNOffset = nposOffset;
 	mNDCOffset.x = nposOffset.x*2.f;

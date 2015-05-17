@@ -137,19 +137,11 @@ void Error(const char* szFmt, ...)
 //---------------------------------------------------------------------------
 void UIManager::Update(float elapsedTime)
 {
-	for (auto ui : mSetFocusReserved)
-	{
-		if (mKeyboardFocus)
-			mKeyboardFocus->OnFocusLost();
-		if (mFocusWnd)
-			mFocusWnd->OnFocusLost();
+	for (auto& it : mSetFocusReserved)
+	{		
+		auto ui = it.first;
 		auto focusRoot = ui->GetRootWnd();
-		mFocusWnd = focusRoot;
-		mKeyboardFocus = ui;
-		if (mFocusWnd)
-			mFocusWnd->OnFocusGain();
-		if (mKeyboardFocus)
-			mKeyboardFocus->OnFocusGain();
+
 		auto hwndId = mFocusWnd->GetHwndId();
 		auto windows = mWindows[hwndId];
 		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), focusRoot);
@@ -783,12 +775,38 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	}
 }
 
-void UIManager::SetFocusUI(IWinBase* ui)
+void UIManager::SetFocusUI(IWinBase* ui, std::function< void() > func)
 {
 	if (!ui || !ui->GetVisible())
 		return;
-	if (ValueNotExistInVector(mSetFocusReserved, ui))
-		mSetFocusReserved.push_back(ui);
+	Log(FB_DEFAULT_DEBUG_ARG, FormatString("setting focus ui : %s", ComponentType::ConvertToString(ui->GetType())) );
+	for (auto& it : mSetFocusReserved)
+	{
+		if (it.first == ui)
+			return;
+	}
+
+	if (mKeyboardFocus)
+		mKeyboardFocus->OnFocusLost();
+	if (mFocusWnd)
+		mFocusWnd->OnFocusLost();
+
+	auto focusRoot = ui->GetRootWnd();
+
+	mFocusWnd = focusRoot;
+	mKeyboardFocus = ui;
+
+	if (mFocusWnd)
+		mFocusWnd->OnFocusGain();
+	if (mKeyboardFocus)
+		mKeyboardFocus->OnFocusGain();
+
+	if (func)
+	{
+		func();
+	}
+
+	mSetFocusReserved.push_back( std::make_pair(ui, func) );
 }
 
 IWinBase* UIManager::GetFocusUI() const
@@ -955,10 +973,13 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 {
 	if (!pMouse->IsValid() && !pKeyboard->IsValid())
 		return;
-	if (mLocatingComp != ComponentType::NUM)
+	if (gFBEnv->pEngine->IsMainWindowForground())
 	{
-		OnInputForLocating(pMouse, pKeyboard);
-		return;
+		if (mLocatingComp != ComponentType::NUM)
+		{
+			OnInputForLocating(pMouse, pKeyboard);
+			return;
+		}
 	}
 
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();

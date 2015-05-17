@@ -16,6 +16,7 @@ namespace fastbird
 		virtual IWinBase* AddChild(ComponentType::Enum type);
 		virtual IWinBase* AddChild(const fastbird::LuaObject& compTable);
 		virtual void RemoveChild(IWinBase* child, bool immediately = false);
+		virtual void RemoveChildNotDelete(IWinBase* child);
 		virtual void RemoveAllChild(bool immediately = false);
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false);
@@ -31,7 +32,7 @@ namespace fastbird
 		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
-		virtual void SetNPosOffset(const Vec2& offset);
+		virtual void SetWNPosOffset(const Vec2& offset);
 		virtual void SetAnimNPosOffset(const Vec2& offset);
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
 
@@ -67,6 +68,8 @@ namespace fastbird
 		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const;
 		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
 		virtual void TabPressed();
+		virtual float GetContentHeight() const;
+		
 
 	private:
 		friend class WinBase;
@@ -93,5 +96,8 @@ namespace fastbird
 		bool mChildrenPosSizeChanged;
 		bool mChildrenChanged;  // only detecting addition. not deletion.
 		bool mMatchHeight;
+		bool mHandlingInput;
+		COMPONENTS::reverse_iterator mCurInputHandling;
+		bool mCurInputHandlingChanged;
 	};
 }

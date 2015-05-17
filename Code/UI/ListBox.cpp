@@ -4,6 +4,7 @@
 #include <UI/ImageBox.h>
 #include <UI/Button.h>
 #include <UI/CheckBox.h>
+#include <UI/PropertyList.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -70,6 +71,54 @@ void ListItem::SetBackColor(const char* backColor)
 void ListItem::SetNoBackground(bool noBackground)
 {
 	mNoBackground = noBackground;
+}
+
+void ListItem::OnFocusGain()
+{
+	if (mParent && mParent->GetType() == ComponentType::PropertyList)
+	{
+		PropertyList* prop = (PropertyList*)mParent;
+		prop->SetFocusRow(mRowIndex);
+	}
+	SetProperty(UIProperty::NO_BACKGROUND, "false");
+	TriggerRedraw();
+}
+
+void ListItem::OnFocusLost()
+{
+	SetProperty(UIProperty::NO_BACKGROUND, "true");
+	if (mParent && mParent->GetType() == ComponentType::PropertyList)
+	{
+
+	}
+	TriggerRedraw();
+}
+
+bool ListItem::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+{
+	if (mParent && mParent->GetType() == ComponentType::PropertyList)
+	{
+		if (GetFocus())
+		{
+			PropertyList* prop = (PropertyList*)mParent;
+			auto c = keyboard->GetChar();
+			if (c)
+			{
+				keyboard->PopChar();
+				keyboard->Invalidate();
+				if (c == VK_TAB)
+				{					
+					prop->MoveFocusToEdit(mRowIndex);					
+				}
+				else
+				{	
+					prop->GoToNext(c, mRowIndex);
+					
+				}
+			}
+		}
+	}
+	return __super::OnInputFromHandler(mouse, keyboard);
 }
 
 //-----------------------------------------------------------------------------
@@ -333,7 +382,7 @@ void ListBox::SetHighlightRow(size_t row, bool highlight)
 {
 	for (size_t i = 0; i < mNumCols; ++i)
 	{
-		if (mItems[row].size() <= i)
+		if (mItems[row].size() <= i || !mItems[row][i])
 			break;
 		if (highlight)
 		{

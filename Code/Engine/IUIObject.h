@@ -25,7 +25,7 @@ namespace fastbird
 		virtual const Vec2& GetNSize() const = 0;
 		virtual void SetNPos(const Vec2& npos) = 0; // in normalized space 0.0f~1.0f
 		virtual const Vec2& GetNPos() const = 0;
-		virtual void SetNPosOffset(const Vec2& nposOffset) = 0; // in normalized space 0.0f~1.0f
+		virtual void SetWNPosOffset(const Vec2& nposOffset) = 0; // in normalized space 0.0f~1.0f
 		virtual void SetAnimNPosOffset(const Vec2& nposOffset) = 0;// in normalized space 0.0f~1.0f
 		virtual const Vec2& GetAnimNPosOffset() const = 0;
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot) = 0;

@@ -120,6 +120,7 @@
     <ClInclude Include="IUIManager.h" />
     <ClInclude Include="IWinBase.h" />
     <ClInclude Include="KeyboardCursor.h" />
+    <ClInclude Include="KeyValueDataSet.h" />
     <ClInclude Include="ListBox.h" />
     <ClInclude Include="NamedPortrait.h" />
     <ClInclude Include="NumericUpDown.h" />
@@ -146,6 +147,7 @@
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="DragBox.cpp" />
+    <ClCompile Include="KeyValueDataSet.cpp" />
     <ClCompile Include="PropertyList.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />

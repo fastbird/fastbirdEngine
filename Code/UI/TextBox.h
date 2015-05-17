@@ -19,7 +19,7 @@ namespace fastbird
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 		virtual void SetText(const wchar_t* szText);
-		void SetNPosOffset(const Vec2& offset);
+		void SetWNPosOffset(const Vec2& offset);
 		virtual unsigned GetTextBoxHeight() const;
 		virtual void SetHwndId(HWND_ID hwndId);
 

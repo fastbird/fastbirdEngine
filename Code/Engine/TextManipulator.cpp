@@ -21,6 +21,7 @@ TextManipulator::~TextManipulator()
 // Call AddListener first.
 void TextManipulator::SetText(std::wstring* text)
 {
+	gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
 	mText = text;
 	EndHighlighting();
 	if (mText)
@@ -202,6 +203,25 @@ void TextManipulator::StartHighlighting()
 int TextManipulator::GetCursorPos() const
 {
 	return mCursorPos;
+}
+
+void TextManipulator::SetCursorPos(int pos)
+{
+	mCursorPos = pos;
+	mCursorPos = std::min(mCursorPos, (int)mText->size());
+	OnCursorPosChanged();
+}
+
+void TextManipulator::SelectAll()
+{
+	if (!mText)
+		return;
+	mCursorPos = 0;
+	StartHighlighting();
+	mCursorPos = mText->size();
+	Highlighting(true);
+	OnCursorPosChanged();
+
 }
 
 }

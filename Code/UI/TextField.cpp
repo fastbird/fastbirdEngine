@@ -4,6 +4,7 @@
 #include <UI/IUIManager.h>
 #include <UI/ImageBox.h>
 #include <UI/PropertyList.h>
+#include <UI/IUIEditor.h>
 #include <Engine/TextManipulator.h>
 
 
@@ -50,11 +51,19 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			if (gFBUIManager->GetKeyboardFocusUI() == this)
 			{
 				keyboard->PopChar();
-				auto root = GetRootWnd();
-				if (root)
-				{					
-					root->TabPressed();
-				}				
+				auto propertyList = IsInPropertyList();
+				if (propertyList)
+				{
+					propertyList->MoveToNextLine();
+				}
+				else
+				{
+					auto root = GetRootWnd();
+					if (root)
+					{
+						root->TabPressed();
+					}
+				}
 			}
 		}
 		else if (keyboard->GetChar() == VK_RETURN)
@@ -116,14 +125,6 @@ void TextField::SetText(const wchar_t* szText)
 	TriggerRedraw();
 }
 
-
-void TextField::OnFocusLost()
-{
-	auto mani = gFBUIManager->GetTextManipulator();
-	mani->SetText(0);
-	mani->RemoveListener(this);
-}
-
 void TextField::OnFocusGain()
 {
 	KeyboardCursor::GetKeyboardCursor().SetHwndId(GetHwndId());
@@ -133,18 +134,64 @@ void TextField::OnFocusGain()
 	mani->AddListener(this);
 	mani->SetText(&mTextw);
 
-	if (mParent && mParent->GetType() == ComponentType::ListItem)
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	long x, y;
+	mouse->GetPos(x, y);
+	Vec2I cursorPos(x, y);
+	PixelToLocalPixel(cursorPos);
+	cursorPos.x -= mTextGap.x;
+
+	auto font = gFBEnv->pRenderer->GetFont();
+	if (font)
 	{
-		auto pl = mParent->GetParent();
-		if (pl && pl->GetType() == ComponentType::PropertyList)
+		font->SetHeight(mTextSize);
+		float length = 0.f;
+		for (int i = 0; i < (int)mTextw.size(); i++)
 		{
-			ListItem* listItem = (ListItem*)mParent;
-			PropertyList* propertyList = (PropertyList*)pl;
-			propertyList->SetFocusRow(listItem->GetRowIndex());
+			float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
+			length += halfLength;
+			if (cursorPos.x < length)
+			{
+				mani->SetCursorPos(i);
+				break;
+			}
+			length += halfLength;
 		}
+		font->SetBackToOrigHeight();
+	}
+
+	auto propertyList = IsInPropertyList();
+	if (propertyList)
+	{
+		ListItem* listItem = (ListItem*)mParent;
+		propertyList->SetFocusRow(listItem->GetRowIndex());
 	}
 
 	KeyboardCursor::GetKeyboardCursor().SetScissorRegion(GetScissorRegion());
+}
+
+void TextField::OnFocusLost()
+{
+	auto mani = gFBUIManager->GetTextManipulator();
+	auto propertyList = IsInPropertyList();
+	if (propertyList)
+	{
+		assert(mParent && mParent->GetType() == ComponentType::ListItem);
+		ListItem* valueItem = (ListItem*)mParent;
+		auto index = valueItem->GetRowIndex();
+		auto uiEditor = gFBUIManager->GetUIEditor();
+		IWinBase* editingUI = uiEditor->GetCurSelected();
+		std::string key, value;
+		propertyList->GetCurKeyValue(key, value);
+		if (editingUI)
+		{
+			char buf[255] = { 0 };
+			editingUI->GetProperty(UIProperty::ConverToEnum(key.c_str()), buf, false);
+			SetText(AnsiToWide());
+		}
+	}
+	mani->SetText(0);
+	mani->RemoveListener(this);
 }
 
 void TextField::SetPasswd(bool passwd)
@@ -212,7 +259,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(T);
 		T->SetRender3D(mRender3D, GetRenderTargetSize());
 		T->SetManualParent(this);
-		T->SetSizeY(2);
+		T->SetSizeY(1);
 		T->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 
@@ -221,7 +268,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(L);
 		L->SetRender3D(mRender3D, GetRenderTargetSize());
 		L->SetManualParent(this);
-		L->SetSizeX(2);
+		L->SetSizeX(1);
 		L->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -230,7 +277,7 @@ void TextField::SetUseBorder(bool use)
 		R->SetRender3D(mRender3D, GetRenderTargetSize());
 		R->SetManualParent(this);
 		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		R->SetSizeX(2);
+		R->SetSizeX(1);
 		R->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 
@@ -240,7 +287,7 @@ void TextField::SetUseBorder(bool use)
 		B->SetRender3D(mRender3D, GetRenderTargetSize());
 		B->SetManualParent(this);
 		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		B->SetSizeY(2);
+		B->SetSizeY(1);
 		B->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -248,7 +295,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(LT);
 		LT->SetRender3D(mRender3D, GetRenderTargetSize());
 		LT->SetManualParent(this);
-		LT->SetSize(Vec2I(2, 2));
+		LT->SetSize(Vec2I(1, 1));
 		LT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -256,7 +303,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(RT);
 		RT->SetRender3D(mRender3D, GetRenderTargetSize());
 		RT->SetManualParent(this);
-		RT->SetSize(Vec2I(2, 2));
+		RT->SetSize(Vec2I(1, 1));
 		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 		RT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -265,7 +312,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(LB);
 		LB->SetRender3D(mRender3D, GetRenderTargetSize());
 		LB->SetManualParent(this);
-		LB->SetSize(Vec2I(2, 2));
+		LB->SetSize(Vec2I(1, 1));
 		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		LB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -274,7 +321,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(RB);
 		RB->SetRender3D(mRender3D, GetRenderTargetSize());
 		RB->SetManualParent(this);
-		RB->SetSize(Vec2I(2, 2));
+		RB->SetSize(Vec2I(1, 1));
 		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 		RB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -303,4 +350,21 @@ void TextField::OnPosChanged()
 	}
 }
 
+PropertyList* TextField::IsInPropertyList() const
+{
+	if (mParent && mParent->GetType() == ComponentType::ListItem)
+	{
+		auto pp = mParent->GetParent();
+		if (pp && pp->GetType() == ComponentType::PropertyList)
+		{
+			return (PropertyList*)pp;
+		}
+	}
+	return 0;
+}
+void TextField::SelectAllAfterGetFocused()
+{
+	gFBUIManager->GetTextManipulator()->SelectAll();
+	TriggerRedraw();
+}
 }

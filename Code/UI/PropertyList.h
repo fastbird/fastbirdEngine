@@ -1,10 +1,18 @@
 #pragma once
 #include <UI/ListBox.h>
+#include <UI/KeyValueDataSet.h>
 namespace fastbird{
 
 	class PropertyList : public ListBox
 	{
 		unsigned mFocusRow;
+		unsigned mStartIndex;
+		unsigned mEndIndex;
+
+		KeyValueDataSet mData;
+		typedef std::vector<std::pair<ListItem*, ListItem*> > PropertyListRecycle;
+		PropertyListRecycle mRecycleBin;
+
 	public:
 		PropertyList();
 		virtual ~PropertyList();
@@ -24,14 +32,26 @@ namespace fastbird{
 		unsigned GetFocusRow() const { return mFocusRow; }
 
 		bool GetCurKeyValue(std::string& key, std::string& value);
+
+		virtual void Scrolled();
+
+		void MoveToRecycle(unsigned row);
+
+		void VisualizeData(unsigned index);
+
+		virtual float GetContentHeight() const;
+		void Sort();
+		void GoToNext(char c, unsigned curIndex);
+		void MoveFocusToEdit(unsigned index);
+		void MoveToNextLine();
+
+		
+
+	protected:
+		virtual void OnSizeChanged();
 		
 	private:
 		ListItem* CreateNewKeyItem(int row, int col, float ny);
-		ListItem* CreateNewValueItem(int row, int col, float ny);
-		IWinBase* GetTextField(const wchar_t* key, unsigned* index);
-		
-
-
-		
+		ListItem* CreateNewValueItem(int row, int col, float ny);		
 	};
 }

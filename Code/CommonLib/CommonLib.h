@@ -40,6 +40,21 @@ if (!(V))
 	arr.erase(std::remove(arr.begin(), arr.end(), v), arr.end()); \
 	unsigned arr ## SizeAfter = arr.size();
 
+#define DeleteValuesInList(arr, v) \
+	unsigned arr ## SizeBefore = arr.size(); \
+	for (auto it = arr.begin(); it != arr.end();)\
+	{\
+		if ((*it) == v)\
+		{\
+			it = mChildren.erase(it);\
+		}\
+		else\
+		{\
+			++it;\
+		}\
+	}\
+	unsigned arr ## SizeAfter = arr.size();
+
 
 #if defined(_DEBUG)
 #define CHECK(exp)          if(!(exp)) { DebugBreak(); } else {}

@@ -33,6 +33,10 @@ namespace fastbird
 	void ToLowerCase( std::string& str );
 	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase( std::string& str );
+
+	void ToLowerCase(std::wstring& str);
+	void ToLowerCaseFirst(std::wstring& str);
+	void ToUpperCase(std::wstring& str);
 	bool IsNumeric(const char* str);
 	const char* FormatString(const char* str, ...);
 

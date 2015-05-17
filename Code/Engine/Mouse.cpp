@@ -112,6 +112,7 @@ namespace fastbird
 				auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hwnd);
 				if (hwndId != INVALID_HWND_ID)
 				{
+					gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
 					SetForegroundWindow(hwnd);
 					return;
 				}

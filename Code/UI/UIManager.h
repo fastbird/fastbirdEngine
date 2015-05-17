@@ -57,7 +57,7 @@ namespace fastbird
 		ListBox* mCachedListBox;
 		WinBases mAlwaysOnTopWindows;
 		WINDOWS mMoveToBottomReserved;
-		WINDOWS mSetFocusReserved;
+		std::vector < std::pair<IWinBase*, std::function<void ()>> > mSetFocusReserved;
 
 		std::vector<std::string> mHideUIExcepts;
 
@@ -120,7 +120,7 @@ namespace fastbird
 
 		virtual void DeleteWindow(IWinBase* pWnd);
 		virtual void DeleteWindowsFor(HWND_ID hwndId);
-		virtual void SetFocusUI(IWinBase* pWnd);
+		virtual void SetFocusUI(IWinBase* pWnd, std::function< void() > func = std::function< void() >());
 		virtual IWinBase* GetFocusUI() const;
 		virtual IWinBase* GetKeyboardFocusUI() const;
 		virtual void SetFocusUI(const char* uiName);
@@ -194,6 +194,7 @@ namespace fastbird
 		//-------------------------------------------------------------------
 	public:
 		virtual void SetUIEditor(IUIEditor* editor);
+		virtual IUIEditor* GetUIEditor() const { return mUIEditor; }
 		virtual void StartLocatingComponent(ComponentType::Enum c);
 		virtual void CancelLocatingComponent();
 		virtual void ChangeFilepath(IWinBase* root, const char* newfile);

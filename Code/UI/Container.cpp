@@ -12,8 +12,8 @@ Container::Container()
 	: mScrollerV(0)
 	, mUseScrollerH(false), mUseScrollerV(false), mChildrenPosSizeChanged(false)
 	, mWndContentUI(0), mChildrenChanged(false), mMatchHeight(false)
+	, mCurInputHandlingChanged(false), mHandlingInput(false)
 {
-
 }
 
 Container::~Container()
@@ -159,7 +159,7 @@ void Container::RemoveChild(IWinBase* child, bool immediately)
 		if (mScrollerV == child)
 			mScrollerV = 0;
 		gFBEnv->pUIManager->DeleteComponent(child);
-		DeleteValuesInVector(mChildren, child);
+		DeleteValuesInList(mChildren, child);
 	}
 	else
 	{
@@ -167,6 +167,40 @@ void Container::RemoveChild(IWinBase* child, bool immediately)
 			mPendingDelete.push_back(child);
 	}
 	SetChildrenPosSizeChanged();
+}
+
+void Container::RemoveChildNotDelete(IWinBase* child)
+{
+	if (mWndContentUI)
+	{
+		return mWndContentUI->RemoveChildNotDelete(child);
+	}
+	if (mScrollerV == child)
+		mScrollerV = 0;
+	if (mHandlingInput &&  mChildren.rend() != mCurInputHandling  &&  (*mCurInputHandling) == child)
+	{
+		auto test = *mCurInputHandling;
+		auto nextIt = mChildren.erase(--mCurInputHandling.base());
+		if (nextIt == mChildren.end())	{
+			mCurInputHandling = mChildren.rbegin();
+		}
+		else{
+			++nextIt;
+			if (nextIt == mChildren.end())	{
+				mCurInputHandling = mChildren.rbegin();
+			}
+			else
+			{
+				mCurInputHandling = COMPONENTS::reverse_iterator(nextIt);
+			}
+		}
+		
+		mCurInputHandlingChanged = true;
+	}
+	else
+	{
+		DeleteValuesInList(mChildren, child);
+	}
 }
 
 void Container::RemoveAllChild(bool immediately)
@@ -261,9 +295,9 @@ void Container::OnStartUpdate(float elapsedTime)
 	mChildrenChanged = false;
 	__super::OnStartUpdate(elapsedTime);
 
-	for (auto winBase : mChildren)
+	for (auto it = mChildren.begin(); it != mChildren.end(); ++it)
 	{
-		winBase->OnStartUpdate(elapsedTime);
+		(*it)->OnStartUpdate(elapsedTime);
 	}
 
 	bool deleted = false;
@@ -421,7 +455,28 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mouse->IsValid() && !keyboard->IsValid())
 		return false;
-	
+
+	bool mouseIn = false;
+	mHandlingInput = true;
+	auto it = mChildren.rbegin();
+	for (; it != mChildren.rend();)
+	{		
+		mCurInputHandlingChanged = false;
+		mCurInputHandling = it;
+		mouseIn = (*it)->OnInputFromHandler(mouse, keyboard) || mouseIn;
+		if (mChildrenChanged)
+			break;
+		if (!mCurInputHandlingChanged)
+		{
+			++it;
+		}
+		else
+		{
+			it = mCurInputHandling;
+		}
+	}	
+	mHandlingInput = false;
+
 	if (keyboard->GetChar() == VK_TAB)
 	{
 		if (gFBUIManager->GetKeyboardFocusUI() == this)
@@ -430,15 +485,6 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			TabPressed();
 		}
 	}
-
-	bool mouseIn = false;
-	auto it = mChildren.rbegin(), itEnd = mChildren.rend();
-	for (; it!=itEnd; it++)
-	{
-		mouseIn = (*it)->OnInputFromHandler(mouse, keyboard) || mouseIn;
-		if (mChildrenChanged)
-			break;
-	}	
 
 	if (mNoMouseEvent)
 		return mouseIn;
@@ -483,16 +529,9 @@ void Container::RefreshVScrollbar()
 		return;
 
 	// find last wn
-	float contentWNEnd = 0.f;
-	for (auto i : mChildren)
-	{
-		WinBase* pWinBase = (WinBase*)i;
-		float wnEnd = pWinBase->GetWNPos().y + pWinBase->GetWNSize().y;
-		contentWNEnd = std::max(wnEnd, contentWNEnd);
-	}
-		
+	float contentHeight = GetContentHeight();
 	float boxWNEnd = mWNPos.y + mWNSize.y;
-	float length = contentWNEnd - boxWNEnd;
+	float length = contentHeight - mWNSize.y;
 	if (length > 0.0001f)
 	{
 		float visableRatio = mWNSize.y / (mWNSize.y + length);
@@ -531,13 +570,25 @@ void Container::RefreshVScrollbar()
 				{
 					if (child->GetType() != ComponentType::Scroller)
 					{
-						child->SetNPosOffset(Vec2(0, 0));
+						child->SetWNPosOffset(Vec2(0, 0));
 					}
 				}
 			}
 		}
 	}
 	
+}
+
+float Container::GetContentHeight() const
+{
+	float contentWNEnd = 0;
+	for (auto i : mChildren)
+	{
+		WinBase* pWinBase = (WinBase*)i;
+		float wnEnd = pWinBase->GetWNPos().y + pWinBase->GetWNSize().y;
+		contentWNEnd = std::max(wnEnd, contentWNEnd);
+	}
+	return contentWNEnd - mWNPos.y;
 }
 
 bool Container::SetVisible(bool visible)
@@ -598,7 +649,7 @@ void Container::Scrolled()
 		float visableRatio = mScrollerV->GetNSize().y;
 		float movable = 1.0f - visableRatio;
 		float maxOffset = mScrollerV->GetMaxOffset().y;
-		Vec2 offset = mScrollerV->GetOffset();
+		const Vec2& offset = mScrollerV->GetOffset();
 		float curPos = -offset.y / maxOffset;
 		float nPosY = movable * curPos;
 		mScrollerV->SetNPosY(nPosY);
@@ -607,7 +658,7 @@ void Container::Scrolled()
 			{
 				if (child->GetType() != ComponentType::Scroller)
 				{
-					child->SetNPosOffset(offset);
+					child->SetWNPosOffset(offset);
 				}
 					
 			}
@@ -620,11 +671,11 @@ void Container::Scrolled()
 	}
 }
 
-void Container::SetNPosOffset(const Vec2& offset)
+void Container::SetWNPosOffset(const Vec2& offset)
 {
 	// scrollbar offset
 	assert(GetType() != ComponentType::Scroller);
-	__super::SetNPosOffset(offset);
+	__super::SetWNPosOffset(offset);
 }
 
 void Container::SetAnimNPosOffset(const Vec2& offset)

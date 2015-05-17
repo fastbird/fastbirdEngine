@@ -399,7 +399,7 @@ void Console::OnInput(IMouse* mouse, IKeyboard* keyboard)
 			case VK_TAB:
 			{
 				keyboard->PopChar();
-						   AutoCompletion();
+				AutoCompletion();
 			}
 				break;
 			case VK_RETURN:

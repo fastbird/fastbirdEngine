@@ -153,6 +153,7 @@ namespace fastbird
 		}
 		virtual void RemoveChild(IWinBase* child, bool immediately = false) {}
 		virtual void RemoveAllChild(bool immediately = false) {}
+		virtual void RemoveChildNotDelete(IWinBase* child){}
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) { return 0; }
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
 		virtual IWinBase* GetParent() { return (IWinBase*)mParent; }
@@ -232,8 +233,8 @@ namespace fastbird
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0);
 
 		virtual void Scrolled(){}
-		virtual void SetNPosOffset(const Vec2& offset);
-		virtual const Vec2& GetNPosOffset() const { return mWNPosOffset; }
+		virtual void SetWNPosOffset(const Vec2& offset);
+		virtual const Vec2& GetWNPosOffset() const { return mWNPosOffset; }
 		virtual void SetAnimNPosOffset(const Vec2& offset);
 		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
 		virtual void SetPivotToUIObject(const Vec2& pivot);
@@ -267,6 +268,10 @@ namespace fastbird
 		virtual float PixelToLocalNWidth(int pixel) const;
 		virtual float PixelToLocalNHeight(int pixel) const;
 		virtual Vec2 PixelToLocalNSize(const Vec2I& pixel) const;
+
+		virtual int PixelToLocalPixelWidth(int posx) const;
+		virtual int PixelToLocalPixelHeight(int posy) const;
+		virtual void PixelToLocalPixel(Vec2I& pos) const;
 
 		virtual int LocalNWidthToPixel(float nwidth) const;
 		virtual int LocalNHeightToPixel(float nheight) const;
@@ -347,6 +352,8 @@ namespace fastbird
 		virtual bool GetSaveNameCheck() const;
 		virtual void SetRuntimeChild(bool runtime) { mRunTimeChild = runtime; }
 		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
+
+		virtual float GetContentHeight() const;
 
 	protected:
 		virtual void OnPosChanged();

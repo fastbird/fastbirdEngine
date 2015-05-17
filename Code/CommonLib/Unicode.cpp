@@ -238,6 +238,13 @@ WCHAR* AnsiToWide(const char* source)
 {
 	return AnsiToWide(source, strlen(source));
 }
+WCHAR AnsiToWide(const char source)
+{
+	static WCHAR wideBuffer[4];
+	memset(wideBuffer, 0, 4 * sizeof(WCHAR));
+	int ret = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, &source, 1, wideBuffer, 2);
+	return wideBuffer[0];
+}
 
 // return data is temporary data. save it to other memory if you need
 WCHAR* UTF8ToWide(const unsigned char* source)
