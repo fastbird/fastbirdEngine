@@ -7,7 +7,7 @@ funtionalities as I'm working on the game.
 
 Compilation
 ---------------
-You need these libraries to compile the source code. You can find the helper .bat files setting environment variables for these paths in the code/ folder.
+You need these libraries to compile the source code. You can find the '.bat' files which helps you to set libary path environment variables easily. They are located in 'code/' folder.
 * _FASTBIRD_ENGINE_DIR
   * Run _FASTBIRD_ENGINE_DIR.bat in code/ directory.
 * FreeImage 3.15.4
