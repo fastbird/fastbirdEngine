@@ -7,7 +7,8 @@
 #include <UI/KeyboardCursor.h>
 #include <UI/ImageBox.h>
 #include <UI/CheckBox.h>
-#include <UI/ListBox.h>
+#include <UI/ListBox.h> 
+#include <UI/ListItem.h>
 #include <UI/FileSelector.h>
 #include <UI/Scroller.h>
 #include <UI/RadioBox.h>
@@ -137,13 +138,11 @@ void Error(const char* szFmt, ...)
 //---------------------------------------------------------------------------
 void UIManager::Update(float elapsedTime)
 {
-	for (auto& it : mSetFocusReserved)
+	for (auto& ui : mSetFocusReserved)
 	{		
-		auto ui = it.first;
 		auto focusRoot = ui->GetRootWnd();
-
 		auto hwndId = mFocusWnd->GetHwndId();
-		auto windows = mWindows[hwndId];
+		auto& windows = mWindows[hwndId];
 		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), focusRoot);
 		if (f != windows.end())
 		{
@@ -207,6 +206,15 @@ void UIManager::BeforeUIRendering(HWND_ID hwndId)
 {
 	if (hwndId==1)
 		mDragBox.Render();
+}
+
+void UIManager::AfterDebugHudRendered(HWND_ID hwndId)
+{
+	if (hwndId == 1 && mUIEditor)
+	{
+		mUIEditor->DrawFocusBoxes();
+	}
+
 }
 
 void UIManager::GatherRenderList()
@@ -715,6 +723,10 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 {
 	if (!pWnd)
 		return;
+	if (pWnd == mKeyboardFocus)
+	{
+		mKeyboardFocus = 0;
+	}
 	OnDeleteWinBase(pWnd);
 	auto hwndId = pWnd->GetHwndId();
 	assert(hwndId != -1);
@@ -775,14 +787,15 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	}
 }
 
-void UIManager::SetFocusUI(IWinBase* ui, std::function< void() > func)
+void UIManager::SetFocusUI(IWinBase* ui)
 {
 	if (!ui || !ui->GetVisible())
 		return;
+
 	Log(FB_DEFAULT_DEBUG_ARG, FormatString("setting focus ui : %s", ComponentType::ConvertToString(ui->GetType())) );
-	for (auto& it : mSetFocusReserved)
+	for (auto& ui : mSetFocusReserved)
 	{
-		if (it.first == ui)
+		if (ui == ui)
 			return;
 	}
 
@@ -801,12 +814,7 @@ void UIManager::SetFocusUI(IWinBase* ui, std::function< void() > func)
 	if (mKeyboardFocus)
 		mKeyboardFocus->OnFocusGain();
 
-	if (func)
-	{
-		func();
-	}
-
-	mSetFocusReserved.push_back( std::make_pair(ui, func) );
+	mSetFocusReserved.push_back( ui);
 }
 
 IWinBase* UIManager::GetFocusUI() const
@@ -969,15 +977,15 @@ void UIManager::DeleteComponent(IWinBase* com)
 }
 
 //---------------------------------------------------------------------------
-void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
+void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 {
-	if (!pMouse->IsValid() && !pKeyboard->IsValid())
+	if (!pMouse->IsValid() && !keyboard->IsValid())
 		return;
 	if (gFBEnv->pEngine->IsMainWindowForground())
 	{
 		if (mLocatingComp != ComponentType::NUM)
 		{
-			OnInputForLocating(pMouse, pKeyboard);
+			OnInputForLocating(pMouse, keyboard);
 			return;
 		}
 	}
@@ -985,24 +993,31 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
 
-	if (pKeyboard->IsValid() && pKeyboard->IsKeyPressed(VK_ESCAPE))	{
+	if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_ESCAPE))	{
 		WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 		int i = 0;
 		for (; it != itEnd; ++it) {
 			if ((*it)->GetVisible() && (*it)->GetCloseByEsc()) {
 				(*it)->SetVisible(false);
+				keyboard->Invalidate();
 				break;
 			}
+		}
+	}
+	if (mUIEditor){
+		if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_DELETE)) {
+			mUIEditor->TryToDeleteCurComp();
+
 		}
 	}
 
 	if (mIgnoreInput) {
 		if (mModalWindow)
-			mModalWindow->OnInputFromHandler(pMouse, pKeyboard);
+			mModalWindow->OnInputFromHandler(pMouse, keyboard);
 		return;
 	}
 
-	
+	//Select
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {		
 		auto it = windows.rbegin(), itEnd = windows.rend();
 		IWinBase* focusWnd = 0;
@@ -1020,9 +1035,13 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 				focusWnd = 0;
 
 		}
-		if (focusWnd && mFocusWnd != focusWnd)
+		if (focusWnd && mKeyboardFocus != focusWnd)
 		{
 			SetFocusUI(focusWnd);
+			if (mUIEditor)
+			{
+				mUIEditor->OnComponentSelected(focusWnd);
+			}
 		}
 	}
 
@@ -1033,10 +1052,10 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 	{
 		if ((*it)->GetVisible())
 		{
-			mMouseIn = (*it)->OnInputFromHandler(pMouse, pKeyboard) || mMouseIn;
+			mMouseIn = (*it)->OnInputFromHandler(pMouse, keyboard) || mMouseIn;
 		}
 
-		if (!pMouse->IsValid() && !pKeyboard->IsValid())
+		if (!pMouse->IsValid() && !keyboard->IsValid())
 			break;
 	}
 
@@ -1569,7 +1588,7 @@ void UIManager::CancelLocatingComponent()
 
 }
 
-void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard)
+void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 {
 	if (mLocatingComp == ComponentType::NUM)
 		return;
@@ -1664,7 +1683,8 @@ void UIManager::LocateComponent()
 	}
 	
 	win->SetProperty(UIProperty::NO_BACKGROUND, "false");
-	win->SetProperty(UIProperty::BACK_COLOR, "0.3, 0.3, 0.5, 0.4");
+	if (mLocatingComp == ComponentType::Window)
+		win->SetProperty(UIProperty::BACK_COLOR, "0.3, 0.3, 0.5, 0.4");
 	win->SetProperty(UIProperty::VISIBLE, "true");
 	auto keyboard = gFBEnv->pEngine->GetKeyboard();
 	if (!keyboard->IsKeyPressed(VK_SHIFT))
@@ -1673,8 +1693,10 @@ void UIManager::LocateComponent()
 		if (mUIEditor)
 		{
 			mUIEditor->OnComponentSelected(win);
+			mUIEditor->OnCancelComponent();
 		}
 	}
+	
 }
 
 
@@ -1696,7 +1718,11 @@ const char* UIManager::GetUIPath(const char* uiname) const
 }
 const char*  UIManager::GetUIScriptPath(const char* uiname) const
 {
-	auto it = mLuaUIs.find(uiname);
+	std::string lower(uiname);
+	ToLowerCase(lower);
+	auto it = mLuaUIs.find(lower.c_str());
+	if (it == mLuaUIs.end())
+		return "";
 	auto& windows = it->second;
 	if (windows.empty())
 		return "";

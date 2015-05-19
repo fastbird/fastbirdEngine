@@ -1,7 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/UIObject.h>
 #include <Engine/GlobalEnv.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/IFont.h>
 #include <Engine/IConsole.h>
 #include <UI/ComponentType.h>
@@ -276,9 +276,11 @@ void UIObject::Render()
 	if (!mMaterial || !mVertexBuffer || mOut)
 		return;
 
+	auto const renderer = gFBEnv->_pInternalRenderer;
+
 	if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug)
 	{
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
+		IFont* pFont = renderer->GetFont();
 		if (pFont)
 		{
 			pFont->PrepareRenderResources();
@@ -297,15 +299,15 @@ void UIObject::Render()
 
 	if (mScissor)
 	{
-		gFBEnv->pRenderer->SetScissorRects(&mScissorRect, 1);
+		renderer->SetScissorRects(&mScissorRect, 1);
 	}
 
 	if (!mNoDrawBackground)
 	{
-		gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+		renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 		mMaterial->Bind(true);
 		//mRasterizerStateShared->Bind();
-		gFBEnv->pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		renderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	
 		const unsigned int numBuffers = 4;
 		IVertexBuffer* buffers[numBuffers] = { mVertexBuffer, mVBColor, mVBTexCoords[0], mVBTexCoords[1] };
@@ -315,14 +317,14 @@ void UIObject::Render()
 			mVBTexCoords[1] ? mVBTexCoords[1]->GetStride() : 0
 		};
 		unsigned int offsets[numBuffers] = { 0, 0, 0, 0 };
-		gFBEnv->pRenderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
+		renderer->SetVertexBuffer(0, numBuffers, buffers, strides, offsets);
 		
-		gFBEnv->pRenderer->Draw(mVertexBuffer->GetNumVertices(), 0);
+		renderer->Draw(mVertexBuffer->GetNumVertices(), 0);
 	}
 
 	if (!mText.empty())
 	{
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
+		IFont* pFont = renderer->GetFont();
 		if (pFont)
 		{
 			pFont->PrepareRenderResources();

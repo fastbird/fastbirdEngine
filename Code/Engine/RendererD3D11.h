@@ -112,6 +112,7 @@ namespace fastbird
 		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+		virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
 		virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0);
 		virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 			const Color& color, ITexture* texture, IMaterial* materialOverride = 0);

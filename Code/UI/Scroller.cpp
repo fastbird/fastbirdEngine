@@ -1,6 +1,7 @@
 #include <UI/StdAfx.h>
 #include <UI/Scroller.h>
 #include <UI/Container.h>
+#include <Engine/IConsole.h>
 
 namespace fastbird
 {
@@ -12,9 +13,9 @@ Scroller::Scroller()
 	, mOwner(0)
 	, mDestOffset(0)
 	, mCurOffset(0)
-	, mScrollAcc(10)
+	, mScrollAcc(100)
 	, mCurScrollSpeed(0)
-	, mMaxScrollSpeed(50)
+	, mMaxScrollSpeed(100)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -42,8 +43,11 @@ bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	long wheel = mouse->GetWheel();
 	if (wheel && mParent->IsIn(mouse))
 	{		
+		float wheelSens = gFBEnv->pConsole->GetEngineCommand()->WheelSens;
+		float wheelSensitivity = wheelSens * (float)mouse->GetNumLinesWheelScroll();
+
 		float prevDestOffset = mDestOffset;
-		mDestOffset += wheel * mScrollAmount;
+		mDestOffset += wheel * wheelSensitivity * mScrollAmount;
 		mDestOffset = std::min(0.f, mDestOffset);
 		mDestOffset = std::max(-mMaxOffset.y, mDestOffset);
 		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
@@ -99,7 +103,10 @@ void Scroller::SetMaxOffset(const Vec2& maxOffset)
 			mCurOffset = mOffset.y;
 			mDestOffset = mCurOffset;
 			mOwner->Scrolled();
-		}		
+		}
+
+		mScrollAmount = 22 / (float)GetRenderTargetSize().y;
+			
 		
 	}
 }

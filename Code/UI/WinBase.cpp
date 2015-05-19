@@ -35,8 +35,8 @@ WinBase::WinBase()
 , mTextAlignV(ALIGNV::MIDDLE)
 , mMatchSize(false)
 , mSize(10, 10)
-, mTextSize(24.f)
-, mFixedTextSize(false)
+, mTextSize(22.f)
+, mFixedTextSize(true)
 , mWNPosOffset(0, 0)
 , mNPosOffset(0, 0)
 , mMouseDragStartInHere(false)
@@ -916,10 +916,7 @@ HCURSOR WinBase::GetMouseCursorOver()
 }
 
 void WinBase::AlignText()
-{
-	if (mTextw.empty())
-		return;
-	
+{	
 	float nwidth = ConvertToNormalized(Vec2I(mTextWidth, mTextWidth)).x;
 	if (mMatchSize && mTextWidth != 0 && !mLockTextSizeChange)
 	{ 
@@ -1000,7 +997,10 @@ void WinBase::OnPosChanged()
 void WinBase::CalcTextWidth()
 {
 	if (mTextw.empty())
+	{
+		mTextWidth = 0;
 		return;
+	}
 	IFont* pFont = gFBEnv->pRenderer->GetFont();
 	pFont->SetHeight(mTextSize);
 	mTextWidth = (int)gFBEnv->pRenderer->GetFont()->GetTextWidth(
@@ -1022,11 +1022,11 @@ void WinBase::OnSizeChanged()
 		if (!mFixedTextSize)
 		{
 			const RECT& region = mUIObject->GetRegion();
-			mTextSize = (float)(region.bottom - region.top);
+			mTextSize = (float)(region.bottom - region.top);			
 			CalcTextWidth();
 			AlignText();
-			mUIObject->SetTextSize(mTextSize);
-		}
+		}		
+		mUIObject->SetTextSize(mTextSize);
 	}
 
 	// we need this for alignment
@@ -1072,7 +1072,10 @@ void WinBase::SetText(const wchar_t* szText)
 {
 	mTextw = szText;
 	if (mUIObject)
+	{
+		mUIObject->SetTextSize(mTextSize);
 		mUIObject->SetText(szText);
+	}
 
 	CalcTextWidth();
 
@@ -1358,14 +1361,6 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							 }
 							 return true;
 	}
-	case UIProperty::ALPHA:
-	{
-							  bool b = StringConverter::parseBool(val);
-							  if (mUIObject)
-								  mUIObject->SetAlphaBlending(b);
-							  gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-							  return true;
-	}
 
 	case UIProperty::TOOLTIP:
 	{
@@ -1612,8 +1607,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 
 		auto data = StringConverter::toString(mTextSize);
 		strcpy(val, data.c_str());
-	
-		break;
+		return true;
 	}
 
 	case UIProperty::FIXED_TEXT_SIZE:
@@ -1794,22 +1788,6 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			strcpy(val, WideToAnsi(mTextw.c_str()));
 		}
 		return true;
-	}
-	case UIProperty::ALPHA:
-	{
-		if (!mUIObject)
-			return false;
-		
-		if (notDefaultOnly) {
-			if (mUIObject->GetAlphaBlending() == UIProperty::GetDefaultValueBool(prop))
-				return false;
-		}
-
-		auto data = StringConverter::toString(mUIObject->GetAlphaBlending());
-		strcpy(val, data.c_str());
-		return true;
-		
-		return false;
 	}
 
 	case UIProperty::TOOLTIP:
@@ -2086,6 +2064,13 @@ void WinBase::SetUseBorder(bool use)
 		RefreshBorder();
 		RefreshScissorRects();
 		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+
+		auto visible = mVisibility.IsVisible();
+		for (auto borderImage : mBorders)
+		{
+			borderImage->SetVisible(visible);
+		}
+
 	}
 	else if (!use && !mBorders.empty())
 	{
@@ -3542,6 +3527,11 @@ bool WinBase::GetSaveNameCheck() const
 float WinBase::GetContentHeight() const
 {
 	return mWNSize.y;
+}
+
+bool WinBase::IsKeyboardFocused() const
+{
+	return gFBUIManager->GetKeyboardFocusUI() == this;
 }
 
 }

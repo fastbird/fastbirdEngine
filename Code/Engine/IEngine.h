@@ -53,6 +53,7 @@ namespace fastbird
 	class IBillboardQuad;
 	class IDustRenderer;
 	class TextManipulator;
+	class LuaObject;
 	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
@@ -177,6 +178,8 @@ namespace fastbird
 
 		virtual TextManipulator* CreateTextManipulator() = 0;
 		virtual void DeleteTextManipulator(TextManipulator* mani) = 0;
+
+		virtual void SetInputOverride(const LuaObject& func) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

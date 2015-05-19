@@ -613,9 +613,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									mProgressBar->SetParent(this);
 									mProgressBar->SetWNSize(mWNSize);
 									mProgressBar->SetWNPos(mWNPos);
-									mProgressBar->SetMaximum(StringConverter::parseReal(val));
-									mProgressBar->SetProperty(UIProperty::ALPHA, "true");
-									SetProperty(UIProperty::ALPHA, "true");
+									mProgressBar->SetMaximum(StringConverter::parseReal(val));									
 									return true;
 	}
 

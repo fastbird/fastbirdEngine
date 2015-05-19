@@ -2,7 +2,7 @@
 #include <UI/ListBox.h>
 #include <UI/KeyValueDataSet.h>
 namespace fastbird{
-
+	class ListItem;
 	class PropertyList : public ListBox
 	{
 		unsigned mFocusRow;
@@ -24,7 +24,7 @@ namespace fastbird{
 		virtual unsigned InsertItem(const wchar_t* key, const wchar_t* value);
 		virtual unsigned ModifyItem(const wchar_t* key, const wchar_t* value);
 		virtual void RemoveItem(const wchar_t* key);
-		virtual void ClearItems();
+		virtual void Clear();
 
 		const wchar_t* GetValue(const wchar_t* key);
 		
@@ -43,8 +43,9 @@ namespace fastbird{
 		void Sort();
 		void GoToNext(char c, unsigned curIndex);
 		void MoveFocusToEdit(unsigned index);
-		void MoveToNextLine();
-
+		void MoveLine(bool applyInput, bool next);
+		void RemoveHighlight(unsigned index);
+		void MoveFocusToKeyItem();
 		
 
 	protected:

@@ -4,6 +4,7 @@
 #include <UI/IUIManager.h>
 #include <UI/ImageBox.h>
 #include <UI/PropertyList.h>
+#include <UI/ListItem.h>
 #include <UI/IUIEditor.h>
 #include <Engine/TextManipulator.h>
 
@@ -47,14 +48,20 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		return mouseIn;
 
 	if (keyboard->IsValid()) {
-		if (keyboard->GetChar() == VK_TAB)	{
-			if (gFBUIManager->GetKeyboardFocusUI() == this)
+		auto ch = keyboard->GetChar();
+		if (ch == VK_TAB)	{
+			if (IsKeyboardFocused())
 			{
 				keyboard->PopChar();
 				auto propertyList = IsInPropertyList();
 				if (propertyList)
 				{
-					propertyList->MoveToNextLine();
+					if (keyboard->IsKeyDown(VK_SHIFT)) {
+						propertyList->MoveFocusToKeyItem();
+					}
+					else{
+						propertyList->MoveLine(true, true);
+					}
 				}
 				else
 				{
@@ -66,7 +73,7 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 			}
 		}
-		else if (keyboard->GetChar() == VK_RETURN)
+		else if (ch == VK_RETURN)
 		{
 			bool succ = false;
 			if (OnEvent(EVENT_ENTER))
@@ -75,29 +82,43 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			else
 			{
-				auto parent = GetParent();
-				int count = 2;
-				while (count-- && parent)
+				auto prop = IsInPropertyList();
+				if (prop)
 				{
-					auto eventHandler = dynamic_cast<IEventHandler*>(parent);
+					auto eventHandler = dynamic_cast<IEventHandler*>(prop);
 					if (eventHandler)
 					{
 						if (eventHandler->OnEvent(EVENT_ENTER)){
 							succ = true;
-							break;
 						}
 					}
-					parent = parent->GetParent();
 				}
 			}
 			if (succ){
 				keyboard->PopChar();
+				keyboard->Invalidate();
 				TriggerRedraw();
+				
+			}
+		}
+		else if (ch == VK_ESCAPE){
+			auto prop = IsInPropertyList();
+			if (prop) {
+				prop->MoveFocusToKeyItem();
+				keyboard->PopChar();
 				keyboard->Invalidate();
 			}
 		}
 		else{
 			gFBUIManager->GetTextManipulator()->OnInput(mouse, keyboard);
+		}
+	}
+
+	if (mouseIn && mouse->IsValid() && mouse->IsLButtonDoubleClicked())
+	{
+		if (IsKeyboardFocused())
+		{
+			gFBUIManager->GetTextManipulator()->SelectAll();
 		}
 	}
 	
@@ -135,29 +156,31 @@ void TextField::OnFocusGain()
 	mani->SetText(&mTextw);
 
 	auto mouse = gFBEnv->pEngine->GetMouse();
-	long x, y;
-	mouse->GetPos(x, y);
-	Vec2I cursorPos(x, y);
-	PixelToLocalPixel(cursorPos);
-	cursorPos.x -= mTextGap.x;
+	if (mouse->IsLButtonClicked()){
+		long x, y;
+		mouse->GetPos(x, y);
+		Vec2I cursorPos(x, y);
+		PixelToLocalPixel(cursorPos);
+		cursorPos.x -= mTextGap.x;
 
-	auto font = gFBEnv->pRenderer->GetFont();
-	if (font)
-	{
-		font->SetHeight(mTextSize);
-		float length = 0.f;
-		for (int i = 0; i < (int)mTextw.size(); i++)
+		auto font = gFBEnv->pRenderer->GetFont();
+		if (font)
 		{
-			float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
-			length += halfLength;
-			if (cursorPos.x < length)
+			font->SetHeight(mTextSize);
+			float length = 0.f;
+			for (int i = 0; i < (int)mTextw.size(); i++)
 			{
-				mani->SetCursorPos(i);
-				break;
+				float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
+				length += halfLength;
+				if (cursorPos.x < length)
+				{
+					mani->SetCursorPos(i);
+					break;
+				}
+				length += halfLength;
 			}
-			length += halfLength;
+			font->SetBackToOrigHeight();
 		}
-		font->SetBackToOrigHeight();
 	}
 
 	auto propertyList = IsInPropertyList();
@@ -179,15 +202,18 @@ void TextField::OnFocusLost()
 		assert(mParent && mParent->GetType() == ComponentType::ListItem);
 		ListItem* valueItem = (ListItem*)mParent;
 		auto index = valueItem->GetRowIndex();
+		propertyList->RemoveHighlight(index);
 		auto uiEditor = gFBUIManager->GetUIEditor();
 		IWinBase* editingUI = uiEditor->GetCurSelected();
 		std::string key, value;
 		propertyList->GetCurKeyValue(key, value);
+		Log("key = %s, value = %s", key.c_str(), value.c_str());
 		if (editingUI)
 		{
-			char buf[255] = { 0 };
-			editingUI->GetProperty(UIProperty::ConverToEnum(key.c_str()), buf, false);
-			SetText(AnsiToWide());
+			char buf[256] = { 0 };
+			auto got = editingUI->GetProperty(UIProperty::ConverToEnum(key.c_str()), buf, false);
+			if (got)
+				SetText(AnsiToWide(buf));
 		}
 	}
 	mani->SetText(0);
@@ -247,7 +273,7 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 void TextField::OnTextChanged(TextManipulator* mani)
 {
 	TriggerRedraw();
-	mUIObject->SetText(mTextw.c_str());
+	SetText(mTextw.c_str());
 }
 
 void TextField::SetUseBorder(bool use)

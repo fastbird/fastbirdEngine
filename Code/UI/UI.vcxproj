@@ -122,6 +122,7 @@
     <ClInclude Include="KeyboardCursor.h" />
     <ClInclude Include="KeyValueDataSet.h" />
     <ClInclude Include="ListBox.h" />
+    <ClInclude Include="ListItem.h" />
     <ClInclude Include="NamedPortrait.h" />
     <ClInclude Include="NumericUpDown.h" />
     <ClInclude Include="PropertyList.h" />
@@ -148,6 +149,7 @@
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="DragBox.cpp" />
     <ClCompile Include="KeyValueDataSet.cpp" />
+    <ClCompile Include="ListItem.cpp" />
     <ClCompile Include="PropertyList.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />

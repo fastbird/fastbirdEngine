@@ -726,6 +726,11 @@ void Renderer::RenderDebugHud()
 	mDebugHud->PreRender();
 	mDebugHud->Render();
 	SetWireframe(backup);
+
+	for (auto l : mRenderListeners)
+	{
+		l->AfterDebugHudRendered(gFBEnv->pEngine->GetMainWndHandleId());
+	}
 }
 
 //-------------------------------------------------------------------------

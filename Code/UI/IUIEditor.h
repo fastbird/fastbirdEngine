@@ -11,5 +11,7 @@ namespace fastbird
 		virtual void OnCancelComponent() {}
 		virtual void OnPosChanged(IWinBase* comp){}
 		virtual void OnSizeChanged(IWinBase* comp){}
+		virtual void DrawFocusBoxes(){}
+		virtual void TryToDeleteCurComp() {}
 	};
 }

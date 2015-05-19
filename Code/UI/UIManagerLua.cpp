@@ -3,6 +3,7 @@
 #include <UI/StaticText.h>
 #include <UI/Button.h>
 #include <UI/ListBox.h>
+#include <UI/ListItem.h>
 #include <UI/PropertyList.h>
 #include <UI/TextBox.h>
 #include <UI/CheckBox.h>
@@ -89,10 +90,12 @@ namespace fastbird
 	int GetUIPropertyName(lua_State* L);
 	int GetPropertyCurKeyValue(lua_State* L);
 	int SortPropertyList(lua_State* L);
+	int ClearPropertyItems(lua_State* L);
 
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, ClearPropertyItems);
 		LUA_SETCFUNCTION(mL, SortPropertyList);
 		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
 		LUA_SETCFUNCTION(mL, GetUIPropertyName);
@@ -1419,6 +1422,19 @@ namespace fastbird
 		{
 			auto propertyList = (PropertyList*)comp;
 			propertyList->Sort();
+		}
+		return 0;
+	}
+
+	int ClearPropertyItems(lua_State* L)
+	{
+		auto uiname = luaL_checkstring(L, 1);
+		auto compName = luaL_checkstring(L, 2);
+		auto comp = gFBUIManager->FindComp(uiname, compName);
+		if (comp && comp->GetType() == ComponentType::PropertyList)
+		{
+			auto propertyList = (PropertyList*)comp;
+			propertyList->Clear();
 		}
 		return 0;
 	}

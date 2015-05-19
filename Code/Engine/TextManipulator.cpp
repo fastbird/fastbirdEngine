@@ -216,6 +216,13 @@ void TextManipulator::SelectAll()
 {
 	if (!mText)
 		return;
+	if (mText->size() == 0)
+	{
+		EndHighlighting();
+		return;
+	}
+
+	EndHighlighting();
 	mCursorPos = 0;
 	StartHighlighting();
 	mCursorPos = mText->size();

@@ -288,8 +288,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
 									 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 									 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
-									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
-									 mTitlebar->SetProperty(UIProperty::FIXED_TEXT_SIZE, "true");
+									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");									 
 									 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
 									 mTitlebar->SetName("_@TitleBar");
 									 assert(!mWndContentUI);

@@ -230,6 +230,7 @@ public:
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
+	virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
 	virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 		const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;

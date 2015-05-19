@@ -521,14 +521,19 @@ void Engine::HandleUserInput()
 
 
 	gFBEnv->_pInternalRenderer->OnInputFromEngineForCamera(mMouse, mKeyboard);
-		
-
-	INPUT_LISTENER_VECTOR::iterator it = mInputListeners.begin(),
-		itEnd = mInputListeners.end();
-	for (; it!=itEnd; it++)
+	if (mInputOverride.IsFunction())
 	{
-		if ((*it)->IsEnabledInputLIstener())
-			(*it)->OnInput(mMouse.get(), mKeyboard.get());
+		mInputOverride.Call();
+	}
+	else
+	{
+		INPUT_LISTENER_VECTOR::iterator it = mInputListeners.begin(),
+			itEnd = mInputListeners.end();
+		for (; it != itEnd; it++)
+		{
+			if ((*it)->IsEnabledInputLIstener())
+				(*it)->OnInput(mMouse.get(), mKeyboard.get());
+		}
 	}
 }
 
@@ -1394,6 +1399,10 @@ TextManipulator* Engine::CreateTextManipulator()
 void Engine::DeleteTextManipulator(TextManipulator* mani)
 {
 	FB_DELETE(mani);
+}
+
+void Engine::SetInputOverride(const LuaObject& func){
+	mInputOverride = func;
 }
 
 } // namespace fastbird

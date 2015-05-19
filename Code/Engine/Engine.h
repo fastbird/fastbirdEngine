@@ -56,7 +56,7 @@ namespace fastbird
 		std::set<std::string> mChangedFiles;
 		float mLastChangedTime;
 		std::vector<IFileChangeListener*> mFileChangeListeners;	
-
+		LuaObject mInputOverride;
 		bool mExiting;
 	
 
@@ -183,6 +183,8 @@ namespace fastbird
 
 		virtual TextManipulator* CreateTextManipulator();
 		virtual void DeleteTextManipulator(TextManipulator* mani);
+		
+		virtual void SetInputOverride(const LuaObject& func);
 	};
 };
 

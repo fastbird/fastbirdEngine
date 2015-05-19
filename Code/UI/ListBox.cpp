@@ -4,122 +4,12 @@
 #include <UI/ImageBox.h>
 #include <UI/Button.h>
 #include <UI/CheckBox.h>
-#include <UI/PropertyList.h>
+#include <UI/ListItem.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
 {
-//-----------------------------------------------------------------------------
-const float ListItem::LEFT_GAP = 0.001f;
-const size_t ListItem::INVALID_INDEX = -1;
 
-ListItem::ListItem()
-: mRowIndex(INVALID_INDEX)
-, mColIndex(INVALID_INDEX)
-, mNoBackground(true)
-, mBackColor("0.1, 0.3, 0.3, 0.7")
-{
-	assert(mUIObject);
-	//mUIObject = gFBEnv->pEngine->CreateUIObject(false);
-	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-}
-
-ListItem::~ListItem()
-{
-
-}
-
-void ListItem::GatherVisit(std::vector<IUIObject*>& v)
-{
-	v.push_back(mUIObject);	
-
-	__super::GatherVisit(v);
-}
-
-void ListItem::OnPosChanged()
-{
-	__super::OnPosChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-void ListItem::OnSizeChanged()
-{
-	__super::OnSizeChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-CheckBox* ListItem::GetCheckBox() const
-{
-	for (auto& child : mChildren)
-	{
-		if (child->GetType() == ComponentType::CheckBox)
-		{
-			return dynamic_cast<CheckBox*>(child);
-		}
-	}
-	return 0;
-}
-
-void ListItem::SetBackColor(const char* backColor)
-{
-	if_assert_fail(backColor)
-		return;
-	mBackColor = backColor;
-}
-
-void ListItem::SetNoBackground(bool noBackground)
-{
-	mNoBackground = noBackground;
-}
-
-void ListItem::OnFocusGain()
-{
-	if (mParent && mParent->GetType() == ComponentType::PropertyList)
-	{
-		PropertyList* prop = (PropertyList*)mParent;
-		prop->SetFocusRow(mRowIndex);
-	}
-	SetProperty(UIProperty::NO_BACKGROUND, "false");
-	TriggerRedraw();
-}
-
-void ListItem::OnFocusLost()
-{
-	SetProperty(UIProperty::NO_BACKGROUND, "true");
-	if (mParent && mParent->GetType() == ComponentType::PropertyList)
-	{
-
-	}
-	TriggerRedraw();
-}
-
-bool ListItem::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
-{
-	if (mParent && mParent->GetType() == ComponentType::PropertyList)
-	{
-		if (GetFocus())
-		{
-			PropertyList* prop = (PropertyList*)mParent;
-			auto c = keyboard->GetChar();
-			if (c)
-			{
-				keyboard->PopChar();
-				keyboard->Invalidate();
-				if (c == VK_TAB)
-				{					
-					prop->MoveFocusToEdit(mRowIndex);					
-				}
-				else
-				{	
-					prop->GoToNext(c, mRowIndex);
-					
-				}
-			}
-		}
-	}
-	return __super::OnInputFromHandler(mouse, keyboard);
-}
 
 //-----------------------------------------------------------------------------
 ListBox::ListBox()
@@ -644,10 +534,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 					{
 						pAddedItem->SetProperty(UIProperty::TEXT_SIZE, mHeaderTextSize[i].c_str());
 					}
-					else
-					{
-						pAddedItem->SetProperty(UIProperty::TEXT_SIZE, "24");
-					}
+					
 					pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
 					pAddedItem->SetRowIndex(-1);
 					pAddedItem->SetColIndex(i);

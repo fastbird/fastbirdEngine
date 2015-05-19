@@ -31,6 +31,11 @@ ImageBox::~ImageBox()
 {
 }
 
+void ImageBox::OnCreated()
+{
+	SetProperty(UIProperty::TEXTUREATLAS, "data/textures/gameui.xml");
+}
+
 void ImageBox::CalcUV(const Vec2I& textureSize)
 {
 	if (mImageFixedSize)
@@ -152,6 +157,7 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 			mUIObject->SetColors(colors, 4);
 		}
 	}
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
@@ -198,7 +204,9 @@ void ImageBox::ChangeRegion(TextureAtlasRegion* region)
 
 void ImageBox::ChangeRegion(const char* region)
 {
-	assert(mTextureAtlas);
+	if (!mTextureAtlas)
+		mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(mTextureAtlasFile.c_str());
+
 	if (mTextureAtlas)
 	{
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
@@ -271,10 +279,6 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::REGION:
 	{
 		mStrRegion = val;
-							   if (mTextureAtlasFile.empty())
-							   {
-								   mTextureAtlasFile = "data/textures/gameui.xml";
-							   }
 							   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
 							   return true;
 	}
@@ -348,17 +352,14 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 									{
 										mFrameImage = CreateImageBox();
 									}
-									if_assert_pass(!mTextureAtlasFile.empty())
+									mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+									if (strlen(val) == 0)
 									{
-										mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
-										if (strlen(val) == 0)
-										{
-											mFrameImage->SetVisible(false);
-										}
-										else
-										{
-											mFrameImage->SetVisible(true);
-										}
+										mFrameImage->SetVisible(false);
+									}
+									else
+									{
+										mFrameImage->SetVisible(true);
 									}
 									return true;
 	}
@@ -434,7 +435,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 				return false;
 
 		}
-		auto data = StringConverter::toString(1.f / mSecPerFrame);
+		auto data = StringConverter::toString(mSecPerFrame==0.f ? 0.f : 1.f / mSecPerFrame);
 		strcpy(val, data.c_str());
 		return true;
 	}

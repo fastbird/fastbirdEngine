@@ -34,7 +34,7 @@ namespace fastbird
 
 		virtual void DeleteWindow(IWinBase* pWnd) = 0;
 		virtual void DeleteWindowsFor(HWND_ID hwndId) = 0;
-		virtual void SetFocusUI(IWinBase* pWnd, std::function< void() > func = std::function< void() >()) = 0;
+		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
 		virtual IWinBase* GetKeyboardFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;

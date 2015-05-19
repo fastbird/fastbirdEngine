@@ -46,7 +46,6 @@ namespace fastbird
 			REGION,
 			REGIONS,
 			FPS,
-			ALPHA,
 			HOVER_IMAGE,
 			BACKGROUND_IMAGE,
 			BACKGROUND_IMAGE_HOVER,
@@ -168,7 +167,6 @@ namespace fastbird
 			"REGION",
 			"REGIONS",
 			"FPS",
-			"ALPHA",
 			"HOVER_IMAGE",
 			"BACKGROUND_IMAGE",
 			"BACKGROUND_IMAGE_HOVER",
@@ -327,7 +325,7 @@ namespace fastbird
 		{
 			switch (prop){
 			case TEXT_SIZE:
-				return 24.f;
+				return 22.f;
 			case FPS:
 				return 0.f;
 			case GAUGE_MAX:
@@ -345,13 +343,11 @@ namespace fastbird
 		{
 			switch (prop){
 			case FIXED_TEXT_SIZE:
-				return false;
+				return true;
 			case MATCH_SIZE:
 				return false;
 			case NO_BACKGROUND:
-				return false;
-			case ALPHA:
-				return false;
+				return false;			
 			case NO_MOUSE_EVENT:
 				return false;
 			case NO_MOUSE_EVENT_ALONE:

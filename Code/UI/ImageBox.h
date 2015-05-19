@@ -11,6 +11,7 @@ public:
 	ImageBox();
 	~ImageBox();
 
+	virtual void OnCreated();
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::ImageBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);

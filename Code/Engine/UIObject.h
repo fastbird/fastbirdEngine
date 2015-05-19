@@ -69,6 +69,8 @@ namespace fastbird
 		void UpdateRegion();
 		static void ClearSharedRS();
 
+		
+
 	private:
 		void PrepareVBs();
 

@@ -1,0 +1,12 @@
+<UI name="FBConfirmUI">
+	<component name="FBConfirmUI" type="Window" npos="0.5, 0.3" nsizeX="0.7" sizeY="50" ALIGNH="center" USE_BORDER="true"
+		NO_BACKGROUND="false"  MODAL="true" ALWAYS_ON_TOP="true">
+		<component name="message" type="StaticText" 
+			npos="0.5, 0.5"
+			nsizeX="1" sizeY="30"
+			ALIGNH="center" ALIGNV="middle"
+			TEXT_ALIGN="center" NO_MOUSE_EVENT="true"
+			/>
+	</component>
+		
+</UI>

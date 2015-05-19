@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <CommonLib/luawrapper.hpp>
+#include <CommonLib/LuaObject.h>
 
 using namespace fastbird;
 
@@ -8,12 +9,28 @@ namespace fastbird
 	int GetResolution(lua_State* L);
 	int GetFrameCounter(lua_State* L);
 	int PrintSpatialObject(lua_State* L);
+	int InvalidateMouseKeyboard(lua_State* L);
+	int FBSetKeyMouseEventOverride(lua_State* L);
+
+	int IsKeyPressed(lua_State* L);
+	int IsKeyDown(lua_State* L);
+	int IsLButtonClicked(lua_State* L);
+	int IsRButtonClicked(lua_State* L);
+	int IsLButtonDown(lua_State* L);
 
 	void InitEngineLuaFuncs(lua_State* L)
 	{
+		LUA_SETCFUNCTION(L, IsKeyPressed);
+		LUA_SETCFUNCTION(L, IsKeyDown);
+		LUA_SETCFUNCTION(L, IsLButtonClicked);
+		LUA_SETCFUNCTION(L, IsRButtonClicked);
+		LUA_SETCFUNCTION(L, IsLButtonDown);
+
+		LUA_SETCFUNCTION(L, FBSetKeyMouseEventOverride);
 		LUA_SETCFUNCTION(L, PrintSpatialObject);
 		LUA_SETCFUNCTION(L, GetResolution);
 		LUA_SETCFUNCTION(L, GetFrameCounter);
+		LUA_SETCFUNCTION(L, InvalidateMouseKeyboard);
 	}
 
 	int GetResolution(lua_State* L)
@@ -40,5 +57,63 @@ namespace fastbird
 			}
 		}
 		return 0;
+	}
+
+	int InvalidateMouseKeyboard(lua_State* L)
+	{
+		if (gFBEnv)
+		{
+			auto keyboard = gFBEnv->pEngine->GetKeyboard();
+			auto mouse = gFBEnv->pEngine->GetMouse();
+
+			if (keyboard)
+			{
+				keyboard->Invalidate();
+				keyboard->ClearBuffer();
+			}
+			if (mouse)
+			{
+				mouse->Invalidate();
+				mouse->ClearWheel();
+			}
+		}
+		return 0;
+	}
+
+	int FBSetKeyMouseEventOverride(lua_State* L)
+	{
+		LuaObject overrideFunc(L, 1);
+		gFBEnv->pEngine->SetInputOverride(overrideFunc);
+		return 0;
+	}
+
+	int IsKeyPressed(lua_State* L)
+	{
+		unsigned short keyCode = luaL_checkunsigned(L, 1);
+		bool pressed = gFBEnv->pEngine->GetKeyboard()->IsKeyPressed(keyCode);
+		lua_pushboolean(L, pressed);
+		return 1;
+	}
+	int IsKeyDown(lua_State* L)
+	{
+		unsigned short keyCode = luaL_checkunsigned(L, 1);
+		bool down = gFBEnv->pEngine->GetKeyboard()->IsKeyDown(keyCode);
+		lua_pushboolean(L, down);
+		return 1;
+	}
+	int IsLButtonClicked(lua_State* L)
+	{
+		lua_pushboolean(L, gFBEnv->pEngine->GetMouse()->IsLButtonClicked());
+		return 1;
+	}
+	int IsRButtonClicked(lua_State* L)
+	{
+		lua_pushboolean(L, gFBEnv->pEngine->GetMouse()->IsRButtonClicked());
+		return 1;
+	}
+	int IsLButtonDown(lua_State* L)
+	{
+		lua_pushboolean(L, gFBEnv->pEngine->GetMouse()->IsLButtonDown());
+		return 1;
 	}
 }

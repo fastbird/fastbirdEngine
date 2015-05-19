@@ -3,6 +3,7 @@
 #include <UI/Scroller.h>
 #include <UI/IUIManager.h>
 #include <UI/TextField.h>
+#include <UI/ListItem.h>
 #include <Engine/TextManipulator.h>
 
 namespace fastbird
@@ -130,7 +131,7 @@ void PropertyList::RemoveItem(const wchar_t* key)
 	}
 }
 
-void PropertyList::ClearItems()
+void PropertyList::Clear()
 {
 	mData.Clear();
 	for (auto& item : mItems)
@@ -323,6 +324,8 @@ void PropertyList::MoveToRecycle(unsigned row)
 	{
 		if (mItems[row][0] && mItems[row][1])
 		{
+			if (mItems[row][0]->IsKeyboardFocused() || mItems[row][1]->GetChild((unsigned)0)->IsKeyboardFocused())
+				return;
 			mRecycleBin.push_back(std::make_pair(mItems[row][0], mItems[row][1]));
 			RemoveChildNotDelete(mItems[row][0]);
 			RemoveChildNotDelete(mItems[row][1]);
@@ -360,7 +363,7 @@ void PropertyList::GoToNext(char c, unsigned curIndex)
 
 	if (mScrollerV)
 	{
-		if (index < mStartIndex || index > (mEndIndex>=3 ? mEndIndex-3: mEndIndex))
+		if (index < mStartIndex+1 || index > (mEndIndex>=3 ? mEndIndex-3: mEndIndex))
 		{
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * index + mRowGap;
@@ -376,11 +379,16 @@ void PropertyList::GoToNext(char c, unsigned curIndex)
 
 void PropertyList::MoveFocusToEdit(unsigned index)
 {
-	assert(mFocusRow == index);
+	if (index >= mData.Size()) 	{
+		index = mData.Size()-1;
+	}
+	else{
+
+	}
 		//scroll
 	if (mScrollerV)
 	{
-		if (index < mStartIndex || index >(mEndIndex>=3 ? mEndIndex - 3 : mEndIndex))
+		if (index < mStartIndex+1 || index >(mEndIndex>=3 ? mEndIndex - 3 : mEndIndex))
 		{
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * index + mRowGap;
@@ -391,43 +399,66 @@ void PropertyList::MoveFocusToEdit(unsigned index)
 
 	if (mItems[index][1])
 	{
-		gFBUIManager->SetFocusUI(mItems[index][1]->GetChild((unsigned)0),
-
-			std::bind(&TextField::SelectAllAfterGetFocused,
-			(TextField*)mItems[mFocusRow][1]->GetChild((unsigned)0))
-			);
+		gFBUIManager->SetFocusUI(mItems[index][1]->GetChild((unsigned)0));
+		gFBUIManager->GetTextManipulator()->SelectAll();
+		TriggerRedraw();
 	}
 }
 
-void PropertyList::MoveToNextLine()
+void PropertyList::MoveLine(bool applyInput, bool next)
 {
 	// apply value;
-	OnEvent(EVENT_ENTER);
+	if (applyInput)
+		OnEvent(EVENT_ENTER);
 
-	++mFocusRow;
-	if (mFocusRow >= mData.Size())
+
+	unsigned nextLine = next ? mFocusRow + 1 : mFocusRow - 1;
+	if (nextLine == -1)
 	{
-		mFocusRow = 0;
+		nextLine = mData.Size() - 1;
+	}
+	else if (nextLine >= mData.Size())
+	{
+		nextLine = 0;
 	}
 	//scroll
 	if (mScrollerV)
 	{
-		if (mFocusRow < mStartIndex || 
-			(mFocusRow > (mEndIndex>=3 ? mEndIndex - 3 : mEndIndex))
+		if (nextLine < mStartIndex+1 ||
+			(nextLine >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
 			)
 		{
 			unsigned hgap = mRowHeight + mRowGap;
-			unsigned destY = hgap * mFocusRow + mRowGap;
+			unsigned destY = hgap * nextLine + mRowGap;
 
 				mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
 		}
 	}
 
+	if (mItems[nextLine][0])
+	{
+		gFBUIManager->SetFocusUI(mItems[nextLine][0]);
+	}
+
+	mFocusRow = nextLine;	
+	
+}
+
+
+void PropertyList::RemoveHighlight(unsigned index)
+{
+	if (mItems[index][0])
+	{
+		mItems[index][0]->SetProperty(UIProperty::NO_BACKGROUND, "true");
+	}
+}
+
+void PropertyList::MoveFocusToKeyItem()
+{
 	if (mItems[mFocusRow][0])
 	{
 		gFBUIManager->SetFocusUI(mItems[mFocusRow][0]);
 	}
-	
 }
 
 }

@@ -68,7 +68,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 IWinBase* Container::AddChild(float posX, float posY, float width, float height, ComponentType::Enum type)
 {
 	mChildrenChanged = true; // only detecting addition. not deletion.
-	if (mWndContentUI)
+	if (mWndContentUI && type != ComponentType::Scroller)
 	{
 		return mWndContentUI->AddChild(posX, posY, width, height, type);
 	}
@@ -149,6 +149,9 @@ IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
 
 void Container::RemoveChild(IWinBase* child, bool immediately)
 {
+	if (child == 0)
+		return;
+
 	if (mWndContentUI)
 	{
 		return mWndContentUI->RemoveChild(child, immediately);
@@ -177,9 +180,8 @@ void Container::RemoveChildNotDelete(IWinBase* child)
 	}
 	if (mScrollerV == child)
 		mScrollerV = 0;
-	if (mHandlingInput &&  mChildren.rend() != mCurInputHandling  &&  (*mCurInputHandling) == child)
+	if (mHandlingInput &&  mChildren.rend() != mCurInputHandling  &&  *mCurInputHandling == child)
 	{
-		auto test = *mCurInputHandling;
 		auto nextIt = mChildren.erase(--mCurInputHandling.base());
 		if (nextIt == mChildren.end())	{
 			mCurInputHandling = mChildren.rbegin();
@@ -193,8 +195,30 @@ void Container::RemoveChildNotDelete(IWinBase* child)
 			{
 				mCurInputHandling = COMPONENTS::reverse_iterator(nextIt);
 			}
+			auto temp = (*mCurInputHandling) == child;
+			assert(!temp);
 		}
 		
+		mCurInputHandlingChanged = true;
+	}
+	else if (mHandlingInput && mCurInputHandling.base() != mChildren.end() && *mCurInputHandling.base() == child){
+		auto nextIt = mChildren.erase(mCurInputHandling.base());
+		if (nextIt == mChildren.end())	{
+			mCurInputHandling = mChildren.rbegin();
+		}
+		else{
+			++nextIt;
+			if (nextIt == mChildren.end())	{
+				mCurInputHandling = mChildren.rbegin();
+			}
+			else
+			{
+				mCurInputHandling = COMPONENTS::reverse_iterator(nextIt);
+			}
+			auto temp = (*mCurInputHandling) == child;
+			assert(!temp);
+		}
+
 		mCurInputHandlingChanged = true;
 	}
 	else
@@ -280,14 +304,26 @@ IWinBase* Container::GetChild(unsigned idx)
 
 }
 
-unsigned Container::GetNumChildren() const
+unsigned Container::GetNumChildren(bool excludeRunTimeChild) const
 {
 	if (mWndContentUI)
 	{
 		return mWndContentUI->GetNumChildren();
 	}
-
-	return mChildren.size();
+	if (excludeRunTimeChild)
+	{
+		unsigned num = 0;
+		for (auto& child : mChildren)
+		{
+			if (!child->IsRuntimeChild())
+				++num;
+		}
+		return num;
+	}
+	else
+	{
+		return mChildren.size();
+	}
 }
 
 void Container::OnStartUpdate(float elapsedTime)
@@ -831,7 +867,6 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::SCROLLERV:
 	{
 								  // SCROLLERV should set before TITLEBAR property.
-								  assert(mWndContentUI == 0);
 								  bool b = StringConverter::parseBool(val);
 								  mUseScrollerV = b;
 								  return true;
@@ -1026,9 +1061,6 @@ IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, bool container) const
 		if (found)
 			return found;
 	}
-
-	if (container)
-		return 0;
 
 	return __super::WinBaseWithPoint(pt, container);
 }

@@ -35,7 +35,7 @@ namespace fastbird
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
 		virtual IWinBase* GetChild(unsigned idx) = 0;
 		virtual IWinBase* GetParent() = 0;
-		virtual unsigned GetNumChildren() const = 0;
+		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const = 0;
 		virtual void RemoveAllEvents(bool includeChildren) = 0;
 
 		virtual void SetSize(const fastbird::Vec2I& size) = 0;
@@ -220,6 +220,10 @@ namespace fastbird
 		virtual bool IsRuntimeChild() const = 0;
 
 		virtual float GetContentHeight() const = 0;
+
+		virtual bool IsKeyboardFocused() const = 0;
+
+		virtual void TriggerRedraw() = 0;
 
 	protected:
 		virtual void OnPosChanged() = 0;

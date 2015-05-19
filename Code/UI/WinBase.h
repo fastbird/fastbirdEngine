@@ -157,7 +157,7 @@ namespace fastbird
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) { return 0; }
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
 		virtual IWinBase* GetParent() { return (IWinBase*)mParent; }
-		virtual unsigned GetNumChildren() const { return 0; }
+		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const { return 0; }
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual void SetName(const char* name);
 		virtual const char* GetName() const;
@@ -354,6 +354,8 @@ namespace fastbird
 		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
 
 		virtual float GetContentHeight() const;
+
+		virtual bool IsKeyboardFocused() const;
 
 	protected:
 		virtual void OnPosChanged();

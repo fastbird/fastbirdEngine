@@ -21,7 +21,7 @@ namespace fastbird
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false);
 		virtual IWinBase* GetChild(unsigned idx);
-		virtual unsigned GetNumChildren() const;
+		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual bool GetFocus(bool includeChildren = false) const;

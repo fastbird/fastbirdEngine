@@ -2433,6 +2433,19 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 	Draw(4, 0);
 }
 
+void RendererD3D11::DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color)
+{
+	int left = pos.x - 1;
+	int top = pos.y - 1;
+	int right = pos.x + size.x + 1;
+	int bottom = pos.y + size.y + 1;
+	DrawLine(Vec2I(left, top), Vec2I(right, top), color, color);
+	DrawLine(Vec2I(left, top), Vec2I(left, bottom), color, color);
+	DrawLine(Vec2I(right, top), Vec2I(right, bottom), color, color);
+	DrawLine(Vec2I(left, bottom), Vec2I(right, bottom), color, color);
+
+}
+
 void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride)
 {
 	DrawQuadWithTextureUV(pos, size, Vec2(0, 0), Vec2(1, 1), color, texture, materialOverride);	

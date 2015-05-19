@@ -23,6 +23,7 @@ ScriptSystem::ScriptSystem()
 	assert(mLuaState);
 	ExportsDefaultFunctions();
 	LoadConfig("configEngine.lua");
+	RunScript("es/scripts/ConstKeys.lua");
 	InitEngineLuaFuncs(mLuaState);
 }
 
