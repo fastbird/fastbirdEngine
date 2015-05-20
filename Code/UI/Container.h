@@ -19,7 +19,7 @@ namespace fastbird
 		virtual void RemoveChildNotDelete(IWinBase* child);
 		virtual void RemoveAllChild(bool immediately = false);
 		virtual void RemoveAllEvents(bool includeChildren);
-		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false);
+		virtual IWinBase* GetChild(const std::string& name, bool includeSubChildren = false);
 		virtual IWinBase* GetChild(unsigned idx);
 		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);

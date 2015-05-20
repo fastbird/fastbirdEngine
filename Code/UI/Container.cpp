@@ -225,6 +225,8 @@ void Container::RemoveChildNotDelete(IWinBase* child)
 	{
 		DeleteValuesInList(mChildren, child);
 	}
+	if (gFBUIManager->GetKeyboardFocusUI() == child)
+		gFBUIManager->SetFocusUI(this);
 }
 
 void Container::RemoveAllChild(bool immediately)
@@ -261,7 +263,7 @@ void Container::RemoveAllChild(bool immediately)
 	SetChildrenPosSizeChanged();
 }
 
-IWinBase* Container::GetChild(const char* name, bool includeSubChildren/*= false*/)
+IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*= false*/)
 {
 	if (mWndContentUI)
 	{
@@ -270,7 +272,7 @@ IWinBase* Container::GetChild(const char* name, bool includeSubChildren/*= false
 
 	for (auto var : mChildren)
 	{
-		if (stricmp(var->GetName(), name) == 0)
+		if (stricmp(var->GetName(), name.c_str()) == 0)
 		{
 			return var;
 		}
@@ -294,7 +296,10 @@ IWinBase* Container::GetChild(unsigned idx)
 	{
 		return mWndContentUI->GetChild(idx);
 	}
-	assert(idx < mChildren.size());
+	if (mChildren.empty())
+		return 0;
+	if (idx >= mChildren.size())
+		return 0;
 	auto it = mChildren.begin();
 	while (idx)
 	{
@@ -513,15 +518,6 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	}	
 	mHandlingInput = false;
 
-	if (keyboard->GetChar() == VK_TAB)
-	{
-		if (gFBUIManager->GetKeyboardFocusUI() == this)
-		{
-			keyboard->PopChar();
-			TabPressed();
-		}
-	}
-
 	if (mNoMouseEvent)
 		return mouseIn;
 
@@ -664,7 +660,7 @@ void Container::SetVisibleInternal(bool visible)
 	{
 		if ((visible && var->GetInheritVisibleTrue()) || !visible)
 		{
-			var->SetVisibleInternal(visible);
+			var->SetVisible(visible);
 		}
 		var->OnParentVisibleChanged(visible);
 	}

@@ -203,7 +203,7 @@ void Button::OnMouseHover(void* arg)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColorOver.GetVec4());
 	mUIObject->SetTextColor(mEnable ? mTextColorHover : mTextColorHover * .5f);
-	SetCursor(WinBase::mCursorOver);
+	SetCursor(WinBase::sCursorOver);
 
 	mUIObject->GetMaterial()->SetEmissiveColor(0.8f, 0.8f, 0.1f, 1);
 	//  1 is edge color

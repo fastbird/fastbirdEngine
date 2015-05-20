@@ -681,7 +681,7 @@ void Renderer::DrawLine(const Vec2I& start, const Vec2I& end,
 	const Color& color0, const Color& color1)
 {
 	if (mDebugHud)
-		mDebugHud->DrawLine(start, end, color0, color0);
+		mDebugHud->DrawLine(start, end, color0, color1);
 }
 
 void Renderer::DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
@@ -721,12 +721,17 @@ void Renderer::RenderDebugHud()
 	if (!mDebugHud)
 		return;
 	D3DEventMarker devent("RenderDebugHud");
-	bool backup = GetWireframe();
-	SetWireframe(false);
+	for (auto l : mRenderListeners)
+	{
+		l->BeforeDebugHudRendered(gFBEnv->pEngine->GetMainWndHandleId());
+	}
+
+	//bool backup = GetWireframe();
+	//SetWireframe(false);
+	RestoreRenderStates();
 	mDebugHud->PreRender();
 	mDebugHud->Render();
-	SetWireframe(backup);
-
+	//SetWireframe(backup);
 	for (auto l : mRenderListeners)
 	{
 		l->AfterDebugHudRendered(gFBEnv->pEngine->GetMainWndHandleId());

@@ -65,7 +65,9 @@ namespace fastbird
 		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent) = 0;
 		virtual void GetHDDeltaXY(long &x, long &y) const = 0;
 		virtual void GetDeltaXY(long &x, long &y) const = 0;
+		virtual Vec2I GetDeltaXY() const = 0;
 		virtual void GetPos(long &x, long &y) const = 0;
+		virtual Vec2I GetPos() const = 0;
 		virtual void GetPrevPos(long &x, long &y) const = 0;
 		// normalized pos(0.0~1.0)
 		virtual void GetNPos(float &x, float &y) const = 0;
@@ -82,8 +84,13 @@ namespace fastbird
 		virtual bool IsMoved() const = 0;
 		virtual void GetDragStart(long &x, long &y) const = 0;
 		virtual bool IsDragStartIn(const RECT& region) const = 0;
+		virtual bool IsDragStarted(Vec2I& outStartPos) const = 0;
+		virtual bool IsDragEnded() const = 0;
+		virtual void PopDragEvent() = 0;
+		
 
 		virtual long GetWheel() const = 0;
+		virtual void PopWheel() = 0;
 		virtual void ClearWheel() = 0;
 		virtual void ClearButton() = 0;
 		virtual unsigned long GetNumLinesWheelScroll() const = 0;

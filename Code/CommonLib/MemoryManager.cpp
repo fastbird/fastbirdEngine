@@ -59,7 +59,7 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	void PrepareDelete(void* ptr, const char* file, size_t line, const char* func)
+	void DeallocBytes(void* ptr, const char* file, size_t line, const char* func)
 	{
 		if (!ptr)
 			return;
@@ -78,10 +78,11 @@ namespace fastbird
 			GetMemAllocLines().erase(it);
 		}
 		--gNumMemoryAllocation;
+		free(ptr);
 	}
 
 	//-----------------------------------------------------------------------
-	void PrepareDeleteArr(void* ptr, const char* file, size_t line, const char* func)
+	void DeallocBytesAligned(void* ptr, const char* file, size_t line, const char* func)
 	{
 		if (!ptr)
 			return;
@@ -95,6 +96,8 @@ namespace fastbird
 		}*/
 		GetMemAllocLines().erase(it);
 		--gNumMemoryAllocation;
+		_aligned_free(ptr);
+
 	}
 
 	//-----------------------------------------------------------------------

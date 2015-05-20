@@ -126,7 +126,7 @@ void DebugHud::DrawLine(const Vec2I& start, const Vec2I& end,
 	line.mColor = color0;
 
 	line.mEnd = Vec3((float)end.x, (float)end.y, 0.f);
-	line.mColor = color1;
+	line.mColore = color1;
 	
 	mScreenLines.push_back(line);
 }

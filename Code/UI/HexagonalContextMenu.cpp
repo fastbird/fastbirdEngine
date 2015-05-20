@@ -130,7 +130,7 @@ namespace fastbird
 
 	void HexagonalContextMenu::OnMouseHover(void* arg)
 	{
-		SetCursor(WinBase::mCursorOver);
+		SetCursor(WinBase::sCursorOver);
 	}
 	void HexagonalContextMenu::OnMouseOut(void* arg)
 	{

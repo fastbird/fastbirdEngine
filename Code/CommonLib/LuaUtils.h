@@ -48,6 +48,61 @@ if (numLuaArgs != (x)) \
 	assert(0); \
 }
 
+#define REGISTER_ENUM_TO_LUA(endIdx, enumName) \
+	inline void RegisterToLua(lua_State* L)\
+{\
+	lua_createtable(L, 0, (endIdx)); \
+for (int i = 0; i <= (endIdx); ++i)\
+{\
+	lua_pushinteger(L, i); \
+	lua_setfield(L, -2, ConvertToString(Enum(i))); \
+}\
+	lua_getglobal(L, "NoNewMethod"); \
+	lua_setfield(L, -2, "__newindex"); \
+	lua_pushvalue(L, -1); \
+	lua_setmetatable(L, -2); \
+	lua_setglobal(L, #enumName); \
+	\
+	lua_createtable(L, 0, (endIdx)); \
+for (int i = 0; i <= (endIdx); ++i)\
+{\
+	lua_pushstring(L, ConvertToString(Enum(i))); \
+	lua_rawseti(L, -2, i); \
+}\
+	lua_getglobal(L, "NoNewMethod"); \
+	lua_setfield(L, -2, "__newindex"); \
+	lua_pushvalue(L, -1); \
+	lua_setmetatable(L, -2); \
+	lua_setglobal(L, #enumName "String");\
+}
+
+#define REGISTER_CLASS_ENUM_TO_LUA(classname, enumName, endIdx) \
+	static void RegisterEnumToLua(lua_State* L)\
+{\
+	lua_getglobal(L, #classname); \
+	if (lua_isnil(L, -1))\
+		{\
+		assert(0); \
+		lua_pop(L, 1); \
+		lua_createtable(L, 1, 0); \
+		lua_setglobal(L, #classname); \
+		lua_getglobal(L, #classname);\
+		}\
+\
+	lua_createtable(L, 0, endIdx); \
+	for (int i = 0; i <= endIdx; ++i)\
+		{\
+		lua_pushinteger(L, i);\
+		lua_setfield(L, -2, ConvertToString(##enumName(i))); \
+		}\
+	lua_getglobal(L, "NoNewMethod");\
+	lua_setfield(L, -2, "__newindex");\
+	lua_pushvalue(L, -1);\
+	lua_setmetatable(L, -2);\
+	lua_setfield(L, -2, #enumName);\
+	lua_pop(L, 1);\
+}
+
 namespace fastbird
 {
 	struct LUA_STACK_WATCHER

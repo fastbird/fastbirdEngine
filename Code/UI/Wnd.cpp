@@ -256,6 +256,7 @@ void Wnd::RefreshFrame()
 				gFBEnv->pUIManager->DeleteComponent(var);
 			}
 			mFrames.clear();
+			gFBUIManager->DirtyRenderList(GetHwndId());
 		}
 	}
 }

@@ -79,13 +79,13 @@ void ListItem::OnFocusGain()
 		PropertyList* prop = (PropertyList*)mParent;
 		prop->SetFocusRow(mRowIndex);
 	}
-	SetProperty(UIProperty::NO_BACKGROUND, "false");
+	//SetProperty(UIProperty::NO_BACKGROUND, "false");
 	TriggerRedraw();
 }
 
 void ListItem::OnFocusLost()
 {
-	SetProperty(UIProperty::NO_BACKGROUND, "true");
+	//SetProperty(UIProperty::NO_BACKGROUND, "true");
 	if (mParent && mParent->GetType() == ComponentType::PropertyList)
 	{
 
@@ -93,45 +93,49 @@ void ListItem::OnFocusLost()
 	TriggerRedraw();
 }
 
-bool ListItem::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
-{
-	if (keyboard->IsValid() && mParent && mParent->GetType() == ComponentType::PropertyList)
-	{
-		PropertyList* prop = (PropertyList*)mParent;
-		if (GetFocus())
-		{
-			auto c = keyboard->GetChar();
-			if (c)
-			{
-				keyboard->PopChar();
-				keyboard->Invalidate();
-				if (c == VK_TAB)
-				{
-					if (keyboard->IsKeyDown(VK_SHIFT))
-						prop->MoveFocusToEdit(mRowIndex - 1);
-					else
-						prop->MoveFocusToEdit(mRowIndex);
-				}
-				else
-				{
-					prop->GoToNext(c, mRowIndex);
-				}
-			}
+//bool ListItem::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
+//{
+//	if (!GetFocus(true))
+//		return mMouseIn;
+//
+//	bool mousein = __super::OnInputFromHandler(mouse, keyboard);
+//
+//	if (keyboard->IsValid() && mParent && mParent->GetType() == ComponentType::PropertyList)
+//	{
+//		ListBox* listbox = (ListBox*)mParent;
+//		auto c = keyboard->GetChar();
+//		if (c)
+//		{
+//			keyboard->PopChar();
+//			keyboard->Invalidate();
+//			if (c == VK_TAB)
+//			{
+//				if (keyboard->IsKeyDown(VK_SHIFT))
+//					listbox->MoveFocusToEdit(mRowIndex - 1);
+//				else
+//					listbox->MoveFocusToEdit(mRowIndex);
+//			}
+//			else
+//			{
+//				prop->GoToNext(c, mRowIndex);
+//			}
+//		}
+//
+//		if (keyboard->IsKeyPressed(VK_DOWN)){
+//			prop->MoveLine(false, true);
+//			keyboard->Invalidate();
+//		}
+//		else if (keyboard->IsKeyPressed(VK_UP)) 	{
+//			prop->MoveLine(false, false);
+//			keyboard->Invalidate();
+//		}
+//		else if (keyboard->IsKeyPressed(VK_RIGHT)){
+//			prop->MoveFocusToEdit(mRowIndex);
+//			keyboard->Invalidate();
+//		}
+//	}	
+//
+//	return mousein;
+//}
 
-			if (keyboard->IsKeyPressed(VK_DOWN)){
-				prop->MoveLine(false, true);
-				keyboard->Invalidate();
-			}
-			else if (keyboard->IsKeyPressed(VK_UP)) 	{
-				prop->MoveLine(false, false);
-				keyboard->Invalidate();
-			}
-			else if (keyboard->IsKeyPressed(VK_RIGHT)){
-				prop->MoveFocusToEdit(mRowIndex);
-				keyboard->Invalidate();
-			}
-		}
-	}
-	return __super::OnInputFromHandler(mouse, keyboard);
-}
 }

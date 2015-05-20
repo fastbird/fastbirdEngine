@@ -31,8 +31,6 @@ namespace fastbird
 		Vec2 mNSize; //0.0f~1.0f
 		bool mFillX;
 		bool mFillY;
-		Vec2I mSizeMod;
-		Vec2 mNSizeMod;
 		Vec2I mPos;
 		Vec2 mNPos; // normalized pos 0.f ~ 1.f
 		float mAspectRatio;
@@ -78,7 +76,13 @@ namespace fastbird
 
 		IUIObject* mUIObject;
 
-		static HCURSOR mCursorOver;
+		static HCURSOR sCursorOver;
+		static HCURSOR sCursorAll;
+		static HCURSOR sCursorNWSE;
+		static HCURSOR sCursorNESW;
+		static HCURSOR sCursorWE;
+		static HCURSOR sCursorNS;
+		
 		bool mMouseDragStartInHere;
 
 		Vec2 mDestNPos;
@@ -154,7 +158,7 @@ namespace fastbird
 		virtual void RemoveChild(IWinBase* child, bool immediately = false) {}
 		virtual void RemoveAllChild(bool immediately = false) {}
 		virtual void RemoveChildNotDelete(IWinBase* child){}
-		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) { return 0; }
+		virtual IWinBase* GetChild(const std::string& name, bool includeSubChildren = false) { return 0; }
 		virtual IWinBase* GetChild(unsigned idx) { return 0; }
 		virtual IWinBase* GetParent() { return (IWinBase*)mParent; }
 		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const { return 0; }
@@ -184,6 +188,7 @@ namespace fastbird
 
 		virtual const Vec2& GetWNPos() const { return mWNPos; }
 		virtual Vec2I GetWPos() const;
+		virtual void SetWPos(const Vec2I& wpos);
 		virtual Vec2 GetFinalPos() const { return mWNPos + mWNPosOffset; }
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
@@ -209,7 +214,11 @@ namespace fastbird
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v);
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual bool IsIn(IMouse* mouse) const;
-		virtual bool IsIn(const Vec2I& pt) const;
+		virtual bool IsIn(const Vec2I& pt, Vec2I* expand = 0) const;
+		virtual bool IsPtOnLeft(const Vec2I& pt, int area) const;
+		virtual bool IsPtOnRight(const Vec2I& pt, int area) const;
+		virtual bool IsPtOnTop(const Vec2I& pt, int area) const;
+		virtual bool IsPtOnBottom(const Vec2I& pt, int area) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual void OnFocusLost(){}

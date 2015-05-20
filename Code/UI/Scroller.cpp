@@ -13,9 +13,11 @@ Scroller::Scroller()
 	, mOwner(0)
 	, mDestOffset(0)
 	, mCurOffset(0)
-	, mScrollAcc(100)
+	, mScrollAcc(10)
 	, mCurScrollSpeed(0)
-	, mMaxScrollSpeed(100)
+	, mMaxScrollSpeed(10)
+	, mScrollAmountScale(1.f)
+	, mLastWheel(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -42,12 +44,21 @@ bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
 	long wheel = mouse->GetWheel();
 	if (wheel && mParent->IsIn(mouse))
-	{		
+	{
+		mouse->PopWheel();
+		if ((gpTimer->GetTime() - mLastScrollTime )< 0.5f && Sign((float)mLastWheel) == Sign((float)wheel)){
+			mScrollAmountScale += 0.3f;			
+		}
+		else {
+			mScrollAmountScale = 1.0f;
+		}
+		mLastScrollTime = gpTimer->GetTime();
+		mLastWheel = wheel;
 		float wheelSens = gFBEnv->pConsole->GetEngineCommand()->WheelSens;
 		float wheelSensitivity = wheelSens * (float)mouse->GetNumLinesWheelScroll();
 
 		float prevDestOffset = mDestOffset;
-		mDestOffset += wheel * wheelSensitivity * mScrollAmount;
+		mDestOffset += wheel * wheelSensitivity * (mScrollAmount * mScrollAmountScale);
 		mDestOffset = std::min(0.f, mDestOffset);
 		mDestOffset = std::max(-mMaxOffset.y, mDestOffset);
 		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
@@ -66,17 +77,13 @@ void Scroller::OnStartUpdate(float elapsedTime)
 	mCurScrollSpeed += mScrollAcc*elapsedTime;
 	mCurScrollSpeed = std::min(mCurScrollSpeed, mMaxScrollSpeed);
 
-	if (gap < 0)
-		gap -= 0.01f;
-	else if (gap>0)
-		gap += 0.01f;
 	mCurOffset += mCurScrollSpeed * elapsedTime * gap;
-	if (gap < 0 && mDestOffset >= mCurOffset-0.005f)
+	if (gap < 0 && mDestOffset >= mCurOffset)
 	{
 		mCurOffset = mDestOffset;
 		mCurScrollSpeed = 0.f;
 	}
-	else if (gap > 0 && mDestOffset <= mCurOffset+0.005f)
+	else if (gap > 0 && mDestOffset <= mCurOffset)
 	{
 		mCurOffset = mDestOffset;
 		mCurScrollSpeed = 0.f;

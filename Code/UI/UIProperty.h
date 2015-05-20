@@ -432,7 +432,7 @@ namespace fastbird
 			case CARD_OFFSETY:
 				return 2;
 			case LISTBOX_ROW_HEIGHT:
-				return 26;
+				return 24;
 			case LISTBOX_ROW_GAP:
 				return 4;
 			case NUMERIC_UPDOWN_NUMBER:

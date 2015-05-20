@@ -93,7 +93,7 @@ void CheckBox::UpdateImage()
 
 void CheckBox::OnMouseHover(void* arg)
 {
-	SetCursor(WinBase::mCursorOver);
+	SetCursor(WinBase::sCursorOver);
 }
 
 

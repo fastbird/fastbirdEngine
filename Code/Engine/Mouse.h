@@ -23,12 +23,17 @@ namespace fastbird
 		virtual void Invalidate(bool buttonClicked = false);
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
+		virtual Vec2I GetDeltaXY() const;
 		virtual void GetPos(long &x, long &y) const;
+		virtual Vec2I GetPos() const;
 		virtual void GetPrevPos(long &x, long &y) const;
 		virtual void GetNPos(float &x, float &y) const;
 		virtual Vec2 GetNPos() const;
 		virtual void GetDragStart(long &x, long &y) const;
 		virtual bool IsDragStartIn(const RECT& region) const;
+		virtual bool IsDragStarted(Vec2I& outStartPos) const;
+		virtual bool IsDragEnded() const;
+		virtual void PopDragEvent();
 
 		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(float* time = 0) const;
@@ -42,6 +47,7 @@ namespace fastbird
 		virtual bool IsMoved() const;
 
 		virtual long GetWheel() const;
+		virtual void PopWheel();
 		virtual void ClearWheel();
 		virtual void ClearButton();
 		virtual unsigned long GetNumLinesWheelScroll() const;
@@ -107,6 +113,9 @@ namespace fastbird
 
 		Ray3 mWorldRay;
 		bool mWorldRayCalculated;
+		float mLastWheelPush;
+		bool mDragStarted;
+		bool mDragEnd;
 	};
 }
 

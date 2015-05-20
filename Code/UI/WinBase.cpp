@@ -10,7 +10,12 @@
 namespace fastbird
 {
 const float WinBase::LEFT_GAP = 0.001f;
-HCURSOR WinBase::mCursorOver = 0;
+HCURSOR WinBase::sCursorOver = 0;
+HCURSOR WinBase::sCursorAll = 0;
+HCURSOR WinBase::sCursorNWSE = 0;
+HCURSOR WinBase::sCursorNESW = 0;
+HCURSOR WinBase::sCursorWE = 0;
+HCURSOR WinBase::sCursorNS = 0;
 const float WinBase::NotDefined = 12345.6f;
 const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
@@ -55,7 +60,6 @@ WinBase::WinBase()
 , mAbsTempLock(false)
 , mAbsOffset(0, 0)
 , mNOffset(0, 0)
-, mSizeMod(0, 0)
 , mManualParent(0)
 , mCustomContent(0)
 , mLockTextSizeChange(false)
@@ -73,7 +77,7 @@ WinBase::WinBase()
 , mCurHighlightTime(0)
 , mHighlightSpeed(0.f)
 , mGoingBright(true), mAlpha(1.f), mShowingTooltip(false), mTabOrder(-1), mSaveCheck(false)
-, mFillX(false), mFillY(false), mNSizeMod(0, 0), mRunTimeChild(false)
+, mFillX(false), mFillY(false), mRunTimeChild(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -185,17 +189,17 @@ void WinBase::SetSize(const fastbird::Vec2I& size)
 //---------------------------------------------------------------------------
 void WinBase::SetSizeModificator(const Vec2I& sizemod)
 {
-	mSizeMod = sizemod;
+	Vec2 nSizeMod;
 	auto rtSize = GetRenderTargetSize();
 	if(mParent)
 	{
-		mNSizeMod = mParent->PixelToLocalNSize(mSizeMod);
+		nSizeMod = mParent->PixelToLocalNSize(sizemod);
 	}
 	else
 	{
-		mNSizeMod = Vec2(mSizeMod.x / (float)rtSize.x, mSizeMod.y / (float)rtSize.y);
+		nSizeMod = Vec2(sizemod.x / (float)rtSize.x, sizemod.y / (float)rtSize.y);
 	}
-	SetNSize(mNSize + mNSizeMod);
+	SetNSize(mNSize + nSizeMod);
 }
 
 Vec2I WinBase::GetWPos() const
@@ -208,6 +212,16 @@ Vec2I WinBase::GetWPos() const
 	wpos += mPos;
 	wpos += Round(mWNPosOffset * GetRenderTargetSize());
 	return wpos;
+}
+
+void WinBase::SetWPos(const Vec2I& wpos){
+	Vec2I lpos = wpos;
+	if (mParent)
+	{
+		lpos -= mParent->GetWPos();
+	}
+	lpos -= Round(mWNPosOffset * GetRenderTargetSize());
+	SetPos(lpos);
 }
 
 void WinBase::SetSizeX(int x)
@@ -693,24 +707,62 @@ bool WinBase::IsIn(IMouse* mouse) const
 		mouseNormpos.y > wy + mWNSize.y);
 }
 
-bool WinBase::IsIn(const Vec2I& pt) const
+bool WinBase::IsIn(const Vec2I& pt, Vec2I* expand) const
 {
 	if (mUseScissor)
 	{
-		const RECT& rect = GetScissorRegion();
+		RECT rect = GetScissorRegion();
+		if (expand)
+		{
+			rect.left -= expand->x / 2;
+			rect.right += expand->x / 2;
+			rect.top -= expand->y / 2;
+			rect.bottom += expand->y / 2;
+		}
 		bool inScissor = !(pt.x < rect.left || pt.x > rect.right || pt.y < rect.top || pt.y > rect.bottom);
 		if (!inScissor)
+		{
+			Log("not in scissor");
 			return false;
+		}
 	}
 
 	auto wpos = GetWPos();
+	auto size = mSize;
+	if (expand){
+		wpos.x -= expand->x / 2;
+		size.x += expand->x;
+		wpos.y -= expand->y / 2;
+		size.y += expand->y;
+	}	
+
 	bool in = !(
 		wpos.x > pt.x ||
-		wpos.x + mSize.x  < pt.x ||
+		wpos.x + size.x < pt.x ||
 		wpos.y > pt.y ||
-		wpos.y + mSize.y < pt.y
+		wpos.y + size.y < pt.y
 		);
 	return in;
+}
+
+bool WinBase::IsPtOnLeft(const Vec2I& pt, int area) const{
+	auto wpos = GetWPos();
+	return pt.x < wpos.x + area && pt.x > wpos.x - area;
+}
+bool WinBase::IsPtOnRight(const Vec2I& pt, int area) const{
+	auto wpos = GetWPos();
+	int right = wpos.x + mSize.x;
+	return pt.x < right + area && pt.x > right - area;
+}
+bool WinBase::IsPtOnTop(const Vec2I& pt, int area) const{
+	auto wpos = GetWPos();
+	int top = wpos.y;
+	return pt.y < top + area && pt.y > top - area;
+}
+bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
+	auto wpos = GetWPos();
+	int bottom = wpos.y + mSize.y;
+	return pt.y < bottom + area && pt.y > bottom - area;
 }
 
 //---------------------------------------------------------------------------
@@ -854,7 +906,6 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				{
 					keyboard->PopChar();
 					TriggerRedraw();
-					keyboard->Invalidate();
 				}
 			}
 			break;
@@ -902,7 +953,12 @@ IWinBase* WinBase::GetPrev() const
 // static
 void WinBase::InitMouseCursor()
 {
-	mCursorOver = LoadCursor(0, IDC_HAND);
+	sCursorOver = LoadCursor(0, IDC_HAND);
+	sCursorAll = LoadCursor(0, IDC_SIZEALL);
+	sCursorNESW = LoadCursor(0, IDC_SIZENESW);
+	sCursorNWSE = LoadCursor(0, IDC_SIZENWSE);
+	sCursorWE = LoadCursor(0, IDC_SIZEWE);
+	sCursorNS = LoadCursor(0, IDC_SIZENS);
 }
 // static
 void WinBase::FinalizeMouseCursor()
@@ -912,7 +968,7 @@ void WinBase::FinalizeMouseCursor()
 //static 
 HCURSOR WinBase::GetMouseCursorOver()
 {
-	return mCursorOver;
+	return sCursorOver;
 }
 
 void WinBase::AlignText()
@@ -2656,38 +2712,42 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	}
 
 	// size mod
+	Vec2I sizeMod(0, 0);
 	sz = pelem->Attribute("sizeMod");
 	{
 		if (sz)
 		{
-			mSizeMod = StringConverter::parseVec2I(sz);
+			sizeMod = StringConverter::parseVec2I(sz);
 		}
 	}
 	sz = pelem->Attribute("sizeModX");
 	if (sz)
 	{
 		int x = StringConverter::parseInt(sz);
-		mSizeMod.x = x;
+		sizeMod.x = x;
 	}
 
 	sz = pelem->Attribute("sizeModY");
 	if (sz)
 	{
 		int y = StringConverter::parseInt(sz);
-		mSizeMod.y = y;
+		sizeMod.y = y;
 	}
-
-	if (mParent)
+	Vec2 nSizeMod(0, 0);
+	if (sizeMod != Vec2I::ZERO)
 	{
-		mNSizeMod = mParent->PixelToLocalNSize(mSizeMod);
-	}
-	else
-	{
-		mNSizeMod = Vec2(mSizeMod.x / (float)rtSize.x, mSizeMod.y / (float)rtSize.y);
-	}
+		if (mParent)
+		{
+			nSizeMod = mParent->PixelToLocalNSize(sizeMod);
+		}
+		else
+		{
+			nSizeMod = Vec2(sizeMod.x / (float)rtSize.x, sizeMod.y / (float)rtSize.y);
+		}
+	}	
 
 	mAbsTempLock = true;
-	SetNSize(mNSize + mNSizeMod);
+	SetNSize(mNSize + nSizeMod);
 	SetNPos(mNPos);
 	mAbsTempLock = false;
 
@@ -3045,17 +3105,18 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 
 	// size mod
 	Vec2 nsizeMod(0, 0);
-	mSizeMod = compTable.GetField("sizeMod").GetVec2I(success);
+	Vec2I sizeMod;
+	sizeMod = compTable.GetField("sizeMod").GetVec2I(success);
 	{
 		if (success)
 		{
 			if (mParent)
 			{
-				nsizeMod = mParent->PixelToLocalNSize(mSizeMod);
+				nsizeMod = mParent->PixelToLocalNSize(sizeMod);
 			}
 			else
 			{
-				nsizeMod = Vec2(mSizeMod.x / (float)rtSize.x, mSizeMod.y / (float)rtSize.y);
+				nsizeMod = Vec2(sizeMod.x / (float)rtSize.x, sizeMod.y / (float)rtSize.y);
 			}
 		}
 	}
@@ -3064,7 +3125,6 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		int x = compTable.GetField("sizeModX").GetInt(success);
 		if (success)
 		{
-			mSizeMod.x = x;
 			if (mParent)
 				nsizeMod.x = mParent->PixelToLocalNWidth(x);
 			else
@@ -3074,17 +3134,15 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		int y = compTable.GetField("sizeModY").GetInt(success);
 		if (success)
 		{
-			mSizeMod.y = y;
 			if (mParent)
 				nsizeMod.y = mParent->PixelToLocalNHeight(y);
 			else
 				nsizeMod.y = y / (float)rtSize.y;
 		}
-		mNSize += nsizeMod;
 	}
 
 	mAbsTempLock = true;
-	SetNSize(mNSize);
+	SetNSize(mNSize + nsizeMod);
 	SetNPos(mNPos);
 	mAbsTempLock = false;
 

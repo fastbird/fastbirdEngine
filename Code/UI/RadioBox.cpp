@@ -180,7 +180,7 @@ void RadioBox::OnMouseHover(void* arg)
 {
 	if (!mEnable)
 		return;
-	SetCursor(WinBase::mCursorOver);
+	SetCursor(WinBase::sCursorOver);
 }
 
 }

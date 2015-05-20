@@ -65,6 +65,9 @@ namespace fastbird
 		, mPhysicalX(0)
 		, mPhysicalY(0)
 		, mWorldRayCalculated(false)
+		, mLastWheelPush(0)
+		, mDragStarted(false)
+		, mDragEnd(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -119,12 +122,14 @@ namespace fastbird
 			}
 		}
 
-			
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
+
+
 		mButtonsDownPrev = mButtonsDown;
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_LEFT_BUTTON_DOWN)
 		{
+			mDragEnd = false;
 			if ((mButtonsDown & MOUSE_BUTTON_LEFT)==0)
 			{
 				// drag
@@ -137,6 +142,10 @@ namespace fastbird
 			mLastLeftDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
+		}
+		if (IsMoved() && IsLButtonDown())
+		{
+			mDragStarted = true;
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_DOWN)
 		{
@@ -186,6 +195,10 @@ namespace fastbird
 			{
 				mDragEndX = mAbsX;
 				mDragEndY = mAbsY;
+				if (mDragStarted){
+					mDragStarted = false;
+					mDragEnd = true;
+				}
 				if (mDragStartX == mDragEndX && mDragStartY == mDragEndY)
 				{
 					ClearDrag();
@@ -251,6 +264,7 @@ namespace fastbird
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MOUSE_WHEEL)
 		{
 			mWheel.push((short)mouseEvent.usButtonData);
+			mLastWheelPush = gpTimer->GetTime();
 		}
 	}
 
@@ -271,10 +285,13 @@ namespace fastbird
 			mAbsXPrev = mAbsX;
 			mAbsYPrev = mAbsY;
 		}
-		while(!mWheel.empty())
-			mWheel.pop();
 		mValid = true;
 		mLButtonDoubleClicked = false;
+		if (gpTimer->GetTime() - mLastWheelPush > 0.5f){
+			while (!mWheel.empty()){
+				mWheel.pop();
+			}
+		}
 	}
 
 	void Mouse::Invalidate(bool buttonClicked)
@@ -297,10 +314,20 @@ namespace fastbird
 		y = mAbsY - mAbsYPrev;
 	}
 
+	Vec2I Mouse::GetDeltaXY() const
+	{
+		return Vec2I(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
+	}
+
 	void Mouse::GetPos(long &x, long &y) const
 	{
 		x = mAbsX;
 		y = mAbsY;
+	}
+
+	Vec2I Mouse::GetPos() const
+	{
+		return Vec2I(mAbsX, mAbsY);
 	}
 
 	void Mouse::GetPrevPos(long &x, long &y) const
@@ -393,6 +420,8 @@ namespace fastbird
 	{
 		mDragStartX = mDragEndX = -1;
 		mDragStartY = mDragEndY = -1;
+		mDragStarted = false;
+		mDragEnd = false;
 	}
 
 	bool Mouse::IsDragStartIn(const RECT& region) const
@@ -406,11 +435,32 @@ namespace fastbird
 		return true;
 	}
 
+	bool Mouse::IsDragStarted(Vec2I& outStartPos) const{
+		if (mDragStarted)
+		{
+			outStartPos = Vec2I(mDragStartX, mDragStartY);
+		}
+		return mDragStarted;
+	}
+
+	bool Mouse::IsDragEnded() const{
+		return mDragEnd;
+	}
+
+	void Mouse::PopDragEvent(){
+		mDragStarted = false;
+		mDragEnd = false;
+	}
+
 	long Mouse::GetWheel() const
 	{
 		if (mWheel.empty())
 			return 0;
-		return mWheel.top();
+		return mWheel.top();		
+	}
+	
+	void Mouse::PopWheel(){
+		mWheel.pop();
 	}
 
 	void Mouse::ClearWheel()
@@ -473,6 +523,11 @@ namespace fastbird
 		mAbsYPrev = mAbsY;
 
 		LockMousePos(false);
+		if (mDragStarted)
+		{
+			mDragStarted = false;
+			mDragEnd = true;
+		}
 	}
 
 	void Mouse::OnKillFocus()

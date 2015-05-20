@@ -103,6 +103,7 @@ namespace fastbird
 
 		// IRenderListener
 		virtual void BeforeUIRendering(HWND_ID hwndId);
+		virtual void BeforeDebugHudRendered(HWND_ID hwndId);
 		virtual void AfterDebugHudRendered(HWND_ID hwndId);
 
 		// IUIManager Interfaces
@@ -206,6 +207,7 @@ namespace fastbird
 		std::string GetUniqueUIName() const;
 		std::string GetBackupName(const std::string& name) const;
 		void BackupFile(const char* filename);
+		void DragUI();
 	};
 }
 

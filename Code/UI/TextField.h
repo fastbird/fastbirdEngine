@@ -7,7 +7,7 @@ namespace fastbird
 {
 class IUIObject;
 class PropertyList;
-
+class ListBox;
 class TextField : public WinBase, public ITextManipulatorListener
 {
 public:
@@ -29,8 +29,12 @@ public:
 	virtual void OnCursorPosChanged(TextManipulator* mani);
 	virtual void OnTextChanged(TextManipulator* mani);
 	PropertyList* IsInPropertyList() const;
-
+	ListBox* IsInListBox() const;
 	void SelectAllAfterGetFocused();
+
+	void OnClicked(void* arg);
+	void OnDoubleClicked(void* arg);
+	void OnEnter(void* arg);
 	
 	
 

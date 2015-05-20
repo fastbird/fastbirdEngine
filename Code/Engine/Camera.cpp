@@ -428,6 +428,7 @@ void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pK
 		long wheel = pMouse->GetWheel();
 		if (wheel)
 		{
+			pMouse->PopWheel();
 			float shift = 1.0f;
 			if (pKeyboard->IsKeyDown(VK_SHIFT))
 				shift = 0.1f;

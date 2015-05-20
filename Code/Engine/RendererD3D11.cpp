@@ -1031,7 +1031,7 @@ public:
 
 	virtual COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE Close(LPCVOID pData)
 	{
-		FB_ARRDELETE((void*)pData);
+		FB_ARRDELETE((char*)pData);
 		return S_OK;
 	}
 

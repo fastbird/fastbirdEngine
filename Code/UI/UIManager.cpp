@@ -208,12 +208,19 @@ void UIManager::BeforeUIRendering(HWND_ID hwndId)
 		mDragBox.Render();
 }
 
-void UIManager::AfterDebugHudRendered(HWND_ID hwndId)
-{
+void UIManager::BeforeDebugHudRendered(HWND_ID hwndId){
 	if (hwndId == 1 && mUIEditor)
 	{
 		mUIEditor->DrawFocusBoxes();
 	}
+}
+
+void UIManager::AfterDebugHudRendered(HWND_ID hwndId)
+{
+	/*if (hwndId == 1 && mUIEditor)
+	{
+		mUIEditor->DrawFocusBoxes();
+	}*/
 
 }
 
@@ -981,6 +988,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 {
 	if (!pMouse->IsValid() && !keyboard->IsValid())
 		return;
+
 	if (gFBEnv->pEngine->IsMainWindowForground())
 	{
 		if (mLocatingComp != ComponentType::NUM)
@@ -1004,18 +1012,6 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 			}
 		}
 	}
-	if (mUIEditor){
-		if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_DELETE)) {
-			mUIEditor->TryToDeleteCurComp();
-
-		}
-	}
-
-	if (mIgnoreInput) {
-		if (mModalWindow)
-			mModalWindow->OnInputFromHandler(pMouse, keyboard);
-		return;
-	}
 
 	//Select
 	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {		
@@ -1024,14 +1020,15 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		Vec2 mousepos = pMouse->GetNPos();
 		for (; it!=itEnd && !focusWnd; it++)
 		{
-			focusWnd = (*it)->FocusTest(pMouse);
+			if ((*it)->GetVisible())
+				focusWnd = (*it)->FocusTest(pMouse);
 		}
-		if (focusWnd && focusWnd->GetEnable())
+		if (focusWnd)
 		{
 			long x, y;
 			pMouse->GetPos(x, y);
 			focusWnd = focusWnd->WinBaseWithPoint(Vec2I(x, y), false);
-			if (focusWnd && !focusWnd->GetEnable())
+			if (focusWnd && !focusWnd->GetVisible())
 				focusWnd = 0;
 
 		}
@@ -1043,6 +1040,20 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 				mUIEditor->OnComponentSelected(focusWnd);
 			}
 		}
+	}
+	
+	if (mUIEditor){
+		if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_DELETE)) {
+			mUIEditor->TryToDeleteCurComp();
+			keyboard->Invalidate();
+		}
+		DragUI();
+	}
+
+	if (mIgnoreInput) {
+		if (mModalWindow)
+			mModalWindow->OnInputFromHandler(pMouse, keyboard);
+		return;
 	}
 
 	mMouseIn = false;
@@ -1059,6 +1070,16 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 			break;
 	}
 
+	if (keyboard->GetChar() == VK_TAB)
+	{
+		if (gFBUIManager->GetKeyboardFocusUI())
+		{
+			keyboard->PopChar();
+			gFBUIManager->GetKeyboardFocusUI()->TabPressed();
+		}
+	}
+
+
 	if (mMouseIn && EventHandler::sLastEventProcess != gpTimer->GetFrame() && pMouse->IsLButtonClicked())
 	{		
 		LuaObject mouseInvalided;
@@ -1066,10 +1087,6 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		if (mouseInvalided.IsValid())
 		{
 			mouseInvalided.Call();
-		}
-		else
-		{
-			Log(DEFAULT_DEBUG_ARG, "info : lua function OnMouseInvalidatedInUI is not found.");
 		}
 	}
 }
@@ -1799,6 +1816,110 @@ void UIManager::BackupFile(const char* filename)
 	{
 		FileSystem::Rename(filename, GetBackupName(filename).c_str());
 	}
+}
+
+void UIManager::DragUI(){
+	assert(mUIEditor);
+	static bool sDragStarted = false;
+	static bool sSizingXRight = false;
+	static bool sSizingXLeft = false;
+	static bool sSizingYTop = false;
+	static bool sSizingYBottom = false;
+	static Vec2I sDragStartedPos(0, 0);
+	static Vec2I sInitialSize(0, 0);	
+	static Vec2I sOffset(0, 0);
+	static Vec2I sExpand(6, 6);
+	static int sAreaX = 3;
+	static int sAreaY = 3;
+	auto curUI = mUIEditor->GetCurSelected();
+	if (!curUI)
+		return;
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	
+
+	if (!sDragStarted)
+	{
+		Vec2I sDragStartedPos = mouse->GetPos();
+		bool in = curUI->IsIn(sDragStartedPos, &sExpand);
+		if (in) {
+
+			sSizingXLeft = curUI->IsPtOnLeft(sDragStartedPos, sAreaX);
+			sSizingXRight = curUI->IsPtOnRight(sDragStartedPos, sAreaX);
+			sSizingYTop = curUI->IsPtOnTop(sDragStartedPos, sAreaY);
+			sSizingYBottom = curUI->IsPtOnBottom(sDragStartedPos, sAreaY);
+			if (
+				(sSizingXLeft && sSizingYTop) ||
+				(sSizingXRight && sSizingYBottom)
+				)
+			{
+				SetCursor(WinBase::sCursorNWSE);
+			}
+			else if (
+				(sSizingXRight && sSizingYTop) ||
+				(sSizingXLeft && sSizingYBottom)
+				)
+			{
+				SetCursor(WinBase::sCursorNESW);
+			}
+			else if (sSizingXLeft || sSizingXRight){
+				SetCursor(WinBase::sCursorWE);
+			}
+			else if (sSizingYTop || sSizingYBottom){
+				SetCursor(WinBase::sCursorNS);
+			}
+			else {
+				SetCursor(WinBase::sCursorAll);
+			}
+
+			if (mouse->IsDragStarted(sDragStartedPos)){
+				mouse->PopDragEvent();
+				sDragStarted = true;
+				auto uiPos = curUI->GetWPos();
+				sOffset = uiPos - sDragStartedPos;
+				sInitialSize = curUI->GetSize();
+			}
+		}
+	}
+	else{
+		if (
+			(sSizingXLeft && sSizingYTop) ||
+			(sSizingXRight && sSizingYBottom)
+			)
+		{
+			SetCursor(WinBase::sCursorNWSE);
+		}
+		else if (
+			(sSizingXRight && sSizingYTop) ||
+			(sSizingXLeft && sSizingYBottom)
+			)
+		{
+			SetCursor(WinBase::sCursorNESW);
+		}
+		else if (sSizingXLeft){
+			SetCursor(WinBase::sCursorWE);
+		}
+		else if (sSizingXRight){
+			auto delta = mouse->GetDeltaXY();
+			curUI->SetSizeModificator(Vec2I(delta.x, 0));
+			SetCursor(WinBase::sCursorWE);
+		}
+		else if (sSizingYTop || sSizingYBottom){
+			SetCursor(WinBase::sCursorNS);
+		}
+		else{
+			// positioning
+			auto curPos = mouse->GetPos();
+			curUI->SetWPos(curPos + sOffset);
+			SetCursor(WinBase::sCursorAll);
+		}
+		if (mouse->IsDragEnded()){
+			sDragStarted = false;
+			sSizingXRight = false;
+			sSizingXLeft = false;
+			sSizingYTop = false;
+			sSizingYBottom = false;
+		}
+	}	
 }
 
 } // namespace fastbird

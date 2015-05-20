@@ -32,7 +32,7 @@ namespace fastbird
 		virtual void RemoveChild(IWinBase* child, bool immediately=false) = 0;
 		virtual void RemoveChildNotDelete(IWinBase* child) = 0;
 		virtual void RemoveAllChild(bool immediately = false) = 0;
-		virtual IWinBase* GetChild(const char* name, bool includeSubChildren = false) = 0;
+		virtual IWinBase* GetChild(const std::string& name, bool includeSubChildren = false) = 0;
 		virtual IWinBase* GetChild(unsigned idx) = 0;
 		virtual IWinBase* GetParent() = 0;
 		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const = 0;
@@ -62,6 +62,7 @@ namespace fastbird
 		virtual const Vec2I& GetPos() const = 0;
 		virtual const Vec2& GetWNPos() const = 0;
 		virtual Vec2I GetWPos() const = 0;
+		virtual void SetWPos(const Vec2I& wpos) = 0;
 		virtual Vec2 GetFinalPos() const = 0;
 		virtual const Vec2& GetWNSize() const = 0;
 		virtual const Vec2& GetNSize() const = 0;
@@ -69,7 +70,13 @@ namespace fastbird
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
-		virtual bool IsIn(const Vec2I& pt) const = 0;
+		virtual bool IsIn(const Vec2I& pt, Vec2I* expand = 0) const = 0;
+
+		virtual bool IsPtOnLeft(const Vec2I& pt, int area) const = 0;
+		virtual bool IsPtOnRight(const Vec2I& pt, int area) const = 0;
+		virtual bool IsPtOnTop(const Vec2I& pt, int area) const = 0;
+		virtual bool IsPtOnBottom(const Vec2I& pt, int area) const = 0;
+
 		virtual bool SetVisible(bool show) = 0;
 		virtual bool SetVisibleChildren(bool show) = 0;
 		virtual void SetVisibleInternal(bool visible) = 0;

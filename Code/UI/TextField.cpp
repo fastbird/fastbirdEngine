@@ -5,6 +5,7 @@
 #include <UI/ImageBox.h>
 #include <UI/PropertyList.h>
 #include <UI/ListItem.h>
+#include <UI/ListBox.h>
 #include <UI/IUIEditor.h>
 #include <Engine/TextManipulator.h>
 
@@ -22,6 +23,12 @@ TextField::TextField()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
+	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
+		std::bind(&TextField::OnClicked, this, std::placeholders::_1));
+	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+		std::bind(&TextField::OnDoubleClicked, this, std::placeholders::_1));
+	RegisterEventFunc(IEventHandler::EVENT_ENTER,
+		std::bind(&TextField::OnEnter, this, std::placeholders::_1));
 }
 
 TextField::~TextField()
@@ -53,22 +60,14 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			if (IsKeyboardFocused())
 			{
 				keyboard->PopChar();
-				auto propertyList = IsInPropertyList();
-				if (propertyList)
+				auto listbox = IsInListBox();
+				if (listbox)
 				{
 					if (keyboard->IsKeyDown(VK_SHIFT)) {
-						propertyList->MoveFocusToKeyItem();
+						listbox->IterateItem(false, true);
 					}
 					else{
-						propertyList->MoveLine(true, true);
-					}
-				}
-				else
-				{
-					auto root = GetRootWnd();
-					if (root)
-					{
-						root->TabPressed();
+						listbox->IterateItem(true, true);
 					}
 				}
 			}
@@ -82,10 +81,10 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			else
 			{
-				auto prop = IsInPropertyList();
-				if (prop)
+				auto listbox = IsInListBox();
+				if (listbox)
 				{
-					auto eventHandler = dynamic_cast<IEventHandler*>(prop);
+					auto eventHandler = dynamic_cast<IEventHandler*>(listbox);
 					if (eventHandler)
 					{
 						if (eventHandler->OnEvent(EVENT_ENTER)){
@@ -111,14 +110,6 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		}
 		else{
 			gFBUIManager->GetTextManipulator()->OnInput(mouse, keyboard);
-		}
-	}
-
-	if (mouseIn && mouse->IsValid() && mouse->IsLButtonDoubleClicked())
-	{
-		if (IsKeyboardFocused())
-		{
-			gFBUIManager->GetTextManipulator()->SelectAll();
 		}
 	}
 	
@@ -154,34 +145,7 @@ void TextField::OnFocusGain()
 	auto mani = gFBUIManager->GetTextManipulator();
 	mani->AddListener(this);
 	mani->SetText(&mTextw);
-
-	auto mouse = gFBEnv->pEngine->GetMouse();
-	if (mouse->IsLButtonClicked()){
-		long x, y;
-		mouse->GetPos(x, y);
-		Vec2I cursorPos(x, y);
-		PixelToLocalPixel(cursorPos);
-		cursorPos.x -= mTextGap.x;
-
-		auto font = gFBEnv->pRenderer->GetFont();
-		if (font)
-		{
-			font->SetHeight(mTextSize);
-			float length = 0.f;
-			for (int i = 0; i < (int)mTextw.size(); i++)
-			{
-				float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
-				length += halfLength;
-				if (cursorPos.x < length)
-				{
-					mani->SetCursorPos(i);
-					break;
-				}
-				length += halfLength;
-			}
-			font->SetBackToOrigHeight();
-		}
-	}
+	
 
 	auto propertyList = IsInPropertyList();
 	if (propertyList)
@@ -388,9 +352,64 @@ PropertyList* TextField::IsInPropertyList() const
 	}
 	return 0;
 }
+
+ListBox* TextField::IsInListBox() const{
+	if (mParent && mParent->GetType() == ComponentType::ListItem)
+	{
+		auto pp = mParent->GetParent();
+		ListBox* listbox = dynamic_cast<ListBox*>(pp);
+		return listbox;
+	}
+	return 0;
+}
+
 void TextField::SelectAllAfterGetFocused()
 {
 	gFBUIManager->GetTextManipulator()->SelectAll();
 	TriggerRedraw();
+}
+
+void TextField::OnClicked(void* arg){
+	assert(this == arg);
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	long x, y;
+	mouse->GetPos(x, y);
+	Vec2I cursorPos(x, y);
+	PixelToLocalPixel(cursorPos);
+	cursorPos.x -= mTextGap.x;
+
+	auto font = gFBEnv->pRenderer->GetFont();
+	if (font)
+	{
+		font->SetHeight(mTextSize);
+		float length = 0.f;
+		if (cursorPos.x >= (int)mTextWidth){
+			gFBUIManager->GetTextManipulator()->SetCursorPos(mTextw.size());
+		}
+		else{
+			for (int i = 0; i < (int)mTextw.size(); i++)
+			{
+				float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
+				length += halfLength;
+				if (cursorPos.x < length)
+				{
+					gFBUIManager->GetTextManipulator()->SetCursorPos(i);
+					break;
+				}
+				length += halfLength;
+			}
+		}
+		font->SetBackToOrigHeight();
+	}
+	mouse->Invalidate();
+
+}
+void TextField::OnDoubleClicked(void* arg){
+	gFBUIManager->GetTextManipulator()->SelectAll();
+}
+
+void TextField::OnEnter(void* arg)
+{
+	
 }
 }
