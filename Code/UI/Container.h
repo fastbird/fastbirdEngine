@@ -23,7 +23,6 @@ namespace fastbird
 		virtual IWinBase* GetChild(unsigned idx);
 		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
-		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual void RefreshVScrollbar();
@@ -64,7 +63,7 @@ namespace fastbird
 
 		virtual void SetHwndId(HWND_ID hwndId);
 
-		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, bool container) const;
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const;
 		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const;
 		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
 		virtual void TabPressed();

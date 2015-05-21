@@ -4,6 +4,7 @@
 
 #include <UI/IUIManager.h>
 #include <UI/DragBox.h>
+#include <UI/RegionTestParam.h>
 #include <Engine/IFileChangeListener.h>
 #include <Engine/IRenderListener.h>
 
@@ -71,6 +72,9 @@ namespace fastbird
 
 		DragBox mDragBox;
 		TextManipulator* mTextManipulator;
+
+		// for locating
+		bool mMultiLocating;
 
 
 	protected:
@@ -184,12 +188,14 @@ namespace fastbird
 		virtual UICommands* GetUICommands() const { return mUICommands; }
 		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle){ mUIEditorModuleHandle = moduleHandle; }
 		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
-		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, bool onlyContainer);
+		
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param);
 		virtual TextManipulator* GetTextManipulator() const { return mTextManipulator; }
 		
 		virtual const char* GetUIPath(const char* uiname) const;
 		virtual const char* GetUIScriptPath(const char* uiname) const;
 
+		virtual void SuppressPropertyWarning(bool suppress);
 
 		//-------------------------------------------------------------------
 		// For UI Editing
@@ -208,6 +214,7 @@ namespace fastbird
 		std::string GetBackupName(const std::string& name) const;
 		void BackupFile(const char* filename);
 		void DragUI();
+		void AlignUI();
 	};
 }
 

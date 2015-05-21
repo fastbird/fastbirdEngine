@@ -129,9 +129,11 @@
     <ClInclude Include="NumericUpDown.h" />
     <ClInclude Include="PropertyList.h" />
     <ClInclude Include="RadioBox.h" />
+    <ClInclude Include="RegionTestParam.h" />
     <ClInclude Include="Scroller.h" />
     <ClInclude Include="StaticText.h" />
     <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="TabWindow.h" />
     <ClInclude Include="TextBox.h" />
     <ClInclude Include="TextField.h" />
     <ClInclude Include="UIAnimation.h" />
@@ -154,6 +156,7 @@
     <ClCompile Include="ListBoxData.cpp" />
     <ClCompile Include="ListItem.cpp" />
     <ClCompile Include="PropertyList.cpp" />
+    <ClCompile Include="TabWindow.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />
     <ClCompile Include="EventHandler.cpp" />

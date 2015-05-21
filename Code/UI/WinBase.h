@@ -14,6 +14,7 @@ namespace fastbird
 		static const float WinBase::LEFT_GAP;
 		static const float NotDefined;
 		static Vec2I OSWindowPos;
+		static bool sSuppressPropertyWarning;
 
 		static Vec2I sLastPos;
 		friend class VisibleStatus;
@@ -136,6 +137,8 @@ namespace fastbird
 		WinBase();
 		virtual ~WinBase();
 
+		static void SuppressPropertyWarning(bool warning);
+
 		virtual void SetHwndId(HWND_ID hwndId);
 		virtual HWND_ID GetHwndId() const;
 		virtual void OnCreated(){}
@@ -173,6 +176,7 @@ namespace fastbird
 		virtual void SetPosX(int x);
 		virtual void SetPosY(int y);
 		virtual void SetInitialOffset(Vec2I offset);
+		virtual void Move(Vec2I amount);
 
 		virtual void SetNSize(const fastbird::Vec2& size); // normalized size (0.0~1.0)
 		virtual void SetNSizeX(float x);
@@ -214,13 +218,12 @@ namespace fastbird
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v);
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual bool IsIn(IMouse* mouse) const;
-		virtual bool IsIn(const Vec2I& pt, Vec2I* expand = 0) const;
+		virtual bool IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand = 0) const;
 		virtual bool IsPtOnLeft(const Vec2I& pt, int area) const;
 		virtual bool IsPtOnRight(const Vec2I& pt, int area) const;
 		virtual bool IsPtOnTop(const Vec2I& pt, int area) const;
 		virtual bool IsPtOnBottom(const Vec2I& pt, int area) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
-		virtual IWinBase* FocusTest(IMouse* mouse);
 		virtual void OnFocusLost(){}
 		virtual void OnFocusGain(){}
 		std::string TranslateText(const char* text);
@@ -349,7 +352,7 @@ namespace fastbird
 		virtual void OnAlphaChanged();
 		virtual const char* GetMsgTranslationUnit() const;
 		virtual void TriggerRedraw();
-		virtual IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, bool container) const;
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const;
 		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
 		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const{
 			return 0;

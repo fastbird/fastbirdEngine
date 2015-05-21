@@ -4,6 +4,7 @@
 #include <UI/Container.h>
 #include <UI/UIAnimation.h>
 #include <UI/ImageBox.h>
+#include <UI/IUIEditor.h>
 #include <Engine/IRenderTarget.h>
 #include <CommonLib/StringUtils.h>
 
@@ -22,6 +23,8 @@ const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
 Vec2I WinBase::OSWindowPos;
+
+bool WinBase::sSuppressPropertyWarning = false;
 
 WinBase::WinBase()
 : mHwndId(-1)
@@ -106,6 +109,10 @@ WinBase::~WinBase()
 	}
 	
 	gFBEnv->pEngine->DeleteUIObject(mUIObject);
+}
+
+void WinBase::SuppressPropertyWarning(bool warning){
+	sSuppressPropertyWarning = warning;
 }
 
 void WinBase::SetHwndId(HWND_ID hwndId)
@@ -462,6 +469,21 @@ void WinBase::SetInitialOffset(Vec2I offset)
 	}
 }
 
+void WinBase::Move(Vec2I amount){
+	mPos += amount;
+	auto rtSize = GetRenderTargetSize();
+
+	if (mParent)
+	{
+		mNPos = mParent->PixelToLocalNPos(mPos);
+	}
+	else
+	{
+		mNPos = Vec2(mPos.x / (float)rtSize.x, mPos.y / (float)rtSize.y);
+	}
+	UpdateWorldPos(true);
+}
+
 
 void WinBase::SetNPos(const fastbird::Vec2& pos) // normalized pos (0.0~1.0)
 {	
@@ -707,9 +729,9 @@ bool WinBase::IsIn(IMouse* mouse) const
 		mouseNormpos.y > wy + mWNSize.y);
 }
 
-bool WinBase::IsIn(const Vec2I& pt, Vec2I* expand) const
+bool WinBase::IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand) const
 {
-	if (mUseScissor)
+	if (mUseScissor && !ignoreScissor)
 	{
 		RECT rect = GetScissorRegion();
 		if (expand)
@@ -722,7 +744,6 @@ bool WinBase::IsIn(const Vec2I& pt, Vec2I* expand) const
 		bool inScissor = !(pt.x < rect.left || pt.x > rect.right || pt.y < rect.top || pt.y > rect.bottom);
 		if (!inScissor)
 		{
-			Log("not in scissor");
 			return false;
 		}
 	}
@@ -747,22 +768,22 @@ bool WinBase::IsIn(const Vec2I& pt, Vec2I* expand) const
 
 bool WinBase::IsPtOnLeft(const Vec2I& pt, int area) const{
 	auto wpos = GetWPos();
-	return pt.x < wpos.x + area && pt.x > wpos.x - area;
+	return pt.x <= wpos.x + area && pt.x >= wpos.x - area;
 }
 bool WinBase::IsPtOnRight(const Vec2I& pt, int area) const{
 	auto wpos = GetWPos();
 	int right = wpos.x + mSize.x;
-	return pt.x < right + area && pt.x > right - area;
+	return pt.x <= right + area && pt.x >= right - area;
 }
 bool WinBase::IsPtOnTop(const Vec2I& pt, int area) const{
 	auto wpos = GetWPos();
 	int top = wpos.y;
-	return pt.y < top + area && pt.y > top - area;
+	return pt.y <= top + area && pt.y >= top - area;
 }
 bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	auto wpos = GetWPos();
 	int bottom = wpos.y + mSize.y;
-	return pt.y < bottom + area && pt.y > bottom - area;
+	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
 //---------------------------------------------------------------------------
@@ -774,6 +795,15 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	if (mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return false;
+	}
+	auto editor = gFBUIManager->GetUIEditor();
+	if (editor)
+	{		
+		if (GetHwndId() != editor->GetHwndId())
+		{
+			if (!keyboard->IsKeyDown(VK_MENU))
+				return false;
+		}
 	}
 
 	mMouseIn = false;
@@ -913,13 +943,6 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	}
 
 	return mMouseIn;
-}
-
-IWinBase* WinBase::FocusTest(IMouse* mouse)
-{
-	IWinBase* ret = 0;
-	IsIn(mouse) ? ret = this : ret = 0;
-	return ret;
 }
 
 void WinBase::SetNext(IWinBase* next)
@@ -1542,7 +1565,8 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			return true;
 		}
 	}
-	Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
+	if (!sSuppressPropertyWarning)
+		Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
 	return false;
 }
 
@@ -3554,9 +3578,9 @@ void WinBase::TriggerRedraw()
 	}
 }
 
-IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, bool container) const
+IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
-	if (IsIn(pt))
+	if (IsIn(pt, param.mIgnoreScissor))
 		return (IWinBase*)this;
 	return 0;
 }

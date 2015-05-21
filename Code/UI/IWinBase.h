@@ -4,6 +4,7 @@
 #include <UI/Align.h>
 #include <UI/UIProperty.h>
 #include <UI/IUIAnimation.h>
+#include <UI/RegionTestParam.h>
 #include <Engine/IUIObject.h>
 #include <CommonLib/LuaObject.h>
 
@@ -46,6 +47,7 @@ namespace fastbird
 		virtual void SetPosX(int x) = 0;
 		virtual void SetPosY(int y) = 0;
 		virtual void SetInitialOffset(Vec2I offset) = 0;
+		virtual void Move(Vec2I amount) = 0;
 
 		virtual void SetNSize(const fastbird::Vec2& size) = 0; // normalized size (0.0~1.0)
 		virtual void SetNSizeX(float x) = 0;
@@ -70,7 +72,7 @@ namespace fastbird
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
-		virtual bool IsIn(const Vec2I& pt, Vec2I* expand = 0) const = 0;
+		virtual bool IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand = 0) const = 0;
 
 		virtual bool IsPtOnLeft(const Vec2I& pt, int area) const = 0;
 		virtual bool IsPtOnRight(const Vec2I& pt, int area) const = 0;
@@ -89,7 +91,6 @@ namespace fastbird
 
 		virtual void OnStartUpdate(float elapsedTime) = 0;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard) = 0;
-		virtual IWinBase* FocusTest(IMouse* mouse) = 0;
 		virtual void OnFocusLost() = 0;
 		virtual void OnFocusGain() = 0;
 
@@ -141,7 +142,8 @@ namespace fastbird
 		virtual void Save(tinyxml2::XMLElement& elem) = 0;
 		virtual bool ParseLua(const fastbird::LuaObject& compTable) = 0;
 		virtual float GetTextBottomGap() const = 0;
-		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, bool container) const = 0;
+
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const = 0;
 		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const = 0;
 		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const = 0;
 		virtual void TabPressed() = 0;

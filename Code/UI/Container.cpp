@@ -524,21 +524,6 @@ bool Container::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	return __super::OnInputFromHandler(mouse, keyboard) || mouseIn;
 }
 
-IWinBase* Container::FocusTest(IMouse* mouse)
-{
-	IWinBase* foundWnd = 0;
-	/*COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
-	for (; it!=itEnd && !foundWnd; it++)
-	{
-		foundWnd = (*it)->FocusTest(normalizedMousePos);
-	}
-
-	if (!foundWnd)*/
-		foundWnd = __super::FocusTest(mouse);
-
-	return foundWnd;
-}
-
 bool Container::GetFocus(bool includeChildren /*= false*/) const
 {
 	bool focused = __super::GetFocus(includeChildren);
@@ -1043,22 +1028,24 @@ void Container::SetHwndId(HWND_ID hwndId)
 	}
 }
 
-IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, bool container) const
+IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
-	for (auto child : mChildren)
-	{
-		if (container)
+	if (param.mTestChildren){
+		for (auto child : mChildren)
 		{
-			auto cont = dynamic_cast<Container*>(child);
-			if (!cont)
-				continue;
+			if (param.mOnlyContainer)
+			{
+				auto cont = dynamic_cast<Container*>(child);
+				if (!cont)
+					continue;
+			}
+			auto found = child->WinBaseWithPoint(pt, param);
+			if (found)
+				return found;
 		}
-		auto found = child->WinBaseWithPoint(pt, container);
-		if (found)
-			return found;
 	}
 
-	return __super::WinBaseWithPoint(pt, container);
+	return __super::WinBaseWithPoint(pt, param);
 }
 
 IWinBase* Container::WinBaseWithTabOrder(unsigned tabOrder) const

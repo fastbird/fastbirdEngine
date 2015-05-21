@@ -1,5 +1,6 @@
 #include <UI/StdAfx.h>
 #include <UI/UIManager.h>
+#include <UI/IUIEditor.h>
 #include <UI/Wnd.h>
 #include <UI/TextField.h>
 #include <UI/StaticText.h>
@@ -24,7 +25,7 @@
 #include <UI/UIAnimation.h>
 #include <UI/UICommands.h>
 #include <UI/PropertyList.h>
-#include <UI/IUIEditor.h>
+#include <UI/TabWindow.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/LuaUtils.h>
 #include <CommonLib/LuaObject.h>
@@ -56,6 +57,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
+	, mMultiLocating(false)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -734,6 +736,7 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 	{
 		mKeyboardFocus = 0;
 	}
+	DeleteLuaUIContaning(pWnd);
 	OnDeleteWinBase(pWnd);
 	auto hwndId = pWnd->GetHwndId();
 	assert(hwndId != -1);
@@ -796,10 +799,6 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
-	if (!ui || !ui->GetVisible())
-		return;
-
-	Log(FB_DEFAULT_DEBUG_ARG, FormatString("setting focus ui : %s", ComponentType::ConvertToString(ui->GetType())) );
 	for (auto& ui : mSetFocusReserved)
 	{
 		if (ui == ui)
@@ -811,7 +810,7 @@ void UIManager::SetFocusUI(IWinBase* ui)
 	if (mFocusWnd)
 		mFocusWnd->OnFocusLost();
 
-	auto focusRoot = ui->GetRootWnd();
+	auto focusRoot = ui ? ui->GetRootWnd() : 0;
 
 	mFocusWnd = focusRoot;
 	mKeyboardFocus = ui;
@@ -820,8 +819,8 @@ void UIManager::SetFocusUI(IWinBase* ui)
 		mFocusWnd->OnFocusGain();
 	if (mKeyboardFocus)
 		mKeyboardFocus->OnFocusGain();
-
-	mSetFocusReserved.push_back( ui);
+	if (ui && ValueNotExistInVector(mSetFocusReserved, ui))
+		mSetFocusReserved.push_back(ui);
 }
 
 IWinBase* UIManager::GetFocusUI() const
@@ -969,6 +968,9 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::PropertyList:
 		pWnd = FB_NEW(PropertyList);
 		break;
+	case ComponentType::TabWindow:
+		pWnd = FB_NEW(TabWindow);
+		break;
 	default:
 		assert(0 && "Unknown component");
 	}
@@ -989,19 +991,28 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	if (!pMouse->IsValid() && !keyboard->IsValid())
 		return;
 
-	if (gFBEnv->pEngine->IsMainWindowForground())
+	if (mUIEditor && gFBEnv->pEngine->IsMainWindowForground())
 	{
 		if (mLocatingComp != ComponentType::NUM)
 		{
-			OnInputForLocating(pMouse, keyboard);
-			return;
+			if (mMultiLocating  && mLocatingComp != ComponentType::NUM && !keyboard->IsKeyDown(VK_SHIFT))
+			{
+				mLocatingComp = ComponentType::NUM;
+				mUIEditor->OnCancelComponent();
+				mMultiLocating = false;
+			}
+			else{
+				OnInputForLocating(pMouse, keyboard);
+
+				return;
+			}
 		}
 	}
 
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
 
-	if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_ESCAPE))	{
+	if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_ESCAPE)) {
 		WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 		int i = 0;
 		for (; it != itEnd; ++it) {
@@ -1014,30 +1025,22 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	//Select
-	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {		
-		auto it = windows.rbegin(), itEnd = windows.rend();
-		IWinBase* focusWnd = 0;
-		Vec2 mousepos = pMouse->GetNPos();
-		for (; it!=itEnd && !focusWnd; it++)
-		{
-			if ((*it)->GetVisible())
-				focusWnd = (*it)->FocusTest(pMouse);
-		}
-		if (focusWnd)
-		{
-			long x, y;
-			pMouse->GetPos(x, y);
-			focusWnd = focusWnd->WinBaseWithPoint(Vec2I(x, y), false);
-			if (focusWnd && !focusWnd->GetVisible())
-				focusWnd = 0;
-
-		}
-		if (focusWnd && mKeyboardFocus != focusWnd)
+	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
+		auto mousePos = pMouse->GetPos();
+		RegionTestParam rparam;
+		rparam.mOnlyContainer = false;
+		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mTestChildren = true;
+		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		if (mKeyboardFocus != focusWnd)
 		{
 			SetFocusUI(focusWnd);
-			if (mUIEditor)
-			{
-				mUIEditor->OnComponentSelected(focusWnd);
+		}
+		if (mUIEditor)
+		{
+			if (!keyboard->IsKeyDown(VK_MENU)){
+				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
+					mUIEditor->OnComponentSelected(mKeyboardFocus);
 			}
 		}
 	}
@@ -1047,7 +1050,9 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 			mUIEditor->TryToDeleteCurComp();
 			keyboard->Invalidate();
 		}
+		
 		DragUI();
+		mUIEditor->AlignUI();
 	}
 
 	if (mIgnoreInput) {
@@ -1616,7 +1621,11 @@ void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 	long x, y;
 	pMouse->GetPos(x, y);
 	Vec2I pt(x, y);
-	mMouseOveredContainer = WinBaseWithPoint(pt, true);
+	RegionTestParam rparam;
+	rparam.mOnlyContainer = true;
+	rparam.mIgnoreScissor = true;
+	rparam.mTestChildren = true;
+	mMouseOveredContainer = WinBaseWithPoint(pt, rparam);
 	if (pMouse->IsLButtonDown())
 	{
 		if (!mDragBox.IsStarted())
@@ -1648,7 +1657,7 @@ void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 	}
 }
 
-IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, bool container)
+IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param)
 {
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
@@ -1657,7 +1666,7 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, bool container)
 		auto cont = dynamic_cast<Container*>(wnd);
 		if (!cont || !cont->GetVisible())
 			continue;
-		auto found = cont->WinBaseWithPoint(pt, container);
+		auto found = cont->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
 	}
@@ -1704,7 +1713,7 @@ void UIManager::LocateComponent()
 		win->SetProperty(UIProperty::BACK_COLOR, "0.3, 0.3, 0.5, 0.4");
 	win->SetProperty(UIProperty::VISIBLE, "true");
 	auto keyboard = gFBEnv->pEngine->GetKeyboard();
-	if (!keyboard->IsKeyPressed(VK_SHIFT))
+	if (!keyboard->IsKeyDown(VK_SHIFT))
 	{
 		mLocatingComp = ComponentType::NUM;
 		if (mUIEditor)
@@ -1712,6 +1721,10 @@ void UIManager::LocateComponent()
 			mUIEditor->OnComponentSelected(win);
 			mUIEditor->OnCancelComponent();
 		}
+	}
+	else
+	{
+		mMultiLocating = true;
 	}
 	
 }
@@ -1744,6 +1757,10 @@ const char*  UIManager::GetUIScriptPath(const char* uiname) const
 	if (windows.empty())
 		return "";
 	return windows[0]->GetScriptPath();
+}
+
+void UIManager::SuppressPropertyWarning(bool suppress){
+	WinBase::SuppressPropertyWarning(suppress);
 }
 
 std::string UIManager::GetUniqueUIName() const
@@ -1825,28 +1842,41 @@ void UIManager::DragUI(){
 	static bool sSizingXLeft = false;
 	static bool sSizingYTop = false;
 	static bool sSizingYBottom = false;
-	static Vec2I sDragStartedPos(0, 0);
-	static Vec2I sInitialSize(0, 0);	
-	static Vec2I sOffset(0, 0);
-	static Vec2I sExpand(6, 6);
-	static int sAreaX = 3;
-	static int sAreaY = 3;
-	auto curUI = mUIEditor->GetCurSelected();
-	if (!curUI)
+	static Vec2I sExpand(8, 8);
+	static int sAreaX = 4;
+	static int sAreaY = 4;
+
+	auto mouse = gFBEnv->pEngine->GetMouse();	
+	auto keyboard = gFBEnv->pEngine->GetKeyboard();
+	if (keyboard->IsKeyDown(VK_MENU))
 		return;
-	auto mouse = gFBEnv->pEngine->GetMouse();
-	
+
+	unsigned num = mUIEditor->GetNumCurEditing();
+	if (!num)
+		return;
+
+	Vec2I dragStartPos;
+	bool dragStarted = mouse->IsDragStarted(dragStartPos);
+	Vec2I testPos = dragStarted ? dragStartPos : mouse->GetPos();
 
 	if (!sDragStarted)
-	{
-		Vec2I sDragStartedPos = mouse->GetPos();
-		bool in = curUI->IsIn(sDragStartedPos, &sExpand);
-		if (in) {
+	{			
+		bool in = false;
+		for (unsigned i = 0; i < num; ++i){
+			auto curUI = mUIEditor->GetCurSelected(i);
+			if (!curUI)
+				return;
 
-			sSizingXLeft = curUI->IsPtOnLeft(sDragStartedPos, sAreaX);
-			sSizingXRight = curUI->IsPtOnRight(sDragStartedPos, sAreaX);
-			sSizingYTop = curUI->IsPtOnTop(sDragStartedPos, sAreaY);
-			sSizingYBottom = curUI->IsPtOnBottom(sDragStartedPos, sAreaY);
+			in = curUI->IsIn(testPos, true, &sExpand);
+			if (in) {
+				sSizingXLeft = curUI->IsPtOnLeft(testPos, sAreaX);
+				sSizingXRight = curUI->IsPtOnRight(testPos, sAreaX);
+				sSizingYTop = curUI->IsPtOnTop(testPos, sAreaY);
+				sSizingYBottom = curUI->IsPtOnBottom(testPos, sAreaY);
+				break;
+			}
+		}
+		if (in){
 			if (
 				(sSizingXLeft && sSizingYTop) ||
 				(sSizingXRight && sSizingYBottom)
@@ -1871,16 +1901,45 @@ void UIManager::DragUI(){
 				SetCursor(WinBase::sCursorAll);
 			}
 
-			if (mouse->IsDragStarted(sDragStartedPos)){
+			if (dragStarted){
 				mouse->PopDragEvent();
 				sDragStarted = true;
-				auto uiPos = curUI->GetWPos();
-				sOffset = uiPos - sDragStartedPos;
-				sInitialSize = curUI->GetSize();
 			}
 		}
 	}
 	else{
+		auto delta = mouse->GetDeltaXY();
+		for (unsigned i = 0; i < num; ++i){
+			auto curUI = mUIEditor->GetCurSelected(i);
+			bool sizing = false;
+			if (sSizingXLeft)
+			{
+				curUI->Move(Vec2I(delta.x, 0));
+				curUI->SetSizeModificator(Vec2I(-delta.x, 0));
+				sizing = true;
+			}
+			if (sSizingXRight)
+			{
+				curUI->SetSizeModificator(Vec2I(delta.x, 0));
+				sizing = true;
+			}
+			if (sSizingYTop)
+			{
+				curUI->Move(Vec2I(0, delta.y));
+				curUI->SetSizeModificator(Vec2I(0, -delta.y));
+				sizing = true;
+			}
+			if (sSizingYBottom)
+			{
+				curUI->SetSizeModificator(Vec2I(0, delta.y));
+				sizing = true;
+			}
+			if (!sizing)
+			{
+				curUI->Move(delta);
+			}
+		}
+
 		if (
 			(sSizingXLeft && sSizingYTop) ||
 			(sSizingXRight && sSizingYBottom)
@@ -1895,24 +1954,18 @@ void UIManager::DragUI(){
 		{
 			SetCursor(WinBase::sCursorNESW);
 		}
-		else if (sSizingXLeft){
-			SetCursor(WinBase::sCursorWE);
-		}
-		else if (sSizingXRight){
-			auto delta = mouse->GetDeltaXY();
-			curUI->SetSizeModificator(Vec2I(delta.x, 0));
-			SetCursor(WinBase::sCursorWE);
+		else if (sSizingXLeft || sSizingXRight){
+
 		}
 		else if (sSizingYTop || sSizingYBottom){
 			SetCursor(WinBase::sCursorNS);
 		}
 		else{
-			// positioning
-			auto curPos = mouse->GetPos();
-			curUI->SetWPos(curPos + sOffset);
 			SetCursor(WinBase::sCursorAll);
 		}
+
 		if (mouse->IsDragEnded()){
+			mouse->PopDragEvent();
 			sDragStarted = false;
 			sSizingXRight = false;
 			sSizingXLeft = false;

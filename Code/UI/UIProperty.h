@@ -123,6 +123,9 @@ namespace fastbird
 			MSG_TRANSLATION,
 			TAB_ORDER,
 
+			TABWND_NUM_TABS,
+			TABWND_TAB_NAMES,
+
 			COUNT
 		};
 
@@ -244,6 +247,9 @@ namespace fastbird
 			"MSG_TRANSLATION",
 
 			"TAB_ORDER",
+
+			"TABWND_NUM_TABS",
+			"TABWND_TAB_NAMES",
 
 			"COUNT"
 		};
@@ -439,6 +445,8 @@ namespace fastbird
 				return 0;
 			case RADIO_GROUP:
 				return -1;
+			case TABWND_NUM_TABS:
+				return 0;
 			}
 			assert(0);
 			return 0;

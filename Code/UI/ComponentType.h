@@ -30,6 +30,7 @@ namespace fastbird
 			ColorRamp,
 			NamedPortrait,
 			PropertyList,
+			TabWindow,
 
 			NUM
 		};
@@ -59,6 +60,7 @@ namespace fastbird
 			"ColorRamp",
 			"NamedPortrait",
 			"PropertyList",
+			"TabWindow",
 
 			"NUM",
 		};

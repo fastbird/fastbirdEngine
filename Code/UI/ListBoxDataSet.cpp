@@ -310,7 +310,7 @@ namespace fastbird
 		mCharBuffer.push_back(AnsiToWide(c));
 		ToUpperCase(mCharBuffer);
 		unsigned num = mData.size();
-		for (unsigned i = curIndex+1; i < num; ++i){
+		for (unsigned i = curIndex; i < num; ++i){
 			auto cols = mData[i];
 			std::wstring s = cols[colIndex].GetText();
 			DeleteValuesInVector(s, L'_');
@@ -319,14 +319,17 @@ namespace fastbird
 				return i;
 			}
 		}
-		for (unsigned i = 0; i < curIndex; ++i)
+		if (curIndex != 0)
 		{
-			auto cols = mData[i];
-			std::wstring s = cols[colIndex].GetText();
-			DeleteValuesInVector(s, L'_');
-			if (s.size() >= mCharBuffer.size() && s.compare(0, mCharBuffer.size(), mCharBuffer) == 0)
+			for (unsigned i = 0; i < curIndex - 1; ++i)
 			{
-				return i;
+				auto cols = mData[i];
+				std::wstring s = cols[colIndex].GetText();
+				DeleteValuesInVector(s, L'_');
+				if (s.size() >= mCharBuffer.size() && s.compare(0, mCharBuffer.size(), mCharBuffer) == 0)
+				{
+					return i;
+				}
 			}
 		}
 		return -1;

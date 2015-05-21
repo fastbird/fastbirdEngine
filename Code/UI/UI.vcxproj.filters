@@ -100,6 +100,10 @@
     <ClInclude Include="ListBoxData.h" />
     <ClInclude Include="ListBoxDataSet.h" />
     <ClInclude Include="ListItemDataType.h" />
+    <ClInclude Include="RegionTestParam.h" />
+    <ClInclude Include="TabWindow.h">
+      <Filter>Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -195,5 +199,8 @@
     </ClCompile>
     <ClCompile Include="ListBoxData.cpp" />
     <ClCompile Include="ListBoxDataSet.cpp" />
+    <ClCompile Include="TabWindow.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
