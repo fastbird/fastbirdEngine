@@ -12,8 +12,6 @@ namespace fastbird
 		//-------------------------------------------------------------------------
 		// IUIObject interfaces
 		//-------------------------------------------------------------------------
-		/*virtual void SetVertices(const Vec3* ndcPoints, int num,
-			const DWORD* colors = 0, const Vec2* texcoords = 0);*/
 		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0);
 		virtual void SetColors(DWORD colors[], DWORD num);
 
@@ -22,29 +20,11 @@ namespace fastbird
 
 		virtual void SetUISize(const Vec2I& size);
 		virtual const Vec2I& GetUISize() const;
-
-		/*virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
-		virtual const Vec2& GetAnimScale() const;*/
-		/*virtual void SetPivot(const Vec2& pivot);*/
+		
 		virtual void SetAlpha(float alpha);
-
-		//virtual void SetNSize(const Vec2& nsize); // in normalized space (0.0f ~ 1.0f)
-		//virtual const Vec2& GetNSize() const { return mNSize; }
-		//virtual void SetNPos(const Vec2& npos);// in normalized space 0.0f~1.0f
-		//virtual const Vec2& GetNPos() const { return mNPos; }
-		//virtual void SetAnimNPosOffset(const Vec2& nposOffset); // in normalized space 0.0f~1.0f
-		//virtual const Vec2& GetAnimNPosOffset() const { return mAnimNOffset; }
-		//virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
-		//virtual const Vec2& GetAnimScale() const{
-		//	return mScale;
-		//}
-		//virtual void SetPivot(const Vec2& pivot) { mPivot = pivot; }
-		//virtual void SetAlpha(float alpha);
-
 
 		virtual void SetText(const wchar_t* s);
 		virtual void SetTextOffset(const Vec2I& offset);
-		//virtual const Vec2& GetTextStarNPos() const { return mTextNPos; }
 		virtual const Vec2I& GetTextOffset() const { return mTextOffset; }
 		virtual Vec2I GetTextStartWPos() const;
 
