@@ -29,7 +29,8 @@ CardScroller::~CardScroller()
 void CardScroller::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	mWidth = 1.0f - PixelToLocalNWidth(4);
+	
+	mWidth = 1.0f - (4 / (float)GetParentSize().x);
 }
 
 bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
@@ -101,65 +102,50 @@ void CardScroller::SetCardSize_Offset(const Vec2& x_ratio, int offset)
 	mWidth = x_ratio.x;
 	mRatio = x_ratio.y;
 	mCardOffsetY = offset;
-	mNYOffset = this->PixelToLocalNHeight(offset);
+	auto localRT = GetParentSize();
+	mNYOffset = offset / (float)localRT.y;
 
-	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mWidth));
-	auto rtTarget = GetRenderTargetSize();
-	float iWidth = rtTarget.x * worldSize.x;
-	mCardSizeX = (int)iWidth;
+	float iWidth = localRT.x * mWidth;
+	mCardSizeX = Round(iWidth);
 	float iHeight = iWidth / mRatio;
-	mCardSizeY = (int)iHeight;
-	mHeight = iHeight / (rtTarget.y * mWNSize.y);
+	mCardSizeY = Round(iHeight);
+	mHeight = iHeight / (float)localRT.y;
 }
 
 void CardScroller::SetCardSize(const Vec2I& size)
 {
-	if (mParent)
-	{
-		mWidth = mParent->PixelToLocalNWidth(size.x);
-		mHeight = mParent->PixelToLocalNHeight(size.y);
-	}
-	else
-	{
-		auto rtSize = GetRenderTargetSize();
-		mWidth = size.x / (float)rtSize.x;
-		mHeight = size.y / (float)rtSize.y;
-	}
-
-	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mHeight));
-	auto rtTarget = GetRenderTargetSize();
-	auto iSize = Vec2(rtTarget) * worldSize;
-	mCardSizeX = (int)iSize.x;
-	mCardSizeY = (int)iSize.y;
+	auto localRT = GetParentSize();
+	mWidth = size.x / (float)localRT.x;
+	mHeight = size.y / (float)localRT.y;	
+	
+	mCardSizeX = size.x;
+	mCardSizeY = size.y;
 }
 
 void CardScroller::SetCardSizeNX(float nx)
 {
 	mWidth = nx;
-	Vec2 worldSize = ConvertChildSizeToWorldCoord(Vec2(mWidth, mHeight));
-	auto rtTarget = GetRenderTargetSize();
-	auto iSize = Vec2(rtTarget) * worldSize;
-	mCardSizeX = (int)iSize.x;
+	mCardSizeX = Round(nx * GetParentSize().x);
 }
 
 void CardScroller::SetCardSizeX(int x)
 {
 	mCardSizeX = x;
-	auto rtSize = GetRenderTargetSize();
-	mWidth = x / (rtSize.x * mWNSize.x);
+	auto rtSize = GetParentSize();
+	mWidth = x / (float)rtSize.x;
 }
 
 void CardScroller::SetCardSizeY(int y)
 {
 	mCardSizeY = y;
-	auto rtSize = GetRenderTargetSize();
-	mHeight = y / (rtSize.y * mWNSize.y);
+	auto rtSize = GetParentSize();
+	mHeight = y / (float)rtSize.y;
 }
 
 void CardScroller::SetCardOffset(int offset)
 {
 	mCardOffsetY = offset;
-	mNYOffset = this->PixelToLocalNHeight(offset);
+	mNYOffset = offset  /(float)GetParentSize().y;
 }
 
 CardScroller::Slot* CardScroller::GetNextCardPos(Vec2& pos)

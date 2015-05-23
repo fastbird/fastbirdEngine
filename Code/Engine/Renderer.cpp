@@ -575,7 +575,7 @@ Vec2 Renderer::ToNdcPos(HWND_ID id, const Vec2I& screenPos) const
 	if (it == mSwapChainRenderTargets.end())
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Window id %u is not found.", id));
-		return Vec2I(0, 0);
+		return Vec2(0, 0);
 	}
 	const auto& size = it->second->GetSize();
 	Vec2 ret;

@@ -550,7 +550,7 @@ void UIAnimation::SetActivated(bool activate)
 			if (!mKeyScale.empty())
 			{
 				mCurScale = mKeyScale.begin()->second;
-				mTargetUI->SetAnimScale(mCurScale, mTargetUI->GetPivotWNPos());
+				mTargetUI->SetAnimScale(mCurScale);
 			}
 
 			if (!mKeyBackColor.empty())

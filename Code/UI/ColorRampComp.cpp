@@ -128,7 +128,7 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 		auto bar = AddChild(xPos, 0.5f, 0.05f, 1.0f, ComponentType::Button);
 		bar->SetRuntimeChild(true);
 		mBars.push_back((Button*)bar);
-		bar->SetSizeModificator(Vec2I(0, -10));
+		bar->ModifySize(Vec2I(0, -10));
 		bar->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 		bar->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");
 		bar->SetProperty(UIProperty::REGION, "BarComp");

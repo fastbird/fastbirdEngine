@@ -566,7 +566,7 @@ void ImageBox::SetCenterUVMatParam()
 	}
 }
 
-void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
+void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
 {
 	Vec2I isize(0, 0);
 	if (mAtlasRegion)
@@ -586,9 +586,8 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 		assert(0 && "You didn't set the texture");
 		return;
 	}
-	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
-	SetWNSize(size);
-	SetWNPos(wnpos);
+	SetSize(isize);
+	SetPos(wpos);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 	
 }

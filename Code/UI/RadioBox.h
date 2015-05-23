@@ -31,7 +31,6 @@ public:
 	void OnClicked(void* arg);
 
 	virtual void OnSizeChanged();
-	virtual void OnPosChanged();
 
 	void OnMouseHover(void* arg);
 

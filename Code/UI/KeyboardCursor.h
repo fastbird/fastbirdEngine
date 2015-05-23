@@ -15,8 +15,8 @@ namespace fastbird
 
 		IUIObject* GetUIObject() const;
 
-		void SetNPos(const Vec2& pos);
-		void SetNSize(const Vec2& size);
+		void SetPos(const Vec2I& pos);
+		void SetSize(const Vec2I& size);
 		void SetHwndId(HWND_ID hwndId);
 		void SetScissorRegion(const RECT& r);
 

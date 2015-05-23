@@ -34,7 +34,7 @@ namespace fastbird
 	protected:
 		void SetCommonProperty(IWinBase* item, size_t index);
 		const static float LEFT_GAP;
-		virtual void OnPosChanged();
+		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
 
 	private:

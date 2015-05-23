@@ -59,14 +59,15 @@ ListItem* ListBox::CreateNewItem(int row, int col)
 {
 	int hgap = mRowHeight + mRowGap;
 	int y = hgap * row + mRowGap;
-	float x = 0;
+	int x = 0;
+	float nx = 0.f;
+	const auto& finalSize = GetFinalSize();
 	for (int c = 0; c < col; ++c) {
-		x += mColSizes[c];
+		nx += mColSizes[c];
 	}
-	auto npos = Vec2(x, PixelToLocalNHeight(y));
-	auto nsize = Vec2(mColSizes[col], PixelToLocalNHeight(mRowHeight));
+	x = Round(nx * finalSize.x);
 
-	ListItem* item = (ListItem*)AddChild(npos.x, npos.y, nsize.x, nsize.y, ComponentType::ListItem);
+	ListItem* item = (ListItem*)AddChild(Vec2I(x, y), Vec2I(Round(mColSizes[col]*finalSize.x), mRowHeight), ComponentType::ListItem);
 	item->SetRuntimeChild(true);
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
@@ -297,6 +298,9 @@ void ListBox::Clear()
 	mHighlighted.clear();
 	TriggerRedraw();
 	gFBUIManager->DirtyRenderList(GetHwndId());
+	if (mScrollerV){
+		mScrollerV->SetOffset(Vec2(0.f, 0.f));
+	}
 }
 
 size_t ListBox::GetNumItems() const{
@@ -412,20 +416,20 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 			mStrHeaders = val;
 			StringVector strs = Split(val, ",");
-			assert(strs.size() == mNumCols);
-			float nh = PixelToLocalNHeight(mRowHeight);
+			assert(strs.size() == mNumCols);			
+			const auto& finalSize = GetFinalSize();
 			if (mHeaders.empty())
 			{
 				for (unsigned i = 0; i < mNumCols; ++i)
 				{
-					float posx = 0.0f;
+					int posX = 0;
 					if (i >= 1)
 					{
-						posx = mHeaders[i - 1]->GetNPos().x + mHeaders[i - 1]->GetNSize().x;
+						posX = mHeaders[i - 1]->GetFinalPos().x + mHeaders[i - 1]->GetFinalSize().x;
 					}
 
 					mHeaders.push_back(static_cast<ListItem*>(
-						AddChild(posx, 0.0f, mColSizes[i], nh, ComponentType::ListItem)));
+						AddChild(Vec2I(posX, 0), Vec2I(Round(mColSizes[i] * finalSize.x), mRowHeight), ComponentType::ListItem)));
 					ListItem* pAddedItem = mHeaders.back();
 					pAddedItem->SetRuntimeChild(true);
 					const RECT& rect = mUIObject->GetRegion();
@@ -445,7 +449,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 				mWndContentUI->SetRuntimeChild(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
-				mWndContentUI->SetSizeModificator(sizeMod);
+				mWndContentUI->ModifySize(sizeMod);
 				mWndContentUI->SetUseAbsYSize(true);
 				mWndContentUI->SetPos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
@@ -800,6 +804,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					}
 				}
 			}
+			OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 		else if (keyboard->IsKeyPressed(VK_DOWN))
 		{
@@ -878,6 +883,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					}
 				}
 			}
+			OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 
 	}
@@ -937,6 +943,7 @@ void ListBox::OnItemClicked(void* arg)
 	ChangeFocusItem(listItem);
 
 	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 void ListBox::OnItemDoubleClicked(void* arg)
@@ -956,6 +963,7 @@ void ListBox::OnItemDoubleClicked(void* arg)
 	}
 	ChangeFocusItem(listItem);
 	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
+	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 void ListBox::OnItemEnter(void* arg){
@@ -988,7 +996,7 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 		return 0;
 
 	mItems[row][0]->SetNSizeX(1.0f);
-	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
+	mItems[row][0]->ModifySize(Vec2I(-4, 0));
 	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
 	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
 	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -1010,7 +1018,7 @@ IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char
 		return 0;
 
 	mItems[row][0]->SetNSizeX(1.0f);
-	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
+	mItems[row][0]->ModifySize(Vec2I(-4, 0));
 	
 	if (backColor && strlen(backColor) != 0)
 	{
@@ -1091,6 +1099,9 @@ void ListBox::VisualizeData(unsigned index){
 	if (!mData)
 		return;
 
+	if (mItems.empty())
+		return;
+
 	if (index < mStartIndex || index > mEndIndex)
 	{
 		if (mItems[index][0])
@@ -1127,7 +1138,7 @@ void ListBox::VisualizeData(unsigned index){
 			int y = hgap * index + mRowGap;
 			for (unsigned c = 0; c < mNumCols; ++c){
 				items[c]->SetPosY(y);
-				items[c]->SetWNPosOffset(offset);
+				items[c]->SetWNScollingOffset(offset);
 				items[c]->SetRowIndex(index);
 				mChildren.push_back(items[c]);
 				mItems[index][c] = items[c];
@@ -1138,14 +1149,13 @@ void ListBox::VisualizeData(unsigned index){
 		else
 		{
 			int y = hgap * index + mRowGap;
-			float ny = PixelToLocalNHeight(y);
 			for (unsigned c = 0; c < mNumCols; ++c){
 				auto item = CreateNewItem(index, c);
 				if (c == 0)
 				{
 					item->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
 				}
-				item->SetWNPosOffset(offset);
+				item->SetWNScollingOffset(offset);
 				mItems[index][c] = item;				
 			}
 			FillItem(index);
@@ -1417,6 +1427,7 @@ void ListBox::SearchStartingChacrcter(char c, unsigned curIndex)
 		ChangeFocusItem(mItems[index][0]);
 		gFBUIManager->SetFocusUI(mItems[index][0]);
 	}
+	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 
@@ -1468,6 +1479,7 @@ void ListBox::IterateItem(bool next, bool apply)
 		else
 			gFBUIManager->SetFocusUI(newFocusItem);
 	}
+	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
 		
 }
 

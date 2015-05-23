@@ -560,7 +560,13 @@ void Engine::HotReloading()
 				bool hasExtension = strlen(extension) != 0;
 				bool sdfFile = _stricmp(extension, "sdf") == 0;
 				bool canOpen = true;
-				if (!hasExtension || sdfFile)
+				bool throwAway = false;
+				auto ignoreIt = mIgnoreFileChanges.find(filepath);
+				if (ignoreIt != mIgnoreFileChanges.end()){
+					mIgnoreFileChanges.erase(ignoreIt);
+					throwAway = true;
+				}
+				if (!hasExtension || sdfFile || throwAway)
 				{
 					auto nextit = it;
 					++nextit;
@@ -580,7 +586,6 @@ void Engine::HotReloading()
 						fclose(file);
 				}
 					
-
 				if (canOpen)
 				{
 					if (shader || material || texture || particle || xml)
@@ -619,7 +624,7 @@ void Engine::HotReloading()
 				else
 				{
 					++it;
-				}					
+				}
 			}
 		}
 	}
@@ -1133,6 +1138,7 @@ void Engine::ProcessFileChange()
 										fileName[count] = 0;
 										char unifiedPath[MAX_PATH] = { 0 };
 										UnifyFilepath(unifiedPath, fileName);
+										std::transform(&unifiedPath[0], &unifiedPath[0] + strlen(unifiedPath), &unifiedPath[0], tolower);
 										mChangedFiles.insert(unifiedPath);
 										mLastChangedTime = time;
 
@@ -1403,6 +1409,21 @@ void Engine::DeleteTextManipulator(TextManipulator* mani)
 
 void Engine::SetInputOverride(const LuaObject& func){
 	mInputOverride = func;
+}
+
+void Engine::StopFileChangeMonitor(const char* filepath)
+{
+	std::string lower(filepath);
+	ToLowerCase(lower);
+	mIgnoreFileChanges.insert(lower);
+}
+void Engine::ResumeFileChangeMonitor(const char* filepath)
+{
+	std::string lower(filepath);
+	ToLowerCase(lower);
+	auto it = mIgnoreFileChanges.find(lower);
+	if (it != mIgnoreFileChanges.end())
+		mIgnoreFileChanges.erase(it);
 }
 
 } // namespace fastbird

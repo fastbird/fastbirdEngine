@@ -21,7 +21,9 @@ namespace fastbird
 		static bool IsFileExisting(const char* filepath);
 		static void Rename(const char* prev, const char* newname);
 		static void DelFile(const char* file);
+		static void NewFile(const char* filepath);
 		static void CreateFolder(const char* folderPath);
-		static const char* GetCWD() { return mRootAbs.c_str(); }
+		static const char* GetCWD();
+		static std::string OpenFile(HWND hwnd, char* filter);
 	};
 }

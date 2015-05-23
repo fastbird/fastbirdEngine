@@ -23,6 +23,11 @@ namespace fastbird
 		virtual IWinBase* GetChild(unsigned idx);
 		virtual unsigned GetNumChildren(bool excludeRunTimeChild = false) const;
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+
+		// called when the parent size has changed.
+		virtual void NotifySizeChange();
+		virtual void NotifyPosChange();		
+
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual void RefreshVScrollbar();
@@ -31,9 +36,7 @@ namespace fastbird
 		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
 		virtual void Scrolled();
-		virtual void SetWNPosOffset(const Vec2& offset);
-		virtual void SetAnimNPosOffset(const Vec2& offset);
-		virtual void SetAnimScale(const Vec2& scale, const Vec2& pivot);
+		virtual void SetWNScollingOffset(const Vec2& offset);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
@@ -43,14 +46,12 @@ namespace fastbird
 		virtual void RefreshScissorRects();
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		void ParseXMLChildren(tinyxml2::XMLElement* pelem);
 		virtual void Save(tinyxml2::XMLElement& elem);
+		void SaveChildren(tinyxml2::XMLElement& elem);
 		virtual bool ParseLua(const fastbird::LuaObject& compTable);
 
 		void SetChildrenPosSizeChanged() { mChildrenPosSizeChanged = true; }
-
-		virtual float PixelToLocalNWidth(int pixel) const;
-		virtual float PixelToLocalNHeight(int pixel) const;
-		virtual Vec2 PixelToLocalNSize(const Vec2I& pixel) const;
 
 		bool HasVScroll() { return mScrollerV != 0; }
 		const Vec2& GetScrollOffset() const;
@@ -66,8 +67,12 @@ namespace fastbird
 		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const;
 		virtual IWinBase* WinBaseWithTabOrder(unsigned tabOrder) const;
 		virtual void GatherTabOrder(VectorMap<unsigned, IWinBase*>& winbases) const;
+		virtual void GetBiggestTabOrder(int& curBiggest) const;
 		virtual void TabPressed();
 		virtual float GetContentHeight() const;
+
+		void TransferChildrenTo(Container* destContainer);
+		void AddChild(IWinBase* child);
 		
 
 	private:
@@ -76,13 +81,9 @@ namespace fastbird
 	protected:
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		/*virtual void GatherVisitAlpha(std::vector<IUIObject*>& v);*/
-		virtual void OnPosChanged();
 		virtual void OnSizeChanged();
+		virtual void OnPosChanged(bool anim);
 		friend class UIManager;
-		Vec2 ConvertChildSizeToWorldCoord(const fastbird::Vec2& size) const;
-		Vec2 ConvertChildPosToWorldCoord(const fastbird::Vec2& pos) const;
-		Vec2 ConvertWorldSizeToParentCoord(const fastbird::Vec2& worldSize) const;
-		Vec2 ConvertWorldPosToParentCoord(const fastbird::Vec2& worldPos) const;
 
 	protected:
 		typedef std::list<IWinBase*> COMPONENTS;
@@ -91,7 +92,7 @@ namespace fastbird
 		Scroller* mScrollerV;
 		bool mUseScrollerH;
 		bool mUseScrollerV;
-		IWinBase* mWndContentUI;
+		Container* mWndContentUI;
 		bool mChildrenPosSizeChanged;
 		bool mChildrenChanged;  // only detecting addition. not deletion.
 		bool mMatchHeight;

@@ -144,12 +144,16 @@ namespace fastbird
 			mUpdateMaterialParams = false;
 			IMaterial* mat = mUIObject->GetMaterial();
 			assert(mat);
+			const auto& finalSize = GetFinalSize();
+			const auto& finalPos = GetFinalPos();
+			auto wnPos = finalPos / Vec2(GetRenderTargetSize());
+			auto wnSize = finalSize / Vec2(GetRenderTargetSize());
 			Vec4 param[3];
 			param[0] = Vec4(mHexaEnabled[0] ? 1.0f : 0.0f, mHexaEnabled[1] ? 1.0f : 0.0f,
 				mHexaEnabled[2] ? 1.0f : 0.0f, mHexaEnabled[3] ? 1.0f : 0.0f);
 			param[1] = Vec4(mHexaEnabled[4] ? 1.0f : 0.0f, mHexaEnabled[5] ? 1.0f : 0.0f,
-				mWNSize.x, mWNSize.y);
-			param[2] = Vec4(mWNPos.x, mWNPos.y, 0.0f, 0.0f);
+				wnSize.x, wnSize.y);
+			param[2] = Vec4(wnPos.x, wnPos.y, 0.0f, 0.0f);
 			for (int i = 1; i < 4; ++i)
 				mat->SetMaterialParameters(i, param[i-1]);
 		}
@@ -162,7 +166,11 @@ namespace fastbird
 		mMouseInHexaIdx = -1;
 		if (isIn)
 		{
-			Vec2 localMousePos = (mouse->GetNPos() - mWNPos) / mWNSize;
+			const auto& finalSize = GetFinalSize();
+			const auto& finalPos = GetFinalPos();
+			auto wnPos = finalPos / Vec2(GetRenderTargetSize());
+			auto wnSize = finalSize / Vec2(GetRenderTargetSize());
+			Vec2 localMousePos = (mouse->GetNPos() - wnPos) / wnSize;
 			localMousePos = localMousePos*2.0f - 1.0f;
 			localMousePos.y = -localMousePos.y;
 			

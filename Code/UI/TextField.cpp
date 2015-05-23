@@ -33,6 +33,10 @@ TextField::TextField()
 
 TextField::~TextField()
 {
+	auto mani = gFBUIManager->GetTextManipulator();
+	if (mani){
+		mani->RemoveListener(this);
+	}
 }
 
 void TextField::GatherVisit(std::vector<IUIObject*>& v)
@@ -59,10 +63,10 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		if (ch == VK_TAB)	{
 			if (IsKeyboardFocused())
 			{
-				keyboard->PopChar();
 				auto listbox = IsInListBox();
 				if (listbox)
 				{
+					keyboard->PopChar();
 					if (keyboard->IsKeyDown(VK_SHIFT)) {
 						listbox->IterateItem(false, true);
 					}
@@ -182,6 +186,7 @@ void TextField::OnFocusLost()
 	}
 	mani->SetText(0);
 	mani->RemoveListener(this);
+	TriggerRedraw();
 }
 
 void TextField::SetPasswd(bool passwd)
@@ -192,9 +197,8 @@ void TextField::SetPasswd(bool passwd)
 void TextField::OnCursorPosChanged(TextManipulator* mani)
 {	
 	TriggerRedraw();
-
-	auto finalPos = GetFinalPos();
 	int cursorPos = mani->GetCursorPos();	
+	const auto& textStartWPos = mUIObject->GetTextStartWPos();
 	if (mani->IsHighlighting())
 	{
 		auto start = mani->GetHighlightStart();
@@ -203,41 +207,48 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 		{
 			std::swap(start, end);
 		}
-		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+		if (end - start > 0){
+			gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
 			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				((const char*)mTextw.c_str()) + (start*2),
-				(end-start) * 2);
+				((const char*)mTextw.c_str()) + (start * 2),
+				(end - start+1) * 2);
 			float leftGap = gFBEnv->pRenderer->GetFont()->GetTextWidth(
 				(const char*)mTextw.c_str(), start * 2);
-		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
-		float xpos = ConvertToNormalized(Vec2I((int)leftGap, (int)leftGap)).x;
-
-		Vec2 size = ConvertToNormalized(Vec2I((int)width, (int)mTextSize));
-		KeyboardCursor::GetKeyboardCursor().SetNSize(size);
-
-		KeyboardCursor::GetKeyboardCursor().SetNPos(
-			Vec2(mUIObject->GetTextStarNPos().x + xpos, finalPos.y)
-			);
+			gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)width, (int)mTextSize));
+			KeyboardCursor::GetKeyboardCursor().SetPos(
+				Vec2I(textStartWPos.x + (int)leftGap,
+				textStartWPos.y - Round(mTextSize))
+				);
+		}
+		else{
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)1, (int)mTextSize));
+			KeyboardCursor::GetKeyboardCursor().SetPos(
+				Vec2I(textStartWPos.x, textStartWPos.y - Round(mTextSize))
+				);
+		}
 	}
 	else
 	{
 		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
 			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-			Vec2 size = ConvertToNormalized(Vec2I((int)aWidth, 2));
-			KeyboardCursor::GetKeyboardCursor().SetNSize(size);
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I(Round(aWidth), 2));
 			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
 				(const char*)mTextw.c_str(), cursorPos * 2);
+
 		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
-		float xpos = ConvertToNormalized(Vec2I((int)width, (int)width)).x;
-		KeyboardCursor::GetKeyboardCursor().SetNPos(
-			Vec2(mUIObject->GetTextStarNPos().x + xpos,
-			finalPos.y + mWNSize.y - GetTextBottomGap() - (2.f / GetRenderTargetSize().y)));
+
+		KeyboardCursor::GetKeyboardCursor().SetPos(
+			Vec2I(textStartWPos.x + Round(width),
+				textStartWPos.y - WinBase::BOTTOM_GAP - 2)
+			);
 	}
 }
 void TextField::OnTextChanged(TextManipulator* mani)
 {
 	TriggerRedraw();
 	SetText(mTextw.c_str());
+	mTextBeforeTranslated.clear();
 }
 
 void TextField::SetUseBorder(bool use)
@@ -330,9 +341,18 @@ void TextField::SetUseBorder(bool use)
 	}
 }
 
-void TextField::OnPosChanged()
+void TextField::OnPosChanged(bool anim)
 {
-	__super::OnPosChanged();
+	__super::OnPosChanged(anim);
+	if (gFBUIManager->GetKeyboardFocusUI() == this)
+	{
+		OnCursorPosChanged(gFBUIManager->GetTextManipulator());
+		KeyboardCursor::GetKeyboardCursor().SetScissorRegion(GetScissorRegion());
+	}
+}
+
+void TextField::OnSizeChanged(){
+	__super::OnSizeChanged();
 	if (gFBUIManager->GetKeyboardFocusUI() == this)
 	{
 		OnCursorPosChanged(gFBUIManager->GetTextManipulator());
@@ -371,11 +391,15 @@ void TextField::SelectAllAfterGetFocused()
 
 void TextField::OnClicked(void* arg){
 	assert(this == arg);
+	if (!IsKeyboardFocused()){
+		gFBUIManager->SetFocusUI(this);
+	}
 	auto mouse = gFBEnv->pEngine->GetMouse();
 	long x, y;
 	mouse->GetPos(x, y);
 	Vec2I cursorPos(x, y);
-	PixelToLocalPixel(cursorPos);
+	const auto& finalPos = GetFinalPos();
+	cursorPos = cursorPos - finalPos;
 	cursorPos.x -= mTextGap.x;
 
 	auto font = gFBEnv->pRenderer->GetFont();

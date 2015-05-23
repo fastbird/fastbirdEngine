@@ -27,6 +27,9 @@ namespace fastbird
 	std::string ConcatFilepath(const char* a, const char* b);
 	// if outChar is zero, you have to free the returned pointer.
 	char* ToAbsolutePath(char* outChar, const char* a);
+	bool StringsEqual_i(const std::string& lhs, const std::string& rhs);
+	void SplitPath(const std::string& in_path, std::vector<std::string>& split_path);
+	std::string GetRelativePath(const std::string& to, const std::string& from);
 	StringVector Split(const std::string& str, const std::string& delims = "\t\n, ", 
 		unsigned int maxSplits = 0, bool preserveDelims = false);
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
@@ -85,6 +88,9 @@ namespace fastbird
             Format is "x y" (i.e. 2x float values, space delimited)
         */
         static std::string toString(const Vec2& val);
+
+		static std::string toString(const Vec2I& val);
+
         /** Converts a Vec3 to a String. 
         @remarks
             Format is "x y z" (i.e. 3x float values, space delimited)

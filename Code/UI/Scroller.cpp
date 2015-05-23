@@ -93,7 +93,7 @@ void Scroller::OnStartUpdate(float elapsedTime)
 }
 void Scroller::ResetScroller()
 {
-	mOffset = Vec2I(0, 0);
+	mOffset = Vec2(0, 0);
 	mCurOffset = 0;
 	mDestOffset = 0;
 

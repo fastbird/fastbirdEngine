@@ -12,7 +12,7 @@ RadioBox::RadioBox()
 	, mGroupID(-1)
 {
 	mRadioImageBox = static_cast<ImageBox*>(
-		AddChild(0.f, 0.f, 0.05f, 1.0f, ComponentType::ImageBox));
+		AddChild(Vec2I(0, 0), Vec2I(24, 24), ComponentType::ImageBox));
 	mRadioImageBox->SetRuntimeChild(true);
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
 	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
@@ -22,6 +22,7 @@ RadioBox::RadioBox()
 
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
+	mStaticText->ChangePosX(24);
 	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
 	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
@@ -144,36 +145,9 @@ void RadioBox::UpdateImage()
 void RadioBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	Vec2 wnSize = mRadioImageBox->GetWNSize();
-
-	auto rtSize = GetRenderTargetSize();
-	unsigned width = rtSize.x;
-	unsigned height = rtSize.y;
-	float fHeight = wnSize.y * height;
-	float fWidth = wnSize.x * width;
-	if (fHeight > fWidth)
-	{
-		float wnWidth = fHeight / (float)width;
-		mRadioImageBox->SetWNSize(Vec2(wnWidth, wnSize.y));
-	}
-	else if (fHeight < fWidth)
-	{
-		float wnHeight = fWidth / (float)height;
-		mRadioImageBox->SetWNSize(Vec2(wnSize.x, wnHeight));
-	}
-}
-
-void RadioBox::OnPosChanged()
-{
-	__super::OnPosChanged();
-
-	const RECT& region = mRadioImageBox->GetRegion();
-	unsigned posx = region.right+4;
-	auto rtSize = GetRenderTargetSize();
-	float fPosX = (float)posx / rtSize.x;
-	Vec2 wnPos = mStaticText->GetWNPos();
-	mStaticText->SetWNPos(Vec2(fPosX, wnPos.y));
-	
+	int sizeY = GetFinalSize().y;
+	mRadioImageBox->ChangeSize(Vec2I(sizeY, sizeY));
+	mStaticText->ChangePosX(sizeY+4);
 }
 
 void RadioBox::OnMouseHover(void* arg)

@@ -28,6 +28,7 @@ namespace fastbird
 		"OnHide",
 		"EVENT_ON_LOADED",
 		"OnListBoxCleared",
+		"OnListBoxSelectionChanged",
 		"OnColorRampDragged",
 
 		"EVENT_NUM"

@@ -33,8 +33,8 @@ void CheckBox::OnCreated()
 	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
-	mCheckImageBox->SetSize(Vec2I(24, 24));
-	mCheckImageBox->SetNPos(Vec2(0.0, 0.5f));
+	mCheckImageBox->ChangeSize(Vec2I(24, 24));
+	mCheckImageBox->ChangeNPos(Vec2(0.0, 0.5f));
 
 	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));

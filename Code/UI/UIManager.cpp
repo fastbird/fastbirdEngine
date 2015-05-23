@@ -295,6 +295,8 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 	}
 	tinyxml2::XMLDocument doc;
 	int err = doc.LoadFile(filepath);
+	char buf[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, buf);
 	if (err)
 	{
 		Error("parsing ui file(%s) failed.", filepath);
@@ -335,7 +337,7 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 
 	std::string scriptPath;
 	const char* sz = pRoot->Attribute("script");
-	if (sz)
+	if (sz && strlen(sz)!=0)
 	{
 		int error = luaL_dofile(mL, sz);
 		if (error)
@@ -343,7 +345,6 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 			char buf[1024];
 			sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
 			Error(DEFAULT_DEBUG_ARG, buf);
-			assert(0);
 			return false;
 		}
 		scriptPath = sz;
@@ -451,7 +452,7 @@ void UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc)
 		Error(FB_DEFAULT_DEBUG_ARG, "doesn't have any window!");
 		return;
 	}
-	if (it->second.size() != 0)
+	if (it->second.size() != 1)
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, "Only supporting an window per ui.");
 		return;
@@ -643,8 +644,8 @@ void UIManager::DeleteLuaUI(const char* uiName)
 	{
 		for (auto& win : it->second)
 		{
-			DeleteWindow(win);
 			DirtyRenderList(win->GetHwndId());
+			DeleteWindow(win);			
 		}
 		mLuaUIs.erase(it);
 	}
@@ -674,9 +675,10 @@ IWinBase* UIManager::AddWindow(int posX, int posY, int width, int height, Compon
 		pWnd->SetHwndId(hwndId);
 		auto& windows = mWindows[hwndId];
 		windows.push_back(pWnd);
-		pWnd->SetSize(Vec2I(width, height));
-		pWnd->SetPos(Vec2I(posX, posY));
+		pWnd->ChangeSize(Vec2I(width, height));
+		pWnd->ChangePos(Vec2I(posX, posY));
 		mNeedToRegisterUIObject[hwndId] = true;
+		pWnd->OnCreated();
 	}
 	
 	return pWnd;
@@ -700,9 +702,10 @@ IWinBase* UIManager::AddWindow(float posX, float posY, float width, float height
 		pWnd->SetHwndId(hwndId);
 		auto& windows = mWindows[hwndId];
 		windows.push_back(pWnd);
-		pWnd->SetNSize(Vec2(width, height));
-		pWnd->SetNPos(Vec2(posX, posY));
+		pWnd->ChangeNSize(Vec2(width, height));
+		pWnd->ChangeNPos(Vec2(posX, posY));
 		mNeedToRegisterUIObject[hwndId] = true;
+		pWnd->OnCreated();
 	}
 	return pWnd;
 }
@@ -723,6 +726,7 @@ IWinBase* UIManager::AddWindow(ComponentType::Enum type, HWND_ID hwndId)
 		auto& windows = mWindows[hwndId];
 		windows.push_back(pWnd);
 		mNeedToRegisterUIObject[hwndId] = true;
+		pWnd->OnCreated();
 	}
 	
 	return pWnd;
@@ -736,7 +740,6 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 	{
 		mKeyboardFocus = 0;
 	}
-	DeleteLuaUIContaning(pWnd);
 	OnDeleteWinBase(pWnd);
 	auto hwndId = pWnd->GetHwndId();
 	assert(hwndId != -1);
@@ -785,6 +788,11 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	if (!winbase)
 		return;
 
+	if (mUIEditor)
+	{
+		mUIEditor->OnComponentDeleted(winbase);
+	}
+
 	if (winbase->GetFocus(true))
 		mFocusWnd = 0;	
 	
@@ -799,9 +807,9 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
-	for (auto& ui : mSetFocusReserved)
+	for (auto& reservedUI : mSetFocusReserved)
 	{
-		if (ui == ui)
+		if (ui == reservedUI)
 			return;
 	}
 
@@ -980,6 +988,7 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 //---------------------------------------------------------------------------
 void UIManager::DeleteComponent(IWinBase* com)
 {
+	OnDeleteWinBase(com);
 	if (mKeyboardFocus == com)
 		mKeyboardFocus = 0;
 	FB_DELETE(com);
@@ -1046,13 +1055,14 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 	
 	if (mUIEditor){
-		if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_DELETE)) {
-			mUIEditor->TryToDeleteCurComp();
-			keyboard->Invalidate();
+		if (gFBEnv->pEngine->IsMainWindowForground()) {
+			if (keyboard->IsValid() && keyboard->IsKeyPressed(VK_DELETE)) {
+				mUIEditor->TryToDeleteCurComp();
+				keyboard->Invalidate();
+			}
+			DragUI();
+			mUIEditor->ProcessKeyInput();
 		}
-		
-		DragUI();
-		mUIEditor->AlignUI();
 	}
 
 	if (mIgnoreInput) {
@@ -1173,14 +1183,14 @@ void UIManager::ShowTooltip()
 
 	const int maxWidth = 350;
 	width = std::min(maxWidth, width) + 4;
-	mTooltipUI->SetSizeX(width + 16);
-	mTooltipTextBox->SetSizeX(width);
+	mTooltipUI->ChangeSizeX(width + 16);
+	mTooltipTextBox->ChangeSizeX(width);
 	mTooltipTextBox->SetText(mTooltipText.c_str());
 	int textWidth = mTooltipTextBox->GetTextWidth();
-	mTooltipUI->SetSizeX(textWidth + 16);
-	mTooltipTextBox->SetSizeX(textWidth+4);
+	mTooltipUI->ChangeSizeX(textWidth + 16);
+	mTooltipTextBox->ChangeSizeX(textWidth + 4);
 	int sizeY = mTooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
-	mTooltipUI->SetSizeY(sizeY + 8);
+	mTooltipUI->ChangeSizeY(sizeY + 8);
 	mTooltipUI->SetVisible(true);
 }
 
@@ -1204,7 +1214,7 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 		backPos.x -= backPos.x + nSize.x - 1.0f;
 	}
 	backPos.y += gTooltipFontSize / (float)size.y;
-	mTooltipUI->SetNPos(backPos);
+	mTooltipUI->ChangeNPos(backPos);
 }
 
 void UIManager::CleanTooltip()
@@ -1222,8 +1232,8 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 	{
 		mPopup = CreateComponent(ComponentType::Window);
 		mPopup->SetHwndId(gFBEnv->pEngine->GetMainWndHandleId());
-		mPopup->SetNPos(Vec2(0.5f, 0.5f));
-		mPopup->SetNSize(Vec2(0.3f, 0.1f));
+		mPopup->ChangeNPos(Vec2(0.5f, 0.5f));
+		mPopup->ChangeNSize(Vec2(0.3f, 0.1f));
 		mPopup->SetProperty(UIProperty::ALIGNH, "center");
 		mPopup->SetProperty(UIProperty::ALIGNV, "middel");
 		mPopup->SetProperty(UIProperty::TEXT_ALIGN, "center");
@@ -1464,10 +1474,10 @@ bool UIManager::OnFileChanged(const char* file)
 		if (!windows.empty())
 		{
 			hwndId = windows[0]->GetHwndId();
-			for (const auto& ui : itFind->second)
-			{
-				DeleteWindow(ui);
-			}
+			while (!windows.empty()){
+				DeleteWindow(windows.back());
+				windows.pop_back();
+			}			
 		}
 		mLuaUIs.erase(itFind);
 	}
@@ -1663,12 +1673,14 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 	auto windows = mWindows[hwndId];
 	for (auto wnd : windows)
 	{
-		auto cont = dynamic_cast<Container*>(wnd);
-		if (!cont || !cont->GetVisible())
+		if(!wnd->GetVisible())
 			continue;
-		auto found = cont->WinBaseWithPoint(pt, param);
+		auto found = wnd->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
+
+		if (wnd->IsIn(pt, param.mIgnoreScissor))
+			return wnd;
 	}
 
 	return 0;
@@ -1808,6 +1820,8 @@ void UIManager::ChangeFilepath(IWinBase* root, const char* newfile)
 		}
 
 		auto oldFilepath = root->GetUIFilePath();
+		gFBEnv->pEngine->StopFileChangeMonitor(oldFilepath);
+		gFBEnv->pEngine->StopFileChangeMonitor(newfile);
 		FileSystem::Rename(oldFilepath, newfile);
 		mLuaUIs[newName].swap(it->second);
 		mLuaUIs.erase(it);
@@ -1845,6 +1859,9 @@ void UIManager::DragUI(){
 	static Vec2I sExpand(8, 8);
 	static int sAreaX = 4;
 	static int sAreaY = 4;
+
+	if (!gFBEnv->pEngine->IsMainWindowForground())
+		return;
 
 	auto mouse = gFBEnv->pEngine->GetMouse();	
 	auto keyboard = gFBEnv->pEngine->GetKeyboard();
@@ -1915,23 +1932,23 @@ void UIManager::DragUI(){
 			if (sSizingXLeft)
 			{
 				curUI->Move(Vec2I(delta.x, 0));
-				curUI->SetSizeModificator(Vec2I(-delta.x, 0));
+				curUI->ModifySize(Vec2I(-delta.x, 0));
 				sizing = true;
 			}
 			if (sSizingXRight)
 			{
-				curUI->SetSizeModificator(Vec2I(delta.x, 0));
+				curUI->ModifySize(Vec2I(delta.x, 0));
 				sizing = true;
 			}
 			if (sSizingYTop)
 			{
 				curUI->Move(Vec2I(0, delta.y));
-				curUI->SetSizeModificator(Vec2I(0, -delta.y));
+				curUI->ModifySize(Vec2I(0, -delta.y));
 				sizing = true;
 			}
 			if (sSizingYBottom)
 			{
-				curUI->SetSizeModificator(Vec2I(0, delta.y));
+				curUI->ModifySize(Vec2I(0, delta.y));
 				sizing = true;
 			}
 			if (!sizing)
@@ -1964,6 +1981,7 @@ void UIManager::DragUI(){
 			SetCursor(WinBase::sCursorAll);
 		}
 
+		mUIEditor->OnPosSizeChanged();
 		if (mouse->IsDragEnded()){
 			mouse->PopDragEvent();
 			sDragStarted = false;

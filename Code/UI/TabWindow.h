@@ -9,6 +9,7 @@ namespace fastbird{
 		std::vector<IWinBase*> mWindows;
 		unsigned mNumTabs;
 		std::string mStrTabNames;
+		unsigned mCurTabIndex;
 
 	public:
 		TabWindow();
@@ -18,6 +19,10 @@ namespace fastbird{
 		virtual void OnCreated();
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
+		virtual void Save(tinyxml2::XMLElement& elem);
+		virtual bool SetVisible(bool show);
+		void UpdateTabIndex(unsigned index);
 
 	private:
 		void BuildTabWnd(unsigned numTabs);

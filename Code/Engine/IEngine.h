@@ -180,6 +180,9 @@ namespace fastbird
 		virtual void DeleteTextManipulator(TextManipulator* mani) = 0;
 
 		virtual void SetInputOverride(const LuaObject& func) = 0;
+
+		virtual void StopFileChangeMonitor(const char* filepath) = 0;
+		virtual void ResumeFileChangeMonitor(const char* filepath) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

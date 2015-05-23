@@ -31,7 +31,8 @@ for (; it != it ## End; ++it)
 #define if_assert_pass(V) assert((V)); \
 if ((V))
 
-#define if_assert_fail(V) assert((V)); \
+//assert((V));
+#define if_assert_fail(V)  \
 if (!(V))
 
 #define ValueNotExistInVector(arr, v)	(std::find(arr.begin(), arr.end(), v) == arr.end())

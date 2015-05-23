@@ -36,18 +36,6 @@ void ListItem::GatherVisit(std::vector<IUIObject*>& v)
 	__super::GatherVisit(v);
 }
 
-void ListItem::OnPosChanged()
-{
-	__super::OnPosChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-void ListItem::OnSizeChanged()
-{
-	__super::OnSizeChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
 CheckBox* ListItem::GetCheckBox() const
 {
 	for (auto& child : mChildren)

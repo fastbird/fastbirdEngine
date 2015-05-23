@@ -37,8 +37,6 @@ namespace fastbird
 
 	protected:
 		const static float LEFT_GAP;
-		virtual void OnPosChanged();
-		virtual void OnSizeChanged();
 
 		size_t mRowIndex;
 		size_t mColIndex;

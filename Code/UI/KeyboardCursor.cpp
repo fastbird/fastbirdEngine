@@ -39,15 +39,13 @@ KeyboardCursor::~KeyboardCursor()
 	gFBEnv->pEngine->DeleteUIObject(mUIObject);
 }
 
-//---------------------------------------------------------------------------------------
-void KeyboardCursor::SetNPos(const Vec2& pos)
-{
-	mUIObject->SetNPos(pos);
+//---------------------------------------------------------------------
+void KeyboardCursor::SetPos(const Vec2I& pos){
+	mUIObject->SetUIPos(pos);
 }
 
-void KeyboardCursor::SetNSize(const Vec2& size)
-{
-	mUIObject->SetNSize(size);
+void KeyboardCursor::SetSize(const Vec2I& size){
+	mUIObject->SetUISize(size);
 }
 
 IUIObject* KeyboardCursor::GetUIObject() const

@@ -44,25 +44,25 @@ namespace fastbird
 		__super::GatherVisit(v);
 	}
 
-	void TextBox::SetWNPosOffset(const Vec2& offset)
+	void TextBox::SetWNScollingOffset(const Vec2& offset)
 	{
-		__super::SetWNPosOffset(offset);
+		__super::SetWNScollingOffset(offset);
 		if (mImage)
-			mImage->SetWNPosOffset(offset);
+			mImage->SetWNScollingOffset(offset);
 	}
 
-	void TextBox::OnPosChanged()
+	void TextBox::OnPosChanged(bool anim)
 	{
-		__super::OnPosChanged();
+		__super::OnPosChanged(anim);
 		if (mImage)
-			mImage->SetWNPos(mWNPos);
+			mImage->SetPos(GetFinalPos());
 	}
 
 	void TextBox::OnSizeChanged()
 	{
 		__super::OnSizeChanged();
 		if (mImage)
-			mImage->SetWNSize(mWNSize);
+			mImage->SetSize(GetFinalSize());
 
 	}
 
@@ -103,8 +103,8 @@ namespace fastbird
 				mImage->SetHwndId(GetHwndId());
 				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 				mImage->SetParent(this);
-				mImage->SetWNPos(mWNPos);
-				mImage->SetWNSize(mWNSize);
+				mImage->ChangePos(GetFinalPos());
+				mImage->ChangeSize(GetFinalSize());
 			}
 			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
@@ -121,8 +121,8 @@ namespace fastbird
 				mImage->SetHwndId(GetHwndId());
 				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
 				mImage->SetParent(this);
-				mImage->SetWNPos(mWNPos);
-				mImage->SetWNSize(mWNSize);
+				mImage->ChangePos(GetFinalPos());
+				mImage->ChangeSize(GetFinalSize());
 			}
 			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 			mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));

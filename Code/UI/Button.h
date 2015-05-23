@@ -20,7 +20,7 @@ public:
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 	virtual void OnSizeChanged();
-	virtual void OnPosChanged();
+	virtual void OnPosChanged(bool anim);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar

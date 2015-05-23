@@ -28,9 +28,6 @@ namespace fastbird{
 
 		void SetFocusRow(unsigned row){ mFocusRow = row; }
 		unsigned GetFocusRow() const { return mFocusRow; }
-			
-	private:
-		ListItem* CreateNewKeyItem(int row, int col, float ny);
-		ListItem* CreateNewValueItem(int row, int col, float ny);		
+		
 	};
 }

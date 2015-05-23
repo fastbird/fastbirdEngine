@@ -42,15 +42,17 @@ DropDown::~DropDown()
 void DropDown::OnCreated()
 {
 	mButton = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
+
 	mButton->SetHwndId(GetHwndId());
 	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
 	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 	mButton->SetSize(Vec2I(24, 24));
 	mButton->SetProperty(UIProperty::ALIGNH, "right");
-	Vec2 btnPos = mWNPos;
-	btnPos.x += mWNSize.x;
-	mButton->SetWNPos(btnPos);
+	Vec2I btnPos = GetFinalPos();
+	btnPos.x += GetFinalSize().x;
+	mButton->ChangePos(btnPos);
+
 	mButton->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	mButton->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");
 	mButton->SetProperty(UIProperty::REGION, "dropdown");
@@ -69,15 +71,16 @@ void DropDown::GatherVisit(std::vector<IUIObject*>& v)
 		mButton->GatherVisit(v);
 }
 
-void DropDown::OnPosChanged()
+void DropDown::OnPosChanged(bool anim)
 {
-	__super::OnPosChanged();
-	AlignText();
+	__super::OnPosChanged(anim);
 	
-	Vec2 btnPos= mWNPos;
-	btnPos.x += mWNSize.x;
-	if (mButton)
-		mButton->SetWNPos(btnPos);
+	if (mButton){
+		Vec2I btnPos = GetFinalPos();
+		btnPos.x += GetFinalSize().x;
+		mButton->ChangePos(btnPos);
+	}
+		
 }
 
 void DropDown::OnSizeChanged()
@@ -87,8 +90,9 @@ void DropDown::OnSizeChanged()
 
 	if (mButton)
 	{
-		mButton->SetWNSize(mWNSize);
+		mButton->SetSizeY(GetFinalSize().y);
 		mButton->SetSizeX(24);
+		mButton->OnSizeChanged();
 	}
 }
 

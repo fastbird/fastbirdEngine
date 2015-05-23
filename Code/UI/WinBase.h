@@ -11,7 +11,8 @@ namespace fastbird
 	class WinBase : public IWinBase, public EventHandler
 	{
 	protected:
-		static const float WinBase::LEFT_GAP;
+		static const int WinBase::LEFT_GAP;
+		static const int WinBase::BOTTOM_GAP;
 		static const float NotDefined;
 		static Vec2I OSWindowPos;
 		static bool sSuppressPropertyWarning;
@@ -29,27 +30,32 @@ namespace fastbird
 		ALIGNV::Enum mAlignV;
 		// local
 		Vec2I mSize;
+		Vec2 mAnimScale;
+		Vec2I mScaledSize;
 		Vec2 mNSize; //0.0f~1.0f
 		bool mFillX;
 		bool mFillY;
 		Vec2I mPos;
-		Vec2 mNPos; // normalized pos 0.f ~ 1.f
+		Vec2I mWPos;
+		Vec2I mWAlignedPos;
+		Vec2I mScrolledPos;
+		Vec2I mAnimatedPos;
+
+		Vec2 mAnimPos;			
+		Vec2 mNPos;
+		Vec2 mNPosAligned;
+		Vec2 mWNPos;
+		// scrolling offset;
+		Vec2 mWNScrollingOffset;
+
 		float mAspectRatio;
+		bool mAspectRatioSet;
 		bool mUseAbsoluteXPos;
 		bool mUseAbsoluteYPos;
 
 		bool mUseAbsoluteXSize;
 		bool mUseAbsoluteYSize;
-		bool mAbsTempLock;
 
-		// aligned local
-		Vec2 mNPosAligned; // normalized pos 0.f ~ 1.f
-
-		// world
-		Vec2 mWNSize; // worldSize aligned.
-		Vec2 mWNPos; // worldPos;
-		Vec2 mWNPosOffset; // scrollbar offset
-		Vec2 mNPosOffset;
 		Container* mParent;
 		WinBase* mManualParent;
 
@@ -130,6 +136,7 @@ namespace fastbird
 		int mTabOrder;
 		bool mSaveCheck;
 		bool mRunTimeChild;
+		bool mGhost;
 
 		VectorMap<IEventHandler::EVENT, std::string> mEventFuncNames;
 
@@ -169,36 +176,63 @@ namespace fastbird
 		virtual void SetName(const char* name);
 		virtual const char* GetName() const;
 		virtual void ClearName();
-		virtual void SetSize(const fastbird::Vec2I& size);
-		virtual void SetSizeX(int x);
-		virtual void SetSizeY(int y);
-		virtual void SetPos(const fastbird::Vec2I& pos);
-		virtual void SetPosX(int x);
-		virtual void SetPosY(int y);
-		virtual void SetInitialOffset(Vec2I offset);
-		virtual void Move(Vec2I amount);
 
-		virtual void SetNSize(const fastbird::Vec2& size); // normalized size (0.0~1.0)
+		// Sizing
+		virtual void ChangeSize(const Vec2I& size); // in runtime.
+		virtual void ChangeSizeX(int sizeX);
+		virtual void ChangeSizeY(int sizeY);
+		virtual void SetSize(const Vec2I& size); 		
+		virtual void SetSizeX(int x);		
+		virtual void SetSizeY(int y);
+
+		virtual void ChangeNSize(const Vec2& nsize);
+		virtual void SetNSize(const Vec2& size); // normalized size (0.0~1.0)
 		virtual void SetNSizeX(float x);
 		virtual void SetNSizeY(float y);
 
+		virtual void ModifySize(const Vec2I& sizemod);
 		virtual void SetWNSize(const fastbird::Vec2& size);
+		virtual void OnParentSizeChanged();
+		void SetAspectRatio(float ratio) { mAspectRatioSet = true; mAspectRatio = ratio; }
+		// called when the parent size has changed.
+		virtual void NotifySizeChange() {
+			/*nothing to do if this is not a container.*/
+		} 		
+
+		// Positioning
+		virtual void ChangePos(const Vec2I& pos); // in runtime
+		virtual void ChangePosX(int posx);
+		virtual void ChangePosY(int posy);
+		virtual void ChangeNPos(const Vec2& npos);
+		virtual void ChangeWPos(const Vec2I& wpos);
+		virtual void SetPos(const Vec2I& pos);
+		virtual void SetPosX(int x);
+		virtual void SetPosY(int y);		
+		
 		virtual void SetNPos(const fastbird::Vec2& pos); // normalized pos (0.0~1.0)
 		virtual void SetNPosX(float x);
 		virtual void SetNPosY(float y);
-		virtual void SetWNPos(const fastbird::Vec2& wnPos);
-		void SetAspectRatio(float ratio) { mAspectRatio = ratio; }
-		virtual void SetSizeModificator(const Vec2I& sizemod);
 
+		virtual void SetInitialOffset(Vec2I offset);
+		virtual void Move(Vec2I amount);
+		virtual void SetWNPos(const fastbird::Vec2& wnPos);
+		virtual void OnParentPosChanged();
+		virtual void NotifyPosChange(){
+			/*nothing to do if this is not a container.*/
+		}
+		
+		// Accessors
 		virtual const Vec2& GetWNPos() const { return mWNPos; }
-		virtual Vec2I GetWPos() const;
+		virtual const Vec2I& GetWPos() const { return mWPos; }
+		virtual const Vec2I& GetFinalPos() const { return mAnimatedPos; }
+		virtual const Vec2I& GetFinalSize() const { return mScaledSize; }
 		virtual void SetWPos(const Vec2I& wpos);
-		virtual Vec2 GetFinalPos() const { return mWNPos + mWNPosOffset; }
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
-		virtual const Vec2& GetWNSize() const { return mWNSize; }
+		//virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
+		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
 		virtual void SetUseAbsXPos(bool use) { mUseAbsoluteXPos = use; }
 		virtual void SetUseAbsYPos(bool use) { mUseAbsoluteYPos = use; }
@@ -207,7 +241,7 @@ namespace fastbird
 		virtual void SetUseAbsXSize(bool use) { mUseAbsoluteXSize = use; }
 		virtual void SetUseAbsYSize(bool use) { mUseAbsoluteYSize = use; }
 		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize; }
-		virtual bool GetUseAbsYSize() const { return mUseAbsoluteXSize; }
+		virtual bool GetUseAbsYSize() const { return mUseAbsoluteYSize; }
 
 		virtual bool SetVisible(bool show);
 		virtual bool SetVisibleChildren(bool show){ return false; }
@@ -245,12 +279,12 @@ namespace fastbird
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0);
 
 		virtual void Scrolled(){}
-		virtual void SetWNPosOffset(const Vec2& offset);
-		virtual const Vec2& GetWNPosOffset() const { return mWNPosOffset; }
-		virtual void SetAnimNPosOffset(const Vec2& offset);
-		virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
-		virtual void SetPivotToUIObject(const Vec2& pivot);
-		virtual Vec2 GetPivotWNPos();
+		virtual void SetWNScollingOffset(const Vec2& offset);
+		virtual const Vec2& GetWNScrollingOffset() const { return mWNScrollingOffset; }
+		virtual void SetAnimScale(const Vec2& scale);
+		virtual void SetAnimPos(const Vec2& pos);
+		/*virtual void SetPivotToUIObject(const Vec2& pivot);*/
+		//virtual Vec2 GetPivotWNPos();
 		virtual const RECT& GetRegion() const;
 		// OWN
 		// local space.
@@ -274,32 +308,8 @@ namespace fastbird
 		static void FinalizeMouseCursor();
 
 		void PosAnimationTo(const Vec2& destNPos, float speed);
-
-		virtual void SetAlphaBlending(bool set);
-		/*virtual bool GetAlphaBlending() const;*/
-		virtual float PixelToLocalNWidth(int pixel) const;
-		virtual float PixelToLocalNHeight(int pixel) const;
-		virtual Vec2 PixelToLocalNSize(const Vec2I& pixel) const;
-
-		virtual int PixelToLocalPixelWidth(int posx) const;
-		virtual int PixelToLocalPixelHeight(int posy) const;
-		virtual void PixelToLocalPixel(Vec2I& pos) const;
-
-		virtual int LocalNWidthToPixel(float nwidth) const;
-		virtual int LocalNHeightToPixel(float nheight) const;
-		virtual Vec2I LocalNSizeToPixel(const Vec2& nsize) const;
-
-		virtual float PixelToLocalNPosX(int pixel) const;
-		virtual float PixelToLocalNPosY(int pixel) const;
-		virtual Vec2 PixelToLocalNPos(const Vec2I& pixel) const;
-
-		virtual int LocalNPosXToPixel(float nposx) const;
-		virtual int LocalNPosYToPixel(float nposy) const;
-		virtual Vec2I LocalNPosToPixel(const Vec2& npos) const;
-
+		
 		virtual int GetTextWidth() const { return mTextWidth; }
-		virtual float GetTextWidthLocal() const;
-		virtual float GetTextEndWLocal() const;
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
 		virtual void Save(tinyxml2::XMLElement& elem);
@@ -318,10 +328,11 @@ namespace fastbird
 		}
 		virtual void* GetContent() const { return mCustomContent; }
 
+		//void UpdateWorldSize(bool settingSize = false);
+		void UpdateWorldPos();
 		void UpdateAlignedPos();
-		void UpdateWorldSize(bool settingSize = false);
-		void UpdateWorldPos(bool settingPos = false);
-		void UpdateNPos();
+		void UpdateScrolledPos();
+		void UpdateAnimatedPos();
 
 		virtual int GetSpecialOrder() const { return mSpecialOrder; }
 		virtual bool GetInheritVisibleTrue() const { return mInheritVisibleTrue; }
@@ -333,6 +344,7 @@ namespace fastbird
 		virtual void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
 		virtual bool GetRender3D() const{ return mRender3D; }
 		virtual Vec2I GetRenderTargetSize() const;
+		virtual Vec2I GetParentSize() const;
 
 		virtual IWinBase* GetRootWnd() const;
 
@@ -358,19 +370,22 @@ namespace fastbird
 			return 0;
 		}
 		virtual int GetTabOrder() const { return mTabOrder; }
-		virtual void TabPressed() {}
+		virtual void GetBiggestTabOrder(int& curBiggest) const;
+		virtual void TabPressed();
 
 		virtual void SetSaveNameCheck(bool set);
 		virtual bool GetSaveNameCheck() const;
 		virtual void SetRuntimeChild(bool runtime) { mRunTimeChild = runtime; }
 		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
+		virtual void SetGhost(bool ghost){ mGhost = ghost; }
+		virtual bool GetGhost() const{ return mGhost; }
 
 		virtual float GetContentHeight() const;
 
 		virtual bool IsKeyboardFocused() const;
 
 	protected:
-		virtual void OnPosChanged();
+		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
 		virtual void OnEnableChanged(){}
 

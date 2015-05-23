@@ -41,7 +41,8 @@ public:
 protected:
 	const static float LEFT_GAP;
 	virtual void SetUseBorder(bool use);
-	virtual void OnPosChanged();
+	virtual void OnPosChanged(bool anim);
+	virtual void OnSizeChanged();
 
 private:
 	bool mPasswd;

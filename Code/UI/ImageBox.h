@@ -38,7 +38,7 @@ public:
 	void SetKeepImageRatio(bool keep);
 	void SetUVRot(bool set);
 	void SetCenterUVMatParam();
-	void DrawAsFixedSizeCenteredAt(const Vec2& wnpos);
+	void DrawAsFixedSizeCenteredAt(const Vec2I& wpos);
 	void DrawAsFixedSizeAtCenter();
 	void DrawAsFixedSize();
 	void SetDesaturate(bool desat);

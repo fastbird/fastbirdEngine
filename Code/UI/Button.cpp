@@ -66,9 +66,9 @@ Button::~Button()
 	}
 }
 
-void Button::OnPosChanged()
+void Button::OnPosChanged(bool anim)
 {
-	__super::OnPosChanged();
+	__super::OnPosChanged(anim);
 	if (mButtonIconSize>0)
 		AlignIconText();
 	else
@@ -77,7 +77,7 @@ void Button::OnPosChanged()
 		{
 			if (mImages[i])
 			{
-				mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+				mImages[i]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			}
 		}
 	}		
@@ -86,37 +86,20 @@ void Button::OnPosChanged()
 void Button::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	/*float imgRatio = 1.0f;
-	const RECT& uiRect = mUIObject->GetRegion();
-	float uiRatio = (uiRect.right - uiRect.left) /
-		(float)(uiRect.bottom - uiRect.top);
-	if (uiRatio == imgRatio)
-	{*/
-		Vec2 texcoords[4] = {
-			Vec2(0.f, 1.f),
-			Vec2(0.f, 0.f),
-			Vec2(1.f, 1.f),
-			Vec2(1.f, 0.f)
-		};
-		mUIObject->SetTexCoord(texcoords, 4);
-	/*}
-	else
-	{
-		float halfu = (uiRatio / imgRatio) * .5f;
-		Vec2 texcoords[4] = {
-			Vec2(0.5f - halfu, 1.f),
-			Vec2(0.5f - halfu, 0.f),
-			Vec2(0.5f + halfu, 1.f),
-			Vec2(0.5f + halfu, 0.f)
-		};
-		mUIObject->SetTexCoord(texcoords, 4);
-	}*/
+	Vec2 texcoords[4] = {
+		Vec2(0.f, 1.f),
+		Vec2(0.f, 0.f),
+		Vec2(1.f, 1.f),
+		Vec2(1.f, 0.f)
+	};
+	mUIObject->SetTexCoord(texcoords, 4);
 
-		for (int i = 0; i < ButtonImages::Num; ++i)
-		{
-			if (mImages[i])
-				mImages[i]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
-		}
+	for (int i = 0; i < ButtonImages::Num; ++i)
+	{
+		if (mImages[i])
+			mImages[i]->DrawAsFixedSizeCenteredAt(
+				GetFinalPos() + Round(GetFinalSize() * .5f));
+	}
 }
 
 void Button::GatherVisit(std::vector<IUIObject*>& v)
@@ -298,7 +281,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   assert(!mImageAtlas.empty());
 							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 							   mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
-							   //mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   //mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 							   if (mIconText)
 							   {
 								   OnSizeChanged();
@@ -321,7 +304,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   assert(!mImageAtlas.empty());
 							   mImages[ButtonImages::Image]->SetProperty(UIProperty::TEXTUREATLAS, mImageAtlas.c_str());
 							   mImages[ButtonImages::Image]->SetProperty(prop, val);
-							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 							   if (mIconText)
 							   {
 								   OnSizeChanged();
@@ -376,7 +359,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									else
 									{
 										mImages[ButtonImages::ImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-										mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 									}
 									
 									return true;
@@ -390,7 +373,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										 }
 										 assert(!mImageAtlas.empty());
 										 mImages[ButtonImages::BackImage]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-										 mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										 mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 										 return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_DISABLED:
@@ -402,7 +385,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										 }
 										 assert(!mImageAtlas.empty());
 										 mImages[ButtonImages::BackImageDisabled]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-										 mImages[ButtonImages::BackImageDisabled]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										 mImages[ButtonImages::BackImageDisabled]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 										 return true;
 	}
 
@@ -416,7 +399,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 											   assert(!mImageAtlas.empty());
 											   mImages[ButtonImages::BackImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-											   mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+											   mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 											   return true;
 	}
 
@@ -429,7 +412,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										 }
 
 										mImages[ButtonImages::BackImage]->SetTexture(val);
-										mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 										 return true;
 	}
 
@@ -443,7 +426,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 											   
 												mImages[ButtonImages::BackImageHover]->SetTexture(val);
-												mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+												mImages[ButtonImages::BackImageHover]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 											   return true;
 	}
 
@@ -512,7 +495,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											mImages[ButtonImages::ActiveImage]->SetVisible(false);
 											mImages[ButtonImages::ActiveImage]->SetCenterUVMatParam();
 										}
-										mImages[ButtonImages::ActiveImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										mImages[ButtonImages::ActiveImage]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 
 										return true;
 	}
@@ -536,7 +519,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											  mImages[ButtonImages::DeactiveImage]->SetVisible(false);
 											  mImages[ButtonImages::DeactiveImage]->SetCenterUVMatParam();
 										  }
-										  mImages[ButtonImages::DeactiveImage]->DrawAsFixedSizeCenteredAt(mWNPos + mWNSize*.5f);
+										  mImages[ButtonImages::DeactiveImage]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 										  return true;
 	}
 
@@ -611,8 +594,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									mProgressBar->SetHwndId(GetHwndId());
 									mProgressBar->SetRender3D(mRender3D, GetRenderTargetSize());
 									mProgressBar->SetParent(this);
-									mProgressBar->SetWNSize(mWNSize);
-									mProgressBar->SetWNPos(mWNPos);
+									mProgressBar->SetSize(GetFinalSize());
+									mProgressBar->SetPos(GetFinalPos());
 									mProgressBar->SetMaximum(StringConverter::parseReal(val));									
 									return true;
 	}
@@ -1025,8 +1008,8 @@ ImageBox* Button::CreateImageBox()
 	image->SetRender3D(mRender3D, GetRenderTargetSize());
 	image->SetVisible(true);
 	image->SetParent(this);
-	image->SetWNPos(mWNPos);
-	image->SetSize(mSize);
+	image->SetPos(GetFinalPos());
+	image->SetSize(GetFinalSize());
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	return image;
 }
@@ -1132,30 +1115,26 @@ void Button::OnEnableChanged()
 
 void Button::AlignIconText()
 {
-	const float IconTextGap = 2.0f;
+	const int IconTextGap = 2;
 	if (mImages[ButtonImages::Image])
 	{
 		mImages[ButtonImages::Image]->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
-		auto rtSize = GetRenderTargetSize();
-		float iconSize = mImages[ButtonImages::Image]->GetWNSize().x * rtSize.x;
-		float textSize = (float)mTextWidth;
-		float buttonSize = mWNSize.x * rtSize.x;
-		float buttonCenter = buttonSize*.5f;
+		int iconSize = mImages[ButtonImages::Image]->GetFinalSize().x;
+		int textSize = mTextWidth;
+		int buttonSize = GetFinalSize().x;
+		int buttonCenter = Round(buttonSize*.5f);
 
-		float contentSize = iconSize + textSize + IconTextGap;
+		int contentSize = iconSize + textSize + IconTextGap;
 
-		float sizeGap = buttonSize - contentSize;
-		float iconStart = sizeGap*.5f;
-		float textStart = iconStart + iconSize + IconTextGap;
-		float textCenter = textStart + textSize * .5f;
+		int sizeGap = buttonSize - contentSize;
+		int iconStart = Round(sizeGap*.5f);
+		int textStart = iconStart + iconSize + IconTextGap;
+		int textCenter = textStart + Round(textSize * .5f);
 
-		float wnIconStart = iconStart / rtSize.x;
-		float wnTextStart = textStart / rtSize.x;
-		float nIconStart = ConvertWorldSizeToParentCoord(Vec2(wnIconStart, wnIconStart)).x;
 		mImages[ButtonImages::Image]->SetNPos(Vec2(0.f, 0.5f));
 		mImages[ButtonImages::Image]->SetInitialOffset(Vec2I(((int)iconStart), 0));
 		mImages[ButtonImages::Image]->UpdateWorldPos();
-		mTextGap.x = Round(textCenter - buttonCenter);
+		mTextGap.x = textCenter - buttonCenter;
 		AlignText();		
 	}	
 }

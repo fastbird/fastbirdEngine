@@ -19,7 +19,7 @@ public:
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 	virtual bool SetVisible(bool show);
-	virtual void SetAnimScale(const Vec2& scale, const Vec2& povot);
+	virtual void SetAnimScale(const Vec2& scale);
 	virtual void RefreshScissorRects();
 	
 	// own
@@ -37,7 +37,7 @@ public:
 
 protected:
 	virtual void OnSizeChanged();
-	virtual void OnPosChanged();
+	virtual void OnPosChanged(bool anim);
 	void RefreshFrame();
 	void OnTitlebarDrag(void *arg);
 

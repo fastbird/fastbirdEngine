@@ -34,9 +34,7 @@ v2p ui_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
-	OUTPUT.Position = float4(INPUT.Position, 1.0);
-	OUTPUT.Position.x += gWorld[0][3];
-	OUTPUT.Position.y += gWorld[1][3];
+	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
 #ifdef DIFFUSE_TEXTURE
 	#ifdef _UV_ROT
 		float2 center = gMaterialParam[0].xy;

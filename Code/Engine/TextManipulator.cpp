@@ -207,6 +207,11 @@ int TextManipulator::GetCursorPos() const
 
 void TextManipulator::SetCursorPos(int pos)
 {
+	if (!mText)
+	{
+		assert(0);
+		return;
+	}
 	mCursorPos = pos;
 	mCursorPos = std::min(mCursorPos, (int)mText->size());
 	OnCursorPosChanged();

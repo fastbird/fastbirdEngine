@@ -197,8 +197,8 @@ namespace fastbird
 				mDragEndY = mAbsY;
 				if (mDragStarted){
 					mDragStarted = false;
-					mDragEnd = true;
 				}
+				mDragEnd = true;
 				if (mDragStartX == mDragEndX && mDragStartY == mDragEndY)
 				{
 					ClearDrag();

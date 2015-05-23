@@ -56,49 +56,6 @@ unsigned PropertyList::InsertItem(const wchar_t* key, const wchar_t* value)
 	VisualizeData(index);
 	return index;
 }
-ListItem* PropertyList::CreateNewKeyItem(int row, int col, float ny)
-{
-	float nh = PixelToLocalNHeight(mRowHeight);
-	ListItem* item = (ListItem*)AddChild(0.f, ny, 0.4f, nh, ComponentType::ListItem);
-	item->SetRuntimeChild(true);
-	
-	if (col < (int)mColAlignes.size())
-		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
-	
-	if (col < (int)mTextSizes.size())
-		item->SetProperty(UIProperty::TEXT_SIZE, mTextSizes[col].c_str());
-
-	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
-	item->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.3, 0.3, 0.7");
-	item->SetVisible(mVisibility.IsVisible());
-	item->SetRowIndex(row);
-	item->SetColIndex(col);
-	item->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
-	return item;
-}
-
-ListItem* PropertyList::CreateNewValueItem(int row, int col, float ny)
-{
-	float nh = PixelToLocalNHeight(mRowHeight);
-	ListItem* item = (ListItem*)AddChild(0.41f, ny, 0.57f, nh, ComponentType::ListItem);
-	item->SetRuntimeChild(true);
-
-	if (col < (int)mColAlignes.size())
-		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
-
-	if (col < (int)mTextSizes.size())
-		item->SetProperty(UIProperty::TEXT_SIZE, mTextSizes[col].c_str());
-
-	item->SetVisible(mVisibility.IsVisible());
-	item->SetRowIndex(row);
-	item->SetColIndex(col);
-	auto textField = item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::TextField);
-	textField->SetRuntimeChild(true);
-	textField->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
-	textField->SetProperty(UIProperty::USE_BORDER, "true");
-	textField->SetVisible(mVisibility.IsVisible());
-	return item;
-}
 
 unsigned PropertyList::ModifyItem(const wchar_t* key, const wchar_t* value)
 {

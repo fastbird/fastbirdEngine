@@ -58,6 +58,8 @@ namespace fastbird
 		std::vector<IFileChangeListener*> mFileChangeListeners;	
 		LuaObject mInputOverride;
 		bool mExiting;
+		
+		std::set<std::string> mIgnoreFileChanges;
 	
 
 	public:
@@ -185,6 +187,9 @@ namespace fastbird
 		virtual void DeleteTextManipulator(TextManipulator* mani);
 		
 		virtual void SetInputOverride(const LuaObject& func);
+
+		virtual void StopFileChangeMonitor(const char* filepath);
+		virtual void ResumeFileChangeMonitor(const char* filepath);
 	};
 };
 

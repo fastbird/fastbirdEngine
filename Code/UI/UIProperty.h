@@ -18,6 +18,10 @@ namespace fastbird
 			NSIZEY,
 			OFFSETX,
 			OFFSETY,
+			USE_NPOSX,
+			USE_NPOSY,
+			USE_NSIZEX,
+			USE_NSIZEY,
 
 			BACK_COLOR, // vec4
 			BACK_COLOR_OVER,	// vec4
@@ -143,6 +147,10 @@ namespace fastbird
 			"NSIZEY",
 			"OFFSETX",
 			"OFFSETY",
+			"USE_NPOSX",
+			"USE_NPOSY",
+			"USE_NSIZEX",
+			"USE_NSIZEY",
 			"BACK_COLOR", // vec4
 			"BACK_COLOR_OVER",	// vec4
 			"BACK_COLOR_DOWN", // vec4
