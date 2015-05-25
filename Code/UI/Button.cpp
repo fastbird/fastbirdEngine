@@ -58,12 +58,6 @@ Button::Button()
 
 Button::~Button()
 {
-	for (int i = 0; i < ButtonImages::Num; ++i)
-	{
-		auto p = mImages[i];
-		FB_DELETE(p);
-		mImages[i] = 0;
-	}
 }
 
 void Button::OnPosChanged(bool anim)
@@ -75,8 +69,8 @@ void Button::OnPosChanged(bool anim)
 	{
 		for (int i = 0; i < ButtonImages::Num; ++i)
 		{
-			if (mImages[i])
-			{
+			if (mImages[i]){
+				mImages[i]->ChangePos(GetFinalPos());				
 				mImages[i]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			}
 		}
@@ -96,9 +90,13 @@ void Button::OnSizeChanged()
 
 	for (int i = 0; i < ButtonImages::Num; ++i)
 	{
-		if (mImages[i])
+		if (mImages[i]) {
+			mImages[i]->ChangeSize(GetFinalSize());
+			mImages[i]->OnParentSizeChanged();
 			mImages[i]->DrawAsFixedSizeCenteredAt(
 				GetFinalPos() + Round(GetFinalSize() * .5f));
+			
+		}
 	}
 }
 
@@ -573,7 +571,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											 mIconText = true;
 											 if (mImages[ButtonImages::Image])
 											 {
-												 mImages[ButtonImages::Image]->SetSize(Vec2I(mButtonIconSize, mButtonIconSize));
+												 mImages[ButtonImages::Image]->ChangeSize(Vec2I(mButtonIconSize, mButtonIconSize));
 											 }
 											 AlignIconText();
 										 }
@@ -590,12 +588,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::PROGRESSBAR:
 	{
 									FB_DELETE(mProgressBar);
-									mProgressBar = (HorizontalGauge*)gFBEnv->pUIManager->CreateComponent(ComponentType::HorizontalGauge);
-									mProgressBar->SetHwndId(GetHwndId());
-									mProgressBar->SetRender3D(mRender3D, GetRenderTargetSize());
-									mProgressBar->SetParent(this);
-									mProgressBar->SetSize(GetFinalSize());
-									mProgressBar->SetPos(GetFinalPos());
+									mProgressBar = (HorizontalGauge*)AddChild(GetFinalPos(), GetFinalSize(), ComponentType::HorizontalGauge);
+									mProgressBar->SetGatheringException();
 									mProgressBar->SetMaximum(StringConverter::parseReal(val));									
 									return true;
 	}
@@ -1000,18 +994,33 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 	return __super::GetProperty(prop, val, notDefaultOnly);
 }
 
+bool Button::SetVisible(bool visible){
+	bool changed= __super::SetVisible(visible);
+	for (int i = 0; i < ButtonImages::Num; ++i){
+		if (mImages[i])
+			mImages[i]->SetVisible(visible);
+	}
+	return changed;
+}
+
+void Button::SetVisibleInternal(bool visible){
+	__super::SetVisibleInternal(visible);
+	for (int i = 0; i < ButtonImages::Num; ++i){
+		if (mImages[i]){
+			mImages[i]->SetVisible(visible);
+		}
+	}
+}
+
 
 ImageBox* Button::CreateImageBox()
 {
-	auto image = FB_NEW(ImageBox);
-	image->SetHwndId(GetHwndId());
+	auto image = AddChild(Vec2I(0, 0), GetFinalSize(), ComponentType::ImageBox);
 	image->SetRender3D(mRender3D, GetRenderTargetSize());
 	image->SetVisible(true);
-	image->SetParent(this);
-	image->SetPos(GetFinalPos());
-	image->SetSize(GetFinalSize());
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-	return image;
+	image->SetGatheringException();
+	return (ImageBox*)image;
 }
 
 void Button::OnStartUpdate(float elapsedTime)
@@ -1131,7 +1140,7 @@ void Button::AlignIconText()
 		int textStart = iconStart + iconSize + IconTextGap;
 		int textCenter = textStart + Round(textSize * .5f);
 
-		mImages[ButtonImages::Image]->SetNPos(Vec2(0.f, 0.5f));
+		mImages[ButtonImages::Image]->ChangeNPos(Vec2(0.f, 0.5f));
 		mImages[ButtonImages::Image]->SetInitialOffset(Vec2I(((int)iconStart), 0));
 		mImages[ButtonImages::Image]->UpdateWorldPos();
 		mTextGap.x = textCenter - buttonCenter;
@@ -1139,20 +1148,4 @@ void Button::AlignIconText()
 	}	
 }
 
-void Button::SetHwndId(HWND_ID hwndId)
-{
-	__super::SetHwndId(hwndId);
-	for (int i = 0; i < ButtonImages::Num; ++i)
-	{
-		if (mImages[i])
-		{
-			mImages[i]->SetHwndId(hwndId);
-		}
-	}
-
-	if (mProgressBar)
-		mProgressBar->SetHwndId(hwndId);
-
-
-}
 }

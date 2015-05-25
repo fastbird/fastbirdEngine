@@ -6,6 +6,7 @@ namespace fastbird{
 			CheckBox,
 			TexturePath,
 			TextureRegion,
+			Texture,
 			NumberKey,
 			TextField,
 
@@ -17,6 +18,7 @@ namespace fastbird{
 			"CheckBox",
 			"TexturePath",
 			"TextureRegion",
+			"Texture",
 			"NumberKey",
 			"TextField",
 

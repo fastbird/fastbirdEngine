@@ -205,26 +205,6 @@ void UIObject::Render()
 
 	auto const renderer = gFBEnv->_pInternalRenderer;
 
-	if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug)
-	{
-		IFont* pFont = renderer->GetFont();
-		if (pFont)
-		{
-			pFont->PrepareRenderResources();
-			pFont->SetRenderStates();
-			pFont->SetHeight(30.0f);
-			std::wstringstream ss;
-			if (mTypeString)
-				ss << L"UI Type: " << AnsiToWide(mTypeString, strlen(mTypeString)) << ", ";
-			ss << mUIPos.x << "," << mUIPos.y;
-			
-			pFont->Write((float)(mRegion.left + (mRegion.right - mRegion.left)/2), 
-				(float)(mRegion.top + (mRegion.bottom - mRegion.top)/2),
-				0.f, Color::Blue.Get4Byte(), (const char*)ss.str().c_str(), -1, FONT_ALIGN_LEFT);
-			pFont->SetBackToOrigHeight();
-		}
-	}
-
 	if (mScissor)
 	{
 		renderer->SetScissorRects(&mScissorRect, 1);
@@ -266,6 +246,28 @@ void UIObject::Render()
 			pFont->SetBackToOrigHeight();
 		}
 	}
+
+	/*if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug)
+	{
+		if (gFBEnv->pEngine->GetMouse()->IsIn(mRegion)){
+			IFont* pFont = renderer->GetFont();
+			if (pFont)
+			{
+				pFont->PrepareRenderResources();
+				pFont->SetRenderStates();
+				pFont->SetHeight(30.0f);
+				std::wstringstream ss;
+				if (mTypeString)
+					ss << L"UI Type: " << AnsiToWide(mTypeString, strlen(mTypeString)) << ", ";
+				ss << mUIPos.x << "," << mUIPos.y;
+
+				pFont->Write((float)(mRegion.left + (mRegion.right - mRegion.left) / 2),
+					(float)(mRegion.top + (mRegion.bottom - mRegion.top) / 2),
+					0.f, Color::Blue.Get4Byte(), (const char*)ss.str().c_str(), -1, FONT_ALIGN_LEFT);
+				pFont->SetBackToOrigHeight();
+			}
+		}
+	}*/
 }
 
 void UIObject::PostRender()

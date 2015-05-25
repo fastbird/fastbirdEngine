@@ -347,7 +347,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 													 mBackgroundImage = FB_NEW(ImageBox);
 													 mBackgroundImage->SetHwndId(GetHwndId());
 													 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-													 mBackgroundImage->SetParent(this);
+													 mBackgroundImage->SetManualParent(this);
 													 mBackgroundImage->ChangePos(GetFinalPos());
 													 mBackgroundImage->ChangeSize(GetFinalSize());
 													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
@@ -366,7 +366,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 											 mBackgroundImage = FB_NEW(ImageBox);
 											 mBackgroundImage->SetHwndId(GetHwndId());
 											 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-											 mBackgroundImage->SetParent(this);
+											 mBackgroundImage->SetManualParent(this);
 											 mBackgroundImage->ChangePos(GetFinalPos());
 											 mBackgroundImage->ChangeSize(GetFinalSize());
 											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");

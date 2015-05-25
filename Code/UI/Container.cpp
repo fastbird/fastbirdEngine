@@ -53,6 +53,7 @@ IWinBase* Container::AddChild(ComponentType::Enum type)
 	if (pWinBase)
 	{
 		pWinBase->SetHwndId(GetHwndId());
+		pWinBase->SetRender3D(mRender3D, GetRenderTargetSize());
 		mChildren.push_back(pWinBase);
 		if (mNoMouseEvent)
 		{
@@ -411,7 +412,7 @@ void Container::GatherVisit(std::vector<IUIObject*>& v)
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
 	for (; it!=itEnd; it++)
 	{
-		if ((*it)->GetVisible())
+		if ((*it)->GetVisible() && !(*it)->GetGatheringException())
 			(*it)->GatherVisit(v);
 	}
 	__super::GatherVisit(v);
@@ -747,7 +748,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 
 void Container::MatchHeight(bool checkName)
 {
-	float contentWNEnd = 0.f;
+	int contentWNEnd = 0;
 	for (auto i : mChildren)
 	{
 		WinBase* pWinBase = (WinBase*)i;
@@ -755,12 +756,12 @@ void Container::MatchHeight(bool checkName)
 		{
 			if (checkName && strlen(pWinBase->GetName())==0)
 				continue;
-			float wnEnd = (float)(pWinBase->GetFinalPos().y + pWinBase->GetFinalSize().y);
+			int wnEnd = (pWinBase->GetFinalPos().y + pWinBase->GetFinalSize().y);
 			contentWNEnd = std::max(wnEnd, contentWNEnd);
 		}
 	}
 
-	int sizeY = Round((contentWNEnd - GetFinalPos().y) * GetRenderTargetSize().y);
+	int sizeY = contentWNEnd - GetFinalPos().y;
 	ChangeSizeY(sizeY);
 }
 
@@ -1061,6 +1062,7 @@ void Container::AddChild(IWinBase* child){
 	mChildren.push_back(child);
 	mChildrenChanged = true; // only detecting addition. not deletion.
 	child->SetHwndId(GetHwndId());
+	child->SetRender3D(mRender3D, GetRenderTargetSize());
 	if (mNoMouseEvent)
 	{
 		child->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");

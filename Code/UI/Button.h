@@ -19,6 +19,9 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+	virtual bool SetVisible(bool visible);
+	virtual void SetVisibleInternal(bool visible);
+
 	virtual void OnSizeChanged();
 	virtual void OnPosChanged(bool anim);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
@@ -38,8 +41,6 @@ public:
 	void OnMouseDown(void* arg);
 	bool IsActivated() const { return mActivated; }
 	void AlignIconText();
-
-	virtual void SetHwndId(HWND_ID hwndId);
 
 private:
 

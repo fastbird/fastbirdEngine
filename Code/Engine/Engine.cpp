@@ -1214,7 +1214,7 @@ void Engine::DeleteScene(IScene* p)
 //------------------------------------------------------------------------
 void Engine::Log(const char* szFmt, ...) const
 {
-	char buf[2048];
+	char buf[4096];
 
 	int len = 0;
 	if (gFBEnv && gFBEnv->pTimer)
@@ -1226,9 +1226,9 @@ void Engine::Log(const char* szFmt, ...) const
 		
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf + len, 2048 - len , szFmt, args);
+	vsprintf_s(buf + len, 4096 - len, szFmt, args);
 	va_end(args);
-	strcat_s(buf, 2048, "\n");
+	strcat_s(buf, 4096, "\n");
 	std::cout << buf;
 	OutputDebugString(buf);
 	buf[strlen(buf) - 1] = 0;
@@ -1240,7 +1240,7 @@ void Engine::Log(const char* szFmt, ...) const
 //------------------------------------------------------------------------
 void Engine::Error(const char* szFmt, ...) const
 {
-	char buf[2048];
+	char buf[4096];
 
 	int len = 0;
 	if (gFBEnv && gFBEnv->pTimer)
@@ -1253,10 +1253,10 @@ void Engine::Error(const char* szFmt, ...) const
 				
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);		
 		
-	strcat_s(buf, 2048, "\n");
+	strcat_s(buf, 4096, "\n");
 	OutputDebugString(buf);
 	buf[strlen(buf) - 1] = 0;
 

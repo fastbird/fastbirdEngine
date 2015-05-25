@@ -45,6 +45,10 @@ protected:
 	std::string mStrHeaders;
 	VectorMap<Vec2I, bool> mHighlighted;
 
+	typedef std::pair<UIProperty::Enum, std::string> PropertyData;
+	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
+	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
+
 public:
 	ListBox();
 	virtual ~ListBox();
@@ -64,6 +68,7 @@ public:
 
 	virtual void SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type);
 	virtual void SetItem(const Vec2I& rowcol, bool checked);
+	virtual void SetItem(const Vec2I& rowcol, ITexture* texture);
 
 	virtual bool GetCheckBox(const Vec2I& indexRowCol) const;
 
@@ -90,6 +95,12 @@ public:
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
 	virtual ListItem* GetItem(const Vec2I& indexRowCol) const;
+	ListBoxData* GetData(unsigned rowIndex, unsigned colIndex) const;
+	virtual unsigned FindRowIndex(unsigned uniqueKey) const;
+	virtual unsigned FindRowIndex(wchar_t* uniqueKey) const;
+
+	virtual unsigned GetUnsignedKey(unsigned rowIndex) const;
+	virtual const wchar_t* GetStringKey(unsigned rowIndex) const;
 
 	virtual void SetRowHeight(int rowHeight) { mRowHeight = rowHeight; }
 
@@ -106,13 +117,13 @@ public:
 	virtual IWinBase* MakeMergedRow(unsigned row, const char* backColor, const char* textColor, bool noMouseEvent);
 	virtual void SwapItems(unsigned index0, unsigned index1);
 	virtual void SwapItems(const wchar_t* uniqueKey0, const wchar_t* uniqueKey1);
-	virtual unsigned FindRowWithKey(unsigned uniqueKey);
+
+	virtual void SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val);
+	virtual void SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val);
 
 	virtual void VisualizeData(unsigned index);
 	void FillItem(unsigned index);
 	void MoveToRecycle(unsigned row);
-
-	ListBoxData* GetData(unsigned rowIndex, unsigned colIndex) const;
 	void Sort();
 
 	

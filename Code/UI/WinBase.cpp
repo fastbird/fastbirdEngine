@@ -82,6 +82,7 @@ WinBase::WinBase()
 , mGoingBright(true), mAlpha(1.f), mShowingTooltip(false), mTabOrder(-1), mSaveCheck(false)
 , mFillX(false), mFillY(false), mRunTimeChild(false), mGhost(false), mAspectRatioSet(false)
 , mAnimScale(1, 1), mAnimatedPos(0, 0), mAnimPos(0, 0)
+, mGatheringException(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -362,6 +363,16 @@ void WinBase::ChangeNPos(const Vec2& npos){
 	OnPosChanged(false);
 }
 
+void WinBase::ChangeNPosX(float xpos){
+	SetNPosX(xpos);
+	OnPosChanged(false);
+}
+void WinBase::ChangeNPosY(float ypos){
+	SetNPosY(ypos);
+	OnPosChanged(false);
+}
+
+//---------------------------------------------------------------------------
 void WinBase::ChangeWPos(const Vec2I& wpos){
 	SetWPos(wpos);
 	OnPosChanged(false);
@@ -464,6 +475,36 @@ void WinBase::SetPosY(int y)
 	mPos.y = y;
 	auto rtY = GetParentSize().y;
 	mNPos.y = y / (float)rtY;
+}
+
+//---------------------------------------------------------------------------
+void WinBase::SetPosWithTranslator(const Vec2I& pos){
+	Vec2I translatedPos = pos;
+	const auto& rt = GetParentSize();
+	if (pos.x < 0){
+		translatedPos.x = rt.x + pos.x;
+	}
+	if (pos.y < 0){
+		translatedPos.y = rt.y + pos.y;
+	}
+	SetPos(translatedPos);
+}
+void WinBase::SetPosWithTranslatorX(int x){
+	int translatedX = x;
+	const auto& rt = GetParentSize();
+	if (x < 0){
+		translatedX = rt.x + x;
+	}
+	SetPosX(translatedX);
+
+}
+void WinBase::SetPosWithTranslatorY(int y){
+	int translatedY = y;
+	const auto& rt = GetParentSize();
+	if (y < 0){
+		translatedY = rt.y + y;
+	}
+	SetPosX(translatedY);
 }
 
 //---------------------------------------------------------------------------
@@ -1006,6 +1047,14 @@ void WinBase::SetText(const wchar_t* szText)
 const wchar_t* WinBase::GetText() const
 {
 	return mTextw.c_str();
+}
+
+int WinBase::GetTextEndPosLocal() const
+{
+	if (mUIObject){
+		return mUIObject->GetTextOffset().x +  mTextWidth;
+	}
+	return 0;
 }
 
 IUIAnimation* WinBase::GetOrCreateUIAnimation(const char* name)
@@ -2264,13 +2313,6 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		mUseAbsoluteYSize = !StringConverter::parseBool(sz);
 	}
 
-	sz = pelem->Attribute("npos");
-	if (sz)
-	{
-		Vec2 npos = StringConverter::parseVec2(sz);
-		SetNPos(npos);
-	}
-
 	// positions
 	sz = pelem->Attribute("pos");
 	if (sz)
@@ -2285,10 +2327,29 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 			Vec2I pos;
 			pos.x = ParseIntPosX(vec[0]);
 			pos.y = ParseIntPosY(vec[1]);
-			SetPos(pos);
+			SetPosWithTranslator(pos);
 		}
 	}		
+	sz = pelem->Attribute("posX");
+	if (sz)
+	{
+		int x = ParseIntPosX(sz);
+		SetPosWithTranslatorX(x);
+	}
 
+	sz = pelem->Attribute("posY");
+	if (sz)
+	{
+		int y = ParseIntPosY(sz);
+		SetPosWithTranslatorY(y);
+	}
+
+	sz = pelem->Attribute("npos");
+	if (sz)
+	{
+		Vec2 npos = StringConverter::parseVec2(sz);
+		SetNPos(npos);
+	}
 	sz = pelem->Attribute("nposX");
 	if (sz)
 		SetNPosX(StringConverter::parseReal(sz));
@@ -2296,20 +2357,6 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("nposY");
 	if (sz)
 		SetNPosY(StringConverter::parseReal(sz));
-
-	sz = pelem->Attribute("posX");
-	if (sz)
-	{
-		int x = ParseIntPosX(sz);
-		SetPosX(x);
-	}
-
-	sz = pelem->Attribute("posY");
-	if (sz)
-	{
-		int y = ParseIntPosY(sz);
-		SetPosY(y);
-	}
 
 	sz = pelem->Attribute("offset");
 	{
@@ -2534,7 +2581,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	if (success)
 	{
 		sLastPos = pos;
-		SetPos(pos);
+		SetPosWithTranslator(pos);
 	}
 
 	auto nPosX = compTable.GetField("nposX").GetFloat(success);
@@ -2550,14 +2597,14 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	if (success)
 	{
 		sLastPos.x = x;
-		SetPosX(x);
+		SetPosWithTranslatorX(x);
 	}
 
 	int y = compTable.GetField("posY").GetInt(success);
 	if (success)
 	{
 		sLastPos.y = y;
-		SetPosY(y);
+		SetPosWithTranslatorY(y);
 	}
 
 	auto offset = compTable.GetField("offset").GetVec2I(success);

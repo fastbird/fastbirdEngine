@@ -17,6 +17,17 @@ UICommands::UICommands()
 
 UICommands::~UICommands()
 {
+	gFBEnv->pConsole->RemoveListener(this);
+	for (auto p : mCVars)
+	{
+		gFBEnv->pConsole->UnregisterVariable(p);
+		FB_SAFE_DEL(p);
+	}
+
+	for (const auto& p : mCommands)
+	{
+		gFBEnv->pConsole->UnregisterCommand(p);
+	}
 }
 
 bool UICommands::OnChangeCVar(CVar* pCVar)

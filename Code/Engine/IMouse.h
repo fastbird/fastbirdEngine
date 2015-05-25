@@ -100,6 +100,8 @@ namespace fastbird
 		virtual void OnSetFocus(HWND hWnd) = 0;
 
 		virtual const Ray3& GetWorldRay() = 0;
+
+		virtual bool IsIn(const RECT& r) = 0;
 	};
 }
 

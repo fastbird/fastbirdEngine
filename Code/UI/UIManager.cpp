@@ -119,20 +119,20 @@ void UIManager::Shutdown()
 
 void Log(const char* szFmt, ...)
 {
-	char buf[2048];
+	char buf[4096];
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
 	gFBEnv->pEngine->Log(buf);
 }
 
 void Error(const char* szFmt, ...)
 {
-	char buf[2048];
+	char buf[4096];
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
 	gFBEnv->pEngine->Error(buf);
 }
@@ -997,6 +997,10 @@ void UIManager::DeleteComponent(IWinBase* com)
 //---------------------------------------------------------------------------
 void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 {
+	if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug){
+		DebugUI();
+	}
+
 	if (!pMouse->IsValid() && !keyboard->IsValid())
 		return;
 
@@ -1673,8 +1677,12 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 	auto windows = mWindows[hwndId];
 	for (auto wnd : windows)
 	{
-		if(!wnd->GetVisible())
+		if (!wnd->GetVisible()){
+			if (wnd->IsIn(pt, param.mIgnoreScissor)){
+				Log("is not visible : %s", wnd->GetName());
+			}
 			continue;
+		}
 		auto found = wnd->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
@@ -1982,7 +1990,7 @@ void UIManager::DragUI(){
 		}
 
 		mUIEditor->OnPosSizeChanged();
-		if (mouse->IsDragEnded()){
+		if (mouse->IsDragEnded() || keyboard->IsKeyDown(VK_ESCAPE)){
 			mouse->PopDragEvent();
 			sDragStarted = false;
 			sSizingXRight = false;
@@ -1991,6 +1999,24 @@ void UIManager::DragUI(){
 			sSizingYBottom = false;
 		}
 	}	
+}
+
+void UIManager::DebugUI(){
+	auto curHwndId = gFBEnv->pEngine->GetForegroundWindowId();
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	for (auto& win : mWindows){
+		if (win.first != curHwndId)
+			continue;
+
+		for (auto comp : win.second){
+			if (comp->GetVisible() && comp->IsIn(mouse->GetPos(), false)){
+				wchar_t buf[1024];
+				swprintf_s(buf, L"UIName = %s", AnsiToWide(comp->GetName()));
+				gFBEnv->pRenderer->DrawText(mouse->GetPos(), buf, Color::SkyBlue);
+				break;
+			}
+		}
+	}
 }
 
 } // namespace fastbird

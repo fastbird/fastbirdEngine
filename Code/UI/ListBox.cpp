@@ -129,6 +129,11 @@ void ListBox::SetItem(const Vec2I& rowcol, bool checked){
 	VisualizeData(rowcol.x);
 }
 
+void ListBox::SetItem(const Vec2I& rowcol, ITexture* texture){
+	mData->SetData(rowcol, texture);
+	VisualizeData(rowcol.x);
+}
+
 bool ListBox::GetCheckBox(const Vec2I& indexRowCol) const{
 	if (!mData){
 		Log(FB_DEFAULT_DEBUG_ARG, "No data");
@@ -425,7 +430,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 					int posX = 0;
 					if (i >= 1)
 					{
-						posX = mHeaders[i - 1]->GetFinalPos().x + mHeaders[i - 1]->GetFinalSize().x;
+						posX = mHeaders[i - 1]->GetPos().x + mHeaders[i - 1]->GetFinalSize().x;
 					}
 
 					mHeaders.push_back(static_cast<ListItem*>(
@@ -1070,19 +1075,12 @@ void ListBox::SwapItems(const wchar_t* uniqueKey0, const wchar_t* uniqueKey1){
 	SwapItems(index0, index1);
 }
 
-unsigned ListBox::FindRowWithKey(unsigned key)
-{
-	if (!mData)
-		return -1;
-	return mData->FindRowIndexWithKey(key);
-}
-
 void ListBox::GetSelectedUniqueIdsString(std::vector<std::string>& ids) const{
 	if (!mData)
 		return;
 
 	for (unsigned index : mSelectedIndices){
-		ids.push_back(mData->GetStringKey(index));
+		ids.push_back(WideToAnsi(mData->GetStringKey(index)));
 	}
 }
 void ListBox::GetSelectedUniqueIdsUnsigned(std::vector<unsigned>& ids) const{
@@ -1264,6 +1262,26 @@ void ListBox::FillItem(unsigned index){
 			}
 			break;
 		}
+		case ListItemDataType::Texture:
+		{
+			auto imageBox = dynamic_cast<ImageBox*>(item->GetChild(0));
+			if (!imageBox)
+			{
+				item->RemoveAllChild();
+				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
+				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				imageBox->SetRuntimeChild(true);
+				imageBox->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(imageBox){
+				imageBox->SetTexture(data[i].GetTexture());
+			}
+			break;
+		}
 		default:
 			assert(0);
 		}
@@ -1274,6 +1292,27 @@ void ListBox::FillItem(unsigned index){
 		}
 		else{
 			SetHighlightRowCol(index, i, false);
+		}
+	}
+
+	unsigned int key = mData->GetUnsignedKey(index);
+	if (key != -1){
+		auto it = mItemPropertyByUnsigned.Find(key);
+		if (it != mItemPropertyByUnsigned.end()){
+			for (auto col : mItems[index]){
+				col->SetProperty(it->second.first, it->second.second.c_str());
+			}			
+		}
+	}
+	else{
+		auto key = mData->GetStringKey(index);
+		if (wcslen(key)!=0) {
+			auto it = mItemPropertyByString.Find(key);
+			if (it != mItemPropertyByString.end()){
+				for (auto col : mItems[index]){
+					col->SetProperty(it->second.first, it->second.second.c_str());
+				}
+			}
 		}
 	}
 }
@@ -1311,6 +1350,29 @@ ListBoxData* ListBox::GetData(unsigned rowIndex, unsigned colIndex) const{
 	auto cols = mData->GetData(rowIndex);
 	return &cols[colIndex];
 
+}
+
+unsigned ListBox::FindRowIndex(unsigned uniqueKey) const{
+	if (!mData)
+		return -1;
+	return mData->FindRowIndexWithKey(uniqueKey);
+}
+unsigned ListBox::FindRowIndex(wchar_t* uniqueKey) const{
+	if (!mData)
+		return -1;
+	return mData->FindRowIndexWithKey(uniqueKey);
+}
+
+unsigned ListBox::GetUnsignedKey(unsigned rowIndex) const{
+	if (mData == 0)
+		return -1;
+	return mData->GetUnsignedKey(rowIndex);
+}
+const wchar_t* ListBox::GetStringKey(unsigned rowIndex) const{
+	if (mData == 0)
+		return L"";
+
+	return mData->GetStringKey(rowIndex);
 }
 
 void ListBox::OnSizeChanged()
@@ -1498,4 +1560,28 @@ void ListBox::MakeSureRangeFor(unsigned rowIndex){
 	}
 }
 
+void ListBox::SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val){
+	mItemPropertyByUnsigned[uniqueKey] = std::make_pair(prop, val);
+	if (!mData)
+		return;
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	for (auto item : mItems[rowIndex]){
+		assert(item);
+		item->SetProperty(prop, val);
+	}
+}
+void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val){
+	mItemPropertyByString[uniqueKey] = std::make_pair(prop, val);
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	for (auto item : mItems[rowIndex]){
+		assert(item);
+		item->SetProperty(prop, val);
+	}
+}
 }

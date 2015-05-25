@@ -57,6 +57,8 @@ namespace fastbird
 		virtual void OnSetFocus(HWND hWnd);
 
 		virtual const Ray3& GetWorldRay();
+
+		virtual bool IsIn(const RECT& r);
 		
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		

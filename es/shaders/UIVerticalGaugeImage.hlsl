@@ -30,10 +30,7 @@ struct v2p
 v2p uiverticalgaugeimage_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
-
-	OUTPUT.Position = float4(INPUT.Position, 1.0);
-	OUTPUT.Position.x += gWorld[0][3];
-	OUTPUT.Position.y += gWorld[1][3];
+	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
 	OUTPUT.uvFilled = INPUT.uvFilled;
 	OUTPUT.uvNotFilled = INPUT.uvNotFilled;
 

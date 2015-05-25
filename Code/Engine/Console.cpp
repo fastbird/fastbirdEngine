@@ -179,11 +179,11 @@ void Console::AddCandidatesTo(const char* parent, const StringVector& candidates
 void Console::Log(const char* szFmt, ...)
 {
 	LOCK_CRITICAL_SECTION lock(mBufferwCS);
-	char buf[2048];
+	char buf[4096];
 
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
 
 	std::cerr << buf << std::endl;

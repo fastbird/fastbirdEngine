@@ -117,7 +117,7 @@ void ImageBox::SetTexture(const char* file)
 
 void ImageBox::SetTexture(ITexture* pTexture)
 {
-	mImageFile.clear();
+	//mImageFile.clear();
 	mTexture = pTexture;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;
@@ -586,8 +586,8 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
 		assert(0 && "You didn't set the texture");
 		return;
 	}
-	SetSize(isize);
-	SetPos(wpos);
+	ChangeSize(isize);
+	ChangeWPos(wpos);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 	
 }
@@ -595,7 +595,7 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
 void ImageBox::DrawAsFixedSizeAtCenter()
 {
 	DrawAsFixedSize();
-	SetNPos(Vec2(0.5f, 0.5f));
+	ChangeNPos(Vec2(0.5f, 0.5f));
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 }
 
@@ -618,8 +618,7 @@ void ImageBox::DrawAsFixedSize()
 	{
 		return;
 	}
-	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
-	SetWNSize(size);
+	ChangeSize(isize);
 }
 
 void ImageBox::SetDesaturate(bool desat)

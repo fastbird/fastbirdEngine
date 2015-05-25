@@ -555,4 +555,8 @@ namespace fastbird
 
 		return mWorldRay;
 	}
+
+	bool Mouse::IsIn(const RECT& r){
+		return !(mAbsX < r.left || mAbsX > r.right || mAbsY < r.top || mAbsY > r.bottom);
+	}
 }

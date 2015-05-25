@@ -58,6 +58,8 @@ namespace fastbird
 		virtual void ChangePosY(int posy) = 0;
 		virtual void ChangeWPos(const Vec2I& wpos) = 0;
 		virtual void ChangeNPos(const Vec2& npos) = 0;
+		virtual void ChangeNPosX(float xpos) = 0;
+		virtual void ChangeNPosY(float ypos) = 0;
 		virtual void SetPos(const Vec2I& pos) = 0;
 		virtual void SetPosX(int x) = 0;
 		virtual void SetPosY(int y) = 0;
@@ -110,6 +112,8 @@ namespace fastbird
 		virtual void SetText(const wchar_t* szText) = 0;
 		virtual const wchar_t* GetText() const = 0;
 		virtual void SetPasswd(bool passwd) = 0;
+		virtual int GetTextWidth() const = 0;
+		virtual int GetTextEndPosLocal() const = 0;
 
 		virtual void SetNext(IWinBase* next) = 0;
 		virtual void SetPrev(IWinBase* prev) = 0;
@@ -167,8 +171,6 @@ namespace fastbird
 			LAYER_DOWN_5,
 		};
 		*/
-
-		virtual int GetTextWidth() const = 0;
 		virtual void RefreshScissorRects() = 0;
 
 		virtual void SetEnable(bool enable) = 0;
@@ -231,6 +233,9 @@ namespace fastbird
 		virtual bool IsKeyboardFocused() const = 0;
 
 		virtual void TriggerRedraw() = 0;
+
+		virtual void SetGatheringException() = 0;
+		virtual bool GetGatheringException() const = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

@@ -137,6 +137,7 @@ namespace fastbird
 		bool mSaveCheck;
 		bool mRunTimeChild;
 		bool mGhost;
+		bool mGatheringException;
 
 		VectorMap<IEventHandler::EVENT, std::string> mEventFuncNames;
 
@@ -204,10 +205,16 @@ namespace fastbird
 		virtual void ChangePosX(int posx);
 		virtual void ChangePosY(int posy);
 		virtual void ChangeNPos(const Vec2& npos);
+		virtual void ChangeNPosX(float xpos);
+		virtual void ChangeNPosY(float ypos);
 		virtual void ChangeWPos(const Vec2I& wpos);
 		virtual void SetPos(const Vec2I& pos);
 		virtual void SetPosX(int x);
 		virtual void SetPosY(int y);		
+
+		void SetPosWithTranslator(const Vec2I& pos);
+		void SetPosWithTranslatorX(int x);
+		void SetPosWithTranslatorY(int y);
 		
 		virtual void SetNPos(const fastbird::Vec2& pos); // normalized pos (0.0~1.0)
 		virtual void SetNPosX(float x);
@@ -264,6 +271,9 @@ namespace fastbird
 		virtual void SetTextColor(const Color& c);
 		virtual void SetText(const wchar_t* szText);
 		virtual const wchar_t* GetText() const;
+		virtual int GetTextWidth() const { return mTextWidth; }
+		virtual int GetTextEndPosLocal() const;
+
 		virtual void SetPasswd(bool passwd) {};
 		virtual IUIAnimation* GetOrCreateUIAnimation(const char* name);
 		virtual IUIAnimation* GetUIAnimation(const char* name);
@@ -308,8 +318,6 @@ namespace fastbird
 		static void FinalizeMouseCursor();
 
 		void PosAnimationTo(const Vec2& destNPos, float speed);
-		
-		virtual int GetTextWidth() const { return mTextWidth; }
 
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
 		virtual void Save(tinyxml2::XMLElement& elem);
@@ -383,6 +391,11 @@ namespace fastbird
 		virtual float GetContentHeight() const;
 
 		virtual bool IsKeyboardFocused() const;
+
+		virtual void SetGatheringException(){ mGatheringException = true; }
+		virtual bool GetGatheringException() const{
+			return mGatheringException;
+		}
 
 	protected:
 		virtual void OnPosChanged(bool anim);

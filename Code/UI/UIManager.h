@@ -215,6 +215,8 @@ namespace fastbird
 		void BackupFile(const char* filename);
 		void DragUI();
 		void AlignUI();
+
+		void DebugUI();
 	};
 }
 

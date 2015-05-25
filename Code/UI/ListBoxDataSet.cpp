@@ -138,6 +138,23 @@ namespace fastbird
 		cols[colIndex].SetChecked(checked);
 	}
 
+	void ListBoxDataSet::SetData(const std::wstring& uniqueKey, unsigned colIndex, ITexture* texture){
+		colIndex += 1; // due to the unique key
+		if_assert_fail(colIndex < mNumCols)
+			return;
+
+		unsigned row = FindRowIndexWithKey(uniqueKey);
+		if (row == -1)
+		{
+			Error(FB_DEFAULT_DEBUG_ARG,
+				FormatString("Cannot find the data set with the key %s", WideToAnsi(uniqueKey.c_str()))
+				);
+			return;
+		}
+		auto cols = mData[row];
+		cols[colIndex].SetTexture(texture);
+	}
+
 	// string or texture path
 	void ListBoxDataSet::SetData(unsigned uniqueKey, unsigned colIndex, const wchar_t* string, ListItemDataType::Enum type){
 		colIndex += 1; // due to the unique key
@@ -175,6 +192,23 @@ namespace fastbird
 		cols[colIndex].SetChecked(checked);
 	}
 
+	void ListBoxDataSet::SetData(unsigned uniqueKey, unsigned colIndex, ITexture* texture){
+		colIndex += 1; // due to the unique key
+		if_assert_fail(colIndex < mNumCols)
+			return;
+
+		unsigned row = FindRowIndexWithKey(uniqueKey);
+		if (row == -1)
+		{
+			Error(FB_DEFAULT_DEBUG_ARG,
+				FormatString("Cannot find the data set with the key %u", uniqueKey)
+				);
+			return;
+		}
+		auto cols = mData[row];
+		cols[colIndex].SetTexture(texture);
+	}
+
 	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, const wchar_t* string, ListItemDataType::Enum type){
 		unsigned rowIndex = indexRowCol.x;
 		unsigned colIndex = indexRowCol.y+1;
@@ -200,6 +234,17 @@ namespace fastbird
 		cols[colIndex].SetChecked(checked);
 	}
 
+	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, ITexture* texture){
+		unsigned rowIndex = indexRowCol.x;
+		unsigned colIndex = indexRowCol.y + 1;
+
+		if (rowIndex >= mData.size())
+			return;
+		if (colIndex >= mNumCols)
+			return;
+		auto cols = mData[rowIndex];
+		cols[colIndex].SetTexture(texture);
+	}
 
 	ListBoxData* ListBoxDataSet::GetData(unsigned index){
 		if (index < mData.size())
@@ -344,11 +389,11 @@ namespace fastbird
 		std::swap(mData[index0], mData[index1]);
 	}
 
-	std::string ListBoxDataSet::GetStringKey(unsigned index) const{
+	const wchar_t* ListBoxDataSet::GetStringKey(unsigned index) const{
 		if (index >= mData.size())
-			return std::string();
+			return L"";
 
-		return WideToAnsi(mData[index][0].GetText());
+		return mData[index][0].GetText();
 	}
 
 	unsigned ListBoxDataSet::GetUnsignedKey(unsigned index) const{

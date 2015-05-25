@@ -34,4 +34,10 @@ namespace fastbird{
 	bool ListBoxData::CanHaveFocus() const{
 		return mDataType == ListItemDataType::TextField || mDataType == ListItemDataType::CheckBox;
 	}
+
+	void ListBoxData::SetTexture(ITexture* texture)
+	{
+		mTexture = texture;
+		mDataType = ListItemDataType::TexturePath;
+	}
 }
