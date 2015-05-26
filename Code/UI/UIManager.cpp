@@ -1036,27 +1036,6 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 			}
 		}
 	}
-
-	//Select
-	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
-		auto mousePos = pMouse->GetPos();
-		RegionTestParam rparam;
-		rparam.mOnlyContainer = false;
-		rparam.mIgnoreScissor = mUIEditor ? true : false;
-		rparam.mTestChildren = true;
-		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
-		if (mKeyboardFocus != focusWnd)
-		{
-			SetFocusUI(focusWnd);
-		}
-		if (mUIEditor)
-		{
-			if (!keyboard->IsKeyDown(VK_MENU)){
-				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
-					mUIEditor->OnComponentSelected(mKeyboardFocus);
-			}
-		}
-	}
 	
 	if (mUIEditor){
 		if (gFBEnv->pEngine->IsMainWindowForground()) {
@@ -1087,6 +1066,27 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 
 		if (!pMouse->IsValid() && !keyboard->IsValid())
 			break;
+	}
+
+	//Select
+	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
+		auto mousePos = pMouse->GetPos();
+		RegionTestParam rparam;
+		rparam.mOnlyContainer = false;
+		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mTestChildren = true;
+		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		if (mKeyboardFocus != focusWnd)
+		{
+			SetFocusUI(focusWnd);
+		}
+		if (mUIEditor)
+		{
+			if (!keyboard->IsKeyDown(VK_MENU)){
+				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
+					mUIEditor->OnComponentSelected(mKeyboardFocus);
+			}
+		}
 	}
 
 	if (keyboard->GetChar() == VK_TAB)
@@ -1677,10 +1677,7 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 	auto windows = mWindows[hwndId];
 	for (auto wnd : windows)
 	{
-		if (!wnd->GetVisible()){
-			if (wnd->IsIn(pt, param.mIgnoreScissor)){
-				Log("is not visible : %s", wnd->GetName());
-			}
+		if (!wnd->GetVisible()){			
 			continue;
 		}
 		auto found = wnd->WinBaseWithPoint(pt, param);
@@ -1715,6 +1712,7 @@ void UIManager::LocateComponent()
 		Vec2I pos = cont->GetWPos();
 		pos = start - pos;
 		win = cont->AddChild(pos, size, mLocatingComp);
+		win->ChangeWPos(start);
 	}
 	else
 	{
@@ -1816,10 +1814,12 @@ void UIManager::ChangeFilepath(IWinBase* root, const char* newfile)
 	auto newName = GetFileNameWithoutExtension(newfile);
 	if (name != newName)
 	{
-		auto newIt = mLuaUIs.find(newName);
+		std::string lowerNewName(newName);
+		ToLowerCase(lowerNewName);
+		auto newIt = mLuaUIs.find(lowerNewName);
 		if (newIt != mLuaUIs.end())
 		{
-			Error(FB_DEFAULT_DEBUG_ARG, FormatString("The new name %s is already used.", newName.c_str()));
+			Error(FB_DEFAULT_DEBUG_ARG, FormatString("The new name %s is already used.", lowerNewName.c_str()));
 			return;
 		}
 		if (FileSystem::IsFileExisting(newfile))
@@ -1831,9 +1831,10 @@ void UIManager::ChangeFilepath(IWinBase* root, const char* newfile)
 		gFBEnv->pEngine->StopFileChangeMonitor(oldFilepath);
 		gFBEnv->pEngine->StopFileChangeMonitor(newfile);
 		FileSystem::Rename(oldFilepath, newfile);
-		mLuaUIs[newName].swap(it->second);
+		mLuaUIs[lowerNewName].swap(it->second);
 		mLuaUIs.erase(it);
 		root->SetUIFilePath(newfile);
+		root->SetName(newName.c_str());
 	}
 }
 
@@ -1883,7 +1884,7 @@ void UIManager::DragUI(){
 	Vec2I dragStartPos;
 	bool dragStarted = mouse->IsDragStarted(dragStartPos);
 	Vec2I testPos = dragStarted ? dragStartPos : mouse->GetPos();
-
+	
 	if (!sDragStarted)
 	{			
 		bool in = false;
@@ -1929,6 +1930,7 @@ void UIManager::DragUI(){
 			if (dragStarted){
 				mouse->PopDragEvent();
 				sDragStarted = true;
+				mUIEditor->BackupSizePos();
 			}
 		}
 	}
@@ -1991,6 +1993,9 @@ void UIManager::DragUI(){
 
 		mUIEditor->OnPosSizeChanged();
 		if (mouse->IsDragEnded() || keyboard->IsKeyDown(VK_ESCAPE)){
+			if (keyboard->IsKeyDown(VK_ESCAPE)){
+				mUIEditor->RestoreSizePos();
+			}
 			mouse->PopDragEvent();
 			sDragStarted = false;
 			sSizingXRight = false;

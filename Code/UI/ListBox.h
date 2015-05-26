@@ -45,9 +45,10 @@ protected:
 	std::string mStrHeaders;
 	VectorMap<Vec2I, bool> mHighlighted;
 
-	typedef std::pair<UIProperty::Enum, std::string> PropertyData;
+	typedef std::vector<std::pair<UIProperty::Enum, std::string>> PropertyData;
 	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
 	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
+	std::set<unsigned> mNoVirtualizingRows;
 
 public:
 	ListBox();
@@ -65,6 +66,7 @@ public:
 	// Own	
 	virtual unsigned InsertItem(unsigned uniqueKey);
 	virtual unsigned InsertItem(const wchar_t* uniqueKey);
+	virtual unsigned InsertEmptyData();
 
 	virtual void SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type);
 	virtual void SetItem(const Vec2I& rowcol, bool checked);
@@ -133,6 +135,8 @@ public:
 	void SearchStartingChacrcter(char c, unsigned curIndex);
 	void IterateItem(bool next, bool apply);
 	void MakeSureRangeFor(unsigned rowIndex);
+
+	virtual void NoVirtualizingItem(unsigned rowIndex);
 
 protected:
 

@@ -80,7 +80,7 @@ void Voxelizer::CalcDistanceMap()
 	param.mShaderResourceView = true;
 	param.mMipmap = false;
 	param.mCubemap = false;
-	param.mHasDepth = true;
+	param.mWillCreateDepth = true;
 	param.mUsePool = true;
 
 	SmartPtr<IRenderTarget> pDepthRT = gFBEnv->pRenderer->CreateRenderTarget(param);

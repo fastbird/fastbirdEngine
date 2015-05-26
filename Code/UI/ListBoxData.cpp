@@ -14,6 +14,7 @@ namespace fastbird{
 	ListBoxData::ListBoxData()
 		: mDataType(ListItemDataType::Unknown)
 		, mChecked(false)
+		, mKey(-1)
 	{
 
 	}

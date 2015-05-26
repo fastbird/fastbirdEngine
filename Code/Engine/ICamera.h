@@ -63,6 +63,7 @@ namespace fastbird
 		// need to set target for camera focus.
 		virtual void SetTarget(SpatialObject* pObj) = 0;
 		virtual SpatialObject* GetTarget() const = 0;
+		virtual void SetDistanceFromTarget(float dist) = 0;
 
 		virtual void SetCurrent(bool cur) = 0;
 		virtual void SetCameraIndex(size_t idx) = 0;

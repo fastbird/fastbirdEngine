@@ -30,7 +30,7 @@ public:
 	virtual void OnTextChanged(TextManipulator* mani);
 	PropertyList* IsInPropertyList() const;
 	ListBox* IsInListBox() const;
-	void SelectAllAfterGetFocused();
+	void SelectAll();
 
 	void OnClicked(void* arg);
 	void OnDoubleClicked(void* arg);

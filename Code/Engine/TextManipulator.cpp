@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/TextManipulator.h>
 #include <Engine/ITextManipulatorListener.h>
+#include <CommonLib/ClipboardData.h>
 
 namespace fastbird
 {
@@ -38,51 +39,91 @@ void TextManipulator::OnInput(IMouse* mouse, IKeyboard* keyboard)
 
 	if (unsigned int chr = keyboard->GetChar())
 	{
-		switch (chr)
+		if (chr == 22) // Synchronous idle - ^V
 		{
-		case VK_BACK:
-		{			if (IsHighlighting() && !mText->empty())
+			keyboard->PopChar();
+			std::string data = GetClipboardDataAsString(gFBEnv->pEngine->GetMainWndHandle());
+			if (!data.empty())
 			{
-				auto it = mText->begin() + mCursorPos;
-				auto end = mText->begin() + mHighlightStart;
-				if (mCursorPos > mHighlightStart)
-				{
-					std::swap(it, end);
+				if (IsHighlighting()){
+					auto it = mText->begin() + mCursorPos;
+					auto end = mText->begin() + mHighlightStart;
+					if (mCursorPos > mHighlightStart)
+					{
+						std::swap(it, end);
+					}
+					mCursorPos = std::distance(mText->begin(), it);
+					// delete selected string
+					mText->erase(it, end);
+					EndHighlighting();
 				}
-				mCursorPos = std::distance(mText->begin(), it);
-				mText->erase(it, end);
-				EndHighlighting();
+				std::wstring wclipData = AnsiToWide(data.c_str());
+				mText->insert(mText->begin() + mCursorPos, wclipData.begin(), wclipData.end());				
+				mCursorPos += data.size();
+				OnCursorPosChanged();
+				OnTextChanged();
 			}
-			else if (mCursorPos > 0 && !mText->empty())
-			{
-				mText->erase(mText->begin() + mCursorPos - 1);
-				mCursorPos--;
-			}
-			OnCursorPosChanged();
-			OnTextChanged();
 		}
-		break;
-		default:
-		{
-			if (IsHighlighting())
-			{
+		else if (chr == 3){ // ^C
+			if (IsHighlighting()){
 				auto it = mText->begin() + mCursorPos;
 				auto end = mText->begin() + mHighlightStart;
 				if (mCursorPos > mHighlightStart)
 				{
 					std::swap(it, end);
 				}
-				mCursorPos = std::distance(mText->begin(), it);
-				// delete selected string
-				mText->erase(it, end);
-				EndHighlighting();
+				std::string data(it, end);
+				SetClipboardStringData(gFBEnv->pEngine->GetMainWndHandle(), data.c_str());
 			}
+		}
+		else{
+			switch (chr)
+			{
+			case VK_BACK:
+			{			
+				if (IsHighlighting() && !mText->empty())
+				{
+					auto it = mText->begin() + mCursorPos;
+					auto end = mText->begin() + mHighlightStart;
+					if (mCursorPos > mHighlightStart)
+					{
+						std::swap(it, end);
+					}
+					mCursorPos = std::distance(mText->begin(), it);
+					mText->erase(it, end);
+					EndHighlighting();
+				}
+				else if (mCursorPos > 0 && !mText->empty())
+				{
+					mText->erase(mText->begin() + mCursorPos - 1);
+					mCursorPos--;
+				}
+				OnCursorPosChanged();
+				OnTextChanged();
+			}
+			break;
+			default:
+			{
+				if (IsHighlighting())
+				{
+					auto it = mText->begin() + mCursorPos;
+					auto end = mText->begin() + mHighlightStart;
+					if (mCursorPos > mHighlightStart)
+					{
+						std::swap(it, end);
+					}
+					mCursorPos = std::distance(mText->begin(), it);
+					// delete selected string
+					mText->erase(it, end);
+					EndHighlighting();
+				}
 
-			mText->insert(mText->begin() + mCursorPos, chr);
-			mCursorPos++;
-			OnCursorPosChanged();
-			OnTextChanged();
-		}
+				mText->insert(mText->begin() + mCursorPos, chr);
+				mCursorPos++;
+				OnCursorPosChanged();
+				OnTextChanged();
+			}
+			}
 		}
 
 		keyboard->PopChar();

@@ -59,7 +59,7 @@ void SkySphere::CreateSharedEnvRT()
 		param.mShaderResourceView = true;
 		param.mMipmap = true;
 		param.mCubemap = true;
-		param.mHasDepth = false;
+		param.mWillCreateDepth = false;
 		param.mUsePool = true;
 		mRT = gFBEnv->pRenderer->CreateRenderTarget(param);
 		mRT->CreateScene();

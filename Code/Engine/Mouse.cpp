@@ -68,6 +68,7 @@ namespace fastbird
 		, mLastWheelPush(0)
 		, mDragStarted(false)
 		, mDragEnd(false)
+		, mLockMouseKey(0)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -219,6 +220,8 @@ namespace fastbird
 				mLastClickTime = gFBEnv->pTimer->GetTime();
 				mLastClickPos = Vec2I(mAbsX, mAbsY);
 			}
+
+			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
 		{
@@ -229,6 +232,7 @@ namespace fastbird
 				mLastClickTime = gFBEnv->pTimer->GetTime();
 				mLastClickPos = Vec2I(mAbsX, mAbsY);
 			}
+			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_UP)
 		{
@@ -480,10 +484,14 @@ namespace fastbird
 		return mNumLinesWheelScroll;
 	}
 
-	void Mouse::LockMousePos(bool lock)
+	void Mouse::LockMousePos(bool lock, void* key)
 	{
 		if (mLockMouse == lock)
 			return;
+		if (!lock && mLockMouseKey != key && key != (void*)-1)
+			return;
+
+		mLockMouseKey = key;
 
 		if (lock)
 		{
@@ -522,7 +530,7 @@ namespace fastbird
 		mAbsXPrev = mAbsX;
 		mAbsYPrev = mAbsY;
 
-		LockMousePos(false);
+		LockMousePos(false, (void*)-1);
 		if (mDragStarted)
 		{
 			mDragStarted = false;
@@ -532,7 +540,7 @@ namespace fastbird
 
 	void Mouse::OnKillFocus()
 	{		
-		LockMousePos(false);
+		LockMousePos(false, (void*)-1);
 		mButtonsDown = 0;
 		EndFrame();
 	}

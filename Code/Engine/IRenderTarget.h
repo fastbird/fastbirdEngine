@@ -26,6 +26,7 @@ namespace fastbird
 		virtual void SetClearValues(const Color& color, float z, UINT8 stencil) = 0;
 		virtual void SetClearColor(const Color& color) = 0;
 		virtual void SetClearDepthStencil(float z, UINT8 stencil) = 0;
+		virtual void SetScene(IScene*) = 0;
 		virtual IScene* GetScene() const = 0;
 		virtual void SetSceneOverride(IScene* scene) = 0;
 		virtual IScene* GetSceneOverride() const = 0;

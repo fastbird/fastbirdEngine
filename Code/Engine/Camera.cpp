@@ -388,6 +388,10 @@ void Camera::SetTarget(SpatialObject* pObj)
 		mTarget->AddCameraTargetingMe(this);
 }
 
+void Camera::SetDistanceFromTarget(float dist){
+	mInternalParams.dist = dist;
+}
+
 //---------------------------------------------------------------------------
 void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)
 {
@@ -417,12 +421,12 @@ void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pK
 				mUserParams.dPitch = -dy * mouseSens;
 			}
 
-			pMouse->LockMousePos(true);
+			pMouse->LockMousePos(true, this);
 			pMouse->Invalidate();
 		}
 		else
 		{
-			pMouse->LockMousePos(false);
+			//pMouse->LockMousePos(false, this);
 		}
 
 		long wheel = pMouse->GetWheel();

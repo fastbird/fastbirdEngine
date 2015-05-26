@@ -88,6 +88,10 @@ namespace fastbird
 	}
 	
 	unsigned ListBoxDataSet::InsertData(const std::wstring& uniqueKey){
+		auto row = FindRowIndexWithKey(uniqueKey);
+		if (row != -1){
+			return row;
+		}
 		mData.push_back(FB_ARRNEW(ListBoxData, mNumCols));
 		auto& cols = mData.back();
 		cols[0].SetDataType(ListItemDataType::String);
@@ -96,9 +100,19 @@ namespace fastbird
 	}
 
 	unsigned ListBoxDataSet::InsertData(unsigned uniqueKey){
+		auto row = FindRowIndexWithKey(uniqueKey);
+		if (row != -1){
+			return row;
+		}
 		mData.push_back(FB_ARRNEW(ListBoxData, mNumCols));
 		auto& cols = mData.back();
 		cols[0].SetKey(uniqueKey);
+		return mData.size() - 1;
+	}
+
+	unsigned ListBoxDataSet::InsertEmptyData(){
+		mData.push_back(FB_ARRNEW(ListBoxData, mNumCols));
+		auto& cols = mData.back();
 		return mData.size() - 1;
 	}
 

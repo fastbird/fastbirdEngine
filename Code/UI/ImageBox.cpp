@@ -1,6 +1,8 @@
 #include <UI/StdAfx.h>
 #include <UI/ImageBox.h>
 #include <UI/IUIManager.h>
+#include <Engine/IRenderTarget.h>
+#include <Engine/ICamera.h>
 namespace fastbird
 {
 
@@ -15,20 +17,20 @@ namespace fastbird
 		, mPlayingTime(0)
 		, mCurFrame(0), mImageFixedSize(false)
 		, mTexture(0), mColorOveraySet(false)
+		, mRenderTarget(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER, 
-		std::bind(&ImageBox::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT, 
-		std::bind(&ImageBox::OnMouseOut, this, std::placeholders::_1));
 }
 
 ImageBox::~ImageBox()
 {
+	if (mRenderTarget){
+		gFBEnv->pRenderer->DeleteRenderTarget(mRenderTarget);
+		mRenderTarget = 0;
+	}
 }
 
 void ImageBox::OnCreated()
@@ -99,6 +101,14 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 	}
 }
 
+bool ImageBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard){
+	auto ret = __super::OnInputFromHandler(mouse, keyboard);
+	if (ret && mRenderTarget && mouse->IsValid()){
+		mRenderTarget->OnInputFromHandler(mouse, keyboard);
+	}
+	return ret;
+}
+
 void ImageBox::SetTexture(const char* file)
 {
 	if (!file)
@@ -126,6 +136,15 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
 	if (pTexture)
 		CalcUV(pTexture->GetSize());
+}
+
+void ImageBox::SetRenderTargetTexture(IRenderTarget* rt){
+	if (mRenderTarget){
+		gFBEnv->pRenderer->DeleteRenderTarget(mRenderTarget);
+		mRenderTarget = 0;
+	}
+	mRenderTarget = rt;
+	SetTexture(mRenderTarget->GetRenderTargetTexture());
 }
 
 void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
@@ -255,14 +274,6 @@ void ImageBox::Highlight(bool enable)
 	{
 		mUIObject->GetMaterial()->SetEmissiveColor(0, 0, 0, 0);
 	}
-}
-
-void ImageBox::OnMouseHover(void* arg)
-{
-}
-
-void ImageBox::OnMouseOut(void* arg)
-{
 }
 
 bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
@@ -485,6 +496,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			return false;
 		auto data = StringConverter::toString(mUIObject->GetMaterial()->GetDiffuseColor());
 		strcpy(val, data.c_str());
+		return true;
 	}
 
 	case UIProperty::IMAGE_FIXED_SIZE:

@@ -119,6 +119,19 @@ unsigned ListBox::InsertItem(const wchar_t* uniqueKey)
 	return index;
 }
 
+unsigned ListBox::InsertEmptyData(){
+	unsigned index = mData->InsertEmptyData();
+	while (mItems.size() <= index)
+	{
+		mItems.push_back(ROW());
+		auto& row = mItems.back();
+		for (unsigned c = 0; c < mNumCols; ++c){
+			row.push_back(0);
+		}
+	}
+	return index;
+}
+
 void ListBox::SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type){
 	mData->SetData(rowcol, string, type);
 	VisualizeData(rowcol.x);
@@ -1000,16 +1013,13 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 	if (mItems[row].empty())
 		return 0;
 
-	mItems[row][0]->SetNSizeX(1.0f);
-	mItems[row][0]->ModifySize(Vec2I(-4, 0));
-	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
-	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
-	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0x88cceeff");
-	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
-	mItems[row][0]->SetNoBackground(false);
-	mItems[row][0]->SetBackColor("0, 0, 0, 0.3");
+	NoVirtualizingItem(row);
 
+	mItems[row][0]->ChangeNSizeX(1.0f);
+	mItems[row][0]->ModifySize(Vec2I(-4, 0));
+	for (unsigned i = 1; i < mNumCols; ++i){
+		mItems[row][i]->ChangeNPosX(1.f);
+	}
 
 	return mItems[row][0];
 }
@@ -1022,8 +1032,13 @@ IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char
 	if (mItems[row].empty())
 		return 0;
 
+	NoVirtualizingItem(row);
+
 	mItems[row][0]->SetNSizeX(1.0f);
 	mItems[row][0]->ModifySize(Vec2I(-4, 0));
+	for (unsigned i = 1; i < mNumCols; ++i){
+		mItems[row][i]->ChangeNPosX(1.f);
+	}
 	
 	if (backColor && strlen(backColor) != 0)
 	{
@@ -1100,13 +1115,16 @@ void ListBox::VisualizeData(unsigned index){
 	if (mItems.empty())
 		return;
 
+	bool noVirtualizing = mNoVirtualizingRows.find(index)!= mNoVirtualizingRows.end();
 	if (index < mStartIndex || index > mEndIndex)
 	{
-		if (mItems[index][0])
-		{
-			MoveToRecycle(index);
+		if (!noVirtualizing){
+			if (mItems[index][0])
+			{
+				MoveToRecycle(index);
+			}
+			return;
 		}
-		return;
 	}
 
 	int hgap = mRowHeight + mRowGap;
@@ -1120,7 +1138,8 @@ void ListBox::VisualizeData(unsigned index){
 	const auto data = mData->GetData(index);
 	if (!data)
 	{
-		MoveToRecycle(index);
+		if (!noVirtualizing)
+			MoveToRecycle(index);
 		return;
 	}
 	
@@ -1282,8 +1301,6 @@ void ListBox::FillItem(unsigned index){
 			}
 			break;
 		}
-		default:
-			assert(0);
 		}
 
 		auto it = mHighlighted.Find(Vec2I((int)index, (int)i));
@@ -1299,9 +1316,11 @@ void ListBox::FillItem(unsigned index){
 	if (key != -1){
 		auto it = mItemPropertyByUnsigned.Find(key);
 		if (it != mItemPropertyByUnsigned.end()){
-			for (auto col : mItems[index]){
-				col->SetProperty(it->second.first, it->second.second.c_str());
-			}			
+			for (auto& property : it->second){
+				for (auto col : mItems[index]){
+					col->SetProperty(property.first, property.second.c_str());
+				}
+			}
 		}
 	}
 	else{
@@ -1309,8 +1328,10 @@ void ListBox::FillItem(unsigned index){
 		if (wcslen(key)!=0) {
 			auto it = mItemPropertyByString.Find(key);
 			if (it != mItemPropertyByString.end()){
-				for (auto col : mItems[index]){
-					col->SetProperty(it->second.first, it->second.second.c_str());
+				for (auto& property : it->second){
+					for (auto col : mItems[index]){
+						col->SetProperty(property.first, property.second.c_str());
+					}
 				}
 			}
 		}
@@ -1561,7 +1582,7 @@ void ListBox::MakeSureRangeFor(unsigned rowIndex){
 }
 
 void ListBox::SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val){
-	mItemPropertyByUnsigned[uniqueKey] = std::make_pair(prop, val);
+	mItemPropertyByUnsigned[uniqueKey].push_back(std::make_pair(prop, val));
 	if (!mData)
 		return;
 	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
@@ -1574,7 +1595,7 @@ void ListBox::SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const c
 	}
 }
 void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val){
-	mItemPropertyByString[uniqueKey] = std::make_pair(prop, val);
+	mItemPropertyByString[uniqueKey].push_back(std::make_pair(prop, val));
 	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
 	if (rowIndex == -1)
 		return;
@@ -1583,5 +1604,14 @@ void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, c
 		assert(item);
 		item->SetProperty(prop, val);
 	}
+}
+
+void ListBox::NoVirtualizingItem(unsigned rowIndex){
+	if (!mData){
+		assert(0);
+		return;
+	}
+	mNoVirtualizingRows.insert(rowIndex);
+	VisualizeData(rowIndex);
 }
 }

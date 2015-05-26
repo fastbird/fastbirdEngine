@@ -361,7 +361,7 @@ void Console::OnInput(IMouse* mouse, IKeyboard* keyboard)
 		if (chr == 22) // Synchronous idle - ^V
 		{
 			keyboard->PopChar();
-			std::string data = GetClipbardDataAsString();
+			std::string data = GetClipboardDataAsString(gFBEnv->pEngine->GetMainWndHandle());
 			if (!data.empty())
 			{
 				auto insertionPos = mInputString.begin() + mCursorPos;

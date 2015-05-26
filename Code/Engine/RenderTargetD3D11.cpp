@@ -48,7 +48,7 @@ void RenderTargetD3D11::SetDepthStencilDesc(int width, int height, PIXEL_FORMAT 
 		type |= TEXTURE_TYPE_CUBE_MAP;
 	mDepthStencilTexture = gFBEnv->pRenderer->CreateTexture(0, width, height, format,
 		BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
-	mHasDepth = true;
+	mWillCreateDepth = true;
 }
 
 }

@@ -220,11 +220,12 @@ void Wnd::RefreshFrame()
 				mUseFrame ? -64 : -44,
 			};
 			mWndContentUI->ModifySize(sizeMod);
-			mWndContentUI->SetUseAbsYSize(true);
 			mWndContentUI->ChangePos(Vec2I(20, 44));
 			mWndContentUI->ModifySize(Vec2I(-20, 0));
 
 			mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
+			mWndContentUI->SetProperty(UIProperty::USE_NSIZEX, "true");
+			mWndContentUI->SetProperty(UIProperty::USE_NSIZEY, "true");
 			if (mUseScrollerV)
 			{
 				mPendingDelete.push_back(mScrollerV);

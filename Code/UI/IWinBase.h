@@ -47,6 +47,8 @@ namespace fastbird
 		virtual void SetSizeY(int y) = 0;
 
 		virtual void ChangeNSize(const Vec2& nsize) = 0;
+		virtual void ChangeNSizeX(float x) = 0;
+		virtual void ChangeNSizeY(float y) = 0;
 		virtual void SetNSize(const Vec2& size) = 0;
 		virtual void SetNSizeX(float x) = 0;
 		virtual void SetNSizeY(float y) = 0;

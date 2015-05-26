@@ -4,6 +4,7 @@
 #include <UI/IUIManager.h>
 #include <UI/Scroller.h>
 #include <UI/DropDown.h>
+#include <UI/TextField.h>
 
 namespace fastbird
 {
@@ -520,7 +521,7 @@ void Container::RefreshVScrollbar()
 
 		if (mScrollerV)
 		{
-			mScrollerV->SetNSizeY(visableRatio);
+			mScrollerV->ChangeNSizeY(visableRatio);
 			mScrollerV->OnPosChanged(false);
 			mScrollerV->SetVisible(true);
 			mScrollerV->SetMaxOffset(Vec2(0, length));
@@ -698,6 +699,12 @@ void Container::SaveChildren(tinyxml2::XMLElement& elem){
 			auto compElem = elem.GetDocument()->NewElement("component");
 			elem.InsertEndChild(compElem);
 			child->Save(*compElem);
+		}
+		else{
+			auto childCont = dynamic_cast<Container*>(child);
+			if (childCont){
+				childCont->SaveChildren(elem);
+			}
 		}
 	}
 }
@@ -1036,6 +1043,10 @@ void Container::TabPressed()
 		if (win)
 		{
 			gFBUIManager->SetFocusUI(win);
+			if (win->GetType() == ComponentType::TextField){
+				TextField* tf = (TextField*)win;
+				tf->SelectAll();
+			}
 		}
 		else
 		{

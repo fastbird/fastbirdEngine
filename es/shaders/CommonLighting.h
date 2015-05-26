@@ -133,10 +133,11 @@ float GetShadow(float4 lightPos)
 	{
 		for (int x = -2; x<=2; ++x)
 		{
-			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.0002, float2(x, y));
+			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.00001, float2(x, y));
 		}
 	}
-	return min(0.5f + c * 0.11111f, 1.0f);
+	//return c * 0.04f;
+	return min(0.5f + c * 0.055555f, 1.0f);
 }
 
 float3 GetIrrad(float4 vNormal)

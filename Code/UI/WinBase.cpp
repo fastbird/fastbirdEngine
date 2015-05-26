@@ -193,6 +193,15 @@ void WinBase::ChangeNSize(const Vec2& nsize){
 	OnSizeChanged();
 }
 
+void WinBase::ChangeNSizeX(float x){
+	SetNSizeX(x);
+	OnSizeChanged();
+}
+void WinBase::ChangeNSizeY(float y){
+	SetNSizeY(y);
+	OnSizeChanged();
+}
+
 //---------------------------------------------------------------------------
 void WinBase::OnSizeChanged()
 {
@@ -504,7 +513,7 @@ void WinBase::SetPosWithTranslatorY(int y){
 	if (y < 0){
 		translatedY = rt.y + y;
 	}
-	SetPosX(translatedY);
+	SetPosY(translatedY);
 }
 
 //---------------------------------------------------------------------------
@@ -680,20 +689,20 @@ bool WinBase::IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand) const
 		}
 	}
 
-	auto wpos = GetWPos();
+	auto finalPos = GetFinalPos();
 	auto size = mSize;
 	if (expand){
-		wpos.x -= expand->x / 2;
+		finalPos.x -= expand->x / 2;
 		size.x += expand->x;
-		wpos.y -= expand->y / 2;
+		finalPos.y -= expand->y / 2;
 		size.y += expand->y;
 	}	
 
 	bool in = !(
-		wpos.x > pt.x ||
-		wpos.x + size.x < pt.x ||
-		wpos.y > pt.y ||
-		wpos.y + size.y < pt.y
+		finalPos.x > pt.x ||
+		finalPos.x + size.x < pt.x ||
+		finalPos.y > pt.y ||
+		finalPos.y + size.y < pt.y
 		);
 	return in;
 }
@@ -757,7 +766,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				GetWindowRect(hwnd, &rect);
 				OSWindowPos.x = rect.left;
 				OSWindowPos.y = rect.top;
-				invalidate = true;
+				//invalidate = true;
 			}
 			else
 			{
@@ -765,7 +774,6 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			if (mouse->IsLButtonDown() && mMouseDragStartInHere)
 			{
-				invalidate = true;
 				long x,  y;
 				mouse->GetDeltaXY(x, y);
 				if (x != 0 || y != 0)
@@ -828,7 +836,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				mouse->Invalidate();
 				TriggerRedraw();
 			}
-		}		
+		}
 		else if (mMouseInPrev)
 		{
 			if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
@@ -856,21 +864,32 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		return mMouseIn;
 
 	if (keyboard->IsValid() && gFBUIManager->GetKeyboardFocusUI() == this)
-	{	
+	{
 
 		char c = (char)keyboard->GetChar();
 
-		switch(c)
+		switch (c)
 		{
 		case VK_RETURN:
+		{
+			if (OnEvent(EVENT_ENTER))
 			{
-				if (OnEvent(EVENT_ENTER))
-				{
-					keyboard->PopChar();
-					TriggerRedraw();
-				}
+				keyboard->PopChar();
+				TriggerRedraw();
 			}
 			break;
+		}
+		case VK_TAB:
+		{
+			if (GetType() == ComponentType::TextField){
+				if (OnEvent(EVENT_ENTER))
+				{
+					TriggerRedraw();
+				}
+				break;
+			}
+		}
+			
 		}
 	}
 
@@ -1107,7 +1126,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::POS:
 	{
-							auto v = Split(val, ", ");
+							auto v = Split(val);
 							assert(v.size() == 2);
 							int x = ParseIntPosX(v[0]);
 							int y = ParseIntPosY(v[1]);
@@ -2386,7 +2405,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("nsize");
 	if (sz)
 	{
-		auto data = Split(sz, ",");
+		auto data = Split(sz);
 		data[0] = StripBoth(data[0].c_str());
 		data[1] = StripBoth(data[1].c_str());
 		float x, y;

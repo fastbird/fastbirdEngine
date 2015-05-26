@@ -2292,7 +2292,7 @@ void Renderer::Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIOb
 		param.mShaderResourceView = true;
 		param.mMipmap = true;
 		param.mCubemap = false;
-		param.mHasDepth = false;
+		param.mWillCreateDepth = false;
 		param.mUsePool = true;
 		auto rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
 		assert(rtt);

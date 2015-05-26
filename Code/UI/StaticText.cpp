@@ -16,7 +16,6 @@ StaticText::StaticText()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
-	mUIObject->SetNoDrawBackground(true);
 }
 
 StaticText::~StaticText()

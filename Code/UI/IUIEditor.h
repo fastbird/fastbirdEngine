@@ -16,6 +16,8 @@ namespace fastbird
 		virtual void DrawFocusBoxes(){}
 		virtual void TryToDeleteCurComp() {}
 		virtual HWND_ID GetHwndId() const { return -1; }
+		virtual void BackupSizePos(){}
+		virtual void RestoreSizePos(){}
 
 		// process for Ctrl + left, right, up, down. and Ctrl+keypad 5
 		virtual void ProcessKeyInput(){}

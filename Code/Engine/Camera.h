@@ -70,6 +70,7 @@ namespace fastbird
 		virtual Vec2I WorldToScreen(const Vec3& worldPos) const;
 		virtual void SetYZSwap(bool enable){mYZSwap = enable; mProjPropertyChanged = true; }
 		virtual void SetTarget(SpatialObject* pObj);
+		virtual void SetDistanceFromTarget(float dist);
 		virtual SpatialObject* GetTarget() const { return mTarget; }
 		virtual void SetCurrent(bool cur) { mCurrentCamera = cur; }
 		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);

@@ -52,7 +52,7 @@ namespace fastbird
 		virtual void ClearButton();
 		virtual unsigned long GetNumLinesWheelScroll() const;
 
-		virtual void LockMousePos(bool lock);
+		virtual void LockMousePos(bool lock, void* key);
 		virtual void OnKillFocus();
 		virtual void OnSetFocus(HWND hWnd);
 
@@ -118,6 +118,8 @@ namespace fastbird
 		float mLastWheelPush;
 		bool mDragStarted;
 		bool mDragEnd;
+
+		void* mLockMouseKey;
 	};
 }
 

@@ -383,7 +383,7 @@ ListBox* TextField::IsInListBox() const{
 	return 0;
 }
 
-void TextField::SelectAllAfterGetFocused()
+void TextField::SelectAll()
 {
 	gFBUIManager->GetTextManipulator()->SelectAll();
 	TriggerRedraw();

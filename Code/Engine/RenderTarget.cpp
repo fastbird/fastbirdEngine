@@ -23,7 +23,7 @@ RenderTarget::RenderTarget()
 	, mSRV(false)
 	, mMiplevel(false)
 	, mCubeMap(false)
-	, mHasDepth(false), mUsePool(true), mGlowSet(false)
+	, mWillCreateDepth(false), mUsePool(true), mGlowSet(false)
 	, mFrameLuminanceCalced(0)
 	, mGaussianDistBlendGlow(0)
 	, mGaussianDistBloom(0), mSceneOverride(0), mLockSceneOverride(false), mDrawOnEvent(false), mDrawEventTriggered(false)
@@ -55,7 +55,7 @@ bool RenderTarget::CheckOptions(const RenderTargetParam& param)
 {
 	return param.mSize == mSize && param.mPixelFormat == mFormat && 
 		param.mShaderResourceView == mSRV && 
-		param.mMipmap == mMiplevel && param.mCubemap == mCubeMap && param.mHasDepth == mHasDepth && param.mUsePool == mUsePool;
+		param.mMipmap == mMiplevel && param.mCubemap == mCubeMap && param.mWillCreateDepth == mWillCreateDepth&& param.mUsePool == mUsePool;
 }
 
 RenderPipeline& RenderTarget::GetRenderPipeline() const
@@ -229,15 +229,18 @@ bool RenderTarget::Render(size_t face)
 		UnSetGlowRenderTarget();
 	}
 
-	if (mRenderPipeline->GetStep(RenderSteps::ShadowMap))
 	{
 		D3DEventMarker mark("Shadow pass");
 		//UpdateLightCamera is performed in the Bind()
 		BindShadowMap(false);
 		PrepareShadowMapRendering();
-		GetSceneInternal()->Render();
+		if (mRenderPipeline->GetStep(RenderSteps::ShadowMap))
+		{
+			GetSceneInternal()->Render();
+		}
 		EndShadowMapRendering();
 	}
+	
 
 	if (mRenderPipeline->GetStep(RenderSteps::Depth))
 	{
@@ -263,8 +266,7 @@ bool RenderTarget::Render(size_t face)
 	}
 
 	// god ray pre pass
-	if (engineCmd->r_GodRay && 
-		mRenderPipeline->GetStep(RenderSteps::GodRay))
+	if (engineCmd->r_GodRay && mRenderPipeline->GetStep(RenderSteps::GodRay))
 	{
 		D3DEventMarker mark("GodRay pre occlusion pass");
 		SetGodRayRenderTarget();
@@ -306,17 +308,22 @@ bool RenderTarget::Render(size_t face)
 
 		if (engineCmd->r_Glow && mRenderPipeline->GetStep(RenderSteps::Glow))
 			BlendGlow();
-		if (engineCmd->r_GodRay)
+		if (engineCmd->r_GodRay && mRenderPipeline->GetStep(RenderSteps::GodRay))
 			BlendGodRay();
 
 		BindTargetOnly(false);
 		MeasureLuminanceOfHDRTargetNew();
 
 		BrightPass();
-		BrightPassToStarSource();
-		StarSourceToBloomSource();
-		Bloom();
-		RenderStarGlare();
+
+		if (engineCmd->r_Glow && mRenderPipeline->GetStep(RenderSteps::Glow))
+		{
+			BrightPassToStarSource();
+			StarSourceToBloomSource();
+			Bloom();
+			RenderStarGlare();
+		}
+		
 		ToneMapping();
 	}
 	Unbind();
@@ -422,7 +429,10 @@ void RenderTarget::BindDepthTexture(bool set)
 void RenderTarget::SetGlowRenderTarget()
 {
 	if (!mRenderPipeline->GetStep(RenderSteps::Glow))
+	{
+		BindTargetOnly(true);
 		return;
+	}
 	if (mGlowSet)
 		return;
 
@@ -753,12 +763,14 @@ void RenderTarget::CalcLuminance()
 //---------------------------------------------------------------------------
 void RenderTarget::BlendGlow()
 {
-	auto const renderer = gFBEnv->_pInternalRenderer;
-	Vec2I size((int)(mSize.x*0.25f), (int)(mSize.y*0.25f));
 	if (!mGlowTexture[0])
 	{
 		return;
 	}
+
+	auto const renderer = gFBEnv->_pInternalRenderer;
+	Vec2I size((int)(mSize.x*0.25f), (int)(mSize.y*0.25f));
+	
 
 	{
 		D3DEventMarker mark("Glowing");

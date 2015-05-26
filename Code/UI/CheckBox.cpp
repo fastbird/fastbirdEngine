@@ -73,6 +73,7 @@ void CheckBox::OnClicked(void* arg)
 {
 	mChecked = !mChecked;
 	UpdateImage();
+	gFBEnv->pEngine->GetMouse()->Invalidate();
 }
 
 void CheckBox::OnClickedChildren(void* arg)

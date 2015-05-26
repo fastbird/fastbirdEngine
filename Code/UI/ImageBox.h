@@ -4,7 +4,7 @@
 
 namespace fastbird
 {
-
+	class IRenderTarget;
 class ImageBox : public Container
 {
 public:
@@ -17,10 +17,14 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void OnSizeChanged();
 	virtual void OnStartUpdate(float elapsedTime);
+	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 
 	// ImageBox;
 	virtual void SetTexture(const char* file);
 	virtual void SetTexture(ITexture* pTexture);
+	// image box will own the rt.
+	virtual void SetRenderTargetTexture(IRenderTarget* rt);
+	virtual IRenderTarget* GetRenderTargetTexture() const { return mRenderTarget; }
 	virtual void SetUseHighlight(bool use) { mUseHighlight = use; }
 	// or
 	virtual void SetTextureAtlasRegion(const char* atlas, const char* region);
@@ -33,8 +37,6 @@ public:
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
 
-	void OnMouseHover(void* arg);
-	void OnMouseOut(void* arg);
 	void SetKeepImageRatio(bool keep);
 	void SetUVRot(bool set);
 	void SetCenterUVMatParam();
@@ -59,6 +61,7 @@ private:
 	TextureAtlas* mTextureAtlas;
 	TextureAtlasRegion* mAtlasRegion;
 	std::vector<TextureAtlasRegion*> mAtlasRegions;
+	IRenderTarget* mRenderTarget;
 	// should not be smart pointer
 	// material will hold a reference of this image.
 	ITexture* mTexture;

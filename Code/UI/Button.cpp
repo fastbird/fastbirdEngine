@@ -65,7 +65,7 @@ void Button::OnPosChanged(bool anim)
 	__super::OnPosChanged(anim);
 	if (mButtonIconSize>0)
 		AlignIconText();
-	else
+	/*else
 	{
 		for (int i = 0; i < ButtonImages::Num; ++i)
 		{
@@ -74,7 +74,7 @@ void Button::OnPosChanged(bool anim)
 				mImages[i]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			}
 		}
-	}		
+	}		*/
 }
 
 void Button::OnSizeChanged()
@@ -88,16 +88,16 @@ void Button::OnSizeChanged()
 	};
 	mUIObject->SetTexCoord(texcoords, 4);
 
-	for (int i = 0; i < ButtonImages::Num; ++i)
-	{
-		if (mImages[i]) {
-			mImages[i]->ChangeSize(GetFinalSize());
-			mImages[i]->OnParentSizeChanged();
-			mImages[i]->DrawAsFixedSizeCenteredAt(
-				GetFinalPos() + Round(GetFinalSize() * .5f));
-			
-		}
-	}
+	//for (int i = 0; i < ButtonImages::Num; ++i)
+	//{
+	//	if (mImages[i]) {
+	//		/*mImages[i]->ChangeSize(GetFinalSize());
+	//		mImages[i]->OnParentSizeChanged();*/
+	//		mImages[i]->DrawAsFixedSizeCenteredAt(
+	//			GetFinalPos() + Round(GetFinalSize() * .5f));
+	//		
+	//	}
+	//}
 }
 
 void Button::GatherVisit(std::vector<IUIObject*>& v)
@@ -273,7 +273,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   }
 							   else
 							   {
-								   FB_DELETE(mImages[ButtonImages::Image]);
+								   RemoveChild(mImages[ButtonImages::Image]);
 								   mImages[ButtonImages::Image] = CreateImageBox();
 							   }
 							   assert(!mImageAtlas.empty());
@@ -296,7 +296,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   }
 							   else
 							   {
-								   FB_DELETE(mImages[ButtonImages::Image]);
+								   RemoveChild(mImages[ButtonImages::Image]);
 								   mImages[ButtonImages::Image] = CreateImageBox();
 							   }
 							   assert(!mImageAtlas.empty());
@@ -319,7 +319,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									 }
 									 else
 									 {
-										 FB_DELETE(mImages[ButtonImages::Image]);
+										 RemoveChild(mImages[ButtonImages::Image]);
 										 mImages[ButtonImages::Image] = CreateImageBox();
 									 }
 									 
@@ -351,7 +351,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									assert(!mImageAtlas.empty());
 									if (strlen(val) == 0)
 									{
-										FB_DELETE(mImages[ButtonImages::ImageHover]);
+										RemoveChild(mImages[ButtonImages::ImageHover]);										
 										mImages[ButtonImages::ImageHover] = 0;
 									}
 									else
@@ -587,7 +587,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::PROGRESSBAR:
 	{
-									FB_DELETE(mProgressBar);
+									RemoveChild(mProgressBar);
 									mProgressBar = (HorizontalGauge*)AddChild(GetFinalPos(), GetFinalSize(), ComponentType::HorizontalGauge);
 									mProgressBar->SetGatheringException();
 									mProgressBar->SetMaximum(StringConverter::parseReal(val));									

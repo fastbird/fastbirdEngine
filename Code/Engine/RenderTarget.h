@@ -23,7 +23,7 @@ namespace fastbird
 		bool mSRV;
 		bool mMiplevel;
 		bool mCubeMap;
-		bool mHasDepth;
+		bool mWillCreateDepth;
 		SmartPtr<ITexture> mRenderTargetTexture;
 		SmartPtr<ITexture> mDepthStencilTexture;
 		SmartPtr<Scene> mScene;
