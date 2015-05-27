@@ -5,6 +5,7 @@
 #include <UI/UIProperty.h>
 #include <UI/IUIAnimation.h>
 #include <UI/RegionTestParam.h>
+#include <UI/IEventHandler.h>
 #include <Engine/IUIObject.h>
 #include <CommonLib/LuaObject.h>
 
@@ -238,6 +239,9 @@ namespace fastbird
 
 		virtual void SetGatheringException() = 0;
 		virtual bool GetGatheringException() const = 0;
+
+		virtual void SetEvent(UIEvents::Enum e, const char* luaFuncName) = 0;
+		virtual const char* GetEvent(UIEvents::Enum e) = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

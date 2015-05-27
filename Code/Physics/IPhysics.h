@@ -54,6 +54,9 @@ namespace fastbird
 
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
 
+		virtual unsigned CreateBTSphereShape(float radius) = 0;
+		virtual void DeleteBTShape(unsigned id) = 0;
+
 		//-------------------------------------------------------------------
 		// collision shape manager
 		//-------------------------------------------------------------------

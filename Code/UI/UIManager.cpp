@@ -143,7 +143,7 @@ void UIManager::Update(float elapsedTime)
 	for (auto& ui : mSetFocusReserved)
 	{		
 		auto focusRoot = ui->GetRootWnd();
-		auto hwndId = mFocusWnd->GetHwndId();
+		auto hwndId = focusRoot->GetHwndId();
 		auto& windows = mWindows[hwndId];
 		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), focusRoot);
 		if (f != windows.end())
@@ -375,7 +375,7 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 			continue;
 		}
 
-		ComponentType::Enum type = ComponentType::ConverToEnum(sz);
+		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
 
 		IWinBase* p = AddWindow(type, hwndId);
 		if (p)
@@ -428,7 +428,7 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 		{
 			auto eventHandler = dynamic_cast<EventHandler*>(topWindow);
 			if (eventHandler)
-				eventHandler->OnEvent(IEventHandler::EVENT_ON_LOADED);
+				eventHandler->OnEvent(UIEvents::EVENT_ON_LOADED);
 		}
 
 	}
@@ -554,7 +554,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 			continue;
 		}
 
-		ComponentType::Enum type = ComponentType::ConverToEnum(sz);
+		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
 
 		IWinBase* p = AddWindow(type, hwndId);
 		if (p)
@@ -591,7 +591,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 	{
 		auto eventHandler = dynamic_cast<EventHandler*>(topWindow);
 		if (eventHandler)
-			eventHandler->OnEvent(IEventHandler::EVENT_ON_LOADED);
+			eventHandler->OnEvent(UIEvents::EVENT_ON_LOADED);
 	}
 }
 
@@ -625,7 +625,7 @@ bool UIManager::AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId)
 		return false;
 	}
 	std::string typeText = data.GetField("type_").GetString();
-	auto type = ComponentType::ConverToEnum(typeText.c_str());
+	auto type = ComponentType::ConvertToEnum(typeText.c_str());
 	
 	IWinBase* p = AddWindow(0.f, 0.f, 0.1f, 0.1f, type, hwndId);
 	assert(p);
@@ -793,8 +793,10 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 		mUIEditor->OnComponentDeleted(winbase);
 	}
 
-	if (winbase->GetFocus(true))
-		mFocusWnd = 0;	
+	if (winbase->GetFocus(true)){
+		mFocusWnd = 0;
+		mKeyboardFocus = 0;
+	}
 	
 	if (mMouseOveredContainer == winbase)
 		mMouseOveredContainer = 0;
@@ -886,7 +888,7 @@ void UIManager::DirtyRenderList(HWND_ID hwndId)
 
 void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val)
 {
-	SetUIProperty(uiname, compname, UIProperty::ConverToEnum(prop), val);
+	SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val);
 }
 void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val)
 {
@@ -1069,7 +1071,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	//Select
-	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
+	if (pMouse->IsLButtonClicked()) {
 		auto mousePos = pMouse->GetPos();
 		RegionTestParam rparam;
 		rparam.mOnlyContainer = false;
@@ -1249,7 +1251,7 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 		yes->SetName("yes");
 		yes->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 		yes->SetText(L"Yes");
-		yes->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		yes->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 			std::bind(&UIManager::OnPopupYes, this, std::placeholders::_1));
 
 		WinBase* no = (WinBase*)mPopup->AddChild(0.51f, 0.99f, 0.25f, 0.1f, ComponentType::Button);
@@ -1257,7 +1259,7 @@ void UIManager::PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(voi
 		no->SetName("no");
 		no->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		no->SetText(L"No");
-		no->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		no->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 			std::bind(&UIManager::OnPopupNo, this, std::placeholders::_1));
 	}
 	

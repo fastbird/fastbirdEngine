@@ -218,6 +218,8 @@ namespace fastbird
 		{
 			return COLOR_WRITE_MASK_ALPHA;
 		}
+		if (_stricmp(str, "0") == 0)
+			return COLOR_WRITE_MASK_NONE;
 
 		Error(FB_DEFAULT_DEBUG_ARG, FormatString("%s is not valid COLOR_WRITE_MASK", str));
 		return COLOR_WRITE_MASK_ALL;
@@ -315,6 +317,8 @@ namespace fastbird
 			return PASS_GLOW;
 		if (_stricmp(str, "DEPTH") == 0)
 			return PASS_DEPTH;
+		if (_stricmp(str, "DEPTH_ONLY") == 0)
+			return PASS_DEPTH_ONLY;
 		if (_stricmp(str, "SHADOW") == 0)
 			return PASS_SHADOW;
 		

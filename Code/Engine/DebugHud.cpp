@@ -164,8 +164,12 @@ void DebugHud::PreRender()
 {
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
-	mObjectConstants_WorldLine.gWorldViewProj = 
-		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
+
+	
 }
 
 void DebugHud::OnBeforeRenderingTransparents(IScene* scene)
@@ -218,6 +222,10 @@ void DebugHud::Render()
 		return;
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
+
+	mObjectConstants_WorldLine.gWorldViewProj =
+		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
 	//Profiler profile("void DebugHud::Render()");
 	D3DEventMarker mark("DebugHud::Render()");
 	//PreRender();

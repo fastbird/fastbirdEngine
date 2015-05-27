@@ -70,6 +70,8 @@ namespace fastbird
 	int GetNumUIProperties(lua_State* L);
 	int GetUIPropertyName(lua_State* L);
 	int GetPropertyCurKeyValue(lua_State* L);	
+	int GetNumUIEvents(lua_State* L);
+	int GetUIEventName(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -116,6 +118,9 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, ClearPropertyItems);
 		LUA_SETCFUNCTION(mL, ClearListBox);
 		
+
+		LUA_SETCFUNCTION(mL, GetUIEventName);
+		LUA_SETCFUNCTION(mL, GetNumUIEvents);
 		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
 		LUA_SETCFUNCTION(mL, GetUIPropertyName);
 		LUA_SETCFUNCTION(mL, GetNumUIProperties);
@@ -537,7 +542,7 @@ namespace fastbird
 		{
 			char buf[256];
 
-			bool result = comp->GetProperty(UIProperty::ConverToEnum(prop), buf, false);
+			bool result = comp->GetProperty(UIProperty::ConvertToEnum(prop), buf, false);
 			if (result)
 			{
 				lua_pushstring(L, buf);
@@ -558,7 +563,7 @@ namespace fastbird
 			auto eventHandler = dynamic_cast<EventHandler*>(comp);
 			if (eventHandler)
 			{
-				eventHandler->UnregisterEventLuaFunc(IEventHandler::ConvertToEnum(eventName));
+				eventHandler->UnregisterEventLuaFunc(UIEvents::ConvertToEnum(eventName));
 				return 0;
 			}
 		}
@@ -949,6 +954,18 @@ namespace fastbird
 
 	}
 
+	int GetNumUIEvents(lua_State* L){
+		lua_pushinteger(L, UIEvents::EVENT_NUM);
+		return 1;
+	}
+
+	int GetUIEventName(lua_State* L){
+		UIEvents::Enum e = (UIEvents::Enum)luaL_checkunsigned(L, 1);
+		lua_pushstring(L, UIEvents::ConvertToString(e));
+		return 1;
+	}
+
+
 	//-----------------------------------------------------------------------
 	// Listbox
 	//-----------------------------------------------------------------------
@@ -1274,7 +1291,7 @@ namespace fastbird
 			auto item = listbox->GetItem(Vec2I(rowIndex, colIndex));
 			auto prop = luaL_checkstring(L, 5);
 			auto val = luaL_checkstring(L, 6);
-			item->SetProperty(UIProperty::ConverToEnum(prop), val);
+			item->SetProperty(UIProperty::ConvertToEnum(prop), val);
 		}
 		return 0;
 	}

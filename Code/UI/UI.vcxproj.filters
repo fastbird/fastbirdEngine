@@ -104,6 +104,7 @@
     <ClInclude Include="TabWindow.h">
       <Filter>Components</Filter>
     </ClInclude>
+    <ClInclude Include="UIEvents.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">

@@ -56,7 +56,7 @@ namespace fastbird
 		mDown->SetNPos(Vec2(0, 0));		
 		mDown->SetText(L"-");		
 		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
-		mDown->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		mDown->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
 		mDown->SetEnable(mValue >= mMin);
 
@@ -66,7 +66,7 @@ namespace fastbird
 		mUp->SetProperty(UIProperty::ALIGNH, "right");
 		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mUp->SetText(L"+");		
-		mUp->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		mUp->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
 		mUp->SetEnable(mValue <= mMax);
 		SetProperty(UIProperty::TEXT_ALIGN, "center");
@@ -88,7 +88,7 @@ namespace fastbird
 			mUp->SetEnable(mValue <= mMax);
 		if (mDown)
 			mDown->SetEnable(mValue >= mMin);
-		OnEvent(EVENT_NUMERIC_SET);
+		OnEvent(UIEvents::EVENT_NUMERIC_SET);
 	}
 	
 	void NumericUpDown::SetMinMax(int min, int max)
@@ -105,7 +105,7 @@ namespace fastbird
 		if (mValue > mMin)
 		{
 			SetNumber(mValue - 1);
-			OnEvent(EVENT_NUMERIC_DOWN);
+			OnEvent(UIEvents::EVENT_NUMERIC_DOWN);
 		}
 	}
 
@@ -114,7 +114,7 @@ namespace fastbird
 		if (mValue < mMax)
 		{
 			SetNumber(mValue + 1);
-			OnEvent(EVENT_NUMERIC_UP);
+			OnEvent(UIEvents::EVENT_NUMERIC_UP);
 		}
 	}
 

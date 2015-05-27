@@ -110,18 +110,21 @@ namespace fastbird
 			const auto& size = gFBEnv->pEngine->GetRequestedWndSize(handle);
 			mNPosX = (float)mAbsX / (float)size.x;
 			mNPosY = (float)mAbsY / (float)size.y;
-			auto hwnd = WindowFromPoint({ mPhysicalX, mPhysicalY });
-			if (hwnd != handle)
-			{
-				auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hwnd);
-				if (hwndId != INVALID_HWND_ID)
+			if (!IsLButtonDown()){
+				auto hwnd = WindowFromPoint({ mPhysicalX, mPhysicalY });
+				if (hwnd != handle)
 				{
-					gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
-					SetForegroundWindow(hwnd);
-					return;
+					auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hwnd);
+					if (hwndId != INVALID_HWND_ID)
+					{
+						gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
+						SetForegroundWindow(hwnd);
+						return;
+					}
 				}
 			}
 		}
+
 
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;

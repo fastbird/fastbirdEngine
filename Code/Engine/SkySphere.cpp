@@ -114,6 +114,10 @@ void SkySphere::PreRender()
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
 
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
+
 	if (mInterpolating)
 	{
 		mCurInterpolationTime += gFBEnv->pTimer->GetDeltaTime();

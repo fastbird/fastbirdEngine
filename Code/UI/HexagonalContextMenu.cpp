@@ -14,9 +14,9 @@ namespace fastbird
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 
-		RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 			std::bind(&HexagonalContextMenu::OnMouseHover, this, std::placeholders::_1));
-		RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT,
+		RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 			std::bind(&HexagonalContextMenu::OnMouseOut, this, std::placeholders::_1));
 
 		for (int i = 0; i < 6; i++)
@@ -99,7 +99,7 @@ namespace fastbird
 		mHexaStaticTexts[index]->SetProperty(UIProperty::TEXT_COLOR, "0.86667, 1.0, 0.1843, 1");
 		mHexaStaticTexts[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 		mHexaStaticTexts[index]->SetText(text);
-		mHexaStaticTexts[index]->DisableEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+		mHexaStaticTexts[index]->DisableEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 	}
 
 	void HexagonalContextMenu::SetHexaImageIcon(unsigned index, const char* atlas, const char* region)

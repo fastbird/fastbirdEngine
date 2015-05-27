@@ -15,6 +15,9 @@ namespace fastbird
 
 	class Object : public IObject
 	{
+	protected:
+		unsigned mLastPreRendered;
+
 	public:
 		Object();
 		virtual ~Object();

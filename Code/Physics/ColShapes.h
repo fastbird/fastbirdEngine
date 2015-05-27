@@ -35,7 +35,7 @@ namespace fastbird
 			return strings[a];
 		}
 
-		inline Enum ConverToEnum(const char* str)
+		inline Enum ConvertToEnum(const char* str)
 		{
 			for (int i = 0; i < Num; i++)
 			{

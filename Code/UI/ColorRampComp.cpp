@@ -204,5 +204,5 @@ void ColorRampComp::OnChildHasDragged()
 	mTexts.back()->SetNPos(Vec2(xPos + ratio*.5f, 0.5f));
 
 	// issue the event
-	OnEvent(IEventHandler::EVENT_COLORRAMP_DRAGGED);
+	OnEvent(UIEvents::EVENT_COLORRAMP_DRAGGED);
 }

@@ -113,7 +113,7 @@ void PropertyList::MoveLine(bool applyInput, bool next)
 {
 	// apply value;
 	if (applyInput)
-		OnEvent(EVENT_ENTER);
+		OnEvent(UIEvents::EVENT_ENTER);
 
 	unsigned nextLine = next ? mFocusRow + 1 : mFocusRow - 1;
 	if (nextLine == -1)

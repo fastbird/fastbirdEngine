@@ -11,18 +11,18 @@ namespace fastbird
 		static unsigned sLastEventProcess;
 		EventHandler();
 		virtual ~EventHandler();
-		virtual FunctionID RegisterEventFunc(EVENT e, EVENT_FUNCTION);
-		virtual void UnregisterEventFunc(EVENT e, FunctionID slot);
-		virtual bool RegisterEventLuaFunc(EVENT e, const char* luaFuncName);
-		virtual void UnregisterEventLuaFunc(EVENT e);
+		virtual FunctionID RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION);
+		virtual void UnregisterEventFunc(UIEvents::Enum e, FunctionID slot);
+		virtual bool RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncName);
+		virtual void UnregisterEventLuaFunc(UIEvents::Enum e);
 		virtual void UnregisterAllEventFunc();
-		virtual void DisableEvent(EVENT e);
+		virtual void DisableEvent(UIEvents::Enum e);
 		virtual void DisableAllEvent();
 		virtual void ClearDisabledEvents();
 
 		virtual void SetEnableEvent(bool enable){ mEventEnable = enable; }
 		virtual bool GetEnableEvent() const { return mEventEnable; }
-		virtual bool OnEvent(EVENT e);
+		virtual bool OnEvent(UIEvents::Enum e);
 
 	protected:
 		friend class UIManager;
@@ -30,14 +30,14 @@ namespace fastbird
 
 	protected:
 		typedef std::map<FunctionID, EVENT_FUNCTION> FUNC_MAP;
-		typedef std::map<EVENT, std::set<FunctionID> > EVENT_FUNC_MAP;
+		typedef std::map<UIEvents::Enum, std::set<FunctionID> > EVENT_FUNC_MAP;
 		FUNC_MAP mFuncMap;
 		EVENT_FUNC_MAP mEventFuncMap;
 
-		typedef std::map<EVENT, fastbird::LuaObject> LUA_EVENT_FUNC_MAP;
+		typedef std::map<UIEvents::Enum, fastbird::LuaObject> LUA_EVENT_FUNC_MAP;
 		LUA_EVENT_FUNC_MAP mLuaFuncMap;
 
-		std::set<EVENT> mDisabledEvent;
+		std::set<UIEvents::Enum> mDisabledEvent;
 		bool mEventEnable;
 	};
 }

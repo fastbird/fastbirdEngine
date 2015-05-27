@@ -22,12 +22,12 @@ DropDown::DropDown()
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 	mUIObject->SetNoDrawBackground(true);
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&DropDown::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 		std::bind(&DropDown::OnMouseOut, this, std::placeholders::_1));
 }
 
@@ -45,7 +45,7 @@ void DropDown::OnCreated()
 
 	mButton->SetHwndId(GetHwndId());
 	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
-	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
+	mButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 	mButton->SetSize(Vec2I(24, 24));
 	mButton->SetProperty(UIProperty::ALIGNH, "right");
@@ -211,7 +211,7 @@ void DropDown::OnItemSelected(void* arg)
 	}
 	assert(index != -1);
 	mCurIdx = index; 
-	OnEvent(IEventHandler::EVENT_DROP_DOWN_SELECTED);
+	OnEvent(UIEvents::EVENT_DROP_DOWN_SELECTED);
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
@@ -267,7 +267,7 @@ void DropDown::SetCommonProperty(IWinBase* item, size_t index)
 	item->SetInitialOffset(Vec2I(0, 24 * index));
 
 	WinBase* wb = (WinBase*)item;
-	wb->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	wb->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnItemSelected, this, std::placeholders::_1));
 }
 

@@ -23,7 +23,7 @@ namespace fastbird
 			return strings[a];
 		}
 
-		inline Enum ConverToEnum(const char* str)
+		inline Enum ConvertToEnum(const char* str)
 		{
 			if (_stricmp(str, "Billboard")==0)
 				return Billboard;
@@ -58,7 +58,7 @@ namespace fastbird
 			return strings[a];
 		}
 
-		inline Enum ConverToEnum(const char* str)
+		inline Enum ConvertToEnum(const char* str)
 		{
 			if (_stricmp(str, "LocalSpace")==0)
 				return LocalSpace;
@@ -99,7 +99,7 @@ namespace fastbird
 			return strings[a];
 		}
 
-		inline Enum ConverToEnum(const char* str)
+		inline Enum ConvertToEnum(const char* str)
 		{
 			if (_stricmp(str, "Point")==0)
 				return Point;

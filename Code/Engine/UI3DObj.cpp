@@ -38,6 +38,10 @@ namespace fastbird
 		if (mObjFlag & IObject::OF_HIDE )
 			return;
 
+		if (mLastPreRendered == gFBEnv->mFrameCounter)
+			return;
+		mLastPreRendered = gFBEnv->mFrameCounter;
+
 		mTransformation.GetHomogeneous(mObjectConstants.gWorld);
 
 	}

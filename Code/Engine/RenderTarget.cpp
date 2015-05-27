@@ -27,6 +27,7 @@ RenderTarget::RenderTarget()
 	, mFrameLuminanceCalced(0)
 	, mGaussianDistBlendGlow(0)
 	, mGaussianDistBloom(0), mSceneOverride(0), mLockSceneOverride(false), mDrawOnEvent(false), mDrawEventTriggered(false)
+	, mLuminance(0.5f), mFace(0)
 {
 	mId = NextRenderTargetId++;
 
@@ -1126,7 +1127,7 @@ void RenderTarget::Bloom()
 			mGaussianDistBloom->Calc(resol.x, resol.y, 3.f, 1.25f);
 		}
 		memcpy(avSampleOffsets, mGaussianDistBloom->mGaussianDistOffsetX, sizeof(Vec4) * 15);
-		memcpy(avSampleOffsets, mGaussianDistBloom->mGaussianDistWeightX, sizeof(Vec4) * 15);
+		memcpy(avSampleWeights, mGaussianDistBloom->mGaussianDistWeightX, sizeof(Vec4) * 15);
 		renderer->UnmapBigBuffer();
 
 		ITexture* rts[] = { mBloomTexture[1] };
@@ -1272,7 +1273,6 @@ void RenderTarget::RenderStarGlare()
 
 				avSampleWeights[i] = s_aaColor[starLine.nPasses - 1 - p][i] *
 					lum * (p + 1.0f) * 0.5f;
-
 
 				// Offset of sampling coordinate
 				avSampleOffsets[i].x = vtStepUV.x * i;

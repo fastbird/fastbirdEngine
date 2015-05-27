@@ -129,7 +129,7 @@ IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
 {
 	mChildrenChanged = true;
 	std::string typeText = compTable.GetField("type_").GetString();
-	auto type = ComponentType::ConverToEnum(typeText.c_str());
+	auto type = ComponentType::ConvertToEnum(typeText.c_str());
 	bool dropdown = GetType() == ComponentType::DropDown;
 	IWinBase* p = AddChild(type);
 	assert(p);
@@ -666,7 +666,7 @@ void Container::ParseXMLChildren(tinyxml2::XMLElement* pelem){
 			Error("component doesn't have the type attribute.");
 			break;
 		}
-		ComponentType::Enum type = ComponentType::ConverToEnum(sz);
+		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
 		IWinBase* p = AddChild(type);
 		assert(p);
 		p->SetRender3D(mRender3D, GetRenderTargetSize());
@@ -727,7 +727,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 				assert(0);
 				break;
 			}
-			auto typee = ComponentType::ConverToEnum(type.c_str());
+			auto typee = ComponentType::ConvertToEnum(type.c_str());
 			if (typee != ComponentType::NUM)
 			{
 				IWinBase* p = AddChild(typee);

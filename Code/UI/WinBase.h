@@ -139,7 +139,7 @@ namespace fastbird
 		bool mGhost;
 		bool mGatheringException;
 
-		VectorMap<IEventHandler::EVENT, std::string> mEventFuncNames;
+		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
 	public:
 		WinBase();
@@ -399,6 +399,9 @@ namespace fastbird
 			return mGatheringException;
 		}
 
+		virtual void SetEvent(UIEvents::Enum e, const char* luaFuncName);
+		virtual const char* GetEvent(UIEvents::Enum e);
+
 	protected:
 		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
@@ -416,7 +419,7 @@ namespace fastbird
 		
 	private:
 		friend class Container;
-		void ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos);
+		void ToolTipEvent(UIEvents::Enum evt, const Vec2& mouseNPos);
 
 		int ParseIntPosX(const std::string& posX);
 		int ParseIntPosY(const std::string& posY);

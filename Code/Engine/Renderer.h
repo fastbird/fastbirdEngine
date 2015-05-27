@@ -43,6 +43,7 @@ protected:
 	SmartPtr<IMaterial> mMissingMaterial;
 	SmartPtr<IRasterizerState> mDefaultRasterizerState;
 	SmartPtr<IRasterizerState> mFrontFaceCullRS;
+	SmartPtr<IRasterizerState> mOneBiasedDepthRS;
 	SmartPtr<IBlendState> mDefaultBlendState;
 	SmartPtr<IBlendState> mAdditiveBlendState;
 	SmartPtr<IBlendState> mAlphaBlendState;
@@ -98,6 +99,7 @@ protected:
 	SmartPtr<ITexture> mDepthTarget;
 	SmartPtr<IShader> mDepthWriteShader;
 	SmartPtr<IShader> mCloudDepthWriteShader;
+	SmartPtr<IShader> mDepthOnlyShader;
 	SmartPtr<IBlendState> mMinBlendState;
 
 	// HDR resources.
@@ -146,6 +148,7 @@ protected:
 
 	SmartPtr<IBlendState> mGreenMaskBlend;
 	SmartPtr<IBlendState> mBlueMaskBlend;
+	SmartPtr<IBlendState> mNoColorWriteBlend;
 	SmartPtr<IRasterizerState> mRSCloudFar;
 	SmartPtr<IRasterizerState> mRSCloudNear;
 
@@ -330,6 +333,7 @@ public:
 	virtual void SetRedAlphaMaskAddAddBlend();
 	virtual void SetGreenMask();
 	virtual void SetBlueMask();
+	virtual void SetNoColorWriteState();
 
 
 	void LockBlendState();
@@ -342,12 +346,17 @@ public:
 
 	// raster
 	virtual void SetFrontFaceCullRS();
+	virtual void SetOneBiasedDepthRS();
 
 	// sampler
 	virtual void SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot);
 
+	// write depth to render target
 	virtual void SetDepthWriteShader();
 	virtual void SetDepthWriteShaderCloud();
+
+	// write depth to depth buffer
+	virtual void SetDepthOnlyShader();
 
 	virtual ITexture* GetTemporalDepthBuffer(const Vec2I& size);	
 

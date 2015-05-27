@@ -141,7 +141,7 @@ namespace fastbird{
 			auto button = (Button*)mButtons.back();
 			button->SetProperty(UIProperty::TEXT_ALIGN, "center");
 			button->SetVisible(mVisibility.IsVisible());
-			button->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+			button->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&TabWindow::OnTabClicked, this, std::placeholders::_1));
 			button->SetProperty(UIProperty::USE_BORDER, "true");
 			mWindows.push_back(

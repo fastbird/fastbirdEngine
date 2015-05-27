@@ -7,47 +7,6 @@
 namespace fastbird
 {
 
-	const char* const EventHandler::StrEVENT[] = {
-		"OnEnter",
-		"OnMouseIn",
-		"OnMouseHover",
-		"OnMouseOut",
-		"OnMouseLClick",
-		"OnMouseLDClick",
-		"OnMouseRClick",
-		"OnMouseDown",
-		"OnMouseDrag",
-		"OnFileSelectorSelected",
-		"OnFileSelectorOk",
-		"OnFileSelectorCancel",
-		"OnNumericUp",
-		"OnNumericDown",
-		"OnNumericSet",
-		"OnDropDownSelected",
-		"OnVisible",
-		"OnHide",
-		"EVENT_ON_LOADED",
-		"OnListBoxCleared",
-		"OnListBoxSelectionChanged",
-		"OnColorRampDragged",
-
-		"EVENT_NUM"
-	};
-	const char* IEventHandler::ConvertToString(EVENT e)
-	{
-		assert(e >= 0 && e < EVENT::EVENT_NUM);
-		return StrEVENT[e];
-	}
-	IEventHandler::EVENT IEventHandler::ConvertToEnum(const char* str)
-	{
-		for (int i = 0; i < EVENT::EVENT_NUM; ++i)
-		{
-			if (_stricmp(str, StrEVENT[i]) == 0)
-				return EVENT(i);
-		}
-		return EVENT_NUM;
-	}
-
 size_t EventHandler::UNIQUE_ID = 0;
 unsigned EventHandler::sLastEventProcess = 0;
 EventHandler::EventHandler()
@@ -58,7 +17,7 @@ EventHandler::~EventHandler()
 {
 }
 
-IEventHandler::FunctionID EventHandler::RegisterEventFunc(EVENT e, EVENT_FUNCTION func)
+IEventHandler::FunctionID EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
 {
 	mFuncMap[UNIQUE_ID] = func;
 	mEventFuncMap[e].insert(UNIQUE_ID);
@@ -66,7 +25,7 @@ IEventHandler::FunctionID EventHandler::RegisterEventFunc(EVENT e, EVENT_FUNCTIO
 	return UNIQUE_ID++;	
 }
 
-void EventHandler::UnregisterEventFunc(EVENT e, FunctionID id)
+void EventHandler::UnregisterEventFunc(UIEvents::Enum e, FunctionID id)
 {
 	mEventFuncMap[e].erase(id);
 	mFuncMap.erase(mFuncMap.find(id));
@@ -78,7 +37,7 @@ void EventHandler::UnregisterAllEventFunc()
 	mEventFuncMap.clear();
 }
 
-bool EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
+bool EventHandler::RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncName)
 {
 	if (luaFuncName == 0)
 	{
@@ -95,14 +54,14 @@ bool EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
 	return false;
 }
 
-void EventHandler::UnregisterEventLuaFunc(EVENT e)
+void EventHandler::UnregisterEventLuaFunc(UIEvents::Enum e)
 {
 	auto it = mLuaFuncMap.find(e);
 	if (it != mLuaFuncMap.end())
 		mLuaFuncMap.erase(it);
 }
 
-bool EventHandler::OnEvent(EVENT e)
+bool EventHandler::OnEvent(UIEvents::Enum e)
 {
 	if (mDisabledEvent.find(e) != mDisabledEvent.end() || !mEventEnable)
 		return false;
@@ -141,16 +100,16 @@ bool EventHandler::OnEvent(EVENT e)
 	return processed;
 }
 
-void EventHandler::DisableEvent(EVENT e)
+void EventHandler::DisableEvent(UIEvents::Enum e)
 {
 	mDisabledEvent.insert(e);
 }
 
 void EventHandler::DisableAllEvent()
 {
-	for (int i = 0; i < EVENT_NUM; ++i)
+	for (int i = 0; i < UIEvents::EVENT_NUM; ++i)
 	{
-		mDisabledEvent.insert((EVENT)i);
+		mDisabledEvent.insert((UIEvents::Enum)i);
 	}
 }
 

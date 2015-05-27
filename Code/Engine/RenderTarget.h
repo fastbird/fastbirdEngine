@@ -38,7 +38,7 @@ namespace fastbird
 		bool mEnabled;
 		bool mUsePool;
 		Viewport mViewport;
-		unsigned mFace = 0;
+		unsigned mFace;
 
 		// Additional Targets
 		// Depth target

@@ -48,11 +48,11 @@ Button::Button()
 	// material param 1 : edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 	
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN, 
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_DOWN,
 		std::bind(&Button::OnMouseDown, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER, 
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&Button::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT, 
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 		std::bind(&Button::OnMouseOut, this, std::placeholders::_1));
 }
 

@@ -77,9 +77,9 @@ ListItem* ListBox::CreateNewItem(int row, int col)
 	}
 	item->SetProperty(UIProperty::BACK_COLOR, mHighlightColor.c_str());
 	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
-	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
@@ -654,7 +654,7 @@ void ListBox::SelectRow(unsigned index)
 			mSelectedIndices.push_back(idx);
 		}
 	}
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void ListBox::DeselectRow(unsigned index){
@@ -694,7 +694,7 @@ void ListBox::ClearSelection()
 		SetHighlightRow(row, false);
 	}
 	mSelectedIndices.clear();
-	OnEvent(IEventHandler::EVENT_LISTBOX_CLEARED);
+	OnEvent(UIEvents::EVENT_LISTBOX_CLEARED);
 }
 
 bool ListBox::IsSelected(unsigned row)
@@ -757,7 +757,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						MakeSureRangeFor(rowIndex);
 						SetHighlightRowAndSelect(rowIndex, true);						
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
@@ -770,14 +770,14 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 							SetHighlightRow(lastRow, false);
 							DeleteValuesInVector(mSelectedIndices, lastRow);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 						else
 						{
 							MakeSureRangeFor(dest);
 							SetHighlightRowAndSelect(dest, true);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 					}
 					else{
@@ -802,7 +802,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						MakeSureRangeFor(rowIndex);
 						SetHighlightRowAndSelect(rowIndex, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
@@ -814,7 +814,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						MakeSureRangeFor(last - 1);
 						SetHighlightRowAndSelect(last-1, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 					else
 					{
@@ -822,7 +822,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					}
 				}
 			}
-			OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+			OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 		else if (keyboard->IsKeyPressed(VK_DOWN))
 		{
@@ -843,7 +843,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						MakeSureRangeFor(rowIndex);
 						SetHighlightRowAndSelect(rowIndex, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
@@ -856,14 +856,14 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						{
 							SetHighlightRowAndSelect(lastRow, false);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 						else
 						{
 							MakeSureRangeFor(dest);
 							SetHighlightRowAndSelect(dest, true);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 					}
 				}
@@ -885,7 +885,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						SetHighlightRowAndSelect(rowIndex, true);
 						MakeSureRangeFor(rowIndex);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
@@ -897,11 +897,11 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						SetHighlightRowAndSelect(last + 1, true);
 						MakeSureRangeFor(last + 1);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 			}
-			OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+			OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 
 	}
@@ -960,8 +960,8 @@ void ListBox::OnItemClicked(void* arg)
 
 	ChangeFocusItem(listItem);
 
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
-	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 void ListBox::OnItemDoubleClicked(void* arg)
@@ -980,8 +980,8 @@ void ListBox::OnItemDoubleClicked(void* arg)
 		SetHighlightRowAndSelect(rowIndex, true);
 	}
 	ChangeFocusItem(listItem);
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
-	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 void ListBox::OnItemEnter(void* arg){
@@ -995,7 +995,7 @@ void ListBox::OnItemEnter(void* arg){
 			auto textfield = dynamic_cast<TextField*>(mFocusedListItem->GetChild(0));
 			if (wcscmp(textfield->GetText(), data[colIndex].GetText()) != 0){
 				data[colIndex].SetText(textfield->GetText());
-				OnEvent(EVENT_ENTER);
+				OnEvent(UIEvents::EVENT_ENTER);
 			}
 		}
 	}
@@ -1201,9 +1201,9 @@ void ListBox::FillItem(unsigned index){
 			{
 				item->RemoveAllChild();
 				checkbox = (CheckBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::CheckBox);
-				checkbox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-				checkbox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				checkbox->SetRuntimeChild(true);
 				checkbox->SetVisible(mVisibility.IsVisible());
@@ -1229,11 +1229,11 @@ void ListBox::FillItem(unsigned index){
 				textField->SetProperty(UIProperty::TEXT_LEFT_GAP, "4");
 				textField->SetRuntimeChild(true);
 				textField->SetVisible(mVisibility.IsVisible());
-				textField->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-				textField->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
-				textField->RegisterEventFunc(IEventHandler::EVENT_ENTER,
+				textField->RegisterEventFunc(UIEvents::EVENT_ENTER,
 					std::bind(&ListBox::OnItemEnter, this, std::placeholders::_1));
 			}
 			if_assert_pass(textField){
@@ -1249,9 +1249,9 @@ void ListBox::FillItem(unsigned index){
 				item->RemoveAllChild();
 				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
 				imageBox->DrawAsFixedSizeAtCenter();
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
@@ -1269,9 +1269,9 @@ void ListBox::FillItem(unsigned index){
 				item->RemoveAllChild();
 				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
 				imageBox->DrawAsFixedSizeAtCenter();
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
@@ -1289,9 +1289,9 @@ void ListBox::FillItem(unsigned index){
 				item->RemoveAllChild();
 				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
 				imageBox->DrawAsFixedSizeAtCenter();
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-				imageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
@@ -1510,7 +1510,7 @@ void ListBox::SearchStartingChacrcter(char c, unsigned curIndex)
 		ChangeFocusItem(mItems[index][0]);
 		gFBUIManager->SetFocusUI(mItems[index][0]);
 	}
-	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
 
@@ -1531,7 +1531,7 @@ void ListBox::IterateItem(bool next, bool apply)
 				auto textfield = dynamic_cast<TextField*>(mFocusedListItem->GetChild(0));
 				if (wcscmp(textfield->GetText(), data[colIndex].GetText()) != 0){
 					data[colIndex].SetText(textfield->GetText());
-					OnEvent(EVENT_ENTER);
+					OnEvent(UIEvents::EVENT_ENTER);
 				}								
 			}
 			
@@ -1562,7 +1562,7 @@ void ListBox::IterateItem(bool next, bool apply)
 		else
 			gFBUIManager->SetFocusUI(newFocusItem);
 	}
-	OnEvent(EVENT_LISTBOX_SELECTION_CHANGED);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 		
 }
 

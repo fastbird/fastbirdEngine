@@ -78,7 +78,7 @@ namespace fastbird
 			return ConvertToString(ComponentType::Enum(e));
 		}
 
-		inline Enum ConverToEnum(const char* sz)
+		inline Enum ConvertToEnum(const char* sz)
 		{
 			int i = 0;
 			for (auto& strEnum : strings)

@@ -112,7 +112,7 @@ EngineCommand::EngineCommand()
 		"ShadowMap height");
 
 	r_ShadowNear = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowNear", 10.0f);
+		"r_ShadowNear", 2.0f);
 	REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera near.");
 

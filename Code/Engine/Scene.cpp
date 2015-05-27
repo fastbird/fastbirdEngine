@@ -29,13 +29,8 @@ Scene::Scene()
 , mSkipSpatialObjects(false)
 , mDrawClouds(true)
 , mRttScene(false)
-, mLastPreRenderFrame(-1)
 , mFogColor(0, 0, 0)
 {
-	mVisibleObjectsMain.reserve(1000);
-	mVisibleObjectsLight.reserve(1000);
-	mPreRenderList.reserve(1000);
-	mVisibleTransparentObjects.reserve(1000);
 	mSkyBox = 0;
 
 	mWindDir = Vec3(1, 0, 0);
@@ -224,14 +219,19 @@ void Scene::SetSkipSpatialObjects(bool skip)
 }
 
 //----------------------------------------------------------------------------
-IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow/* = false*/)
+IScene::OBJECTS Scene::QueryVisibleObjects(ICamera* cam, const Ray3& ray, unsigned limitObject, bool narrow/* = false*/)
 {
 	if (mSkipSpatialObjects)
 		return IScene::OBJECTS();
 	OBJECTS objects;
 	// find object from visible list;
-	SPATIAL_OBJECTS::iterator it = mVisibleObjectsMain.begin(),
-		itEnd = mVisibleObjectsMain.end();
+	auto itCam = mVisibleObjectsMain.Find(cam);
+	if (itCam == mVisibleObjectsMain.end()){
+		return objects;
+	}
+
+	SPATIAL_OBJECTS::iterator it = itCam->second.begin(),
+		itEnd = itCam->second.end();
 	for (; it!=itEnd && objects.size() < limitObject; it++)
 	{
 		SpatialObject* pObj = (*it);
@@ -277,19 +277,21 @@ IScene::OBJECTS Scene::QueryVisibleObjects(const Ray3& ray, unsigned limitObject
 }
 
 //----------------------------------------------------------------------------
-void Scene::MakeVisibleSet()
+void Scene::MakeVisibleSet(ICamera* mainCam)
 {
 	if (mSkipSpatialObjects)
 		return;
-	mVisibleObjectsMain.clear();
-	mVisibleObjectsLight.clear();
-	mVisibleTransparentObjects.clear();
-	mPreRenderList.clear();
-	auto const renderer = gFBEnv->pRenderer;	
-	auto mainCam = renderer->GetCamera();
+
+	auto const renderer = gFBEnv->pRenderer;
 	auto curTarget = renderer->GetCurRendrTarget();
 	assert(curTarget);
 	auto lightCamera = curTarget->GetLightCamera();
+
+	mVisibleObjectsMain[mainCam].clear();
+	mVisibleObjectsLight[lightCamera].clear();
+	mVisibleTransparentObjects[mainCam].clear();
+	mPreRenderList[mainCam].clear();
+	
 	auto it = mSpatialObjects.begin(), itEnd = mSpatialObjects.end();
 	for (; it!=itEnd; it++)
 	{
@@ -301,47 +303,47 @@ void Scene::MakeVisibleSet()
 			IMaterial* pmat = (*it)->GetMaterial();
 			if (pmat && pmat->IsTransparent())
 			{
-				mVisibleTransparentObjects.push_back(*it);
+				mVisibleTransparentObjects[mainCam].push_back(*it);
 			}
 			else
 			{
-				mVisibleObjectsMain.push_back(*it);
+				mVisibleObjectsMain[mainCam].push_back(*it);
 			}
 			inserted = true;
 		}
 		
 		if (lightCamera && !lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
 		{
-			mVisibleObjectsLight.push_back((*it));
+			mVisibleObjectsLight[lightCamera].push_back((*it));
 			inserted = true;
 		}
 		if (inserted)
-			mPreRenderList.push_back((*it));		
+			mPreRenderList[mainCam].push_back((*it));
 	}
 
 	const fastbird::Vec3& camPos = gFBEnv->pRenderer->GetCamera()->GetPos();
-	for (const auto& obj : mPreRenderList)
+	for (const auto& obj : mPreRenderList[mainCam])
 	{
 		const Vec3& objPos = obj->GetPos();
 		float dist = (camPos - objPos).Length();
 		obj->SetDistToCam(dist);
 	}
 
-	std::sort(mVisibleObjectsMain.begin(), mVisibleObjectsMain.end(), 
+	std::sort(mVisibleObjectsMain[mainCam].begin(), mVisibleObjectsMain[mainCam].end(),
 				[](SpatialObject* a, SpatialObject* b) -> bool
 				{
 					return a->GetDistToCam() < b->GetDistToCam();
 				}
 			);
 
-	std::sort(mVisibleObjectsLight.begin(), mVisibleObjectsLight.end(),
+	std::sort(mVisibleObjectsLight[lightCamera].begin(), mVisibleObjectsLight[lightCamera].end(),
 				[](SpatialObject* a, SpatialObject* b) -> bool
 			{
 				return a->GetDistToCam() < b->GetDistToCam();
 			}
 			);
 
-	std::sort(mVisibleTransparentObjects.begin(), mVisibleTransparentObjects.end(),
+	std::sort(mVisibleTransparentObjects[mainCam].begin(), mVisibleTransparentObjects[mainCam].end(),
 				[](SpatialObject* a, SpatialObject* b) -> bool
 			{
 				return a->GetDistToCam() > b->GetDistToCam();
@@ -357,8 +359,6 @@ void Scene::MakeVisibleSet()
 //----------------------------------------------------------------------------
 void Scene::PreRender()
 {
-	bool runnedAlready = mLastPreRenderFrame == gFBEnv->mFrameCounter;		
-
 	if (!mSkipSpatialObjects)
 	{
 		auto cam = gFBEnv->pRenderer->GetCamera();
@@ -369,47 +369,40 @@ void Scene::PreRender()
 			return;
 		mLastPreRenderFramePerCam[cam] = gFBEnv->mFrameCounter;
 
-		MakeVisibleSet();
+		MakeVisibleSet(cam);
 
-		if (!runnedAlready)
+		auto objIt = mPreRenderList[cam].begin(), objItEnd = mPreRenderList[cam].end();
+		for (; objIt != objItEnd; objIt++)
 		{
-			auto objIt = mPreRenderList.begin(), objItEnd = mPreRenderList.end();
-			for (; objIt != objItEnd; objIt++)
-			{
-				(*objIt)->PreRender();
-			}
+			(*objIt)->PreRender();
 		}
 	}	
-	if (!runnedAlready)
+
+	if (mSkyRendering)
 	{
-		if (mSkyRendering)
+		if (mSkySphere)
 		{
-			if (mSkySphere)
+			if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
 			{
-				if (mSkySphereBlend && mSkySphereBlend->GetAlpha() == 1.0f)
-				{
+				mSkySphereBlend->PreRender();
+			}
+			else
+			{
+				mSkySphere->PreRender();
+				if (mSkySphereBlend && mSkySphereBlend->GetAlpha() != 0.f)
 					mSkySphereBlend->PreRender();
-				}
-				else
-				{
-					mSkySphere->PreRender();
-					if (mSkySphereBlend && mSkySphereBlend->GetAlpha() != 0.f)
-						mSkySphereBlend->PreRender();
-				}
+			}
 
-			}
-			if (mSkyBox)
-			{
-				mSkyBox->PreRender();
-			}
 		}
-
-		FB_FOREACH(it, mObjects)
+		if (mSkyBox)
 		{
-			(*it)->PreRender();
+			mSkyBox->PreRender();
 		}
+	}
 
-		mLastPreRenderFrame = gFBEnv->mFrameCounter;
+	FB_FOREACH(it, mObjects)
+	{
+		(*it)->PreRender();
 	}
 }
 
@@ -417,12 +410,16 @@ void Scene::PreRender()
 void Scene::Render()
 {
 	auto const renderer = (Renderer*)gFBEnv->pRenderer;
+	auto curTarget = renderer->GetCurRendrTarget();
+	assert(curTarget);
+	auto lightCamera = curTarget->GetLightCamera();
+	auto cam = renderer->GetCamera();
 	if (!mSkipSpatialObjects)
 	{
 		D3DEventMarker mark("VisibleObjects - Opaque");
 		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW)
 		{
-			for (auto& obj : mVisibleObjectsLight)
+			for (auto& obj : mVisibleObjectsLight[lightCamera])
 			{
 				obj->Render();
 			}
@@ -434,7 +431,7 @@ void Scene::Render()
 				l->OnBeforeRenderingOpaques(this);
 			}
 
-			for (auto& obj : mVisibleObjectsMain)
+			for (auto& obj : mVisibleObjectsMain[cam])
 			{
 				obj->Render();
 			}
@@ -481,7 +478,7 @@ void Scene::Render()
 		{
 			{
 				D3DEventMarker mark("VisibleObjects - Transparent");
-				auto it = mVisibleTransparentObjects.begin(), itEnd = mVisibleTransparentObjects.end();
+				auto it = mVisibleTransparentObjects[cam].begin(), itEnd = mVisibleTransparentObjects[cam].end();
 				for (; it != itEnd; it++)
 				{
 					(*it)->Render();
@@ -578,9 +575,9 @@ void Scene::RemoveListener(ISceneListener* listener)
 	DeleteValuesInVector(mListeners, listener);
 }
 
-const std::vector<SpatialObject*>& Scene::GetVisibleSpatialList() const
+const std::vector<SpatialObject*>& Scene::GetVisibleSpatialList(ICamera* cam)
 {
-	return mVisibleObjectsMain;
+	return mVisibleObjectsMain[cam];
 }
 
 unsigned Scene::GetNumSpatialObjects() const

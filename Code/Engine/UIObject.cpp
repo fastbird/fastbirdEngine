@@ -173,6 +173,10 @@ void UIObject::PreRender()
 	if (mObjFlag & IObject::OF_HIDE || mDoNotDraw)
 		return;
 
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
+
 	mOut = mScissor && 
 		!IsOverlapped(mRegion, mScissorRect);
 	if (mOut)

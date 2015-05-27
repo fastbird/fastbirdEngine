@@ -15,9 +15,9 @@ RadioBox::RadioBox()
 		AddChild(Vec2I(0, 0), Vec2I(24, 24), ComponentType::ImageBox));
 	mRadioImageBox->SetRuntimeChild(true);
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
-	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mRadioImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
-	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mRadioImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 
 	mStaticText = static_cast<StaticText*>(
@@ -25,17 +25,17 @@ RadioBox::RadioBox()
 	mStaticText->ChangePosX(24);
 	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mStaticText->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mStaticText->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 }
 
@@ -124,7 +124,7 @@ void RadioBox::OnChildrenClicked(void* arg)
 	if (mParent)
 		mParent->OnClickRadio(this);
 
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void RadioBox::OnClicked(void* arg)

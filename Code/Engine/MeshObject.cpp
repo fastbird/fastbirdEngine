@@ -21,6 +21,7 @@ namespace fastbird
 		: mAuxCloned(0)
 		, mRenderHighlight(false)
 		, mCollisionsCloned(0)
+		, mForceAlphaBlending(false)
 	{
 		mTopology = PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		if (gFBEnv && gFBEnv->pRenderer && gFBEnv->pRenderer->GetCamera())
@@ -51,6 +52,11 @@ namespace fastbird
 	{
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
+		if (mLastPreRendered == gFBEnv->mFrameCounter)
+			return;
+
+		mLastPreRendered = gFBEnv->mFrameCounter;
+
 		__super::PreRender();
 		
 		bool pointLightDataGathered = false;
@@ -146,7 +152,6 @@ namespace fastbird
 				}
 				else if (!(mObjFlag & OF_NO_DEPTH_PASS))
 				{
-					renderer->SetPositionInputLayout();
 					renderer->SetDepthWriteShader();
 					materialReady = true;
 				}
@@ -158,7 +163,7 @@ namespace fastbird
 			return;
 		}
 		// PASS_GODRAY_OCC_PRE
-		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI))
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !mForceAlphaBlending)
 		{
 			renderer->SetPositionInputLayout();
 			FB_FOREACH(it, mMaterialGroups)
@@ -191,19 +196,45 @@ namespace fastbird
 					mInputLayoutOverride->Bind();
 					includeInputLayout = false;
 				}
+				if (mForceAlphaBlending && !mMaterialGroups.empty()){
+					auto it = mMaterialGroups.begin();
+					renderer->SetPositionInputLayout();
+					bool hasSubMat = it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH_ONLY, false);
+					if (hasSubMat){
+						// write only depth
+						FB_FOREACH(it, mMaterialGroups)
+						{
+							it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH_ONLY, false);							
+							RenderMaterialGroup(&(*it), true);
+						}
+					}
+					else{
+						renderer->RestoreDepthStencilState();
+						renderer->SetOneBiasedDepthRS();
+						renderer->SetNoColorWriteState();
+
+						renderer->SetDepthOnlyShader();
+						// write only depth
+						FB_FOREACH(it, mMaterialGroups)
+						{
+							RenderMaterialGroup(&(*it), true);
+						}
+					}
+				}
 				FB_FOREACH(it, mMaterialGroups)
 				{
-					if (!it->mMaterial || !it->mVBPos)
+					auto material = mForceAlphaBlending ? it->mForceAlphaMaterial : it->mMaterial;
+					if (!material || !it->mVBPos)
 						continue;
 
-					it->mMaterial->Bind(includeInputLayout);
+					material->Bind(includeInputLayout);
 					RenderMaterialGroup(&(*it), false);
-					it->mMaterial->Unbind();
+					material->Unbind();
 				}
 			}
 			bool mainRt = renderer->IsMainRenderTarget();
 			// HIGHLIGHT
-			if (mRenderHighlight && mainRt)
+			if (mRenderHighlight && mainRt && !mForceAlphaBlending)
 			{
 				// draw silhouett to samll buffer
 				auto rt = renderer->GetCurRendrTarget();
@@ -338,7 +369,9 @@ namespace fastbird
 	IMaterial* MeshObject::GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
 	{
 		if (!mMaterialGroups.empty())
-			return mMaterialGroups[0].mMaterial;
+		{
+			return mForceAlphaBlending ? mMaterialGroups[0].mForceAlphaMaterial : mMaterialGroups[0].mMaterial;
+		}
 
 		return 0;
 	}
@@ -1035,9 +1068,10 @@ namespace fastbird
 		{
 			if (it.mMaterial)
 			{
-				if (!it.mMaterial->NumRefs()!=1)
+				if (it.mMaterial->NumRefs()!=1)
 				{
 					it.mMaterial = it.mMaterial->Clone();
+					it.mMaterial->CloneRenderStates();
 				}
 				BLEND_DESC bdesc;
 				bdesc.RenderTarget[0].BlendEnable = alpha != 1.0f;
@@ -1048,6 +1082,41 @@ namespace fastbird
 				auto diffuse = it.mMaterial->GetDiffuseColor();
 				diffuse.w = alpha;
 				it.mMaterial->SetDiffuseColor(diffuse);
+			}
+		}
+	}
+
+	void MeshObject::SetForceAlphaBlending(bool enable, float alpha){
+		mForceAlphaBlending = enable;
+		if (mForceAlphaBlending){
+			for (auto& it : mMaterialGroups)
+			{
+				if (it.mMaterial)
+				{
+					if (!it.mForceAlphaMaterial){
+						it.mForceAlphaMaterial = it.mMaterial->Clone();
+						it.mForceAlphaMaterial->CloneRenderStates();
+					}
+					BLEND_DESC bdesc;
+					bdesc.RenderTarget[0].BlendEnable = alpha != 1.0f;
+					bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+					bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+					bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+					it.mForceAlphaMaterial->SetBlendState(bdesc);
+					auto diffuse = it.mForceAlphaMaterial->GetDiffuseColor();
+					diffuse.w = alpha;
+					it.mForceAlphaMaterial->SetDiffuseColor(diffuse);
+
+					RASTERIZER_DESC rs;
+					rs.CullMode = CULL_MODE_NONE;
+					it.mForceAlphaMaterial->SetRasterizerState(rs);
+
+					DEPTH_STENCIL_DESC ds;
+					ds.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+					it.mForceAlphaMaterial->SetDepthStencilState(ds);
+
+					it.mForceAlphaMaterial->SetTransparent(true);
+				}
 			}
 		}
 	}

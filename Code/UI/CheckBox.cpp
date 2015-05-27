@@ -26,19 +26,19 @@ void CheckBox::OnCreated()
 {
 	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
 	mCheckImageBox->SetRuntimeChild(true);
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
 	mCheckImageBox->ChangeSize(Vec2I(24, 24));
 	mCheckImageBox->ChangeNPos(Vec2(0.0, 0.5f));
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	
 
@@ -78,7 +78,7 @@ void CheckBox::OnClicked(void* arg)
 
 void CheckBox::OnClickedChildren(void* arg)
 {
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void CheckBox::UpdateImage()

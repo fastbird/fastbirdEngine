@@ -82,6 +82,7 @@ namespace fastbird
 		struct MaterialGroup
 		{
 			SmartPtr<IMaterial> mMaterial;
+			SmartPtr<IMaterial> mForceAlphaMaterial;
 			SmartPtr<IVertexBuffer> mVBPos;
 			SmartPtr<IVertexBuffer> mVBNormal;
 			SmartPtr<IVertexBuffer> mVBUV;
@@ -98,6 +99,7 @@ namespace fastbird
 		};
 
 		virtual void SetAlpha(float alpha);
+		virtual void SetForceAlphaBlending(bool enable, float alpha);
 		virtual void SetAmbientColor(const Color& color);
 
 	private:
@@ -130,5 +132,7 @@ namespace fastbird
 		SmartPtr<BoundingVolume> mAABB;
 
 		bool mUseDynamicVB[BUFFER_TYPE_NUM];
+
+		bool mForceAlphaBlending;
 	};
 }

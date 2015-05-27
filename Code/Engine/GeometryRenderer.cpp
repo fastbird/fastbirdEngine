@@ -145,8 +145,10 @@ void GeometryRenderer::PreRender()
 {
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
-	mObjectConstants_WorldLine.gWorldViewProj =
-		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
 }
 
 void GeometryRenderer::OnBeforeRenderingTransparents(IScene* scene)
@@ -201,6 +203,9 @@ void GeometryRenderer::Render()
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
 	D3DEventMarker mark("GeometryRenderer::Render()");
+
+	mObjectConstants_WorldLine.gWorldViewProj =
+		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 	
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 	// object constant buffer

@@ -103,6 +103,7 @@ void Renderer::Deinit()
 	mRSCloudNear = 0;
 	mCloudVolumeDepth = 0;
 	mFrontFaceCullRS = 0;
+	mOneBiasedDepthRS = 0;
 	FB_SAFE_DEL(mCloudManager);
 	// All release operation should be done here.
 	SkySphere::DeleteSharedEnvRT();
@@ -517,8 +518,10 @@ void Renderer::SetCamera(ICamera* pCamera)
 	if (prev)
 		prev->SetCurrent(false);
 	mCamera = pCamera;
-	mCamera->SetCurrent(true);
-	UpdateCameraConstantsBuffer();
+	if (mCamera){
+		mCamera->SetCurrent(true);
+		UpdateCameraConstantsBuffer();
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -1383,6 +1386,15 @@ void Renderer::SetBlueMask()
 	mBlueMaskBlend->Bind();
 }
 
+void Renderer::SetNoColorWriteState(){
+	if (!mNoColorWriteBlend){
+		BLEND_DESC bdesc;
+		bdesc.RenderTarget[0].RenderTargetWriteMask = 0;
+		mNoColorWriteBlend = gFBEnv->pRenderer->CreateBlendState(bdesc);
+	}
+	mNoColorWriteBlend->Bind();
+}
+
 //---------------------------------------------------------------------------
 void Renderer::SetNoDepthWriteLessEqual()
 {
@@ -1431,6 +1443,15 @@ void Renderer::SetFrontFaceCullRS()
 		mFrontFaceCullRS = CreateRasterizerState(rdesc);
 	}
 	mFrontFaceCullRS->Bind();
+}
+
+void Renderer::SetOneBiasedDepthRS(){
+	if (!mOneBiasedDepthRS){
+		RASTERIZER_DESC rdesc;
+		rdesc.DepthBias = 1;
+		mOneBiasedDepthRS = CreateRasterizerState(rdesc);
+	}
+	mOneBiasedDepthRS->Bind();
 }
 
 //---------------------------------------------------------------------------
@@ -1742,6 +1763,17 @@ void Renderer::SetDepthWriteShaderCloud()
 	}
 	mPositionInputLayout->Bind();
 	mCloudDepthWriteShader->Bind();
+}
+
+void Renderer::SetDepthOnlyShader(){
+	if (!mDepthOnlyShader){
+		mDepthOnlyShader = CreateShader("es/shaders/DepthOnly.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			IMaterial::SHADER_DEFINES());
+		if (!mPositionInputLayout)
+			mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mDepthOnlyShader);
+	}
+	mPositionInputLayout->Bind();
+	mDepthOnlyShader->Bind();
 }
 
 //---------------------------------------------------------------------------

@@ -12,10 +12,10 @@ namespace fastbird
 
 		OBJECTS mObjects;
 		SPATIAL_OBJECTS mSpatialObjects;
-		SPATIAL_OBJECTS mVisibleObjectsMain;
-		SPATIAL_OBJECTS mVisibleObjectsLight;
-		SPATIAL_OBJECTS mPreRenderList; // VisibleObjectsMain + VisibleObjectsLight
-		SPATIAL_OBJECTS mVisibleTransparentObjects;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleObjectsMain;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleObjectsLight;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mPreRenderList;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleTransparentObjects;
 		SmartPtr<ISkyBox> mSkyBox;
 		SmartPtr<ISkySphere> mSkySphere;
 		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
@@ -34,7 +34,6 @@ namespace fastbird
 		Vec3 mWindVector;
 		Color mFogColor;
 		VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
-		unsigned mLastPreRenderFrame;
 		bool mDrawClouds;
 		bool mRttScene;
 
@@ -61,10 +60,10 @@ namespace fastbird
 		virtual ISkySphere* GetSkySphere() const {return mSkySphere;}
 		virtual void SetSkipSpatialObjects(bool skip);
 
-		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false);
+		virtual OBJECTS QueryVisibleObjects(ICamera* cam, const Ray3& ray, unsigned limitObject, bool narrow = false);
 		virtual void ClearEverySpatialObject();
 
-		virtual void MakeVisibleSet();
+		virtual void MakeVisibleSet(ICamera* cam);
 		virtual void PreRender();
 		virtual void Render();
 
@@ -81,7 +80,7 @@ namespace fastbird
 		virtual void AddListener(ISceneListener* listener);
 		virtual void RemoveListener(ISceneListener* listener);
 
-		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList() const;
+		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList(ICamera* cam);
 
 		virtual unsigned GetNumSpatialObjects() const;
 

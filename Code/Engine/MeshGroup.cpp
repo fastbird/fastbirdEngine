@@ -135,6 +135,10 @@ void MeshGroup::PreRender()
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
 
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
+
 	UpdateTransform();
 
 	FB_FOREACH(it, mMeshObjects)
@@ -307,6 +311,19 @@ Transformation MeshGroup::GetToLocalTransform(const char* meshName)
 	return Transformation();
 }
 
+Transformation MeshGroup::GetLocalMeshTransform(unsigned meshIdx)
+{
+	const Hierarchy& h = mHierarchyMap[meshIdx];
+	auto parentIdx = h.mParentIndex;
+	if (parentIdx != -1){
+		Transformation transform = mMeshObjects[parentIdx].first->GetTransform() * mMeshObjects[meshIdx].second;
+		return transform;
+	}
+	else{
+		return mMeshObjects[meshIdx].second;
+	}
+}
+
 //---------------------------------------------------------------------------
 void MeshGroup::SetEnableHighlight(bool enable)
 {
@@ -367,6 +384,14 @@ void MeshGroup::SetAlpha(float alpha)
 	for (auto& it : mMeshObjects)
 	{
 		it.first->SetAlpha(alpha);		
+	}
+}
+
+void MeshGroup::SetForceAlphaBlending(bool enable, float alpha)
+{
+	for (auto& it : mMeshObjects)
+	{
+		it.first->SetForceAlphaBlending(enable, alpha);
 	}
 }
 

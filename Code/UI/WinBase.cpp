@@ -604,7 +604,7 @@ void WinBase::SetVisibleInternal(bool visible)
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	if (visible)
 	{
-		OnEvent(IEventHandler::EVENT_ON_VISIBLE);
+		OnEvent(UIEvents::EVENT_ON_VISIBLE);
 		if (mModal)
 		{
 			gFBEnv->pUIManager->IgnoreInput(true, this);
@@ -612,7 +612,7 @@ void WinBase::SetVisibleInternal(bool visible)
 	}
 	else
 	{
-		OnEvent(IEventHandler::EVENT_ON_HIDE);
+		OnEvent(UIEvents::EVENT_ON_HIDE);
 		if (mModal)
 		{
 			gFBEnv->pUIManager->IgnoreInput(false, this);
@@ -778,7 +778,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				mouse->GetDeltaXY(x, y);
 				if (x != 0 || y != 0)
 				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_DRAG))
+					if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
 					{
 						mouse->Invalidate();
 					}
@@ -789,26 +789,26 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 				else
 				{
-					if (OnEvent(IEventHandler::EVENT_MOUSE_DOWN))
+					if (OnEvent(UIEvents::EVENT_MOUSE_DOWN))
 						mouse->Invalidate();
 				}
 			}
 			else if (mMouseInPrev)
 			{
-				if (OnEvent(IEventHandler::EVENT_MOUSE_HOVER))
+				if (OnEvent(UIEvents::EVENT_MOUSE_HOVER))
 					invalidate = true;
-				ToolTipEvent(IEventHandler::EVENT_MOUSE_HOVER, mousepos);
+				ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, mousepos);
 			}
 			else if (mMouseIn)
 			{
-				if (OnEvent(IEventHandler::EVENT_MOUSE_IN))
+				if (OnEvent(UIEvents::EVENT_MOUSE_IN))
 					invalidate = true;
-				ToolTipEvent(IEventHandler::EVENT_MOUSE_IN, mousepos);
+				ToolTipEvent(UIEvents::EVENT_MOUSE_IN, mousepos);
 			}
 
 			if (mouse->IsLButtonClicked())
 			{
-				if (OnEvent(EVENT_MOUSE_LEFT_CLICK))
+				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK))
 				{
 					invalidate = true;
 					mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
@@ -816,7 +816,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			else if (mouse->IsLButtonDoubleClicked())
 			{
-				if (OnEvent(EVENT_MOUSE_LEFT_DOUBLE_CLICK))
+				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK))
 				{
 					invalidate = true;
 					gFBEnv->pUIManager->CleanTooltip();
@@ -825,7 +825,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			else if (mouse->IsRButtonClicked())
 			{
-				if (OnEvent(EVENT_MOUSE_RIGHT_CLICK))
+				if (OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK))
 				{
 					mouse->Invalidate();
 					invalidate = true;
@@ -839,24 +839,24 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		}
 		else if (mMouseInPrev)
 		{
-			if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+			if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
 			{
 				mouse->Invalidate();
 				TriggerRedraw();
 			}
-			ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
+			ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
 		}
 
 		mMouseInPrev = mMouseIn;
 	}
 	else if (mMouseInPrev)
 	{
-		if (OnEvent(IEventHandler::EVENT_MOUSE_OUT))
+		if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
 		{
 			mouse->Invalidate();
 			TriggerRedraw();
 		}
-		ToolTipEvent(IEventHandler::EVENT_MOUSE_OUT, mousepos);
+		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
 		mMouseInPrev = false;
 	}
 
@@ -872,7 +872,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		{
 		case VK_RETURN:
 		{
-			if (OnEvent(EVENT_ENTER))
+			if (OnEvent(UIEvents::EVENT_ENTER))
 			{
 				keyboard->PopChar();
 				TriggerRedraw();
@@ -882,7 +882,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		case VK_TAB:
 		{
 			if (GetType() == ComponentType::TextField){
-				if (OnEvent(EVENT_ENTER))
+				if (OnEvent(UIEvents::EVENT_ENTER))
 				{
 					TriggerRedraw();
 				}
@@ -2545,8 +2545,8 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		auto eventElem = eventsElem->FirstChildElement();
 		while (eventElem)
 		{
-			IEventHandler::EVENT e = IEventHandler::ConvertToEnum(eventElem->Name());
-			if (e != IEventHandler::EVENT_NUM)
+			UIEvents::Enum e = UIEvents::ConvertToEnum(eventElem->Name());
+			if (e != UIEvents::EVENT_NUM)
 			{
 				const char* funcName = eventElem->GetText();
 				bool succ = RegisterEventLuaFunc(e, funcName);
@@ -2798,7 +2798,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			std::string funcName = kv.second.GetString(s2);
 			if (s1 && s2)
 			{
-				IEventHandler::EVENT e = IEventHandler::ConvertToEnum(eventName.c_str());
+				UIEvents::Enum e = UIEvents::ConvertToEnum(eventName.c_str());
 				RegisterEventLuaFunc(e, funcName.c_str());
 			}
 		}
@@ -2918,7 +2918,7 @@ void WinBase::Save(tinyxml2::XMLElement& elem)
 		elem.InsertEndChild(eventsElem);
 		for (auto it : mEventFuncNames)
 		{
-			auto eElem = eventsElem->GetDocument()->NewElement(IEventHandler::ConvertToString(it.first));
+			auto eElem = eventsElem->GetDocument()->NewElement(UIEvents::ConvertToString(it.first));
 			eventsElem->InsertEndChild(eElem);
 			auto text = eElem->GetDocument()->NewText(it.second.c_str());
 			eElem->InsertEndChild(text);
@@ -2936,14 +2936,14 @@ float WinBase::GetTextBottomGap() const
 }
 
 
-void WinBase::ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos)
+void WinBase::ToolTipEvent(UIEvents::Enum evt, const Vec2& mouseNPos)
 {
 	if (mTooltipText.empty())
 		return;
 
 	switch (evt)
 	{
-	case IEventHandler::EVENT_MOUSE_IN:
+	case UIEvents::EVENT_MOUSE_IN:
 	{
 										  gFBEnv->pUIManager->SetTooltipString(mTooltipText);
 
@@ -2952,13 +2952,13 @@ void WinBase::ToolTipEvent(IEventHandler::EVENT evt, const Vec2& mouseNPos)
 	}
 		break;
 
-	case IEventHandler::EVENT_MOUSE_HOVER:
+	case UIEvents::EVENT_MOUSE_HOVER:
 		gFBEnv->pUIManager->SetTooltipString(mTooltipText);
 		gFBEnv->pUIManager->SetTooltipPos(mouseNPos);
 		mShowingTooltip = true;
 		break;
 
-	case IEventHandler::EVENT_MOUSE_OUT:
+	case UIEvents::EVENT_MOUSE_OUT:
 		gFBEnv->pUIManager->SetTooltipString(std::wstring());
 		mShowingTooltip = false;
 		break;
@@ -3320,6 +3320,24 @@ float WinBase::GetContentHeight() const
 bool WinBase::IsKeyboardFocused() const
 {
 	return gFBUIManager->GetKeyboardFocusUI() == this;
+}
+
+
+void WinBase::SetEvent(UIEvents::Enum e, const char* luaFuncName){
+	if (e != UIEvents::EVENT_NUM)
+	{
+		mEventFuncNames[e] = luaFuncName;
+		RegisterEventLuaFunc(e, luaFuncName);
+	}
+}
+
+const char* WinBase::GetEvent(UIEvents::Enum e){
+	assert(e < UIEvents::EVENT_NUM);
+	auto it = mEventFuncNames.Find(e);
+	if (it != mEventFuncNames.end()){
+		return it->second.c_str();
+	}
+	return "";
 }
 
 }

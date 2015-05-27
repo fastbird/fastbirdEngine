@@ -39,7 +39,7 @@ FileSelector::FileSelector()
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
 		mDriveButtons.back()->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
 		mDriveButtons.back()->SetText(AnsiToWide(drives[i].c_str(), drives[i].size()));
-		mDriveButtons.back()->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+		mDriveButtons.back()->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 			std::bind(&FileSelector::OnDriveClick, this, std::placeholders::_1));
 		xpos+= 0.082f;
 	}
@@ -52,15 +52,15 @@ FileSelector::FileSelector()
 		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox) );
 	mListBox->SetRuntimeChild(true);
 	mListBox->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
-	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
+	mListBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnListClick, this, std::placeholders::_1));
-	mListBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK, 
+	mListBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&FileSelector::OnListDoubleClick, this, std::placeholders::_1));
 	
 	mOKButton = static_cast<Button*>(
 		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
 	mOKButton->SetRuntimeChild(true);
-	mOKButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
+	mOKButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnOK, this, std::placeholders::_1));
 	mOKButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mOKButton->SetText(L"OK");
@@ -68,7 +68,7 @@ FileSelector::FileSelector()
 	mCancelButton = static_cast<Button*>(
 		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
 	mCancelButton->SetRuntimeChild(true);
-	mCancelButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mCancelButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnCancel, this, std::placeholders::_1));
 	mCancelButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
 	mCancelButton->SetText(L"Cancel");	
@@ -91,12 +91,12 @@ void FileSelector::GatherVisit(std::vector<IUIObject*>& v)
 
 void FileSelector::OnOK(void* pButton)
 {
-	OnEvent(IEventHandler::EVENT_FILE_SELECTOR_OK);
+	OnEvent(UIEvents::EVENT_FILE_SELECTOR_OK);
 }
 void FileSelector::OnCancel(void* pButton)
 {
 	mFile.clear();
-	OnEvent(IEventHandler::EVENT_FILE_SELECTOR_CANCEL);
+	OnEvent(UIEvents::EVENT_FILE_SELECTOR_CANCEL);
 }
 
 void FileSelector::OnListClick(void* pList)
@@ -108,7 +108,7 @@ void FileSelector::OnListClick(void* pList)
 	// if dir
 	if (!tinydir_isdir(unifiedPath))
 	{
-		OnEvent(IEventHandler::EVENT_FILE_SELECTOR_SELECTED);
+		OnEvent(UIEvents::EVENT_FILE_SELECTOR_SELECTED);
 		mFileTextField->SetText( AnsiToWide(unifiedPath, strlen(unifiedPath)) );
 	}
 }
@@ -126,7 +126,7 @@ void FileSelector::OnListDoubleClick(void* pList)
 	}
 	else
 	{
-		OnEvent(IEventHandler::EVENT_FILE_SELECTOR_OK);
+		OnEvent(UIEvents::EVENT_FILE_SELECTOR_OK);
 		mFile = unifiedPath;
 	}
 

@@ -23,11 +23,11 @@ TextField::TextField()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK, 
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&TextField::OnClicked, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&TextField::OnDoubleClicked, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_ENTER,
+	RegisterEventFunc(UIEvents::EVENT_ENTER,
 		std::bind(&TextField::OnEnter, this, std::placeholders::_1));
 }
 
@@ -79,7 +79,7 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		else if (ch == VK_RETURN)
 		{
 			bool succ = false;
-			if (OnEvent(EVENT_ENTER))
+			if (OnEvent(UIEvents::EVENT_ENTER))
 			{
 				succ = true;
 			}
@@ -91,7 +91,7 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					auto eventHandler = dynamic_cast<IEventHandler*>(listbox);
 					if (eventHandler)
 					{
-						if (eventHandler->OnEvent(EVENT_ENTER)){
+						if (eventHandler->OnEvent(UIEvents::EVENT_ENTER)){
 							succ = true;
 						}
 					}
@@ -179,7 +179,7 @@ void TextField::OnFocusLost()
 		if (editingUI)
 		{
 			char buf[256] = { 0 };
-			auto got = editingUI->GetProperty(UIProperty::ConverToEnum(key.c_str()), buf, false);
+			auto got = editingUI->GetProperty(UIProperty::ConvertToEnum(key.c_str()), buf, false);
 			if (got)
 				SetText(AnsiToWide(buf));
 		}

@@ -106,6 +106,7 @@
     <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="UIEvents.h" />
     <ClInclude Include="FileSelector.h" />
     <ClInclude Include="HexagonalContextMenu.h" />
     <ClInclude Include="HorizontalGauge.h" />

@@ -285,6 +285,9 @@ bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
 		sz = rasterizerDescElem->Attribute("ScissorEnable");
 		if (sz)
 			rdesc.ScissorEnable = StringConverter::parseBool(sz);
+		sz = rasterizerDescElem->Attribute("DepthBias");
+		if (sz)
+			rdesc.DepthBias = StringConverter::parseInt(sz);
 	}
 	else
 	{

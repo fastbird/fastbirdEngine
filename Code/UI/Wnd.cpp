@@ -319,7 +319,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 mTitlebar->SetHwndId(GetHwndId());
 									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
 									 mTitlebar->SetVisible(mVisibility.IsVisible());
-									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
+									 mTitlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
 										 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
 									 mTitlebar->SetManualParent(this);
 									 mTitlebar->ChangeSizeX(GetFinalSize().x);

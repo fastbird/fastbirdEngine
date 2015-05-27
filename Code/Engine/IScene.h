@@ -14,6 +14,7 @@ namespace fastbird
 	class ISkySphere;
 	class IMeshObject;
 	class ILight;
+	class ICamera;
 	class IScene : public ReferenceCounter
 	{
 	public:
@@ -41,12 +42,11 @@ namespace fastbird
 		virtual ISkySphere* GetSkySphere() const = 0;
 
 		// narrow : do narrow phase collision check
-		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false) = 0;
+		virtual OBJECTS QueryVisibleObjects(ICamera* cam, const Ray3& ray, unsigned limitObject, bool narrow = false) = 0;
 		virtual void SetSkipSpatialObjects(bool skip) = 0;
 
 		virtual void ClearEverySpatialObject() = 0;
 
-		virtual void MakeVisibleSet() = 0;
 		virtual void PreRender() = 0;
 		virtual void Render() = 0;
 
@@ -61,7 +61,7 @@ namespace fastbird
 		virtual void AddListener(ISceneListener* listener) = 0;
 		virtual void RemoveListener(ISceneListener* listener) = 0;
 
-		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList() const = 0;
+		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList(ICamera* cam) = 0;
 
 		virtual unsigned GetNumSpatialObjects() const = 0;
 		virtual void PrintSpatialObject() = 0;
