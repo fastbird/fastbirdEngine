@@ -721,7 +721,8 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 		{
 			if (c == VK_TAB)
 			{
-				keyboard->PopChar();
+				keyboard->ClearBuffer();
+				keyboard->Invalidate();
 				bool next = keyboard->IsKeyDown(VK_SHIFT) ? false : true;
 				bool apply = true;
 				IterateItem(next, apply);
@@ -959,6 +960,13 @@ void ListBox::OnItemClicked(void* arg)
 	}
 
 	ChangeFocusItem(listItem);
+	if (listItem->GetNumChildren() > 0){
+		gFBUIManager->SetFocusUI(listItem->GetChild(0));
+	}
+	else{
+		gFBUIManager->SetFocusUI(listItem);
+	}
+	
 
 	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);

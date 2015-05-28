@@ -287,6 +287,20 @@ namespace fastbird
 			return COUNT;
 		}
 
+		inline Enum IsUIProperty(const char* sz)
+		{
+			int i = 0;
+			for (auto& strEnum : strings)
+			{
+				if (_stricmp(strEnum, sz) == 0)
+					return Enum(i);
+
+				++i;
+			}
+
+			return COUNT;
+		}
+
 		inline Vec4 GetDefaultValueVec4(UIProperty::Enum prop)
 		{
 			switch (prop){

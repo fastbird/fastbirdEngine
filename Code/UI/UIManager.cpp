@@ -1057,6 +1057,9 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	mMouseIn = false;
+	if (mKeyboardFocus && mKeyboardFocus->GetHwndId() != hwndId){
+		mKeyboardFocus->OnInputFromHandler(pMouse, keyboard);
+	}
 	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 	int i = 0;
 	for (; it != itEnd; ++it)
@@ -1071,12 +1074,13 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	//Select
-	if (pMouse->IsLButtonClicked()) {
+	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
 		auto mousePos = pMouse->GetPos();
 		RegionTestParam rparam;
 		rparam.mOnlyContainer = false;
 		rparam.mIgnoreScissor = mUIEditor ? true : false;
 		rparam.mTestChildren = true;
+		rparam.mHwndId = hwndId;
 		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
 		if (mKeyboardFocus != focusWnd)
 		{
@@ -1091,7 +1095,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		}
 	}
 
-	if (keyboard->GetChar() == VK_TAB)
+	if (keyboard->IsValid() && keyboard->GetChar() == VK_TAB)
 	{
 		if (gFBUIManager->GetKeyboardFocusUI())
 		{
@@ -1430,6 +1434,12 @@ bool UIManager::OnFileChanged(const char* file)
 	std::string filepath = lower;
 	if (strcmp(extension, "lua") == 0)
 	{
+		if (mUIEditor){
+			if (!MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
+				"Warning", MB_YESNO))
+				return false;
+		}
+
 		uiname = FindUINameWithLua(lower.c_str());
 		filepath = FindUIFilenameWithLua(lower.c_str());
 	}
@@ -1641,7 +1651,8 @@ void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 	rparam.mOnlyContainer = true;
 	rparam.mIgnoreScissor = true;
 	rparam.mTestChildren = true;
-	mMouseOveredContainer = WinBaseWithPoint(pt, rparam);
+	rparam.mHwndId = gFBEnv->pEngine->GetMainWndHandleId();
+	mMouseOveredContainer = (Container*)WinBaseWithPoint(pt, rparam);
 	if (pMouse->IsLButtonDown())
 	{
 		if (!mDragBox.IsStarted())
@@ -1682,6 +1693,8 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 		if (!wnd->GetVisible()){			
 			continue;
 		}
+		if (param.mHwndId != wnd->GetHwndId())
+			continue;
 		auto found = wnd->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
@@ -1747,6 +1760,45 @@ void UIManager::LocateComponent()
 		mMultiLocating = true;
 	}
 	
+}
+
+void UIManager::CopyCompsAtMousePos(const std::vector<IWinBase*>& src){
+	if (src.empty())
+		return;
+	if (!gFBEnv->pEngine->IsMainWindowForground() || !mMouseOveredContainer)
+		return;
+
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	auto pos = mouse->GetPos();
+	auto offset = pos - src[0]->GetFinalPos();
+	std::vector<IWinBase*> cloned;
+	tinyxml2::XMLDocument doc;
+	for (auto& s : src){		
+		auto comp = doc.NewElement("component");
+		doc.InsertEndChild(comp);
+		s->Save(*comp);
+	}
+	auto comp = doc.FirstChildElement("component");
+	while (comp){
+		const char* sz = comp->Attribute("type");
+		if (!sz)
+		{
+			Error("component doesn't have the type attribute.");
+			break;
+		}
+		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
+		WinBase* pWinBase = (WinBase*)CreateComponent(type);
+		cloned.push_back(pWinBase);
+		pWinBase->ParseXML(comp);
+		pWinBase->OnCreated();
+		comp = comp->NextSiblingElement("component");
+	}
+
+	for (auto c : cloned){
+		mMouseOveredContainer->AddChild(c);
+		c->SetVisible(true);
+		c->Move(offset);
+	}
 }
 
 

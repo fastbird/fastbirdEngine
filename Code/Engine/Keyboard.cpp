@@ -113,8 +113,10 @@ namespace fastbird
 
 	void Keyboard::PopChar()
 	{
-		if (!mCurrentChar.empty())
+		if (!mCurrentChar.empty()){
 			mCurrentChar.pop();
+			Invalidate();
+		}
 	}
 
 	//--------------------------------------------------------------------------

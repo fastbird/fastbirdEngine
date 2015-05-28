@@ -233,6 +233,7 @@ void Wnd::RefreshFrame()
 				mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
 			}
 			TransferChildrenTo(mWndContentUI);
+			mWndContentUI->SetVisible(mVisibility.IsVisible());
 		}
 		enum FRAME_ORDER
 		{

@@ -1301,9 +1301,15 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::TEXT_GAP:
 	{
-		int gap = StringConverter::parseInt(val);
-		mTextGap.x = gap;
-		mTextGap.y = gap;
+		auto vals = Split(val);
+		if (vals.size()== 2){
+			mTextGap = StringConverter::parseVec2I(val);
+		}
+		else{
+			mTextGap.x = StringConverter::parseInt(val);
+			mTextGap.y = mTextGap.x;
+		}
+		
 		AlignText();
 		return true;
 	}
@@ -1690,12 +1696,10 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 	case UIProperty::TEXT_GAP:
 	{
 		if (notDefaultOnly) {
-			if (mTextGap == UIProperty::GetDefaultValueVec2I(prop)) {
-				return false;
-			}
+			return false;
 		}
 
-		auto data = StringConverter::toString(mTextGap.x);
+		auto data = StringConverter::toString(mTextGap);
 		strcpy(val, data.c_str());
 		
 		return true;
@@ -3324,10 +3328,20 @@ bool WinBase::IsKeyboardFocused() const
 
 
 void WinBase::SetEvent(UIEvents::Enum e, const char* luaFuncName){
+	assert(luaFuncName);
 	if (e != UIEvents::EVENT_NUM)
 	{
-		mEventFuncNames[e] = luaFuncName;
-		RegisterEventLuaFunc(e, luaFuncName);
+		if (strlen(luaFuncName) == 0){
+			UnregisterEventLuaFunc(e);
+			auto it = mEventFuncNames.Find(e);
+			if (it != mEventFuncNames.end()){
+				mEventFuncNames.erase(it);
+			}
+		}
+		else{
+			RegisterEventLuaFunc(e, luaFuncName);
+			mEventFuncNames[e] = luaFuncName;
+		}
 	}
 }
 

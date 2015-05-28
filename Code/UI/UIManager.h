@@ -17,6 +17,7 @@ namespace fastbird
 	class IUIObject;
 	class ListBox;
 	class UICommands;
+	class Container;
 	class UIManager : public IUIManager, public IFileChangeListener,
 		public IRenderListener
 	{
@@ -36,7 +37,7 @@ namespace fastbird
 
 		IWinBase* mFocusWnd;
 		IWinBase* mKeyboardFocus;
-		IWinBase* mMouseOveredContainer;
+		Container* mMouseOveredContainer;
 		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
 		IWinBase* mTooltipUI;
@@ -206,6 +207,7 @@ namespace fastbird
 		virtual void StartLocatingComponent(ComponentType::Enum c);
 		virtual void CancelLocatingComponent();
 		virtual void ChangeFilepath(IWinBase* root, const char* newfile);
+		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src);
 
 	private:
 		void OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard);

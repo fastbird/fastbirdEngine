@@ -7,6 +7,7 @@
 #include <UI/ListItem.h>
 #include <UI/ListBox.h>
 #include <UI/IUIEditor.h>
+#include <UI/UIEvents.h>
 #include <Engine/TextManipulator.h>
 
 
@@ -179,9 +180,19 @@ void TextField::OnFocusLost()
 		if (editingUI)
 		{
 			char buf[256] = { 0 };
-			auto got = editingUI->GetProperty(UIProperty::ConvertToEnum(key.c_str()), buf, false);
-			if (got)
-				SetText(AnsiToWide(buf));
+			auto prop = UIProperty::IsUIProperty(key.c_str());
+			if (prop != UIProperty::COUNT){
+				auto got = editingUI->GetProperty(prop, buf, false);
+				if (got)
+					SetText(AnsiToWide(buf));
+			}
+			else{
+				auto e = UIEvents::IsUIEvents(key.c_str());
+				if (e != UIEvents::EVENT_NUM){
+					auto szEvent = editingUI->GetEvent(e);
+					editingUI->SetEvent(e, szEvent);
+				}
+			}
 		}
 	}
 	mani->SetText(0);

@@ -87,11 +87,14 @@ namespace fastbird
 		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle) = 0;
 		virtual HMODULE GetUIEditorModuleHandle() const = 0;
 		virtual TextManipulator* GetTextManipulator() const = 0;
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) = 0;
 
 		virtual const char* GetUIPath(const char* uiname) const = 0;
 		virtual const char* GetUIScriptPath(const char* uiname) const = 0;
 		
 		virtual void SuppressPropertyWarning(bool suppress) = 0;
+
+		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

@@ -71,5 +71,15 @@ namespace fastbird{
 			}
 			return EVENT_NUM;
 		}
+
+		inline Enum IsUIEvents(const char* str)
+		{
+			for (int i = 0; i < EVENT_NUM; ++i)
+			{
+				if (_stricmp(str, StrEVENT[i]) == 0)
+					return Enum(i);
+			}
+			return EVENT_NUM;
+		}
 	}
 }

@@ -402,6 +402,9 @@ namespace fastbird
 		virtual void SetEvent(UIEvents::Enum e, const char* luaFuncName);
 		virtual const char* GetEvent(UIEvents::Enum e);
 
+		virtual bool GetNoMouseEvent() const { return mNoMouseEvent; }
+		virtual bool GetNoMouseEventAlone() const { return mNoMouseEventAlone; }
+
 	protected:
 		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();

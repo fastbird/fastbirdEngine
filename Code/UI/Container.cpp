@@ -1070,8 +1070,15 @@ void Container::TransferChildrenTo(Container* destContainer){
 void Container::AddChild(IWinBase* child){
 	if (!child)
 		return;
-	mChildren.push_back(child);
+
 	mChildrenChanged = true; // only detecting addition. not deletion.
+	if (mWndContentUI)
+	{
+		mWndContentUI->AddChild(child);
+		return;
+	}
+
+	mChildren.push_back(child);	
 	child->SetHwndId(GetHwndId());
 	child->SetRender3D(mRender3D, GetRenderTargetSize());
 	if (mNoMouseEvent)
@@ -1081,7 +1088,10 @@ void Container::AddChild(IWinBase* child){
 	WinBase* winbase = (WinBase*)child;
 	winbase->SetParent(this);
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-	SetChildrenPosSizeChanged();
+	winbase->OnParentSizeChanged();
+	winbase->OnParentPosChanged();
+
+	SetChildrenPosSizeChanged();	
 }
 
 }
