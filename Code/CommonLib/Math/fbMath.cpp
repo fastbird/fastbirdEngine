@@ -365,4 +365,20 @@ namespace fastbird
 		r.right += size;
 		r.bottom += size;
 	}
+
+	Vec2I GetMinComp(const Vec2I& a, const Vec2I& b)
+	{
+		int x = std::min(a.x, b.x);
+		int y = std::min(a.y, b.y);
+		return Vec2I(x, y);
+	}
+
+	Vec2I GetMaxComp(const Vec2I& a, const Vec2I& b)
+	{
+		int x = std::max(a.x, b.x);
+		int y = std::max(a.y, b.y);
+		return Vec2I(x, y);
+	}
+
+
 }

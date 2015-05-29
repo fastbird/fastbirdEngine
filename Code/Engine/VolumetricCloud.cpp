@@ -54,10 +54,18 @@ namespace fastbird
 		b = GenerateCloudParticles();
 		assert(b);
 
-		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
-		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
-		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
-		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPosition();
+		auto scene = gFBEnv->pRenderer->GetMainScene();
+		if (scene) {
+			mWind = scene->GetWindVector();
+		}
+		else {
+			Error(FB_DEFAULT_DEBUG_ARG, "No scene found!");
+		}
+		auto light = gFBEnv->pRenderer->GetDirectionalLight(0);
+		assert(light);
+		mLightIntensity = light->GetIntensity();
+		mLightColor = light->GetDiffuse() * mLightIntensity;
+		mLightDir = light->GetPosition();
 		mCamPos = gFBEnv->pRenderer->GetCamera()->GetPos();
 		m_ParticlePool.m_vWindVelocity = mWind;
 
@@ -107,7 +115,11 @@ namespace fastbird
 	//-----------------------------------------------------------------------
 	void VolumetricCloud::PrepareRender()
 	{
-		mWind = gFBEnv->pEngine->GetScene()->GetWindVector();
+		auto scene = gFBEnv->pRenderer->GetMainScene();
+		if (scene) {
+			mWind = scene->GetWindVector();			
+		}
+		
 		mLightIntensity = gFBEnv->pRenderer->GetDirectionalLight(0)->GetIntensity();
 		mLightColor = gFBEnv->pRenderer->GetDirectionalLight(0)->GetDiffuse() * mLightIntensity;
 		mLightDir = gFBEnv->pRenderer->GetDirectionalLight(0)->GetPos();

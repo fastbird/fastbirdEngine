@@ -26,24 +26,12 @@ DirectionalLight::DirectionalLight()
 : mTheta(0)
 , mPhi(0)
 , mInterpolating(false)
-, mDuplicatedLightCamera(false)
 {
-	mLightCamera = FB_NEW(Camera);
-	auto cmd = gFBEnv->pConsole->GetEngineCommand();
-	mLightCamera->SetOrthogonal(true);
-	mLightCamera->SetWidth(cmd->r_ShadowCamWidth);
-	mLightCamera->SetHeight(cmd->r_ShadowCamHeight);
-	mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
-	gFBEnv->pEngine->GetCamera(0)->RegisterCamListener(this);
 }
 
 //----------------------------------------------------------------------------
 DirectionalLight::~DirectionalLight()
 {
-	if (gFBEnv->pEngine->GetCamera(0))
-		gFBEnv->pEngine->GetCamera(0)->UnregisterCamListener(this);
-	if (!mDuplicatedLightCamera)
-		FB_DELETE(mLightCamera);
 }
 
 //----------------------------------------------------------------------------
@@ -55,8 +43,6 @@ void DirectionalLight::SetPosition(const Vec3& pos)
 	mTheta = acos(mDirection.z);
 	mPhi = atan2(mDirection.y, mDirection.x);
 	mPhi += mPhi < 0 ? TWO_PI : 0;
-
-	SetUpCamera();
 }
 
 //----------------------------------------------------------------------------
@@ -89,7 +75,6 @@ void DirectionalLight::AddTheta(float radian)
 	}
 
 	mDirection = SphericalToCartesian(mTheta, mPhi);
-	SetUpCamera();
 
 }
 
@@ -105,7 +90,6 @@ void DirectionalLight::AddPhi(float radian)
 	}
 
 	mDirection = SphericalToCartesian(mTheta, mPhi);
-	SetUpCamera();
 }
 
 //----------------------------------------------------------------------------
@@ -195,33 +179,6 @@ void DirectionalLight::PostRender()
 
 }
 
-void DirectionalLight::SetUpCamera()
-{
-	ICamera* pCam = gFBEnv->pEngine->GetCamera(0);
-	assert(pCam);
-	auto target = pCam->GetTarget();
-	float shadowCamDist = 
-		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
-	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
-	{
-		mLightCamera->SetPos(target->GetPos() + mDirection * shadowCamDist);
-	}
-	else
-	{
-		mLightCamera->SetPos(pCam->GetPos() + mDirection * shadowCamDist);
-	}
-	mLightCamera->SetDir(-mDirection);
-}
-
-void DirectionalLight::OnViewMatChanged()
-{
-	SetUpCamera();
-}
-void DirectionalLight::OnProjMatChanged()
-{
-
-}
-
 void DirectionalLight::CopyLight(ILight* other_)
 {
 	auto other = dynamic_cast<DirectionalLight*>(other_);
@@ -243,11 +200,4 @@ void DirectionalLight::CopyLight(ILight* other_)
 		mInterpolTime[i] = other->mInterpolTime[i];
 	}
 	mInterpolating = other->mInterpolating;
-	// temporal.
-	if (mLightCamera && !mDuplicatedLightCamera)
-	{
-		FB_DELETE(mLightCamera);
-	}
-	mLightCamera = other->mLightCamera;
-	mDuplicatedLightCamera = true;
 }

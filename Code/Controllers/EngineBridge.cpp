@@ -33,7 +33,7 @@ namespace Controllers
 		fastbird::FreeFBLibrary(gEngineModule);
 	}
 
-	int EngineBridge::InitSwapChain(HANDLE hwnd, int width, int height)
+	int EngineBridge::InitSwapChain(fastbird::HWND_ID id, int width, int height)
 	{
 		//return gFBEnv->pEngine->InitSwapChain((HWND)hwnd, width, height);
 		return 0;

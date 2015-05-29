@@ -58,6 +58,7 @@ namespace fastbird
 			mValue.w = rgba->a / 255.0f;
 		}
 
+		// when you want to send the data to gpu
 		unsigned int Get4Byte() const
 		{
 			RGBA color;
@@ -65,6 +66,17 @@ namespace fastbird
 			color.g = BYTE(mValue.y * 255.f);
 			color.b = BYTE(mValue.z * 255.f);
 			color.a = BYTE(mValue.w * 255.f);
+			return *(unsigned int*)&color;
+		}
+
+		// when you want to create hexa string
+		unsigned int Get4ByteReversed() const
+		{
+			RGBA color;
+			color.r = BYTE(mValue.w * 255.f);
+			color.g = BYTE(mValue.z * 255.f);
+			color.b = BYTE(mValue.y * 255.f); 
+			color.a = BYTE(mValue.x * 255.f); 
 			return *(unsigned int*)&color;
 		}
 

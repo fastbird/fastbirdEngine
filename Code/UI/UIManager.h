@@ -3,6 +3,11 @@
 #define _UIManager_header_include__
 
 #include <UI/IUIManager.h>
+#include <UI/DragBox.h>
+#include <UI/RegionTestParam.h>
+#include <Engine/IFileChangeListener.h>
+#include <Engine/IRenderListener.h>
+
 
 namespace fastbird
 {
@@ -12,9 +17,10 @@ namespace fastbird
 	class IUIObject;
 	class ListBox;
 	class UICommands;
-	class UIManager : public IUIManager
+	class Container;
+	class UIManager : public IUIManager, public IFileChangeListener,
+		public IRenderListener
 	{
-		friend class DropDown;
 	public:
 
 		typedef std::vector<IWinBase*> WinBases;
@@ -23,11 +29,16 @@ namespace fastbird
 	private:
 
 		bool mInputListenerEnable;
+		std::string mUIFolder;
 
 		typedef std::list<IWinBase*> WINDOWS;
-		WINDOWS mWindows;
+		VectorMap<HWND_ID, WINDOWS> mWindows;
+		std::map<std::string, WinBases> mLuaUIs;
+
 		IWinBase* mFocusWnd;
-		bool mNeedToRegisterUIObject;
+		IWinBase* mKeyboardFocus;
+		Container* mMouseOveredContainer;
+		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
 		IWinBase* mTooltipUI;
 		IWinBase* mTooltipTextBox;
@@ -39,16 +50,16 @@ namespace fastbird
 
 		lua_State* mL;
 
-		std::map<std::string, WinBases> mLuaUIs;
+		
 		bool mPosSizeEventEnabled;
 		bool mLockFocus;
 		int mIgnoreInput;
-		IWinBase* mModelWindow;
+		IWinBase* mModalWindow;
 
 		ListBox* mCachedListBox;
 		WinBases mAlwaysOnTopWindows;
 		WINDOWS mMoveToBottomReserved;
-		WINDOWS mSetFocusReserved;
+		std::vector < IWinBase* > mSetFocusReserved;
 
 		std::vector<std::string> mHideUIExcepts;
 
@@ -57,6 +68,14 @@ namespace fastbird
 
 		UICommands* mUICommands;
 		HMODULE mUIEditorModuleHandle;
+		ComponentType::Enum mLocatingComp;
+		IUIEditor* mUIEditor;
+
+		DragBox mDragBox;
+		TextManipulator* mTextManipulator;
+
+		// for locating
+		bool mMultiLocating;
 
 
 	protected:
@@ -73,7 +92,7 @@ namespace fastbird
 		const char* FindUIFilenameWithLua(const char* luafilepath);
 		const char* FindUINameWithLua(const char* luafilepath);
 		void ShowTooltip();
-
+		void DeleteLuaUIContaning(IWinBase* wnd);
 
 	public:
 
@@ -84,22 +103,36 @@ namespace fastbird
 
 		virtual void Shutdown();
 
+		// IFileChangeListeners
+		virtual bool OnFileChanged(const char* file);
+
+		// IRenderListener
+		virtual void BeforeUIRendering(HWND_ID hwndId);
+		virtual void BeforeDebugHudRendered(HWND_ID hwndId);
+		virtual void AfterDebugHudRendered(HWND_ID hwndId);
+
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
 		virtual void GatherRenderList();
-		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, bool luaUI = false);
-		virtual bool AddLuaUI(const char* uiName, LuaObject& data);
+		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false);
+		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc);
+		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID);
 		virtual void DeleteLuaUI(const char* uiName);
 		virtual bool IsLoadedUI(const char* uiName);
-		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type);
-		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type);
-		virtual IWinBase* AddWindow(ComponentType::Enum type);
+
+		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+		virtual IWinBase* AddWindow(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+		virtual IWinBase* AddWindow(float posX, float posY, float width, float height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+		virtual IWinBase* AddWindow(ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);
+
 		virtual void DeleteWindow(IWinBase* pWnd);
+		virtual void DeleteWindowsFor(HWND_ID hwndId);
 		virtual void SetFocusUI(IWinBase* pWnd);
 		virtual IWinBase* GetFocusUI() const;
+		virtual IWinBase* GetKeyboardFocusUI() const;
 		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
-		virtual void DirtyRenderList();
+		virtual void DirtyRenderList(HWND_ID hwndId);
 
 		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val);
 		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val);
@@ -135,7 +168,6 @@ namespace fastbird
 		virtual void LockFocus(bool lock);
 		virtual bool GetVisible(const char* uiname) const;
 		virtual void CloseAllLuaUI();
-		virtual void OnUIFileChanged(const char* file);
 
 		virtual void CloneUI(const char* uiname, const char* newUIname);
 		virtual void IgnoreInput(bool ignore, IWinBase* modalWindow);
@@ -157,6 +189,36 @@ namespace fastbird
 		virtual UICommands* GetUICommands() const { return mUICommands; }
 		virtual void SetUIEditorModuleHandle(HMODULE moduleHandle){ mUIEditorModuleHandle = moduleHandle; }
 		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
+		
+		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param);
+		virtual TextManipulator* GetTextManipulator() const { return mTextManipulator; }
+		
+		virtual const char* GetUIPath(const char* uiname) const;
+		virtual const char* GetUIScriptPath(const char* uiname) const;
+
+		virtual void SuppressPropertyWarning(bool suppress);
+
+		//-------------------------------------------------------------------
+		// For UI Editing
+		//-------------------------------------------------------------------
+	public:
+		virtual void SetUIEditor(IUIEditor* editor);
+		virtual IUIEditor* GetUIEditor() const { return mUIEditor; }
+		virtual void StartLocatingComponent(ComponentType::Enum c);
+		virtual void CancelLocatingComponent();
+		virtual void ChangeFilepath(IWinBase* root, const char* newfile);
+		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src);
+
+	private:
+		void OnInputForLocating(IMouse* pMouse, IKeyboard* pKeyboard);
+		void LocateComponent();
+		std::string GetUniqueUIName() const;
+		std::string GetBackupName(const std::string& name) const;
+		void BackupFile(const char* filename);
+		void DragUI();
+		void AlignUI();
+
+		void DebugUI();
 	};
 }
 

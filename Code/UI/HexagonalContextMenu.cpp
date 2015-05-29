@@ -14,9 +14,9 @@ namespace fastbird
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 
-		RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+		RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 			std::bind(&HexagonalContextMenu::OnMouseHover, this, std::placeholders::_1));
-		RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT,
+		RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 			std::bind(&HexagonalContextMenu::OnMouseOut, this, std::placeholders::_1));
 
 		for (int i = 0; i < 6; i++)
@@ -87,8 +87,11 @@ namespace fastbird
 		if (!mHexaEnabled[index])
 			return;
 		if (!mHexaStaticTexts[index])
+		{
 			mHexaStaticTexts[index] = (StaticText*)AddChild(
-			mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.16f, 0.16f, ComponentType::StaticText);
+				mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.16f, 0.16f, ComponentType::StaticText);
+			mHexaStaticTexts[index]->SetRuntimeChild(true);
+		}
 
 		mHexaStaticTexts[index]->SetVisible(true);
 		mHexaStaticTexts[index]->SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
@@ -96,12 +99,13 @@ namespace fastbird
 		mHexaStaticTexts[index]->SetProperty(UIProperty::TEXT_COLOR, "0.86667, 1.0, 0.1843, 1");
 		mHexaStaticTexts[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 		mHexaStaticTexts[index]->SetText(text);
-		mHexaStaticTexts[index]->DisableEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+		mHexaStaticTexts[index]->DisableEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 	}
 
 	void HexagonalContextMenu::SetHexaImageIcon(unsigned index, const char* atlas, const char* region)
 	{
 		mHexaImages[index] = (ImageBox*)AddChild(mHexaOrigins[index].x*.5f + .5f, mHexaOrigins[index].y*-.5f + .5f, 0.2f, 0.2f, ComponentType::ImageBox);
+		mHexaImages[index]->SetRuntimeChild(true);
 		mHexaImages[index]->SetProperty(UIProperty::USE_SCISSOR, "false");
 	}
 
@@ -126,7 +130,7 @@ namespace fastbird
 
 	void HexagonalContextMenu::OnMouseHover(void* arg)
 	{
-		SetCursor(WinBase::mCursorOver);
+		SetCursor(WinBase::sCursorOver);
 	}
 	void HexagonalContextMenu::OnMouseOut(void* arg)
 	{
@@ -140,12 +144,16 @@ namespace fastbird
 			mUpdateMaterialParams = false;
 			IMaterial* mat = mUIObject->GetMaterial();
 			assert(mat);
+			const auto& finalSize = GetFinalSize();
+			const auto& finalPos = GetFinalPos();
+			auto wnPos = finalPos / Vec2(GetRenderTargetSize());
+			auto wnSize = finalSize / Vec2(GetRenderTargetSize());
 			Vec4 param[3];
 			param[0] = Vec4(mHexaEnabled[0] ? 1.0f : 0.0f, mHexaEnabled[1] ? 1.0f : 0.0f,
 				mHexaEnabled[2] ? 1.0f : 0.0f, mHexaEnabled[3] ? 1.0f : 0.0f);
 			param[1] = Vec4(mHexaEnabled[4] ? 1.0f : 0.0f, mHexaEnabled[5] ? 1.0f : 0.0f,
-				mWNSize.x, mWNSize.y);
-			param[2] = Vec4(mWNPos.x, mWNPos.y, 0.0f, 0.0f);
+				wnSize.x, wnSize.y);
+			param[2] = Vec4(wnPos.x, wnPos.y, 0.0f, 0.0f);
 			for (int i = 1; i < 4; ++i)
 				mat->SetMaterialParameters(i, param[i-1]);
 		}
@@ -158,7 +166,11 @@ namespace fastbird
 		mMouseInHexaIdx = -1;
 		if (isIn)
 		{
-			Vec2 localMousePos = (mouse->GetNPos() - mWNPos) / mWNSize;
+			const auto& finalSize = GetFinalSize();
+			const auto& finalPos = GetFinalPos();
+			auto wnPos = finalPos / Vec2(GetRenderTargetSize());
+			auto wnSize = finalSize / Vec2(GetRenderTargetSize());
+			Vec2 localMousePos = (mouse->GetNPos() - wnPos) / wnSize;
 			localMousePos = localMousePos*2.0f - 1.0f;
 			localMousePos.y = -localMousePos.y;
 			

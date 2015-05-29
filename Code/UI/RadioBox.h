@@ -18,7 +18,7 @@ public:
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void SetText(const wchar_t* szText);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 	// IRadioBox
 	virtual void SetCheck(bool check);
@@ -31,7 +31,6 @@ public:
 	void OnClicked(void* arg);
 
 	virtual void OnSizeChanged();
-	virtual void OnPosChanged();
 
 	void OnMouseHover(void* arg);
 

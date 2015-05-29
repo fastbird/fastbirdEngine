@@ -1,6 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Voxelizer.h>
-#include <Engine/IRenderToTexture.h>
+#include <Engine/IRenderTarget.h>
 #include <Engine/ICamera.h>
 #include <Engine/IColladaImporter.h>
 
@@ -73,25 +73,26 @@ void Voxelizer::CalcDistanceMap()
 	float radius = pMeshObject->GetBoundingVolume()->GetRadius() * 1.05f;
 	// draw depth maps;
 	// x axis
-	RenderToTextureParam param;
+	RenderTargetParam param;
 	param.mEveryFrame = false;
 	param.mSize = Vec2I(mNumVoxels, mNumVoxels);
 	param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
 	param.mShaderResourceView = true;
 	param.mMipmap = false;
 	param.mCubemap = false;
-	param.mHasDepth = true;
+	param.mWillCreateDepth = true;
 	param.mUsePool = true;
 
-	SmartPtr<IRenderToTexture> pDepthRT = gFBEnv->pRenderer->CreateRenderToTexture(param);
+	SmartPtr<IRenderTarget> pDepthRT = gFBEnv->pRenderer->CreateRenderTarget(param);
 	pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 	ICamera* pCam = pDepthRT->GetCamera();
 	pCam->SetOrthogonal(true);
-	pCam->SetWidth((float)radius*2.0f);
-	pCam->SetHeight((float)radius*2.0f);
+	pCam->SetWidth((int)(radius*2.0f));
+	pCam->SetHeight((int)(radius*2.0f));
 	pCam->SetNearFar(-radius, radius);
 	pCam->SetPos(Vec3(0, 0, 0));
-	pDepthRT->GetScene()->AttachObject(pMeshObject);
+	auto scene = pDepthRT->CreateScene();
+	scene->AttachObject(pMeshObject);
 	pMeshObject->SetMaterial("es/materials/collada_mesh.material");
 	auto material = pMeshObject->GetMaterial();
 	material->SetRasterizerState(rd_cull_back);

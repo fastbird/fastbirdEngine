@@ -26,11 +26,11 @@ namespace fastbird
 		inline Enum ConvertToEnum(const char* sz)
 		{
 			assert(sz);
-			if (stricmp(sz, "LEFT") == 0)
+			if (_stricmp(sz, "LEFT") == 0)
 				return LEFT;
-			if (stricmp(sz, "CENTER") == 0)
+			if (_stricmp(sz, "CENTER") == 0)
 				return CENTER;
-			if (stricmp(sz, "RIGHT") == 0)
+			if (_stricmp(sz, "RIGHT") == 0)
 				return RIGHT;
 			else
 			{
@@ -63,11 +63,11 @@ namespace fastbird
 		inline Enum ConvertToEnum(const char* sz)
 		{
 			assert(sz);
-			if (stricmp(sz, "TOP") == 0)
+			if (_stricmp(sz, "TOP") == 0)
 				return TOP;
-			if (stricmp(sz, "MIDDLE") == 0)
+			if (_stricmp(sz, "MIDDLE") == 0)
 				return MIDDLE;
-			if (stricmp(sz, "BOTTOM") == 0)
+			if (_stricmp(sz, "BOTTOM") == 0)
 				return BOTTOM;
 			else
 			{

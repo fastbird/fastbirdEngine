@@ -207,7 +207,7 @@ bool ParticleEmitter::Load(const char* filepath)
 
 		sz = pPT->Attribute("align");
 		if (sz)
-			pt.mAlign = ParticleAlign::ConverToEnum(sz);
+			pt.mAlign = ParticleAlign::ConvertToEnum(sz);
 
 		sz = pPT->Attribute("stretchMax");
 		if (sz)
@@ -223,7 +223,7 @@ bool ParticleEmitter::Load(const char* filepath)
 
 		sz = pPT->Attribute("emitTo");
 		if (sz)
-			pt.mEmitTo = ParticleEmitTo::ConverToEnum(sz);
+			pt.mEmitTo = ParticleEmitTo::ConvertToEnum(sz);
 
 		sz = pPT->Attribute("cameraPulling");
 		if (sz)
@@ -233,7 +233,7 @@ bool ParticleEmitter::Load(const char* filepath)
 
 		sz = pPT->Attribute("range");
 		if (sz)
-			pt.mRangeType = ParticleRangeType::ConverToEnum(sz);
+			pt.mRangeType = ParticleRangeType::ConvertToEnum(sz);
 
 		sz = pPT->Attribute("rangeRadius");
 		if (sz)

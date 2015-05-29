@@ -34,9 +34,7 @@ v2p ui_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
-	OUTPUT.Position = float4(INPUT.Position, 1.0);
-	OUTPUT.Position.x += gWorld[0][3];
-	OUTPUT.Position.y += gWorld[1][3];
+	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
 #ifdef DIFFUSE_TEXTURE
 	#ifdef _UV_ROT
 		float2 center = gMaterialParam[0].xy;
@@ -61,7 +59,7 @@ v2p ui_VertexShader( in a2v INPUT )
 float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 {	
 #ifdef DIFFUSE_TEXTURE
-	float4 color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
+	float4 color = gDiffuseTexture.Sample(gPointSampler, INPUT.UV);
 	color *= gDiffuseColor;
 	float highlight = gEmissiveColor.w;
 	float2 glowss = smoothstep(0.9, 1.0, abs(saturate(INPUT.UV)*2.0-1.0) * highlight);

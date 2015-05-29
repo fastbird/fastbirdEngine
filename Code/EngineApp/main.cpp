@@ -3,20 +3,26 @@
 #include "CameraMan.h"
 #include "QuickSortTask.h"
 #include "PhyObj.h"
-#include <Engine/IVoxelizer.h>
-#include <Engine/IRenderToTexture.h>
 #include <CommonLib/threads.h>
 #include <CommonLib/Profiler.h>
+#include <Engine/IVoxelizer.h>
+#include <Engine/IRenderTarget.h>
+#include <UI/IUIManager.h>
 #include <Physics/IPhysics.h>
 #include <Physics/RigidBody.h>
 using namespace fastbird;
 
+
 #define RUN_PARALLEL_EXAMPLE 0
+#define PHYSICS_TEST 0
 
 fastbird::GlobalEnv* gFBEnv = 0;
 fastbird::IPhysics* gFBPhysics = 0;
+fastbird::IUIManager* gFBUIManager = 0; // same with the gFBEnv->pUImanager
+
 HMODULE gEngineModule = 0;
 HMODULE gPhysicsModule = 0;
+HMODULE gUIModule = 0;
 
 CameraMan* gCameraMan = 0;
 InputHandler* gInputHandler = 0;
@@ -30,8 +36,16 @@ void UpdateFrame()
 	gFBEnv->pTimer->Tick();
 	float elapsedTime = gpTimer->GetDeltaTime();
 	gFBEnv->pEngine->UpdateInput();
+
+	if (gFBUIManager)
+		gFBUIManager->Update(elapsedTime);
+
 	gFBPhysics->Update(elapsedTime);
 	gCameraMan->Update(elapsedTime);
+	
+	if (gFBUIManager)
+		gFBUIManager->GatherRenderList();
+
 	gFBEnv->pEngine->UpdateFrame(elapsedTime);
 }
 
@@ -86,15 +100,18 @@ bool InitEngine()
 
 	fastbird::IEngine* pEngine = createEngineProc();
 	gFBEnv = pEngine->GetGlobalEnv();
-	pEngine->CreateEngineWindow(0, 0, 1600, 900, "Game", WinProc);
-	pEngine->InitEngine(fastbird::IEngine::D3D11);
-	pEngine->InitSwapChain(gFBEnv->pEngine->GetWindowHandle(), 1600, 900);
-	gpTimer = gFBEnv->pTimer;
-
-	if (gFBEnv->pRenderer)
+	bool succ = pEngine->InitEngine(fastbird::IEngine::D3D11);
+	if (!succ)
 	{
-		gFBEnv->pRenderer->SetClearColor(0, 0, 0, 1);
+		Error(FB_DEFAULT_DEBUG_ARG, "Init engine error!");
+		return false;
 	}
+	fastbird::HWND_ID id = pEngine->CreateEngineWindow(0, 0, 1600, 900, "EngineApp", 
+		"Game powered by fastbird engine",
+		WS_BORDER | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, 0,
+		WinProc);
+	pEngine->InitSwapChain(id, 1600, 900);
+	gpTimer = gFBEnv->pTimer;
 	gInputHandler = FB_NEW(InputHandler)();
 	gCameraMan = FB_NEW(CameraMan)(gFBEnv->pRenderer->GetCamera());
 	gFBEnv->pEngine->AddInputListener(gInputHandler, IInputListener::INPUT_LISTEN_PRIORITY_INTERACT, 0);
@@ -116,11 +133,34 @@ bool InitEngine()
 
 	gFBPhysics = createPhysicsProc();
 
+	//-------------------------------------------------------------------------
+	// UI
+	//-------------------------------------------------------------------------
+	gUIModule = fastbird::LoadFBLibrary("UI.dll");
+	if (!gUIModule)
+		return false;
+
+	typedef fastbird::IUIManager* (__cdecl *CreateUIProc)(fastbird::GlobalEnv* genv);
+	CreateUIProc createUIProc = (CreateUIProc)GetProcAddress(gUIModule, "Create_fastbird_UIManager");
+	if (!createUIProc)
+		return false;
+	assert(gFBEnv);
+	gFBUIManager = createUIProc(gFBEnv); // also gFBEnv->pUIManager is set.	
+
 	return true;
 }
 
 void FinalizeEngine()
 {
+	if (!gUIModule)
+		return;
+	typedef void(__cdecl *DestroyUIProc)();
+	DestroyUIProc destroyUIProc = (DestroyUIProc)GetProcAddress(gUIModule, "Destroy_fastbird_UIManager");
+	if (!destroyUIProc)
+		return;
+	destroyUIProc();
+	gFBUIManager = 0; // also gFBEnv->pUIManager is zero.
+
 	typedef void(__cdecl *DestroyPhysicsProc)();
 	DestroyPhysicsProc destroyPhysicsProc = (DestroyPhysicsProc)GetProcAddress(gPhysicsModule, "Destroy_fastbird_Physics");
 	if (!destroyPhysicsProc)
@@ -143,11 +183,6 @@ int main()
 {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-	std::vector<int> test;
-	test.push_back(0);
-	test.push_back(0);
-
-
 	//----------------------------------------------------------------------------
 	// 1. How to init engine.
 	//----------------------------------------------------------------------------
@@ -158,7 +193,6 @@ int main()
 		// failed to initialize!
 		return 1;
 	}
-
 	//----------------------------------------------------------------------------
 	// 2. How to create sky -  see Data/Materials/skybox.material
 	//----------------------------------------------------------------------------
@@ -196,11 +230,11 @@ int main()
 	voxelObject = 0;
 
 	//----------------------------------------------------------------------------
-	// 5. How to use Render To Texture (Need to include <Engine/IRenderToTexture.h>)
+	// 5. How to use Render To Texture (Need to include <Engine/IRenderTarget.h>)
 	//----------------------------------------------------------------------------
 	if (gMeshObject)
 	{
-		RenderToTextureParam param;
+		RenderTargetParam param;
 		param.mEveryFrame = false;
 		param.mSize = Vec2I(1024, 1024);
 		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
@@ -209,14 +243,15 @@ int main()
 		param.mCubemap = false;
 		param.mHasDepth = false;
 		param.mUsePool = false;
-		IRenderToTexture* rtt = gFBEnv->pRenderer->CreateRenderToTexture(param);
-		rtt->GetScene()->AttachObject(gMeshObject);
+		IRenderTarget* rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
+		auto scene = rtt->CreateScene();
+		scene->AttachObject(gMeshObject);
 		ICamera* pRTTCam = rtt->GetCamera();
 		pRTTCam->SetPos(Vec3(-5, 0, 0));
 		pRTTCam->SetDir(Vec3(1, 0, 0));
 		rtt->Render();
 		rtt->GetRenderTargetTexture()->SaveToFile("rtt.png");
-		gFBEnv->pRenderer->DeleteRenderToTexture(rtt);
+		gFBEnv->pRenderer->DeleteRenderTarget(rtt);
 	}
 
 #if RUN_PARALLEL_EXAMPLE
@@ -273,10 +308,11 @@ int main()
 #endif // RUN_PARALLEL_EXAMPLE
 	//----------------------------------------------------------------------------
 
+	std::vector<PhyObj*> PhyObjs;
+#if PHYSICS_TEST
 	//----------------------------------------------------------------------------
 	// Physics Test
-	//----------------------------------------------------------------------------
-	std::vector<PhyObj*> PhyObjs;
+	//----------------------------------------------------------------------------	
 	PhyObjs.reserve(200);
 	for (int i = 0; i < 100; i++)
 	{
@@ -313,8 +349,10 @@ int main()
 		rigidBody->ApplyCentralImpulse(Random(Vec3(-10, -10, -10), Vec3(-10, 10, 10)));
 
 	}
+#endif
 
-	//----------------------------------------------------------------------------
+	// UIEditor
+	gFBEnv->pConsole->ProcessCommand("StartUIEditor");
 
 	//----------------------------------------------------------------------------
 	// Entering game loop.
@@ -322,7 +360,6 @@ int main()
 	RunGame();
 	gTaskSchedular->Finalize();
 
-	gFBEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	for (auto& m : gVoxels)
 	{
 		gFBEnv->pEngine->ReleaseMeshObject(m);
@@ -332,6 +369,7 @@ int main()
 		FB_DELETE(obj);
 	}
 	PhyObjs.clear();
+	gFBEnv->pEngine->ReleaseMeshObject(gMeshObject);
 	FB_SAFE_DEL(gCameraMan);
 	FB_SAFE_DEL(gInputHandler);
 	FB_SAFE_DEL(gTaskSchedular);

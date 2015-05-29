@@ -69,6 +69,7 @@ extern "C" {
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/Profiler.h>
 #include <CommonLib/FileSystem.h>
+#include <CommonLib/LuaObject.h>
 
 #include <Engine/IEngine.h>
 #include <Engine/IRenderer.h>

@@ -79,6 +79,8 @@ void Terrain::Init(int numVertX, int numVertY, float distance,
 		mNumPatches = Vec2I(
 			(numVertX-1) / (PATCH_NUM_VERT-1), (numVertY-1) / (PATCH_NUM_VERT-1));
 		mPatches.reserve(mNumPatches.x*mNumPatches.y);
+		auto scene = gFBEnv->pRenderer->GetMainScene();
+		assert(scene);
 		for (int idy=0; idy<mNumPatches.y; idy++)
 		{
 			for (int idx=0; idx<mNumPatches.x; idx++)
@@ -86,7 +88,7 @@ void Terrain::Init(int numVertX, int numVertY, float distance,
 				TerrainPatch* pNewPatch = FB_NEW(TerrainPatch);
 				mPatches.push_back(pNewPatch);
 				pNewPatch->Build(idx, idy, numVertX, distance, pImage, this);
-				gFBEnv->pEngine->GetScene()->AttachObject(pNewPatch);
+				scene->AttachObject(pNewPatch);
 			}
 		}
 		int patchIndex = 0;

@@ -3,7 +3,7 @@
 #include <Engine/ITexture.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IEngine.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/ICamera.h>
 #include <Engine/RendererEnums.h>
 #include <Engine/IVertexBuffer.h>
@@ -156,10 +156,7 @@ int Font::Init(const char *fontFile)
 		
 	mInitialized = r==0;
 
-	DEPTH_STENCIL_DESC ds;
-	mDepthEnabledState = gFBEnv->pRenderer->CreateDepthStencilState(ds); 
-	ds.DepthEnable = false;
-	mDepthDisabledState = gFBEnv->pRenderer->CreateDepthStencilState(ds);
+	mTextureMaterial = gFBEnv->pRenderer->GetMaterial(DEFAULT_MATERIALS::QUAD_TEXTURE)->Clone();
 
 	BLEND_DESC desc;
 	desc.RenderTarget[0].BlendEnable = true;
@@ -167,15 +164,11 @@ int Font::Init(const char *fontFile)
 	desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
 	desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
 	desc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE;
-	mBlendState = gFBEnv->pRenderer->CreateBlendState(desc);
+	mTextureMaterial->SetBlendState(desc);
+	mTextureMaterial->CloneRenderStates();
+	
 
-	RASTERIZER_DESC rdesc;
-	mRasterizerWithoutScissor = gFBEnv->pRenderer->CreateRasterizerState(rdesc);
-	rdesc.ScissorEnable = true;
-	mRasterizerWithScissor = gFBEnv->pRenderer->CreateRasterizerState(rdesc);
-
-	mRenderTargetSize.x = gFBEnv->pRenderer->GetWidth();
-	mRenderTargetSize.y = gFBEnv->pRenderer->GetHeight();
+	mRenderTargetSize = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
 		(float)mRenderTargetSize.x,
 		(float)mRenderTargetSize.y,
@@ -651,28 +644,26 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 
 	if (scissorEnable)
 	{
-		mTextureMaterial = gFBEnv->pRenderer->GetMaterial(DEFAULT_MATERIALS::QUAD_TEXTURE)->Clone();
-		mTextureMaterial->CloneRenderStates();		
 		RASTERIZER_DESC rd;
 		rd.ScissorEnable = true;
 		mTextureMaterial->SetRasterizerState(rd);
-		mRasterizerWithScissor->Bind();
 	}
 	else
 	{
-		mTextureMaterial = gFBEnv->pRenderer->GetMaterial(DEFAULT_MATERIALS::QUAD_TEXTURE)->Clone();
-		mRasterizerWithoutScissor->Bind();
+		RASTERIZER_DESC rd;
+		rd.ScissorEnable = false;
+		mTextureMaterial->SetRasterizerState(rd);
 	}
-	
-	mBlendState->Bind();	
-
 	if (depthEnable)
 	{
-		mDepthEnabledState->Bind(0);
+		mTextureMaterial->SetDepthStencilState(DEPTH_STENCIL_DESC());
+		
 	}
 	else
 	{
-		mDepthDisabledState->Bind(0);
+		DEPTH_STENCIL_DESC desc;
+		desc.DepthEnable = false;
+		mTextureMaterial->SetDepthStencilState(desc);
 	}
 }
 
@@ -808,7 +799,8 @@ void Font::SetRenderTargetSize(const Vec2I& rtSize)
 
 void Font::RestoreRenderTargetSize()
 {
-	mRenderTargetSize = Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight());
+	const auto& rtSize = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	mRenderTargetSize = rtSize;
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
 		(float)mRenderTargetSize.x,
 		(float)mRenderTargetSize.y,

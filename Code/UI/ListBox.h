@@ -1,112 +1,33 @@
 #pragma once
 
 #include <UI/Wnd.h>
+#include <UI/ListBoxDataSet.h>
+#include <UI/ListItemDataType.h>
 
 namespace fastbird
 {
 class IUIObject;
-class Scroller;
 class CheckBox;
-class ListItem : public Wnd
-{
-public:
-	ListItem();
-	virtual ~ListItem();
-	static const size_t INVALID_INDEX;
+class ListItem;
 
-	// IWinBase
-	virtual ComponentType::Enum GetType() const { return ComponentType::ListItem; }
-	virtual void GatherVisit(std::vector<IUIObject*>& v);
-
-	// Own
-	void SetRowIndex(size_t index) { mRowIndex = index; }
-	size_t GetRowIndex() const { return mRowIndex; }
-
-	void SetColIndex(size_t index) { mColIndex = index; }
-	size_t GetColIndex() const { return mColIndex; }
-	CheckBox* ListItem::GetCheckBox() const;
-
-	void SetBackColor(const char* backColor);
-	void SetNoBackground(bool noBackground);
-	const char* GetBackColor() const {return mBackColor.c_str();}
-	bool GetNoBackground() const { return mNoBackground; }
-
-protected:
-	const static float LEFT_GAP;
-	virtual void OnPosChanged();
-	virtual void OnSizeChanged();
-
-	size_t mRowIndex;
-	size_t mColIndex;
-
-	// backup values
-	std::string mBackColor;
-	bool mNoBackground;
-};
-
+class ITexture;
 //--------------------------------------------------------------------------------
 class ListBox : public Wnd
 {
-public:
-	ListBox();
-	virtual ~ListBox();
-	// IWinBase
-	virtual ComponentType::Enum GetType() const { return ComponentType::ListBox; }
-	virtual void GatherVisit(std::vector<IUIObject*>& v);
+protected:
+	ListItem* mFocusedListItem;
+	unsigned mStartIndex;
+	unsigned mEndIndex;
 
-	// Own
-	virtual unsigned InsertItem(const wchar_t* szString);
-	virtual unsigned InsertItem(ITexture* texture);
-	virtual unsigned InsertCheckBoxItem(bool check);
-	virtual CheckBox* GetCheckBox(unsigned row, unsigned col) const;
-	virtual void RemoveItem(size_t index);
-	virtual void SetItemString(size_t row, size_t col, const wchar_t* szString);
-	virtual void SetItemTexture(size_t row, size_t col, ITexture* texture);
-	virtual void SetItemTexture(size_t row, size_t col, const char* texturePath);
-	virtual void SetTextureAtlas(const char* atlas);
-	virtual void SetItemTextureRegion(size_t row, size_t col, const char* region);
-	virtual IWinBase* SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize);
-	virtual std::string GetSelectedString();
-	typedef std::vector<size_t> SelectedRows;
-	virtual const SelectedRows& GetSelectedRows() const { return mSelectedRows; }
-	virtual void GetSelectedRowIds(std::vector<unsigned>& ids) const;
-	void OnItemClicked(void* arg);
-	void OnItemDoubleClicked(void* arg);
-	virtual void Clear();
-	size_t GetNumItems() const { return mItems.size();}
-	unsigned GetNumCols() const { return mNumCols; }
-	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-
-	virtual ListItem* GetItem(size_t row, size_t col) const;
-	virtual void SetRowHeight(int rowHeight) { mRowHeight = rowHeight; }
-	virtual void SelectRow(unsigned row);
-	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
-	virtual void ClearSelection();
-	virtual bool IsSelected(unsigned row);
-	virtual unsigned GetNumRows();
-	virtual IWinBase* MakeMergedRow(unsigned row);
-	virtual IWinBase* MakeMergedRow(unsigned row, const char* backColor, const char* textColor, bool noMouseEvent);
-	virtual void SetRowId(unsigned row, unsigned id);
-	virtual void SwapItems(unsigned row0, unsigned row1);
-	virtual unsigned GetRowId(unsigned row);
-	virtual unsigned FindRowWithId(unsigned id);
-	virtual void DeleteRow(unsigned row);
-
-private:
-
-	ListItem* CreateNewItem(int row, int col, const Vec2& npos, const Vec2& nsize);
-	void SetHighlightRow(size_t row, bool highlight);
-	void SetHighlightRowAndSelect(size_t row, bool highlight);
-
-private:
-
+	ListBoxDataSet* mData;
 	typedef std::vector<ListItem*> ROW;
+	std::vector< ROW > mRecycleBin;	
 	ROW mHeaders;
 	std::vector<ROW> mItems;
-	std::vector<unsigned> mRowIds;
-	SelectedRows mSelectedRows;
-	size_t mCurSelectedCol;
+	typedef std::vector<size_t> SelectedRows;
+	SelectedRows mSelectedIndices;
 	unsigned mNumCols;
+
 	std::vector < float > mColSizes;
 	std::vector< std::string > mColAlignes;
 	std::vector< std::string> mHeaderTextSize;
@@ -115,6 +36,116 @@ private:
 	int mRowGap;
 	std::string mHighlightColor;
 	std::string mTextureAtlas;
+
+	std::string mStrCols;
+	std::string mStrColSizes;
+	std::string mStrTextSizes;
+	std::string mStrColAlignH;
+	std::string mStrHeaderTextSizes;
+	std::string mStrHeaders;
+	VectorMap<Vec2I, bool> mHighlighted;
+
+	typedef std::vector<std::pair<UIProperty::Enum, std::string>> PropertyData;
+	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
+	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
+	std::set<unsigned> mNoVirtualizingRows;
+
+public:
+	ListBox();
+	virtual ~ListBox();
+	// IWinBase
+	virtual ComponentType::Enum GetType() const { return ComponentType::ListBox; }
+	virtual void GatherVisit(std::vector<IUIObject*>& v);
+	virtual void Scrolled();
+	virtual float GetContentHeight() const;
+
+protected:
+	virtual void OnSizeChanged();
+
+public:
+	// Own	
+	virtual unsigned InsertItem(unsigned uniqueKey);
+	virtual unsigned InsertItem(const wchar_t* uniqueKey);
+	virtual unsigned InsertEmptyData();
+
+	virtual void SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type);
+	virtual void SetItem(const Vec2I& rowcol, bool checked);
+	virtual void SetItem(const Vec2I& rowcol, ITexture* texture);
+
+	virtual bool GetCheckBox(const Vec2I& indexRowCol) const;
+
+	virtual void RemoveRow(const wchar_t* key);
+	virtual void RemoveRow(unsigned uniqueKey);
+	virtual void RemoveRowWithIndex(unsigned index);
+	
+	virtual std::string GetSelectedString();
+	virtual const SelectedRows& GetSelectedRows() const { return mSelectedIndices; }
+	virtual void GetSelectedUniqueIdsString(std::vector<std::string>& ids) const;
+	virtual void GetSelectedUniqueIdsUnsigned(std::vector<unsigned>& ids) const;
+
+	void OnItemClicked(void* arg);
+	void OnItemDoubleClicked(void* arg);
+	void OnItemEnter(void* arg);
+
+	void ChangeFocusItem(ListItem* newItem);
+
+	size_t GetNumItems() const;
+
+	unsigned GetNumCols() const { return mNumCols; }
+
+	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
+
+	virtual ListItem* GetItem(const Vec2I& indexRowCol) const;
+	ListBoxData* GetData(unsigned rowIndex, unsigned colIndex) const;
+	virtual unsigned FindRowIndex(unsigned uniqueKey) const;
+	virtual unsigned FindRowIndex(wchar_t* uniqueKey) const;
+
+	virtual unsigned GetUnsignedKey(unsigned rowIndex) const;
+	virtual const wchar_t* GetStringKey(unsigned rowIndex) const;
+
+	virtual void SetRowHeight(int rowHeight) { mRowHeight = rowHeight; }
+
+	virtual void SelectRow(unsigned index);
+	virtual void DeselectRow(unsigned index);
+	virtual void DeselectAll();
+	virtual void ToggleSelection(unsigned index);
+
+	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
+	virtual void ClearSelection();
+	virtual bool IsSelected(unsigned row);
+	virtual unsigned GetNumRows();
+	virtual IWinBase* MakeMergedRow(unsigned row);
+	virtual IWinBase* MakeMergedRow(unsigned row, const char* backColor, const char* textColor, bool noMouseEvent);
+	virtual void SwapItems(unsigned index0, unsigned index1);
+	virtual void SwapItems(const wchar_t* uniqueKey0, const wchar_t* uniqueKey1);
+
+	virtual void SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val);
+	virtual void SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val);
+
+	virtual void VisualizeData(unsigned index);
+	void FillItem(unsigned index);
+	void MoveToRecycle(unsigned row);
+	void Sort();
+
+	
+
+	virtual void Clear();
+
+	void SearchStartingChacrcter(char c, unsigned curIndex);
+	void IterateItem(bool next, bool apply);
+	void MakeSureRangeFor(unsigned rowIndex);
+
+	virtual void NoVirtualizingItem(unsigned rowIndex);
+
+protected:
+
+	ListItem* CreateNewItem(int row, int col);
+	void SetHighlightRow(size_t row, bool highlight);
+	void SetHighlightRowCol(unsigned row, unsigned col, bool highlight);
+	void SetHighlightRowAndSelect(size_t row, bool highlight);
+
+
 
 	
 };

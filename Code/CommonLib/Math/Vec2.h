@@ -15,7 +15,7 @@ namespace fastbird
 		{
 		}
 
-		Vec2(const Vec2I& v)
+		explicit Vec2(const Vec2I& v)
 			:x((float)v.x), y((float)v.y)
 		{
 
@@ -204,6 +204,22 @@ namespace fastbird
 
 
 	};
+
+	inline Vec2 operator / (const Vec2I& left, const Vec2& right){
+		return Vec2(left.x / right.x, left.y / right.y);
+	}
+
+	inline Vec2 operator * (const Vec2I& left, const Vec2& right){
+		return Vec2(left.x * right.x, left.y * right.y);
+	}
+
+	inline Vec2 operator * (const Vec2& left, const Vec2I& right){
+		return Vec2(left.x * right.x, left.y * right.y);
+	}
+
+	inline Vec2 operator*(const Vec2I& left, float right){
+		return Vec2(left.x * right, left.y * right);
+	}
 }
 
 // luawapper util

@@ -76,6 +76,7 @@ namespace fastbird
 		virtual BoundingVolume* GetAABB() const = 0;
 
 		virtual void SetAlpha(float alpha) = 0;
+		virtual void SetForceAlphaBlending(bool enable, float alpha) = 0;
 		virtual void SetAmbientColor(const Color& color) = 0;
 
 	private:

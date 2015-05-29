@@ -1,6 +1,8 @@
 #include <UI/StdAfx.h>
 #include <UI/ImageBox.h>
 #include <UI/IUIManager.h>
+#include <Engine/IRenderTarget.h>
+#include <Engine/ICamera.h>
 namespace fastbird
 {
 
@@ -14,21 +16,26 @@ namespace fastbird
 		, mSecPerFrame(0)
 		, mPlayingTime(0)
 		, mCurFrame(0), mImageFixedSize(false)
-		, mTexture(0)
+		, mTexture(0), mColorOveraySet(false)
+		, mRenderTarget(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER, 
-		std::bind(&ImageBox::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT, 
-		std::bind(&ImageBox::OnMouseOut, this, std::placeholders::_1));
 }
 
 ImageBox::~ImageBox()
 {
+	if (mRenderTarget){
+		gFBEnv->pRenderer->DeleteRenderTarget(mRenderTarget);
+		mRenderTarget = 0;
+	}
+}
+
+void ImageBox::OnCreated()
+{
+	SetProperty(UIProperty::TEXTUREATLAS, "data/textures/gameui.xml");
 }
 
 void ImageBox::CalcUV(const Vec2I& textureSize)
@@ -94,6 +101,14 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 	}
 }
 
+bool ImageBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard){
+	auto ret = __super::OnInputFromHandler(mouse, keyboard);
+	if (ret && mRenderTarget && mouse->IsValid()){
+		mRenderTarget->OnInputFromHandler(mouse, keyboard);
+	}
+	return ret;
+}
+
 void ImageBox::SetTexture(const char* file)
 {
 	if (!file)
@@ -107,12 +122,12 @@ void ImageBox::SetTexture(const char* file)
 	}
 	ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
 	SetTexture(pTexture);
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void ImageBox::SetTexture(ITexture* pTexture)
 {
-	mImageFile.clear();
+	//mImageFile.clear();
 	mTexture = pTexture;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;
@@ -121,6 +136,15 @@ void ImageBox::SetTexture(ITexture* pTexture)
 	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
 	if (pTexture)
 		CalcUV(pTexture->GetSize());
+}
+
+void ImageBox::SetRenderTargetTexture(IRenderTarget* rt){
+	if (mRenderTarget){
+		gFBEnv->pRenderer->DeleteRenderTarget(mRenderTarget);
+		mRenderTarget = 0;
+	}
+	mRenderTarget = rt;
+	SetTexture(mRenderTarget->GetRenderTargetTexture());
 }
 
 void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
@@ -152,6 +176,7 @@ void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 			mUIObject->SetColors(colors, 4);
 		}
 	}
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
@@ -198,7 +223,9 @@ void ImageBox::ChangeRegion(TextureAtlasRegion* region)
 
 void ImageBox::ChangeRegion(const char* region)
 {
-	assert(mTextureAtlas);
+	if (!mTextureAtlas)
+		mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(mTextureAtlasFile.c_str());
+
 	if (mTextureAtlas)
 	{
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
@@ -249,14 +276,6 @@ void ImageBox::Highlight(bool enable)
 	}
 }
 
-void ImageBox::OnMouseHover(void* arg)
-{
-}
-
-void ImageBox::OnMouseOut(void* arg)
-{
-}
-
 bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	switch (prop)
@@ -270,10 +289,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::REGION:
 	{
-							   if (mTextureAtlasFile.empty())
-							   {
-								   mTextureAtlasFile = "data/textures/gameui.xml";
-							   }
+		mStrRegion = val;
 							   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
 							   return true;
 	}
@@ -281,6 +297,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::REGIONS:
 	{
+		mStrRegions = val;
 								mAnimation = true;
 								auto useNumberData = Split(val, ":");
 								if (useNumberData.size() >= 2)
@@ -341,27 +358,26 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::FRAME_IMAGE:
 	{
+		mStrFrameImage = val;
 									if (!mFrameImage)
 									{
 										mFrameImage = CreateImageBox();
 									}
-									if_assert_pass(!mTextureAtlasFile.empty())
+									mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+									if (strlen(val) == 0)
 									{
-										mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
-										if (strlen(val) == 0)
-										{
-											mFrameImage->SetVisible(false);
-										}
-										else
-										{
-											mFrameImage->SetVisible(true);
-										}
+										mFrameImage->SetVisible(false);
+									}
+									else
+									{
+										mFrameImage->SetVisible(true);
 									}
 									return true;
 	}
 
 	case UIProperty::IMAGE_COLOR_OVERLAY:
 	{
+		mColorOveraySet = true;
 											Color color = Color(val);
 											if (mUIObject)
 											{
@@ -388,6 +404,120 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
+bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly){
+			if (mTextureAtlasFile.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mTextureAtlasFile.c_str());
+		return true;
+	}
+
+	case UIProperty::REGION:
+	{
+		if (notDefaultOnly){
+			if (mStrRegion.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrRegion.c_str());
+		return true;
+	}
+
+	case UIProperty::REGIONS:
+	{
+		if (notDefaultOnly){
+			if (mStrRegions.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrRegions.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::FPS:
+	{
+		if (notDefaultOnly)	{
+			if (mSecPerFrame == 0.f)
+				return false;
+
+		}
+		auto data = StringConverter::toString(mSecPerFrame==0.f ? 0.f : 1.f / mSecPerFrame);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::TEXTURE_FILE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageFile.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mImageFile.c_str());
+		return true;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+		if (notDefaultOnly)
+		{
+			if (mKeepImageRatio == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mKeepImageRatio);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+	case UIProperty::FRAME_IMAGE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrFrameImage.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrFrameImage.c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_COLOR_OVERLAY:
+	{
+		if (notDefaultOnly)
+		{
+			if (!mColorOveraySet)
+				return false;
+		}
+		if (!mUIObject)
+			return false;
+		auto data = StringConverter::toString(mUIObject->GetMaterial()->GetDiffuseColor());
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_FIXED_SIZE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageFixedSize == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		auto data = StringConverter::toString(mImageFixedSize);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
+}
+
 void ImageBox::SetKeepImageRatio(bool keep)
 {
 	mKeepImageRatio = keep;
@@ -402,6 +532,7 @@ void ImageBox::SetKeepImageRatio(bool keep)
 ImageBox* ImageBox::CreateImageBox()
 {
 	auto image = (ImageBox*)AddChild(0, 0, 1.0f, 1.0f, ComponentType::ImageBox);
+	image->SetRuntimeChild(true);
 	return image;
 }
 
@@ -447,7 +578,7 @@ void ImageBox::SetCenterUVMatParam()
 	}
 }
 
-void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
+void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
 {
 	Vec2I isize(0, 0);
 	if (mAtlasRegion)
@@ -467,9 +598,8 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 		assert(0 && "You didn't set the texture");
 		return;
 	}
-	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
-	SetWNSize(size);
-	SetWNPos(wnpos);
+	ChangeSize(isize);
+	ChangeWPos(wpos);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 	
 }
@@ -477,7 +607,7 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2& wnpos)
 void ImageBox::DrawAsFixedSizeAtCenter()
 {
 	DrawAsFixedSize();
-	SetNPos(Vec2(0.5f, 0.5f));
+	ChangeNPos(Vec2(0.5f, 0.5f));
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 }
 
@@ -500,8 +630,7 @@ void ImageBox::DrawAsFixedSize()
 	{
 		return;
 	}
-	Vec2 size = Vec2(isize) / Vec2(GetRenderTargetSize());
-	SetWNSize(size);
+	ChangeSize(isize);
 }
 
 void ImageBox::SetDesaturate(bool desat)

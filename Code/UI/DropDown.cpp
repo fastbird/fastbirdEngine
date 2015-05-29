@@ -22,12 +22,12 @@ DropDown::DropDown()
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
 	mUIObject->SetNoDrawBackground(true);
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&DropDown::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_OUT,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 		std::bind(&DropDown::OnMouseOut, this, std::placeholders::_1));
 }
 
@@ -42,14 +42,17 @@ DropDown::~DropDown()
 void DropDown::OnCreated()
 {
 	mButton = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
+
+	mButton->SetHwndId(GetHwndId());
 	mButton->SetRender3D(mRender3D, GetRenderTargetSize());
-	mButton->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DOWN,
+	mButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_DOWN,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 	mButton->SetSize(Vec2I(24, 24));
 	mButton->SetProperty(UIProperty::ALIGNH, "right");
-	Vec2 btnPos = mWNPos;
-	btnPos.x += mWNSize.x;
-	mButton->SetWNPos(btnPos);
+	Vec2I btnPos = GetFinalPos();
+	btnPos.x += GetFinalSize().x;
+	mButton->ChangePos(btnPos);
+
 	mButton->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	mButton->SetProperty(UIProperty::TEXTUREATLAS, "es/textures/ui.xml");
 	mButton->SetProperty(UIProperty::REGION, "dropdown");
@@ -68,15 +71,16 @@ void DropDown::GatherVisit(std::vector<IUIObject*>& v)
 		mButton->GatherVisit(v);
 }
 
-void DropDown::OnPosChanged()
+void DropDown::OnPosChanged(bool anim)
 {
-	__super::OnPosChanged();
-	AlignText();
+	__super::OnPosChanged(anim);
 	
-	Vec2 btnPos= mWNPos;
-	btnPos.x += mWNSize.x;
-	if (mButton)
-		mButton->SetWNPos(btnPos);
+	if (mButton){
+		Vec2I btnPos = GetFinalPos();
+		btnPos.x += GetFinalSize().x;
+		mButton->ChangePos(btnPos);
+	}
+		
 }
 
 void DropDown::OnSizeChanged()
@@ -86,8 +90,9 @@ void DropDown::OnSizeChanged()
 
 	if (mButton)
 	{
-		mButton->SetWNSize(mWNSize);
+		mButton->SetSizeY(GetFinalSize().y);
 		mButton->SetSizeX(24);
+		mButton->OnSizeChanged();
 	}
 }
 
@@ -110,20 +115,28 @@ bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool DropDown::GetProperty(UIProperty::Enum prop, char val[])
+bool DropDown::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::DROPDOWN_INDEX:
 	{
-		auto data = StringConverter::toString(mCurIdx);
-		strcpy(val, data.c_str());
+		std::string data;
+		if (mReservedIdx!=-1)
+		{
+			data = StringConverter::toString(mReservedIdx);
+		}
+		else
+		{
+			data = StringConverter::toString(mCurIdx);
+		}
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
 	
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void DropDown::OnMouseClick(void* arg)
@@ -152,7 +165,7 @@ void DropDown::OnMouseClick(void* arg)
 	{
 		var->SetVisible(!vis);
 	}
-	gFBEnv->pUIManager->DirtyRenderList();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void DropDown::CloseOptions()
@@ -198,14 +211,16 @@ void DropDown::OnItemSelected(void* arg)
 	}
 	assert(index != -1);
 	mCurIdx = index; 
-	OnEvent(IEventHandler::EVENT_DROP_DOWN_SELECTED);
-	gFBEnv->pUIManager->DirtyRenderList();
+	OnEvent(UIEvents::EVENT_DROP_DOWN_SELECTED);
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 size_t DropDown::AddDropDownItem(WCHAR* szString)
 {
 	mDropDownItems.push_back((Button*)AddChild(0.0f, 1.0f, 1.0f, 1.0f, ComponentType::Button));
 	Button* pDropDownItem = mDropDownItems.back();
+	// dropdown need to be saved.
+//	pDropDownItem->SetRuntimeChild(true);
 	pDropDownItem->SetText(szString);
 	size_t index = mDropDownItems.size()-1;
 	SetCommonProperty(pDropDownItem, index);
@@ -252,7 +267,7 @@ void DropDown::SetCommonProperty(IWinBase* item, size_t index)
 	item->SetInitialOffset(Vec2I(0, 24 * index));
 
 	WinBase* wb = (WinBase*)item;
-	wb->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	wb->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnItemSelected, this, std::placeholders::_1));
 }
 
@@ -321,6 +336,14 @@ bool DropDown::SetVisible(bool show)
 	}
 	mButton->SetVisible(show);
 	return ret;
+}
+
+void DropDown::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	if (mButton)
+		mButton->SetHwndId(hwndId);
+
 }
 
 }

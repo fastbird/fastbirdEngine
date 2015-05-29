@@ -36,6 +36,7 @@ namespace fastbird
 				mCurShowTime = 0;
 				mCurVisibility = Visibility::Shown;
 			}
+			mWinBase->TriggerRedraw();
 		}
 		else if (mCurVisibility == Visibility::Hiding)
 		{
@@ -46,6 +47,7 @@ namespace fastbird
 				mCurVisibility = Visibility::Hided;
 				mWinBase->SetVisibleInternal(false);
 			}
+			mWinBase->TriggerRedraw();
 		}
 	}
 

@@ -378,6 +378,15 @@ void LuaObject::SetField(const char* fieldName, const Vec2& v)
 	lua_pop(mL, 1);
 }
 
+void LuaObject::SetField(const char* fieldName, const Vec2I& v){
+	assert(fieldName);
+	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	PushToStack();
+	luaU_push(mL, v);
+	lua_setfield(mL, -2, fieldName);
+	lua_pop(mL, 1);
+}
+
 void LuaObject::SetField(const char* fieldName, const Transformation& t)
 {
 	assert(fieldName);

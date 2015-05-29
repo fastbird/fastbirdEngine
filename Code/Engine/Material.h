@@ -2,7 +2,7 @@
 #include <Engine/IMaterial.h>
 #include <CommonLib/Math/Vec4.h>
 #include <CommonLib/VectorMap.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/RendererStructs.h>
 
 namespace fastbird

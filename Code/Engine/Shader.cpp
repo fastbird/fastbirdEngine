@@ -67,7 +67,7 @@ void Shader::ReloadShader(const char* filepath, const IMaterial::SHADER_DEFINES&
 	auto it = mShaders.begin(), itEnd = mShaders.end();
 	for (; it!=itEnd; it++)
 	{
-		if (stricmp(filepath, (*it)->GetName())==0)
+		if (_stricmp(filepath, (*it)->GetName())==0)
 		{
 			if ((*it)->GetShaderDefines() == shaderDefines)
 			{

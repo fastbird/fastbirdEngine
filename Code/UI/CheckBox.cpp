@@ -25,19 +25,20 @@ CheckBox::~CheckBox()
 void CheckBox::OnCreated()
 {
 	mCheckImageBox = static_cast<ImageBox*>(AddChild(ComponentType::ImageBox));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mCheckImageBox->SetRuntimeChild(true);
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&CheckBox::OnClickedChildren, this, std::placeholders::_1));
-	mCheckImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mCheckImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	mCheckImageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
-	mCheckImageBox->SetSize(Vec2I(24, 24));
-	mCheckImageBox->SetNPos(Vec2(0.0, 0.5f));
+	mCheckImageBox->ChangeSize(Vec2I(24, 24));
+	mCheckImageBox->ChangeNPos(Vec2(0.0, 0.5f));
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&CheckBox::OnMouseHover, this, std::placeholders::_1));
 	
 
@@ -72,11 +73,12 @@ void CheckBox::OnClicked(void* arg)
 {
 	mChecked = !mChecked;
 	UpdateImage();
+	gFBEnv->pEngine->GetMouse()->Invalidate();
 }
 
 void CheckBox::OnClickedChildren(void* arg)
 {
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void CheckBox::UpdateImage()
@@ -92,7 +94,7 @@ void CheckBox::UpdateImage()
 
 void CheckBox::OnMouseHover(void* arg)
 {
-	SetCursor(WinBase::mCursorOver);
+	SetCursor(WinBase::sCursorOver);
 }
 
 
@@ -111,19 +113,24 @@ bool CheckBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool CheckBox::GetProperty(UIProperty::Enum prop, char val[])
+bool CheckBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::CHECKBOX_CHECKED:
 	{
+		if (notDefaultOnly)
+		{
+			if (mChecked == GetDefaultValueBool(prop))
+				return false;
+		}
 		auto data = StringConverter::toString(mChecked);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 }

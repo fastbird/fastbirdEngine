@@ -13,7 +13,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#if defined(_DEBUG) && !defined(_WINDLL)
+#if defined(_DEBUG)
 	#define _CRTDBG_MAP_ALLOC
 	#include <stdlib.h>
 	#include <crtdbg.h>

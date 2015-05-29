@@ -1,12 +1,12 @@
-
 #include <Engine/StdAfx.h>
 #include <Engine/MeshObject.h>
-#include <Engine/IRenderer.h>
+#include <Engine/Renderer.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ICamera.h>
 #include <Engine/IConsole.h>
 #include <Engine/Animation.h>
 #include <Engine/FBCollisionShape.h>
+#include <Engine/IRenderTarget.h>
 
 namespace fastbird
 {
@@ -21,6 +21,7 @@ namespace fastbird
 		: mAuxCloned(0)
 		, mRenderHighlight(false)
 		, mCollisionsCloned(0)
+		, mForceAlphaBlending(false)
 	{
 		mTopology = PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		if (gFBEnv && gFBEnv->pRenderer && gFBEnv->pRenderer->GetCamera())
@@ -51,6 +52,11 @@ namespace fastbird
 	{
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
+		if (mLastPreRendered == gFBEnv->mFrameCounter)
+			return;
+
+		mLastPreRendered = gFBEnv->mFrameCounter;
+
 		__super::PreRender();
 		
 		bool pointLightDataGathered = false;
@@ -103,18 +109,18 @@ namespace fastbird
 			return;
 
 		D3DEventMarker mark("MeshObject");
-		IRenderer* pRenderer = gFBEnv->pRenderer;
+		auto const renderer = gFBEnv->_pInternalRenderer;
 		
-		mObjectConstants.gWorldView = gFBEnv->pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
-		mObjectConstants.gWorldViewProj = gFBEnv->pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
+		mObjectConstants.gWorldView = renderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
+		mObjectConstants.gWorldViewProj = renderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
 
 
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
-			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+			renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
-		pRenderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
+		renderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
 
-		pRenderer->SetPrimitiveTopology(mTopology);
+		renderer->SetPrimitiveTopology(mTopology);
 
 		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW && !HasObjFlag(OF_HIGHLIGHT_DEDI))
 		{
@@ -124,8 +130,8 @@ namespace fastbird
 					continue;
 				if (!it->mMaterial->BindSubPass(RENDER_PASS::PASS_SHADOW, true))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
-					gFBEnv->pRenderer->SetShadowMapShader();
+					renderer->SetPositionInputLayout();
+					renderer->SetShadowMapShader();
 				}
 				RenderMaterialGroup(&(*it), true);
 			}
@@ -141,13 +147,12 @@ namespace fastbird
 				bool materialReady = false;
 				if (it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
+					renderer->SetPositionInputLayout();
 					materialReady = true;
 				}
 				else if (!(mObjFlag & OF_NO_DEPTH_PASS))
 				{
-					gFBEnv->pRenderer->SetPositionInputLayout();
-					gFBEnv->pRenderer->SetDepthWriteShader();
+					renderer->SetDepthWriteShader();
 					materialReady = true;
 				}
 				if (materialReady)
@@ -158,19 +163,19 @@ namespace fastbird
 			return;
 		}
 		// PASS_GODRAY_OCC_PRE
-		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI))
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !mForceAlphaBlending)
 		{
-			gFBEnv->pRenderer->SetPositionInputLayout();
+			renderer->SetPositionInputLayout();
 			FB_FOREACH(it, mMaterialGroups)
 			{
 				if (!it->mMaterial || !it->mVBPos || it->mMaterial->IsNoShadowCast())
 					continue;
 
 				if (it->mMaterial->GetBindingShaders() & BINDING_SHADER_GS) {
-					gFBEnv->pRenderer->SetOccPreGSShader();
+					renderer->SetOccPreGSShader();
 				}
 				else {
-					gFBEnv->pRenderer->SetOccPreShader();
+					renderer->SetOccPreShader();
 				}
 				it->mMaterial->BindMaterialParams();
 
@@ -191,22 +196,50 @@ namespace fastbird
 					mInputLayoutOverride->Bind();
 					includeInputLayout = false;
 				}
+				if (mForceAlphaBlending && !mMaterialGroups.empty()){
+					auto it = mMaterialGroups.begin();
+					renderer->SetPositionInputLayout();
+					bool hasSubMat = it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH_ONLY, false);
+					if (hasSubMat){
+						// write only depth
+						FB_FOREACH(it, mMaterialGroups)
+						{
+							it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH_ONLY, false);							
+							RenderMaterialGroup(&(*it), true);
+						}
+					}
+					else{
+						renderer->RestoreDepthStencilState();
+						renderer->SetOneBiasedDepthRS();
+						renderer->SetNoColorWriteState();
+
+						renderer->SetDepthOnlyShader();
+						// write only depth
+						FB_FOREACH(it, mMaterialGroups)
+						{
+							RenderMaterialGroup(&(*it), true);
+						}
+					}
+				}
 				FB_FOREACH(it, mMaterialGroups)
 				{
-					if (!it->mMaterial || !it->mVBPos)
+					auto material = mForceAlphaBlending ? it->mForceAlphaMaterial : it->mMaterial;
+					if (!material || !it->mVBPos)
 						continue;
 
-					it->mMaterial->Bind(includeInputLayout);
+					material->Bind(includeInputLayout);
 					RenderMaterialGroup(&(*it), false);
-					it->mMaterial->Unbind();
+					material->Unbind();
 				}
 			}
-
+			bool mainRt = renderer->IsMainRenderTarget();
 			// HIGHLIGHT
-			if (mRenderHighlight && !gFBEnv->mRenderToTexture)
+			if (mRenderHighlight && mainRt && !mForceAlphaBlending)
 			{
 				// draw silhouett to samll buffer
-				pRenderer->SetSamllSilouetteBuffer();
+				auto rt = renderer->GetCurRendrTarget();
+				assert(rt);
+				rt->SetSmallSilouetteBuffer();
 				{
 					FB_FOREACH(it, mMaterialGroups)
 					{
@@ -215,13 +248,13 @@ namespace fastbird
 						bool materialReady = false;
 						if (it->mMaterial && it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
+							renderer->SetPositionInputLayout();
 							materialReady = true;
 						}
 						else
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
-							gFBEnv->pRenderer->SetDepthWriteShader();
+							renderer->SetPositionInputLayout();
+							renderer->SetDepthWriteShader();
 							materialReady = true;
 						}
 						if (materialReady)
@@ -230,7 +263,7 @@ namespace fastbird
 						}
 					}
 				}
-				pRenderer->SetBigSilouetteBuffer();
+				rt->SetBigSilouetteBuffer();
 				{
 					FB_FOREACH(it, mMaterialGroups)
 					{
@@ -239,13 +272,13 @@ namespace fastbird
 						bool materialReady = false;
 						if (it->mMaterial && it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH, false))
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
+							renderer->SetPositionInputLayout();
 							materialReady = true;
 						}
 						else
 						{
-							gFBEnv->pRenderer->SetPositionInputLayout();
-							gFBEnv->pRenderer->SetDepthWriteShader();
+							renderer->SetPositionInputLayout();
+							renderer->SetDepthWriteShader();
 							materialReady = true;
 						}
 						if (materialReady)
@@ -254,15 +287,8 @@ namespace fastbird
 						}
 					}
 				}
-
 				gFBEnv->mSilouetteRendered = true;
-				//mRenderHighlight = false;
-
-				if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-					pRenderer->SetHDRTarget();
-				else
-					pRenderer->RestoreRenderTarget();
-				pRenderer->RestoreViewports();
+				rt->BindTargetOnly(true);
 			}
 		}
 	}
@@ -343,7 +369,9 @@ namespace fastbird
 	IMaterial* MeshObject::GetMaterial(int pass /*= RENDER_PASS::PASS_NORMAL*/) const
 	{
 		if (!mMaterialGroups.empty())
-			return mMaterialGroups[0].mMaterial;
+		{
+			return mForceAlphaBlending ? mMaterialGroups[0].mForceAlphaMaterial : mMaterialGroups[0].mMaterial;
+		}
 
 		return 0;
 	}
@@ -1040,9 +1068,10 @@ namespace fastbird
 		{
 			if (it.mMaterial)
 			{
-				if (!it.mMaterial->NumRefs()!=1)
+				if (it.mMaterial->NumRefs()!=1)
 				{
 					it.mMaterial = it.mMaterial->Clone();
+					it.mMaterial->CloneRenderStates();
 				}
 				BLEND_DESC bdesc;
 				bdesc.RenderTarget[0].BlendEnable = alpha != 1.0f;
@@ -1053,6 +1082,41 @@ namespace fastbird
 				auto diffuse = it.mMaterial->GetDiffuseColor();
 				diffuse.w = alpha;
 				it.mMaterial->SetDiffuseColor(diffuse);
+			}
+		}
+	}
+
+	void MeshObject::SetForceAlphaBlending(bool enable, float alpha){
+		mForceAlphaBlending = enable;
+		if (mForceAlphaBlending){
+			for (auto& it : mMaterialGroups)
+			{
+				if (it.mMaterial)
+				{
+					if (!it.mForceAlphaMaterial){
+						it.mForceAlphaMaterial = it.mMaterial->Clone();
+						it.mForceAlphaMaterial->CloneRenderStates();
+					}
+					BLEND_DESC bdesc;
+					bdesc.RenderTarget[0].BlendEnable = alpha != 1.0f;
+					bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+					bdesc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+					bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+					it.mForceAlphaMaterial->SetBlendState(bdesc);
+					auto diffuse = it.mForceAlphaMaterial->GetDiffuseColor();
+					diffuse.w = alpha;
+					it.mForceAlphaMaterial->SetDiffuseColor(diffuse);
+
+					RASTERIZER_DESC rs;
+					rs.CullMode = CULL_MODE_NONE;
+					it.mForceAlphaMaterial->SetRasterizerState(rs);
+
+					DEPTH_STENCIL_DESC ds;
+					ds.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+					it.mForceAlphaMaterial->SetDepthStencilState(ds);
+
+					it.mForceAlphaMaterial->SetTransparent(true);
+				}
 			}
 		}
 	}

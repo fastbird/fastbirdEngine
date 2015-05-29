@@ -134,7 +134,8 @@ std::string GetFileNameWithoutExtension(const char* s)
 
 std::string GetDirectoryPath(const char* s)
 {
-	assert(s && strlen(s) != 0);
+	if (!s || strlen(s) == 0)
+		return std::string();
 	std::string ret(s);
 	size_t f = ret.find_last_of('/');
 	if (f == std::string::npos)
@@ -317,27 +318,70 @@ std::string ConcatFilepath(const char* a, const char* b)
 }
 
 //------------------------------------------------------------------------
-char* ToAbsolutePath(char* outChar, const char* a)
+void SplitPath(const std::string& in_path, std::vector<std::string>& split_path)
 {
-	if (outChar==a)
+	size_t start = 0;
+	size_t dirsep;
+	do
 	{
-		assert(0);
-		Error("ToAbsolutePath arg error!");
-		return 0;
-	}
-	if (strlen(a)<=3)
+		dirsep = in_path.find_first_of("\\/", start);
+		if (dirsep == std::string::npos)
+			split_path.push_back(std::string(&in_path[start]));
+		else
+			split_path.push_back(std::string(&in_path[start], &in_path[dirsep]));
+		start = dirsep + 1;
+	} while (dirsep != std::string::npos);
+}
+
+bool StringsEqual_i(const std::string& lhs, const std::string& rhs){
+	return _stricmp(lhs.c_str(), rhs.c_str()) == 0;
+}
+
+// implementation by dash-tom-bang
+std::string GetRelativePath(const std::string& to, const std::string& from)
+{
+	char to_buf[512];
+	char from_buf[512];
+	UnifyFilepath(to_buf, to.c_str());
+	UnifyFilepath(from_buf, from.c_str());
+
+	std::vector<std::string> to_dirs;
+	std::vector<std::string> from_dirs;
+
+	
+	SplitPath(to_buf, to_dirs);
+	SplitPath(from_buf, from_dirs);
+
+	std::string output;
+	output.reserve(to.size());
+
+	std::vector<std::string>::const_iterator to_it = to_dirs.begin(),
+		to_end = to_dirs.end(),
+		from_it = from_dirs.begin(),
+		from_end = from_dirs.end();
+
+	while ((to_it != to_end) && (from_it != from_end) && StringsEqual_i(*to_it, *from_it))
 	{
-		if (a[1]==':')
-		{
-			if (!outChar)
-			{
-				outChar = (char*)malloc(MAX_PATH);
-			}
-			strcpy(outChar, a);
-			return outChar;
-		}
+		++to_it;
+		++from_it;
 	}
-	return _fullpath(outChar, a, MAX_PATH);
+
+	while (from_it != from_end)
+	{
+		output += "../";
+		++from_it;
+	}
+
+	while (to_it != to_end)
+	{
+		output += *to_it;
+		++to_it;
+
+		if (to_it != to_end)
+			output += "/";
+	}
+
+	return output;
 }
 
 //------------------------------------------------------------------------
@@ -439,6 +483,29 @@ void ToUpperCase( std::string& str )
             str.begin(),
 			toupper);
 }
+
+void ToLowerCase(std::wstring& str)
+{
+	std::transform(
+		str.begin(),
+		str.end(),
+		str.begin(),
+		tolower);
+}
+void ToLowerCaseFirst(std::wstring& str)
+{
+	std::transform(
+		str.begin(), str.begin() + 1, str.begin(), tolower);
+}
+void ToUpperCase(std::wstring& str)
+{
+	std::transform(
+		str.begin(),
+		str.end(),
+		str.begin(),
+		toupper);
+}
+
 
 bool IsNumeric(const char* str)
 {
@@ -548,6 +615,14 @@ std::string StringConverter::toString(const Vec2& val)
 	stream << val.x << " " << val.y;
     return stream.str();
 }
+
+std::string StringConverter::toString(const Vec2I& val)
+{
+	std::stringstream stream;
+	stream << val.x << " " << val.y;
+	return stream.str();
+}
+
 //-----------------------------------------------------------------------
 std::string StringConverter::toString(const Vec3& val)
 {

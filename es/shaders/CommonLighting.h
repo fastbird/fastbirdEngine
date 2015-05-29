@@ -133,10 +133,10 @@ float GetShadow(float4 lightPos)
 	{
 		for (int x = -2; x<=2; ++x)
 		{
-			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.0002, float2(x, y));
+			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.001, float2(x, y));
 		}
 	}
-	return min(0.5f + c * 0.11111f, 1.0f);
+	return min(0.5f + c * 0.02f, 1.0f);
 }
 
 float3 GetIrrad(float4 vNormal)
@@ -178,9 +178,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 #ifdef ENV_TEXTURE
 	vec3 Tp = normalize(tangent
 		- normal*dot(tangent, normal)); // local tangent
-	vec3 Bp = normalize(binormal
-		- normal*dot(binormal,normal)
-		- Tp*dot(binormal, Tp)); // local bitangent
+	vec3 Bp = normalize(cross(tangent, normal));
 		
 	static float2 hammersley[16] = (float2[16])gHammersley;
 	for(int i=0; i<ENV_SAMPLES; ++i)
@@ -204,8 +202,8 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 		horiz *= horiz;
 		ndl = max( 0.05, abs(ndl) );
 
-		float vdh = max( 1e-8, abs(dot(toViewDir, Hn)) );
-		float ndh = max( 1e-8, abs(dot(normal, Hn)) );
+		float vdh = max( 1e-8, dot(toViewDir, Hn) );
+		float ndh = max( 1e-8, dot(normal, Hn) );
 		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
 			ProbabilityGGX(ndh, vdh, roughness));
 		envContrib += SampleEnvironmentMap(Ln, lodS)

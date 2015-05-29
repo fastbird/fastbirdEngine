@@ -1,12 +1,13 @@
 #include <UI/StdAfx.h>
 #include <UI/Scroller.h>
 #include <UI/Container.h>
+#include <Engine/IConsole.h>
 
 namespace fastbird
 {
 
 Scroller::Scroller()
-	: mScrollAmount(0.001f)
+	: mScrollAmount(0.0015f)
 	, mOffset(0, 0)
 	, mMaxOffset(0, 0)
 	, mOwner(0)
@@ -14,7 +15,9 @@ Scroller::Scroller()
 	, mCurOffset(0)
 	, mScrollAcc(10)
 	, mCurScrollSpeed(0)
-	, mMaxScrollSpeed(30)
+	, mMaxScrollSpeed(10)
+	, mScrollAmountScale(1.f)
+	, mLastWheel(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -41,9 +44,21 @@ bool Scroller::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	bool isIn = __super::OnInputFromHandler(mouse, keyboard);
 	long wheel = mouse->GetWheel();
 	if (wheel && mParent->IsIn(mouse))
-	{		
+	{
+		mouse->PopWheel();
+		if ((gpTimer->GetTime() - mLastScrollTime )< 0.5f && Sign((float)mLastWheel) == Sign((float)wheel)){
+			mScrollAmountScale += 0.3f;			
+		}
+		else {
+			mScrollAmountScale = 1.0f;
+		}
+		mLastScrollTime = gpTimer->GetTime();
+		mLastWheel = wheel;
+		float wheelSens = gFBEnv->pConsole->GetEngineCommand()->WheelSens;
+		float wheelSensitivity = wheelSens * (float)mouse->GetNumLinesWheelScroll();
+
 		float prevDestOffset = mDestOffset;
-		mDestOffset += wheel * mScrollAmount;
+		mDestOffset += wheel * wheelSensitivity * (mScrollAmount * mScrollAmountScale);
 		mDestOffset = std::min(0.f, mDestOffset);
 		mDestOffset = std::max(-mMaxOffset.y, mDestOffset);
 		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
@@ -62,17 +77,13 @@ void Scroller::OnStartUpdate(float elapsedTime)
 	mCurScrollSpeed += mScrollAcc*elapsedTime;
 	mCurScrollSpeed = std::min(mCurScrollSpeed, mMaxScrollSpeed);
 
-	if (gap < 0)
-		gap -= 0.01f;
-	else if (gap>0)
-		gap += 0.01f;
 	mCurOffset += mCurScrollSpeed * elapsedTime * gap;
-	if (gap < 0 && mDestOffset >= mCurOffset-0.005f)
+	if (gap < 0 && mDestOffset >= mCurOffset)
 	{
 		mCurOffset = mDestOffset;
 		mCurScrollSpeed = 0.f;
 	}
-	else if (gap > 0 && mDestOffset <= mCurOffset+0.005f)
+	else if (gap > 0 && mDestOffset <= mCurOffset)
 	{
 		mCurOffset = mDestOffset;
 		mCurScrollSpeed = 0.f;
@@ -82,7 +93,7 @@ void Scroller::OnStartUpdate(float elapsedTime)
 }
 void Scroller::ResetScroller()
 {
-	mOffset = Vec2I(0, 0);
+	mOffset = Vec2(0, 0);
 	mCurOffset = 0;
 	mDestOffset = 0;
 
@@ -99,7 +110,10 @@ void Scroller::SetMaxOffset(const Vec2& maxOffset)
 			mCurOffset = mOffset.y;
 			mDestOffset = mCurOffset;
 			mOwner->Scrolled();
-		}		
+		}
+
+		mScrollAmount = 22 / (float)GetRenderTargetSize().y;
+			
 		
 	}
 }

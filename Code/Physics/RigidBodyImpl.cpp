@@ -289,15 +289,15 @@ void RigidBodyImpl::SetDamping(float linear, float angular)
 	setDamping(linear, angular);
 }
 
-bool RigidBodyImpl::HasContact(void** gamePtr)
+bool RigidBodyImpl::HasContact(std::vector<void*>* gamePtrs)
 {
 	struct Callback : public btCollisionWorld::ContactResultCallback
 	{
-		RigidBody* mCollided;
+		std::vector<RigidBody*> mCollided;
 		RigidBodyImpl* mMe;
 
 		Callback(RigidBodyImpl* me)
-			:mHasCollision(false), mCollided(0), mMe(me)
+			:mHasCollision(false), mMe(me)
 		{
 
 		}
@@ -323,11 +323,11 @@ bool RigidBodyImpl::HasContact(void** gamePtr)
 				mHasCollision = true;
 				if (colObj0Wrap->m_collisionObject->getUserPointer() == mMe)
 				{
-					mCollided = (RigidBody*)colObj1Wrap->m_collisionObject->getUserPointer();
+					mCollided.push_back((RigidBody*)colObj1Wrap->m_collisionObject->getUserPointer());
 				}
 				else if (colObj1Wrap->m_collisionObject->getUserPointer() == mMe)
 				{
-					mCollided = (RigidBody*)colObj0Wrap->m_collisionObject->getUserPointer();
+					mCollided.push_back((RigidBody*)colObj0Wrap->m_collisionObject->getUserPointer());
 				}
 				
 			}
@@ -337,9 +337,11 @@ bool RigidBodyImpl::HasContact(void** gamePtr)
 	Callback callback(this);
 	Physics* physics = (Physics*)gFBPhysics;
 	physics->_GetDynamicWorld()->contactTest(this, callback);
-	if (gamePtr && callback.mCollided)
+	if (gamePtrs && !callback.mCollided.empty())
 	{
-		*gamePtr = callback.mCollided->GetGamePtr();
+		for (auto& rigidBody : callback.mCollided){
+			gamePtrs->push_back(rigidBody->GetGamePtr());
+		}
 	}
 	return callback.mHasCollision;
 }

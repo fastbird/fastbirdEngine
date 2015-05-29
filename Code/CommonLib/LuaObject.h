@@ -84,6 +84,7 @@ namespace fastbird
 		void SetField(const char* fieldName, const Vec3& v);
 		void SetField(const char* fieldName, const Vec3I& v);
 		void SetField(const char* fieldName, const Vec2& v);
+		void SetField(const char* fieldName, const Vec2I& v);
 		void SetField(const char* fieldName, const Transformation& t);
 
 		LuaObject SetSeqTable(int n) const;

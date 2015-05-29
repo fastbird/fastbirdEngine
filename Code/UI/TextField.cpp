@@ -1,8 +1,15 @@
 #include <UI/StdAfx.h>
-#include "TextField.h"
+#include <UI/TextField.h>
 #include <UI/KeyboardCursor.h>
-#include <Engine/GlobalEnv.h>
 #include <UI/IUIManager.h>
+#include <UI/ImageBox.h>
+#include <UI/PropertyList.h>
+#include <UI/ListItem.h>
+#include <UI/ListBox.h>
+#include <UI/IUIEditor.h>
+#include <UI/UIEvents.h>
+#include <Engine/TextManipulator.h>
+
 
 namespace fastbird
 {
@@ -10,7 +17,6 @@ const float TextField::LEFT_GAP = 0.001f;
 
 TextField::TextField()
 	: WinBase()
-	, mCursorPos(0)
 	, mPasswd(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
@@ -18,81 +24,98 @@ TextField::TextField()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&TextField::OnClicked, this, std::placeholders::_1));
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+		std::bind(&TextField::OnDoubleClicked, this, std::placeholders::_1));
 }
 
 TextField::~TextField()
 {
+	auto mani = gFBUIManager->GetTextManipulator();
+	if (mani){
+		mani->RemoveListener(this);
+	}
 }
 
 void TextField::GatherVisit(std::vector<IUIObject*>& v)
 {
 	v.push_back(mUIObject);	
-	if (GetFocus())
+	if (gFBUIManager->GetKeyboardFocusUI() == this)
 		v.push_back(KeyboardCursor::GetKeyboardCursor().GetUIObject());
+
+	__super::GatherVisit(v);
 }
 
 bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
+	if (!mEnable)
+		return false;
+
 	bool mouseIn = __super::OnInputFromHandler(mouse, keyboard);
 
 	if (!mVisibility.IsVisible() || !GetFocus(false))
 		return mouseIn;
 
-	if (keyboard->IsValid())
-	{
-		char c = (char)keyboard->GetChar();
-		keyboard->Invalidate();
-
-		if (c!=0)
-		{
-			switch(c)
+	if (keyboard->IsValid()) {
+		auto ch = keyboard->GetChar();
+		if (ch == VK_TAB)	{
+			if (IsKeyboardFocused())
 			{
-			case VK_BACK:
+				auto listbox = IsInListBox();
+				if (listbox)
 				{
-					if (!mTextw.empty())
-					{
-						mTextw.pop_back();
-						MoveCursor(-1);
+					keyboard->PopChar();
+					if (keyboard->IsKeyDown(VK_SHIFT)) {
+						listbox->IterateItem(false, true);
+					}
+					else{
+						listbox->IterateItem(true, true);
 					}
 				}
-				break;
-			case VK_TAB:
-				{
-					if (keyboard->IsKeyDown(VK_SHIFT))
-					{
-						if (mPrev)
-							gFBEnv->pUIManager->SetFocusUI(mPrev);
-					}
-					else
-					{
-						if (mNext)
-							gFBEnv->pUIManager->SetFocusUI(mNext);
-					}
-				}
-				break;
-			default:
-				{
-					mTextw.push_back(AnsiToWide(&c, 1)[0]);
-					MoveCursor(1);
-				}
-				break;
 			}
-			if (!mPasswd)
+		}
+		else if (ch == VK_RETURN)
+		{
+			bool succ = false;
+			if (OnEvent(UIEvents::EVENT_ENTER))
 			{
-				mUIObject->SetText(mTextw.c_str());
+				succ = true;
 			}
 			else
 			{
-				std::wstring asterisks(mTextw.size(), L'*');
-				mUIObject->SetText(asterisks.c_str());
+				auto listbox = IsInListBox();
+				if (listbox)
+				{
+					auto eventHandler = dynamic_cast<IEventHandler*>(listbox);
+					if (eventHandler)
+					{
+						if (eventHandler->OnEvent(UIEvents::EVENT_ENTER)){
+							succ = true;
+						}
+					}
+				}
+			}
+			if (succ){
+				keyboard->PopChar();
+				keyboard->Invalidate();
+				TriggerRedraw();
+				
 			}
 		}
+		else if (ch == VK_ESCAPE){
+			auto prop = IsInPropertyList();
+			if (prop) {
+				prop->MoveFocusToKeyItem();
+				keyboard->PopChar();
+				keyboard->Invalidate();
+			}
+		}
+		else{
+			gFBUIManager->GetTextManipulator()->OnInput(mouse, keyboard);
+		}
 	}
-
-	if (mouse->IsValid() && mMouseIn)
-	{
-		mouse->Invalidate();
-	}
+	
 	return mouseIn;
 }
 
@@ -111,71 +134,69 @@ void TextField::SetText(const wchar_t* szText)
 			mUIObject->SetText(asterisks.c_str());
 		}
 	}
-}
+	CalcTextWidth();
 
-void TextField::OnPosChanged()
-{
-	__super::OnPosChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-void TextField::OnSizeChanged()
-{
-	__super::OnSizeChanged();
-	mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-
-void TextField::OnFocusLost()
-{
+	AlignText();
+	TriggerRedraw();
 }
 
 void TextField::OnFocusGain()
 {
-	gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
-	float width;
-	width = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-	gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+	KeyboardCursor::GetKeyboardCursor().SetHwndId(GetHwndId());
+	gFBUIManager->DirtyRenderList(mHwndId);
 
-	Vec2 size = ConvertToNormalized(Vec2I((int)width, 2));
-	KeyboardCursor::GetKeyboardCursor().SetNSize(size);
+	auto mani = gFBUIManager->GetTextManipulator();
+	mani->AddListener(this);
+	mani->SetText(&mTextw);
+	
 
-	int chrs = mTextw.size();
-	MoveCursor(chrs - mCursorPos);	
-}
-
-void TextField::MoveCursor(int move)
-{
-	if (!mUIObject)
-		return;
-	mCursorPos += move;
-	if (mCursorPos<0)
-		mCursorPos = 0;
-
-	float xpos = 0.f;
-	if (!mTextw.empty())
+	auto propertyList = IsInPropertyList();
+	if (propertyList)
 	{
-		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
-		float width;
-		if (mPasswd)
-		{
-			std::wstring asterisks(mTextw.size(), L'*');
-			width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				(const char*)asterisks.c_str(), asterisks.size()*2);
-		}
-		else
-		{
-			width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				(const char*)mTextw.c_str(), mTextw.size()*2);
-		}
-		xpos = ConvertToNormalized(Vec2I((int)width, (int)width)).x;
-		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+		ListItem* listItem = (ListItem*)mParent;
+		propertyList->SetFocusRow(listItem->GetRowIndex());
 	}
 
-	KeyboardCursor::GetKeyboardCursor().SetNPos(
-		Vec2(mWNPos.x + LEFT_GAP + xpos,
-		mWNPos.y + mWNSize.y - GetTextBottomGap()));
-	
+	KeyboardCursor::GetKeyboardCursor().SetScissorRegion(GetScissorRegion());
+}
+
+void TextField::OnFocusLost()
+{
+	gFBUIManager->DirtyRenderList(mHwndId);
+	auto mani = gFBUIManager->GetTextManipulator();
+	auto propertyList = IsInPropertyList();
+	if (propertyList)
+	{
+		assert(mParent && mParent->GetType() == ComponentType::ListItem);
+		ListItem* valueItem = (ListItem*)mParent;
+		auto index = valueItem->GetRowIndex();
+		propertyList->RemoveHighlight(index);
+		auto uiEditor = gFBUIManager->GetUIEditor();
+		IWinBase* editingUI = uiEditor->GetCurSelected();
+		std::string key, value;
+		propertyList->GetCurKeyValue(key, value);
+		Log("key = %s, value = %s", key.c_str(), value.c_str());
+		if (editingUI)
+		{
+			char buf[256] = { 0 };
+			auto prop = UIProperty::IsUIProperty(key.c_str());
+			if (prop != UIProperty::COUNT){
+				auto got = editingUI->GetProperty(prop, buf, 256, false);
+				if (got)
+					SetText(AnsiToWide(buf));
+			}
+			else{
+				auto e = UIEvents::IsUIEvents(key.c_str());
+				if (e != UIEvents::EVENT_NUM){
+					auto szEvent = editingUI->GetEvent(e);
+					editingUI->SetEvent(e, szEvent);
+				}
+			}
+		}
+	}
+	mani->SetText(0);
+	mani->RemoveListener(this);
+	TriggerRedraw();
 }
 
 void TextField::SetPasswd(bool passwd)
@@ -183,4 +204,241 @@ void TextField::SetPasswd(bool passwd)
 	mPasswd = passwd;
 }
 
+void TextField::OnCursorPosChanged(TextManipulator* mani)
+{	
+	TriggerRedraw();
+	int cursorPos = mani->GetCursorPos();	
+	const auto& textStartWPos = mUIObject->GetTextStartWPos();
+	if (mani->IsHighlighting())
+	{
+		auto start = mani->GetHighlightStart();
+		auto end = cursorPos;
+		if (start > end)
+		{
+			std::swap(start, end);
+		}
+		if (end - start > 0){
+			gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
+				((const char*)mTextw.c_str()) + (start * 2),
+				(end - start+1) * 2);
+			float leftGap = gFBEnv->pRenderer->GetFont()->GetTextWidth(
+				(const char*)mTextw.c_str(), start * 2);
+			gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)width, (int)mTextSize));
+			KeyboardCursor::GetKeyboardCursor().SetPos(
+				Vec2I(textStartWPos.x + (int)leftGap,
+				textStartWPos.y - Round(mTextSize))
+				);
+		}
+		else{
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)1, (int)mTextSize));
+			KeyboardCursor::GetKeyboardCursor().SetPos(
+				Vec2I(textStartWPos.x, textStartWPos.y - Round(mTextSize))
+				);
+		}
+	}
+	else
+	{
+		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
+			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I(Round(aWidth), 2));
+			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
+				(const char*)mTextw.c_str(), cursorPos * 2);
+
+		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+
+		KeyboardCursor::GetKeyboardCursor().SetPos(
+			Vec2I(textStartWPos.x + Round(width),
+				textStartWPos.y - WinBase::BOTTOM_GAP - 2)
+			);
+	}
+}
+void TextField::OnTextChanged(TextManipulator* mani)
+{
+	TriggerRedraw();
+	SetText(mTextw.c_str());
+	mTextBeforeTranslated.clear();
+}
+
+void TextField::SetUseBorder(bool use)
+{
+	if (use && mBorders.empty())
+	{
+		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		T->SetHwndId(GetHwndId());
+		mBorders.push_back(T);
+		T->SetRender3D(mRender3D, GetRenderTargetSize());
+		T->SetManualParent(this);
+		T->ChangeSizeY(1);
+		T->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+
+		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		L->SetHwndId(GetHwndId());
+		mBorders.push_back(L);
+		L->SetRender3D(mRender3D, GetRenderTargetSize());
+		L->SetManualParent(this);
+		L->ChangeSizeX(1);
+		L->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		R->SetHwndId(GetHwndId());
+		mBorders.push_back(R);
+		R->SetRender3D(mRender3D, GetRenderTargetSize());
+		R->SetManualParent(this);
+		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		R->ChangeSizeX(1);
+		R->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+
+		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		B->SetHwndId(GetHwndId());
+		mBorders.push_back(B);
+		B->SetRender3D(mRender3D, GetRenderTargetSize());
+		B->SetManualParent(this);
+		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		B->ChangeSizeY(1);
+		B->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		LT->SetHwndId(GetHwndId());
+		mBorders.push_back(LT);
+		LT->SetRender3D(mRender3D, GetRenderTargetSize());
+		LT->SetManualParent(this);
+		LT->ChangeSize(Vec2I(1, 1));
+		LT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RT->SetHwndId(GetHwndId());
+		mBorders.push_back(RT);
+		RT->SetRender3D(mRender3D, GetRenderTargetSize());
+		RT->SetManualParent(this);
+		RT->ChangeSize(Vec2I(1, 1));
+		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		RT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
+		LB->SetHwndId(GetHwndId());
+		mBorders.push_back(LB);
+		LB->SetRender3D(mRender3D, GetRenderTargetSize());
+		LB->SetManualParent(this);
+		LB->ChangeSize(Vec2I(1, 1));
+		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		LB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RB->SetHwndId(GetHwndId());
+		mBorders.push_back(RB);
+		RB->SetRender3D(mRender3D, GetRenderTargetSize());
+		RB->SetManualParent(this);
+		RB->ChangeSize(Vec2I(1, 1));
+		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
+		RB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
+
+		RefreshBorder();
+		RefreshScissorRects();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+	}
+	else if (!use && !mBorders.empty())
+	{
+		for (auto ib : mBorders)
+		{
+			gFBEnv->pUIManager->DeleteComponent(ib);
+		}
+		mBorders.clear();
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+	}
+}
+
+void TextField::OnPosChanged(bool anim)
+{
+	__super::OnPosChanged(anim);
+	if (gFBUIManager->GetKeyboardFocusUI() == this)
+	{
+		OnCursorPosChanged(gFBUIManager->GetTextManipulator());
+		KeyboardCursor::GetKeyboardCursor().SetScissorRegion(GetScissorRegion());
+	}
+}
+
+void TextField::OnSizeChanged(){
+	__super::OnSizeChanged();
+	if (gFBUIManager->GetKeyboardFocusUI() == this)
+	{
+		OnCursorPosChanged(gFBUIManager->GetTextManipulator());
+		KeyboardCursor::GetKeyboardCursor().SetScissorRegion(GetScissorRegion());
+	}
+}
+
+PropertyList* TextField::IsInPropertyList() const
+{
+	if (mParent && mParent->GetType() == ComponentType::ListItem)
+	{
+		auto pp = mParent->GetParent();
+		if (pp && pp->GetType() == ComponentType::PropertyList)
+		{
+			return (PropertyList*)pp;
+		}
+	}
+	return 0;
+}
+
+ListBox* TextField::IsInListBox() const{
+	if (mParent && mParent->GetType() == ComponentType::ListItem)
+	{
+		auto pp = mParent->GetParent();
+		ListBox* listbox = dynamic_cast<ListBox*>(pp);
+		return listbox;
+	}
+	return 0;
+}
+
+void TextField::SelectAll()
+{
+	gFBUIManager->GetTextManipulator()->SelectAll();
+	TriggerRedraw();
+}
+
+void TextField::OnClicked(void* arg){
+	assert(this == arg);
+	if (!IsKeyboardFocused()){
+		gFBUIManager->SetFocusUI(this);
+	}
+	auto mouse = gFBEnv->pEngine->GetMouse();
+	long x, y;
+	mouse->GetPos(x, y);
+	Vec2I cursorPos(x, y);
+	const auto& finalPos = GetFinalPos();
+	cursorPos = cursorPos - finalPos;
+	cursorPos.x -= mTextGap.x;
+
+	auto font = gFBEnv->pRenderer->GetFont();
+	if (font)
+	{
+		font->SetHeight(mTextSize);
+		float length = 0.f;
+		if (cursorPos.x >= (int)mTextWidth){
+			gFBUIManager->GetTextManipulator()->SetCursorPos(mTextw.size());
+		}
+		else{
+			for (int i = 0; i < (int)mTextw.size(); i++)
+			{
+				float halfLength = font->GetTextWidth((const char*)&mTextw[i], 2) *.5f;
+				length += halfLength;
+				if (cursorPos.x < length)
+				{
+					gFBUIManager->GetTextManipulator()->SetCursorPos(i);
+					break;
+				}
+				length += halfLength;
+			}
+		}
+		font->SetBackToOrigHeight();
+	}
+	mouse->Invalidate();
+
+}
+void TextField::OnDoubleClicked(void* arg){
+	gFBUIManager->GetTextManipulator()->SelectAll();
+}
 }

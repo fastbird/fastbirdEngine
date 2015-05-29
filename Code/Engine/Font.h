@@ -2,7 +2,7 @@
 
 #include <Engine/IFont.h>
 #include <Engine/RendererStructs.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/Object.h>
 #include <Engine/TextTags.h>
 
@@ -105,11 +105,6 @@ namespace fastbird
 		unsigned int mVertexLocation;
 		SmartPtr<IShader> mShader;
 		SmartPtr<IInputLayout> mInputLayout;
-		SmartPtr<IDepthStencilState> mDepthDisabledState;
-		SmartPtr<IDepthStencilState> mDepthEnabledState;
-		SmartPtr<IBlendState> mBlendState;
-		SmartPtr<IRasterizerState> mRasterizerWithScissor;
-		SmartPtr<IRasterizerState> mRasterizerWithoutScissor;
 		SmartPtr<IMaterial> mTextureMaterial;
 
 		bool mInitialized;

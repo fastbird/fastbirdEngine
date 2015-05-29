@@ -7,8 +7,6 @@
 namespace fastbird
 {
 
-const float StaticText::LEFT_GAP = 0.001f;
-
 StaticText::StaticText()
 	: WinBase()
 	, mCursorPos(0)
@@ -18,7 +16,6 @@ StaticText::StaticText()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
-	mUIObject->SetNoDrawBackground(true);
 }
 
 StaticText::~StaticText()
@@ -30,17 +27,7 @@ void StaticText::GatherVisit(std::vector<IUIObject*>& v)
 	if (!mVisibility.IsVisible())
 		return;
 	v.push_back(mUIObject);	
+	__super::GatherVisit(v);
 }
 
-void StaticText::OnPosChanged()
-{
-	WinBase::OnPosChanged();
-	AlignText();
-}
-
-void StaticText::OnSizeChanged()
-{
-	WinBase::OnSizeChanged();
-	AlignText();
-}
 }

@@ -33,6 +33,10 @@ namespace fastbird
 
 		int mRayGroup;
 
+		static unsigned NextInternalColShapeId;
+		VectorMap<unsigned, btCollisionShape*> mInternalShapes;
+
+
 	public:
 		Physics::Physics();
 		Physics::~Physics();
@@ -69,6 +73,8 @@ namespace fastbird
 		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except);
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b);
 
+		virtual unsigned CreateBTSphereShape(float radius);
+		virtual void DeleteBTShape(unsigned id);
 
 		//-------------------------------------------------------------------
 		// collision shape manager

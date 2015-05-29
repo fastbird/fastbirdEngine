@@ -17,7 +17,7 @@ namespace fastbird
 			Key(const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade)
 				:mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
 			{
-				strcpy(mTexturePath, texturePath);
+				strcpy_s(mTexturePath, texturePath);
 			}
 
 			bool operator==(const Key& other) const

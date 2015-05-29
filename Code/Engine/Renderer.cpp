@@ -4,7 +4,7 @@
 #include <Engine/Material.h>
 #include <Engine/DebugHud.h>
 #include <Engine/GeometryRenderer.h>
-#include <Engine/RenderToTexture.h>
+#include <Engine/RenderTarget.h>
 #include <Engine/ILight.h>
 #include <Engine/SkySphere.h>
 #include <Engine/IConsole.h>
@@ -13,6 +13,10 @@
 #include <Engine/VolumetricCloud.h>
 #include <Engine/CloudManager.h>
 #include <Engine/PointLightMan.h>
+#include <Engine/RenderPipeline.h>
+#include <Engine/UIObject.h>
+#include <Engine/ParticleManager.h>
+#include <Engine/IRenderListener.h>
 #include <CommonLib/Unicode.h>
 
 namespace fastbird
@@ -23,29 +27,14 @@ namespace fastbird
 //----------------------------------------------------------------------------
 	Renderer::Renderer()
 		: DEFAULT_DYN_VERTEX_COUNTS(100)
-		, mWidth(0)
-		, mHeight(0)
-		, mCropWidth(0)
-		, mCropHeight(0)
-		, mClearColor(0.0f, 0.0f, 0.0f)
-		, mDepthClear(1.f)
-		, mStencilClear(0)
+		, mCurRTSize(100, 100)
+		, mCurProcessingScene(0)
 		, mCamera(0)
-		, mDepthStencilCreated(false)
 		, mForcedWireframe(false)
-		, mLuminanceIndex(-1)
-		, mGaussianDistCalculated(false)
-		, mGaussianDistGlowCalculated(false)
 		, mNextEnvUpdateSkySphere(0)
 		, mLockBlendState(false)
 		, mLockDepthStencil(false)
-		, mCloudRendering(false)
 		, mCameraBackup(0)
-		, mGaussianDownScale2x2Calculated(false)
-		, m_fChromaticAberration(0.5f)
-		, m_fStarInclination(HALF_PI)
-		, mCurRTSize(100, 100)
-		, mGlowSet(false)
 		, mPointLightMan(0)
 		, mRefreshPointLight(true)
 		, mLuminanceOnCpu(false)
@@ -53,6 +42,7 @@ namespace fastbird
 		, mLuminance(0.5f)
 		, mUseFilmicToneMapping(true)
 		, mFadeAlpha(0.0f)
+		, m3DUIEnabled(true)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -62,9 +52,6 @@ namespace fastbird
 	{
 		mDefaultSamplers[i] = 0;
 	}
-	
-	StarDef::InitializeStatic();
-	mStarDef.Initialize(STLT_VERTICAL);	
 
 	float y = 0.0f;
 	for (int i = 0; i < MaxDebugRenderTargets; i++)
@@ -86,21 +73,23 @@ Renderer::~Renderer()
 // called from inherited classes.
 void Renderer::Deinit()
 {
+	RenderTarget::ReleaseStarDef();
+	for (auto it : mUI3DObjectsRTs)
+	{
+		gFBEnv->pRenderer->DeleteRenderTarget(it.second);
+	}
+
+	for (auto it : mUI3DRenderObjs)
+	{
+		FB_DELETE(it.second);
+	}
+
 	mMergeTexture2 = 0;
 	mStarGlareShader = 0;
-	mStarSourceTex = 0;
-	for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
-	{
-		mStarTextures[i] = 0;
-	}
+	mSwapChainRenderTargets.clear();
 	mBlur5x5 = 0;
-	mTempDepthBuffer = 0;
-	mTempDepthBufferHalf = 0;
-	mBigSilouetteBuffer = 0;
-	mSmallSilouetteBuffer = 0;
 	mSilouetteShader = 0;
 	mShadowMapShader = 0;
-	mShadowMap = 0;
 	mCloudDepthWriteShader = 0;
 	mNoiseMap = 0;
 	mRedAlphaMaskAddMinusBlend = 0;
@@ -114,6 +103,7 @@ void Renderer::Deinit()
 	mRSCloudNear = 0;
 	mCloudVolumeDepth = 0;
 	mFrontFaceCullRS = 0;
+	mOneBiasedDepthRS = 0;
 	FB_SAFE_DEL(mCloudManager);
 	// All release operation should be done here.
 	SkySphere::DeleteSharedEnvRT();
@@ -129,8 +119,6 @@ void Renderer::Deinit()
 
 	mDirectionalLight[0] = 0;
 	mDirectionalLight[1] = 0;
-	mDirectionalLightOverride[0] = 0;
-	mDirectionalLightOverride[1] = 0;
 	mDebugHud = 0;
 	mGeomRenderer = 0;
 	mFont = 0;
@@ -157,7 +145,7 @@ void Renderer::Deinit()
 	mNoDepthWriteLessEqualState = 0;
 	mLessEqualDepthState = 0;
 
-	mRenderToTextures.clear();
+	mRenderTargets.clear();
 	mInputLayouts.clear();
 
 	for (int i = 0; i < DEFAULT_INPUTS::COUNT; i++)
@@ -165,18 +153,15 @@ void Renderer::Deinit()
 		mDynVBs[i] = 0;
 	}
 
-	mHDRTarget = 0;
-
-	for (auto rt : mRenderToTexturePool)
+	for (auto rt : mRenderTargetPool)
 	{
 		FB_DELETE(rt);
 	}
-	mRenderToTexturePool.clear();
+	mRenderTargetPool.clear();	
 }
 
 void Renderer::CleanDepthWriteResources()
 {
-	mMinBlendState = 0;
 	mDepthWriteShader = 0;
 	mDepthTarget = 0;
 	mPositionInputLayout = 0;
@@ -184,41 +169,24 @@ void Renderer::CleanDepthWriteResources()
 
 void Renderer::CleanGlowResources()
 {
-	mGlowTarget = 0;
-	mGlowTexture[0] = 0;
-	mGlowTexture[1] = 0;
 	mGlowPS = 0;
 }
 
 void Renderer::CleanHDRResources()
 {
-	mHDRTarget = 0;
 	for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES_NEW; ++i)
 		mToneMap[i] = 0;
 	for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; ++i)
 		mLuminanceMap[i] = 0;
-	mLuminanceIndex = -1;
-	mDownScale2x2LumPS = 0;
-	mDownScale3x3PS = 0;
 	mToneMappingPS = 0;
-	mLuminanceAvgPS = 0;
-	mBrightPassTexture = 0;
-	for (int i = 0; i < FB_NUM_BLOOM_TEXTURES; ++i)
-	{
-		mBloomTexture[i] = 0;
-	}
 	mBrightPassPS = 0;
 	mBloomPS = 0;
-	mBloomSourceTex = 0;
 }
 
 void Renderer::CleanGodRayResources()
 {
 	gFBEnv->mGodRayInScreen = false;
-	for (int i = 0; i < 2; ++i)
-		mGodRayTarget[i] = 0;
 	mGodRayPS = 0;
-	mNoMSDepthStencil = 0;
 	mOccPrePassGSShader = 0;
 	mOccPrePassShader = 0;
 	mOccPrePassShader = 0;
@@ -227,25 +195,6 @@ void Renderer::CleanGodRayResources()
 //----------------------------------------------------------------------------
 bool Renderer::OnPrepared()
 {
-	mCurRTSize.x = GetWidth();
-	mCurRTSize.y = GetHeight();
-
-	// Light
-	for (int i = 0; i < 2; ++i)
-	{
-		mDirectionalLight[i] = ILight::CreateLight(ILight::LIGHT_TYPE_DIRECTIONAL);
-		mDirectionalLight[i]->SetIntensity(1.0f);
-	}
-
-	mDirectionalLight[0]->SetPosition(Vec3(-3, 1, 1));
-	mDirectionalLight[0]->SetDiffuse(Vec3(1, 1, 1));
-	mDirectionalLight[0]->SetSpecular(Vec3(1, 1, 1));
-
-	mDirectionalLight[1]->SetPosition(Vec3(3, 1, -1));
-	mDirectionalLight[1]->SetDiffuse(Vec3(0.8f, 0.4f, 0.1f));
-	mDirectionalLight[1]->SetSpecular(Vec3(0, 0, 0));
-
-
 	mMaterials[DEFAULT_MATERIALS::QUAD] = fastbird::IMaterial::CreateMaterial(
 		"es/materials/quad.material");
 	mMaterials[DEFAULT_MATERIALS::QUAD_TEXTURE] = fastbird::IMaterial::CreateMaterial(
@@ -424,7 +373,10 @@ bool Renderer::OnPrepared()
 	}
 	mFont->Init(fontName.c_str());
 	if (mFont)
-		mFont->SetRenderTargetSize(mCurRTSize);
+	{
+
+		mFont->SetRenderTargetSize(GetMainRTSize());
+	}
 	mFont->SetTextEncoding(IFont::UTF16);
 
 	mDebugHud = FB_NEW(DebugHud);
@@ -432,8 +384,6 @@ bool Renderer::OnPrepared()
 
 	if (gFBEnv->pConsole)
 		gFBEnv->pConsole->Init();
-
-	UpdateRareConstantsBuffer();
 
 	mDefaultRasterizerState = CreateRasterizerState(RASTERIZER_DESC());
 	mDefaultBlendState = CreateBlendState(BLEND_DESC());
@@ -506,38 +456,59 @@ bool Renderer::OnPrepared()
 	
 	SetSamplerState(SAMPLERS::POINT, BINDING_SHADER_VS, SAMPLERS::POINT);
 
-	mTempDepthBufferHalf = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
-		BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
-	mTempDepthBuffer = CreateTexture(0, mWidth, mHeight, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
-		BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
-
 	mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
 	mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
 	mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
+	UpdateRareConstantsBuffer();
+
 
 	return true;
 }
 
-//----------------------------------------------------------------------------
-void Renderer::ProcessRenderToTexture()
+void Renderer::OnSwapchainCreated(HWND_ID id)
 {
-	for (auto pRT : mRenderToTextures)
+	auto rt = mSwapChainRenderTargets[id];
+	auto scene = gFBEnv->pEngine->CreateScene();
+	rt->SetScene(scene);
+
+	if (id==1) // main
+	{
+		rt->Bind();
+		OnPrepared();
+	}
+}
+
+//----------------------------------------------------------------------------
+void Renderer::ProcessRenderTarget()
+{
+	for (auto pRT : mRenderTargets)
 	{
 		pRT->Render();
 	}
 }
 
 //----------------------------------------------------------------------------
-void Renderer::SetClearColor(float r, float g, float b, float a/*=1.f*/)
+void Renderer::SetClearColor(HWND_ID id, const Color& color)
 {
-	mClearColor.SetColor(r, g, b, a);
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the render target(%u).", id));
+		return;
+	}
+	it->second->SetClearColor(color);
 }
 
 //----------------------------------------------------------------------------
-void Renderer::SetClearDepthStencil(float z, UINT8 stencil)
+void Renderer::SetClearDepthStencil(HWND_ID id, float z, UINT8 stencil)
 {
-	mDepthClear = z;
-	mStencilClear = stencil;
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the render target(%u).", id));
+		return;
+	}
+	it->second->SetClearDepthStencil(z, stencil);
 }
 
 //----------------------------------------------------------------------------
@@ -547,14 +518,29 @@ void Renderer::SetCamera(ICamera* pCamera)
 	if (prev)
 		prev->SetCurrent(false);
 	mCamera = pCamera;
-	mCamera->SetCurrent(true);
-	if (prev !=0 && prev != mCamera)
-		UpdateRareConstantsBuffer();
+	if (mCamera){
+		mCamera->SetCurrent(true);
+		UpdateCameraConstantsBuffer();
+	}
 }
 
+//----------------------------------------------------------------------------
 ICamera* Renderer::GetCamera() const
 {
 	return mCamera;
+}
+
+//----------------------------------------------------------------------------
+ICamera* Renderer::GetMainCamera() const
+{
+	auto rt = GetMainRenderTarget();
+	if (rt)
+	{
+		return rt->GetCamera();
+	}
+	Error(FB_DEFAULT_DEBUG_ARG, "No main camera!");
+	assert(0);
+	return 0;
 }
 
 //----------------------------------------------------------------------------
@@ -571,27 +557,85 @@ const RENDERER_FRAME_PROFILER& Renderer::GetFrameProfiler() const
 }
 
 //----------------------------------------------------------------------------
-Vec2I Renderer::ToSreenPos(const Vec3& ndcPos) const
+Vec2I Renderer::ToSreenPos(HWND_ID id, const Vec3& ndcPos) const
 {
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Window id %u is not found.", id));
+		return Vec2I(0, 0);
+	}
+	const auto& size = it->second->GetSize();
 	Vec2I ret;
-	ret.x = (int)(((float)mWidth*.5f) * ndcPos.x + mWidth*.5f);
-	ret.y = (int)((-(float)mHeight*.5f) * ndcPos.y + mHeight*.5f);
+	ret.x = (int)(((float)size.x*.5f) * ndcPos.x + size.x*.5f);
+	ret.y = (int)((-(float)size.y*.5f) * ndcPos.y + size.y*.5f);
 	return ret;
 }
 
-Vec2 Renderer::ToNdcPos(const Vec2I& screenPos) const
+Vec2 Renderer::ToNdcPos(HWND_ID id, const Vec2I& screenPos) const
 {
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Window id %u is not found.", id));
+		return Vec2(0, 0);
+	}
+	const auto& size = it->second->GetSize();
 	Vec2 ret;
-	ret.x = (float)screenPos.x / (float)mWidth * 2.0f - 1.0f;
-	ret.y = -((float)screenPos.y / (float)mHeight * 2.0f - 1.0f);
+	ret.x = (float)screenPos.x / (float)size.x * 2.0f - 1.0f;
+	ret.y = -((float)screenPos.y / (float)size.y * 2.0f - 1.0f);
 	return ret;
+}
+
+unsigned Renderer::GetWidth(HWND_ID id) const
+{
+	auto it = mWidth.Find(id);
+	if (it != mWidth.end())
+	{
+		return it->second;
+	}
+	Error(FB_DEFAULT_DEBUG_ARG, "Window width not found!");
+	return 100;
+}
+unsigned Renderer::GetHeight(HWND_ID id) const
+{
+	auto it = mHeight.Find(id);
+	if (it != mHeight.end())
+	{
+		return it->second;
+	}
+	Error(FB_DEFAULT_DEBUG_ARG, "Window height not found!");
+	return 100;
+}
+unsigned Renderer::GetWidth(HWND hWnd) const
+{
+	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+	return GetWidth(id);
+}
+unsigned Renderer::GetHeight(HWND hWnd) const
+{
+	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+	return GetHeight(id);
+}
+
+unsigned Renderer::GetCropWidth(HWND hWnd) const
+{
+	auto width = GetWidth(hWnd);
+	return CropSize8(width);
+}
+
+unsigned Renderer::GetCropHeight(HWND hWnd) const
+{
+	auto height = GetHeight(hWnd);
+	return CropSize8(height);
 }
 
 //----------------------------------------------------------------------------
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 	const Color& color, float size)
 {
-	mDebugHud->DrawTextForDuration(secs, pos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->DrawTextForDuration(secs, pos, text, color, size);
 }
 
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
@@ -602,7 +646,8 @@ void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* tex
 
 void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->DrawText(pos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->DrawText(pos, text, color, size);
 }
 
 void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color, float size)
@@ -612,7 +657,8 @@ void Renderer::DrawText(const Vec2I& pos, const char* text, const Color& color, 
 
 void Renderer::Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size)
 {
-	mDebugHud->Draw3DText(worldpos, text, color, size);
+	if (mDebugHud)
+		mDebugHud->Draw3DText(worldpos, text, color, size);
 }
 
 void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size)
@@ -623,55 +669,76 @@ void Renderer::Draw3DText(const Vec3& worldpos, const char* text, const Color& c
 void Renderer::DrawLine(const Vec3& start, const Vec3& end, 
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLine(start, end, color0, color1);
+	if (mDebugHud)
+		mDebugHud->DrawLine(start, end, color0, color1);
 }
 
 void Renderer::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLineBeforeAlphaPass(start, end, color0, color1);
+	if (mDebugHud)
+		mDebugHud->DrawLineBeforeAlphaPass(start, end, color0, color1);
 }
 
 void Renderer::DrawLine(const Vec2I& start, const Vec2I& end, 
 	const Color& color0, const Color& color1)
 {
-	mDebugHud->DrawLine(start, end, color0, color0);
+	if (mDebugHud)
+		mDebugHud->DrawLine(start, end, color0, color1);
 }
 
 void Renderer::DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
 	const char* texture, bool textureFlow)
 {
-	mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
 }
 
 
 void Renderer::DrawSphere(const Vec3& pos, float radius, const Color& color)
 {
-	mGeomRenderer->DrawSphere(pos, radius, color);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawSphere(pos, radius, color);
 }
 void Renderer::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha)
 {
-	mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
 }
 void Renderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha)
 {
-	mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
+	if (mGeomRenderer)
+		mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
 }
 
 void Renderer::RenderGeoms()
 {
+	if (!mGeomRenderer)
+		return;
 	mGeomRenderer->PreRender();
 	mGeomRenderer->Render();
 }
 
 void Renderer::RenderDebugHud()
 {
+	if (!mDebugHud)
+		return;
 	D3DEventMarker devent("RenderDebugHud");
-	bool backup = GetWireframe();
-	SetWireframe(false);
+	for (auto l : mRenderListeners)
+	{
+		l->BeforeDebugHudRendered(gFBEnv->pEngine->GetMainWndHandleId());
+	}
+
+	//bool backup = GetWireframe();
+	//SetWireframe(false);
+	RestoreRenderStates();
 	mDebugHud->PreRender();
 	mDebugHud->Render();
-	SetWireframe(backup);
+	//SetWireframe(backup);
+	for (auto l : mRenderListeners)
+	{
+		l->AfterDebugHudRendered(gFBEnv->pEngine->GetMainWndHandleId());
+	}
 }
 
 //-------------------------------------------------------------------------
@@ -680,8 +747,23 @@ inline IFont* Renderer::GetFont() const
 	return mFont;
 }
 
+void Renderer::SetCurRenderTarget(IRenderTarget* renderTarget)
+{
+	mCurRenderTarget = renderTarget;
+}
+
+bool Renderer::IsMainRenderTarget() const
+{
+	return GetMainRenderTarget() == mCurRenderTarget;
+}
+
+IRenderTarget* Renderer::GetCurRendrTarget() const
+{
+	return mCurRenderTarget;
+}
+
 void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
-	ITexture* pDepthStencil, size_t dsIndex)
+	ITexture* pDepthStencil, size_t dsViewIndex)
 {
 	static float time = 0;
 	static std::set<ITexture*> usedRenderTargets;
@@ -703,24 +785,12 @@ void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int
 	}
 	else
 	{
-		mCurRTSize = Vec2I(mWidth, mHeight);
+		mCurRTSize = GetMainRTSize();
 	}
 	if (mFont)
 		mFont->SetRenderTargetSize(mCurRTSize);
-}
 
-void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num)
-{
-	if (pRenderTargets && num>0)
-	{
-		mCurRTSize = pRenderTargets[0]->GetSize();
-	}
-	else
-	{
-		mCurRTSize = Vec2I(mWidth, mHeight);
-	}
-	if (mFont)
-		mFont->SetRenderTargetSize(mCurRTSize);
+	UpdateRenderTargetConstantsBuffer();
 }
 
 const Vec2I& Renderer::GetRenderTargetSize() const
@@ -728,13 +798,67 @@ const Vec2I& Renderer::GetRenderTargetSize() const
 	return mCurRTSize;
 }
 
-void Renderer::RestoreRenderTarget()
+IRenderTarget* Renderer::GetMainRenderTarget() const
 {
-	mCurRTSize = Vec2I(mWidth, mHeight);
-	if (mFont)
-		mFont->SetRenderTargetSize(mCurRTSize);
+	if (mSwapChainRenderTargets.empty())
+		return 0;
+
+	auto it = mSwapChainRenderTargets.begin();
+	assert(it->first == 1 && "Need to investigate");
+	return it->second;
 }
 
+IRenderTarget* Renderer::GetRenderTarget(HWND_ID id) const
+{
+	auto it = mSwapChainRenderTargets.Find(id);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("No render target is found for the hwnd id %u", id));
+		return 0;
+	}
+	return it->second;
+}
+
+IScene* Renderer::GetMainScene() const
+{
+	auto rt = GetMainRenderTarget();
+	if (rt)
+	{
+		return rt->GetScene();
+	}
+	if (!gFBEnv->mExiting)
+		Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
+	return 0;
+}
+
+IScene* Renderer::GetScene() const
+{
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
+	auto rt = GetRenderTarget(hwndId);
+	if (rt)
+	{
+		return rt->GetScene();
+	}
+
+	// fall back
+	if (mCurRenderTarget)
+		return mCurRenderTarget->GetScene();
+
+	assert(0);
+	return 0;
+}
+
+const Vec2I& Renderer::GetMainRTSize() const
+{
+	auto rt = GetMainRenderTarget();
+	if (rt)
+	{
+		return rt->GetSize();
+	}
+	if (!gFBEnv->mExiting)
+		Error(FB_DEFAULT_DEBUG_ARG, "No main render target!");
+	return Vec2I::ZERO;
+}
 
 const INPUT_ELEMENT_DESCS& Renderer::GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e)
@@ -989,12 +1113,12 @@ IMaterial* Renderer::GetMissingMaterial()
 
 void Renderer::SetDirectionalLight(ILight* pLight, int idx)
 {
-	mDirectionalLightOverride[idx] = pLight;
+	mDirectionalLight[idx] = pLight;
 }
 
 ILight* Renderer::GetDirectionalLight(int idx) const
 {
-	return mDirectionalLightOverride[idx] ? mDirectionalLightOverride[idx] : mDirectionalLight[idx];
+	return mDirectionalLight[idx];
 }
 
 void Renderer::SetEnvironmentTexture(ITexture* pTexture)
@@ -1030,21 +1154,36 @@ void Renderer::SetEnvironmentTextureOverride(ITexture* texture)
 }
 
 //---------------------------------------------------------------------------
+void Renderer::RestoreRenderStates()
+{
+	RestoreBlendState();
+	RestoreRasterizerState();
+	RestoreDepthStencilState();
+}
+
+//---------------------------------------------------------------------------
 void Renderer::RestoreRasterizerState()
 {
-	mDefaultRasterizerState->Bind();
+	if (mDefaultRasterizerState)
+		mDefaultRasterizerState->Bind();
 }
 
 //---------------------------------------------------------------------------
 void Renderer::RestoreBlendState()
 {
-	mDefaultBlendState->Bind();
+	if (mLockBlendState)
+		return;
+	if (mDefaultBlendState)
+		mDefaultBlendState->Bind();
 }
 
 //---------------------------------------------------------------------------
 void Renderer::RestoreDepthStencilState()
 {
-	mDefaultDepthStencilState->Bind(0);
+	if (mLockDepthStencil)
+		return;
+	if (mDefaultDepthStencilState)
+		mDefaultDepthStencilState->Bind(0);
 }
 
 //---------------------------------------------------------------------------
@@ -1247,6 +1386,15 @@ void Renderer::SetBlueMask()
 	mBlueMaskBlend->Bind();
 }
 
+void Renderer::SetNoColorWriteState(){
+	if (!mNoColorWriteBlend){
+		BLEND_DESC bdesc;
+		bdesc.RenderTarget[0].RenderTargetWriteMask = 0;
+		mNoColorWriteBlend = gFBEnv->pRenderer->CreateBlendState(bdesc);
+	}
+	mNoColorWriteBlend->Bind();
+}
+
 //---------------------------------------------------------------------------
 void Renderer::SetNoDepthWriteLessEqual()
 {
@@ -1297,739 +1445,20 @@ void Renderer::SetFrontFaceCullRS()
 	mFrontFaceCullRS->Bind();
 }
 
+void Renderer::SetOneBiasedDepthRS(){
+	if (!mOneBiasedDepthRS){
+		RASTERIZER_DESC rdesc;
+		rdesc.DepthBias = 1;
+		mOneBiasedDepthRS = CreateRasterizerState(rdesc);
+	}
+	mOneBiasedDepthRS->Bind();
+}
+
 //---------------------------------------------------------------------------
 void Renderer::SetSamplerState(SAMPLERS::Enum s, BINDING_SHADER shader, int slot)
 {
 	assert(s >= SAMPLERS::POINT && s < SAMPLERS::NUM);
 	mDefaultSamplers[s]->Bind(shader, slot);
-}
-
-//---------------------------------------------------------------------------
-void Renderer::SetHDRTarget()
-{
-	if (!mHDRTarget)
-	{
-		mHDRTarget = CreateTexture(0, mWidth, mHeight, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, 
-			TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		if (!mHDRTarget)
-		{
-			Error("Cannot create HDR RenderTarget.");
-			return;
-		}
-		/*SAMPLER_DESC desc;
-		mHDRTarget->SetSamplerDesc(desc);*/
-		FB_SET_DEVICE_DEBUG_NAME(mHDRTarget, "HDRTargetTexture");
-	}
-
-	ITexture* rts[] = { mHDRTarget };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1);
-}
-void Renderer::MeasureLuminanceOfHDRTargetNew()
-{
-	mDefaultBlendState->Bind();
-	mNoDepthStencilState->Bind(0);
-	if (mToneMap[0] == 0)
-	{
-		int nSampleLen = 1;
-		for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES_NEW; i++)
-		{
-			// 1, 3, 9, 27, 81
-			mToneMap[i] = CreateTexture(0, nSampleLen, nSampleLen, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-			char buff[255];
-			sprintf_s(buff, "ToneMap(%d)", nSampleLen);
-			FB_SET_DEVICE_DEBUG_NAME(mToneMap[i], buff);
-			nSampleLen *= 3;
-		}
-		for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; i++)
-		{
-			mLuminanceMap[i] = CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		}
-		ITexture* textures[] = { mLuminanceMap[0], mLuminanceMap[1] };
-		size_t index[] = { 0, 0 };
-		SetRenderTarget(textures, index, 2, 0, 0);
-		Clear();
-
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		/*mDownScale2x2LumPS = CreateShader("es/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mDownScale3x3PS = CreateShader("es/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
-		mLuminanceAvgPS = CreateShader("es/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
-
-		mSampleLumInitialShader = CreateShader("es/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mSampleLumIterativeShader = CreateShader("es/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
-		mSampleLumFinalShader = CreateShader("es/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
-		mCalcAdaptedLumShader = CreateShader("es/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
-	}
-
-	D3DEventMarker mark("Luminance");
-	assert(mHDRTarget);
-	int dwCurTexture = FB_NUM_TONEMAP_TEXTURES_NEW - 1;
-	ITexture* renderTarget = mToneMap[dwCurTexture];
-	ITexture* rts[] = { renderTarget };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-	SetTexture(mHDRTarget, BINDING_SHADER_PS, 0);
-	bool msaa = GetMultiSampleCount() > 1;
-	if (msaa)
-	{
-		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-		if (pDest)
-		{
-			pDest->x = (float)mHDRTarget->GetWidth();
-			pDest->y = (float)mHDRTarget->GetHeight();
-			UnmapMaterialParameterBuffer();
-		}
-	}
-
-	const Vec2I& resol = renderTarget->GetSize();
-	Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	DrawFullscreenQuad(mSampleLumInitialShader, false);
-	--dwCurTexture;
-
-	while (dwCurTexture>0)
-	{
-		ITexture* src = mToneMap[dwCurTexture + 1];
-		ITexture* renderTarget = mToneMap[dwCurTexture];
-
-		ITexture* rts[] = { renderTarget };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(src, BINDING_SHADER_PS, 0);
-
-		const Vec2I& resol = renderTarget->GetSize();
-		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1);
-		DrawFullscreenQuad(mSampleLumIterativeShader, false);
-		--dwCurTexture;
-	}
-
-	// Perform the final pass of the average luminance calculation.
-	{
-		ITexture* src = mToneMap[dwCurTexture + 1];
-		ITexture* renderTarget = mToneMap[dwCurTexture];
-		ITexture* rts[] = { renderTarget };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(src, BINDING_SHADER_PS, 0);
-		const Vec2I& resol = renderTarget->GetSize();
-		{Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1); }
-
-		DrawFullscreenQuad(mSampleLumFinalShader, false);
-	}
-
-	// AdaptedLum
-	{
-		std::swap(mLuminanceMap[0], mLuminanceMap[1]);
-		ITexture* rts[] = { mLuminanceMap[0] };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(mLuminanceMap[1], BINDING_SHADER_PS, 0);
-		SetTexture(mToneMap[0], BINDING_SHADER_PS, 1);
-
-		Viewport vp = { 0, 0, (float)mLuminanceMap[0]->GetWidth(), (float)mLuminanceMap[0]->GetHeight(), 0.f, 1.f };
-		SetViewports(&vp, 1);
-		DrawFullscreenQuad(mCalcAdaptedLumShader, false);
-	}
-}
-
-void Renderer::MeasureLuminanceOfHDRTarget()
-{
-
-	mDefaultBlendState->Bind();
-	mNoDepthStencilState->Bind(0);
-	if (mToneMap[0] == 0)
-	{
-		int nSampleLen = 1;
-		for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES; i++)
-		{
-			// 1, 4, 16, 64
-			int iSampleLen = 1 << (2 * i);
-
-			mToneMap[i] = CreateTexture(0, iSampleLen, iSampleLen, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-			char buff[255];
-			sprintf_s(buff, "ToneMap(%d)", nSampleLen);
-			FB_SET_DEVICE_DEBUG_NAME(mToneMap[i], buff);
-		}
-		for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; i++)
-		{
-			mLuminanceMap[i] = CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		}
-		ITexture* textures[] = { mLuminanceMap[0], mLuminanceMap[1] };
-		size_t index[] = { 0, 0 };
-		SetRenderTarget(textures, index, 2, 0, 0);
-		Clear();
-		
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		/*mDownScale2x2LumPS = CreateShader("es/shaders/downscale2x2_lum.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mDownScale3x3PS = CreateShader("es/shaders/downscale3x3.hlsl", BINDING_SHADER_PS);
-		mLuminanceAvgPS = CreateShader("es/shaders/luminanceavgps.hlsl", BINDING_SHADER_PS);*/
-
-		mSampleLumInitialShader = CreateShader("es/shaders/SampleLumInitial.hlsl", BINDING_SHADER_PS, shaderDefines);
-		mSampleLumIterativeShader = CreateShader("es/shaders/SampleLumIterative.hlsl", BINDING_SHADER_PS);
-		mSampleLumFinalShader = CreateShader("es/shaders/SampleLumFinal.hlsl", BINDING_SHADER_PS);
-		mCalcAdaptedLumShader = CreateShader("es/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
-	}
-
-	D3DEventMarker mark("Luminance");
-	assert(mHDRTarget);
-	DWORD dwCurTexture = FB_NUM_TONEMAP_TEXTURES - 1;
-	ITexture* renderTarget = mToneMap[dwCurTexture];
-	ITexture* rts[] = { renderTarget };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-	SetTexture(mHDRTarget, BINDING_SHADER_PS, 0);
-	bool msaa = GetMultiSampleCount() > 1;
-	if (msaa)
-	{
-		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-		if (pDest)
-		{
-			pDest->x = (float)mHDRTarget->GetWidth();
-			pDest->y = (float)mHDRTarget->GetHeight();
-			UnmapMaterialParameterBuffer();
-		}
-	}
-	
-	const Vec2I& resol = renderTarget->GetSize();
-	Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	DrawFullscreenQuad(mSampleLumInitialShader, false);
-	--dwCurTexture;
-
-	while (dwCurTexture>0)
-	{
-		ITexture* src = mToneMap[dwCurTexture+1];
-		ITexture* renderTarget = mToneMap[dwCurTexture];
-
-		ITexture* rts[] = { renderTarget };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(src, BINDING_SHADER_PS, 0);
-
-		const Vec2I& resol = renderTarget->GetSize();
-		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1);
-		DrawFullscreenQuad(mSampleLumIterativeShader, false);
-		--dwCurTexture;
-	}
-
-	// Perform the final pass of the average luminance calculation.
-	{
-		ITexture* src = mToneMap[dwCurTexture + 1];
-		ITexture* renderTarget = mToneMap[dwCurTexture];
-		ITexture* rts[] = { renderTarget };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(src, BINDING_SHADER_PS, 0);
-		const Vec2I& resol = renderTarget->GetSize();
-		{Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1); }
-
-		DrawFullscreenQuad(mSampleLumFinalShader, false);
-	}
-	
-
-	// AdaptedLum
-	{
-		std::swap(mLuminanceMap[0], mLuminanceMap[1]);
-		ITexture* rts[] = { mLuminanceMap[0] };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-		SetTexture(mLuminanceMap[1], BINDING_SHADER_PS, 0);
-		SetTexture(mToneMap[0], BINDING_SHADER_PS, 1);
-		
-		Viewport vp = { 0, 0, (float)mLuminanceMap[0]->GetWidth(), (float)mLuminanceMap[0]->GetHeight(), 0.f, 1.f };
-		SetViewports(&vp, 1);
-		DrawFullscreenQuad(mCalcAdaptedLumShader, false);
-	}
-
-}
-
-//---------------------------------------------------------------------------
-void Renderer::BrightPass()
-{
-	if (!mBrightPassTexture)
-	{
-
-		mBrightPassTexture = CreateTexture(0, mCropWidth / 4, mCropHeight / 4, PIXEL_FORMAT_R8G8B8A8_UNORM,
-			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		FB_SET_DEVICE_DEBUG_NAME(mBrightPassTexture, "BrightPass");
-
-		const char* bpPath = "es/shaders/brightpassps.hlsl";
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		mBrightPassPS = CreateShader(bpPath, BINDING_SHADER_PS, shaderDefines);
-	}
-
-	const Vec2I& resol = mBrightPassTexture->GetSize();
-	{
-		D3DEventMarker mark("Bloom - BrightPass");
-		// brightpass
-		ITexture* rts[] = { mBrightPassTexture };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); // no depth buffer;
-
-		ITexture* rvs[] = { mHDRTarget, mLuminanceMap[0] };
-		SetTextures(rvs, 2, BINDING_SHADER_PS, 0);
-
-		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1);
-
-		if (GetMultiSampleCount() != 1)
-		{
-			Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-			if (pDest)
-			{
-				pDest->x = (float)mHDRTarget->GetWidth();
-				pDest->y = (float)mHDRTarget->GetHeight();
-				UnmapMaterialParameterBuffer();
-			}
-		}
-
-		DrawFullscreenQuad(mBrightPassPS, false);
-	}
-}
-
-//---------------------------------------------------------------------------
-void Renderer::BrightPassToStarSource()
-{
-	if (!mStarSourceTex)
-	{
-		mStarSourceTex = CreateTexture(0, mCropWidth / 4, mCropHeight / 4, PIXEL_FORMAT_R8G8B8A8_UNORM,
-			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-
-		IMaterial::SHADER_DEFINES shaderDefines;
-		if (GetMultiSampleCount() != 1)
-		{
-			shaderDefines.push_back(IMaterial::ShaderDefine());
-			shaderDefines.back().name = "_MULTI_SAMPLE";
-			shaderDefines.back().value = "1";
-		}
-		mBlur5x5 = CreateShader("es/shaders/gaussblur5x5.hlsl", BINDING_SHADER_PS, shaderDefines);
-	}
-
-	Vec4* pOffsets = 0;
-	Vec4* pWeights = 0;
-	GetSampleOffsets_GaussBlur5x5(mGlowTarget->GetWidth(), mGlowTarget->GetHeight(),
-		&pOffsets, &pWeights, 1.0f);
-	assert(pOffsets && pWeights);
-
-	BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-	memcpy(pData->gSampleOffsets, pOffsets, sizeof(Vec4)* 13);
-	memcpy(pData->gSampleWeights, pWeights, sizeof(Vec4)* 13);
-	UnmapBigBuffer();
-
-	ITexture* rts[] = { mStarSourceTex };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0);
-	Viewport vp = { 0, 0, (float)mStarSourceTex->GetWidth(), (float)mStarSourceTex->GetHeight(), 0.f, 1.f };
-	SetViewports(&vp, 1);
-	Clear();
-	SetTexture(mGlowTarget, BINDING_SHADER_PS, 0);
-	if (GetMultiSampleCount() != 1)
-	{
-		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-		if (pDest)
-		{
-			pDest->x = (float)mGlowTarget->GetWidth();
-			pDest->y = (float)mGlowTarget->GetHeight();
-			UnmapMaterialParameterBuffer();
-		}
-	}
-
-	DrawFullscreenQuad(mBlur5x5, false);
-}
-
-//---------------------------------------------------------------------------
-void Renderer::StarSourceToBloomSource()
-{
-	D3DEventMarker mark("StarSourceToBloomSource");
-	if (!mBloomSourceTex)
-	{
-		mBloomSourceTex = CreateTexture(0, mCropWidth / 8, mCropHeight / 8, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		mGaussianDownScale2x2Calculated = false;
-	}
-
-	assert(mBlur5x5);
-	Vec4* pOffsets = 0;
-	Vec4* pWeights = 0;
-	GetSampleOffsets_GaussBlur5x5(mBrightPassTexture->GetWidth(), mBrightPassTexture->GetHeight(),
-		&pOffsets, &pWeights, 1.0f);
-	assert(pOffsets && pWeights);
-
-	BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-	memcpy(pData->gSampleOffsets, pOffsets, sizeof(Vec4)* 13);
-	memcpy(pData->gSampleWeights, pWeights, sizeof(Vec4)* 13);
-	UnmapBigBuffer();
-
-	
-
-	ITexture* rts[] = { mBloomSourceTex };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0);
-	SetTexture(mBrightPassTexture, BINDING_SHADER_PS, 0);
-
-	Viewport vp = { 0, 0, (float)mBloomSourceTex->GetWidth(), (float)mBloomSourceTex->GetHeight(), 0.f, 1.f };
-	SetViewports(&vp, 1);
-
-	if (GetMultiSampleCount() != 1)
-	{
-		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-		if (pDest)
-		{
-			pDest->x = (float)mBrightPassTexture->GetWidth();
-			pDest->y = (float)mBrightPassTexture->GetHeight();
-			UnmapMaterialParameterBuffer();
-		}
-	}
-
-	DrawFullscreenQuad(mBlur5x5, false);
-}
-
-//---------------------------------------------------------------------------
-void Renderer::Bloom()
-{
-	if (!mBloomTexture[0])
-	{
-		for (int i = 0; i < FB_NUM_BLOOM_TEXTURES; i++)
-		{
-			mBloomTexture[i] = CreateTexture(0, mCropWidth / 8, mCropHeight / 8, PIXEL_FORMAT_R8G8B8A8_UNORM,
-				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-			char buff[255];
-			sprintf_s(buff, "Bloom(%d)", i);
-			FB_SET_DEVICE_DEBUG_NAME(mBloomTexture[i], buff);
-		}
-		
-		const char* blPath = "es/shaders/bloomps.hlsl";		
-		mBloomPS = CreateShader(blPath, BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-	}	
-	// blur
-	D3DEventMarker mark("Bloom - Blur");
-	assert(mBloomSourceTex);
-	ITexture* rts[] = { mBloomTexture[2] };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0);
-	Viewport vp = { 0, 0, (float)mBloomTexture[2]->GetWidth(), (float)mBloomTexture[2]->GetHeight(), 0.f, 1.f };
-	SetViewports(&vp, 1);
-
-	SetTexture(mBloomSourceTex, BINDING_SHADER_PS, 0);
-
-	Vec4* pOffsets = 0;
-	Vec4* pWeights = 0;
-	GetSampleOffsets_GaussBlur5x5(mBrightPassTexture->GetWidth(), mBrightPassTexture->GetHeight(),
-		&pOffsets, &pWeights, 1.0f);
-	assert(pOffsets && pWeights);
-
-	BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-	memcpy(pData->gSampleOffsets, pOffsets, sizeof(Vec4)* 13);
-	memcpy(pData->gSampleWeights, pWeights, sizeof(Vec4)* 13);
-	UnmapBigBuffer();
-
-	if (GetMultiSampleCount() != 1)
-	{
-		Vec4* pDest = (Vec4*)MapMaterialParameterBuffer();
-		if (pDest)
-		{
-			pDest->x = (float)mBloomSourceTex->GetWidth();
-			pDest->y = (float)mBloomSourceTex->GetHeight();
-			UnmapMaterialParameterBuffer();
-		}
-	}
-
-	DrawFullscreenQuad(mBlur5x5, false);
-
-
-
-
-	const Vec2I& resol = mBloomTexture[2]->GetSize();
-	// Horizontal Blur
-	{
-		D3DEventMarker mark("Bloom - Apply hori gaussian filter");
-		BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-		Vec4* avSampleOffsets = pData->gSampleOffsets;
-		Vec4* avSampleWeights = pData->gSampleWeights;
-		if (mGaussianDistCalculated)
-		{
-			memcpy(avSampleOffsets, mGaussianDistOffsetX, sizeof(Vec4)* 15);
-			memcpy(avSampleWeights, mGaussianDistWeightX, sizeof(Vec4)* 15);
-		}
-		else
-		{
-			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(resol.x, afSampleOffsets, mGaussianDistWeightX, 3.0f, 
-				gFBEnv->pConsole->GetEngineCommand()->r_BloomGaussianWeight);
-			for (int i = 0; i < 15; i++)
-			{
-
-				mGaussianDistOffsetX[i] = avSampleOffsets[i] = Vec4(afSampleOffsets[i], 0.0f, 0.0f, 0.0f);
-			}
-		}
-		UnmapBigBuffer();
-		ITexture* rts[] = { mBloomTexture[1] };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0);
-		SetTexture(mBloomTexture[2], BINDING_SHADER_PS, 0);
-		DrawFullscreenQuad(mBloomPS, false);
-	}
-
-	// Vertical Blur
-	{
-		D3DEventMarker mark("Bloom - Apply verti gaussian filter");
-		BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-		Vec4* avSampleOffsets = pData->gSampleOffsets;
-		Vec4* avSampleWeights = pData->gSampleWeights;
-		if (mGaussianDistCalculated)
-		{
-			memcpy(avSampleOffsets, mGaussianDistOffsetY, sizeof(Vec4)* 15);
-			memcpy(avSampleWeights, mGaussianDistWeightY, sizeof(Vec4)* 15);
-		}
-		else
-		{
-			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(resol.y, afSampleOffsets, mGaussianDistWeightY, 3.0f, 
-				gFBEnv->pConsole->GetEngineCommand()->r_BloomGaussianWeight);
-			for (int i = 0; i < 15; i++)
-			{
-				mGaussianDistOffsetY[i] = avSampleOffsets[i] = Vec4(0.f, afSampleOffsets[i], 0.0f, 0.0f);
-			}
-			mGaussianDistCalculated = true;
-		}
-
-		UnmapBigBuffer();
-
-		SetTexture(0, BINDING_SHADER_PS, 0);
-		SetTexture(0, BINDING_SHADER_PS, 1);
-		SetTexture(0, BINDING_SHADER_PS, 2);
-		rts[0] = mBloomTexture[0];
-		SetRenderTarget(rts, index, 1, 0, 0);
-		SetTexture(mBloomTexture[1], BINDING_SHADER_PS, 0);
-
-		DrawFullscreenQuad(mBloomPS, false);
-	}
-}
-
-//---------------------------------------------------------------------------
-void Renderer::RenderStarGlare()
-{
-	if (mStarTextures[0] == 0)
-	{
-		for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
-		{
-			mStarTextures[i] = CreateTexture(0, mCropWidth / 4, mCropHeight / 4, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		}
-
-		mStarGlareShader = CreateShader("es/shaders/starglare.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-		mMergeTexture2 = CreateShader("es/shaders/mergetextures2ps.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-	}
-
-	ITexture* rts[] = { mStarTextures[0] };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0);
-	Viewport vp = { 0, 0, (float)mStarTextures[0]->GetWidth(), (float)mStarTextures[0]->GetHeight(), 0.f, 1.f };
-	gFBEnv->pRenderer->SetViewports(&vp, 1);
-	Clear();
-	const float fTanFoV = mCamera->GetFOV();
-	const Color vWhite(1.0f, 1.0f, 1.0f, 1.0f);
-	static const int s_maxPasses = 3;
-	static const int nSamples = 8;
-	static Vec4 s_aaColor[s_maxPasses][8];
-	static const Color s_colorWhite(0.63f, 0.63f, 0.63f, 0.0f);
-
-	Vec4 avSampleWeights[FB_MAX_SAMPLES];
-	Vec4 avSampleOffsets[FB_MAX_SAMPLES];
-
-	//mAdditiveBlendState->Bind();
-
-	float srcW = (float)mStarSourceTex->GetWidth();
-	float srcH = (float)mStarSourceTex->GetHeight();
-
-	for (int p = 0; p < s_maxPasses; ++p)
-	{
-		float ratio;
-		ratio = (float)(p + 1) / (float)s_maxPasses;
-
-		for (int s = 0; s < nSamples; s++)
-		{
-			Color chromaticAberrColor = Lerp(StarDef::GetChromaticAberrationColor(s), s_colorWhite, ratio);
-			s_aaColor[p][s] = Lerp(s_colorWhite, chromaticAberrColor, m_fChromaticAberration).GetVec4();
-		}
-	}
-	float radOffset;
-	radOffset = m_fStarInclination + mStarDef.m_fInclination;
-	
-	ITexture* pSrcTexture = 0;
-	ITexture* pDestTexture = 0;
-
-	// Direction loop
-	for (int d = 0; d < mStarDef.m_nStarLines; ++d)
-	{
-		CONST STARLINE& starLine = mStarDef.m_pStarLine[d];
-
-		pSrcTexture = mStarSourceTex;
-
-		float rad;
-		rad = radOffset + starLine.fInclination;
-		float sn, cs;
-		sn = sinf(rad), cs = cosf(rad);
-		Vec2 vtStepUV;
-		vtStepUV.x = sn / srcW * starLine.fSampleLength;
-		vtStepUV.y = cs / srcH * starLine.fSampleLength;
-
-		float attnPowScale;
-		attnPowScale = (fTanFoV + 0.1f) * 1.0f *
-			(160.0f + 120.0f) / (srcW + srcH) * 1.2f;
-
-		// 1 direction expansion loop
-		int iWorkTexture;
-		iWorkTexture = 1;
-		for (int p = 0; p < starLine.nPasses; p++)
-		{
-
-			if (p == starLine.nPasses - 1)
-			{
-				// Last pass move to other work buffer
-				pDestTexture = mStarTextures[d + 4];
-			}
-			else
-			{
-				pDestTexture = mStarTextures[iWorkTexture];
-			}
-
-			// Sampling configration for each stage
-			for (int i = 0; i < nSamples; ++i)
-			{
-				float lum;
-				lum = powf(starLine.fAttenuation, attnPowScale * i);
-
-				avSampleWeights[i] = s_aaColor[starLine.nPasses - 1 - p][i] *
-					lum * (p + 1.0f) * 0.5f;
-
-
-				// Offset of sampling coordinate
-				avSampleOffsets[i].x = vtStepUV.x * i;
-				avSampleOffsets[i].y = vtStepUV.y * i;
-				if (fabs(avSampleOffsets[i].x) >= 0.9f ||
-					fabs(avSampleOffsets[i].y) >= 0.9f)
-				{
-					avSampleOffsets[i].x = 0.0f;
-					avSampleOffsets[i].y = 0.0f;
-					avSampleWeights[i] *= 0.0f;
-				}
-
-			}
-			BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-			memcpy(pData->gSampleOffsets, avSampleOffsets, sizeof(Vec4)* FB_MAX_SAMPLES);
-			memcpy(pData->gSampleWeights, avSampleWeights, sizeof(Vec4)* FB_MAX_SAMPLES);
-			UnmapBigBuffer();
-
-			ITexture* rts[] = { pDestTexture };
-			size_t index[] = { 0 };
-			SetRenderTarget(rts, index, 1, 0, 0);
-
-			SetTexture(pSrcTexture, BINDING_SHADER_PS, 0);
-			DrawFullscreenQuad(mStarGlareShader, false);
-
-			// Setup next expansion
-			vtStepUV *= nSamples;
-			attnPowScale *= nSamples;
-
-			// Set the work drawn just before to next texture source.
-			pSrcTexture = mStarTextures[iWorkTexture];
-
-			iWorkTexture += 1;
-			if (iWorkTexture > 2)
-			{
-				iWorkTexture = 1;
-			}
-		}
-	}
-
-	pDestTexture = mStarTextures[0];
-
-	std::vector<ITexture*> textures;
-	textures.reserve(mStarDef.m_nStarLines);
-	for (int i = 0; i < mStarDef.m_nStarLines; i++)
-	{
-		textures.push_back(mStarTextures[i + 4]);
-		avSampleWeights[i] = vWhite.GetVec4() * (1.0f / (FLOAT)mStarDef.m_nStarLines);
-	}
-
-	{
-		ITexture* rts[] = { pDestTexture };
-		size_t index[] = { 0 };
-		SetRenderTarget(rts, index, 1, 0, 0); 
-	}
-	SetTextures(&textures[0], textures.size(), BINDING_SHADER_PS, 0);
-	
-	switch (mStarDef.m_nStarLines)
-	{
-	case 2:
-		DrawFullscreenQuad(mMergeTexture2, false);
-		break;
-
-	default:
-		assert(0);
-	}
-
-	textures.clear();
-	for (int i = 0; i < mStarDef.m_nStarLines; i++)
-	{
-		textures.push_back(0);
-	}
-	SetTextures(&textures[0], mStarDef.m_nStarLines, BINDING_SHADER_PS, 0);
-}
-
-//---------------------------------------------------------------------------
-void Renderer::ToneMapping()
-{
-	if (!mToneMappingPS)
-	{
-		CreateToneMappingShader();
-	}
-	D3DEventMarker mark("ToneMapping");
-	ITexture* textures[] = { mHDRTarget, mLuminanceMap[0], mBloomTexture[0], mStarTextures[0] };
-	RestoreRenderTarget();
-	SetTextures(textures, 4, BINDING_SHADER_PS, 0); 
-	Viewport vp = { 0, 0, (float)GetWidth(), (float)GetHeight(), 0.f, 1.f };
-	SetViewports(&vp, 1);
-	if (mLuminanceOnCpu)
-	{
-		Vec4* pData = (Vec4*)MapMaterialParameterBuffer();
-		if (pData)
-		{
-			*pData = float4(mLuminance, 0, 0, 0);
-			UnmapMaterialParameterBuffer();
-		}
-	}	
-
-	DrawFullscreenQuad(mToneMappingPS, false);
-	RestoreDepthStencilState();
-	SetTexture(0, BINDING_SHADER_PS, 3);
 }
 
 //---------------------------------------------------------------------------
@@ -2191,6 +1620,7 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	else if (pCVar->mName == "r_hdrmiddlegray")
 	{
 		mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
+		UpdateRareConstantsBuffer();
 	}
 	else if (pCVar->mName == "r_bloompower")
 	{
@@ -2202,46 +1632,40 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 		mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
 		UpdateRareConstantsBuffer();
 	}
-	else if (pCVar->mName == "r_bloomgaussianweight")
-	{
-		mGaussianDistCalculated = false;
-	}
 	else if (pCVar->mName == "r_shadowmapwidth" ||
 		pCVar->mName == "r_shadowmapheight")
 	{
-		if (mShadowMap) {
-			mShadowMap = 0;
+		for (auto it : mSwapChainRenderTargets)
+		{
+			it.second->DeleteShadowMap();
 		}
 	}
 	else if (pCVar->mName == "r_shadowcamwidth" )
 	{
-		auto lightCam = GetDirectionalLight(0)->GetCamera();
-		if (lightCam) {
-			lightCam->SetWidth(pCVar->GetFloat());
+		for (auto it : mSwapChainRenderTargets)
+		{
+			it.second->SetLightCamWidth(pCVar->GetFloat());
 		}
 	}
 	else if (pCVar->mName == "r_shadowcamheight")
 	{
-		auto lightCam = GetDirectionalLight(0)->GetCamera();
-		if (lightCam)
-			lightCam->SetHeight(pCVar->GetFloat());
+		for (auto it : mSwapChainRenderTargets)
+		{
+			it.second->SetLightCamHeight(pCVar->GetFloat());
+		}
 	}
 	else if (pCVar->mName == "r_shadownear")
 	{
-		auto lightCam = GetDirectionalLight(0)->GetCamera();
-		float n, f;
-		if (lightCam) {
-			lightCam->GetNearFar(n, f);
-			lightCam->SetNearFar(pCVar->GetFloat(), f);
+		for (auto it : mSwapChainRenderTargets)
+		{
+			it.second->SetLightCamNear(pCVar->GetFloat());
 		}
 	}
 	else if (pCVar->mName == "r_shadowfar")
 	{
-		auto lightCam = GetDirectionalLight(0)->GetCamera();
-		float n, f;
-		if (lightCam) {
-			lightCam->GetNearFar(n, f);
-			lightCam->SetNearFar(n, pCVar->GetFloat());
+		for (auto it : mSwapChainRenderTargets)
+		{
+			it.second->SetLightCamFar(pCVar->GetFloat());
 		}
 	}
 
@@ -2283,153 +1707,24 @@ ITexture* Renderer::FindRenderTarget(const Vec2I& size)
 	return 0;
 }
 
-//---------------------------------------------------------------------------
-void Renderer::SetDepthRenderTarget(bool clear)
+IShader* Renderer::GetGodRayPS()
 {
-	int width = int(mWidth*.5f);
-	int height = int(mHeight*.5f);
-	if (!mDepthTarget)
-	{ 
-		mDepthTarget = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-
-		/*BLEND_DESC bdesc;
-		bdesc.RenderTarget[0].BlendEnable = true;
-		bdesc.RenderTarget[0].BlendOp = BLEND_OP_MIN;
-		bdesc.RenderTarget[0].DestBlend = BLEND_ONE;
-		bdesc.RenderTarget[0].SrcBlend= BLEND_ONE;
-		mMinBlendState = CreateBlendState(bdesc);*/
-	}
-	ITexture* rts[] = { mDepthTarget };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
-	Viewport vp = { 0, 0, (float)width, (float)height, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	if (clear)
-		Clear(1.f, 1.f, 1.f, 1.f, 1.f, 0);
-	//mMinBlendState->Bind();
-	LockBlendState();
-}
-
-void Renderer::UnsetDepthRenderTarget()
-{
-	RestoreRenderTarget();
-	UnlockBlendState();
-	RestoreViewports();
-}
-
-void Renderer::SetGodRayRenderTarget()
-{
-	if (!mGodRayTarget[0])
+	if (!mGodRayPS)
 	{
-		for (int i = 0; i < 2; i++)
-		{
-			mGodRayTarget[i] = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_R8G8B8A8_UNORM,
-				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-			/*mGodRayTarget[i]->SetSamplerDesc(SAMPLER_DESC());*/
-		}
-		mNoMSDepthStencil = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_D24_UNORM_S8_UINT,
-			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
-
-		const char* godray = "es/shaders/GodRayPS.hlsl";
-		const char* occpre = "es/shaders/OccPrePass.hlsl";
-		const char* occpregs = "es/shaders/OccPrePassGS.hlsl";
-		mGodRayPS = CreateShader(godray, BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-		mOccPrePassShader = CreateShader(occpre, BINDING_SHADER_VS | BINDING_SHADER_PS,
+		mGodRayPS = CreateShader("es/shaders/GodRayPS.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+		mOccPrePassShader = CreateShader("es/shaders/OccPrePass.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
-		mOccPrePassGSShader = CreateShader(occpregs, BINDING_SHADER_VS | BINDING_SHADER_PS | BINDING_SHADER_GS,
+		mOccPrePassGSShader = CreateShader("es/shaders/OccPrePassGS.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS | BINDING_SHADER_GS,
 			IMaterial::SHADER_DEFINES());
 	}
-
-	
-	ITexture* rts[] = { mGodRayTarget[1] };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, mNoMSDepthStencil, 0);
-	Viewport vp = { 0, 0, (float)mWidth*.5f, (float)mHeight*.5f, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	Clear();
-}
-
-void Renderer::GodRay()
-{
-	ILight* pLight = GetDirectionalLight(0);
-	assert(pLight);
-	Vec4 lightPos(GetCamera()->GetPos() + pLight->GetPosition(), 1.f);
-	lightPos = GetCamera()->GetViewProjMat() * lightPos; // only x,y nee
-	lightPos.x = lightPos.x*.5f + .5f;
-	lightPos.y = .5f - lightPos.y*.5f;
-	
-	ITexture* rts[] = { mGodRayTarget[0] };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, 0, 0);
-	SetTexture(mGodRayTarget[1], BINDING_SHADER_PS, 0);
-	Vec4* pData = (Vec4*)MapMaterialParameterBuffer();
-	if (pData)
-	{
-		*pData = GetCamera()->GetViewProjMat() * lightPos; // only x,y needed.
-		pData->x = lightPos.x;
-		pData->y = lightPos.y;
-		EngineCommand* pEC = gFBEnv->pConsole->GetEngineCommand();
-
-		pData->z = pEC->r_GodRayDensity; // density
-		pData->w = pEC->r_GodRayDecay; // decay
-		++pData;
-		pData->x = pEC->r_GodRayWeight; // weight
-		pData->y =pEC->r_GodRayExposure; // exposure
-		UnmapMaterialParameterBuffer();
-	}
-	DrawFullscreenQuad(mGodRayPS, false);
-	
-
-	
-	Viewport vp = { 0, 0, (float)mWidth, (float)mHeight, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	RestoreRenderTarget();
+	return mGodRayPS;
 }
 
 //---------------------------------------------------------------------------
-void Renderer::BlendGodRay()
+IShader* Renderer::GetGlowShader()
 {
-	D3DEventMarker mark("GodRay Blending");
-	assert(mGodRayTarget[0]);
-	SetTexture(mGodRayTarget[0], BINDING_SHADER_PS, 0);		
-	SetAdditiveBlendState();
-	mNoDepthStencilState->Bind(0);
-	DrawFullscreenQuad(mCopyPS, false);
-	mDefaultBlendState->Bind();
-}
-
-//---------------------------------------------------------------------------
-void Renderer::SetGlowRenderTarget()
-{
-	if (!mGlowTarget)
+	if (!mGlowPS)
 	{
-		/*
-		A pixel shader can be used to render to at least 8 separate render targets,
-		all of which must be the same type (buffer, Texture1D, Texture1DArray, etc...).
-		Furthermore, all render targets must have the same size in all dimensions (width, height, depth, array size, sample counts).
-		Each render target may have a different data format.
-
-		You may use any combination of render targets slots (up to 8). However, a resource view cannot be bound to
-		multiple render-target-slots simultaneously. A view may be reused as long as the resources are not used simultaneously.
-
-		*/
-		mGlowTarget = CreateTexture(0, (int)(mWidth), (int)(mHeight), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTarget, "GlowTarget");
-
-		mGlowTexture[0] = CreateTexture(0, (int)(mWidth * 0.25f), (int)(mHeight * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[0], "GlowTexture0");
-
-		mGlowTexture[1] = CreateTexture(0, (int)(mWidth * 0.25f), (int)(mHeight * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-		FB_SET_DEVICE_DEBUG_NAME(mGlowTexture[1], "GlowTexture1");
-
-		//mGlowTarget->SetSamplerDesc(SAMPLER_DESC());
-		//mGlowTexture[0]->SetSamplerDesc(SAMPLER_DESC());
-		//mGlowTexture[1]->SetSamplerDesc(SAMPLER_DESC());
-
 		IMaterial::SHADER_DEFINES shaderDefines;
 		if (GetMultiSampleCount() != 1)
 		{
@@ -2440,137 +1735,72 @@ void Renderer::SetGlowRenderTarget()
 		mGlowPS = CreateShader("es/shaders/BloomPS.hlsl", BINDING_SHADER_PS, shaderDefines);
 		FB_SET_DEVICE_DEBUG_NAME(mGlowPS, "GlowPS");
 	}
-}
-
-//---------------------------------------------------------------------------
-void Renderer::BlendGlow()
-{
-	{
-		D3DEventMarker mark("Glowing");
-		assert(mGlowTarget);
-		SetTexture(mGlowTarget, BINDING_SHADER_PS, 0);
-		ITexture* rt[] = { mGlowTexture[1] };
-		size_t index[] = { 0 };
-		SetRenderTarget(rt, index, 1, 0, 0);
-		mDefaultBlendState->Bind();		
-		Vec2I resol = mGlowTexture[0]->GetSize();
-		Viewport vp = { 0, 0, (float)resol.x, (float)resol.y, 0.f, 1.f };
-		SetViewports(&vp, 1);
-
-		// Horizontal Blur
-		BIG_BUFFER* pData = (BIG_BUFFER*)MapBigBuffer();
-		Vec4* avSampleOffsets = pData->gSampleOffsets;
-		Vec4* avSampleWeights = pData->gSampleWeights;
-		if (mGaussianDistGlowCalculated)
-		{
-			memcpy(avSampleOffsets, mGaussianDistGlowOffsetX, sizeof(Vec4)* 15);
-			memcpy(avSampleWeights, mGaussianDistGlowWeightX, sizeof(Vec4)* 15);
-		}
-		else
-		{
-			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(resol.x, afSampleOffsets, mGaussianDistGlowWeightX, 3.f, 1.25f);
-			for (int i = 0; i < 15; i++)
-			{
-				avSampleWeights[i] = mGaussianDistGlowWeightX[i];
-				avSampleOffsets[i]  = mGaussianDistGlowOffsetX[i] = Vec4(afSampleOffsets[i], 0.0f, 0.0f, 0.0f);
-			}
-		}
-		UnmapBigBuffer();
-		// mGlowPS is same with BloomPS except it has the _MULTI_SAMPLE shader define.
-		DrawFullscreenQuad(mGlowPS, false);
-
-
-
-		// Vertical Blur
-		pData = (BIG_BUFFER*)MapBigBuffer();
-		avSampleOffsets = pData->gSampleOffsets;
-		avSampleWeights = pData->gSampleWeights;
-		if (mGaussianDistGlowCalculated)
-		{
-			memcpy(avSampleOffsets, mGaussianDistGlowOffsetY, sizeof(Vec4)* 15);
-			memcpy(avSampleWeights, mGaussianDistGlowWeightY, sizeof(Vec4)* 15);
-		}
-		else
-		{
-			float afSampleOffsets[15];
-			GetSampleOffsets_Bloom(mGlowTexture[0]->GetSize().y, afSampleOffsets, mGaussianDistGlowWeightY, 3.f, 1.25f);
-			for (int i = 0; i < 15; i++)
-			{
-				avSampleOffsets[i] = mGaussianDistGlowOffsetY[i] = Vec4(0.f, afSampleOffsets[i], 0.0f, 0.0f);
-				avSampleWeights[i] = mGaussianDistGlowWeightY[i];
-			}
-			mGaussianDistGlowCalculated = true;
-		}
-		UnmapBigBuffer();
-		rt[0] = mGlowTexture[0];
-		SetRenderTarget(rt, index, 1, 0, 0);
-		SetTexture(mGlowTexture[1], BINDING_SHADER_PS, 0);
-		DrawFullscreenQuad(mGlowPS, false);
-	}
-
-	{
-		D3DEventMarker mark("Glow Blend");
-
-		RestoreViewports();
-		if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-		{
-			SetHDRTarget();
-		}
-		else
-		{
-			RestoreRenderTarget();
-		}
-		SetTexture(mGlowTexture[0], BINDING_SHADER_PS, 0);
-		SetAdditiveBlendState();
-		mNoDepthStencilState->Bind(0);
-		if (GetMultiSampleCount()==1)
-			DrawFullscreenQuad(mCopyPS, false);
-		else
-			DrawFullscreenQuad(mCopyPSMS, false);
-		mDefaultBlendState->Bind();
-	}
+	return mGlowPS;
 }
 
 //---------------------------------------------------------------------------
 void Renderer::SetDepthWriteShader()
 {
-	if (mCloudRendering)
+	if (!mDepthWriteShader)
 	{
-		if (!mCloudDepthWriteShader)
-		{
-			mCloudDepthWriteShader = CreateShader("es/shaders/depth_cloud.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
-				IMaterial::SHADER_DEFINES());
-			if (!mPositionInputLayout)
-				mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mCloudDepthWriteShader);
-		}
-		mPositionInputLayout->Bind();
-		mCloudDepthWriteShader->Bind();
-			
+		mDepthWriteShader = CreateShader("es/shaders/depth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			IMaterial::SHADER_DEFINES());
+		if (!mPositionInputLayout)
+			mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mDepthWriteShader);
 	}
-	else
+	mPositionInputLayout->Bind();
+	mDepthWriteShader->Bind();	
+}
+
+void Renderer::SetDepthWriteShaderCloud()
+{
+	if (!mCloudDepthWriteShader)
 	{
-		if (!mDepthWriteShader)
-		{
-			mDepthWriteShader = CreateShader("es/shaders/depth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
-				IMaterial::SHADER_DEFINES());
-			if (!mPositionInputLayout)
-				mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mDepthWriteShader);
-		}
-		mPositionInputLayout->Bind();
-		mDepthWriteShader->Bind();
+		mCloudDepthWriteShader = CreateShader("es/shaders/depth_cloud.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			IMaterial::SHADER_DEFINES());
+		if (!mPositionInputLayout)
+			mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mCloudDepthWriteShader);
 	}
+	mPositionInputLayout->Bind();
+	mCloudDepthWriteShader->Bind();
+}
+
+void Renderer::SetDepthOnlyShader(){
+	if (!mDepthOnlyShader){
+		mDepthOnlyShader = CreateShader("es/shaders/DepthOnly.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
+			IMaterial::SHADER_DEFINES());
+		if (!mPositionInputLayout)
+			mPositionInputLayout = GetInputLayout(DEFAULT_INPUTS::POSITION, mDepthOnlyShader);
+	}
+	mPositionInputLayout->Bind();
+	mDepthOnlyShader->Bind();
+}
+
+//---------------------------------------------------------------------------
+ITexture* Renderer::GetTemporalDepthBuffer(const Vec2I& size)
+{
+	auto it = mTempDepthBuffers.Find(size);
+	if (it == mTempDepthBuffers.end())
+	{
+		auto depthBuffer = CreateTexture(0, size.x, size.y, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
+			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
+		mTempDepthBuffers.Insert(std::make_pair(size, depthBuffer));
+		return depthBuffer;
+	}
+	return it->second;
 	
 }
 
 //---------------------------------------------------------------------------
 void Renderer::SetOccPreShader()
 {
+	assert(mOccPrePassShader);
 	if (mOccPrePassShader)
 		mOccPrePassShader->Bind();
 }
 void Renderer::SetOccPreGSShader()
 {
+	assert(mOccPrePassGSShader);
 	if (mOccPrePassGSShader)
 		mOccPrePassGSShader->Bind();
 }
@@ -2603,41 +1833,40 @@ void Renderer::CleanCloud()
 
 void Renderer::BindDepthTexture(bool set)
 {
-	if (set)
+	auto mainRenderTarget = (RenderTarget*)GetMainRenderTarget();
+	if (mainRenderTarget)
 	{
-		SetTexture(mDepthTarget, BINDING_SHADER_PS, 5);
+		mainRenderTarget->BindDepthTexture(set);
 	}
-	else 
-		SetTexture(0, BINDING_SHADER_PS, 5);
 }
 
-void Renderer::SetCloudVolumeTarget()
-{
-	if (!mCloudVolumeDepth)
-	{
-		mCloudVolumeDepth = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-		/*SAMPLER_DESC sdesc;
-		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-		mCloudVolumeDepth->SetSamplerDesc(sdesc);*/
-	}
-	assert(mTempDepthBufferHalf);
-	ITexture* rts[] = { mCloudVolumeDepth };
-	size_t index[] = { 0 };
-	// mTempDepthBufferHalf already filled with scene objects. while writing the depth texture;
-	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
-	Viewport vp = { 0, 0, mWidth*.5f, mHeight*.5f, 0.f, 1.f };
-	SetViewports(&vp, 1);
-	Clear(0.0f, 0.0f, 0.0f, 0.f, 1, 0);
-}
-
-void Renderer::SetCloudVolumeTexture(bool set)
-{
-	if (set)
-		SetTexture(mCloudVolumeDepth, BINDING_SHADER_PS, 6);
-	else
-		SetTexture(0, BINDING_SHADER_PS, 6);
-}
+//void Renderer::SetCloudVolumeTarget()
+//{
+//	if (!mCloudVolumeDepth)
+//	{
+//		mCloudVolumeDepth = CreateTexture(0, mWidth / 2, mHeight / 2, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
+//			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+//		/*SAMPLER_DESC sdesc;
+//		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+//		mCloudVolumeDepth->SetSamplerDesc(sdesc);*/
+//	}
+//	assert(mTempDepthBufferHalf);
+//	ITexture* rts[] = { mCloudVolumeDepth };
+//	size_t index[] = { 0 };
+//	// mTempDepthBufferHalf already filled with scene objects. while writing the depth texture;
+//	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
+//	Viewport vp = { 0, 0, mWidth*.5f, mHeight*.5f, 0.f, 1.f };
+//	SetViewports(&vp, 1);
+//	Clear(0.0f, 0.0f, 0.0f, 0.f, 1, 0);
+//}
+//
+//void Renderer::SetCloudVolumeTexture(bool set)
+//{
+//	if (set)
+//		SetTexture(mCloudVolumeDepth, BINDING_SHADER_PS, 6);
+//	else
+//		SetTexture(0, BINDING_SHADER_PS, 6);
+//}
 
 
 void Renderer::LockBlendState()
@@ -2655,64 +1884,8 @@ void Renderer::BindNoiseMap()
 		mNoiseMap = CreateTexture("es/textures/pnoise.dds");
 		mNoiseMap->SetShaderStage(BINDING_SHADER_PS);
 		mNoiseMap->SetSlot(7);
-		/*SAMPLER_DESC sdesc;
-		sdesc.AddressU = TEXTURE_ADDRESS_WRAP;
-		sdesc.AddressV = TEXTURE_ADDRESS_WRAP;
-		mNoiseMap->SetSamplerDesc(sdesc);*/
 	}
 	mNoiseMap->Bind();
-}
-
-void Renderer::SetCloudRendering(bool rendering)
-{
-	mCloudRendering = rendering;
-}
-
-//---------------------------------------------------------------------------
-void Renderer::PrepareShadowMapRendering()
-{
-	auto cmd = gFBEnv->pConsole->GetEngineCommand();
-	if (!mShadowMap)
-	{
-		mShadowMap = CreateTexture(0, 
-			cmd->r_ShadowMapWidth, 
-			cmd->r_ShadowMapHeight, 
-			PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
-	}
-
-	ITexture* rts[] = { 0 };
-	size_t index[] = { 0 };
-	SetRenderTarget(rts, index, 1, mShadowMap, 0);
-	gFBEnv->mRenderPass = PASS_SHADOW;
-	SetShadowMapShader();
-	Viewport vp = { 0, 0,
-		(float)cmd->r_ShadowMapWidth,
-		(float)cmd->r_ShadowMapHeight,
-		0.f, 1.f };
-	SetViewports(&vp, 1);
-	mCameraBackup = GetCamera();
-	SetCamera(GetDirectionalLight(0)->GetCamera());
-	Clear(0, 0, 0, 0, 1.0f, 0);
-}
-
-//---------------------------------------------------------------------------
-void Renderer::EndShadowMapRendering()
-{
-	assert(mShadowMap);
-	RestoreRenderTarget();
-	gFBEnv->mRenderPass = PASS_NORMAL;
-	SetCamera(mCameraBackup);
-	UpdateRareConstantsBuffer();
-	RestoreViewports();
-}
-
-void Renderer::BindShadowMap(bool bind)
-{
-	if (bind)
-		SetTexture(mShadowMap, BINDING_SHADER_PS, 8);
-	else
-		SetTexture(0, BINDING_SHADER_PS, 8);
 }
 
 void Renderer::SetShadowMapShader()
@@ -2725,83 +1898,219 @@ void Renderer::SetShadowMapShader()
 	mShadowMapShader->Bind();
 }
 
-void Renderer::SetSilouetteShader()
-{
-	assert(0);
-	/*if (!mSilouetteShader)
-	{
-		mSilouetteShader = CreateShader("es/shaders/silouette.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS,
-			IMaterial::SHADER_DEFINES());
-	}
-
-	mSilouetteShader->Bind();*/
-}
-
-void Renderer::SetSamllSilouetteBuffer()
-{
-	int width = int(mWidth*0.5f);
-	int height = int(mHeight*0.5f);
-	if (!mSmallSilouetteBuffer)
-	{
-		mSmallSilouetteBuffer = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-	}
-
-	ITexture* rts[] = { mSmallSilouetteBuffer };
-	unsigned index[] = { 0 };
-	SetRenderTarget(rts, index, 1, mTempDepthBufferHalf, 0);
-	Viewport vps = { 0.f, 0.f, (float)width, (float)height, 0.0f, 1.0f };
-	SetViewports(&vps, 1);
-	if (!gFBEnv->mSilouetteRendered)
-		Clear(1, 1, 1, 1, 1.f, 0);
-}
-void Renderer::SetBigSilouetteBuffer()
-{
-	int width = int(mWidth);
-	int height = int(mHeight);
-	if (!mBigSilouetteBuffer)
-	{
-		mBigSilouetteBuffer = CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
-	}
-
-	ITexture* rts[] = { mBigSilouetteBuffer };
-	unsigned index[] = { 0 };
-	SetRenderTarget(rts, index, 1, mTempDepthBuffer, 0);
-	Viewport vps = { 0.f, 0.f, (float)width, (float)height, 0.0f, 1.0f };
-	SetViewports(&vps, 1);
-	if (!gFBEnv->mSilouetteRendered)
-		Clear(1, 1, 1, 1, 1.f, 0);
-}
-
-void Renderer::DrawSilouette()
+IShader* Renderer::GetSilouetteShader()
 {
 	if (!mSilouetteShader)
 	{
 		mSilouetteShader = CreateShader("es/shaders/silouette.hlsl", BINDING_SHADER_PS,
 			IMaterial::SHADER_DEFINES());
 	}
-
-	if (gFBEnv->pConsole->GetEngineCommand()->r_HDR)
-		SetHDRTarget();
-	else
-		RestoreRenderTarget();
-	RestoreViewports();
-	ITexture* ts[] = { mSmallSilouetteBuffer, mBigSilouetteBuffer, mDepthTarget };
-	SetTextures(ts, 3, BINDING_SHADER_PS, 0);
-	
-	DrawFullscreenQuad(mSilouetteShader, false);
+	return mSilouetteShader;
 }
 
+IShader* Renderer::GetCopyPS()
+{
+	assert(mCopyPS);
+	return mCopyPS;
+}
+IShader* Renderer::GetCopyPSMS()
+{
+	assert(mCopyPSMS);
+	return mCopyPSMS;
+}
+
+ITexture* Renderer::GetToneMap(unsigned idx)
+{
+	if (mToneMap[0] == 0)
+	{
+		int nSampleLen = 1;
+		for (int i = 0; i < FB_NUM_TONEMAP_TEXTURES_NEW; i++)
+		{
+			// 1, 3, 9, 27, 81
+			mToneMap[i] = CreateTexture(0, nSampleLen, nSampleLen, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+			char buff[255];
+			sprintf_s(buff, "ToneMap(%d)", nSampleLen);
+			FB_SET_DEVICE_DEBUG_NAME(mToneMap[i], buff);
+			nSampleLen *= 3;
+		}
+		for (int i = 0; i < FB_NUM_LUMINANCE_TEXTURES; i++)
+		{
+			mLuminanceMap[i] = CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+		}
+		ITexture* textures[] = { mLuminanceMap[0], mLuminanceMap[1] };
+		size_t index[] = { 0, 0 };
+		SetRenderTarget(textures, index, 2, 0, 0);
+		Clear(0, 0, 0, 1);
+
+		IMaterial::SHADER_DEFINES shaderDefines;
+		if (GetMultiSampleCount() != 1)
+		{
+			shaderDefines.push_back(IMaterial::ShaderDefine());
+			shaderDefines.back().name = "_MULTI_SAMPLE";
+			shaderDefines.back().value = "1";
+		}
+
+		mSampleLumInitialShader = CreateShader("es/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
+		mSampleLumIterativeShader = CreateShader("es/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
+		mSampleLumFinalShader = CreateShader("es/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
+		mCalcAdaptedLumShader = CreateShader("es/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
+	}
+
+	assert(idx < FB_NUM_TONEMAP_TEXTURES_NEW);
+	assert(mToneMap[idx] != 0);
+	return mToneMap[idx];
+}
+
+IShader* Renderer::GetSampleLumInitialShader()
+{
+	assert(mSampleLumInitialShader);
+	return mSampleLumInitialShader;
+}
+
+IShader* Renderer::GetSampleLumIterativeShader()
+{
+	assert(mSampleLumIterativeShader);
+	return mSampleLumIterativeShader;
+}
+
+IShader* Renderer::GetSampleLumFinalShader()
+{
+	assert(mSampleLumFinalShader);
+	return mSampleLumFinalShader;
+}
+
+void Renderer::SwapLuminanceMap()
+{
+	std::swap(mLuminanceMap[0], mLuminanceMap[1]);
+}
+
+ITexture* Renderer::GetLuminanceMap(unsigned idx)
+{
+	assert(idx < FB_NUM_LUMINANCE_TEXTURES);
+	return mLuminanceMap[idx];
+}
+
+IShader* Renderer::GetCalcAdapedLumShader()
+{
+	assert(mCalcAdaptedLumShader);
+	return mCalcAdaptedLumShader;
+}
+
+IShader* Renderer::GetBrightPassPS()
+{
+	if (!mBrightPassPS)
+	{
+		const char* bpPath = "es/shaders/brightpassps.hlsl";
+		IMaterial::SHADER_DEFINES shaderDefines;
+		if (GetMultiSampleCount() != 1)
+		{
+			shaderDefines.push_back(IMaterial::ShaderDefine());
+			shaderDefines.back().name = "_MULTI_SAMPLE";
+			shaderDefines.back().value = "1";
+		}
+		mBrightPassPS = CreateShader(bpPath, BINDING_SHADER_PS, shaderDefines);
+	}
+	assert(mBrightPassPS);
+	return mBrightPassPS;
+}
+
+IShader* Renderer::GetBlur5x5PS()
+{
+	if (!mBlur5x5)
+	{
+		IMaterial::SHADER_DEFINES shaderDefines;
+		if (GetMultiSampleCount() != 1)
+		{
+			shaderDefines.push_back(IMaterial::ShaderDefine());
+			shaderDefines.back().name = "_MULTI_SAMPLE";
+			shaderDefines.back().value = "1";
+		}
+		mBlur5x5 = CreateShader("es/shaders/gaussblur5x5.hlsl", BINDING_SHADER_PS, shaderDefines);
+	}
+	return mBlur5x5;
+}
+
+IShader* Renderer::GetBloomPS()
+{
+	if (!mBloomPS)
+	{
+		const char* blPath = "es/shaders/bloomps.hlsl";
+		mBloomPS = CreateShader(blPath, BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+	}
+	return mBloomPS;
+}
+
+IShader* Renderer::GetStarGlareShader()
+{
+	if (!mStarGlareShader)
+		mStarGlareShader = CreateShader("es/shaders/starglare.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+
+	return mStarGlareShader;
+}
+
+IShader* Renderer::GetMergeTexturePS()
+{
+	if (!mMergeTexture2)
+		mMergeTexture2 = CreateShader("es/shaders/mergetextures2ps.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+	return mMergeTexture2;
+}
+
+IShader* Renderer::GetToneMappingPS()
+{
+	if (!mToneMappingPS)
+		CreateToneMappingShader();
+	return mToneMappingPS;
+}
+
+void Renderer::Render(float dt)
+{
+	InitFrameProfiler(dt);
+	UpdateFrameConstantsBuffer();
+
+	ProcessRenderTarget();
+	Render3DUIsToTexture();
+	auto mainRT = GetMainRenderTarget();
+	for (auto it : mSwapChainRenderTargets)
+	{
+		D3DEventMarker mark(FormatString("Processing render target for %u", it.first));
+		auto hwndId = it.first;
+		auto rt = (RenderTarget*)it.second;
+		assert(rt);
+		bool rendered = rt->Render();
+		if (rendered) {
+			if (rt == mainRT) {
+				RenderMarks();
+			}
+
+			for (auto l : mRenderListeners)	{
+				l->BeforeUIRendering(hwndId);
+			}
+			RenderUI(hwndId);
+
+			for (auto l : mRenderListeners){
+				l->AfterUIRendered(hwndId);
+			}
+		}
+	}
+	mainRT->BindTargetOnly(false);
+	RenderDebugHud();
+	RenderDebugRenderTargets();
+	RenderFade();	
+}
 
 void Renderer::RenderDebugRenderTargets()
 {
+	auto rt = GetMainRenderTarget();
+	assert(rt);
+	const auto& size = rt->GetSize();
 	for (int i = 0; i < MaxDebugRenderTargets; i++)
 	{
 		if (mDebugRenderTargets[i].mTexture)
 		{
-			Vec2 pixelPos = mDebugRenderTargets[i].mPos * Vec2((float)mWidth, (float)mHeight);
-			Vec2 pixelSize = mDebugRenderTargets[i].mSize * Vec2((float)mWidth, (float)mHeight);
+			Vec2 pixelPos = mDebugRenderTargets[i].mPos * Vec2((float)size.x, (float)size.y);
+			Vec2 pixelSize = mDebugRenderTargets[i].mSize * Vec2((float)size.x, (float)size.y);
 			DrawQuadWithTexture(Round(pixelPos), Round(pixelSize), Color(1, 1, 1, 1),
 				mDebugRenderTargets[i].mTexture);
 		}
@@ -2810,24 +2119,26 @@ void Renderer::RenderDebugRenderTargets()
 void Renderer::SetDebugRenderTarget(unsigned idx, const char* textureName)
 {
 	assert(idx < MaxDebugRenderTargets);
-	if (stricmp(textureName, "Shadow") == 0)
-		mDebugRenderTargets[idx].mTexture = mShadowMap;
+	auto mainRT = (RenderTarget*)GetMainRenderTarget();
+	assert(mainRT);
+	if (_stricmp(textureName, "Shadow") == 0)
+		mDebugRenderTargets[idx].mTexture = mainRT->GetShadowMap();
 	else
 		mDebugRenderTargets[idx].mTexture = 0;
 }
 
-IRenderToTexture* Renderer::CreateRenderToTexture(const RenderToTextureParam& param)
+IRenderTarget* Renderer::CreateRenderTarget(const RenderTargetParam& param)
 {
 	if (param.mUsePool)
 	{
-		for (auto it = mRenderToTexturePool.begin(); it != mRenderToTexturePool.end(); it++)
+		for (auto it = mRenderTargetPool.begin(); it != mRenderTargetPool.end(); it++)
 		{
 			if ((*it)->CheckOptions(param))
 			{
 				if (param.mEveryFrame)
-					mRenderToTextures.push_back(*it);
-				IRenderToTexture* rt = *it;
-				mRenderToTexturePool.erase(it);
+					mRenderTargets.push_back(*it);
+				IRenderTarget* rt = *it;
+				mRenderTargetPool.erase(it);
 				return rt;
 			}
 
@@ -2836,15 +2147,15 @@ IRenderToTexture* Renderer::CreateRenderToTexture(const RenderToTextureParam& pa
 	return 0;
 }
 
-void Renderer::DeleteRenderToTexture(IRenderToTexture* rt)
+void Renderer::DeleteRenderTarget(IRenderTarget* rt)
 {
 	if (!rt)
 		return;
 	if (rt->GetUsePool())
 	{
-		if (ValueNotExistInVector(mRenderToTexturePool, rt))
+		if (ValueNotExistInVector(mRenderTargetPool, rt))
 		{
-			mRenderToTexturePool.push_back(rt);
+			mRenderTargetPool.push_back(rt);
 		}
 	}
 	else
@@ -2878,45 +2189,7 @@ void Renderer::DeletePointLight(IPointLight* pointLight)
 	mPointLightMan->DeletePointLight(pointLight);
 }
 
-void Renderer::CalcLuminance()
-{
-	if (mFrameLuminanceCalced == gFBEnv->mFrameCounter ||
-		gFBEnv->pConsole->GetEngineCommand()->r_HDR==0)
-	{
-		return;
-	}
-	mFrameLuminanceCalced = gFBEnv->mFrameCounter;
-	SmartPtr<ITexture> stage = CreateTexture(0, mWidth, mHeight, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_STAGING,
-		BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
-	mHDRTarget->CopyToStaging(stage, 0, 0, 0, 0, 0, 0);
-	auto mapped = stage->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
-	if (mapped.pData)
-	{
-		float accumulated = 0.f;
-		Vec3 luminance(0.2125f, 0.7154f, 0.0721f);
-		BYTE* data = (BYTE*)mapped.pData;
-		unsigned numPixels = mWidth * mHeight;
-		for (unsigned i = 0; i < numPixels; i++)
-		{
-			Vec3 target;
-			Halfp2Singles(&target, data, 3);
-			// Reference : 
-			// Reinhard, Erik, Greg Ward, Sumanta Pattanaik, and Paul Debeve,
-			// Photographic Tone Reproduction for Digital Images, 
-			// ACM Transactions on Graphics, vol. 21, no. 3, pp.267-276, July 2002.
-			//accumulated +=  log(target.Dot(luminance)+0.0001f);
 
-			float l = target.Dot(luminance);
-			//accumulated += std::max(l, 0.2f);
-			accumulated += l;
-
-			data += 8;
-		}
-		//mLuminance = exp(accumulated / numPixels);
-		mLuminance = (accumulated / numPixels);
-		Log("Luminance = %f", mLuminance);
-	}
-}
 
 void Renderer::ToneMapLuminanceOnCpu(bool oncpu)
 {
@@ -2960,13 +2233,307 @@ void Renderer::RenderFade()
 {
 	if (mFadeAlpha <= 0)
 		return;
-	DrawQuad(Vec2I(0, 0), Vec2I(mWidth, mHeight), Color(0, 0, 0, mFadeAlpha));	
+	auto mainRT = GetMainRenderTarget();
+	assert(mainRT);
+	DrawQuad(Vec2I(0, 0), mainRT->GetSize(), Color(0, 0, 0, mFadeAlpha));	
 }
 
 IMaterial* Renderer::GetMaterial(DEFAULT_MATERIALS::Enum type)
 {
 	assert(type < DEFAULT_MATERIALS::COUNT);
 	return mMaterials[type];
+}
+
+
+void Renderer::ProcessInputData()
+{
+	for(auto it : mSwapChainRenderTargets)
+	{
+		it.second->GetCamera()->ProcessInputData();
+	}
+}
+
+void Renderer::OnInputFromEngineForCamera(IMouse* mouse, IKeyboard* keyboard)
+{
+	for (auto it : mSwapChainRenderTargets)
+	{
+		it.second->GetCamera()->OnInputFromEngine(mouse, keyboard);
+	}
+}
+
+int Renderer::CropSize8(int size) const
+{
+	return size - size % 8;
+}
+
+void Renderer::Render3DUIsToTexture()
+{
+	if (!m3DUIEnabled)
+		return;
+
+	D3DEventMarker mark("Render3DUIsToTexture");
+	for (auto scIt : mSwapChainRenderTargets) {
+		for (auto rtIt : mUI3DObjectsRTs) {
+			if (!rtIt.second->GetEnable())
+				continue;
+			auto& uiObjectsIt = mUI3DObjects.Find(std::make_pair(scIt.first, rtIt.first));
+			if (uiObjectsIt != mUI3DObjects.end()){
+				auto& uiObjects = uiObjectsIt->second;				
+				auto& rt = rtIt.second;
+				rt->Bind();
+
+				for (auto& uiobj : uiObjects)
+				{
+					uiobj->PreRender();
+					uiobj->Render();
+					uiobj->PostRender();
+				}
+
+				rt->Unbind();
+				rt->GetRenderTargetTexture()->GenerateMips();
+			}
+		}
+	}
+}
+
+//--------------------------------------------------------------------------
+void Renderer::RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj)
+{
+	auto& objectsToRender = mUIObjectsToRender[hwndId];
+	objectsToRender.swap(uiobj);
+	auto rt = GetRenderTarget(hwndId);
+	if (rt){
+		rt->TriggerDrawEvent();
+	}
+}
+
+void Renderer::UnregisterUIs(HWND_ID hwndId)
+{
+	auto& objectsToRender = mUIObjectsToRender[hwndId];
+	objectsToRender.clear();
+}
+
+void Renderer::Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIObject*>& objects)
+{
+	assert(!objects.empty());
+
+	auto it = mUI3DObjectsRTs.Find(name);
+	if (it == mUI3DObjectsRTs.end())
+	{
+		const Vec2I& rtSize = objects[0]->GetRenderTargetSize();
+		RenderTargetParam param;
+		param.mEveryFrame = false;
+		param.mSize = rtSize;
+		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
+		param.mShaderResourceView = true;
+		param.mMipmap = true;
+		param.mCubemap = false;
+		param.mWillCreateDepth = false;
+		param.mUsePool = true;
+		auto rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
+		assert(rtt);
+		mUI3DObjectsRTs.Insert(std::make_pair(std::string(name), rtt));
+		assert(mUI3DRenderObjs.Find(name) == mUI3DRenderObjs.end());
+		auto renderObj = FB_NEW(UI3DObj);
+		mUI3DRenderObjs.Insert(std::make_pair(std::string(name), renderObj));
+		renderObj->SetTexture(rtt->GetRenderTargetTexture());
+		renderObj->AttachToScene();
+	}
+	else
+	{
+		assert(it->second->GetSize() == objects[0]->GetRenderTargetSize());
+		if (!it->second->GetEnable())
+		{
+			it->second->SetEnable(true);
+			auto it2 = mUI3DRenderObjs.Find(name);
+			if_assert_pass(it2 != mUI3DRenderObjs.end())
+			{
+				it2->second->ModifyObjFlag(IObject::OF_HIDE, false);
+			}
+		}
+	}
+	mUI3DObjects[std::make_pair(hwndId, name)].swap(objects);
+}
+
+// the IWinbase is deleted.
+void Renderer::Unregister3DUIs(const char* name)
+{
+	auto it = mUI3DRenderObjs.Find(name);
+	if (it != mUI3DRenderObjs.end())
+	{
+		FB_DELETE(it->second);
+		mUI3DRenderObjs.erase(it);
+	}
+
+	auto it2 = mUI3DObjectsRTs.Find(name);
+	if (it2 != mUI3DObjectsRTs.end())
+	{
+		it2->second->SetEnable(false);
+	}
+}
+
+void Renderer::Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld)
+{
+	auto it = mUI3DRenderObjs.Find(name);
+	if (it != mUI3DRenderObjs.end())
+	{
+		it->second->SetPosSize(pos, sizeInWorld);
+	}
+}
+
+void Renderer::Reset3DUI(const char* name)
+{
+	auto it = mUI3DRenderObjs.Find(name);
+	if (it != mUI3DRenderObjs.end())
+	{
+		it->second->Reset3DUI();
+	}
+}
+
+void Renderer::SetEnable3DUIs(bool enable)
+{
+	m3DUIEnabled = enable;
+}
+
+//------------------------------------------------------------------------
+void Renderer::AddMarkObject(IObject* mark)
+{
+	if (ValueNotExistInVector(mMarkObjects, mark))
+		mMarkObjects.push_back(mark);
+}
+
+//------------------------------------------------------------------------
+void Renderer::RemoveMarkObject(IObject* mark)
+{
+	DeleteValuesInVector(mMarkObjects, mark);
+}
+
+//------------------------------------------------------------------------
+void Renderer::AddHPBarObject(IObject* hpBar)
+{
+	if (ValueNotExistInVector(mHPBarObjects, hpBar))
+		mHPBarObjects.push_back(hpBar);
+}
+
+//------------------------------------------------------------------------
+void Renderer::RemoveHPBarObject(IObject* hpBar)
+{
+	DeleteValuesInVector(mHPBarObjects, hpBar);
+}
+
+//----------------------------------------------------------------------------
+void Renderer::RenderMarks()
+{
+	D3DEventMarker mark("Render Marks / HPBar");
+	FB_FOREACH(it, mMarkObjects)
+	{
+		(*it)->PreRender();
+		(*it)->Render();
+		(*it)->PostRender();
+	}
+
+	for (auto it : mHPBarObjects)
+	{
+		it->PreRender();
+		it->Render();
+		it->PostRender();
+	}
+}
+
+//----------------------------------------------------------------------------
+void Renderer::RenderUI(HWND_ID hwndId)
+{
+	D3DEventMarker mark("RenderUI");
+	auto& uiobjects = mUIObjectsToRender[hwndId];
+	auto it = uiobjects.begin(), itEnd = uiobjects.end();
+	for (; it != itEnd; it++)
+	{
+		(*it)->PreRender(); // temporary :)
+		(*it)->Render();
+		(*it)->PostRender();
+	}
+}
+
+//----------------------------------------------------------------------------
+void Renderer::RenderFrameProfiler()
+{
+	wchar_t msg[255];
+	int x = 1100;
+	int y = 34;
+	int yStep = 18;
+	if (mFont)
+		yStep = (int)mFont->GetHeight();
+
+	const RENDERER_FRAME_PROFILER& profiler = mFrameProfiler;
+
+	swprintf_s(msg, 255, L"FrameRate = %.0f", profiler.FrameRateDisplay);
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep;
+
+	swprintf_s(msg, 255, L"Num draw calls = %d", profiler.NumDrawCall);
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep;
+
+	swprintf_s(msg, 255, L"Num vertices = %d", profiler.NumVertexCount);
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep * 2;
+
+	swprintf_s(msg, 255, L"Num Particles = %d", ParticleManager::GetParticleManager().GetNumActiveParticles());
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep;
+
+	auto pman = gFBEnv->pRenderer->GetPointLightMan();
+	if (pman)
+	{
+		swprintf_s(msg, 255, L"Num PointLights = %d", pman->GetNumPointLights());
+		DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+	}
+	
+	auto scene = GetMainScene();
+	if (scene)
+	{
+		unsigned num = scene->GetNumSpatialObjects();
+		swprintf_s(msg, L"Num spatial objects = %d", num);
+		DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+	}
+
+	/*swprintf_s(msg, 255, L"Num draw indexed calls = %d", profiler.NumDrawIndexedCall);
+	mRenderer->DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y+= yStep;
+
+	swprintf_s(msg, 255, L"Num draw indices = %d", profiler.NumIndexCount);
+	mRenderer->DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));		*/
+}
+
+
+void Renderer::OnRenderTargetDeleted(RenderTarget* renderTarget)
+{
+	if (mCurRenderTarget == renderTarget)
+	{
+		mCurRenderTarget = GetMainRenderTarget();
+		mCamera = mCurRenderTarget->GetCamera();
+		for (int i = 0; i < 2; i++)
+			mDirectionalLight[i] = mCurRenderTarget->GetScene()->GetLight(i);
+	}
+}
+
+void Renderer::SetScene(IScene* scene)
+{
+	mCurProcessingScene = scene;
+	UpdateSceneConstantsBuffer();
+}
+
+void Renderer::AddRenderListener(IRenderListener* listener)
+{
+	if (ValueNotExistInVector(mRenderListeners, listener))
+		mRenderListeners.push_back(listener);
+}
+
+void Renderer::RemoveRenderListener(IRenderListener* listener)
+{
+	DeleteValuesInVector(mRenderListeners, listener);
 }
 
 }

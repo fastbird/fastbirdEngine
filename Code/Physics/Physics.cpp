@@ -15,6 +15,7 @@
 
 namespace fastbird{
 
+unsigned Physics::NextInternalColShapeId = 1;
 Physics::Physics()
 	: mRayGroup(0x40) // default of the current game under development
 {
@@ -456,7 +457,7 @@ btCollisionShape* Physics::ParseCollisionFile(const char* collisionFile)
 		sz = shapeElem->Attribute("type");
 		if (sz)
 		{
-			CollisionShapes::Enum colShape = CollisionShapes::ConverToEnum(sz);
+			CollisionShapes::Enum colShape = CollisionShapes::ConvertToEnum(sz);
 			btVector3 origin;
 			btQuaternion rot;
 			sz = shapeElem->Attribute("origin");
@@ -961,6 +962,21 @@ float Physics::GetDistanceBetween(RigidBody* a, RigidBody* b)
 
 
 	return distance;
+}
+
+unsigned Physics::CreateBTSphereShape(float radius){
+	auto shape = FB_NEW_ALIGNED(btSphereShape, MemAlign)(radius);
+	mInternalShapes[NextInternalColShapeId] = shape;
+	auto ret = NextInternalColShapeId++;
+	return ret;
+}
+
+void Physics::DeleteBTShape(unsigned id){
+	auto it = mInternalShapes.Find(id);
+	if (it != mInternalShapes.end()){
+		FB_DEL_ALIGNED(it->second);
+		mInternalShapes.erase(it);
+	}
 }
 
 BoxShape* Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr)

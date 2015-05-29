@@ -19,7 +19,7 @@ namespace fastbird
 	}
 
 	//--------------------------------------------------------------------------
-	void Keyboard::PushEvent(const KeyboardEvent& keyboardEvent)
+	void Keyboard::PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent)
 	{
 		/*DebugOutput("MakeCode = %d, Flags = %x, VKey = %d, Message = %d, ExtraInformation = %d",
 			keyboardEvent.MakeCode, keyboardEvent.Flags, keyboardEvent.VKey, keyboardEvent.Message, keyboardEvent.ExtraInformation);*/
@@ -57,7 +57,7 @@ namespace fastbird
 		}
 	}
 
-	void Keyboard::PushChar(unsigned keycode)
+	void Keyboard::PushChar(HWND hWnd, unsigned keycode)
 	{
 		mCurrentChar.push(keycode);
 		while (mCurrentChar.size() > 10)
@@ -108,8 +108,15 @@ namespace fastbird
 		if (mCurrentChar.empty())
 			return 0;
 		unsigned ret = mCurrentChar.front();
-		mCurrentChar.pop();
 		return ret;
+	}
+
+	void Keyboard::PopChar()
+	{
+		if (!mCurrentChar.empty()){
+			mCurrentChar.pop();
+			Invalidate();
+		}
 	}
 
 	//--------------------------------------------------------------------------
@@ -117,6 +124,11 @@ namespace fastbird
 	{
 		memset(mKeyDown, 0, sizeof(mKeyDown));
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
+	}
+
+	void Keyboard::ClearBuffer()
+	{
+		ClearWithSwap(mCurrentChar);
 	}
 
 	bool Keyboard::IsPairedKey(unsigned short keycode) const

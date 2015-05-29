@@ -334,6 +334,7 @@ namespace fastbird
 
 	enum COLOR_WRITE_MASK
     {
+		COLOR_WRITE_MASK_NONE = 0,
 		COLOR_WRITE_MASK_RED		= 1,
 		COLOR_WRITE_MASK_GREEN		= 2,
 		COLOR_WRITE_MASK_BLUE		= 4,
@@ -425,7 +426,8 @@ namespace fastbird
 		PASS_NORMAL = 0,
 		PASS_GODRAY_OCC_PRE, // for GodRay - occlusion pre pass
 		PASS_GLOW,
-		PASS_DEPTH,
+		PASS_DEPTH, // write depth to render target
+		PASS_DEPTH_ONLY, // write depth only to the depth buffer.
 		PASS_SHADOW,
 		PASS_SILOUETTE,
 	};

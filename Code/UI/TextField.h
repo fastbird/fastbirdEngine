@@ -1,12 +1,14 @@
 #pragma once
 
 #include <UI/WinBase.h>
+#include <Engine/ITextManipulatorListener.h>
 
 namespace fastbird
 {
 class IUIObject;
-
-class TextField : public WinBase
+class PropertyList;
+class ListBox;
+class TextField : public WinBase, public ITextManipulatorListener
 {
 public:
 	TextField();
@@ -23,19 +25,25 @@ public:
 
 	virtual void SetPasswd(bool passwd);
 
+	// ITextManipulatorListener
+	virtual void OnCursorPosChanged(TextManipulator* mani);
+	virtual void OnTextChanged(TextManipulator* mani);
+	PropertyList* IsInPropertyList() const;
+	ListBox* IsInListBox() const;
+	void SelectAll();
 
-	// own
+	void OnClicked(void* arg);
+	void OnDoubleClicked(void* arg);
 	
 	
 
 protected:
 	const static float LEFT_GAP;
-	virtual void OnPosChanged();
+	virtual void SetUseBorder(bool use);
+	virtual void OnPosChanged(bool anim);
 	virtual void OnSizeChanged();
-	void MoveCursor(int move);
 
 private:
-	int mCursorPos;
 	bool mPasswd;
 };
 

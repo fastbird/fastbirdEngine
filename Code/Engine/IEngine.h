@@ -52,7 +52,11 @@ namespace fastbird
 	class ISkySphere;
 	class IBillboardQuad;
 	class IDustRenderer;
-
+	class TextManipulator;
+	class LuaObject;
+	
+	typedef unsigned HWND_ID;
+	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
 	class IEngine : public ReferenceCounter
 	{
 	public:
@@ -61,13 +65,21 @@ namespace fastbird
 
 		virtual ~IEngine(){}
 		virtual GlobalEnv* GetGlobalEnv() const = 0;
-		virtual HWND CreateEngineWindow(int x, int y, int width, int height, 
-			const char* title, WNDPROC winProc)
-		{
-				return 0;
-		}
-		virtual HWND GetWindowHandle() const = 0;
-		virtual int InitSwapChain(HWND handle, int width, int height) = 0;
+		virtual HWND_ID CreateEngineWindow(int x, int y, int width, int height,
+			const char* wndClass, const char* title, unsigned style, unsigned exStyle,
+			WNDPROC winProc) = 0;
+		virtual void DestroyEngineWindow(HWND_ID hwndId) = 0;
+		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const = 0;
+		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const = 0;
+		virtual HWND GetWindowHandle(HWND_ID id) const = 0;
+		virtual HWND_ID GetWindowHandleId(HWND hWnd) const = 0;
+		virtual HWND_ID GetWindowHandleIdWithMousePoint() const = 0;
+		virtual HWND GetMainWndHandle() const = 0;
+		virtual HWND GetForegroundWindow(HWND_ID* id = 0) const = 0;
+		virtual HWND_ID GetForegroundWindowId() const = 0;
+		virtual HWND_ID GetMainWndHandleId() const = 0;
+		virtual bool IsMainWindowForground() const = 0;
+		virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 		enum RENDERER_TYPE 
 		{ 
 			D3D9=0, 
@@ -76,21 +88,10 @@ namespace fastbird
 		};
 		virtual bool InitEngine(int rendererType) = 0;
 
-		virtual inline IRenderer* GetRenderer() const = 0;
-		virtual inline IScene* GetScene() const = 0;
-		virtual inline IScene* GetOriginalScene() const = 0;
-		virtual void SetSceneOverride(IScene* pScene) = 0;
-		virtual void LockSceneOverride(bool lock) = 0;
-		virtual IScene* GetSceneOverride() const = 0;
+		virtual inline IRenderer* GetRenderer() const = 0;		
 
 		virtual void UpdateInput() = 0;
 		virtual void UpdateFrame(float dt) = 0;
-
-		virtual size_t CreateCameraAndRegister(const char* cameraName) = 0;
-		virtual size_t RegisterCamera(const char* cameraName, ICamera* pCamera) = 0;
-		virtual bool SetActiveCamera(size_t idx) = 0;
-		virtual ICamera* GetCamera(size_t idx) = 0;
-		virtual ICamera* GetCamera(const std::string& cameraName) = 0;
 		
 		// Terrain
 		// numVertX * numVertY = (2^n+1) * (2^m+1)
@@ -100,15 +101,6 @@ namespace fastbird
 		virtual void AddInputListener(IInputListener* pInputListener, 
 			IInputListener::INPUT_LISTEN_CATEGORY category, int priority) = 0;
 		virtual void RemoveInputListener(IInputListener* pInputListener) = 0;
-
-		virtual void RegisterUIs(std::vector<IUIObject*>& uiobj) = 0;
-		virtual void UnregisterUIs() = 0;
-
-		virtual void Register3DUIs(const char* name, std::vector<IUIObject*>& objects) = 0;
-		virtual void Unregister3DUIs(const char* name) = 0;
-		virtual void Set3DUIPosSize(const char* name, const Vec3& pos, const Vec2& sizeInWorld) = 0;
-		virtual void Reset3DUI(const char* name) = 0; 
-		virtual void SetEnable3DUIs(bool enable) = 0;
 
 		struct MeshImportDesc
 		{
@@ -149,12 +141,7 @@ namespace fastbird
 		virtual bool GetConfigBoolValue(const char* section, const char* name) = 0;
 
 		virtual void RegisterFileChangeListener(IFileChangeListener* listener) = 0;
-		virtual void RemoveFileChangeListener(IFileChangeListener* listener) = 0;
-
-		virtual void AddMarkObject(IObject* mark) = 0;
-		virtual void RemoveMarkObject(IObject* mark) = 0;
-		virtual void AddHPBarObject(IObject* hpBar) = 0;
-		virtual void RemoveHPBarObject(IObject* hpBar) = 0;
+		virtual void RemoveFileChangeListener(IFileChangeListener* listener) = 0;		
 
 		// you have resposible to delete it.
 		virtual IScene* CreateScene() = 0;
@@ -170,9 +157,9 @@ namespace fastbird
 
 #endif
 
-		virtual void Log(const char* szFmt, ...) = 0;
-		virtual void Error(const char* szFmt, ...) = 0;
-		virtual void LogLastError(const char* file, int line, const char* function) = 0;
+		virtual void Log(const char* szFmt, ...) const = 0;
+		virtual void Error(const char* szFmt, ...) const = 0;
+		virtual void LogLastError(const char* file, int line, const char* function) const = 0;
 
 		virtual IVoxelizer* CreateVoxelizer() = 0;
 		virtual void DeleteVoxelizer(IVoxelizer* voxelizer) = 0;
@@ -188,13 +175,14 @@ namespace fastbird
 
 		virtual IDustRenderer* CreateDustRenderer() = 0;
 		virtual void DeleteDustRenderer(IDustRenderer* dust) = 0;
-	};
 
-	//--------------------------------------------------------------------------------
-	class IFileChangeListener
-	{
-	public:
-		virtual void OnFileChanged(const char* file) = 0;
+		virtual TextManipulator* CreateTextManipulator() = 0;
+		virtual void DeleteTextManipulator(TextManipulator* mani) = 0;
+
+		virtual void SetInputOverride(const LuaObject& func) = 0;
+
+		virtual void StopFileChangeMonitor(const char* filepath) = 0;
+		virtual void ResumeFileChangeMonitor(const char* filepath) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

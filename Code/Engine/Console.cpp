@@ -4,6 +4,7 @@
 #include <Engine/EngineCommand.h>
 #include <Engine/GlobalEnv.h>
 #include <Engine/ScriptSystem.h>
+#include <Engine/Renderer.h>
 #include <CommonLib/StdOutRedirect.h>
 #include <CommonLib/ClipboardData.h>
 
@@ -178,11 +179,11 @@ void Console::AddCandidatesTo(const char* parent, const StringVector& candidates
 void Console::Log(const char* szFmt, ...)
 {
 	LOCK_CRITICAL_SECTION lock(mBufferwCS);
-	char buf[2048];
+	char buf[4096];
 
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
 
 	std::cerr << buf << std::endl;
@@ -192,7 +193,8 @@ void Console::Log(const char* szFmt, ...)
 	{
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		int textWidth = (int)pFont->GetTextWidth((char*)strw.c_str());
-		int consoleWidth = gFBEnv->pRenderer->GetWidth();
+		const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+		int consoleWidth = size.x;
 		if (textWidth > consoleWidth)
 		{
 			strw = pFont->StripTags(strw.c_str());
@@ -253,6 +255,7 @@ void Console::Log(const char* szFmt, ...)
 void Console::ToggleOpen()
 {
 	mOpen = !mOpen;
+	gFBEnv->pEngine->GetKeyboard()->ClearBuffer();
 }
 
 //--------------------------------------------------------------------------
@@ -309,7 +312,8 @@ void Console::Render()
 	}
 
 	// Draw Background
-	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(pRenderer->GetWidth(), mHeight),
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
 		Color::DarkGray);
 
 	
@@ -347,16 +351,17 @@ void Console::Render()
 
 }
 
-void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
+void Console::OnInput(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mOpen)
 		return;
 
-	if (unsigned int chr = pKeyboard->GetChar())
+	if (unsigned int chr = keyboard->GetChar())
 	{
 		if (chr == 22) // Synchronous idle - ^V
 		{
-			std::string data = GetClipbardDataAsString();
+			keyboard->PopChar();
+			std::string data = GetClipboardDataAsString(gFBEnv->pEngine->GetMainWndHandle());
 			if (!data.empty())
 			{
 				auto insertionPos = mInputString.begin() + mCursorPos;
@@ -370,6 +375,7 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 			{
 			case VK_BACK:
 			{
+				keyboard->PopChar();
 							if (IsHighlighting() && !mInputString.empty())
 							{
 								auto it = mInputString.begin() + mCursorPos;
@@ -392,22 +398,28 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 				break;
 			case VK_TAB:
 			{
-						   AutoCompletion();
+				keyboard->PopChar();
+				AutoCompletion();
 			}
 				break;
 			case VK_RETURN:
 			{
-							  ProcessCommand(mInputString.c_str());
-							  mInputString.clear();
-							  mCursorPos = 0;
-							  EndHighlighting();
-							  EndAutoCompletion();
+				keyboard->PopChar();
+				if (!mInputString.empty())
+				{
+					ProcessCommand(mInputString.c_str());
+					mInputString.clear();
+					mCursorPos = 0;
+					EndHighlighting();
+					EndAutoCompletion();
+				}
 			}
 				break;
 			default:
 			{
 					   if (IsValidCharForInput(chr))
 					   {
+						   keyboard->PopChar();
 						   if (IsHighlighting())
 						   {
 							   if (!mACMode)
@@ -435,17 +447,17 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 	}
 
-	if (pKeyboard->IsKeyPressed(VK_HOME))
+	if (keyboard->IsKeyPressed(VK_HOME))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		mCursorPos = 0;
 	}
-	else if (pKeyboard->IsKeyPressed(VK_END))
+	else if (keyboard->IsKeyPressed(VK_END))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));	
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));	
 		mCursorPos = mInputString.size();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_DELETE))
+	else if (keyboard->IsKeyPressed(VK_DELETE))
 	{
 		if (!mInputString.empty())
 		{
@@ -468,38 +480,38 @@ void Console::OnInput(IMouse* pMouse, IKeyboard* pKeyboard)
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_LEFT))
+	else if (keyboard->IsKeyPressed(VK_LEFT))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		if (mCursorPos>0)
 		{
 			mCursorPos--;
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_RIGHT))
+	else if (keyboard->IsKeyPressed(VK_RIGHT))
 	{
-		Highlighting(pKeyboard->IsKeyDown(VK_SHIFT));
+		Highlighting(keyboard->IsKeyDown(VK_SHIFT));
 		if (mCursorPos < (int)mInputString.size())
 		{
 			mCursorPos++;
 		}
 		EndAutoCompletion();
 	}
-	else if (pKeyboard->IsKeyPressed(VK_UP))
+	else if (keyboard->IsKeyPressed(VK_UP))
 	{
 		GetNextHistory();
 
 	}
-	else if (pKeyboard->IsKeyPressed(VK_DOWN))
+	else if (keyboard->IsKeyPressed(VK_DOWN))
 	{
 		GetPrevHistory();		
 	}
 
 	mInputStringw = AnsiToWide(mInputString.c_str(), mInputString.size());
 
-	pKeyboard->Invalidate();
-	pMouse->Invalidate();
+	keyboard->Invalidate();
+	mouse->Invalidate();
 }
 
 void Console::EnableInputListener(bool enable)
@@ -618,7 +630,7 @@ void Console::ProcessCommand(const char* command)
 	{
 		for (const auto& c : mCommands)
 		{
-			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
+			if (_stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
 				if (c->mFunc)
 				{
@@ -633,7 +645,7 @@ void Console::ProcessCommand(const char* command)
 	{
 		for (const auto& c : mCVars)
 		{
-			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
+			if (_stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
 				size_t numWords = words.size();
 				if (numWords==2)

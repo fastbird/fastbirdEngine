@@ -26,13 +26,39 @@ namespace fastbird
 	bool IsDir(const char* filepath);
 	std::string ConcatFilepath(const char* a, const char* b);
 	// if outChar is zero, you have to free the returned pointer.
-	char* ToAbsolutePath(char* outChar, const char* a);
+	template <unsigned _Size>
+	char* ToAbsolutePath(char (&outChar)[_Size], const char* a)
+	{
+		if (outChar == a)
+		{
+			assert(0);
+			Error("ToAbsolutePath arg error!");
+			return 0;
+		}
+		if (strlen(a) <= 3)
+		{
+			if (a[1] == ':')
+			{
+				strcpy_s(outChar, a);
+				return outChar;
+			}
+		}
+		return _fullpath(outChar, a, _Size);
+	}
+
+	bool StringsEqual_i(const std::string& lhs, const std::string& rhs);
+	void SplitPath(const std::string& in_path, std::vector<std::string>& split_path);
+	std::string GetRelativePath(const std::string& to, const std::string& from);
 	StringVector Split(const std::string& str, const std::string& delims = "\t\n, ", 
 		unsigned int maxSplits = 0, bool preserveDelims = false);
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
 	void ToLowerCase( std::string& str );
 	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase( std::string& str );
+
+	void ToLowerCase(std::wstring& str);
+	void ToLowerCaseFirst(std::wstring& str);
+	void ToUpperCase(std::wstring& str);
 	bool IsNumeric(const char* str);
 	const char* FormatString(const char* str, ...);
 
@@ -81,6 +107,9 @@ namespace fastbird
             Format is "x y" (i.e. 2x float values, space delimited)
         */
         static std::string toString(const Vec2& val);
+
+		static std::string toString(const Vec2I& val);
+
         /** Converts a Vec3 to a String. 
         @remarks
             Format is "x y z" (i.e. 3x float values, space delimited)

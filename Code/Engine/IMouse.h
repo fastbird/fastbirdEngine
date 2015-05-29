@@ -62,10 +62,12 @@ namespace fastbird
 			MOUSE_BUTTON_5 = 0x10,
 		};
 
-		virtual void PushEvent(const MouseEvent& mouseEvent) = 0;
+		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent) = 0;
 		virtual void GetHDDeltaXY(long &x, long &y) const = 0;
 		virtual void GetDeltaXY(long &x, long &y) const = 0;
+		virtual Vec2I GetDeltaXY() const = 0;
 		virtual void GetPos(long &x, long &y) const = 0;
+		virtual Vec2I GetPos() const = 0;
 		virtual void GetPrevPos(long &x, long &y) const = 0;
 		// normalized pos(0.0~1.0)
 		virtual void GetNPos(float &x, float &y) const = 0;
@@ -82,17 +84,24 @@ namespace fastbird
 		virtual bool IsMoved() const = 0;
 		virtual void GetDragStart(long &x, long &y) const = 0;
 		virtual bool IsDragStartIn(const RECT& region) const = 0;
+		virtual bool IsDragStarted(Vec2I& outStartPos) const = 0;
+		virtual bool IsDragEnded() const = 0;
+		virtual void PopDragEvent() = 0;
+		
 
 		virtual long GetWheel() const = 0;
+		virtual void PopWheel() = 0;
 		virtual void ClearWheel() = 0;
 		virtual void ClearButton() = 0;
 		virtual unsigned long GetNumLinesWheelScroll() const = 0;
 
-		virtual void LockMousePos(bool lock) = 0;
+		virtual void LockMousePos(bool lock, void* key) = 0;
 		virtual void OnKillFocus() = 0;
-		virtual void OnSetFocus() = 0;
+		virtual void OnSetFocus(HWND hWnd) = 0;
 
 		virtual const Ray3& GetWorldRay() = 0;
+
+		virtual bool IsIn(const RECT& r) = 0;
 	};
 }
 

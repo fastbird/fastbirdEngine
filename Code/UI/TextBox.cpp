@@ -44,25 +44,25 @@ namespace fastbird
 		__super::GatherVisit(v);
 	}
 
-	void TextBox::SetNPosOffset(const Vec2& offset)
+	void TextBox::SetWNScollingOffset(const Vec2& offset)
 	{
-		__super::SetNPosOffset(offset);
+		__super::SetWNScollingOffset(offset);
 		if (mImage)
-			mImage->SetNPosOffset(offset);
+			mImage->SetWNScollingOffset(offset);
 	}
 
-	void TextBox::OnPosChanged()
+	void TextBox::OnPosChanged(bool anim)
 	{
-		__super::OnPosChanged();
+		__super::OnPosChanged(anim);
 		if (mImage)
-			mImage->SetWNPos(mWNPos);
+			mImage->SetPos(GetFinalPos());
 	}
 
 	void TextBox::OnSizeChanged()
 	{
 		__super::OnSizeChanged();
 		if (mImage)
-			mImage->SetWNSize(mWNSize);
+			mImage->SetSize(GetFinalSize());
 
 	}
 
@@ -72,8 +72,9 @@ namespace fastbird
 		if (mMatchHeight)
 		{
 			unsigned height = GetTextBoxHeight();
-			SetSizeY(height);
+			ChangeSizeY(height);
 		}
+		TriggerRedraw();
 	}
 
 	void TextBox::CalcTextWidth()
@@ -95,15 +96,17 @@ namespace fastbird
 		{
 		case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 		{
+			mStrBackImage = val;
 			if (!mImage)
 			{
 				mImage = FB_NEW(ImageBox);
+				mImage->SetHwndId(GetHwndId());
 				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
-				mImage->SetParent(this);
-				mImage->SetWNPos(mWNPos);
-				mImage->SetWNSize(mWNSize);
+				mImage->SetManualParent(this);
+				mImage->ChangePos(GetFinalPos());
+				mImage->ChangeSize(GetFinalSize());
 			}
-			gFBEnv->pUIManager->DirtyRenderList();
+			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 			mImage->SetTexture(val);
 			return true;
@@ -111,18 +114,20 @@ namespace fastbird
 
 		case UIProperty::KEEP_IMAGE_RATIO:
 		{
-											 if (!mImage)
-											 {
-												 mImage = FB_NEW(ImageBox);
-												 mImage->SetRender3D(mRender3D, GetRenderTargetSize());
-												 mImage->SetParent(this);
-												 mImage->SetWNPos(mWNPos);
-												 mImage->SetWNSize(mWNSize);
-											 }
-											 gFBEnv->pUIManager->DirtyRenderList();
-											 mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
+			mStrKeepRatio = val;
+			if (!mImage)
+			{
+				mImage = FB_NEW(ImageBox);
+				mImage->SetHwndId(GetHwndId());
+				mImage->SetRender3D(mRender3D, GetRenderTargetSize());
+				mImage->SetManualParent(this);
+				mImage->ChangePos(GetFinalPos());
+				mImage->ChangeSize(GetFinalSize());
+			}
+			gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+			mImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 											 
-											 return true;
+			return true;
 		}
 
 		case UIProperty::TEXTBOX_MATCH_HEIGHT:
@@ -131,7 +136,7 @@ namespace fastbird
 												 if (mMatchHeight)
 												 {
 													 unsigned height = GetTextBoxHeight();
-													 SetSizeY(height);
+													 ChangeSizeY(height);
 												 }
 												 return true;
 		}
@@ -142,6 +147,52 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
+	bool TextBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
+	{
+		switch (prop)
+		{
+		case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+		{
+			if (notDefaultOnly)
+			{
+				if (mStrBackImage.empty())
+					return false;
+			}
+
+			strcpy_s(val, bufsize, mStrBackImage.c_str());
+			return true;
+		}
+
+		case UIProperty::KEEP_IMAGE_RATIO:
+		{
+			if (notDefaultOnly)
+			{
+				if (mStrKeepRatio.empty())
+					return false;
+			}
+
+			strcpy_s(val, bufsize, mStrKeepRatio.c_str());
+		}
+
+		case UIProperty::TEXTBOX_MATCH_HEIGHT:
+		{
+			if (notDefaultOnly)
+			{
+				if (mMatchHeight == UIProperty::GetDefaultValueBool(prop))
+					return false;
+			}
+
+			auto data = StringConverter::toString(mMatchHeight);
+			strcpy_s(val, bufsize, data.c_str());
+			return true;
+		}
+
+		}
+
+
+		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
+	}
+
 
 	unsigned TextBox::GetTextBoxHeight() const
 	{
@@ -149,7 +200,16 @@ namespace fastbird
 		pFont->SetHeight(mTextSize);
 		float height = pFont->GetBaseHeight();
 		pFont->SetBackToOrigHeight();
-		return (unsigned)(height * mNumTextLines) + 16;
+		return Round(height * mNumTextLines) + 16;
+	}
+
+	void TextBox::SetHwndId(HWND_ID hwndId)
+	{
+		__super::SetHwndId(hwndId);
+		if (mImage)
+		{
+			mImage->SetHwndId(hwndId);
+		}
 	}
 
 }

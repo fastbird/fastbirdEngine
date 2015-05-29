@@ -2,6 +2,7 @@
 #include <Engine/DebugHud.h>
 #include <Engine/ICamera.h>
 #include <Engine/IMeshObject.h>
+#include <Engine/Renderer.h>
 
 using namespace fastbird;
 
@@ -14,9 +15,10 @@ const unsigned DebugHud::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 DebugHud::DebugHud()
 {
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)size.x,
+		(float)size.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
@@ -41,8 +43,9 @@ DebugHud::DebugHud()
 	ddesc.DepthEnable = false;
 	mRenderStates = FB_NEW(RenderStates);
 	mRenderStates->CreateDepthStencilState(ddesc);
-
-	gFBEnv->pEngine->GetScene()->AddListener(this);
+	
+	
+	gFBEnv->_pInternalRenderer->GetMainScene()->AddListener(this);
 	
 	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugSphere.dae");
 	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugBox.dae");
@@ -53,8 +56,8 @@ DebugHud::DebugHud()
 //----------------------------------------------------------------------------
 DebugHud::~DebugHud()
 {
-	if (gFBEnv->pEngine->GetScene())
-		gFBEnv->pEngine->GetScene()->RemoveListener(this);
+	if (gFBEnv->_pInternalRenderer->GetMainScene())
+		gFBEnv->_pInternalRenderer->GetMainScene()->RemoveListener(this);
 
 	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
@@ -123,7 +126,7 @@ void DebugHud::DrawLine(const Vec2I& start, const Vec2I& end,
 	line.mColor = color0;
 
 	line.mEnd = Vec3((float)end.x, (float)end.y, 0.f);
-	line.mColor = color1;
+	line.mColore = color1;
 	
 	mScreenLines.push_back(line);
 }
@@ -161,11 +164,15 @@ void DebugHud::PreRender()
 {
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
-	mObjectConstants_WorldLine.gWorldViewProj = 
-		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
+
+	
 }
 
-void DebugHud::OnBeforeRenderingTransparents()
+void DebugHud::OnBeforeRenderingTransparents(IScene* scene)
 {
 	if (!gFBEnv->pConsole->GetEngineCommand()->r_debugDraw)
 		return;
@@ -215,6 +222,10 @@ void DebugHud::Render()
 		return;
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
+
+	mObjectConstants_WorldLine.gWorldViewProj =
+		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
 	//Profiler profile("void DebugHud::Render()");
 	D3DEventMarker mark("DebugHud::Render()");
 	//PreRender();
@@ -251,9 +262,10 @@ void DebugHud::Render()
 		mWorldLines.clear();
 	}
 
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)size.x,
+		(float)size.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 	pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);

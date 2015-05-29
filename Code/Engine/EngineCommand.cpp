@@ -5,6 +5,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/ParticleManager.h>
 #include <Engine/IScriptSystem.h>
+#pragma init_seg(user) 
 namespace fastbird
 {
 static void EditParticle(StringVector& arg);
@@ -57,13 +58,10 @@ EngineCommand::EngineCommand()
 	r_HDRFilmic = gFBEnv->pScriptSystem->GetIntVariable("r_HDRFilmic", 1);
 	REGISTER_CVAR(r_HDRFilmic, r_HDRFilmic, CVAR_CATEGORY_CLIENT, "Use Filmic tone mapping");
 
-	r_BloomGaussianWeight = gFBEnv->pScriptSystem->GetRealVariable("r_BloomGaussianWeight", 1.3f);
-	REGISTER_CVAR(r_BloomGaussianWeight, r_BloomGaussianWeight, CVAR_CATEGORY_CLIENT, "bloom gaussian weight");
-
 	r_BloomPower = gFBEnv->pScriptSystem->GetRealVariable("r_BloomPower", 0.2f);
 	REGISTER_CVAR(r_BloomPower, r_BloomPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
-	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.2f);
+	r_StarPower = gFBEnv->pScriptSystem->GetRealVariable("r_StarPower", 0.4f);
 	REGISTER_CVAR(r_StarPower, r_StarPower, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 
 	r_GodRay = gFBEnv->pScriptSystem->GetIntVariable("r_GodRay", 1);
@@ -114,7 +112,7 @@ EngineCommand::EngineCommand()
 		"ShadowMap height");
 
 	r_ShadowNear = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowNear", 10.0f);
+		"r_ShadowNear", 2.0f);
 	REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera near.");
 
@@ -214,7 +212,8 @@ void SetFov(StringVector& arg)
 {
 	if (arg.size() < 2)
 		return;
-	gFBEnv->pEngine->GetCamera(0)->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
+
+	gFBEnv->pRenderer->GetMainCamera()->SetFOV( Radian(StringConverter::parseReal(arg[1]) ) );
 }
 
 void Clear(StringVector& arg)

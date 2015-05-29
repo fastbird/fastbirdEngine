@@ -46,7 +46,10 @@ namespace fastbird
 		virtual Transformation GetToLocalTransform(unsigned meshIdx);
 		virtual Transformation GetToLocalTransform(const char* meshName);
 
+		virtual Transformation GetLocalMeshTransform(unsigned meshIdx);
+
 		virtual void SetAlpha(float alpha);
+		virtual void SetForceAlphaBlending(bool enable, float alpha);
 		virtual void SetAmbientColor(const Color& color);
 		virtual IMeshObject* GetMeshObject(unsigned idx);
 

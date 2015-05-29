@@ -1,14 +1,16 @@
 #include <Engine/StdAfx.h>
-#include <Engine/IRenderToTexture.h>
+#include <Engine/IRenderTarget.h>
 #include <Engine/ICamera.h>
 #include <Engine/SkySphere.h>
+#include <Engine/Renderer.h>
+#include <Engine/ILight.h>
 
 #include <CommonLib/Math/GeomUtils.h>
 
 namespace fastbird
 {
 
-fastbird::SmartPtr<fastbird::IRenderToTexture> SkySphere::mRT;
+fastbird::SmartPtr<fastbird::IRenderTarget> SkySphere::mRT;
 
 ISkySphere* ISkySphere::CreateSkySphere(bool usingSmartPointer)
 {
@@ -50,17 +52,18 @@ void SkySphere::CreateSharedEnvRT()
 {
 	if (!mRT)
 	{
-		RenderToTextureParam param;
+		RenderTargetParam param;
 		param.mEveryFrame = false;
 		param.mSize = Vec2I(ENV_SIZE, ENV_SIZE);
 		param.mPixelFormat = PIXEL_FORMAT_R8G8B8A8_UNORM;
 		param.mShaderResourceView = true;
 		param.mMipmap = true;
 		param.mCubemap = true;
-		param.mHasDepth = false;
+		param.mWillCreateDepth = false;
 		param.mUsePool = true;
-		mRT = gFBEnv->pRenderer->CreateRenderToTexture(param);
-		mRT->SetColorTextureDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_R8G8B8A8_UNORM, true, true, true);
+		mRT = gFBEnv->pRenderer->CreateRenderTarget(param);
+		mRT->CreateScene();
+		mRT->GetRenderPipeline().SetMinimum();
 	}
 }
 //static 
@@ -110,6 +113,10 @@ void SkySphere::PreRender()
 {
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
+
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
 
 	if (mInterpolating)
 	{
@@ -201,8 +208,14 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 		Error("void SkySphere::UpdateEnvironmentMap(const Vec3& origin) : No mRT");
 		return;
 	}
-		
+
+	auto const renderer = gFBEnv->_pInternalRenderer;
+
 	ITexture* pTexture = mRT->GetRenderTargetTexture();
+	auto dest = mRT->GetScene()->GetLight(0);
+	auto src = renderer->GetMainRenderTarget()->GetScene()->GetLight(0);
+	dest->CopyLight(src);
+
 	mRT->GetScene()->AttachSkySphere(this);
 	mRT->GetCamera()->SetPos(origin);
 	mRT->GetCamera()->SetFOV(HALF_PI);
@@ -217,14 +230,16 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 		mRT->GetCamera()->SetDir(dirs[i]);
 		mRT->Render(i);
 	}
+	// this is for unbind the environment map from the output slot.
+	renderer->GetMainRenderTarget()->BindTargetOnly(false);
 
 	pTexture->GenerateMips();
-	//pTexture->SaveToFile("environment.dds");
+	pTexture->SaveToFile("environment.dds");
 	// for bight test.
 	//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 	GenerateRadianceCoef(pTexture);
-	gFBEnv->pRenderer->SetEnvironmentTexture(pTexture);
-	gFBEnv->pRenderer->UpdateRadConstantsBuffer(mIrradCoeff);
+	renderer->SetEnvironmentTexture(pTexture);
+	renderer->UpdateRadConstantsBuffer(mIrradCoeff);
 	mRT->GetScene()->DetachSkySphere();
 }
 

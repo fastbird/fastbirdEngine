@@ -2,6 +2,7 @@
 #include <Engine/GeometryRenderer.h>
 #include <Engine/ICamera.h>
 #include <Engine/IMeshObject.h>
+#include <Engine/Renderer.h>
 
 using namespace fastbird;
 
@@ -14,9 +15,10 @@ const unsigned GeometryRenderer::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 GeometryRenderer::GeometryRenderer()
 {
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
 	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
-		(float)gFBEnv->pEngine->GetRenderer()->GetWidth(),
-		(float)gFBEnv->pEngine->GetRenderer()->GetHeight(),
+		(float)size.x,
+		(float)size.y,
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
@@ -43,7 +45,7 @@ GeometryRenderer::GeometryRenderer()
 	RASTERIZER_DESC desc;
 	mRasterizerState = gFBEnv->pRenderer->CreateRasterizerState(desc);
 
-	gFBEnv->pEngine->GetScene()->AddListener(this);
+	gFBEnv->_pInternalRenderer->GetMainScene()->AddListener(this);
 
 	mSphereMesh = gFBEnv->pEngine->GetMeshObject("es/objects/Sphere.dae");
 	mBoxMesh = gFBEnv->pEngine->GetMeshObject("es/objects/DebugBox.dae");
@@ -57,8 +59,8 @@ GeometryRenderer::GeometryRenderer()
 //----------------------------------------------------------------------------
 GeometryRenderer::~GeometryRenderer()
 {
-	if (gFBEnv->pEngine->GetScene())
-		gFBEnv->pEngine->GetScene()->RemoveListener(this);
+	if (gFBEnv->_pInternalRenderer->GetMainScene())
+		gFBEnv->_pInternalRenderer->GetMainScene()->RemoveListener(this);
 
 	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
@@ -143,11 +145,13 @@ void GeometryRenderer::PreRender()
 {
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
-	mObjectConstants_WorldLine.gWorldViewProj =
-		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
+
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
 }
 
-void GeometryRenderer::OnBeforeRenderingTransparents()
+void GeometryRenderer::OnBeforeRenderingTransparents(IScene* scene)
 {
 	if (!gFBEnv->pConsole->GetEngineCommand()->r_debugDraw)
 		return;
@@ -199,6 +203,9 @@ void GeometryRenderer::Render()
 	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
 		return;
 	D3DEventMarker mark("GeometryRenderer::Render()");
+
+	mObjectConstants_WorldLine.gWorldViewProj =
+		gFBEnv->pRenderer->GetCamera()->GetViewProjMat();
 	
 	IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer();
 	// object constant buffer

@@ -18,6 +18,7 @@ UIAnimation::UIAnimation()
 , mID(-1)
 , mTargetUI(0)
 , mCurAlpha(0)
+, mGlobalAnim(false)
 {
 }
 
@@ -343,6 +344,132 @@ void UIAnimation::LoadFromXML(tinyxml2::XMLElement* elem)
 			}
 		}
 	}
+
+	{
+		tinyxml2::XMLElement* pC = elem->FirstChildElement("Scale");
+		if (pC)
+		{
+			tinyxml2::XMLElement* k = pC->FirstChildElement("key");
+			while (k)
+			{
+				float time = 0;
+				Vec2 scale;
+				sz = k->Attribute("time");
+				if (sz)
+					time = StringConverter::parseReal(sz);
+				sz = k->Attribute("scale");
+				if (sz)
+					scale = StringConverter::parseVec2(sz);
+				AddScale(time, scale);
+				k = k->NextSiblingElement("key");
+			}
+		}
+	}
+
+	{
+		tinyxml2::XMLElement* pC = elem->FirstChildElement("Alpha");
+		if (pC)
+		{
+			tinyxml2::XMLElement* k = pC->FirstChildElement("key");
+			while (k)
+			{
+				float time = 0;
+				float alpha;
+				sz = k->Attribute("time");
+				if (sz)
+					time = StringConverter::parseReal(sz);
+				sz = k->Attribute("alpha");
+				if (sz)
+					alpha = StringConverter::parseReal(sz);
+				AddAlpha(time, alpha);
+				k = k->NextSiblingElement("key");
+			}
+		}
+	}
+}
+
+void UIAnimation::Save(tinyxml2::XMLElement& elem)
+{
+	if (mGlobalAnim){
+		elem.SetAttribute("globalName", mName.c_str());
+	}
+	else {
+		elem.SetAttribute("id", mID);
+		elem.SetAttribute("name", mName.c_str());
+		elem.SetAttribute("length", mLength);
+		elem.SetAttribute("loop", mLoop);
+		if (!mKeyTextColor.empty()){
+			auto textColorElem = elem.GetDocument()->NewElement("TextColor");
+			elem.InsertEndChild(textColorElem);
+			for (auto& it : mKeyTextColor)
+			{
+				auto keyelem = textColorElem->GetDocument()->NewElement("key");
+				textColorElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("color", StringConverter::toString(it.second).c_str());
+			}
+		}
+
+		if (!mKeyBackColor.empty()){
+			auto backColorElem = elem.GetDocument()->NewElement("BackColor");
+			elem.InsertEndChild(backColorElem);
+			for (auto& it : mKeyBackColor)
+			{
+				auto keyelem = backColorElem->GetDocument()->NewElement("key");
+				backColorElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("color", StringConverter::toString(it.second).c_str());
+			}
+		}
+
+		if (!mKeyMaterialColor.empty()){
+			auto materialColorElem = elem.GetDocument()->NewElement("MaterialColor");
+			elem.InsertEndChild(materialColorElem);
+			for (auto& it : mKeyMaterialColor)
+			{
+				auto keyelem = materialColorElem->GetDocument()->NewElement("key");
+				materialColorElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("color", StringConverter::toString(it.second).c_str());
+			}
+		}
+
+		if (!mKeyPos.empty()){
+			auto posElem = elem.GetDocument()->NewElement("Pos");
+			elem.InsertEndChild(posElem);
+			for (auto& it : mKeyPos)
+			{
+				auto keyelem = posElem->GetDocument()->NewElement("key");
+				posElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("pos", StringConverter::toString(it.second).c_str());
+			}
+		}
+
+		if (!mKeyScale.empty()){
+			auto scaleElem = elem.GetDocument()->NewElement("Scale");
+			elem.InsertEndChild(scaleElem);
+			for (auto& it : mKeyScale)
+			{
+				auto keyelem = scaleElem->GetDocument()->NewElement("key");
+				scaleElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("scale", StringConverter::toString(it.second).c_str());
+			}
+		}
+
+		if (!mKeyAlpha.empty()){
+			auto alphaElem = elem.GetDocument()->NewElement("Alpha");
+			elem.InsertEndChild(alphaElem);
+			for (auto& it : mKeyAlpha)
+			{
+				auto keyelem = alphaElem->GetDocument()->NewElement("key");
+				alphaElem->InsertEndChild(keyelem);
+				keyelem->SetAttribute("time", it.first);
+				keyelem->SetAttribute("alpha", StringConverter::toString(it.second).c_str());
+			}
+		}
+	}
 }
 
 void UIAnimation::ParseLua(LuaObject& data)
@@ -423,7 +550,7 @@ void UIAnimation::SetActivated(bool activate)
 			if (!mKeyScale.empty())
 			{
 				mCurScale = mKeyScale.begin()->second;
-				mTargetUI->SetAnimScale(mCurScale, mTargetUI->GetPivotWNPos());
+				mTargetUI->SetAnimScale(mCurScale);
 			}
 
 			if (!mKeyBackColor.empty())
@@ -472,5 +599,10 @@ IUIAnimation* UIAnimation::Clone() const
 	newAnim->mCurMaterialColor = mCurMaterialColor;
 	newAnim->mCurAlpha = mCurAlpha;
 	return newAnim;
+}
+
+void UIAnimation::SetGlobalAnim(bool global)
+{
+	mGlobalAnim = global;
 }
 }

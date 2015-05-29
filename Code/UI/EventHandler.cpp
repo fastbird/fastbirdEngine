@@ -17,7 +17,7 @@ EventHandler::~EventHandler()
 {
 }
 
-IEventHandler::FunctionID EventHandler::RegisterEventFunc(EVENT e, EVENT_FUNCTION func)
+IEventHandler::FunctionID EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
 {
 	mFuncMap[UNIQUE_ID] = func;
 	mEventFuncMap[e].insert(UNIQUE_ID);
@@ -25,7 +25,7 @@ IEventHandler::FunctionID EventHandler::RegisterEventFunc(EVENT e, EVENT_FUNCTIO
 	return UNIQUE_ID++;	
 }
 
-void EventHandler::UnregisterEventFunc(EVENT e, FunctionID id)
+void EventHandler::UnregisterEventFunc(UIEvents::Enum e, FunctionID id)
 {
 	mEventFuncMap[e].erase(id);
 	mFuncMap.erase(mFuncMap.find(id));
@@ -37,28 +37,31 @@ void EventHandler::UnregisterAllEventFunc()
 	mEventFuncMap.clear();
 }
 
-void EventHandler::RegisterEventLuaFunc(EVENT e, const char* luaFuncName)
+bool EventHandler::RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncName)
 {
 	if (luaFuncName == 0)
 	{
 		Error("Cannot register null function!");
-		return;
+		return false;
 	}
 	std::string funcName = StripBoth(luaFuncName);
 	LuaObject func;
 	func.FindFunction(gFBEnv->pUIManager->GetLuaState(), funcName.c_str());
-	if_assert_pass(func.IsFunction())
-		mLuaFuncMap[e] = func;	
+	if_assert_pass(func.IsFunction()){
+		mLuaFuncMap[e] = func;
+		return true;
+	}
+	return false;
 }
 
-void EventHandler::UnregisterEventLuaFunc(EVENT e)
+void EventHandler::UnregisterEventLuaFunc(UIEvents::Enum e)
 {
 	auto it = mLuaFuncMap.find(e);
 	if (it != mLuaFuncMap.end())
 		mLuaFuncMap.erase(it);
 }
 
-bool EventHandler::OnEvent(EVENT e)
+bool EventHandler::OnEvent(UIEvents::Enum e)
 {
 	if (mDisabledEvent.find(e) != mDisabledEvent.end() || !mEventEnable)
 		return false;
@@ -97,16 +100,16 @@ bool EventHandler::OnEvent(EVENT e)
 	return processed;
 }
 
-void EventHandler::DisableEvent(EVENT e)
+void EventHandler::DisableEvent(UIEvents::Enum e)
 {
 	mDisabledEvent.insert(e);
 }
 
 void EventHandler::DisableAllEvent()
 {
-	for (int i = 0; i < EVENT_NUM; ++i)
+	for (int i = 0; i < UIEvents::EVENT_NUM; ++i)
 	{
-		mDisabledEvent.insert((EVENT)i);
+		mDisabledEvent.insert((UIEvents::Enum)i);
 	}
 }
 

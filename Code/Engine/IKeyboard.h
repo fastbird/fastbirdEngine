@@ -28,13 +28,15 @@ namespace fastbird
 			KEYBOARD_FLAG_KEY_MAKE = 0,
 		};
 		virtual ~IKeyboard(){}
-		virtual void PushEvent(const KeyboardEvent& keyboardEvent) = 0;
-		virtual void PushChar(unsigned keycode) = 0;
+		virtual void PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent) = 0;
+		virtual void PushChar(HWND hWnd, unsigned keycode) = 0;
 		virtual bool IsKeyDown(unsigned short keycode) const = 0;
 		virtual bool IsKeyPressed(unsigned short keycode) const = 0;
 		virtual bool IsKeyUp(unsigned short keycode) const = 0;
 		virtual unsigned GetChar() = 0;
+		virtual void PopChar() = 0;
 		virtual void OnKillFocus() = 0;
+		virtual void ClearBuffer() = 0;
 	};
 }
 

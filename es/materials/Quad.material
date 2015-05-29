@@ -1,4 +1,5 @@
 <Material>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
 	<ShaderFile>es/shaders/Quad.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>

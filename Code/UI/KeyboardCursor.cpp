@@ -27,8 +27,9 @@ void KeyboardCursor::FinalizeKeyboardCursor()
 //---------------------------------------------------------------------------------------
 KeyboardCursor::KeyboardCursor()
 	: mVisible(false)
-{
-	mUIObject = gFBEnv->pEngine->CreateUIObject(false, Vec2I(gFBEnv->pRenderer->GetWidth(), gFBEnv->pRenderer->GetHeight()));
+{	
+	mUIObject = gFBEnv->pEngine->CreateUIObject(false, 
+		gFBEnv->pEngine->GetRequestedWndSize(gFBEnv->pEngine->GetMainWndHandle()));
 	mUIObject->SetMaterial("es/materials/KeyboardCursor.material");
 	mUIObject->SetDebugString("KeyboardCursor");
 }
@@ -38,20 +39,28 @@ KeyboardCursor::~KeyboardCursor()
 	gFBEnv->pEngine->DeleteUIObject(mUIObject);
 }
 
-//---------------------------------------------------------------------------------------
-void KeyboardCursor::SetNPos(const Vec2& pos)
-{
-	mUIObject->SetNPos(pos);
+//---------------------------------------------------------------------
+void KeyboardCursor::SetPos(const Vec2I& pos){
+	mUIObject->SetUIPos(pos);
 }
 
-void KeyboardCursor::SetNSize(const Vec2& size)
-{
-	mUIObject->SetNSize(size);
+void KeyboardCursor::SetSize(const Vec2I& size){
+	mUIObject->SetUISize(size);
 }
 
 IUIObject* KeyboardCursor::GetUIObject() const
 {
 	return mUIObject;
+}
+
+void KeyboardCursor::SetHwndId(HWND_ID hwndId)
+{
+	mUIObject->SetRenderTargetSize(gFBEnv->pEngine->GetRequestedWndSize(hwndId));
+}
+
+void KeyboardCursor::SetScissorRegion(const RECT& r)
+{
+	mUIObject->SetUseScissor(true, r);
 }
 
 }

@@ -78,7 +78,7 @@ namespace fastbird
 	void Thread::CreateThread(int StackSize, char* ThreadName)
 	{
 		mThreadDesc = FB_NEW(ThreadInfo);
-		strcpy(mThreadDesc->ThreadName, ThreadName);
+		strcpy_s(mThreadDesc->ThreadName, ThreadName);
 
 		mThreadHandle = CreateThreadHandle(this, StackSize, mThreadDesc->ThreadName);
 
@@ -104,7 +104,7 @@ namespace fastbird
 		CHECK(!GThreadDesc);
 
 		GThreadDesc = FB_NEW(ThreadInfo);
-		strcpy(GThreadDesc->ThreadName, ThreadName);
+		strcpy_s(GThreadDesc->ThreadName, ThreadName);
 		GThreadDesc->ThreadID = GetCurrentThreadId();
 	}
 }

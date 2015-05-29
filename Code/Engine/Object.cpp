@@ -21,6 +21,7 @@ Object::Object()
 	: mObjFlag(0)
 	, mGameType(-1)
 	, mGamePtr(0)
+	, mLastPreRendered(0)
 {
 	mBoundingVolume = BoundingVolume::Create();
 	mBoundingVolumeWorld = BoundingVolume::Create();
@@ -150,7 +151,7 @@ void Object::SetRadius(float r)
 
 void Object::AttachToScene()
 {
-	IScene* pScene = gFBEnv->pEngine->GetScene();
+	IScene* pScene = gFBEnv->pRenderer->GetMainScene();
 	if (!IsAttached(pScene))
 		pScene->AttachObject(this);
 }

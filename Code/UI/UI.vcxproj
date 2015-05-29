@@ -53,10 +53,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UI;_DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UI;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>UI/StdAfx.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <FloatingPointModel>Strict</FloatingPointModel>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -77,9 +78,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>NDEBUG;_UI;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_UI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>UI/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -103,8 +105,10 @@
     <ClInclude Include="ColorRampComp.h" />
     <ClInclude Include="ComponentType.h" />
     <ClInclude Include="Container.h" />
+    <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="UIEvents.h" />
     <ClInclude Include="FileSelector.h" />
     <ClInclude Include="HexagonalContextMenu.h" />
     <ClInclude Include="HorizontalGauge.h" />
@@ -115,16 +119,24 @@
     <ClInclude Include="IRadioBox.h" />
     <ClInclude Include="ITitleBar.h" />
     <ClInclude Include="IUIAnimation.h" />
+    <ClInclude Include="IUIEditor.h" />
     <ClInclude Include="IUIManager.h" />
     <ClInclude Include="IWinBase.h" />
     <ClInclude Include="KeyboardCursor.h" />
+    <ClInclude Include="ListBoxDataSet.h" />
     <ClInclude Include="ListBox.h" />
+    <ClInclude Include="ListBoxData.h" />
+    <ClInclude Include="ListItemDataType.h" />
+    <ClInclude Include="ListItem.h" />
     <ClInclude Include="NamedPortrait.h" />
     <ClInclude Include="NumericUpDown.h" />
+    <ClInclude Include="PropertyList.h" />
     <ClInclude Include="RadioBox.h" />
+    <ClInclude Include="RegionTestParam.h" />
     <ClInclude Include="Scroller.h" />
     <ClInclude Include="StaticText.h" />
     <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="TabWindow.h" />
     <ClInclude Include="TextBox.h" />
     <ClInclude Include="TextField.h" />
     <ClInclude Include="UIAnimation.h" />
@@ -142,6 +154,12 @@
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
+    <ClCompile Include="DragBox.cpp" />
+    <ClCompile Include="ListBoxDataSet.cpp" />
+    <ClCompile Include="ListBoxData.cpp" />
+    <ClCompile Include="ListItem.cpp" />
+    <ClCompile Include="PropertyList.cpp" />
+    <ClCompile Include="TabWindow.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
     <ClCompile Include="DropDown.cpp" />
     <ClCompile Include="EventHandler.cpp" />

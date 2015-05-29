@@ -18,7 +18,6 @@ TerrainPatch::TerrainPatch()
 	mLeftPatch = 0;
 	mRightPatch = 0;
 	mDownPatch = 0;
-	mLastUpdatedFrame = 0;
 }
 
 TerrainPatch::~TerrainPatch()
@@ -31,7 +30,9 @@ TerrainPatch::~TerrainPatch()
 //----------------------------------------------------------------------------
 void TerrainPatch::PreRender()
 {
-	mLastUpdatedFrame = gFBEnv->mFrameCounter;
+	if (mLastPreRendered == gFBEnv->mFrameCounter)
+		return;
+	mLastPreRendered = gFBEnv->mFrameCounter;
 }
 
 //----------------------------------------------------------------------------

@@ -31,7 +31,10 @@ void RasterizerStateD3D11::Bind()
 void RasterizerStateD3D11::SetDebugName(const char* name)
 {
 	if (mRasterizerState)
+	{
+		mRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		mRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -68,7 +71,10 @@ void BlendStateD3D11::Bind()
 void BlendStateD3D11::SetDebugName(const char* name)
 {
 	if (mBlendState)
+	{
+		mBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		mBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -104,8 +110,10 @@ void DepthStencilStateD3D11::Bind(unsigned stencilRef)
 //----------------------------------------------------------------------------
 void DepthStencilStateD3D11::SetDebugName(const char* name)
 {
-	if (mDepthStencilState)
+	if (mDepthStencilState) {
+		mDepthStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		mDepthStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -137,7 +145,10 @@ void SamplerStateD3D11::Bind(BINDING_SHADER shader, int slot)
 void SamplerStateD3D11::SetDebugName(const char* name)
 {
 	if (mSamplerState)
+	{
+		mSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, 0, 0);
 		mSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	}
 }
 
 void SamplerStateD3D11::SetHardwareSamplerState(ID3D11SamplerState* pSamplerState)

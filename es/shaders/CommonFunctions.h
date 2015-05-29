@@ -150,11 +150,10 @@ float turbulence(float3 p, int octaves, float lacunarity = 2.0, float gain = 0.5
 float3 fixNormalSample(float3 v)
 {
 	float3 res;
-	res.xy	= v.xy * 2.0 - 1.0;
-	res.z = sqrt(1.0 - min(1, (res.x*res.x + res.y*res.y)));
-	
+	res	= (v - 0.5f) * 2.f;	
+	res.z = sqrt(1.0f - min(1, (res.x*res.x + res.y*res.y)));	
 	//res.y = -res.y;
-	return normalize(res);
+	return res;
 }
 
 float mod(float x, float y)

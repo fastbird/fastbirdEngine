@@ -9,24 +9,31 @@ namespace fastbird
 	class Mouse : public IMouse
 	{
 	public:
-		static void GetCurrentMousePos(long& x, long& y);
-		static void SetCurrentMousePos(long x, long y);
+		static void GetCurrentMousePos(HWND_ID hwndId, long& x, long& y, long& physicalX, long& physicalY);
+		static void GetCurrentMousePos(HWND hwnd, long& x, long& y, long& physicalX, long& physicalY);
+		static void SetCurrentMousePos(HWND_ID hwndId, long x, long y);
+		static void SetCurrentMousePos(HWND hwnd, long x, long y);
 
 		Mouse();
 
-		virtual void PushEvent(const MouseEvent& mouseEvent);
+		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
 		virtual bool IsValid() const { return mValid; }
 		virtual void Invalidate(bool buttonClicked = false);
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
+		virtual Vec2I GetDeltaXY() const;
 		virtual void GetPos(long &x, long &y) const;
+		virtual Vec2I GetPos() const;
 		virtual void GetPrevPos(long &x, long &y) const;
 		virtual void GetNPos(float &x, float &y) const;
 		virtual Vec2 GetNPos() const;
 		virtual void GetDragStart(long &x, long &y) const;
 		virtual bool IsDragStartIn(const RECT& region) const;
+		virtual bool IsDragStarted(Vec2I& outStartPos) const;
+		virtual bool IsDragEnded() const;
+		virtual void PopDragEvent();
 
 		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(float* time = 0) const;
@@ -40,15 +47,18 @@ namespace fastbird
 		virtual bool IsMoved() const;
 
 		virtual long GetWheel() const;
+		virtual void PopWheel();
 		virtual void ClearWheel();
 		virtual void ClearButton();
 		virtual unsigned long GetNumLinesWheelScroll() const;
 
-		virtual void LockMousePos(bool lock);
+		virtual void LockMousePos(bool lock, void* key);
 		virtual void OnKillFocus();
-		virtual void OnSetFocus();
+		virtual void OnSetFocus(HWND hWnd);
 
 		virtual const Ray3& GetWorldRay();
+
+		virtual bool IsIn(const RECT& r);
 		
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
@@ -71,6 +81,9 @@ namespace fastbird
 		long mAbsXPrev;
 		long mAbsY;
 		long mAbsYPrev;
+
+		long mPhysicalX;
+		long mPhysicalY;
 
 		float mNPosX;
 		float mNPosY;
@@ -102,6 +115,11 @@ namespace fastbird
 
 		Ray3 mWorldRay;
 		bool mWorldRayCalculated;
+		float mLastWheelPush;
+		bool mDragStarted;
+		bool mDragEnd;
+
+		void* mLockMouseKey;
 	};
 }
 

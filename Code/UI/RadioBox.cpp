@@ -9,29 +9,33 @@ namespace fastbird
 
 RadioBox::RadioBox()
 	: mChecked(false)
+	, mGroupID(-1)
 {
 	mRadioImageBox = static_cast<ImageBox*>(
-		AddChild(0.f, 0.f, 0.05f, 1.0f, ComponentType::ImageBox));
+		AddChild(Vec2I(0, 0), Vec2I(24, 24), ComponentType::ImageBox));
+	mRadioImageBox->SetRuntimeChild(true);
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
-	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mRadioImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
-	mRadioImageBox->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mRadioImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
+	mStaticText->ChangePosX(24);
+	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetProperty(UIProperty::BACK_COLOR, "0.1, 0.1, 0.1, 1.0");
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	mStaticText->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&RadioBox::OnChildrenClicked, this, std::placeholders::_1));
-	mStaticText->RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	mStaticText->RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
-	RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 }
 
@@ -64,22 +68,34 @@ bool RadioBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool RadioBox::GetProperty(UIProperty::Enum prop, char val[])
+bool RadioBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::RADIO_GROUP:
 	{
-		sprintf_s(val, 256, "%u", mGroupID);
+		if (notDefaultOnly)
+		{
+			if (mGroupID == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mGroupID);
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::RADIO_CHECK:
 	{
-		sprintf_s(val, 256, "%s", StringConverter::toString(mChecked).c_str());
+		if (notDefaultOnly)
+		{
+			if (mChecked == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mChecked);
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	}
-	return __super::GetProperty(prop, val);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void RadioBox::SetText(const wchar_t* szText)
@@ -108,7 +124,7 @@ void RadioBox::OnChildrenClicked(void* arg)
 	if (mParent)
 		mParent->OnClickRadio(this);
 
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 }
 
 void RadioBox::OnClicked(void* arg)
@@ -129,43 +145,16 @@ void RadioBox::UpdateImage()
 void RadioBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	Vec2 wnSize = mRadioImageBox->GetWNSize();
-
-	auto rtSize = GetRenderTargetSize();
-	unsigned width = rtSize.x;
-	unsigned height = rtSize.y;
-	float fHeight = wnSize.y * height;
-	float fWidth = wnSize.x * width;
-	if (fHeight > fWidth)
-	{
-		float wnWidth = fHeight / (float)width;
-		mRadioImageBox->SetWNSize(Vec2(wnWidth, wnSize.y));
-	}
-	else if (fHeight < fWidth)
-	{
-		float wnHeight = fWidth / (float)height;
-		mRadioImageBox->SetWNSize(Vec2(wnSize.x, wnHeight));
-	}
-}
-
-void RadioBox::OnPosChanged()
-{
-	__super::OnPosChanged();
-
-	const RECT& region = mRadioImageBox->GetRegion();
-	unsigned posx = region.right+4;
-	auto rtSize = GetRenderTargetSize();
-	float fPosX = (float)posx / rtSize.x;
-	Vec2 wnPos = mStaticText->GetWNPos();
-	mStaticText->SetWNPos(Vec2(fPosX, wnPos.y));
-	
+	int sizeY = GetFinalSize().y;
+	mRadioImageBox->ChangeSize(Vec2I(sizeY, sizeY));
+	mStaticText->ChangePosX(sizeY+4);
 }
 
 void RadioBox::OnMouseHover(void* arg)
 {
 	if (!mEnable)
 		return;
-	SetCursor(WinBase::mCursorOver);
+	SetCursor(WinBase::sCursorOver);
 }
 
 }

@@ -8,6 +8,35 @@ namespace fastbird
 {
     class Scene : public IScene
     {
+		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
+
+		OBJECTS mObjects;
+		SPATIAL_OBJECTS mSpatialObjects;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleObjectsMain;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleObjectsLight;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mPreRenderList;
+		VectorMap<ICamera*, SPATIAL_OBJECTS> mVisibleTransparentObjects;
+		SmartPtr<ISkyBox> mSkyBox;
+		SmartPtr<ISkySphere> mSkySphere;
+		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
+		
+		SmartPtr<ILight> mDirectionalLight[2];
+
+		bool mSkipSpatialObjects;
+		bool mSkyRendering;
+		FB_CRITICAL_SECTION mSpatialObjectsCS;
+
+		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
+
+		std::vector<ISceneListener*> mListeners;
+		Vec3 mWindDir;
+		float mWindVelocity;
+		Vec3 mWindVector;
+		Color mFogColor;
+		VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
+		bool mDrawClouds;
+		bool mRttScene;
+
     public:
         Scene();
         virtual ~Scene();
@@ -31,10 +60,10 @@ namespace fastbird
 		virtual ISkySphere* GetSkySphere() const {return mSkySphere;}
 		virtual void SetSkipSpatialObjects(bool skip);
 
-		virtual OBJECTS QueryVisibleObjects(const Ray3& ray, unsigned limitObject, bool narrow = false);
+		virtual OBJECTS QueryVisibleObjects(ICamera* cam, const Ray3& ray, unsigned limitObject, bool narrow = false);
 		virtual void ClearEverySpatialObject();
 
-		virtual void MakeVisibleSet();
+		virtual void MakeVisibleSet(ICamera* cam);
 		virtual void PreRender();
 		virtual void Render();
 
@@ -51,7 +80,7 @@ namespace fastbird
 		virtual void AddListener(ISceneListener* listener);
 		virtual void RemoveListener(ISceneListener* listener);
 
-		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList() const;
+		virtual const std::vector<SpatialObject*>& GetVisibleSpatialList(ICamera* cam);
 
 		virtual unsigned GetNumSpatialObjects() const;
 
@@ -60,34 +89,13 @@ namespace fastbird
 		virtual void SetRttScene(bool set);
 		virtual bool IsRttScene() const{ return mRttScene; }
 
+		virtual ILight* GetLight(unsigned idx);
+		
+		// internal use
+		void UpdateLightCamera();
+		void SetLightToRenderer();
 
-	protected:
-		typedef std::vector<SpatialObject*> SPATIAL_OBJECTS;
-
-
-    private:
-        OBJECTS mObjects;
-		SPATIAL_OBJECTS mSpatialObjects;
-		SPATIAL_OBJECTS mVisibleObjectsMain;
-		SPATIAL_OBJECTS mVisibleObjectsLight;
-		SPATIAL_OBJECTS mPreRenderList; // VisibleObjectsMain + VisibleObjectsLight
-		SPATIAL_OBJECTS mVisibleTransparentObjects;
-		SmartPtr<ISkyBox> mSkyBox;
-		SmartPtr<ISkySphere> mSkySphere;
-		SmartPtr<ISkySphere> mSkySphereBlend; // alphablend sky
-		bool mSkipSpatialObjects;
-		bool mSkyRendering;
-		FB_CRITICAL_SECTION mSpatialObjectsCS;
-
-		std::vector< SmartPtr<IMeshObject> > mCloudVolumes;
-
-		std::vector<ISceneListener*> mListeners;
-		Vec3 mWindDir;
-		float mWindVelocity;
-		Vec3 mWindVector;
-		Color mFogColor;
-		bool mDrawClouds;
-		bool mRttScene;
+        
     };
 }
 

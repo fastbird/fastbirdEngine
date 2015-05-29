@@ -2,7 +2,7 @@
 
 #include <Engine/Object.h>
 #include <Engine/RendererStructs.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/ISceneListener.h>
 
 #include <CommonLib/Math/Vec2I.h>
@@ -75,7 +75,7 @@ namespace fastbird
 		//--------------------------------------------------------------------
 		// ISceneListener
 		//--------------------------------------------------------------------
-		virtual void OnBeforeRenderingTransparents();
+		virtual void OnBeforeRenderingTransparents(IScene* scene);
 
 		//--------------------------------------------------------------------
 		// Own

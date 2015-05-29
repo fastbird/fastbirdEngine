@@ -5,7 +5,7 @@
 	<ShaderFile>es/Shaders/UI.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
-		<DiffuseColor_Alpha>1, 0, 0, 1</DiffuseColor_Alpha>
+		<DiffuseColor_Alpha>0.7, 0.4, 0.4, 0.5</DiffuseColor_Alpha>
 		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>

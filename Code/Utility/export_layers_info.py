@@ -18,8 +18,8 @@ import xml.etree.ElementTree as ET
 
 # Relative to the folder which running the game executable file game.exe
 gXMLImagePath = "data/textures/gameui.dds"
-gXMLPath = "D:\\projects\\fastbird-engine\\data\\textures\\gameui.xml"
-gDDSPath = "D:\\projects\\fastbird-engine\\data\\textures\\gameui.dds"
+gXMLPath = "D:\\projects\\FBGame1\\data\\textures\\gameui.xml"
+gDDSPath = "D:\\projects\\FBGame1\\data\\textures\\gameui.dds"
 
 def indent(elem, level=0):
     i = "\n" + level*"\t"

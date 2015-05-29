@@ -138,12 +138,17 @@ bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
 		break;
 
 	case UIProperty::REGION_FILLED:
+	{
+		mRegionFilled = val;
+		SetTextureAtlasRegion(prop, val);
+		return true;
+	}
 	case UIProperty::REGION_NOT_FILLED:
 	{
-										  SetTextureAtlasRegion(prop, val);
-										  return true;
+		mRegionNotFilled = val;
+		SetTextureAtlasRegion(prop, val);
+		return true;
 	}
-		break;
 
 	case UIProperty::IMAGE_HFLIP:
 	{
@@ -153,6 +158,7 @@ bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::GAUGE_BORDER_COLOR:
 	{
+		mStrGaugeBorderColor = val;
 										   Color gaugeBorderC = StringConverter::parseColor(val);
 										   if (mUIObject)
 										   {
@@ -163,6 +169,130 @@ bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
 											   }
 										   }
 										   return true;
+	}
+	}
+
+	return __super::SetProperty(prop, val);
+}
+
+bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::GAUGE_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mGaugeColor == UIProperty::GetDefaultValueVec4(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mGaugeColor);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::GAUGE_BLINK_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBlinkColor == Color(1, 0, 0, 1))
+				return false;
+		}
+		auto data = StringConverter::toString(mBlinkColor);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::GAUGE_BLINK_SPEED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mBlinkSpeed == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mBlinkSpeed);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+	case UIProperty::GAUGE_MAX:
+	{
+		if (notDefaultOnly)
+		{
+			if (mMaximum == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mMaximum);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+	case UIProperty::GAUGE_CUR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mPercentage == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mPercentage);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTextureAtlasFile.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mTextureAtlasFile.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::REGION_FILLED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRegionFilled.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mRegionFilled.c_str());
+		return true;
+	}
+	case UIProperty::REGION_NOT_FILLED:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRegionNotFilled.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mRegionNotFilled.c_str());
+		return true;
+	}
+	break;
+
+	case UIProperty::IMAGE_HFLIP:
+	{
+		if (notDefaultOnly)
+		{
+			if (mHorizontalFlip == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mHorizontalFlip);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::GAUGE_BORDER_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrGaugeBorderColor.empty())
+				return false;
+		}
+
+		strcpy_s(val, bufsize, mStrGaugeBorderColor.c_str());
+		return true;
 	}
 	}
 

@@ -18,7 +18,7 @@ namespace fastbird
 		virtual ComponentType::Enum GetType() const { return ComponentType::DropDown; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 		virtual size_t AddDropDownItem(WCHAR* szString);
 		// alread added as a child
 		virtual size_t AddDropDownItem(IWinBase* item);
@@ -29,12 +29,12 @@ namespace fastbird
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnParentVisibleChanged(bool show);
 		virtual bool SetVisible(bool show);
-
+		virtual void SetHwndId(HWND_ID hwndId);
 
 	protected:
 		void SetCommonProperty(IWinBase* item, size_t index);
 		const static float LEFT_GAP;
-		virtual void OnPosChanged();
+		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
 
 	private:

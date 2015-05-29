@@ -18,6 +18,11 @@ namespace fastbird
 			NSIZEY,
 			OFFSETX,
 			OFFSETY,
+			USE_NPOSX,
+			USE_NPOSY,
+			USE_NSIZEX,
+			USE_NSIZEY,
+
 			BACK_COLOR, // vec4
 			BACK_COLOR_OVER,	// vec4
 			BACK_COLOR_DOWN,
@@ -45,7 +50,6 @@ namespace fastbird
 			REGION,
 			REGIONS,
 			FPS,
-			ALPHA,
 			HOVER_IMAGE,
 			BACKGROUND_IMAGE,
 			BACKGROUND_IMAGE_HOVER,
@@ -113,10 +117,18 @@ namespace fastbird
 			NAMED_PORTRAIT_IMAGE_SIZE,
 			NAMED_PORTRAIT_TEXT,
 			NAMED_PORTRAIT_TEXT_COLOR,
+			CARD_SIZEX,
 			CARD_SIZEY,
 			CARD_OFFSETY,
 			RADIO_GROUP,
 			RADIO_CHECK,
+
+			SYNC_WINDOW_POS,
+			MSG_TRANSLATION,
+			TAB_ORDER,
+
+			TABWND_NUM_TABS,
+			TABWND_TAB_NAMES,
 
 			COUNT
 		};
@@ -135,6 +147,10 @@ namespace fastbird
 			"NSIZEY",
 			"OFFSETX",
 			"OFFSETY",
+			"USE_NPOSX",
+			"USE_NPOSY",
+			"USE_NSIZEX",
+			"USE_NSIZEY",
 			"BACK_COLOR", // vec4
 			"BACK_COLOR_OVER",	// vec4
 			"BACK_COLOR_DOWN", // vec4
@@ -162,7 +178,6 @@ namespace fastbird
 			"REGION",
 			"REGIONS",
 			"FPS",
-			"ALPHA",
 			"HOVER_IMAGE",
 			"BACKGROUND_IMAGE",
 			"BACKGROUND_IMAGE_HOVER",
@@ -230,10 +245,19 @@ namespace fastbird
 			"NAMED_PORTRAIT_IMAGE_SIZE",
 			"NAMED_PORTRAIT_TEXT",
 			"NAMED_PORTRAIT_TEXT_COLOR",
+			"CARD_SIZEX",
 			"CARD_SIZEY",
 			"CARD_OFFSETY",
 			"RADIO_GROUP",
 			"RADIO_CHECK",
+
+			"SYNC_WINDOW_POS",
+			"MSG_TRANSLATION",
+
+			"TAB_ORDER",
+
+			"TABWND_NUM_TABS",
+			"TABWND_TAB_NAMES",
 
 			"COUNT"
 		};
@@ -243,8 +267,12 @@ namespace fastbird
 			assert(e >= 0 && e < COUNT);
 			return strings[e];
 		}
+		inline const char* ConvertToString(unsigned e)
+		{
+			return ConvertToString(Enum(e));
+		}
 
-		inline Enum ConverToEnum(const char* sz)
+		inline Enum ConvertToEnum(const char* sz)
 		{
 			int i = 0;
 			for (auto& strEnum : strings)
@@ -257,6 +285,204 @@ namespace fastbird
 			
 			assert(0);
 			return COUNT;
+		}
+
+		inline Enum IsUIProperty(const char* sz)
+		{
+			int i = 0;
+			for (auto& strEnum : strings)
+			{
+				if (_stricmp(strEnum, sz) == 0)
+					return Enum(i);
+
+				++i;
+			}
+
+			return COUNT;
+		}
+
+		inline Vec4 GetDefaultValueVec4(UIProperty::Enum prop)
+		{
+			switch (prop){
+			case BACK_COLOR:
+				return Vec4(0, 0, 0, 0.7f);
+			case TEXT_COLOR:
+				return Vec4(0.8f, 0.8f, 0.8f, 1.0f);
+			case TEXT_COLOR_HOVER:
+				return Vec4(1.f, 1.0f, 1.f, 1.f);
+			case TEXT_COLOR_DOWN:
+				return Vec4(1.0f, 1.0f, 1.0f, 1.f);
+			case BACK_COLOR_OVER:
+				return Vec4(0.09f, 0.02f, 0.03f, 0.8f);
+			case BACK_COLOR_DOWN:
+				return Vec4(0.3f, 0.3f, 0.f, 0.5f);
+			case EDGE_COLOR:
+				return Vec4(1.f, 1.f, 1.f, 0.7f);
+			case EDGE_COLOR_OVER:
+				return Vec4(0.9f, 0.85f, 0.0f, 0.7f);
+			case IMAGE_COLOR_OVERLAY:
+				return Vec4(1, 1, 1, 1);
+			case GAUGE_COLOR:
+				return Vec4(1, 1, 1, 1);
+			case GAUGE_BLINK_COLOR:
+				return Vec4(1, 1, 0, 1);
+			case GAUGE_BORDER_COLOR:
+				return Vec4(0.5f, 0.5f, 0.5f, 0.5f);
+			case LISTBOX_HIGHLIGHT_COLOR:
+				return Vec4(0.1f, 0.3f, 0.3f, 0.7f);
+			}
+			assert(0);
+			return Vec4::ZERO;
+		}
+
+		inline Vec2I GetDefaultValueVec2I(UIProperty::Enum prop)
+		{
+			switch (prop){
+			case TEXT_GAP:
+				return Vec2I::ZERO;
+			case DRAGABLE:
+				return Vec2I::ZERO;
+			case NUMERIC_UPDOWN_MINMAX:
+				return Vec2I(0, 100);
+			}
+			assert(0);
+			return Vec2I::ZERO;
+		}
+
+		inline float GetDefaultValueFloat(UIProperty::Enum prop)
+		{
+			switch (prop){
+			case TEXT_SIZE:
+				return 22.f;
+			case FPS:
+				return 0.f;
+			case GAUGE_MAX:
+				return 1.f;
+			case GAUGE_CUR:
+				return 0.f;
+			case GAUGE_BLINK_SPEED:
+				return 3.f;
+			}
+			assert(0);
+			return 0.f;
+		}
+
+		inline bool GetDefaultValueBool(UIProperty::Enum prop)
+		{
+			switch (prop){
+			case FIXED_TEXT_SIZE:
+				return true;
+			case MATCH_SIZE:
+				return false;
+			case NO_BACKGROUND:
+				return false;			
+			case NO_MOUSE_EVENT:
+				return false;
+			case NO_MOUSE_EVENT_ALONE:
+				return false;
+			case USE_SCISSOR:
+				return true;
+			case USE_BORDER:
+				return false;
+			case INHERIT_VISIBLE_TRUE:
+				return true;
+			case VISIBLE:
+				return true;
+			case ENABLED:
+				return true;
+			case MODAL:
+				return false;
+			case CHECKBOX_CHECKED:
+				return false;
+			case ACTIVATED_IMAGE_ROT:
+				return false;
+			case BUTTON_ACTIVATED:
+				return false;
+			case CHANGE_IMAGE_ACTIVATE:
+				return false;
+			case NO_BUTTON:
+				return false;
+			case SCROLLERV:
+				return false;
+			case SCROLLERH:
+				return false;
+			case MATCH_HEIGHT:
+				return false;
+			case KEEP_IMAGE_RATIO:
+				return true;
+			case IMAGE_FIXED_SIZE:
+				return false;
+			case RADIO_CHECK:
+				return false;
+			case TEXTBOX_MATCH_HEIGHT:
+				return false;
+			case IMAGE_HFLIP:
+				return false;
+			case USE_WND_FRAME:
+				return false;
+			case ALWAYS_ON_TOP:
+				return false;
+			case CLOSE_BY_ESC:
+				return false;
+			case SYNC_WINDOW_POS:
+				return false;
+
+			}
+			assert(0);
+			return false;
+		}
+
+		inline int GetDefaultValueInt(UIProperty::Enum prop)
+		{
+			switch (prop){
+			case TEXT_ALIGN:
+				return ALIGNH::LEFT;
+			case TEXT_VALIGN:
+				return ALIGNV::MIDDLE;
+			case TEXT_LEFT_GAP:
+				return 0;
+			case TEXT_RIGHT_GAP:
+				return 0;
+			case ALIGNH:
+				return ALIGNH::LEFT;
+			case ALIGNV:
+				return ALIGNV::TOP;
+			case SPECIAL_ORDER:
+				return 0;
+			case TAB_ORDER:
+				return -1;
+			case BUTTON_ICON_TEXT:
+				return 0;
+			case CARD_SIZEX:
+				return 200;
+			case CARD_SIZEY:
+				return 100;
+			case CARD_OFFSETY:
+				return 2;
+			case LISTBOX_ROW_HEIGHT:
+				return 24;
+			case LISTBOX_ROW_GAP:
+				return 4;
+			case NUMERIC_UPDOWN_NUMBER:
+				return 0;
+			case RADIO_GROUP:
+				return -1;
+			case TABWND_NUM_TABS:
+				return 0;
+			}
+			assert(0);
+			return 0;
+		}
+
+		inline const char* GetDefaultValueString(UIProperty::Enum prop)
+		{
+			switch (prop)
+			{
+			case LISTBOX_HIGHLIGHT_COLOR:
+				return "0.1, 0.3, 0.3, 0.7";
+			}
+			assert(0);
+			return "";
 		}
 	}
 }

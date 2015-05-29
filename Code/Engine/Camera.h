@@ -45,6 +45,7 @@ namespace fastbird
 		virtual const Mat44& GetInvViewMat();
 		virtual const Mat44& GetInvViewProjMat();
 		virtual const Mat44& GetProjMat();
+		virtual const Mat44& GetInvProjMat();
 		virtual const Mat44& GetViewProjMat();
 		// field of view in the y direction, in radians.
 		virtual void SetFOV(float fov);
@@ -57,10 +58,10 @@ namespace fastbird
 		virtual void SetNearFar(float nearPlane, float farPlane);
 		virtual void GetNearFar(float& nearPlane, float& farPlane) const;
 		// width and height of the view volume at the near view-plane
-		virtual void SetWidth(float width) { mWidth = width; mProjPropertyChanged = true;}
-		virtual void SetHeight(float height) { mHeight = height; mProjPropertyChanged = true;}
-		virtual float GetWidth() const { return mWidth; }
-		virtual float GetHeight() const { return mHeight; }
+		virtual void SetWidth(int width) { mWidth = width; mProjPropertyChanged = true;}
+		virtual void SetHeight(int height) { mHeight = height; mProjPropertyChanged = true;}
+		virtual float GetWidth() const { return (float)mWidth; }
+		virtual float GetHeight() const { return (float)mHeight; }
 		virtual void SetName(const char* name) { mName = name; }
 		virtual const char* GetName() const { return mName.c_str(); }
 		virtual void Update();
@@ -69,6 +70,7 @@ namespace fastbird
 		virtual Vec2I WorldToScreen(const Vec3& worldPos) const;
 		virtual void SetYZSwap(bool enable){mYZSwap = enable; mProjPropertyChanged = true; }
 		virtual void SetTarget(SpatialObject* pObj);
+		virtual void SetDistanceFromTarget(float dist);
 		virtual SpatialObject* GetTarget() const { return mTarget; }
 		virtual void SetCurrent(bool cur) { mCurrentCamera = cur; }
 		virtual void OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
@@ -124,6 +126,7 @@ namespace fastbird
 		Mat44 mViewMat;
 		Mat44 mInvViewMat;
 		Mat44 mProjMat;
+		Mat44 mInvProjMat;
 		Mat44 mViewProjMat;
 		Mat44 mInvViewProjMat;
 		float mFov;
@@ -131,8 +134,8 @@ namespace fastbird
 		float mAspectRatio;
 		float mNear;
 		float mFar;
-		float mWidth;
-		float mHeight;
+		int mWidth;
+		int mHeight;
 		std::string mName;
 		Plane3 mPlanes[6];
 		SpatialObject* mTarget;

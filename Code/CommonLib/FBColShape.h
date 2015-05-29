@@ -26,7 +26,7 @@ namespace fastbird
 		{
 			for (int i = 0; i < Num; ++i)
 			{
-				if (stricmp(strings[i], str) == 0)
+				if (_stricmp(strings[i], str) == 0)
 					return Enum(i);
 			}
 			assert(0);

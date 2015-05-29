@@ -1,6 +1,7 @@
 #include <CommonLib/StdAfx.h>
 #include <CommonLib/FileSystem.h>
 #include <CommonLib/StringUtils.h>
+#include <commdlg.h>
 
 namespace fastbird
 {
@@ -20,6 +21,13 @@ namespace fastbird
 	{
 
 	}
+	
+	const char* FileSystem::GetCWD(){
+		static char buf[MAX_PATH];
+		GetCurrentDirectory(MAX_PATH, buf);
+		return buf;
+	}
+
 
 	int FileSystem::CompareLastFileWrite(const char* filepath1, const char* filepath2)
 	{
@@ -91,7 +99,7 @@ namespace fastbird
 		if (!data || length == 0 || filepath==0)
 			return;
 
-		if (!TestSecurity(filepath))
+		if (!SecurityOK(filepath))
 		{
 			Error("FileSystem: SaveBinaryFile to %s has security violation.", filepath);
 			return;
@@ -105,7 +113,7 @@ namespace fastbird
 		ofs.write(data, length);
 	}
 
-	bool FileSystem::TestSecurity(const char* filepath)
+	bool FileSystem::SecurityOK(const char* filepath)
 	{
 		char absbuf[MAX_PATH];
 		_fullpath(absbuf, filepath, MAX_PATH);
@@ -126,6 +134,95 @@ namespace fastbird
 			FindClose(handle);
 		}
 		return found;
+	}
+
+	void FileSystem::Rename(const char* prev, const char* newname)
+	{
+		if (!SecurityOK(prev) || !SecurityOK(newname))
+			return;
+
+		if (IsFileExisting(prev) && !IsFileExisting(newname))
+		{
+			rename(prev, newname);
+		}
+	}
+
+	void FileSystem::DelFile(const char* file)
+	{
+		if (!SecurityOK(file))
+		{
+			return;
+		}
+		std::string delDir = "data/deleted";
+		std::string delfilePath = delDir + "/" + file;
+		std::string delfileDir = GetDirectoryPath(delfilePath.c_str());
+		CreateFolder(delfileDir.c_str());
+
+		MoveFile(file, delfilePath.c_str());
+	}
+
+	void FileSystem::NewFile(const char* filepath){
+		if (IsFileExisting(filepath))
+			return;
+
+		auto path = GetDirectoryPath(filepath);
+		CreateFolder(path.c_str());
+
+		FILE* file;
+		auto err = fopen_s(&file, filepath, "w");
+		if (!err)
+			fclose(file);
+		else
+		{
+			Error("FileSystem: Cannot create a new file %s", filepath);
+		}
+	}
+
+	void FileSystem::CreateFolder(const char* folderPath)
+	{
+		char unified[MAX_PATH];
+		UnifyFilepath(unified, folderPath);
+		auto folders = Split(folderPath, "/");
+		std::string path;
+		for (auto& folder : folders)
+		{
+			if (!folder.empty())
+			{
+				path += folder;
+				CreateDirectory(path.c_str(), 0);
+				path += "/";
+			}
+		}
+	}
+
+	std::string FileSystem::OpenFile(HWND hwnd, char* filter)
+	{
+		static std::string sLastDir = mRootAbs;
+		char szFile[260];
+		OPENFILENAME ofn;
+		ZeroMemory(&ofn, sizeof(ofn));
+		ofn.lStructSize = sizeof(ofn);
+		ofn.hwndOwner = hwnd;
+		ofn.lpstrFile = szFile;
+		// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+		// use the contents of szFile to initialize itself.
+		ofn.lpstrFile[0] = '\0';
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = filter; // "All\0*.*\0Text\0*.TXT\0\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = NULL;
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = sLastDir.c_str();
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+		
+		if (GetOpenFileName(&ofn)){
+			sLastDir = GetCWD();			
+			SetCurrentDirectory(mRootAbs.c_str());
+			return GetRelativePath(szFile, mRootAbs);
+		}
+		sLastDir = GetCWD();
+		SetCurrentDirectory(mRootAbs.c_str());
+		return std::string();
 	}
 
 }

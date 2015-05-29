@@ -14,7 +14,7 @@ WorkerThread::WorkerThread(TaskScheduler* scheduler)
 
     static DWORD ThreadID = 0;
     static char ThreadName[128];
-    sprintf(ThreadName, "worker_thread_%d", ThreadID++);
+    sprintf_s(ThreadName, "worker_thread_%d", ThreadID++);
 
     CreateThread(256 * 1024, ThreadName);
 }

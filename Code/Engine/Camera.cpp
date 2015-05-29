@@ -27,15 +27,6 @@ Camera::Camera()
 {
 	// proj properties
 	SetFOV(Radian(70));
-	if (IRenderer* pRenderer = gFBEnv->pEngine->GetRenderer())
-	{
-		mWidth = (float)pRenderer->GetWidth();
-		mHeight = (float)pRenderer->GetHeight();
-	}
-	else
-	{
-		Error("No Renderer found while creating the camera.");
-	}
 	mNear = 1.3f;
 	mFar = 2000.0f;
 }
@@ -201,7 +192,7 @@ void Camera::Update()
 	bool projChanged = mProjPropertyChanged;
 	if (mProjPropertyChanged)
 	{
-		mAspectRatio = mWidth / mHeight;
+		mAspectRatio = mWidth / (float)mHeight;
 		mProjPropertyChanged = false;
 		if (!mOrthogonal)
 		{
@@ -220,8 +211,7 @@ void Camera::Update()
 				0, 0, 0, 1); 
 			mProjMat = mProjMat * swapMat;
 		}
-
-		gFBEnv->pRenderer->UpdateRareConstantsBuffer();
+		mInvProjMat = mProjMat.Inverse();
 	}
 
 	if (projChanged || viewChanged)
@@ -308,7 +298,12 @@ const Mat44& Camera::GetProjMat()
 {
 	Update();
 	return mProjMat;
+}
 
+const Mat44& Camera::GetInvProjMat()
+{
+	Update();
+	return mInvProjMat;
 }
 
 //----------------------------------------------------------------------------
@@ -393,6 +388,10 @@ void Camera::SetTarget(SpatialObject* pObj)
 		mTarget->AddCameraTargetingMe(this);
 }
 
+void Camera::SetDistanceFromTarget(float dist){
+	mInternalParams.dist = dist;
+}
+
 //---------------------------------------------------------------------------
 void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard)
 {
@@ -422,17 +421,18 @@ void Camera::OnInputFromEngine(fastbird::IMouse* pMouse, fastbird::IKeyboard* pK
 				mUserParams.dPitch = -dy * mouseSens;
 			}
 
-			pMouse->LockMousePos(true);
+			pMouse->LockMousePos(true, this);
 			pMouse->Invalidate();
 		}
 		else
 		{
-			pMouse->LockMousePos(false);
+			//pMouse->LockMousePos(false, this);
 		}
 
 		long wheel = pMouse->GetWheel();
 		if (wheel)
 		{
+			pMouse->PopWheel();
 			float shift = 1.0f;
 			if (pKeyboard->IsKeyDown(VK_SHIFT))
 				shift = 0.1f;

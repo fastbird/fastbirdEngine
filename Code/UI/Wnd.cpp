@@ -15,11 +15,11 @@ Wnd::Wnd()
 , mBackgroundImage(0)
 , mAlwaysOnTop(false)
 , mCloseByEsc(false)
+, mSyncWindowPos(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mUIObject->SetNoDrawBackground(true);
 	//RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
 		//std::bind(&Wnd::MouseConsumer, this, std::placeholders::_1));
 }
@@ -79,28 +79,39 @@ void Wnd::OnSizeChanged()
 {
 	__super::OnSizeChanged();
 	RefreshFrame();
+
+	if (mTitlebar){
+		mTitlebar->ChangeSizeX(GetFinalSize().x);
+	}
+	if (mBackgroundImage){
+		mBackgroundImage->ChangeSize(GetFinalSize());
+	}
 }
 
-void Wnd::OnPosChanged()
+void Wnd::OnPosChanged(bool anim)
 {
-	__super::OnPosChanged();
+	__super::OnPosChanged(anim);
 	RefreshFrame();
+	if (mBackgroundImage){
+		mBackgroundImage->ChangePos(GetFinalPos());
+	}
 }
 
 void Wnd::RefreshFrame()
 {
 	if (mTitlebar)
 	{
-		mTitlebar->SetNSizeX(mWNSize.x);
-		mTitlebar->SetNPos(GetFinalPos());
+		mTitlebar->ChangeSizeX(GetFinalSize().x);
+		mTitlebar->ChangePos(GetFinalPos());
 	}
 	if (mUseFrame)
 	{
 		if (mFrames.empty())
 		{
 			ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			T->SetHwndId(GetHwndId());
 			T->SetRender3D(mRender3D, GetRenderTargetSize());
-			T->SetSizeY(16);
+			T->ChangeSizeY(16);
 			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
 			T->SetManualParent(this);
 			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");
@@ -109,8 +120,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(T);			
 
 			ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			L->SetHwndId(GetHwndId());
 			L->SetRender3D(mRender3D, GetRenderTargetSize());
-			L->SetSizeX(16);
+			L->ChangeSizeX(16);
 			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
 			L->SetManualParent(this);
 			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");
@@ -119,8 +131,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(L);			
 
 			ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			R->SetHwndId(GetHwndId());
 			R->SetRender3D(mRender3D, GetRenderTargetSize());
-			R->SetSizeX(16);
+			R->ChangeSizeX(16);
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			R->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_R");
 			R->SetManualParent(this);
@@ -130,9 +143,10 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(R);
 
 			ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			B->SetHwndId(GetHwndId());
 			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-			B->SetSizeY(20);
+			B->ChangeSizeY(20);
 			B->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_B");
 			B->SetManualParent(this);
 			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");
@@ -141,8 +155,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(B);
 
 			ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			LT->SetHwndId(GetHwndId());
 			LT->SetRender3D(mRender3D, GetRenderTargetSize());
-			LT->SetSize(Vec2I(40, 44));
+			LT->ChangeSize(Vec2I(40, 44));
 			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
 			LT->SetManualParent(this);
 			LT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
@@ -150,8 +165,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LT);
 
 			ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			RT->SetHwndId(GetHwndId());
 			RT->SetRender3D(mRender3D, GetRenderTargetSize());
-			RT->SetSize(Vec2I(40, 44));
+			RT->ChangeSize(Vec2I(40, 44));
 			RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			RT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RT");
 			RT->SetManualParent(this);
@@ -160,8 +176,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(RT);
 
 			ImageBox* MT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			MT->SetHwndId(GetHwndId());
 			MT->SetRender3D(mRender3D, GetRenderTargetSize());
-			MT->SetSize(Vec2I(302, 44));
+			MT->ChangeSize(Vec2I(302, 44));
 			MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
 			MT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_MT");
 			MT->SetManualParent(this);
@@ -170,8 +187,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(MT);
 
 			ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			LB->SetHwndId(GetHwndId());
 			LB->SetRender3D(mRender3D, GetRenderTargetSize());
-			LB->SetSize(Vec2I(40, 44));
+			LB->ChangeSize(Vec2I(40, 44));
 			LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			LB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LB");
 			LB->SetManualParent(this);
@@ -180,14 +198,42 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(LB);
 
 			ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+			RB->SetHwndId(GetHwndId());
 			RB->SetRender3D(mRender3D, GetRenderTargetSize());
-			RB->SetSize(Vec2I(40, 44));
+			RB->ChangeSize(Vec2I(40, 44));
 			RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 			RB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RB");
 			RB->SetManualParent(this);
 			RB->SetProperty(UIProperty::SPECIAL_ORDER, "2");
 			RB->SetVisible(true);
 			mFrames.push_back(RB);
+		}
+
+		if (!mWndContentUI){
+			mWndContentUI = (Wnd*)AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Window);
+			mWndContentUI->SetName("_@ContentWindow");
+			mWndContentUI->SetGhost(true);
+			mWndContentUI->SetRuntimeChild(true);
+			mWndContentUI->SetRender3D(mRender3D, GetRenderTargetSize());
+			Vec2I sizeMod = {
+				mUseFrame ? -26 : 0,
+				mUseFrame ? -64 : -44,
+			};
+			mWndContentUI->ModifySize(sizeMod);
+			mWndContentUI->ChangePos(Vec2I(20, 44));
+			mWndContentUI->ModifySize(Vec2I(-20, 0));
+
+			mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
+			mWndContentUI->SetProperty(UIProperty::USE_NSIZEX, "true");
+			mWndContentUI->SetProperty(UIProperty::USE_NSIZEY, "true");
+			if (mUseScrollerV)
+			{
+				mPendingDelete.push_back(mScrollerV);
+				mUseScrollerV = false;
+				mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
+			}
+			TransferChildrenTo(mWndContentUI);
+			mWndContentUI->SetVisible(mVisibility.IsVisible());
 		}
 		enum FRAME_ORDER
 		{
@@ -203,39 +249,40 @@ void Wnd::RefreshFrame()
 			FRAME_LB,
 			FRAME_RB,
 		};
-		mFrames[FRAME_T]->SetNSizeX(mWNSize.x);
-		const Vec2 finalPos = GetFinalPos();
-		mFrames[FRAME_T]->SetWNPos(finalPos);
+		const auto& finalSize = GetFinalSize();
+		const auto& finalPos = GetFinalPos();
+		mFrames[FRAME_T]->ChangeSizeX(finalSize.x);
+		mFrames[FRAME_T]->ChangePos(finalPos);
 
-		mFrames[FRAME_L]->SetNSizeY(mWNSize.y);
-		mFrames[FRAME_L]->SetWNPos(finalPos);
+		mFrames[FRAME_L]->ChangeSizeY(finalSize.y);
+		mFrames[FRAME_L]->ChangePos(finalPos);
 
-		mFrames[FRAME_R]->SetNSizeY(mWNSize.y);
-		Vec2 wnpos = finalPos;
-		wnpos.x += mWNSize.x;
-		mFrames[FRAME_R]->SetWNPos(wnpos);
+		mFrames[FRAME_R]->ChangeSizeY(finalSize.y);
+		auto wpos = finalPos;
+		wpos.x += finalSize.x;
+		mFrames[FRAME_R]->ChangePos(wpos);
 
-		mFrames[FRAME_B]->SetNSizeX(mWNSize.x);
-		wnpos = finalPos;
-		wnpos.y += mWNSize.y;
-		mFrames[FRAME_B]->SetWNPos(wnpos);
+		mFrames[FRAME_B]->ChangeSizeX(finalSize.x);
+		wpos = finalPos;
+		wpos.y += finalSize.y;
+		mFrames[FRAME_B]->ChangePos(wpos);
 
-		mFrames[FRAME_LT]->SetWNPos(finalPos);
+		mFrames[FRAME_LT]->ChangePos(finalPos);
 
-		wnpos = finalPos;
-		wnpos.x += mWNSize.x;
-		mFrames[FRAME_RT]->SetWNPos(wnpos);
+		wpos = finalPos;
+		wpos.x += finalSize.x;
+		mFrames[FRAME_RT]->ChangePos(wpos);
 
-		wnpos = finalPos;
-		wnpos.x += mWNSize.x*.5f;
-		mFrames[FRAME_MT]->SetWNPos(wnpos);
+		wpos = finalPos;
+		wpos.x += Round(finalSize.x*.5f);
+		mFrames[FRAME_MT]->ChangePos(wpos);
 
-		wnpos = finalPos;
-		wnpos.y += mWNSize.y;
-		mFrames[FRAME_LB]->SetWNPos(wnpos);
+		wpos = finalPos;
+		wpos.y += finalSize.y;
+		mFrames[FRAME_LB]->ChangePos(wpos);
 
-		wnpos = finalPos + mWNSize;
-		mFrames[FRAME_RB]->SetWNPos(wnpos);
+		wpos = finalPos + finalSize;
+		mFrames[FRAME_RB]->ChangePos(wpos);
 	}
 	else
 	{
@@ -246,7 +293,11 @@ void Wnd::RefreshFrame()
 				gFBEnv->pUIManager->DeleteComponent(var);
 			}
 			mFrames.clear();
+			gFBUIManager->DirtyRenderList(GetHwndId());
 		}
+
+		if (mWndContentUI)
+			mWndContentUI->TransferChildrenTo(this);
 	}
 }
 
@@ -262,43 +313,25 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TITLEBAR:
 	{
+		mTitlebarString = val;
 								 if (!mTitlebar)
 								 {
 									 mTitlebar = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
+									 mTitlebar->SetHwndId(GetHwndId());
 									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
 									 mTitlebar->SetVisible(mVisibility.IsVisible());
-									 mTitlebar->RegisterEventFunc(IEventHandler::EVENT_MOUSE_DRAG,
+									 mTitlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
 										 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
 									 mTitlebar->SetManualParent(this);
-									 mTitlebar->SetNSizeX(mWNSize.x);
-									 mTitlebar->SetSizeY(44);
-									 mTitlebar->SetNPos(GetFinalPos());
+									 mTitlebar->ChangeSizeX(GetFinalSize().x);
+									 mTitlebar->ChangeSizeY(44);
+									 mTitlebar->ChangePos(GetFinalPos());
 									 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
 									 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 									 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
-									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
-									 mTitlebar->SetProperty(UIProperty::FIXED_TEXT_SIZE, "true");
+									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");									 
 									 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
 									 mTitlebar->SetName("_@TitleBar");
-									 assert(!mWndContentUI);
-									 mWndContentUI = (Wnd*)AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Window);
-									 mWndContentUI->SetRender3D(mRender3D, GetRenderTargetSize());
-									 Vec2I sizeMod = {
-										 mUseFrame ? -26 : 0,
-										 mUseFrame ? -64 : -44,
-									 };
-									 mWndContentUI->SetSizeModificator(sizeMod);
-									 mWndContentUI->SetUseAbsYSize(true);
-									 mWndContentUI->SetPos(Vec2I(20, 44));
-									 mWndContentUI->SetSizeModificator(Vec2I(-20, 0));
-
-									 mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
-									 if (mUseScrollerV)
-									 {
-										 mPendingDelete.push_back(mScrollerV);
-										 mUseScrollerV = false;
-										 mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
-									 }
 								 }
 								 auto text = TranslateText(val);
 								 if (text.empty())
@@ -310,16 +343,18 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
+		mStrBackground = val;
 												 if (!mBackgroundImage)
 												 {
 													 mBackgroundImage = FB_NEW(ImageBox);
+													 mBackgroundImage->SetHwndId(GetHwndId());
 													 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-													 mBackgroundImage->SetParent(this);
-													 mBackgroundImage->SetWNPos(GetFinalPos());
-													 mBackgroundImage->SetWNSize(mWNSize);
+													 mBackgroundImage->SetManualParent(this);
+													 mBackgroundImage->ChangePos(GetFinalPos());
+													 mBackgroundImage->ChangeSize(GetFinalSize());
 													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 												 }
-												 gFBEnv->pUIManager->DirtyRenderList();
+												 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 												 mBackgroundImage->SetTexture(val);
 												 return true;
@@ -327,16 +362,18 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::KEEP_IMAGE_RATIO:
 	{
+		mStrKeepRatio = val;
 										 if (!mBackgroundImage)
 										 {
 											 mBackgroundImage = FB_NEW(ImageBox);
+											 mBackgroundImage->SetHwndId(GetHwndId());
 											 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-											 mBackgroundImage->SetParent(this);
-											 mBackgroundImage->SetWNPos(GetFinalPos());
-											 mBackgroundImage->SetWNSize(mWNSize);
+											 mBackgroundImage->SetManualParent(this);
+											 mBackgroundImage->ChangePos(GetFinalPos());
+											 mBackgroundImage->ChangeSize(GetFinalSize());
 											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 										 }
-										 gFBEnv->pUIManager->DirtyRenderList();
+										 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 										 mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
 										 return true;
 	}
@@ -357,20 +394,144 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 return true;
 	}
 
+	case UIProperty::SYNC_WINDOW_POS:
+	{
+		mSyncWindowPos = StringConverter::parseBool(val);
+		return true;
+	}
+
+	case UIProperty::MSG_TRANSLATION:
+	{
+		mMsgTranslationUnit = val;
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
 }
 
+bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
+{
+	switch (prop)
+	{
+	case UIProperty::USE_WND_FRAME:
+	{
+		if (notDefaultOnly)
+		{
+			if (mUseFrame == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mUseFrame).c_str());
+		return true;
+	}
+	case UIProperty::TITLEBAR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTitlebarString.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mTitlebarString.c_str());
+		return true;
+	}
+	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrBackground.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrBackground.c_str());
+		return true;
+	}
+
+	case UIProperty::KEEP_IMAGE_RATIO:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrKeepRatio.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrKeepRatio.c_str());
+		return true;
+	}
+
+	case UIProperty::ALWAYS_ON_TOP:
+	{
+		if (notDefaultOnly)
+		{
+			if (mAlwaysOnTop == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mAlwaysOnTop).c_str());
+		return true;
+	}
+
+	case UIProperty::CLOSE_BY_ESC:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCloseByEsc == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mCloseByEsc).c_str());
+		return true;
+	}
+
+	case UIProperty::SYNC_WINDOW_POS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mSyncWindowPos == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mSyncWindowPos).c_str());
+		return true;
+	}
+
+	case UIProperty::MSG_TRANSLATION:
+	{
+		if (notDefaultOnly)
+		{
+			if (mMsgTranslationUnit.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mMsgTranslationUnit.c_str());
+		return true;
+	}
+
+	}
+
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
+}
+
 void Wnd::OnTitlebarDrag(void *arg)
 {
-	long x, y;
-	gFBEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
-	auto rtSize = GetRenderTargetSize();
-	Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
-	mAbsTempLock = true;
-	SetNPos(GetNPos() + nposOffset);
-	mAbsTempLock = false;
+	if (mSyncWindowPos)
+	{
+		auto mouse = gFBEnv->pEngine->GetMouse();		
+		// move OS window
+		long sx, sy, x, y;
+		mouse->GetDragStart(sx, sy);
+		mouse->GetPos(x, y);
+		auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
+		RECT rect;
+		GetWindowRect(hwnd, &rect);
+		MoveWindow(hwnd, OSWindowPos.x + x - sx, OSWindowPos.y + y - sy, rect.right - rect.left, rect.bottom - rect.top, FALSE);
+	}
+	else
+	{
+		long x, y;
+		gFBEnv->pEngine->GetMouse()->GetDeltaXY(x, y);
+		Move(Vec2I(x, y));
+		/*auto rtSize = GetRenderTargetSize();
+		Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
+		SetNPos(GetNPos() + nposOffset);*/
+	}
 }
 
 bool Wnd::SetVisible(bool show)
@@ -403,21 +564,21 @@ void Wnd::RefreshScissorRects()
 	}
 }
 
-void Wnd::SetAnimScale(const Vec2& scale, const Vec2& pivot)
+void Wnd::SetAnimScale(const Vec2& scale)
 {
 	if (mTitlebar)
 	{
-		mTitlebar->SetAnimScale(scale, pivot);
+		mTitlebar->SetAnimScale(scale);
 	}
 	if (!mFrames.empty())
 	{
 		for (auto var : mFrames)
 		{
-			var->SetAnimScale(scale, pivot);
+			var->SetAnimScale(scale);
 		}
 	}
 
-	__super::SetAnimScale(scale, pivot);
+	__super::SetAnimScale(scale);
 }
 
 
@@ -437,6 +598,40 @@ void Wnd::StopHighlight()
 	}
 
 	__super::StopHighlight();
+}
+
+void Wnd::SetHwndId(HWND_ID hwndId)
+{
+	__super::SetHwndId(hwndId);
+	if (mTitlebar)
+	{
+		mTitlebar->SetHwndId(hwndId);
+	}
+	for (auto win : mFrames)
+	{
+		if (win)
+		{
+			win->SetHwndId(hwndId);
+		}
+	}
+	if (mBackgroundImage)
+		mBackgroundImage->SetHwndId(hwndId);
+}
+
+const char* Wnd::GetMsgTranslationUnit() const
+{
+	auto root = GetRootWnd();
+	if (root == this)
+	{
+		if (mMsgTranslationUnit.empty())
+			return "msg";
+		else
+			return mMsgTranslationUnit.c_str();
+	}
+	else
+	{
+		return root->GetMsgTranslationUnit();
+	}
 }
 
 }

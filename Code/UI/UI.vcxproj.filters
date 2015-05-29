@@ -89,6 +89,22 @@
     </ClInclude>
     <ClInclude Include="VisibleStatus.h" />
     <ClInclude Include="UICommands.h" />
+    <ClInclude Include="PropertyList.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="IUIEditor.h" />
+    <ClInclude Include="DragBox.h" />
+    <ClInclude Include="ListItem.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="ListBoxData.h" />
+    <ClInclude Include="ListBoxDataSet.h" />
+    <ClInclude Include="ListItemDataType.h" />
+    <ClInclude Include="RegionTestParam.h" />
+    <ClInclude Include="TabWindow.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="UIEvents.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -175,5 +191,17 @@
     <ClCompile Include="VisibleStatus.cpp" />
     <ClCompile Include="UICommands.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />
+    <ClCompile Include="PropertyList.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="DragBox.cpp" />
+    <ClCompile Include="ListItem.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
+    <ClCompile Include="ListBoxData.cpp" />
+    <ClCompile Include="ListBoxDataSet.cpp" />
+    <ClCompile Include="TabWindow.cpp">
+      <Filter>Components</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

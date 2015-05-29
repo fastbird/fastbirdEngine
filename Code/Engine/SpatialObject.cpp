@@ -131,10 +131,14 @@ float SpatialObject::GetDistToCam() const
 
 void SpatialObject::AttachToScene()
 {
-	IScene* pScene = gFBEnv->pEngine->GetScene();
-	if (pScene)
+	auto scene = gFBEnv->pRenderer->GetMainScene();
+	if (scene)
 	{
-		pScene->AttachObject(this);
+		scene->AttachObject(this);
+	}
+	else
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "No main scene found!");
 	}
 }
 

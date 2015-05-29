@@ -26,6 +26,7 @@ public:
 private:
 	Vec2 mOffset;
 	float mScrollAmount;
+	float mScrollAmountScale;
 	Vec2 mMaxOffset;
 	IWinBase* mOwner;
 	float mMaxScrollSpeed;
@@ -33,5 +34,8 @@ private:
 	float mScrollAcc;
 	float mCurOffset;
 	float mDestOffset;
+	int mLastWheel;
+	float mLastScrollTime;
+	
 };
 }

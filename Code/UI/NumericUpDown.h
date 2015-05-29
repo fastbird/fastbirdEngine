@@ -18,7 +18,7 @@ namespace fastbird
 		virtual void OnCreated();
 		virtual ComponentType::Enum GetType() const { return ComponentType::NumericUpDown; }
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[]);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 		virtual void SetNumber(int number);
 		virtual void SetMinMax(int min, int max);

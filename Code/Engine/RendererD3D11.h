@@ -3,7 +3,7 @@
 #define __Rendererd3d11_header_included__
 
 #include <Engine/Renderer.h>
-#include <Engine/Shaders/Constants.h>
+#include <../es/shaders/Constants.h>
 #include <Engine/RendererStructs.h>
 #include <Engine/RenderStateD3D11.h>
 #include <CommonLib/Color.h>
@@ -21,15 +21,18 @@ namespace fastbird
 		RendererD3D11();
 		virtual ~RendererD3D11();
 		virtual bool Init(int threadPool);
-		virtual int InitSwapChain(HWND hwnd, int width, int height);
+		virtual bool InitSwapChain(HWND_ID id, int width, int height);
+		virtual void ReleaseSwapChain(HWND_ID id);
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
-		virtual void Clear();
 		virtual void Clear(float r, float g, float b, float a);// only color
 		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
 		virtual void UpdateObjectConstantsBuffer(void* pData);
 		virtual void UpdatePointLightConstantsBuffer(void* pData);
+		virtual void UpdateCameraConstantsBuffer();
+		virtual void UpdateRenderTargetConstantsBuffer();
+		virtual void UpdateSceneConstantsBuffer();
 		virtual void UpdateMaterialConstantsBuffer(void* pData);
 		virtual void UpdateRareConstantsBuffer();
 		virtual void UpdateRadConstantsBuffer(void* pData);
@@ -39,8 +42,8 @@ namespace fastbird
 		virtual void UnmapBigBuffer();
 		virtual unsigned GetMultiSampleCount() const;
 
-		virtual IRenderToTexture* CreateRenderToTexture(const RenderToTextureParam& param);
-		virtual void DeleteRenderToTexture(IRenderToTexture*);
+		virtual IRenderTarget* CreateRenderTarget(const RenderTargetParam& param);
+		virtual void DeleteRenderTarget(IRenderTarget*);
 		
 		virtual void SetWireframe(bool enable);
 		virtual void Present();
@@ -61,15 +64,9 @@ namespace fastbird
 			BUFFER_USAGE usage, int  buffer_cpu_access, int  type);
 
 		virtual void SetRenderTarget(ITexture* pRenderTarget[], size_t rtIndex[], int num, 
-			ITexture* pDepthStencil, size_t dsIndex);
-		virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num);
-		virtual void SetGlowRenderTarget();
-		virtual void UnSetGlowRenderTarget();
-		virtual void RestoreRenderTarget();
-		void OnReleaseRenderTarget(ID3D11RenderTargetView* pRTView);
-		void OnReleaseDepthStencil(ID3D11DepthStencilView* pDSView);
+			ITexture* pDepthStencil, size_t dsViewIndex);		
+		
 		virtual void SetViewports(Viewport viewports[], int num);
-		virtual void RestoreViewports();
 		virtual void SetScissorRects(RECT rects[], int num);
 		virtual void RestoreScissorRects();
 
@@ -115,6 +112,7 @@ namespace fastbird
 		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
 		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+		virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
 		virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0);
 		virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 			const Color& color, ITexture* texture, IMaterial* materialOverride = 0);
@@ -135,20 +133,27 @@ namespace fastbird
 	private:
 		ID3D11Device*			m_pDevice; // free-threaded
 		IDXGIFactory1*			m_pFactory;
-		IDXGISwapChain*			m_pSwapChain;
+		VectorMap<HWND_ID, IDXGISwapChain*> mSwapChains;
+		//VectorMap<HWND_ID, SmartPtr<RenderTarget>> mSwapChainRenderTargets;  -- move to Renderer.h
+		
 		ID3D11DeviceContext*	m_pImmediateContext; //  not free-threaded
 		ID3D11RenderTargetView* m_pRenderTargetView;
 		ID3D11Texture2D*		m_pDepthStencil;
 		ID3D11DepthStencilView* m_pDepthStencilView;
 		D3D11_VIEWPORT			mViewPort;
-		ID3D11Buffer*			m_pFrameConstantsBuffer;
-		ID3D11Buffer*			m_pObjectConstantsBuffer;
-		ID3D11Buffer*			m_pPointLightConstantsBuffer;
-		ID3D11Buffer*			m_pMaterialConstantsBuffer;
-		ID3D11Buffer*			m_pMaterialParametersBuffer;
-		ID3D11Buffer*			m_pRareConstantsBuffer;
-		ID3D11Buffer*			m_pBigBuffer;
-		ID3D11Buffer*			m_pImmutableConstantsBuffer;
+		
+		ID3D11Buffer*			m_pFrameConstantsBuffer; // b0
+		ID3D11Buffer*			m_pObjectConstantsBuffer; // b1
+		ID3D11Buffer*			m_pMaterialConstantsBuffer; // b2
+		ID3D11Buffer*			m_pMaterialParametersBuffer; // b3
+		ID3D11Buffer*			m_pRareConstantsBuffer; // b4
+		ID3D11Buffer*			m_pBigBuffer; // b5
+		ID3D11Buffer*			m_pImmutableConstantsBuffer; // b6
+		ID3D11Buffer*			m_pPointLightConstantsBuffer; //b7
+		ID3D11Buffer*			m_pCameraConstantsBuffer; //b8
+		ID3D11Buffer*			m_pRenderTargetConstantsBuffer; //b9
+		ID3D11Buffer*			m_pSceneConstantsBuffer; // b10
+
 		ID3D11RasterizerState*	m_pWireframeRasterizeState;
 		ID3DX11ThreadPump*		m_pThreadPump;
 
@@ -156,9 +161,12 @@ namespace fastbird
 
 		D3D_DRIVER_TYPE			mDriverType;
 		D3D_FEATURE_LEVEL		mFeatureLevel;
-		DXGI_FORMAT				mDepthStencilFormat;
+		PIXEL_FORMAT			mDepthStencilFormat;
 
 		FRAME_CONSTANTS			mFrameConstants;
+		CAMERA_CONSTANTS		mCameraConstants;
+		RENDERTARGET_CONSTANTS mRenderTargetConstants;
+		SCENE_CONSTANTS	mSceneConstants;
 		
 		
 
@@ -171,18 +179,11 @@ namespace fastbird
 		typedef std::map<SAMPLER_DESC, SmartPtr<SamplerStateD3D11> > SAMPLER_MAP;
 		SAMPLER_MAP mSamplerMap;
 
-		std::vector<IDXGISwapChain*> mSwapChains;
-		typedef std::vector<ID3D11RenderTargetView*> RTViews;
-		RTViews mRenderTargetViews;
-		RTViews mCurrentRTViews;
-		RTViews mRTViewsBeforeGlow;
-		std::vector<ID3D11DepthStencilView*> mDepthStencilViews;
-		ID3D11DepthStencilView* mCurrentDSView;
 		std::vector<D3D11_VIEWPORT> mViewports;
-
 		std::vector<TextureD3D11*> mCheckTextures;
-		
-		std::vector<ID3D11Texture2D*> mRenderTargetTextures;
+
+		std::vector<ID3D11RenderTargetView*> mCurrentRTViews;
+		ID3D11DepthStencilView* mCurrentDSView;
 	};
 }
 

@@ -72,10 +72,11 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
-      <PreprocessorDefinitions>_ENGINE;_DEBUG;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE;_DEBUG;CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;$(DXSDK_DIR)include</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ShowIncludes>false</ShowIncludes>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -101,11 +102,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE;CPP;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -128,11 +130,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_ENGINE;CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ENGINE;CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -175,6 +178,7 @@
     <ClInclude Include="EngineCommand.h" />
     <ClInclude Include="FBCollisionShape.h" />
     <ClInclude Include="Font.h" />
+    <ClInclude Include="GaussianDist.h" />
     <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="IEngineEventListener.h" />
     <ClInclude Include="GlobalEnv.h" />
@@ -185,6 +189,7 @@
     <ClInclude Include="IDGenerator.h" />
     <ClInclude Include="IDustRenderer.h" />
     <ClInclude Include="IEngine.h" />
+    <ClInclude Include="IFileChangeListener.h" />
     <ClInclude Include="IFont.h" />
     <ClInclude Include="IIndexBuffer.h" />
     <ClInclude Include="IInputDevice.h" />
@@ -204,8 +209,9 @@
     <ClInclude Include="IParticleEmitter.h" />
     <ClInclude Include="IPointLight.h" />
     <ClInclude Include="IRenderer.h" />
+    <ClInclude Include="IRenderListener.h" />
     <ClInclude Include="IRenderState.h" />
-    <ClInclude Include="IRenderToTexture.h" />
+    <ClInclude Include="IRenderTarget.h" />
     <ClInclude Include="IScene.h" />
     <ClInclude Include="ISceneListener.h" />
     <ClInclude Include="ISceneManager.h" />
@@ -215,6 +221,7 @@
     <ClInclude Include="ISkyBox.h" />
     <ClInclude Include="ISkySphere.h" />
     <ClInclude Include="ITerrain.h" />
+    <ClInclude Include="ITextManipulatorListener.h" />
     <ClInclude Include="ITexture.h" />
     <ClInclude Include="IUIObject.h" />
     <ClInclude Include="IVertexBuffer.h" />
@@ -238,9 +245,11 @@
     <ClInclude Include="RendererD3D9.h" />
     <ClInclude Include="RendererEnums.h" />
     <ClInclude Include="RendererStructs.h" />
+    <ClInclude Include="RenderPipeline.h" />
     <ClInclude Include="RenderStateD3D11.h" />
-    <ClInclude Include="RenderToTexture.h" />
-    <ClInclude Include="RenderToTextureD3D11.h" />
+    <ClInclude Include="RenderSteps.h" />
+    <ClInclude Include="RenderTarget.h" />
+    <ClInclude Include="RenderTargetD3D11.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="ScriptSystem.h" />
     <ClInclude Include="Shader.h" />
@@ -257,6 +266,7 @@
     <ClInclude Include="StarDef.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="TerrainPatch.h" />
+    <ClInclude Include="TextManipulator.h" />
     <ClInclude Include="TextTags.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureD3D11.h" />
@@ -290,6 +300,7 @@
     <ClCompile Include="EngineCommand.cpp" />
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="Font.cpp" />
+    <ClCompile Include="GaussianDist.cpp" />
     <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="IndexBufferD3D11.cpp" />
     <ClCompile Include="InputLayout.cpp" />
@@ -317,9 +328,10 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererD3D11.cpp" />
     <ClCompile Include="RendererD3D9.cpp" />
+    <ClCompile Include="RenderPipeline.cpp" />
     <ClCompile Include="RenderStateD3D11.cpp" />
-    <ClCompile Include="RenderToTexture.cpp" />
-    <ClCompile Include="RenderToTextureD3D11.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
+    <ClCompile Include="RenderTargetD3D11.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="ScriptSystem.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -330,6 +342,7 @@
     <ClCompile Include="StarDef.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TerrainPatch.cpp" />
+    <ClCompile Include="TextManipulator.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureD3D11.cpp" />
     <ClCompile Include="TextureUtil.cpp" />

@@ -4,91 +4,38 @@
 #include <UI/ImageBox.h>
 #include <UI/Button.h>
 #include <UI/CheckBox.h>
+#include <UI/ListItem.h>
+#include <UI/ListBoxData.h>
+#include <UI/TextField.h>
+#include <UI/IUIManager.h>
+#include <Engine/TextManipulator.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
 {
-//-----------------------------------------------------------------------------
-const float ListItem::LEFT_GAP = 0.001f;
-const size_t ListItem::INVALID_INDEX = -1;
 
-ListItem::ListItem()
-: mRowIndex(INVALID_INDEX)
-, mColIndex(INVALID_INDEX)
-, mNoBackground(true)
-, mBackColor("0.1, 0.3, 0.3, 0.7")
-{
-	assert(mUIObject);
-	//mUIObject = gFBEnv->pEngine->CreateUIObject(false);
-	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-}
-
-ListItem::~ListItem()
-{
-
-}
-
-void ListItem::GatherVisit(std::vector<IUIObject*>& v)
-{
-	v.push_back(mUIObject);	
-
-	__super::GatherVisit(v);
-}
-
-void ListItem::OnPosChanged()
-{
-	__super::OnPosChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-void ListItem::OnSizeChanged()
-{
-	__super::OnSizeChanged();
-	//mUIObject->SetTextStartNPos(Vec2(mWNPos.x, mWNPos.y + mWNSize.y - GetTextBottomGap()));
-}
-
-CheckBox* ListItem::GetCheckBox() const
-{
-	for (auto& child : mChildren)
-	{
-		if (child->GetType() == ComponentType::CheckBox)
-		{
-			return dynamic_cast<CheckBox*>(child);
-		}
-	}
-	return 0;
-}
-
-void ListItem::SetBackColor(const char* backColor)
-{
-	if_assert_fail(backColor)
-		return;
-	mBackColor = backColor;
-}
-
-void ListItem::SetNoBackground(bool noBackground)
-{
-	mNoBackground = noBackground;
-}
 
 //-----------------------------------------------------------------------------
 ListBox::ListBox()
-	: mCurSelectedCol(ListItem::INVALID_INDEX)
-	, mNumCols(1)
-	, mRowHeight(26)
+	: mNumCols(0)
+	, mRowHeight(24)
 	, mRowGap(4)
 	, mHighlightColor("0.1, 0.3, 0.3, 0.7")
+	, mData(0)
+	, mStartIndex(0)
+	, mEndIndex(10)
+	, mFocusedListItem(0)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mColSizes.push_back(1.0f);
-	mUseScrollerV = true;
+	mColSizes.push_back(0.97f);
+	SetProperty(UIProperty::SCROLLERV, "true");
 }
 
 ListBox::~ListBox()
 {
-
+	Clear();
+	FB_DELETE(mData);
 }
 
 void ListBox::GatherVisit(std::vector<IUIObject*>& v)
@@ -98,17 +45,30 @@ void ListBox::GatherVisit(std::vector<IUIObject*>& v)
 
 std::string ListBox::GetSelectedString()
 {
-	if (!mSelectedRows.empty() && mSelectedRows.back() != ListItem::INVALID_INDEX && mCurSelectedCol != ListItem::INVALID_INDEX)
+	if (mFocusedListItem)
 	{
-		if (mItems[mSelectedRows.back()][mCurSelectedCol]->GetText())
-			return WideToAnsi(mItems[mSelectedRows.back()][mCurSelectedCol]->GetText());
+		unsigned row = mFocusedListItem->GetRowIndex();
+		unsigned col = mFocusedListItem->GetColIndex();
+		return WideToAnsi(mData->GetData(row)[col].GetText());
+
 	}
 	return std::string();
 }
 
-ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2& nsize)
+ListItem* ListBox::CreateNewItem(int row, int col)
 {
-	ListItem* item = (ListItem*)AddChild(npos.x, npos.y, nsize.x, nsize.y, ComponentType::ListItem);
+	int hgap = mRowHeight + mRowGap;
+	int y = hgap * row + mRowGap;
+	int x = 0;
+	float nx = 0.f;
+	const auto& finalSize = GetFinalSize();
+	for (int c = 0; c < col; ++c) {
+		nx += mColSizes[c];
+	}
+	x = Round(nx * finalSize.x);
+
+	ListItem* item = (ListItem*)AddChild(Vec2I(x, y), Vec2I(Round(mColSizes[col]*finalSize.x), mRowHeight), ComponentType::ListItem);
+	item->SetRuntimeChild(true);
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
 	if (col < (int)mTextSizes.size())
@@ -117,216 +77,163 @@ ListItem* ListBox::CreateNewItem(int row, int col, const Vec2& npos, const Vec2&
 	}
 	item->SetProperty(UIProperty::BACK_COLOR, mHighlightColor.c_str());
 	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
-	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_CLICK,
+	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
-	item->RegisterEventFunc(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
-	item->SetBackColor(mHighlightColor.c_str());
-	item->SetNoBackground(true);
 	return item;
 }
 
-unsigned ListBox::InsertItem(const wchar_t* szString)
+unsigned ListBox::InsertItem(unsigned uniqueKey){
+	if (!mData)
+		return -1;
+	unsigned index = mData->InsertData(uniqueKey);
+	while (mItems.size() <= index)
+	{
+		mItems.push_back(ROW());
+		auto& row = mItems.back();
+		for (unsigned c = 0; c < mNumCols; ++c){
+			row.push_back(0);
+		}
+	}
+
+	return index;
+}
+
+unsigned ListBox::InsertItem(const wchar_t* uniqueKey)
 {	
-	float nh = PixelToLocalNHeight(mRowHeight);
-	float nextPosY = PixelToLocalNHeight(mRowHeight + mRowGap);
-	float posY = 0.0f;
-	if (!mItems.empty())
+	if (!mData)
+		return -1;
+	unsigned index = mData->InsertData(uniqueKey);
+	while (mItems.size() <= index)
 	{
-		auto item = mItems.back();
-		assert(!item.empty());
-		posY = item[0]->GetNPos().y + nextPosY;
-	}
-
-	mItems.push_back(ROW());
-	ROW& row = mItems.back();
-	ListItem* pAddedItem = CreateNewItem(mItems.size()-1, 0, Vec2(0, posY), Vec2(mColSizes[0], nh));
-	row.push_back(pAddedItem);
-	if (szString)
-		pAddedItem->SetText(szString);
-
-	unsigned curRow = mItems.size() - 1;
-	GetRowId(curRow);
-
-	return curRow;
-}
-
-unsigned ListBox::InsertItem(ITexture* texture)
-{
-	auto row = InsertItem(L"");
-	auto imageBox = (ImageBox*)mItems[row][0]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
-	imageBox->SetTexture(texture);
-	imageBox->SetVisible(mVisibility.IsVisible());
-	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	return row;
-}
-
-unsigned ListBox::InsertCheckBoxItem(bool check)
-{
-	auto row = InsertItem(L"");
-	auto checkbox = (CheckBox*)mItems[row][0]->AddChild(0, 0, 1, 1, ComponentType::CheckBox);
-	checkbox->SetSize(Vec2I(24, 24));
-	checkbox->SetCheck(check);
-	checkbox->SetVisible(mVisibility.IsVisible());
-	return row;
-}
-
-CheckBox* ListBox::GetCheckBox(unsigned row, unsigned col) const
-{
-	if (row >= mItems.size())
-	{
-		assert(0);
-		return 0;
-	}
-
-	return mItems[row][col]->GetCheckBox();
-}
-
-void ListBox::RemoveItem(size_t index)
-{
-	assert(index < mItems.size());
-	float nh = PixelToLocalNHeight(mRowHeight + mRowGap);
-	for (size_t row = index+1; row < mItems.size(); ++row)
-	{
-		for (size_t col = 0; col < mItems[row].size(); ++col)
-		{
-			Vec2 npos = mItems[row][col]->GetNPos();
-			npos.y -= nh;
-			mItems[row][col]->SetNPos(npos);
-			mItems[row][col]->SetRowIndex(row - 1);
+		mItems.push_back(ROW());
+		auto& row = mItems.back();
+		for (unsigned c = 0; c < mNumCols; ++c){
+			row.push_back(0);
 		}
 	}
-	for (size_t col = 0; col < mItems[index].size(); ++col)
+	return index;
+}
+
+unsigned ListBox::InsertEmptyData(){
+	unsigned index = mData->InsertEmptyData();
+	while (mItems.size() <= index)
 	{
-		RemoveChild(mItems[index][col]);
-	}
-	for (auto& idx : mSelectedRows)
-	{
-		if (idx > index)
-		{
-			idx--;
+		mItems.push_back(ROW());
+		auto& row = mItems.back();
+		for (unsigned c = 0; c < mNumCols; ++c){
+			row.push_back(0);
 		}
 	}
-	
-	mItems.erase(mItems.begin() + index);
+	return index;
+}
+
+void ListBox::SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type){
+	mData->SetData(rowcol, string, type);
+	VisualizeData(rowcol.x);
+}
+
+void ListBox::SetItem(const Vec2I& rowcol, bool checked){
+	mData->SetData(rowcol, checked);
+	VisualizeData(rowcol.x);
+}
+
+void ListBox::SetItem(const Vec2I& rowcol, ITexture* texture){
+	mData->SetData(rowcol, texture);
+	VisualizeData(rowcol.x);
+}
+
+bool ListBox::GetCheckBox(const Vec2I& indexRowCol) const{
+	if (!mData){
+		Log(FB_DEFAULT_DEBUG_ARG, "No data");
+		return false;
+	}
+	if ((unsigned)indexRowCol.x >= mData->Size()){
+		Log(FB_DEFAULT_DEBUG_ARG, "Invalid row index");
+		return false;
+	}
+	if ((unsigned)indexRowCol.y >= mNumCols){
+		Log(FB_DEFAULT_DEBUG_ARG, "Invalid col index");
+		return false;
+	}
+
+	auto data = mData->GetData(indexRowCol.x);	
+	auto item = data[indexRowCol.y];
+	return item.GetChecked();
+}
+
+void ListBox::RemoveRow(const wchar_t* uniqueKey)
+{
+	if (!mData)
+		return;
+	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
+	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+		ChangeFocusItem(0);
+
+	if (deletedIndex != -1)
+	{
+		for (auto it = mSelectedIndices.begin(); it != mSelectedIndices.end(); ++it)
+		{
+			if (*it == deletedIndex)
+				SetHighlightRow(deletedIndex, false);
+		}
+		VisualizeData(deletedIndex);
+	}
+}
+
+void ListBox::RemoveRow(unsigned uniqueKey){
+	if (!mData)
+		return;
+	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
+	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+		ChangeFocusItem(0);
+	if (deletedIndex != -1)
+	{
+		for (auto it = mSelectedIndices.begin(); it != mSelectedIndices.end(); ++it)
+		{
+			if (*it == deletedIndex)
+				SetHighlightRow(deletedIndex, false);
+		}
+		VisualizeData(deletedIndex);
+	}
+}
+
+void ListBox::RemoveRowWithIndex(unsigned index){
+	if (!mData)
+		return;
 	if (index >= mItems.size())
 	{
-		DeleteValuesInVector(mSelectedRows, index);
-	}
-	else if (!ValueNotExistInVector(mSelectedRows, index))
-	{
-		for (size_t i = 0; i < mNumCols; ++i)
-		{
-			mItems[index][i]->SetProperty(UIProperty::NO_BACKGROUND, "false");
-		}
-	}
-}
-
-void ListBox::SetItemString(size_t row, size_t col, const wchar_t* szString)
-{
-	if (row >= mItems.size())
-	{
-		assert(0);
+		Log(FB_DEFAULT_DEBUG_ARG, "Out of index.");
 		return;
 	}
-	if (col >= mNumCols)
+	unsigned deletedIndex = mData->DelDataWithIndex(index);
+	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+		ChangeFocusItem(0);
+	if (deletedIndex != -1)
 	{
-		assert(0);
-		return;
-	}
-
-	assert(szString);
-	float nh = PixelToLocalNHeight(mRowHeight);
-	ROW& r = mItems[row];
-	float posy = r.back()->GetNPos().y;
-	while (r.size() <= col)
-	{
-		int prevColIndex = r.size() - 1;
-		int addingColIndex = r.size();
-		float posx = 0.0f;
-		if (prevColIndex >= 0)
+		for (auto it = mSelectedIndices.begin(); it != mSelectedIndices.end(); ++it)
 		{
-			posx = r[prevColIndex]->GetNPos().x + r[prevColIndex]->GetNSize().x;
+			if (*it == deletedIndex)
+				SetHighlightRow(deletedIndex, false);
 		}
-		ListItem* pAddedItem = CreateNewItem(row, addingColIndex, Vec2(posx, posy), Vec2(mColSizes[addingColIndex], nh));
-		r.push_back(pAddedItem);		
+
+		VisualizeData(deletedIndex);
 	}
-
-	mItems[row][col]->SetText(szString);
-}
-
-void ListBox::SetItemTexture(size_t row, size_t col, ITexture* texture)
-{
-	SetItemString(row, col, L"");
-	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
-	imageBox->SetTexture(texture);
-	imageBox->SetVisible(mVisibility.IsVisible());
-	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-}
-
-void ListBox::SetItemTexture(size_t row, size_t col, const char* texturePath)
-{
-	SetItemString(row, col, L"");
-	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
-	imageBox->SetTexture(texturePath);
-	imageBox->SetVisible(mVisibility.IsVisible());
-	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-}
-
-void ListBox::SetTextureAtlas(const char* atlas)
-{
-	assert(atlas);
-	mTextureAtlas = atlas;
-}
-
-void ListBox::SetItemTextureRegion(size_t row, size_t col, const char* region)
-{
-	assert(region && strlen(region)!=0);
-	assert(!mTextureAtlas.empty());
-	SetItemString(row, col, L"");
-	auto imageBox = (ImageBox*)mItems[row][col]->AddChild(0, 0, 1.0, 1.0, ComponentType::ImageBox);
-	imageBox->SetProperty(UIProperty::TEXTUREATLAS, mTextureAtlas.c_str());
-	imageBox->SetProperty(UIProperty::REGION, region);
-	imageBox->SetVisible(mVisibility.IsVisible());
-	imageBox->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	imageBox->DrawAsFixedSizeAtCenter();
-}
-
-IWinBase* ListBox::SetItemIconText(size_t row, size_t col, const char* region, const char* txt, unsigned iconSize)
-{
-	assert(region && strlen(region) != 0);
-	assert(!mTextureAtlas.empty());
-	SetItemString(row, col, L"");
-	Button* button = 0;
-	if (mItems[row][col]->GetNumChildren() > 0)
-	{
-		button = dynamic_cast<Button*>(mItems[row][col]->GetChild((unsigned)0));
-	}
-	if (!button)
-		button = (Button*)mItems[row][col]->AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Button);
-
-	button->SetVisible(mVisibility.IsVisible());
-	button->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	button->SetProperty(UIProperty::TEXT_ALIGN, "center");
-	button->SetProperty(UIProperty::TEXT, txt);	
-	button->SetProperty(UIProperty::NO_BACKGROUND, "true");
-	button->SetProperty(UIProperty::TEXTUREATLAS, mTextureAtlas.c_str());
-	button->SetProperty(UIProperty::REGION, region);
-	char buf[128];
-	sprintf_s(buf, "%u", iconSize);
-	button->SetProperty(UIProperty::BUTTON_ICON_TEXT, buf);
-	return button;
 }
 
 void ListBox::SetHighlightRow(size_t row, bool highlight)
 {
 	for (size_t i = 0; i < mNumCols; ++i)
 	{
-		if (mItems[row].size() <= i)
+		if (mItems[row].size() <= i || !mItems[row][i])
 			break;
+
+		mHighlighted[Vec2I((int)row, (int)i)] = highlight;
+
 		if (highlight)
 		{
 			mItems[row][i]->SetProperty(UIProperty::NO_BACKGROUND, "false");
@@ -340,115 +247,54 @@ void ListBox::SetHighlightRow(size_t row, bool highlight)
 	}
 }
 
-void ListBox::SetHighlightRowAndSelect(size_t row, bool highlight)
+void ListBox::SetHighlightRowCol(unsigned row, unsigned col, bool highlight)
 {
-	SetHighlightRow(row, highlight);
+	if (row >= mData->Size() || col >= mNumCols)
+		return;
+	
+	mHighlighted[Vec2I((int)row, (int)col)] = highlight;
+
+	if (!mItems[row][col])
+	{
+		return;
+	}
 	if (highlight)
 	{
-		if (ValueNotExistInVector(mSelectedRows, row))
-			mSelectedRows.push_back(row);
+		mItems[row][col]->SetProperty(UIProperty::NO_BACKGROUND, "false");
+		mItems[row][col]->SetProperty(UIProperty::BACK_COLOR, mHighlightColor.c_str());
 	}
 	else
 	{
-		DeleteValuesInVector(mSelectedRows, row);
+		mItems[row][col]->SetProperty(UIProperty::NO_BACKGROUND, StringConverter::toString(mItems[row][col]->GetNoBackground()).c_str());
+		mItems[row][col]->SetProperty(UIProperty::BACK_COLOR, mItems[row][col]->GetBackColor());
 	}
 }
 
-void ListBox::OnItemClicked(void* arg)
+void ListBox::SetHighlightRowAndSelect(size_t row, bool highlight)
 {
-	ListItem* pItem = (ListItem*)arg;
-	size_t rowindex = pItem->GetRowIndex();
-	size_t colindex = pItem->GetColIndex();
-	if (rowindex != ListItem::INVALID_INDEX)
+	if (highlight)
 	{
-		auto keyboard = gFBEnv->pEngine->GetKeyboard();
-		if (keyboard->IsKeyDown(VK_CONTROL))
-		{			
-			if (ValueNotExistInVector(mSelectedRows, rowindex))
-			{
-				SetHighlightRow(rowindex, true);
-				mSelectedRows.push_back(rowindex);
-			}
-			else
-			{
-				SetHighlightRow(rowindex, false);
-				DeleteValuesInVector(mSelectedRows, rowindex);
-			}
-		}
-		else if (keyboard->IsKeyDown(VK_SHIFT))
+		if (ValueNotExistInVector(mSelectedIndices, row))
 		{
-			if (mSelectedRows.empty())
-			{
-				SetHighlightRow(rowindex, true);
-				mSelectedRows.push_back(rowindex);
+			mSelectedIndices.push_back(row);
+			if (mFocusedListItem){
+				ChangeFocusItem(mItems[row][mFocusedListItem->GetColIndex()]);
 			}
-			else
-			{
-				size_t start = mSelectedRows.back();
-				int num = rowindex - start;
-				if (num > 0)
-				{
-					for (size_t i = start+1; i <= rowindex; i++)
-					{
-						SetHighlightRow(i, true);
-						if (ValueNotExistInVector(mSelectedRows, i))
-							mSelectedRows.push_back(i);
-					}
-				}
-				else if (num < 0)
-				{
-					for (int i = start - 1; i >= (int)rowindex; i--)
-					{
-						SetHighlightRow(i, true);
-						if (ValueNotExistInVector(mSelectedRows, i))
-							mSelectedRows.push_back(i);
-					}
-				}
-				else
-				{
-					SetHighlightRow(rowindex, false);
-					DeleteValuesInVector(mSelectedRows, rowindex);
-				}
+			else{
+				ChangeFocusItem(mItems[row][0]);
 			}
-
 		}
-		else
-		{
-			for (const auto& idx : mSelectedRows)
-			{
-				SetHighlightRow(idx, false);
-			}
-			mSelectedRows.clear();
-			
-			SetHighlightRow(rowindex, true);
-			mSelectedRows.push_back(rowindex);
-		}
-		mCurSelectedCol = colindex;
 	}
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
-}
-
-void ListBox::OnItemDoubleClicked(void* arg)
-{
-	ListItem* pItem = (ListItem*)arg;
-	size_t rowindex = pItem->GetRowIndex();
-	size_t colindex = pItem->GetColIndex();
-	if (rowindex!=ListItem::INVALID_INDEX && colindex!=ListItem::INVALID_INDEX)
+	else
 	{
-		for (const auto& idx : mSelectedRows)
-		{
-			SetHighlightRow(idx, false);
-		}
-		mSelectedRows.clear();
-		mSelectedRows.push_back(rowindex);
-		SetHighlightRow(rowindex, true);
-		mCurSelectedCol = colindex;
+		DeleteValuesInVector(mSelectedIndices, row);
 	}
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
+	SetHighlightRow(row, highlight);
 }
 
 void ListBox::Clear()
 {
+	ChangeFocusItem(0);
 	for (auto items : mItems)
 	{
 		for (auto item : items)
@@ -457,9 +303,28 @@ void ListBox::Clear()
 		}
 	}
 	mItems.clear();
-	mSelectedRows.clear();
-	mRowIds.clear();
-	mCurSelectedCol = ListItem::INVALID_INDEX;
+	for (auto& cols : mRecycleBin)
+	{
+		for (auto item : cols){
+			gFBEnv->pUIManager->DeleteComponent(item);
+		}
+	}
+	mRecycleBin.clear();
+	if (mData)
+		mData->Clear();
+	mSelectedIndices.clear();
+	mHighlighted.clear();
+	TriggerRedraw();
+	gFBUIManager->DirtyRenderList(GetHwndId());
+	if (mScrollerV){
+		mScrollerV->SetOffset(Vec2(0.f, 0.f));
+	}
+}
+
+size_t ListBox::GetNumItems() const{
+	if (!mData)
+		return 0;
+	return mData->Size();
 }
 
 bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
@@ -473,14 +338,20 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::LISTBOX_COL:
 	{
-									mNumCols = StringConverter::parseUnsignedInt(val);
-									float colsize = 1.0f / (float)mNumCols;
-									mColSizes.clear();
-									for (unsigned i = 0; i < mNumCols; ++i)
-									{
-										mColSizes.push_back(colsize);
-									}
-									return true;
+		mStrCols = val;
+		mNumCols = StringConverter::parseUnsignedInt(val);
+		float colsize = 1.0f / (float)mNumCols;
+		mColSizes.clear();
+		for (unsigned i = 0; i < mNumCols; ++i)
+		{
+			mColSizes.push_back(colsize);
+		}
+		if (mData){
+			Clear();
+			FB_DELETE(mData);
+		}
+		mData = FB_NEW( ListBoxDataSet(mNumCols) );
+		return true;
 	}
 	case UIProperty::LISTBOX_ROW_HEIGHT:
 		{
@@ -489,14 +360,15 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 	case UIProperty::LISTBOX_ROW_GAP:
 	{
-										mRowGap = StringConverter::parseInt(val);
-										return true;
+			mRowGap = StringConverter::parseInt(val);
+			return true;
 	}
 
 	case UIProperty::LISTBOX_COL_SIZES:
 		{
 			// set UIProperty::LISTBOX_COL first
 			// don't need to set this property if the num of col is 1.
+			mStrColSizes = val;
 			assert(mNumCols != 1);
 			mColSizes.clear();
 			StringVector strs = Split(val);
@@ -510,6 +382,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_TEXT_SIZES:
 	{
+		mStrTextSizes = val;
 										  // set UIProperty::LISTBOX_COL first
 										  mTextSizes.clear();
 										  StringVector strs = Split(val);
@@ -522,6 +395,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::LISTBOX_COL_ALIGNH:
 		{
+			mStrColAlignH = val;
 			assert(mNumCols != 1);
 			mColAlignes.clear();
 			mColAlignes.reserve(mNumCols);
@@ -544,6 +418,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_COL_HEADERS_TEXT_SIZE:
 	{
+		mStrHeaderTextSizes = val;
 										   assert(mNumCols != 1);
 										   mHeaderTextSize.clear();
 										   StringVector strs = Split(val);
@@ -557,22 +432,24 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::LISTBOX_COL_HEADERS:
 		{
+			mStrHeaders = val;
 			StringVector strs = Split(val, ",");
-			assert(strs.size() == mNumCols);
-			float nh = PixelToLocalNHeight(mRowHeight);
+			assert(strs.size() == mNumCols);			
+			const auto& finalSize = GetFinalSize();
 			if (mHeaders.empty())
 			{
 				for (unsigned i = 0; i < mNumCols; ++i)
 				{
-					float posx = 0.0f;
+					int posX = 0;
 					if (i >= 1)
 					{
-						posx = mHeaders[i - 1]->GetNPos().x + mHeaders[i - 1]->GetNSize().x;
+						posX = mHeaders[i - 1]->GetPos().x + mHeaders[i - 1]->GetFinalSize().x;
 					}
 
 					mHeaders.push_back(static_cast<ListItem*>(
-						AddChild(posx, 0.0f, mColSizes[i], nh, ComponentType::ListItem)));
+						AddChild(Vec2I(posX, 0), Vec2I(Round(mColSizes[i] * finalSize.x), mRowHeight), ComponentType::ListItem)));
 					ListItem* pAddedItem = mHeaders.back();
+					pAddedItem->SetRuntimeChild(true);
 					const RECT& rect = mUIObject->GetRegion();
 					pAddedItem->SetProperty(UIProperty::NO_BACKGROUND, "false");
 					pAddedItem->SetProperty(UIProperty::BACK_COLOR, "0.0, 0.0, 0.0, 0.5");
@@ -580,10 +457,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 					{
 						pAddedItem->SetProperty(UIProperty::TEXT_SIZE, mHeaderTextSize[i].c_str());
 					}
-					else
-					{
-						pAddedItem->SetProperty(UIProperty::TEXT_SIZE, "24");
-					}
+					
 					pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
 					pAddedItem->SetRowIndex(-1);
 					pAddedItem->SetColIndex(i);
@@ -591,8 +465,9 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				}
 				assert(!mWndContentUI);
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
+				mWndContentUI->SetRuntimeChild(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
-				mWndContentUI->SetSizeModificator(sizeMod);
+				mWndContentUI->ModifySize(sizeMod);
 				mWndContentUI->SetUseAbsYSize(true);
 				mWndContentUI->SetPos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
@@ -621,11 +496,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			return true;
 		}
 	case UIProperty::TEXTUREATLAS:
-	{
-									 assert(val);
-									 mTextureAtlas = val;
-									 return true;
-	}
+		{
+										 assert(val);
+										 mTextureAtlas = val;
+										 return true;
+		}
 	}
 
 	
@@ -633,49 +508,198 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-ListItem* ListBox::GetItem(size_t row, size_t col) const
+bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
+	switch (prop)
+	{
+	case UIProperty::LISTBOX_HIGHLIGHT_COLOR:
+	{
+		if (notDefaultOnly)
+		{
+			if (mHighlightColor == UIProperty::GetDefaultValueString(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, mHighlightColor.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_COL:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrCols.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrCols.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_ROW_HEIGHT:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRowHeight == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mRowHeight);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+
+		
+	}
+	case UIProperty::LISTBOX_ROW_GAP:
+	{
+		if (notDefaultOnly)
+		{
+			if (mRowGap == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mRowGap);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_SIZES:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrColSizes.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrColSizes.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_TEXT_SIZES:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrTextSizes.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrTextSizes.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_COL_ALIGNH:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrColAlignH.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrColAlignH.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_HEADERS_TEXT_SIZE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrHeaderTextSizes.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrHeaderTextSizes.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_COL_HEADERS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mStrHeaders.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mStrHeaders.c_str());
+		return true;
+	}
+	case UIProperty::TEXTUREATLAS:
+	{
+		if (notDefaultOnly)
+		{
+			if (mTextureAtlas.empty())
+				return false;
+		}
+		strcpy_s(val, bufsize, mTextureAtlas.c_str());
+		return true;
+	}
+	}
+
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
+
+}
+ListItem* ListBox::GetItem(const Vec2I& indexRowCol) const
+{
+	unsigned row = indexRowCol.x;
+	unsigned col = indexRowCol.y;
 	assert(row < mItems.size());
 	assert(col < mItems[row].size());
 	return mItems[row][col];
 
 }
 
-void ListBox::SelectRow(unsigned row)
+void ListBox::SelectRow(unsigned index)
 {
-	if (row < mItems.size())
+	if (index < mItems.size())
 	{
-		if (ValueNotExistInVector(mSelectedRows, row))
+		if (ValueNotExistInVector(mSelectedIndices, index))
 		{
-			SetHighlightRow(row, true);
-			mSelectedRows.push_back(row);
+			SetHighlightRow(index, true);
+			mSelectedIndices.push_back(index);
 		}
 	}
 	else if (!mItems.empty())
 	{
 		unsigned idx = mItems.size() - 1;
-		if (ValueNotExistInVector(mSelectedRows, idx))
+		if (ValueNotExistInVector(mSelectedIndices, idx))
 		{
 			SetHighlightRow(idx, true);
-			mSelectedRows.push_back(idx);
+			mSelectedIndices.push_back(idx);
 		}
 	}
-	OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+}
+
+void ListBox::DeselectRow(unsigned index){
+	if (index >= mItems.size())
+		return;
+
+	DeleteValuesInVector(mSelectedIndices, index);
+	if (mSelectedIndicesSizeBefore != mSelectedIndicesSizeAfter){
+		SetHighlightRow(index, false);
+	}	
+}
+
+void ListBox::DeselectAll(){
+	for (auto index : mSelectedIndices){
+		SetHighlightRow(index, false);
+	}
+	mSelectedIndices.clear();
+}
+
+void ListBox::ToggleSelection(unsigned index){
+	if (index >= mItems.size())
+		return;
+	if (ValueNotExistInVector(mSelectedIndices, index))
+	{
+		SelectRow(index);
+	}
+	else
+	{
+		DeselectRow(index);
+	}
 }
 
 void ListBox::ClearSelection()
 {
-	for (auto& row : mSelectedRows)
+	for (auto& row : mSelectedIndices)
 	{
 		SetHighlightRow(row, false);
 	}
-	mSelectedRows.clear();
-	OnEvent(IEventHandler::EVENT_LISTBOX_CLEARED);
+	mSelectedIndices.clear();
+	OnEvent(UIEvents::EVENT_LISTBOX_CLEARED);
 }
 
 bool ListBox::IsSelected(unsigned row)
 {
-	return !ValueNotExistInVector(mSelectedRows, row);
+	return !ValueNotExistInVector(mSelectedIndices, row);
 }
 
 bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
@@ -687,92 +711,145 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	{
 		return false;
 	}
+	
+	bool mouseIn = __super::OnInputFromHandler(mouse, keyboard);
 
-	mMouseIn = __super::OnInputFromHandler(mouse, keyboard);
-
-	if (keyboard->IsValid() && mMouseIn)
+	if (keyboard->IsValid() && GetFocus(true))
 	{
+		auto c = keyboard->GetChar();
+		if (c)
+		{
+			if (c == VK_TAB)
+			{
+				keyboard->ClearBuffer();
+				keyboard->Invalidate();
+				bool next = keyboard->IsKeyDown(VK_SHIFT) ? false : true;
+				bool apply = true;
+				IterateItem(next, apply);
+			}
+			else
+			{
+				keyboard->PopChar();
+				if (mFocusedListItem) {
+					SearchStartingChacrcter(c, mFocusedListItem->GetRowIndex());
+				}
+				else{
+					SearchStartingChacrcter(c, -1);
+				}
+			}
+		}
+
 		if (keyboard->IsKeyPressed(VK_UP))
 		{
 			if (keyboard->IsKeyDown(VK_SHIFT))
 			{
-				if (mSelectedRows.empty())
+				if (mSelectedIndices.empty())
 				{
 					if (!mItems.empty())
 					{
-						SetHighlightRow(mItems.size()-1, true);
-						mSelectedRows.push_back(mItems.size() - 1);
+						unsigned rowIndex = mData->Size()-1;
+						if (mFocusedListItem)
+						{
+							rowIndex = mFocusedListItem->GetRowIndex() - 1;
+							if (rowIndex ==-1){
+								rowIndex = mData->Size() - 1;
+							}
+						}
+						MakeSureRangeFor(rowIndex);
+						SetHighlightRowAndSelect(rowIndex, true);						
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
 				{
-					unsigned lastRow = mSelectedRows.back();
-					if (lastRow != 0)
-					{
+					unsigned lastRow = mSelectedIndices.back();
+					if (lastRow != 0){
 						unsigned dest = lastRow - 1;
 						if (IsSelected(dest))
 						{
 							SetHighlightRow(lastRow, false);
-							DeleteValuesInVector(mSelectedRows, lastRow);
+							DeleteValuesInVector(mSelectedIndices, lastRow);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 						else
 						{
-							SetHighlightRow(dest, true);
-							if (ValueNotExistInVector(mSelectedRows, dest))
-							{
-								mSelectedRows.push_back(dest);
-								keyboard->Invalidate();
-								OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
-							}								
+							MakeSureRangeFor(dest);
+							SetHighlightRowAndSelect(dest, true);
+							keyboard->Invalidate();
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
+					}
+					else{
+						MakeSureRangeFor(0);
 					}
 				}
 			}
 			else
 			{
-				if (mSelectedRows.empty())
+				if (mSelectedIndices.empty())
 				{
 					if (!mItems.empty())
 					{
-						unsigned dest = mItems.size() - 1;
-						SetHighlightRowAndSelect(dest, true);
+						unsigned rowIndex = mData->Size() - 1;
+						if (mFocusedListItem)
+						{
+							rowIndex = mFocusedListItem->GetRowIndex() - 1;
+							if (rowIndex == -1){
+								rowIndex = mData->Size() - 1;
+							}
+						}
+						MakeSureRangeFor(rowIndex);
+						SetHighlightRowAndSelect(rowIndex, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
 				{
-					unsigned last = mSelectedRows.back();
+					unsigned last = mSelectedIndices.back();
 					if (last != 0)
 					{
 						ClearSelection();
+						MakeSureRangeFor(last - 1);
 						SetHighlightRowAndSelect(last-1, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+					}
+					else
+					{
+						MakeSureRangeFor(0);
 					}
 				}
 			}
+			OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 		else if (keyboard->IsKeyPressed(VK_DOWN))
 		{
 			if (keyboard->IsKeyDown(VK_SHIFT))
 			{
-				if (mSelectedRows.empty())
+				if (mSelectedIndices.empty())
 				{
 					if (!mItems.empty())
 					{
-						SetHighlightRowAndSelect(0, true);
+						unsigned rowIndex = 0;
+						if (mFocusedListItem)
+						{
+							rowIndex = mFocusedListItem->GetRowIndex()+1;
+							if (rowIndex >= mData->Size()){
+								rowIndex = 0;
+							}
+						}
+						MakeSureRangeFor(rowIndex);
+						SetHighlightRowAndSelect(rowIndex, true);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
 				{
-					unsigned lastRow = mSelectedRows.back();
+					unsigned lastRow = mSelectedIndices.back();
 					if (lastRow+1 < mItems.size())
 					{
 						unsigned dest = lastRow + 1;
@@ -780,45 +857,156 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						{
 							SetHighlightRowAndSelect(lastRow, false);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 						else
 						{
+							MakeSureRangeFor(dest);
 							SetHighlightRowAndSelect(dest, true);
 							keyboard->Invalidate();
-							OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+							OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 						}
 					}
 				}
-			}
+			} //if (keyboard->IsKeyDown(VK_SHIFT))
 			else
 			{
-				if (mSelectedRows.empty())
+				if (mSelectedIndices.empty())
 				{
 					if (!mItems.empty())
 					{
-						unsigned dest = 0;
-						SetHighlightRowAndSelect(dest, true);
+						unsigned rowIndex = 0;
+						if (mFocusedListItem)
+						{
+							rowIndex = mFocusedListItem->GetRowIndex() + 1;
+							if (rowIndex >= mData->Size()){
+								rowIndex = 0;
+							}
+						}
+						SetHighlightRowAndSelect(rowIndex, true);
+						MakeSureRangeFor(rowIndex);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 				else
 				{
-					unsigned last = mSelectedRows.back();
+					unsigned last = mSelectedIndices.back();
 					if (last +1 < mItems.size())
 					{
 						ClearSelection();
 						SetHighlightRowAndSelect(last + 1, true);
+						MakeSureRangeFor(last + 1);
 						keyboard->Invalidate();
-						OnEvent(IEventHandler::EVENT_MOUSE_LEFT_CLICK);
+						OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
 					}
 				}
 			}
+			OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 		}
 
 	}
-	return mMouseIn;
+
+	return mouseIn;
+}
+
+void ListBox::ChangeFocusItem(ListItem* newItem){
+	mFocusedListItem = newItem;
+}
+
+void ListBox::OnItemClicked(void* arg)
+{		
+	IWinBase* clickedWin = (IWinBase*)arg;
+	while (clickedWin && clickedWin->GetType() != ComponentType::ListItem){
+		clickedWin = clickedWin->GetParent();
+	}
+	if (!clickedWin)
+		return;
+	ListItem* listItem = (ListItem*)clickedWin;
+	
+	size_t rowIndex = listItem->GetRowIndex();
+	if (rowIndex != ListItem::INVALID_INDEX)
+	{
+		auto keyboard = gFBEnv->pEngine->GetKeyboard();
+		unsigned clickedIndex = rowIndex;
+		unsigned lastIndex = -1;
+		if (!mSelectedIndices.empty())
+			lastIndex = mSelectedIndices.back();
+
+		if (keyboard->IsKeyDown(VK_SHIFT)){
+			if (clickedIndex == lastIndex){
+				DeselectRow(clickedIndex);
+			}
+			else if (lastIndex!=-1){
+				if (clickedIndex < lastIndex){
+					std::swap(clickedIndex, lastIndex);
+				}
+				for (unsigned index = lastIndex; index <= clickedIndex; ++index){
+					SetHighlightRowAndSelect(index, true);
+				}
+			}
+			else if (lastIndex == -1){
+				ToggleSelection(clickedIndex);
+			}
+		}
+		else if (keyboard->IsKeyDown(VK_CONTROL)){
+			ToggleSelection(clickedIndex);
+		}		
+		else
+		{
+			DeselectAll();
+			SetHighlightRowAndSelect(rowIndex, true);
+		}
+	}
+
+	ChangeFocusItem(listItem);
+	if (listItem->GetNumChildren() > 0){
+		gFBUIManager->SetFocusUI(listItem->GetChild(0));
+	}
+	else{
+		gFBUIManager->SetFocusUI(listItem);
+	}
+	
+
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
+}
+
+void ListBox::OnItemDoubleClicked(void* arg)
+{
+	IWinBase* clickedWin = (IWinBase*)arg;
+	while (clickedWin && clickedWin->GetType() != ComponentType::ListItem){
+		clickedWin = clickedWin->GetParent();
+	}
+	if (!clickedWin)
+		return;
+	ListItem* listItem = (ListItem*)clickedWin;
+	size_t rowIndex = listItem->GetRowIndex();
+	if (rowIndex != ListItem::INVALID_INDEX)
+	{
+		DeselectAll();
+		SetHighlightRowAndSelect(rowIndex, true);
+	}
+	ChangeFocusItem(listItem);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
+}
+
+void ListBox::OnItemEnter(void* arg){
+	if (mFocusedListItem->GetChild(0) == arg)
+	{
+		unsigned rowIndex = mFocusedListItem->GetRowIndex();
+		unsigned colIndex = mFocusedListItem->GetColIndex();
+		auto data = mData->GetData(rowIndex);
+		if (data[colIndex].GetDataType() == ListItemDataType::TextField)
+		{
+			auto textfield = dynamic_cast<TextField*>(mFocusedListItem->GetChild(0));
+			if (wcscmp(textfield->GetText(), data[colIndex].GetText()) != 0){
+				data[colIndex].SetText(textfield->GetText());
+				OnEvent(UIEvents::EVENT_ENTER);
+			}
+		}
+	}
 }
 unsigned ListBox::GetNumRows()
 {
@@ -833,16 +1021,13 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 	if (mItems[row].empty())
 		return 0;
 
-	mItems[row][0]->SetNSizeX(1.0f);
-	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
-	mItems[row][0]->SetProperty(UIProperty::NO_BACKGROUND, "false");
-	mItems[row][0]->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.3");
-	mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-	mItems[row][0]->SetProperty(UIProperty::TEXT_COLOR, "0x88cceeff");
-	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
-	mItems[row][0]->SetNoBackground(false);
-	mItems[row][0]->SetBackColor("0, 0, 0, 0.3");
+	NoVirtualizingItem(row);
 
+	mItems[row][0]->ChangeNSizeX(1.0f);
+	mItems[row][0]->ModifySize(Vec2I(-4, 0));
+	for (unsigned i = 1; i < mNumCols; ++i){
+		mItems[row][i]->ChangeNPosX(1.f);
+	}
 
 	return mItems[row][0];
 }
@@ -855,8 +1040,13 @@ IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char
 	if (mItems[row].empty())
 		return 0;
 
+	NoVirtualizingItem(row);
+
 	mItems[row][0]->SetNSizeX(1.0f);
-	mItems[row][0]->SetSizeModificator(Vec2I(-4, 0));
+	mItems[row][0]->ModifySize(Vec2I(-4, 0));
+	for (unsigned i = 1; i < mNumCols; ++i){
+		mItems[row][i]->ChangeNPosX(1.f);
+	}
 	
 	if (backColor && strlen(backColor) != 0)
 	{
@@ -876,117 +1066,560 @@ IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char
 	return mItems[row][0];
 }
 
-void ListBox::SetRowId(unsigned row, unsigned id)
+void ListBox::SwapItems(unsigned index0, unsigned index1)
 {
-	while (row >= mRowIds.size())
-	{
-		mRowIds.push_back(-1);
-	}
-	mRowIds[row] = id;
-}
+	if (!mData)
+		return;
+	mData->SwapData(index0, index1);
+	VisualizeData(index0);
+	VisualizeData(index1);
 
-void ListBox::SwapItems(unsigned row0, unsigned row1)
-{
-	if_assert_fail(row0 < mRowIds.size() && row1 < mRowIds.size())
+	auto cols = mItems[index0].size();
+	if_assert_fail(cols == mItems[index1].size())
 		return;
 
-	auto cols = mItems[row0].size();
-	if_assert_fail( cols == mItems[row1].size())
+	bool index0selected = !ValueNotExistInVector(mSelectedIndices, index0);
+	bool index1selected = !ValueNotExistInVector(mSelectedIndices, index1);
+	if (index0selected && !index1selected)
+	{
+		DeleteValuesInVector(mSelectedIndices, index0);
+		mSelectedIndices.push_back(index1);
+	}
+	else if (!index0selected && index1selected)
+	{
+		DeleteValuesInVector(mSelectedIndices, index1);
+		mSelectedIndices.push_back(index0);
+	}
+}
+
+void ListBox::SwapItems(const wchar_t* uniqueKey0, const wchar_t* uniqueKey1){
+	unsigned index0 = mData->FindRowIndexWithKey(uniqueKey0);
+	unsigned index1 = mData->FindRowIndexWithKey(uniqueKey1);
+	SwapItems(index0, index1);
+}
+
+void ListBox::GetSelectedUniqueIdsString(std::vector<std::string>& ids) const{
+	if (!mData)
 		return;
 
-	bool row0selected = !ValueNotExistInVector(mSelectedRows, row0);
-	bool row1selected = !ValueNotExistInVector(mSelectedRows, row1);
-	if (row0selected && !row1selected)
-	{
-		DeleteValuesInVector(mSelectedRows, row0);
-		mSelectedRows.push_back(row1);
+	for (unsigned index : mSelectedIndices){
+		ids.push_back(WideToAnsi(mData->GetStringKey(index)));
 	}
-	else if (!row0selected && row1selected)
-	{
-		DeleteValuesInVector(mSelectedRows, row1);
-		mSelectedRows.push_back(row0);
-	}
-	for (unsigned col = 0; col < mItems[row0].size(); col++)
-	{
-		ListItem* item0 = mItems[row0][col];
-		ListItem* item1 = mItems[row1][col];
-		std::swap(mItems[row0][col], mItems[row1][col]);
-		
-		auto item0RowIndex = item0->GetRowIndex();
-		auto item1RowIndex = item1->GetRowIndex();
-		item0->SetRowIndex(item1RowIndex);
-		item1->SetRowIndex(item0RowIndex);
-		
-		auto pos0 = item0->GetNPos();
-		auto pos1 = item1->GetNPos();
-		item0->SetNPos(pos1);
-		item1->SetNPos(pos0);
-	}
-	std::swap(mRowIds[row0], mRowIds[row1]);
-
 }
-
-unsigned ListBox::GetRowId(unsigned row)
-{
-	while (row >= mRowIds.size())
-	{
-		mRowIds.push_back(-1);
-	}
-	return mRowIds[row];
-}
-unsigned ListBox::FindRowWithId(unsigned id)
-{
-	unsigned row = 0;
-	for (auto rowId : mRowIds)
-	{
-		if (rowId == id)
-			return row;
-
-		++row;
-	}
-
-	return -1;
-}
-
-void ListBox::DeleteRow(unsigned targetRow)
-{
-	if (targetRow >= mItems.size())
+void ListBox::GetSelectedUniqueIdsUnsigned(std::vector<unsigned>& ids) const{
+	if (!mData)
 		return;
 
-	ClearSelection();
-	unsigned num = mItems.size();
-	for (unsigned i = num - 1; i > targetRow; --i)
+	for (unsigned index : mSelectedIndices){
+		ids.push_back(mData->GetUnsignedKey(index));
+	}
+}
+
+
+void ListBox::VisualizeData(unsigned index){
+	if (!mData)
+		return;
+
+	if (mItems.empty())
+		return;
+
+	bool noVirtualizing = mNoVirtualizingRows.find(index)!= mNoVirtualizingRows.end();
+	if (index < mStartIndex || index > mEndIndex)
 	{
-		auto toRow = mItems[i - 1];
-		auto fromRow = mItems[i];
-		unsigned numColToRow = toRow.size();
-		unsigned numColFromRow = fromRow.size();
-		for (unsigned c = 0; c < numColToRow && c < numColFromRow; ++c)
-		{
-			float y = toRow[c]->GetNPos().y;
-			fromRow[c]->SetNPosY(y);
-			fromRow[c]->SetRowIndex(toRow[c]->GetRowIndex());
+		if (!noVirtualizing){
+			if (mItems[index][0])
+			{
+				MoveToRecycle(index);
+			}
+			return;
 		}
 	}
 
-	for (auto item : mItems[targetRow])
+	int hgap = mRowHeight + mRowGap;
+	Vec2 offset(0, 0);
+	if (mScrollerV)
 	{
-		RemoveChild(item);
+		offset = mScrollerV->GetOffset();
 	}
-	mItems.erase(mItems.begin() + targetRow);
-	if (mRowIds.size() > targetRow)
+
+	ListItem *keyItem = 0, *valueItem = 0;
+	const auto data = mData->GetData(index);
+	if (!data)
 	{
-		mRowIds.erase(mRowIds.begin() + targetRow);
+		if (!noVirtualizing)
+			MoveToRecycle(index);
+		return;
+	}
+	
+	if (mItems[index][0])
+	{
+		FillItem(index);		
+	}
+	else
+	{
+		if (!mRecycleBin.empty())
+		{
+			auto items = mRecycleBin.back();
+			int y = hgap * index + mRowGap;
+			for (unsigned c = 0; c < mNumCols; ++c){
+				items[c]->SetPosY(y);
+				items[c]->SetWNScollingOffset(offset);
+				items[c]->SetRowIndex(index);
+				mChildren.push_back(items[c]);
+				mItems[index][c] = items[c];
+			}
+			mRecycleBin.pop_back();
+			FillItem(index);
+		}
+		else
+		{
+			int y = hgap * index + mRowGap;
+			for (unsigned c = 0; c < mNumCols; ++c){
+				auto item = CreateNewItem(index, c);
+				if (c == 0)
+				{
+					item->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
+				}
+				item->SetWNScollingOffset(offset);
+				mItems[index][c] = item;				
+			}
+			FillItem(index);
+		}
+	}	
+}
+
+void ListBox::FillItem(unsigned index){
+	if (!mData)
+		return;
+
+	const auto data = mData->GetData(index);
+	if_assert_fail (data)
+		return;
+
+	for (unsigned i = 0; i < mNumCols; ++i){
+		auto item = mItems[index][i];
+		assert(item);
+		item->SetRowIndex(index);
+		switch (data[i].GetDataType())
+		{
+		case ListItemDataType::CheckBox:
+		{
+			auto checkbox = dynamic_cast<CheckBox*>(item->GetChild(0));
+			if (!checkbox)
+			{
+				item->RemoveAllChild();
+				checkbox = (CheckBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::CheckBox);
+				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				checkbox->SetRuntimeChild(true);
+				checkbox->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(checkbox){
+				checkbox->SetCheck(data[i].GetChecked());
+			}
+			break;
+		}
+		case ListItemDataType::String:
+		{
+			item->SetText(data[i].GetText());
+			break;
+		}
+		case ListItemDataType::TextField:
+		{
+			auto textField = dynamic_cast<TextField*>(item->GetChild(0));
+			if (!textField)
+			{
+				item->RemoveAllChild();
+				textField = (TextField*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::TextField);
+				textField->SetProperty(UIProperty::USE_BORDER, "true");
+				textField->SetProperty(UIProperty::TEXT_LEFT_GAP, "4");
+				textField->SetRuntimeChild(true);
+				textField->SetVisible(mVisibility.IsVisible());
+				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				textField->RegisterEventFunc(UIEvents::EVENT_ENTER,
+					std::bind(&ListBox::OnItemEnter, this, std::placeholders::_1));
+			}
+			if_assert_pass(textField){
+				textField->SetText(data[i].GetText());
+			}
+			break;
+		}
+		case ListItemDataType::TexturePath:
+		{
+			auto imageBox = dynamic_cast<ImageBox*>(item->GetChild(0));
+			if (!imageBox)
+			{
+				item->RemoveAllChild();
+				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
+				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				imageBox->SetRuntimeChild(true);
+				imageBox->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(imageBox){
+				imageBox->SetTexture(WideToAnsi(data[i].GetText()));
+			}
+			break;
+		}
+		case ListItemDataType::TextureRegion:
+		{
+			auto imageBox = dynamic_cast<ImageBox*>(item->GetChild(0));
+			if (!imageBox)
+			{
+				item->RemoveAllChild();
+				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
+				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				imageBox->SetRuntimeChild(true);
+				imageBox->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(imageBox){
+				imageBox->SetTextureAtlasRegion(mTextureAtlas.c_str(), WideToAnsi(data[i].GetText()));
+			}
+			break;
+		}
+		case ListItemDataType::Texture:
+		{
+			auto imageBox = dynamic_cast<ImageBox*>(item->GetChild(0));
+			if (!imageBox)
+			{
+				item->RemoveAllChild();
+				imageBox = (ImageBox*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
+				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
+					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
+				imageBox->SetRuntimeChild(true);
+				imageBox->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(imageBox){
+				imageBox->SetTexture(data[i].GetTexture());
+			}
+			break;
+		}
+		}
+
+		auto it = mHighlighted.Find(Vec2I((int)index, (int)i));
+		if (it != mHighlighted.end() && it->second){
+			SetHighlightRowCol(index, i, true);
+		}
+		else{
+			SetHighlightRowCol(index, i, false);
+		}
+	}
+
+	unsigned int key = mData->GetUnsignedKey(index);
+	if (key != -1){
+		auto it = mItemPropertyByUnsigned.Find(key);
+		if (it != mItemPropertyByUnsigned.end()){
+			for (auto& property : it->second){
+				for (auto col : mItems[index]){
+					col->SetProperty(property.first, property.second.c_str());
+				}
+			}
+		}
+	}
+	else{
+		auto key = mData->GetStringKey(index);
+		if (wcslen(key)!=0) {
+			auto it = mItemPropertyByString.Find(key);
+			if (it != mItemPropertyByString.end()){
+				for (auto& property : it->second){
+					for (auto col : mItems[index]){
+						col->SetProperty(property.first, property.second.c_str());
+					}
+				}
+			}
+		}
 	}
 }
 
-void ListBox::GetSelectedRowIds(std::vector<unsigned>& ids) const
+void ListBox::MoveToRecycle(unsigned row){
+	if (row < mItems.size())
+	{
+		if (mItems[row][0])
+		{
+			for (unsigned c = 0; c < mNumCols; ++c){
+				if (mItems[row][c]->IsKeyboardFocused())
+					return;
+			}			
+			
+			mRecycleBin.push_back(ROW());
+			auto& cols = mRecycleBin.back();			
+			cols.reserve(mNumCols);
+			for (unsigned c = 0; c < mNumCols; ++c){
+				cols.push_back(mItems[row][c]);
+				RemoveChildNotDelete(mItems[row][c]);
+				mItems[row][c] = 0;
+			}
+
+			gFBUIManager->DirtyRenderList(mHwndId);
+		}
+	}
+}
+
+ListBoxData* ListBox::GetData(unsigned rowIndex, unsigned colIndex) const{
+	if (!mData)
+		return 0;
+	if (rowIndex >= mData->Size() || colIndex >= mNumCols)
+		return 0;
+
+	auto cols = mData->GetData(rowIndex);
+	return &cols[colIndex];
+
+}
+
+unsigned ListBox::FindRowIndex(unsigned uniqueKey) const{
+	if (!mData)
+		return -1;
+	return mData->FindRowIndexWithKey(uniqueKey);
+}
+unsigned ListBox::FindRowIndex(wchar_t* uniqueKey) const{
+	if (!mData)
+		return -1;
+	return mData->FindRowIndexWithKey(uniqueKey);
+}
+
+unsigned ListBox::GetUnsignedKey(unsigned rowIndex) const{
+	if (mData == 0)
+		return -1;
+	return mData->GetUnsignedKey(rowIndex);
+}
+const wchar_t* ListBox::GetStringKey(unsigned rowIndex) const{
+	if (mData == 0)
+		return L"";
+
+	return mData->GetStringKey(rowIndex);
+}
+
+void ListBox::OnSizeChanged()
 {
-	ids.clear();
-	for (unsigned rowIdx : mSelectedRows)
+	if (mNSize.x == NotDefined || mNSize.y == NotDefined)
+		return;
+
+	__super::OnSizeChanged();
+	Scrolled();
+}
+
+void ListBox::Scrolled()
+{
+	unsigned prevStart = mStartIndex;
+	unsigned prevEnd = mEndIndex;
+	int hgap = mRowHeight + mRowGap;
+
+	if (mScrollerV)
 	{
-		ids.push_back(mRowIds[rowIdx]);
+		Vec2 offset = mScrollerV->GetOffset();
+		int scrolledLen = -Round(offset.y * GetRenderTargetSize().y) - mRowGap;
+		int topToBottom = mSize.y + scrolledLen - mRowGap;
+
+		// decide visual index range		
+		mStartIndex = scrolledLen / hgap;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+	else
+	{
+		// decide visual index range
+		int topToBottom = mSize.y;
+		mStartIndex = 0;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+
+	// to recycle
+	while (prevStart < mStartIndex)
+	{
+		unsigned index = prevStart++;
+		MoveToRecycle(index);
+	}
+
+	while (prevEnd > mEndIndex)
+	{
+		unsigned index = prevEnd--;
+		MoveToRecycle(index);
+	}
+
+	//to visual
+	while (prevStart > mStartIndex)
+	{
+		--prevStart;
+		unsigned visualIndex = prevStart;
+		VisualizeData(visualIndex);
+	}
+
+	while (prevEnd < mEndIndex)
+	{
+		++prevEnd;
+		unsigned visualIndex = prevEnd;
+		VisualizeData(visualIndex);
+	}
+
+	__super::Scrolled();
+}
+
+float ListBox::GetContentHeight() const
+{
+	if (!mData)
+		return mRowHeight / (float)GetRenderTargetSize().y;
+	unsigned length = mData->Size();
+	unsigned hgap = mRowHeight + mRowGap;
+	unsigned contentLength = hgap * length + mRowGap; // for upper gap
+	return contentLength / (float)GetRenderTargetSize().y;
+}
+
+void ListBox::Sort()
+{
+	mData->Sort(0);
+
+	if (mStartIndex != -1 && mEndIndex != -1) {
+		for (unsigned i = mStartIndex; i <= mEndIndex; i++) {
+			VisualizeData(i);
+		}
 	}
 }
 
+void ListBox::SearchStartingChacrcter(char c, unsigned curIndex)
+{
+	unsigned index = mData->FindNext(0, c, curIndex);
+	if (index == -1)
+		return;
+
+	if (mScrollerV)
+	{
+		if (index < mStartIndex + 1 || index >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
+		{
+			unsigned hgap = mRowHeight + mRowGap;
+			unsigned destY = hgap * index + mRowGap;
+
+			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+		}
+	}
+	if (mItems[index][0])
+	{
+		DeselectAll();
+		SetHighlightRowAndSelect(index, true);
+		ChangeFocusItem(mItems[index][0]);
+		gFBUIManager->SetFocusUI(mItems[index][0]);
+	}
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
+}
+
+
+void ListBox::IterateItem(bool next, bool apply)
+{
+	DeselectAll();
+
+	unsigned rowIndex = 0;
+	unsigned colIndex = 0;
+	if (mFocusedListItem){
+		rowIndex = mFocusedListItem->GetRowIndex();
+		colIndex = mFocusedListItem->GetColIndex();
+		if (apply)
+		{
+			auto data = mData->GetData(rowIndex);
+			if (data[colIndex].GetDataType() == ListItemDataType::TextField)
+			{
+				auto textfield = dynamic_cast<TextField*>(mFocusedListItem->GetChild(0));
+				if (wcscmp(textfield->GetText(), data[colIndex].GetText()) != 0){
+					data[colIndex].SetText(textfield->GetText());
+					OnEvent(UIEvents::EVENT_ENTER);
+				}								
+			}
+			
+		}
+		SetHighlightRow(rowIndex, false);
+		
+		if (next)
+			mData->FindNextFocus(rowIndex, colIndex);
+		else
+			mData->FindPrevFocus(rowIndex, colIndex);
+	}
+		
+	MakeSureRangeFor(rowIndex);
+	auto newFocusItem = mItems[rowIndex][colIndex];
+	if_assert_pass(newFocusItem)
+	{
+		ChangeFocusItem(newFocusItem);
+		SetHighlightRowAndSelect(rowIndex, true);
+		auto child = newFocusItem->GetChild(0);
+		if (child)
+		{			
+			gFBUIManager->SetFocusUI(child);
+			if (child->GetType() == ComponentType::TextField)
+			{
+				gFBUIManager->GetTextManipulator()->SelectAll();
+			}
+		}
+		else
+			gFBUIManager->SetFocusUI(newFocusItem);
+	}
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
+		
+}
+
+void ListBox::MakeSureRangeFor(unsigned rowIndex){
+	if (mScrollerV)
+	{
+		if (rowIndex < mStartIndex + 1 ||
+			(rowIndex >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
+			)
+		{
+			unsigned hgap = mRowHeight + mRowGap;
+			unsigned destY = hgap * rowIndex + mRowGap;
+
+			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+		}
+	}
+}
+
+void ListBox::SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val){
+	mItemPropertyByUnsigned[uniqueKey].push_back(std::make_pair(prop, val));
+	if (!mData)
+		return;
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	for (auto item : mItems[rowIndex]){
+		assert(item);
+		item->SetProperty(prop, val);
+	}
+}
+void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val){
+	mItemPropertyByString[uniqueKey].push_back(std::make_pair(prop, val));
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	for (auto item : mItems[rowIndex]){
+		assert(item);
+		item->SetProperty(prop, val);
+	}
+}
+
+void ListBox::NoVirtualizingItem(unsigned rowIndex){
+	if (!mData){
+		assert(0);
+		return;
+	}
+	mNoVirtualizingRows.insert(rowIndex);
+	VisualizeData(rowIndex);
+}
 }
