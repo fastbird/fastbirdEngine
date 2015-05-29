@@ -176,6 +176,7 @@ void Button::OnMouseDown(void* arg)
 		mImages[ButtonImages::ImageHover]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
 	else if (mImages[ButtonImages::Image])
 		mImages[ButtonImages::Image]->SetSpecularColor(Vec4(0.5f, 0.1f, 0.1f, 1.0f));
+	TriggerRedraw();
 }
 
 void Button::OnMouseHover(void* arg)
@@ -206,6 +207,8 @@ void Button::OnMouseHover(void* arg)
 	// is in out. - DropDown
 	mMouseIn = true;
 
+	TriggerRedraw();
+
 }
 
 void Button::OnMouseOut(void* arg)
@@ -235,6 +238,7 @@ void Button::OnMouseOut(void* arg)
 	// is in out. - DropDown
 
 	mMouseIn = false;
+	TriggerRedraw();
 }
 
 bool Button::SetProperty(UIProperty::Enum prop, const char* val)
@@ -653,7 +657,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool Button::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -670,7 +674,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mBackColorOver);
-		strcpy(val, data.c_str());		
+		strcpy_s(val, bufsize, data.c_str());		
 		return true;
 	}
 	case UIProperty::BACK_COLOR_DOWN:
@@ -682,7 +686,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mBackColorDown);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -695,7 +699,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		
-		strcpy(val, mImageAtlas.c_str());
+		strcpy_s(val, bufsize, mImageAtlas.c_str());
 		return true;		
 	}
 	case UIProperty::REGION:
@@ -706,7 +710,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mRegionName.c_str());
+		strcpy_s(val, bufsize, mRegionName.c_str());
 		return true;
 	}
 	case UIProperty::REGIONS:
@@ -717,7 +721,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mRegionNames.c_str());
+		strcpy_s(val, bufsize, mRegionNames.c_str());
 		return true;
 	}
 	case UIProperty::TEXTURE_FILE:
@@ -728,7 +732,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mTextureFile.c_str());
+		strcpy_s(val, bufsize, mTextureFile.c_str());
 		return true;
 	}
 	case UIProperty::FPS:
@@ -739,7 +743,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mFps);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::HOVER_IMAGE:
@@ -750,7 +754,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mHorverImage.c_str());
+		strcpy_s(val, bufsize, mHorverImage.c_str());
 		return true;		
 	}
 	case UIProperty::BACKGROUND_IMAGE:
@@ -761,7 +765,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mBackgroundImage.c_str());
+		strcpy_s(val, bufsize, mBackgroundImage.c_str());
 		return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_DISABLED:
@@ -772,7 +776,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mBackgroundImageDisabled.c_str());
+		strcpy_s(val, bufsize, mBackgroundImageDisabled.c_str());
 		return true;		
 	}
 
@@ -784,7 +788,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mBackgoundImageHover.c_str());
+		strcpy_s(val, bufsize, mBackgoundImageHover.c_str());
 		return true;
 	}
 
@@ -796,7 +800,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mBackgroundImageNoAtlas.c_str());
+		strcpy_s(val, bufsize, mBackgroundImageNoAtlas.c_str());
 		return true;
 	}
 
@@ -808,7 +812,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mBackgroundImageHoverNoAtlas.c_str());
+		strcpy_s(val, bufsize, mBackgroundImageHoverNoAtlas.c_str());
 		return true;
 	}
 
@@ -820,7 +824,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mFrameImage.c_str());
+		strcpy_s(val, bufsize, mFrameImage.c_str());
 		return true;
 		
 	}
@@ -833,7 +837,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mFrameImageDisabled.c_str());
+		strcpy_s(val, bufsize, mFrameImageDisabled.c_str());
 		return true;
 	}
 
@@ -845,7 +849,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mActivatedImage.c_str());
+		strcpy_s(val, bufsize, mActivatedImage.c_str());
 		return true;		
 	}
 
@@ -857,7 +861,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, mDeactivatedImage.c_str());
+		strcpy_s(val, bufsize, mDeactivatedImage.c_str());
 		return true;
 	}
 
@@ -869,7 +873,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mActivatedRot);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -881,7 +885,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mActivated);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -893,7 +897,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mButtonIconSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -905,7 +909,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mChangeImageActivation);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -920,7 +924,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 		auto data = StringConverter::toString(mProgressBar->GetMaximum());
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -931,7 +935,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 		if (!mProgressBar)
 			return false;
 
-		return mProgressBar->GetProperty(prop, val, notDefaultOnly);
+		return mProgressBar->GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 
 	case UIProperty::EDGE_COLOR:
@@ -944,7 +948,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mEdgeColor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -958,7 +962,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mEdgeColorOver);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -972,7 +976,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mImageColorOverlay);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::NO_BUTTON:
@@ -985,13 +989,13 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			}
 		}
 		auto data = StringConverter::toString(mNoButton);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 bool Button::SetVisible(bool visible){

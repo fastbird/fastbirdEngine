@@ -318,29 +318,6 @@ std::string ConcatFilepath(const char* a, const char* b)
 }
 
 //------------------------------------------------------------------------
-char* ToAbsolutePath(char* outChar, const char* a)
-{
-	if (outChar==a)
-	{
-		assert(0);
-		Error("ToAbsolutePath arg error!");
-		return 0;
-	}
-	if (strlen(a)<=3)
-	{
-		if (a[1]==':')
-		{
-			if (!outChar)
-			{
-				outChar = (char*)malloc(MAX_PATH);
-			}
-			strcpy(outChar, a);
-			return outChar;
-		}
-	}
-	return _fullpath(outChar, a, MAX_PATH);
-}
-
 void SplitPath(const std::string& in_path, std::vector<std::string>& split_path)
 {
 	size_t start = 0;

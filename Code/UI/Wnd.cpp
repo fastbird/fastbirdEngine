@@ -411,7 +411,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -422,7 +422,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			if (mUseFrame == UIProperty::GetDefaultValueBool(prop))
 				return false;
 		}
-		strcpy(val, StringConverter::toString(mUseFrame).c_str());
+		strcpy_s(val, bufsize, StringConverter::toString(mUseFrame).c_str());
 		return true;
 	}
 	case UIProperty::TITLEBAR:
@@ -432,7 +432,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			if (mTitlebarString.empty())
 				return false;
 		}
-		strcpy(val, mTitlebarString.c_str());
+		strcpy_s(val, bufsize, mTitlebarString.c_str());
 		return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
@@ -442,7 +442,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			if (mStrBackground.empty())
 				return false;
 		}
-		strcpy(val, mStrBackground.c_str());
+		strcpy_s(val, bufsize, mStrBackground.c_str());
 		return true;
 	}
 
@@ -453,7 +453,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			if (mStrKeepRatio.empty())
 				return false;
 		}
-		strcpy(val, mStrKeepRatio.c_str());
+		strcpy_s(val, bufsize, mStrKeepRatio.c_str());
 		return true;
 	}
 
@@ -465,7 +465,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, StringConverter::toString(mAlwaysOnTop).c_str()); 
+		strcpy_s(val, bufsize, StringConverter::toString(mAlwaysOnTop).c_str());
 		return true;
 	}
 
@@ -477,7 +477,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, StringConverter::toString(mCloseByEsc).c_str());
+		strcpy_s(val, bufsize, StringConverter::toString(mCloseByEsc).c_str());
 		return true;
 	}
 
@@ -489,7 +489,7 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 				return false;
 		}
 
-		strcpy(val, StringConverter::toString(mSyncWindowPos).c_str());
+		strcpy_s(val, bufsize, StringConverter::toString(mSyncWindowPos).c_str());
 		return true;
 	}
 
@@ -500,13 +500,13 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
 			if (mMsgTranslationUnit.empty())
 				return false;
 		}
-		strcpy(val, mMsgTranslationUnit.c_str());
+		strcpy_s(val, bufsize, mMsgTranslationUnit.c_str());
 		return true;
 	}
 
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void Wnd::OnTitlebarDrag(void *arg)

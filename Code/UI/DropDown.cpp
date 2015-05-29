@@ -115,7 +115,7 @@ bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool DropDown::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool DropDown::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -130,13 +130,13 @@ bool DropDown::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 		{
 			data = StringConverter::toString(mCurIdx);
 		}
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
 	
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void DropDown::OnMouseClick(void* arg)

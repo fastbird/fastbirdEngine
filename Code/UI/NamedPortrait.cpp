@@ -74,7 +74,7 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
-	bool NamedPortrait::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	bool NamedPortrait::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 	{
 		switch (prop)
 		{
@@ -89,21 +89,21 @@ namespace fastbird
 		case UIProperty::IMAGE_FIXED_SIZE:
 			if (mImageBox)
 			{
-				return mImageBox->GetProperty(prop, val, notDefaultOnly);
+				return mImageBox->GetProperty(prop, val, bufsize, notDefaultOnly);
 			}
 			break;
 
 		case UIProperty::NAMED_PORTRAIT_IMAGE_SIZE:
-			return mImageBox->GetProperty(UIProperty::SIZE, val, notDefaultOnly);
+			return mImageBox->GetProperty(UIProperty::SIZE, val, bufsize, notDefaultOnly);
 
 		case UIProperty::NAMED_PORTRAIT_TEXT:
-			return mTextBox->GetProperty(UIProperty::TEXT, val, notDefaultOnly);
+			return mTextBox->GetProperty(UIProperty::TEXT, val, bufsize, notDefaultOnly);
 
 		case UIProperty::NAMED_PORTRAIT_TEXT_COLOR:
-			return mTextBox->GetProperty(UIProperty::TEXT_COLOR, val, notDefaultOnly);
+			return mTextBox->GetProperty(UIProperty::TEXT_COLOR, val, bufsize, notDefaultOnly);
 		}
 
-		return __super::GetProperty(prop, val, notDefaultOnly);
+		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 
 

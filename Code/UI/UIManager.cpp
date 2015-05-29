@@ -1434,14 +1434,25 @@ bool UIManager::OnFileChanged(const char* file)
 	std::string filepath = lower;
 	if (strcmp(extension, "lua") == 0)
 	{
-		if (mUIEditor){
-			if (!MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
-				"Warning", MB_YESNO))
-				return false;
-		}
-
 		uiname = FindUINameWithLua(lower.c_str());
 		filepath = FindUIFilenameWithLua(lower.c_str());
+	
+		if (mUIEditor && !uiname.empty()){
+			auto itFind = mLuaUIs.find(uiname);
+			if (itFind != mLuaUIs.end())
+			{
+				if (!MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
+					"Warning", MB_YESNO))
+					return false;
+
+				tinyxml2::XMLDocument doc;
+				SaveUI(uiname.c_str(), doc);
+				if (!itFind->second.empty()){
+					doc.SaveFile(itFind->second[0]->GetUIFilePath());
+				}
+			}
+		}
+
 	}
 	else if (strcmp(extension, "ui") == 0)
 	{
@@ -1765,6 +1776,11 @@ void UIManager::LocateComponent()
 void UIManager::CopyCompsAtMousePos(const std::vector<IWinBase*>& src){
 	if (src.empty())
 		return;
+	auto pt = gFBEnv->pEngine->GetMouse()->GetPos();
+	RegionTestParam param;
+	param.mOnlyContainer = true;
+	param.mTestChildren = true;
+	mMouseOveredContainer = (Container*)WinBaseWithPoint(pt, param);
 	if (!gFBEnv->pEngine->IsMainWindowForground() || !mMouseOveredContainer)
 		return;
 
@@ -1988,7 +2004,8 @@ void UIManager::DragUI(){
 			}
 		}
 	}
-	else{
+
+	if (sDragStarted){
 		auto delta = mouse->GetDeltaXY();
 		for (unsigned i = 0; i < num; ++i){
 			auto curUI = mUIEditor->GetCurSelected(i);

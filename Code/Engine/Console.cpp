@@ -630,7 +630,7 @@ void Console::ProcessCommand(const char* command)
 	{
 		for (const auto& c : mCommands)
 		{
-			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
+			if (_stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
 				if (c->mFunc)
 				{
@@ -645,7 +645,7 @@ void Console::ProcessCommand(const char* command)
 	{
 		for (const auto& c : mCVars)
 		{
-			if (stricmp(c->mName.c_str(), words[0].c_str())==0)
+			if (_stricmp(c->mName.c_str(), words[0].c_str())==0)
 			{
 				size_t numWords = words.size();
 				if (numWords==2)

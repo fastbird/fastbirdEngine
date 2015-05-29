@@ -2175,27 +2175,27 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 	{
 		const char* ext = GetFileExtension(filename);
 		D3DX11_IMAGE_FILE_FORMAT format = D3DX11_IFF_FORCE_DWORD;
-		if (stricmp(ext, "bmp")==0)
+		if (_stricmp(ext, "bmp")==0)
 		{
 			format = D3DX11_IFF_BMP;
 		}
-		else if (stricmp(ext, "jpg")==0)
+		else if (_stricmp(ext, "jpg")==0)
 		{
 			format = D3DX11_IFF_JPG;
 		}
-		else if (stricmp(ext, "png")==0)
+		else if (_stricmp(ext, "png")==0)
 		{
 			format = D3DX11_IFF_PNG;
 		}
-		else if (stricmp(ext, "dds")==0)
+		else if (_stricmp(ext, "dds")==0)
 		{
 			format = D3DX11_IFF_DDS;
 		}
-		else if (stricmp(ext, "tif")==0)
+		else if (_stricmp(ext, "tif")==0)
 		{
 			format = D3DX11_IFF_TIFF;
 		}
-		else if (stricmp(ext, "gif")==0)
+		else if (_stricmp(ext, "gif")==0)
 		{
 			format = D3DX11_IFF_GIF;
 		}

@@ -149,7 +149,7 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
-	bool NumericUpDown::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	bool NumericUpDown::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 	{
 		switch (prop)
 		{
@@ -161,7 +161,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(Vec2I(mMin, mMax));
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 		case UIProperty::NUMERIC_UPDOWN_NUMBER:
@@ -172,11 +172,11 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mValue);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 		}
 
-		return __super::GetProperty(prop, val, notDefaultOnly);
+		return __super::GetProperty(prop, val, bufsize,  notDefaultOnly);
 	}
 }

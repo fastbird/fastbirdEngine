@@ -58,8 +58,10 @@ StackTracer::StackTracer(void)
 {	
 	// Get machine type
 	mMachineType = 0;
-	char* szProcessor = ::getenv("PROCESSOR_ARCHITECTURE");
-	if (szProcessor)
+	char* szProcessor;
+	size_t len;
+	errno_t err = _dupenv_s(&szProcessor, &len, "PROCESSOR_ARCHITECTURE");
+	if (!err)
 	{
 		if ((!strcmp("EM64T", szProcessor)) || !strcmp("AMD64", szProcessor))
 		{
@@ -70,6 +72,7 @@ StackTracer::StackTracer(void)
 			mMachineType = IMAGE_FILE_MACHINE_I386;
 		}
 	}
+	free(szProcessor);
 
 	// Exception code description
 	mCodeDesc.insert(CODE_DESCR(EXCEPTION_ACCESS_VIOLATION));

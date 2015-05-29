@@ -28,8 +28,6 @@ TextField::TextField()
 		std::bind(&TextField::OnClicked, this, std::placeholders::_1));
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&TextField::OnDoubleClicked, this, std::placeholders::_1));
-	RegisterEventFunc(UIEvents::EVENT_ENTER,
-		std::bind(&TextField::OnEnter, this, std::placeholders::_1));
 }
 
 TextField::~TextField()
@@ -164,6 +162,7 @@ void TextField::OnFocusGain()
 
 void TextField::OnFocusLost()
 {
+	gFBUIManager->DirtyRenderList(mHwndId);
 	auto mani = gFBUIManager->GetTextManipulator();
 	auto propertyList = IsInPropertyList();
 	if (propertyList)
@@ -182,7 +181,7 @@ void TextField::OnFocusLost()
 			char buf[256] = { 0 };
 			auto prop = UIProperty::IsUIProperty(key.c_str());
 			if (prop != UIProperty::COUNT){
-				auto got = editingUI->GetProperty(prop, buf, false);
+				auto got = editingUI->GetProperty(prop, buf, 256, false);
 				if (got)
 					SetText(AnsiToWide(buf));
 			}
@@ -271,7 +270,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(T);
 		T->SetRender3D(mRender3D, GetRenderTargetSize());
 		T->SetManualParent(this);
-		T->SetSizeY(1);
+		T->ChangeSizeY(1);
 		T->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 
@@ -280,7 +279,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(L);
 		L->SetRender3D(mRender3D, GetRenderTargetSize());
 		L->SetManualParent(this);
-		L->SetSizeX(1);
+		L->ChangeSizeX(1);
 		L->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -289,7 +288,7 @@ void TextField::SetUseBorder(bool use)
 		R->SetRender3D(mRender3D, GetRenderTargetSize());
 		R->SetManualParent(this);
 		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		R->SetSizeX(1);
+		R->ChangeSizeX(1);
 		R->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 
@@ -299,7 +298,7 @@ void TextField::SetUseBorder(bool use)
 		B->SetRender3D(mRender3D, GetRenderTargetSize());
 		B->SetManualParent(this);
 		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		B->SetSizeY(1);
+		B->ChangeSizeY(1);
 		B->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -307,7 +306,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(LT);
 		LT->SetRender3D(mRender3D, GetRenderTargetSize());
 		LT->SetManualParent(this);
-		LT->SetSize(Vec2I(1, 1));
+		LT->ChangeSize(Vec2I(1, 1));
 		LT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
 		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
@@ -315,7 +314,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(RT);
 		RT->SetRender3D(mRender3D, GetRenderTargetSize());
 		RT->SetManualParent(this);
-		RT->SetSize(Vec2I(1, 1));
+		RT->ChangeSize(Vec2I(1, 1));
 		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 		RT->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -324,7 +323,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(LB);
 		LB->SetRender3D(mRender3D, GetRenderTargetSize());
 		LB->SetManualParent(this);
-		LB->SetSize(Vec2I(1, 1));
+		LB->ChangeSize(Vec2I(1, 1));
 		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		LB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -333,7 +332,7 @@ void TextField::SetUseBorder(bool use)
 		mBorders.push_back(RB);
 		RB->SetRender3D(mRender3D, GetRenderTargetSize());
 		RB->SetManualParent(this);
-		RB->SetSize(Vec2I(1, 1));
+		RB->ChangeSize(Vec2I(1, 1));
 		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
 		RB->SetTextureAtlasRegion("es/textures/ui.xml", "ThinBorder");
 
@@ -441,10 +440,5 @@ void TextField::OnClicked(void* arg){
 }
 void TextField::OnDoubleClicked(void* arg){
 	gFBUIManager->GetTextManipulator()->SelectAll();
-}
-
-void TextField::OnEnter(void* arg)
-{
-	
 }
 }

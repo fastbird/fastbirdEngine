@@ -542,7 +542,7 @@ namespace fastbird
 		{
 			char buf[256];
 
-			bool result = comp->GetProperty(UIProperty::ConvertToEnum(prop), buf, false);
+			bool result = comp->GetProperty(UIProperty::ConvertToEnum(prop), buf, 256, false);
 			if (result)
 			{
 				lua_pushstring(L, buf);

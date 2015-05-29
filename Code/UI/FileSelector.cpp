@@ -149,6 +149,7 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 
 	mFolder = folder;
 	char buf[MAX_PATH] = {0};
+	strcpy_s(buf, "haha");
 	mFolder = ToAbsolutePath(buf, mFolder.c_str());
 	mFolder = UnifyFilepath(buf, mFolder.c_str());
 	if (filter && strlen(filter)!=0)

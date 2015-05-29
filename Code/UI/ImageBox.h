@@ -35,7 +35,7 @@ public:
 	virtual bool IsAnimated() const;
 	virtual void Highlight(bool enable);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 	void SetKeepImageRatio(bool keep);
 	void SetUVRot(bool set);

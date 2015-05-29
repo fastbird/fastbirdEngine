@@ -184,7 +184,7 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
-	bool HorizontalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	bool HorizontalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 	{
 		switch (prop)
 		{
@@ -196,7 +196,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mMaximum);
-			strcpy(val, data.c_str());			
+			strcpy_s(val, bufsize, data.c_str());			
 			return true;
 		}
 		case UIProperty::GAUGE_CUR:
@@ -207,7 +207,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mPercentage);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 			
 		}
@@ -219,7 +219,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mGaugeColor);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 		case UIProperty::GAUGE_COLOR_EMPTY:
@@ -227,7 +227,7 @@ namespace fastbird
 			if (mGaugeColorEmptySet)
 			{
 				auto data = StringConverter::toString(mGaugeColorEmpty);
-				strcpy(val, data.c_str());
+				strcpy_s(val, bufsize, data.c_str());
 				return true;
 			}
 			return false;
@@ -241,7 +241,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mBlinkColor);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 
@@ -253,7 +253,7 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mBlinkSpeed);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;			
 		}
 
@@ -265,12 +265,12 @@ namespace fastbird
 					return false;
 			}
 			auto data = StringConverter::toString(mGaugeBorderColor);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 		}
 
-		return __super::GetProperty(prop, val, notDefaultOnly);
+		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 
 

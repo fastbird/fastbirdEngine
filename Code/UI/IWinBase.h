@@ -126,7 +126,7 @@ namespace fastbird
 		virtual IEventHandler* GetEventHandler() const = 0;
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) = 0;
-		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly) = 0;
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly) = 0;
 		virtual bool GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal = false) = 0;
 		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f) = 0;
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0) = 0;

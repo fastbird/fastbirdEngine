@@ -253,7 +253,7 @@ void ParticleManager::ReloadParticle(const char* file)
 {
 	for (auto& p : mParticleEmittersByName)
 	{
-		if (stricmp(p.first.c_str(), file)==0)
+		if (_stricmp(p.first.c_str(), file)==0)
 		{
 			std::string lower = file;
 			ToLowerCase(lower);

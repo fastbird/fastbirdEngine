@@ -2121,7 +2121,7 @@ void Renderer::SetDebugRenderTarget(unsigned idx, const char* textureName)
 	assert(idx < MaxDebugRenderTargets);
 	auto mainRT = (RenderTarget*)GetMainRenderTarget();
 	assert(mainRT);
-	if (stricmp(textureName, "Shadow") == 0)
+	if (_stricmp(textureName, "Shadow") == 0)
 		mDebugRenderTargets[idx].mTexture = mainRT->GetShadowMap();
 	else
 		mDebugRenderTargets[idx].mTexture = 0;
@@ -2301,6 +2301,10 @@ void Renderer::RegisterUIs(HWND_ID hwndId, std::vector<IUIObject*>& uiobj)
 {
 	auto& objectsToRender = mUIObjectsToRender[hwndId];
 	objectsToRender.swap(uiobj);
+	auto rt = GetRenderTarget(hwndId);
+	if (rt){
+		rt->TriggerDrawEvent();
+	}
 }
 
 void Renderer::UnregisterUIs(HWND_ID hwndId)

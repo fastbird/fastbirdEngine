@@ -18,7 +18,7 @@ namespace fastbird{
 		virtual ComponentType::Enum GetType() const { return ComponentType::TabWindow; }
 		virtual void OnCreated();
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 		virtual bool ParseXML(tinyxml2::XMLElement* pelem);
 		virtual void Save(tinyxml2::XMLElement& elem);
 		virtual bool SetVisible(bool show);

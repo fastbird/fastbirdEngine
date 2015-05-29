@@ -470,7 +470,7 @@ bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot)
 			mInputElementDescs.push_back(INPUT_ELEMENT_DESC());
 			const char* pbuffer = pElem->Attribute("semantic");
 			if (pbuffer)
-				strcpy(mInputElementDescs.back().mSemanticName, pbuffer);
+				strcpy_s(mInputElementDescs.back().mSemanticName, pbuffer);
 			mInputElementDescs.back().mSemanticIndex = pElem->IntAttribute("index");
 
 			pbuffer = pElem->Attribute("format");

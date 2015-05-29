@@ -39,7 +39,7 @@ namespace fastbird
 		virtual void SetWNScollingOffset(const Vec2& offset);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 		void OnClickRadio(RadioBox* pRadio);
 

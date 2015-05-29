@@ -34,7 +34,6 @@ public:
 
 	void OnClicked(void* arg);
 	void OnDoubleClicked(void* arg);
-	void OnEnter(void* arg);
 	
 	
 

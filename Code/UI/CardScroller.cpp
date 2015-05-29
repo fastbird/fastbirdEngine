@@ -59,7 +59,7 @@ bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -71,7 +71,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], bool notDefaul
 				return false;
 		}
 		auto data = StringConverter::toString(mCardSizeX);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 	}
 	case UIProperty::CARD_SIZEY:
 	{
@@ -81,7 +81,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], bool notDefaul
 				return false;
 		}
 		auto data = StringConverter::toString(mCardSizeY);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 	}
 	case UIProperty::CARD_OFFSETY:
 	{
@@ -91,10 +91,10 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], bool notDefaul
 				return false;
 		}
 		auto data = StringConverter::toString(mCardOffsetY);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 	}
 	}
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void CardScroller::SetCardSize_Offset(const Vec2& x_ratio, int offset)

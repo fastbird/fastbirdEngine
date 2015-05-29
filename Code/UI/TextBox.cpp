@@ -147,7 +147,7 @@ namespace fastbird
 		return __super::SetProperty(prop, val);
 	}
 
-	bool TextBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+	bool TextBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 	{
 		switch (prop)
 		{
@@ -159,7 +159,7 @@ namespace fastbird
 					return false;
 			}
 
-			strcpy(val, mStrBackImage.c_str());
+			strcpy_s(val, bufsize, mStrBackImage.c_str());
 			return true;
 		}
 
@@ -171,7 +171,7 @@ namespace fastbird
 					return false;
 			}
 
-			strcpy(val, mStrKeepRatio.c_str());
+			strcpy_s(val, bufsize, mStrKeepRatio.c_str());
 		}
 
 		case UIProperty::TEXTBOX_MATCH_HEIGHT:
@@ -183,14 +183,14 @@ namespace fastbird
 			}
 
 			auto data = StringConverter::toString(mMatchHeight);
-			strcpy(val, data.c_str());
+			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
 
 		}
 
 
-		return __super::GetProperty(prop, val, notDefaultOnly);
+		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 
 

@@ -18,7 +18,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::Button; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 	virtual bool SetVisible(bool visible);
 	virtual void SetVisibleInternal(bool visible);
 

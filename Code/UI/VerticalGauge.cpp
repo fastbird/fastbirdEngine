@@ -175,7 +175,7 @@ bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -187,7 +187,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mGaugeColor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -199,7 +199,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mBlinkColor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -211,7 +211,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mBlinkSpeed);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::GAUGE_MAX:
@@ -222,7 +222,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mMaximum);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::GAUGE_CUR:
@@ -233,7 +233,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mPercentage);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -244,7 +244,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 			if (mTextureAtlasFile.empty())
 				return false;
 		}
-		strcpy(val, mTextureAtlasFile.c_str());
+		strcpy_s(val, bufsize, mTextureAtlasFile.c_str());
 		return true;
 	}
 	break;
@@ -256,7 +256,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 			if (mRegionFilled.empty())
 				return false;
 		}
-		strcpy(val, mRegionFilled.c_str());
+		strcpy_s(val, bufsize, mRegionFilled.c_str());
 		return true;
 	}
 	case UIProperty::REGION_NOT_FILLED:
@@ -266,7 +266,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 			if (mRegionNotFilled.empty())
 				return false;
 		}
-		strcpy(val, mRegionNotFilled.c_str());
+		strcpy_s(val, bufsize, mRegionNotFilled.c_str());
 		return true;
 	}
 	break;
@@ -279,7 +279,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 		auto data = StringConverter::toString(mHorizontalFlip);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -291,7 +291,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], bool notDefau
 				return false;
 		}
 
-		strcpy(val, mStrGaugeBorderColor.c_str());
+		strcpy_s(val, bufsize, mStrGaugeBorderColor.c_str());
 		return true;
 	}
 	}

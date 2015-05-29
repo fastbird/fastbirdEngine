@@ -52,7 +52,7 @@ namespace fastbird{
 		return __super::SetProperty(prop, val);
 	}
 
-	bool TabWindow::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly) {
+	bool TabWindow::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly) {
 		switch (prop) {
 
 		case UIProperty::TABWND_NUM_TABS:
@@ -62,7 +62,7 @@ namespace fastbird{
 					return false;
 			}
 
-			strcpy(val, StringConverter::toString(mNumTabs).c_str());
+			strcpy_s(val, bufsize, StringConverter::toString(mNumTabs).c_str());
 			return true;
 		}
 		case UIProperty::TABWND_TAB_NAMES:
@@ -72,11 +72,11 @@ namespace fastbird{
 					return false; 
 			}
 			// 255 is enough?
-			strncpy(val, mStrTabNames.c_str(), 255);
+			strncpy_s(val, bufsize, mStrTabNames.c_str(), 255);
 			return true;
 		}
 		}
-		return __super::GetProperty(prop, val, notDefaultOnly);
+		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 	
 	bool TabWindow::ParseXML(tinyxml2::XMLElement* pelem){	

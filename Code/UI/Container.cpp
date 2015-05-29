@@ -270,7 +270,7 @@ IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*
 
 	for (auto var : mChildren)
 	{
-		if (stricmp(var->GetName(), name.c_str()) == 0)
+		if (_stricmp(var->GetName(), name.c_str()) == 0)
 		{
 			return var;
 		}
@@ -811,7 +811,7 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool Container::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool Container::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 
 	switch (prop)
@@ -824,7 +824,7 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOn
 				return false;
 		}
 		auto data = StringConverter::toString(mUseScrollerV);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::SCROLLERV_OFFSET:
@@ -851,7 +851,7 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOn
 				return false;
 		}
 		auto data = StringConverter::toString(mUseScrollerH);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;		
 	}
 	case UIProperty::MATCH_HEIGHT:
@@ -862,13 +862,13 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOn
 				return false;
 		}
 		auto data = StringConverter::toString(mMatchHeight);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 

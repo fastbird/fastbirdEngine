@@ -708,21 +708,21 @@ bool WinBase::IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand) const
 }
 
 bool WinBase::IsPtOnLeft(const Vec2I& pt, int area) const{
-	auto wpos = GetWPos();
+	auto wpos = GetFinalPos();
 	return pt.x <= wpos.x + area && pt.x >= wpos.x - area;
 }
 bool WinBase::IsPtOnRight(const Vec2I& pt, int area) const{
-	auto wpos = GetWPos();
+	auto wpos = GetFinalPos();
 	int right = wpos.x + mSize.x;
 	return pt.x <= right + area && pt.x >= right - area;
 }
 bool WinBase::IsPtOnTop(const Vec2I& pt, int area) const{
-	auto wpos = GetWPos();
+	auto wpos = GetFinalPos();
 	int top = wpos.y;
 	return pt.y <= top + area && pt.y >= top - area;
 }
 bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
-	auto wpos = GetWPos();
+	auto wpos = GetFinalPos();
 	int bottom = wpos.y + mSize.y;
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
@@ -879,7 +879,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 			}
 			break;
 		}
-		case VK_TAB:
+		/*case VK_TAB:
 		{
 			if (GetType() == ComponentType::TextField){
 				if (OnEvent(UIEvents::EVENT_ENTER))
@@ -888,7 +888,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 				break;
 			}
-		}
+		}*/
 			
 		}
 	}
@@ -1270,7 +1270,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::FIXED_TEXT_SIZE:
 	{
-										mFixedTextSize = stricmp("true", val) == 0;
+										mFixedTextSize = _stricmp("true", val) == 0;
 										return true;
 	}
 
@@ -1315,12 +1315,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::MATCH_SIZE:
 	{
-								   mMatchSize = stricmp("true", val) == 0;
+								   mMatchSize = _stricmp("true", val) == 0;
 								   return true;
 	}
 	case UIProperty::NO_BACKGROUND:
 	{
-									  if (stricmp("true", val) == 0)
+									  if (_stricmp("true", val) == 0)
 									  {
 										  if (mUIObject)
 											  mUIObject->SetNoDrawBackground(true);
@@ -1364,7 +1364,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 							 assert(val);
 							 std::string translated = TranslateText(val);
-							 if (translated != val)
+							 if (translated != val || strlen(val)==0)
 							 {
 								 mTextBeforeTranslated = val;
 							 }
@@ -1509,7 +1509,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	return false;
 }
 
-bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	assert(val);
 	switch (prop)
@@ -1517,84 +1517,84 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 	case UIProperty::POS:
 	{
 		auto data = StringConverter::toString(mPos);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::POSX:
 	{
 		auto data = StringConverter::toString(mPos.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::POSY:
 	{
 		auto data = StringConverter::toString(mPos.y);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::NPOS:
 	{
 		auto data = StringConverter::toString(mNPos);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::NPOSX:
 	{
 		auto data = StringConverter::toString(mNPos.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::NPOSY:
 	{
 		auto data = StringConverter::toString(mNPos.y);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::OFFSETX:
 	{
 		auto data = StringConverter::toString(mAbsOffset.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
 	case UIProperty::OFFSETY:
 	{
 		auto data = StringConverter::toString(mAbsOffset.y);
-		strcpy(val, data.c_str());		
+		strcpy_s(val, bufsize, data.c_str());		
 		return true;
 	}
 	case UIProperty::SIZE:
 	{
 		auto data = StringConverter::toString(mSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
 	case UIProperty::SIZEX:
 	{
 		auto data = StringConverter::toString(mSize.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
 	case UIProperty::SIZEY:
 	{
 		auto data = StringConverter::toString(mSize.y);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
 	case UIProperty::NSIZEX:
 	{
 		auto data = mFillX ? std::string("fill") : StringConverter::toString(mNSize.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 				
 		return true;
 	}
 	case UIProperty::NSIZEY:
 	{
 		auto data = mFillY ? std::string("fill") : StringConverter::toString(mNSize.y);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1610,7 +1610,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 		auto data = StringConverter::toString(diffuseColor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;		
 
@@ -1625,7 +1625,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -1637,7 +1637,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 		auto data = StringConverter::toString(mFixedTextSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1650,7 +1650,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 
-		strcpy(val, ALIGNH::ConvertToString(mTextAlignH));
+		strcpy_s(val, bufsize, ALIGNH::ConvertToString(mTextAlignH));
 
 		return true;
 	}
@@ -1662,7 +1662,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 
-		strcpy(val, ALIGNV::ConvertToString(mTextAlignV));
+		strcpy_s(val, bufsize, ALIGNV::ConvertToString(mTextAlignV));
 		
 		return true;
 	}
@@ -1675,7 +1675,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextGap.x);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1688,7 +1688,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextGap.y);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1700,7 +1700,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextGap);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1713,7 +1713,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mMatchSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::NO_BACKGROUND:
@@ -1728,7 +1728,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mUIObject->GetNoDrawBackground());
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::TEXT_COLOR:
@@ -1740,7 +1740,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextColor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::TEXT_COLOR_HOVER:
@@ -1752,7 +1752,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextColorHover);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::TEXT_COLOR_DOWN:
@@ -1764,7 +1764,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTextColorDown);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::ALIGNH:
@@ -1775,7 +1775,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 
-		strcpy(val, ALIGNH::ConvertToString(mAlignH));
+		strcpy_s(val, bufsize, ALIGNH::ConvertToString(mAlignH));
 		
 		return true;
 	}
@@ -1787,7 +1787,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			}
 		}
 
-		strcpy(val, ALIGNV::ConvertToString(mAlignV));
+		strcpy_s(val, bufsize, ALIGNV::ConvertToString(mAlignV));
 		return true;
 	}
 	case UIProperty::TEXT:
@@ -1798,11 +1798,11 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		if (!mTextBeforeTranslated.empty()){
-			strcpy(val, mTextBeforeTranslated.c_str());
+			strcpy_s(val, bufsize, mTextBeforeTranslated.c_str());
 		}
 		else
 		{
-			strcpy(val, WideToAnsi(mTextw.c_str()));
+			strcpy_s(val, bufsize, WideToAnsi(mTextw.c_str()));
 		}
 		return true;
 	}
@@ -1816,11 +1816,11 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 
 		if (!mTooltipTextBeforeT.empty())
 		{
-			strcpy(val, mTooltipTextBeforeT.c_str());
+			strcpy_s(val, bufsize, mTooltipTextBeforeT.c_str());
 		}
 		else
 		{
-			strcpy(val, WideToAnsi(mTooltipText.c_str()));
+			strcpy_s(val, bufsize, WideToAnsi(mTooltipText.c_str()));
 		}		
 		return true;
 	}
@@ -1833,7 +1833,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mNoMouseEvent);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1846,7 +1846,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mNoMouseEventAlone);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		
 		return true;
@@ -1860,7 +1860,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mUseScissor);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1873,7 +1873,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(!mBorders.empty());
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1886,7 +1886,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mSpecialOrder);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1899,7 +1899,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mInheritVisibleTrue);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -1911,7 +1911,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mVisibility.IsVisible());
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -1923,7 +1923,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mEnable);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1935,7 +1935,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 				return false;
 		}
 		auto data = StringConverter::toString(mModal);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1948,7 +1948,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mDragable);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		
 		return true;
 	}
@@ -1961,7 +1961,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 		}
 
 		auto data = StringConverter::toString(mTabOrder);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
 	}
@@ -1973,7 +1973,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
 {
 	char buf[256];
-	bool get = GetProperty(prop, buf, false);
+	bool get = GetProperty(prop, buf, 256, false);
 	if (get)
 	{
 		return StringConverter::parseBool(buf);
@@ -1984,7 +1984,7 @@ bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
 float WinBase::GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal)
 {
 	char buf[256];
-	bool get = GetProperty(prop, buf, false);
+	bool get = GetProperty(prop, buf, 256, false);
 	if (get)
 	{
 		return StringConverter::parseReal(buf);
@@ -1995,7 +1995,7 @@ float WinBase::GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal)
 int WinBase::GetPropertyAsInt(UIProperty::Enum prop, int defaultVal)
 {
 	char buf[256];
-	bool get = GetProperty(prop, buf, false);
+	bool get = GetProperty(prop, buf, 256, false);
 	if (get)
 	{
 		return StringConverter::parseInt(buf);
@@ -2413,14 +2413,14 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		data[0] = StripBoth(data[0].c_str());
 		data[1] = StripBoth(data[1].c_str());
 		float x, y;
-		if (stricmp(data[0].c_str(), "fill") == 0){
+		if (_stricmp(data[0].c_str(), "fill") == 0){
 			x = 1.0f - mNPos.x;
 			mFillX = true;
 		}
 		else
 			x = StringConverter::parseReal(data[0].c_str());
 
-		if (stricmp(data[1].c_str(), "fill") == 0) {
+		if (_stricmp(data[1].c_str(), "fill") == 0) {
 			y = 1.0f - mNPos.y;
 			mFillY = true;
 		}
@@ -2442,7 +2442,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	if (sz)
 	{
 		float x;
-		if (stricmp(sz, "fill") == 0)
+		if (_stricmp(sz, "fill") == 0)
 		{
 			x = 1.0f - mNPos.x;
 			mFillX = true;
@@ -2458,7 +2458,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	if (sz)
 	{
 		float y;
-		if (stricmp(sz, "fill") == 0)
+		if (_stricmp(sz, "fill") == 0)
 		{
 			y = 1.0f - mNPos.y;
 			mFillY = true;
@@ -2675,7 +2675,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		else
 		{
 			std::string str = compTable.GetField("nsizeX").GetString(success);
-			if (success && stricmp(str.c_str(), "fill") == 0)
+			if (success && _stricmp(str.c_str(), "fill") == 0)
 			{
 				SetNSizeX(1.0f - mNPos.x);
 			}
@@ -2691,7 +2691,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		else
 		{
 			std::string str = compTable.GetField("nsizeY").GetString(success);
-			if (stricmp(str.c_str(), "fill") == 0)
+			if (_stricmp(str.c_str(), "fill") == 0)
 			{
 				SetNSizeY(1.0f - mNPos.y);
 			}
@@ -2900,7 +2900,7 @@ void WinBase::Save(tinyxml2::XMLElement& elem)
 	for (int i = UIProperty::BACK_COLOR; i < UIProperty::COUNT; ++i)
 	{
 		char buf[256];
-		auto got = GetProperty(UIProperty::Enum(i), buf, true);
+		auto got = GetProperty(UIProperty::Enum(i), buf, 256, true);
 		if (got)
 		{
 			elem.SetAttribute(UIProperty::ConvertToString(i), buf);

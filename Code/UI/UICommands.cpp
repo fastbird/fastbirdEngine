@@ -48,7 +48,7 @@ void StartUIEditor(StringVector& arg)
 	auto moduleHandle = gFBEnv->pUIManager->GetUIEditorModuleHandle();
 	if (!moduleHandle)
 	{
-		moduleHandle = LoadLibrary("FBUIEditor.dll");;
+		moduleHandle = fastbird::LoadFBLibrary("FBUIEditor.dll");
 		gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
 	}
 	if (moduleHandle)

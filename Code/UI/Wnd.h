@@ -17,7 +17,7 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::Window; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v) ;
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 	virtual bool SetVisible(bool show);
 	virtual void SetAnimScale(const Vec2& scale);
 	virtual void RefreshScissorRects();

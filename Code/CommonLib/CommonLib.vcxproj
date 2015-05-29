@@ -66,6 +66,7 @@
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -89,6 +90,7 @@
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -114,6 +116,7 @@
       <PrecompiledHeaderFile>CommonLib/StdAfx.h</PrecompiledHeaderFile>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalIncludeDirectories>$(LUA_DIR)\include;$(FASTBIRD_ENGINE_DIR)</AdditionalIncludeDirectories>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

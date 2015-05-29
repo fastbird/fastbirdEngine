@@ -39,18 +39,18 @@ bool ColorRampComp::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool ColorRampComp::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool ColorRampComp::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
 	case UIProperty::COLOR_RAMP_VALUES:
 	{
-		GetColorRampValues(val, 6);
+		GetColorRampValues(val, bufsize, 6);
 		return true;
 	}
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void ColorRampComp::SetColorRampValues(const char* values)
@@ -75,7 +75,7 @@ void ColorRampComp::SetColorRampValues(const char* values)
 	SetColorRampValuesFloats(ratios);
 }
 
-void ColorRampComp::GetColorRampValues(char val[], int precision)
+void ColorRampComp::GetColorRampValues(char val[], unsigned bufsize, int precision)
 {
 	std::vector<float> values;
 	GetColorRampValuesFloats(values);
@@ -90,7 +90,7 @@ void ColorRampComp::GetColorRampValues(char val[], int precision)
 			strValues += ",";
 		}
 	}
-	strcpy(val, strValues.c_str());
+	strcpy_s(val, bufsize, strValues.c_str());
 }
 
 void ColorRampComp::GetColorRampValuesFloats(std::vector<float>& values)

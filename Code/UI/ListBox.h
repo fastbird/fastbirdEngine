@@ -94,7 +94,7 @@ public:
 	unsigned GetNumCols() const { return mNumCols; }
 
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-	virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 	virtual ListItem* GetItem(const Vec2I& indexRowCol) const;
 	ListBoxData* GetData(unsigned rowIndex, unsigned colIndex) const;

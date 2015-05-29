@@ -28,7 +28,7 @@ namespace fastbird
 		virtual const Color& GetBlinkColor() const;
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
-		virtual bool GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly);
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 
 	private:
 		float mPercentage;

@@ -26,7 +26,26 @@ namespace fastbird
 	bool IsDir(const char* filepath);
 	std::string ConcatFilepath(const char* a, const char* b);
 	// if outChar is zero, you have to free the returned pointer.
-	char* ToAbsolutePath(char* outChar, const char* a);
+	template <unsigned _Size>
+	char* ToAbsolutePath(char (&outChar)[_Size], const char* a)
+	{
+		if (outChar == a)
+		{
+			assert(0);
+			Error("ToAbsolutePath arg error!");
+			return 0;
+		}
+		if (strlen(a) <= 3)
+		{
+			if (a[1] == ':')
+			{
+				strcpy_s(outChar, a);
+				return outChar;
+			}
+		}
+		return _fullpath(outChar, a, _Size);
+	}
+
 	bool StringsEqual_i(const std::string& lhs, const std::string& rhs);
 	void SplitPath(const std::string& in_path, std::vector<std::string>& split_path);
 	std::string GetRelativePath(const std::string& to, const std::string& from);

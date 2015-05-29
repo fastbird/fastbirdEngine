@@ -404,7 +404,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -414,7 +414,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			if (mTextureAtlasFile.empty())
 				return false;
 		}
-		strcpy(val, mTextureAtlasFile.c_str());
+		strcpy_s(val, bufsize, mTextureAtlasFile.c_str());
 		return true;
 	}
 
@@ -424,7 +424,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			if (mStrRegion.empty())
 				return false;
 		}
-		strcpy(val, mStrRegion.c_str());
+		strcpy_s(val, bufsize, mStrRegion.c_str());
 		return true;
 	}
 
@@ -434,7 +434,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			if (mStrRegions.empty())
 				return false;
 		}
-		strcpy(val, mStrRegions.c_str());
+		strcpy_s(val, bufsize, mStrRegions.c_str());
 		return true;
 	}
 	break;
@@ -447,7 +447,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 
 		}
 		auto data = StringConverter::toString(mSecPerFrame==0.f ? 0.f : 1.f / mSecPerFrame);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	break;
@@ -459,7 +459,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			if (mImageFile.empty())
 				return false;
 		}
-		strcpy(val, mImageFile.c_str());
+		strcpy_s(val, bufsize, mImageFile.c_str());
 		return true;
 	}
 
@@ -471,7 +471,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 				return false;
 		}
 		auto data = StringConverter::toString(mKeepImageRatio);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 	case UIProperty::FRAME_IMAGE:
@@ -481,7 +481,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 			if (mStrFrameImage.empty())
 				return false;
 		}
-		strcpy(val, mStrFrameImage.c_str());
+		strcpy_s(val, bufsize, mStrFrameImage.c_str());
 		return true;
 	}
 
@@ -495,7 +495,7 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 		if (!mUIObject)
 			return false;
 		auto data = StringConverter::toString(mUIObject->GetMaterial()->GetDiffuseColor());
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -508,14 +508,14 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 		}
 
 		auto data = StringConverter::toString(mImageFixedSize);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 
 	}
 
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void ImageBox::SetKeepImageRatio(bool keep)

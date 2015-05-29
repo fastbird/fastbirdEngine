@@ -21,6 +21,8 @@ namespace fastbird
 
 		// process for Ctrl + left, right, up, down. and Ctrl+keypad 5
 		virtual void ProcessKeyInput(){}
+
+		virtual void Save(){}
 		
 	};
 }

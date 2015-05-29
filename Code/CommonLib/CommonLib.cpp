@@ -14,12 +14,12 @@ namespace fastbird
 		}
 
 		char buf[MAX_PATH] = { 0 };
-		strncpy(buf, name, dotPos - name);
+		strncpy_s(buf, name, dotPos - name);
 
 #ifdef _DEBUG
-		strcat(buf, "_Debug.dll");
+		strcat_s(buf, "_Debug.dll");
 #else
-		strcat(buf, "_Release.dll");
+		strcat_s(buf, "_Release.dll");
 #endif
 
 		HMODULE module = LoadLibrary(buf);

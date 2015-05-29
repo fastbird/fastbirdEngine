@@ -113,7 +113,7 @@ bool CheckBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool CheckBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool CheckBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -125,12 +125,12 @@ bool CheckBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnl
 				return false;
 		}
 		auto data = StringConverter::toString(mChecked);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
 	}
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 }

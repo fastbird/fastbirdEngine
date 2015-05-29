@@ -508,7 +508,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	return __super::SetProperty(prop, val);
 }
 
-bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly)
+bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
 {
 	switch (prop)
 	{
@@ -519,7 +519,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mHighlightColor == UIProperty::GetDefaultValueString(prop))
 				return false;
 		}
-		strcpy(val, mHighlightColor.c_str());
+		strcpy_s(val, bufsize, mHighlightColor.c_str());
 		return true;
 	}
 	case UIProperty::LISTBOX_COL:
@@ -529,7 +529,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrCols.empty())
 				return false;
 		}
-		strcpy(val, mStrCols.c_str());
+		strcpy_s(val, bufsize, mStrCols.c_str());
 		return true;
 	}
 	case UIProperty::LISTBOX_ROW_HEIGHT:
@@ -540,7 +540,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 				return false;
 		}
 		auto data = StringConverter::toString(mRowHeight);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 
 		
@@ -553,7 +553,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 				return false;
 		}
 		auto data = StringConverter::toString(mRowGap);
-		strcpy(val, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
 
@@ -564,7 +564,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrColSizes.empty())
 				return false;
 		}
-		strcpy(val, mStrColSizes.c_str());
+		strcpy_s(val, bufsize, mStrColSizes.c_str());
 		return true;
 	}
 
@@ -575,7 +575,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrTextSizes.empty())
 				return false;
 		}
-		strcpy(val, mStrTextSizes.c_str());
+		strcpy_s(val, bufsize, mStrTextSizes.c_str());
 		return true;
 	}
 	case UIProperty::LISTBOX_COL_ALIGNH:
@@ -585,7 +585,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrColAlignH.empty())
 				return false;
 		}
-		strcpy(val, mStrColAlignH.c_str());
+		strcpy_s(val, bufsize, mStrColAlignH.c_str());
 		return true;
 	}
 
@@ -596,7 +596,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrHeaderTextSizes.empty())
 				return false;
 		}
-		strcpy(val, mStrHeaderTextSizes.c_str());
+		strcpy_s(val, bufsize, mStrHeaderTextSizes.c_str());
 		return true;
 	}
 
@@ -607,7 +607,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mStrHeaders.empty())
 				return false;
 		}
-		strcpy(val, mStrHeaders.c_str());
+		strcpy_s(val, bufsize, mStrHeaders.c_str());
 		return true;
 	}
 	case UIProperty::TEXTUREATLAS:
@@ -617,12 +617,12 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], bool notDefaultOnly
 			if (mTextureAtlas.empty())
 				return false;
 		}
-		strcpy(val, mTextureAtlas.c_str());
+		strcpy_s(val, bufsize, mTextureAtlas.c_str());
 		return true;
 	}
 	}
 
-	return __super::GetProperty(prop, val, notDefaultOnly);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 
 }
 ListItem* ListBox::GetItem(const Vec2I& indexRowCol) const

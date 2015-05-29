@@ -76,6 +76,7 @@
       <AdditionalIncludeDirectories>$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;$(DXSDK_DIR)include</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ShowIncludes>false</ShowIncludes>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -106,6 +107,7 @@
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -133,6 +135,7 @@
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
