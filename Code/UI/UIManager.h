@@ -8,7 +8,6 @@
 #include <Engine/IFileChangeListener.h>
 #include <Engine/IRenderListener.h>
 
-
 namespace fastbird
 {
 	void RegisterLuaFuncs(lua_State* mL);
@@ -76,6 +75,14 @@ namespace fastbird
 
 		// for locating
 		bool mMultiLocating;
+
+		std::string mStyle;
+		VectorMap<std::string, std::string> mBorderRegions;
+		VectorMap<std::string, std::string> mWindowRegions;
+		std::string mBorderAlphaRegion;
+		std::string mWindowAlphaRegion;
+		VectorMap<Vec2I, SmartPtr<ITexture>> mAlphaInfoTexture;
+		SmartPtr<ITexture> mAtlasStaging;
 
 
 	protected:
@@ -197,6 +204,13 @@ namespace fastbird
 		virtual const char* GetUIScriptPath(const char* uiname) const;
 
 		virtual void SuppressPropertyWarning(bool suppress);
+
+		virtual void SetStyle(const char* style);
+
+		virtual const char* GetBorderRegion(const char* key) const;
+		virtual const char* GetWndBorderRegion(const char* key) const;
+
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

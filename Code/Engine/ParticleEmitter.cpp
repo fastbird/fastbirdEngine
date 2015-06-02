@@ -1090,7 +1090,7 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 							}
 							else if (!IsEqual(pos, prevPos, 0.001f))
 							{
-								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (GetPos() - GetPrevPos()).Length() / dt*0.1f - mDistToCam*.1f));
+								size.x += std::min(size.x*pt->mStretchMax, std::max(0.f, (pos -prevPos).Length() / dt*0.1f - mDistToCam*.1f));
 							}								
 						}
 						if (dest && numWritable)

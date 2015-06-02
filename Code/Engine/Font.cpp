@@ -633,6 +633,7 @@ void Font::PrepareRenderResources()
 {
 	if (!mInitialized)
 		return;
+	gFBEnv->pRenderer->SetAlphaBlendState();
 	mShader->Bind();
 	mInputLayout->Bind();
 }

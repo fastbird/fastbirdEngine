@@ -147,36 +147,41 @@ void ImageBox::SetRenderTargetTexture(IRenderTarget* rt){
 	SetTexture(mRenderTarget->GetRenderTargetTexture());
 }
 
-void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
+const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 {
 	mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
-		// need to set to material. matarial will hold its reference counter
-		mTexture = mTextureAtlas->mTexture->Clone();
 		if (mImageFixedSize)
 		{
 			DrawAsFixedSize();
 		}
+		SAMPLER_DESC sdesc;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		TriggerRedraw();
+
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
 		if (!mAtlasRegion)
 		{
+			mTexture = 0;
+			mUIObject->GetMaterial()->SetTexture((ITexture*)0,
+				BINDING_SHADER_PS, 0, sdesc);
+			mUIObject->ClearTexCoord();
 			Error("Cannot find the region %s in the atlas %s", region, atlas);
+			return Vec2I::ZERO;
 		}
-		SAMPLER_DESC sdesc;
-		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		// need to set to material. matarial will hold its reference counter
+		mTexture = mTextureAtlas->mTexture->Clone();
 		mUIObject->GetMaterial()->SetTexture(mTexture, 
 			BINDING_SHADER_PS, 0, sdesc);
-		if (mAtlasRegion)
-		{
-			Vec2 texcoords[4];
-			mAtlasRegion->GetQuadUV(texcoords);
-			mUIObject->SetTexCoord(texcoords, 4);
-			DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
-			mUIObject->SetColors(colors, 4);
-		}
+		Vec2 texcoords[4];
+		mAtlasRegion->GetQuadUV(texcoords);
+		mUIObject->SetTexCoord(texcoords, 4);
+		DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+		mUIObject->SetColors(colors, 4);
+		return mAtlasRegion->GetSize();
 	}
-	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+	return Vec2I::ZERO;
 }
 
 void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
@@ -253,11 +258,37 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 void ImageBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
+	
 	if (!mAtlasRegion && mAtlasRegions.empty())
 	{
 		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
 		if (texture)
 			CalcUV(texture->GetSize());
+	}
+	else{
+		if (mAtlasRegion)
+		{			
+			const auto& imagesize = mAtlasRegion->GetSize();
+			if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
+				Vec2 start((float)mAtlasRegion->mStart.x, (float)mAtlasRegion->mStart.y);
+				auto xsize = imagesize.x > mSize.x * 2 ? mSize.x : imagesize.x;
+				auto ysize = imagesize.y > mSize.y * 2 ? mSize.y : imagesize.y;
+				Vec2 end(start.x + xsize, start.y + ysize);
+				auto uvEnd = end / mTextureAtlas->mTexture->GetSize();
+				Vec2 texcoords[4];
+				texcoords[0] = Vec2(mAtlasRegion->mUVStart.x, uvEnd.y);
+				texcoords[1] = mAtlasRegion->mUVStart;
+				texcoords[2] = uvEnd;
+				texcoords[3] = Vec2(uvEnd.x, mAtlasRegion->mUVStart.y);
+				mUIObject->SetTexCoord(texcoords, 4);
+			}
+			else{
+				Vec2 texcoords[4];
+				mAtlasRegion->GetQuadUV(texcoords);
+				mUIObject->SetTexCoord(texcoords, 4);
+			}
+			
+		}
 	}
 }
 

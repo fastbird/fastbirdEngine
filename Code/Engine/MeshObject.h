@@ -78,6 +78,7 @@ namespace fastbird
 		virtual bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri=0) const;
 		virtual void MakeMaterialIndependent();
 		virtual BoundingVolume* GetAABB() const { return mAABB; }
+		virtual bool IsPlayingAction() const;
 
 		struct MaterialGroup
 		{

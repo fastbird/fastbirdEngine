@@ -22,7 +22,6 @@ public:
 	virtual bool SetVisible(bool visible);
 	virtual void SetVisibleInternal(bool visible);
 
-	virtual void OnSizeChanged();
 	virtual void OnPosChanged(bool anim);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
 	virtual void StartProgress();
@@ -45,6 +44,8 @@ public:
 private:
 
 	ImageBox* CreateImageBox();
+	void SetAlphaRegionTexture();
+	void SetDefaultImageAtlasPathIfNotSet();
 
 private:
 	Color mBackColor;
@@ -68,6 +69,9 @@ private:
 	std::string mFrameImageDisabled;
 	std::string mActivatedImage;
 	std::string mDeactivatedImage;
+
+	std::string mAlphaRegion;
+
 	Color mImageColorOverlay;
 	bool mActivatedRot;
 	float mFps;

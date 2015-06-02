@@ -79,6 +79,8 @@ namespace fastbird
 		virtual void SetForceAlphaBlending(bool enable, float alpha) = 0;
 		virtual void SetAmbientColor(const Color& color) = 0;
 
+		virtual bool IsPlayingAction() const = 0;
+
 	private:
 		friend class Engine;
 		virtual void Delete() = 0;

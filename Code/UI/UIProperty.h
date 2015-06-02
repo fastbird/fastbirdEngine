@@ -46,6 +46,8 @@ namespace fastbird
 			IMAGE_HFLIP,
 			TEXTUREATLAS,
 			TEXTURE_FILE,
+			KEEP_UI_RATIO,
+			UI_RATIO,
 			KEEP_IMAGE_RATIO,
 			REGION,
 			REGIONS,
@@ -101,7 +103,9 @@ namespace fastbird
 			HIDE_ANIMATION,
 			ENABLED,
 			IMAGE_COLOR_OVERLAY,
-			IMAGE_FIXED_SIZE,
+			IMAGE_FIXED_SIZE, // match to image size if not set it will matched to ui size
+			ALPHA_REGION,
+
 			NO_BUTTON,
 			CHECKBOX_CHECKED,
 			MODAL,
@@ -174,6 +178,8 @@ namespace fastbird
 			"IMAGE_HFLIP",
 			"TEXTUREATLAS",
 			"TEXTURE_FILE",
+			"KEEP_UI_RATIO",
+			"UI_RATIO",
 			"KEEP_IMAGE_RATIO",
 			"REGION",
 			"REGIONS",
@@ -230,6 +236,7 @@ namespace fastbird
 			"ENABLED",
 			"IMAGE_COLOR_OVERLAY",
 			"IMAGE_FIXED_SIZE",
+			"ALPHA_REGION",
 			"NO_BUTTON",
 			"CHECKBOX_CHECKED",
 			"MODAL",
@@ -362,6 +369,8 @@ namespace fastbird
 				return 0.f;
 			case GAUGE_BLINK_SPEED:
 				return 3.f;
+			case UI_RATIO:
+				return 1.f;
 			}
 			assert(0);
 			return 0.f;
@@ -425,6 +434,8 @@ namespace fastbird
 			case CLOSE_BY_ESC:
 				return false;
 			case SYNC_WINDOW_POS:
+				return false;
+			case KEEP_UI_RATIO:
 				return false;
 
 			}

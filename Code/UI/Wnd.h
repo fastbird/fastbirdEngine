@@ -41,6 +41,8 @@ protected:
 	void RefreshFrame();
 	void OnTitlebarDrag(void *arg);
 
+	ImageBox* CreateBackgroundImage();
+
 private:
 	Button* mTitlebar;
 	std::string mTitlebarString;

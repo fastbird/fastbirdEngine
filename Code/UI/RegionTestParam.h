@@ -5,6 +5,7 @@ namespace fastbird{
 			: mOnlyContainer(false)
 			, mIgnoreScissor(false)
 			, mTestChildren(false)
+			, mNoRuntimeComp(false)
 			, mHwndId(1)
 		{}
 		RegionTestParam(bool onlyContainer, bool ignoreScissor, bool testChildren, HWND_ID hwndId)
@@ -16,6 +17,7 @@ namespace fastbird{
 		bool mOnlyContainer;
 		bool mIgnoreScissor;
 		bool mTestChildren;
+		bool mNoRuntimeComp;
 		HWND_ID mHwndId;
 	};
 }

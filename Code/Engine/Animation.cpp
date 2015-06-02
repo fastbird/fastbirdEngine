@@ -178,4 +178,21 @@ namespace fastbird
 
 		return true;
 	}
+
+	bool Animation::IsPlaying() const{
+		if (mCurPlayingAction)
+		{
+			if (mCurPlayingAction->mLoop)
+				return true;
+			if (mReverse)
+			{
+				return mPlayingTime > 0.0f;
+			}
+			else
+			{
+				return mPlayingTime <= mCurPlayingAction->mLength;
+			}
+		}
+		return false;
+	}
 }

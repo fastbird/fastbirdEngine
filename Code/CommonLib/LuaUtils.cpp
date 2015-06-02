@@ -136,7 +136,7 @@ namespace fastbird
 		Error(lua_tostring(L, -1));
 		lua_pop(L, 1);
 
-		lua_Debug ar;
+	/*	lua_Debug ar;
 		if (lua_getstack(L, level, &ar))
 		{
 			int i = 1;
@@ -148,7 +148,7 @@ namespace fastbird
 				Error("[local variable] name = %s, value = %s", name, GetLuaValueAsString(L, -1).c_str());
 				lua_pop(L, 1);
 			}
-		}
+		}*/
 	}
 
 	std::string GetLuaValueAsString(lua_State* L, int idx)

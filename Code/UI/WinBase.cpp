@@ -83,6 +83,7 @@ WinBase::WinBase()
 , mFillX(false), mFillY(false), mRunTimeChild(false), mGhost(false), mAspectRatioSet(false)
 , mAnimScale(1, 1), mAnimatedPos(0, 0), mAnimPos(0, 0)
 , mGatheringException(false)
+, mKeepUIRatio(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -450,6 +451,24 @@ void WinBase::UpdateAlignedPos()
 
 	const auto& rt = GetRenderTargetSize();
 	mWNPos = mWAlignedPos / Vec2(rt);
+}
+
+const Vec2I WinBase::GetAlignedPos() const
+{
+	Vec2I alignedPos = mPos;
+	switch (mAlignH)
+	{
+	case ALIGNH::LEFT: /*nothing todo*/ break;
+	case ALIGNH::CENTER: alignedPos.x -= Round(mScaledSize.x / 2.f); break;
+	case ALIGNH::RIGHT: alignedPos.x -= mScaledSize.x; break;
+	}
+	switch (mAlignV)
+	{
+	case ALIGNV::TOP: /*nothing todo*/break;
+	case ALIGNV::MIDDLE: alignedPos.y -= Round(mScaledSize.y / 2.f); break;
+	case ALIGNV::BOTTOM: alignedPos.y -= mScaledSize.y; break;
+	}
+	return alignedPos;
 }
 
 //---------------------------------------------------------------------------
@@ -1380,6 +1399,18 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							 return true;
 	}
 
+	case UIProperty::KEEP_UI_RATIO:
+	{
+		mKeepUIRatio = StringConverter::parseBool(val);
+		return true;
+	}
+
+	case UIProperty::UI_RATIO:
+	{
+		mAspectRatio = StringConverter::parseReal(val);
+		return true;
+	}
+
 	case UIProperty::TOOLTIP:
 	{
 								assert(val);
@@ -1429,9 +1460,9 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 		case UIProperty::SPECIAL_ORDER:
 		{
-										  mSpecialOrder = StringConverter::parseInt(val);
-										  mUIObject->SetSpecialOrder(mSpecialOrder);
-										return true;
+			int specialOrder = StringConverter::parseInt(val);
+			SetSpecialOrder(specialOrder);
+			return true;
 		}
 
 		case UIProperty::INHERIT_VISIBLE_TRUE:
@@ -1807,6 +1838,28 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		return true;
 	}
 
+	case UIProperty::KEEP_UI_RATIO:
+	{
+		if (notDefaultOnly){
+			if (mKeepUIRatio == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mKeepUIRatio);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::UI_RATIO:
+	{
+		if (notDefaultOnly){
+			if (mAspectRatio == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mAspectRatio);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
 	case UIProperty::TOOLTIP:
 	{
 		if (notDefaultOnly) {
@@ -2007,87 +2060,7 @@ void WinBase::SetUseBorder(bool use)
 {
 	if (use && mBorders.empty())
 	{
-		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		T->SetHwndId(GetHwndId());
-		mBorders.push_back(T);
-		T->SetRender3D(mRender3D, GetRenderTargetSize());
-		T->SetManualParent(this);
-		T->ChangeSizeY(3);
-		T->SetTextureAtlasRegion("es/textures/ui.xml", "Box_T");	
-		
-
-		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		L->SetHwndId(GetHwndId());
-		mBorders.push_back(L);
-		L->SetRender3D(mRender3D, GetRenderTargetSize());
-		L->SetManualParent(this);
-		L->ChangeSizeX(3);
-		L->SetTextureAtlasRegion("es/textures/ui.xml", "Box_L");		
-
-		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		R->SetHwndId(GetHwndId());
-		mBorders.push_back(R);
-		R->SetRender3D(mRender3D, GetRenderTargetSize());
-		R->SetManualParent(this);
-		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		R->ChangeSizeX(3);
-		R->SetTextureAtlasRegion("es/textures/ui.xml", "Box_R");
-		
-
-		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		B->SetHwndId(GetHwndId());
-		mBorders.push_back(B);
-		B->SetRender3D(mRender3D, GetRenderTargetSize());
-		B->SetManualParent(this);
-		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		B->ChangeSizeY(3);
-		B->SetTextureAtlasRegion("es/textures/ui.xml", "Box_B");
-
-		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		LT->SetHwndId(GetHwndId());
-		mBorders.push_back(LT);
-		LT->SetRender3D(mRender3D, GetRenderTargetSize());
-		LT->SetManualParent(this);
-		LT->ChangeSize(Vec2I(6, 6));
-		LT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LT");		
-
-		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		RT->SetHwndId(GetHwndId());
-		mBorders.push_back(RT);
-		RT->SetRender3D(mRender3D, GetRenderTargetSize());
-		RT->SetManualParent(this);
-		RT->ChangeSize(Vec2I(6, 6));
-		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		RT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RT");		
-
-		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
-		LB->SetHwndId(GetHwndId());
-		mBorders.push_back(LB);
-		LB->SetRender3D(mRender3D, GetRenderTargetSize());
-		LB->SetManualParent(this);
-		LB->ChangeSize(Vec2I(5, 5));
-		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		LB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LB");
-
-		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		RB->SetHwndId(GetHwndId());
-		mBorders.push_back(RB);
-		RB->SetRender3D(mRender3D, GetRenderTargetSize());
-		RB->SetManualParent(this);
-		RB->ChangeSize(Vec2I(6, 6));
-		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
-		RB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RB");
-		
-		RefreshBorder();
-		RefreshScissorRects();
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-
-		auto visible = mVisibility.IsVisible();
-		for (auto borderImage : mBorders)
-		{
-			borderImage->SetVisible(visible);
-		}
-
+		RecreateBorders();
 	}
 	else if (!use && !mBorders.empty())
 	{
@@ -2099,6 +2072,126 @@ void WinBase::SetUseBorder(bool use)
 		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 }
+void WinBase::RecreateBorders(){
+	if (!mBorders.empty()){
+
+		enum ORDER{
+			ORDER_T,
+			ORDER_L,
+			ORDER_R,
+			ORDER_B,
+			ORDER_LT,
+			ORDER_RT,
+			ORDER_LB,
+			ORDER_RB,
+
+			ORDER_NUM
+		};
+		const char* atts[] = {
+			"t", "l", "r", "b", "lt", "rt", "lb", "rb"
+		};
+		const char* uixmlPath = "es/textures/ui.xml";
+		for (auto i = 0; i < ORDER_NUM; ++i){
+			const char* borderRegion = gFBUIManager->GetBorderRegion(atts[i]);
+			const auto& size = mBorders[i]->SetTextureAtlasRegion(uixmlPath, borderRegion);
+			mBorders[i]->ChangeSize(size);
+		}
+	}
+	else{
+		const char* uixmlPath = "es/textures/ui.xml";
+		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		T->SetHwndId(GetHwndId());
+		mBorders.push_back(T);
+		T->SetRender3D(mRender3D, GetRenderTargetSize());
+		T->SetManualParent(this);
+		T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		const auto& sizeT = T->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("t"));
+		T->ChangeSizeY(sizeT.y);
+
+		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		L->SetHwndId(GetHwndId());
+		mBorders.push_back(L);
+		L->SetRender3D(mRender3D, GetRenderTargetSize());
+		L->SetManualParent(this);
+		L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		const auto& sizeL = L->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("l"));
+		L->ChangeSizeX(sizeL.x);
+
+
+		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		R->SetHwndId(GetHwndId());
+		mBorders.push_back(R);
+		R->SetRender3D(mRender3D, GetRenderTargetSize());
+		R->SetManualParent(this);
+		R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		const auto& sizeR = R->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("r"));
+		R->ChangeSizeX(sizeR.x);
+
+		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		B->SetHwndId(GetHwndId());
+		mBorders.push_back(B);
+		B->SetRender3D(mRender3D, GetRenderTargetSize());
+		B->SetManualParent(this);
+		B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		const auto& sizeB = B->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("b"));
+		B->ChangeSizeY(sizeB.y);
+
+		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		LT->SetHwndId(GetHwndId());
+		mBorders.push_back(LT);
+		LT->SetRender3D(mRender3D, GetRenderTargetSize());
+		LT->SetManualParent(this);
+		const auto& sizeLt = LT->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("lt"));
+		LT->ChangeSize(sizeLt);
+
+		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RT->SetHwndId(GetHwndId());
+		mBorders.push_back(RT);
+		RT->SetRender3D(mRender3D, GetRenderTargetSize());
+		RT->SetManualParent(this);
+		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		auto sizeRT = RT->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("rt"));
+		RT->ChangeSize(sizeRT);
+
+		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
+		LB->SetHwndId(GetHwndId());
+		mBorders.push_back(LB);
+		LB->SetRender3D(mRender3D, GetRenderTargetSize());
+		LB->SetManualParent(this);
+		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		const auto& sizeLB = LB->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("lb"));
+		LB->ChangeSize(sizeLB);
+
+		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RB->SetHwndId(GetHwndId());
+		mBorders.push_back(RB);
+		RB->SetRender3D(mRender3D, GetRenderTargetSize());
+		RB->SetManualParent(this);
+		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
+		const auto& sizeRB = RB->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("rb"));
+		RB->ChangeSize(sizeRB);
+	}
+	RefreshBorder();
+	RefreshScissorRects();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+
+	auto visible = mVisibility.IsVisible();
+	for (auto borderImage : mBorders)
+	{
+		borderImage->SetVisible(visible);
+	}
+}
+
 void WinBase::RefreshBorder()
 {
 	if (mBorders.empty())
@@ -2121,20 +2214,25 @@ void WinBase::RefreshBorder()
 
 	const Vec2I& finalPos = GetFinalPos();
 	const Vec2I& finalSize = GetFinalSize();
-	mBorders[ORDER_T]->ChangeSizeX(finalSize.x);
-	mBorders[ORDER_T]->ChangeWPos(finalPos);
+	const auto& ltsize = mBorders[ORDER_LT]->GetSize();
+	mBorders[ORDER_T]->ChangeSizeX(std::max(0, finalSize.x - ltsize.x* 2));
+	mBorders[ORDER_T]->ChangeWPos(Vec2I(finalPos.x + ltsize.x, finalPos.y));
 
-	mBorders[ORDER_L]->ChangeSizeY(finalSize.y);
-	mBorders[ORDER_L]->ChangeWPos(finalPos);
+	mBorders[ORDER_L]->ChangeSizeY(std::max(0, finalSize.y - ltsize.y*2));
+	mBorders[ORDER_L]->ChangeWPos(Vec2I(finalPos.x, finalPos.y + ltsize.y));
 
-	mBorders[ORDER_R]->ChangeSizeY(finalSize.y);
+	const auto& rtsize = mBorders[ORDER_RT]->GetSize();
+	mBorders[ORDER_R]->ChangeSizeY(std::max(0, finalSize.y - rtsize.y * 2));
 	Vec2I wpos = finalPos;
 	wpos.x += finalSize.x;
+	wpos.y += rtsize.y;
 	mBorders[ORDER_R]->ChangeWPos(wpos);
 
-	mBorders[ORDER_B]->ChangeSizeX(finalSize.x);
+	auto lbsize = mBorders[ORDER_LB]->GetSize();
+	mBorders[ORDER_B]->ChangeSizeX(std::max(0, finalSize.x - lbsize.x*2));
 	wpos = finalPos;
 	wpos.y += finalSize.y;
+	wpos.x += lbsize.x;
 	mBorders[ORDER_B]->ChangeWPos(wpos);
 
 	mBorders[ORDER_LT]->ChangeWPos(finalPos);
@@ -2149,6 +2247,8 @@ void WinBase::RefreshBorder()
 
 	wpos = finalPos + finalSize;
 	mBorders[ORDER_RB]->ChangeWPos(wpos);
+
+	auto texture = gFBUIManager->GetAlphaInfoTexture(finalSize);
 }
 
 void WinBase::SetWNScollingOffset(const Vec2& offset)
@@ -3354,4 +3454,11 @@ const char* WinBase::GetEvent(UIEvents::Enum e){
 	return "";
 }
 
+void WinBase::SetSpecialOrder(int specialOrder){
+	mSpecialOrder = specialOrder;
+	if (mUIObject){
+		mUIObject->SetSpecialOrder(specialOrder);
+	}
+	gFBUIManager->DirtyRenderList(GetHwndId());
+}
 }

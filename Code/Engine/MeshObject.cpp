@@ -1007,6 +1007,10 @@ namespace fastbird
 		}
 	}
 
+	bool MeshObject::IsPlayingAction() const{
+		return mAnim && mAnim->IsPlaying();
+	}
+
 	bool MeshObject::CheckNarrowCollision(fastbird::BoundingVolume* pBV) const
 	{
 		unsigned num = GetNumCollisionShapes();

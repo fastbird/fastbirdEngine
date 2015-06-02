@@ -109,12 +109,16 @@ ICamera* RenderTarget::GetOrCreateOverridingCamera()
 	{
 		mOverridingCam = FB_NEW(Camera);
 	}
+	mOverridingCam->SetWidth((int)mCamera->GetWidth());
+	mOverridingCam->SetHeight((int)mCamera->GetHeight());
 	return mOverridingCam;
 }
 
 
 void RenderTarget::RemoveOverridingCamera()
 {
+	if (gFBEnv->pRenderer->GetCamera() == mOverridingCam)
+		gFBEnv->pRenderer->SetCamera(mCamera);
 	mOverridingCam = 0;
 }
 
@@ -1398,7 +1402,7 @@ void RenderTarget::UpdateLightCamera()
 		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
 	auto light = GetSceneInternal()->GetLight(0);
 	assert(light);
-	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
+	if (target && target->GetBoundingVolume() && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
 	{
 		mLightCamera->SetPos(target->GetPos() + light->GetPosition() *shadowCamDist);
 	}

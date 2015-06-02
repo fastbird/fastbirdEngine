@@ -28,6 +28,9 @@ namespace fastbird
 		virtual void SetTransform(const Transformation& t);
 		virtual void GetTransform(Mat44& outMat) const { return mTransformation.GetHomogeneous(outMat); }
 		virtual const Transformation& GetTransform() const { return mTransformation; }
+		virtual const Transformation& GetAnimatedTransform() const {
+			return mAnim ? mAnimatedTransformation : mTransformation;
+		}
 		virtual void AttachToScene();
 		virtual void DetachFromScene(bool includingRtt = false);
 

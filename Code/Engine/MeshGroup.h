@@ -67,6 +67,8 @@ namespace fastbird
 			std::vector<size_t> mChildren;
 		};
 
+		virtual bool IsPlayingAction() const;
+
 	private:
 		friend class Engine;
 		virtual void Delete();

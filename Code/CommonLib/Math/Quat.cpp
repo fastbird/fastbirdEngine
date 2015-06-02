@@ -182,6 +182,17 @@ namespace fastbird
         zAxis.z = kRot[2][2];
 	}
 
+	void Quat::FromDirection(const Vec3& dir){
+		float angle = Vec3::UNIT_Y.AngleBetween(dir);
+		if (IsEqual(angle, 0.f, 0.001f)){
+			*this = IDENTITY;
+		}
+		else{
+			auto axis = Vec3::UNIT_Y.Cross(dir).NormalizeCopy();
+			FromAngleAxis(angle, axis);
+		}
+	}
+
 	//-----------------------------------------------------------------------
 	float Quat::Norm() const
 	{

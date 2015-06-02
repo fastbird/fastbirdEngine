@@ -22,6 +22,7 @@ namespace fastbird
 
 		virtual void PlayAction(const std::string& name, bool immediate, bool reverse);
 		virtual bool IsActionDone(const char* action) const;
+		virtual bool IsPlaying() const;
 		void Update(float dt);
 		const Transformation& GetResult() const { return mResult; }
 		bool Changed() const { return mChanged; }

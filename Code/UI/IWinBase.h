@@ -78,6 +78,7 @@ namespace fastbird
 		
 		virtual const Vec2& GetNPos() const = 0;
 		virtual const Vec2I& GetPos() const = 0;
+		virtual const Vec2I GetAlignedPos() const = 0;
 		virtual const Vec2& GetWNPos() const = 0;
 		virtual const Vec2I& GetWPos() const = 0;
 		virtual const Vec2I& GetFinalPos() const = 0;
@@ -185,6 +186,7 @@ namespace fastbird
 		virtual void SetUseAbsYPos(bool use) = 0;
 		virtual bool GetUseAbsXPos() const = 0;
 		virtual bool GetUseAbsYPos() const = 0;
+		virtual void SetUseAbsSize(bool use) = 0;
 		virtual void SetUseAbsXSize(bool use) = 0;
 		virtual void SetUseAbsYSize(bool use) = 0;
 		virtual bool GetUseAbsXSize() const = 0;
@@ -245,6 +247,9 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const = 0;
 		virtual bool GetNoMouseEventAlone() const = 0;
+		virtual void SetSpecialOrder(int specialOrder) = 0;
+
+		virtual void RecreateBorders() = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

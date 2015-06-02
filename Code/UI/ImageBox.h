@@ -27,7 +27,7 @@ public:
 	virtual IRenderTarget* GetRenderTargetTexture() const { return mRenderTarget; }
 	virtual void SetUseHighlight(bool use) { mUseHighlight = use; }
 	// or
-	virtual void SetTextureAtlasRegion(const char* atlas, const char* region);
+	virtual const Vec2I& SetTextureAtlasRegion(const char* atlas, const char* region);
 	virtual void SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data);
 	virtual void ChangeRegion(TextureAtlasRegion* region);
 	virtual void ChangeRegion(const char* region);
@@ -46,6 +46,7 @@ public:
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
 	void SetSpecularColor(const Vec4& color);
+
 private:
 
 	ImageBox* ImageBox::CreateImageBox();

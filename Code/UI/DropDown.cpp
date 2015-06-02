@@ -91,8 +91,7 @@ void DropDown::OnSizeChanged()
 	if (mButton)
 	{
 		mButton->SetSizeY(GetFinalSize().y);
-		mButton->SetSizeX(24);
-		mButton->OnSizeChanged();
+		mButton->ChangeSizeX(24);
 	}
 }
 

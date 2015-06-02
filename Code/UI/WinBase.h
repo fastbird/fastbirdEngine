@@ -138,6 +138,7 @@ namespace fastbird
 		bool mRunTimeChild;
 		bool mGhost;
 		bool mGatheringException;
+		bool mKeepUIRatio;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -201,7 +202,7 @@ namespace fastbird
 		virtual void NotifySizeChange() {
 			/*nothing to do if this is not a container.*/
 		} 		
-
+		virtual void SetSpecialOrder(int specialOrder);
 		// Positioning
 		virtual void ChangePos(const Vec2I& pos); // in runtime
 		virtual void ChangePosX(int posx);
@@ -238,6 +239,7 @@ namespace fastbird
 		virtual void SetWPos(const Vec2I& wpos);
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
+		virtual const Vec2I GetAlignedPos() const;
 		//virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
@@ -247,6 +249,7 @@ namespace fastbird
 		virtual void SetUseAbsYPos(bool use) { mUseAbsoluteYPos = use; }
 		virtual bool GetUseAbsXPos() const { return mUseAbsoluteXPos; }
 		virtual bool GetUseAbsYPos() const { return mUseAbsoluteYPos; }
+		virtual void SetUseAbsSize(bool use){ mUseAbsoluteXSize = use; mUseAbsoluteYSize = use; }
 		virtual void SetUseAbsXSize(bool use) { mUseAbsoluteXSize = use; }
 		virtual void SetUseAbsYSize(bool use) { mUseAbsoluteYSize = use; }
 		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize; }
@@ -404,6 +407,7 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const { return mNoMouseEvent; }
 		virtual bool GetNoMouseEventAlone() const { return mNoMouseEventAlone; }
+		virtual void RecreateBorders();
 
 	protected:
 		virtual void OnPosChanged(bool anim);

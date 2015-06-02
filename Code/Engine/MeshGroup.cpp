@@ -139,12 +139,7 @@ void MeshGroup::PreRender()
 		return;
 	mLastPreRendered = gFBEnv->mFrameCounter;
 
-	UpdateTransform();
-
-	FB_FOREACH(it, mMeshObjects)
-	{
-		it->first->PreRender();
-	}
+	UpdateTransform(); // and prerender children.
 }
 
 void MeshGroup::Render()
@@ -248,34 +243,39 @@ void MeshGroup::UpdateTransform(bool force)
 	{
 		mLastUpdateFrame = f;
 
-		if (force || mTransformChanged)
+		size_t num = mChanges.size();
+		for (size_t i = 0; i < num; ++i)
 		{
-			size_t num = mChanges.size();
-			for (size_t i = 0; i < num; i++)
-			{
-				if (mChanges[i] || mTransformChanged)
-				{
-					// calc transform
-					const Hierarchy& h = mHierarchyMap[i];
-					Transformation transform;
-					if (h.mParentIndex != -1)
-					{
-						transform = mMeshObjects[h.mParentIndex].first->GetTransform();
-						transform = transform * mMeshObjects[i].second * mLocalTransforms[i];
-					}
-					else
-					{
-						if (mRootAnimated)
-							transform = mTransformation * mMeshObjects[i].second * mLocalTransforms[i];
-						else
-							// for parents mesh, don't need to  multiply mLocalTransforms[i];
-							transform = mTransformation * mMeshObjects[i].second;
-					}
-
-					mMeshObjects[i].first->SetTransform(transform);
-					mChanges[i] = false;
+			auto anim = mMeshObjects[i].first->GetAnimation();
+			bool animated = anim && anim->Changed();
+			if (mChanges[i] || mTransformChanged || animated)
+			{				
+				for (unsigned c = i; c < num; ++c){
+					const Hierarchy& h = mHierarchyMap[c];
+					if (h.mParentIndex == i)
+						mChanges[c] = true;
 				}
+				// calc transform
+				const Hierarchy& h = mHierarchyMap[i];
+				Transformation transform;
+				if (h.mParentIndex != -1)
+				{
+					transform = mMeshObjects[h.mParentIndex].first->GetAnimatedTransform();
+					transform = transform * mMeshObjects[i].second * mLocalTransforms[i];
+				}
+				else
+				{
+					if (mRootAnimated)
+						transform = mTransformation * mMeshObjects[i].second * mLocalTransforms[i];
+					else
+						// for parents mesh, don't need to  multiply mLocalTransforms[i];
+						transform = mTransformation * mMeshObjects[i].second;
+				}
+
+				mMeshObjects[i].first->SetTransform(transform);
+				mChanges[i] = false;
 			}
+			mMeshObjects[i].first->PreRender();
 		}
 		mTransformChanged = false;
 	}
@@ -421,6 +421,16 @@ unsigned MeshGroup::GetNumCollisionShapes() const
 	}
 
 	return mCollisions.size();
+}
+
+bool MeshGroup::IsPlayingAction() const{
+	auto numMeshes = GetNumMeshes();
+	for (unsigned i = 0; i < numMeshes; ++i){
+		if (mMeshObjects[i].first->IsPlayingAction())
+			return true;
+	}
+
+	return false;
 }
 
 unsigned MeshGroup::GetNumCollisionShapes(unsigned idx) const

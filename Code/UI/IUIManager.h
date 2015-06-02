@@ -95,6 +95,9 @@ namespace fastbird
 		virtual void SuppressPropertyWarning(bool suppress) = 0;
 
 		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src) = 0;
+		virtual const char* GetBorderRegion(const char* key) const = 0;
+		virtual const char* GetWndBorderRegion(const char* key) const = 0;
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

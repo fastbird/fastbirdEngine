@@ -261,11 +261,13 @@ void ParticleManager::ReloadParticle(const char* file)
 			ParticleEmitter* editing = (ParticleEmitter*)mEditingParticle.get();
 			if (editing && editing->mAdam == p.second)
 			{
+				auto pos = mEditingParticle->GetPos();
 				mEditingParticle->StopImmediate();
 				mEditingParticle = (IParticleEmitter*)p.second->Clone();
+				mEditingParticle->SetPos(pos);
 				auto const renderer = gFBEnv->pRenderer;
 				auto mainRT = renderer->GetMainRenderTarget();
-				ICamera* pCam = mainRT->GetCamera();
+				ICamera* pCam = mainRT->GetOrCreateOverridingCamera();
 				if (pCam)
 					pCam->SetTarget(mEditingParticle);
 				mEditingParticle->Active(true);
@@ -315,6 +317,8 @@ void ParticleManager::EditThisParticle(const char* file)
 	}
 	else if (strcmp(file,"0")==0)
 	{
+		mEditingParticle->StopImmediate();
+		mEditingParticle = 0;
 		auto rt = renderer->GetMainRenderTarget();
 		assert(rt);
 		rt->RemoveOverridingCamera();

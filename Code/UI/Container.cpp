@@ -560,6 +560,15 @@ float Container::GetContentHeight() const
 	return contentWNEnd - mWNPos.y;
 }
 
+void Container::SetSpecialOrder(int specialOrder){
+	__super::SetSpecialOrder(specialOrder);
+	for (auto c : mChildren){
+		if (c->IsRuntimeChild()){
+			c->SetSpecialOrder(specialOrder);
+		}
+	}
+}
+
 bool Container::SetVisible(bool visible)
 {
 	bool changed = __super::SetVisible(visible);
@@ -954,7 +963,7 @@ IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 				return found;
 		}
 	}
-	if (GetGhost())
+	if (GetGhost() || (param.mNoRuntimeComp && mRunTimeChild))
 		return 0;
 
 	return __super::WinBaseWithPoint(pt, param);

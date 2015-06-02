@@ -77,6 +77,12 @@ void UIObject::SetTexCoord(Vec2 coord[], DWORD num, unsigned index)
 	mDirty = true;
 }
 
+void UIObject::ClearTexCoord(unsigned index){
+	assert(index < 2);
+	mTexcoords[index].clear();
+	mDirty = true;
+}
+
 void UIObject::SetColors(DWORD colors[], DWORD num)
 {
 	mColors.clear();

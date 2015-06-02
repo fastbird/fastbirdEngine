@@ -13,6 +13,7 @@ namespace fastbird
 		// IUIObject interfaces
 		//-------------------------------------------------------------------------
 		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0);
+		virtual void ClearTexCoord(unsigned index = 0);
 		virtual void SetColors(DWORD colors[], DWORD num);
 
 		virtual void SetUIPos(const Vec2I& pos);

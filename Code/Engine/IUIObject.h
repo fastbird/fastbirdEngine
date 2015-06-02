@@ -15,6 +15,7 @@ namespace fastbird
 		virtual ~IUIObject(){}
 
 		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0) = 0;
+		virtual void ClearTexCoord(unsigned index = 0) = 0;
 		virtual void SetColors(DWORD colors[], DWORD num) = 0;
 
 		virtual void SetUIPos(const Vec2I& pos) = 0;

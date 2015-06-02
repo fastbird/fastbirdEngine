@@ -30,7 +30,6 @@ Wnd::~Wnd()
 	{
 		gFBEnv->pUIManager->UnRegisterAlwaysOnTopWnd(this);
 	}
-	FB_DELETE(mBackgroundImage);
 	for (auto var : mFrames)
 	{
 		gFBEnv->pUIManager->DeleteComponent(var);
@@ -46,9 +45,6 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 		return;
 
 	v.push_back(mUIObject);
-	
-	if (mBackgroundImage)
-		mBackgroundImage->GatherVisit(v);
 
 	__super::GatherVisit(v);
 
@@ -83,18 +79,12 @@ void Wnd::OnSizeChanged()
 	if (mTitlebar){
 		mTitlebar->ChangeSizeX(GetFinalSize().x);
 	}
-	if (mBackgroundImage){
-		mBackgroundImage->ChangeSize(GetFinalSize());
-	}
 }
 
 void Wnd::OnPosChanged(bool anim)
 {
 	__super::OnPosChanged(anim);
 	RefreshFrame();
-	if (mBackgroundImage){
-		mBackgroundImage->ChangePos(GetFinalPos());
-	}
 }
 
 void Wnd::RefreshFrame()
@@ -344,38 +334,24 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
 		mStrBackground = val;
-												 if (!mBackgroundImage)
-												 {
-													 mBackgroundImage = FB_NEW(ImageBox);
-													 mBackgroundImage->SetHwndId(GetHwndId());
-													 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-													 mBackgroundImage->SetManualParent(this);
-													 mBackgroundImage->ChangePos(GetFinalPos());
-													 mBackgroundImage->ChangeSize(GetFinalSize());
-													 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-												 }
-												 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+		if (!mBackgroundImage)
+		{
+			mBackgroundImage = CreateBackgroundImage();
+		}
 
-												 mBackgroundImage->SetTexture(val);
-												 return true;
+		mBackgroundImage->SetTexture(val);
+		return true;
 	}
 
 	case UIProperty::KEEP_IMAGE_RATIO:
 	{
 		mStrKeepRatio = val;
-										 if (!mBackgroundImage)
-										 {
-											 mBackgroundImage = FB_NEW(ImageBox);
-											 mBackgroundImage->SetHwndId(GetHwndId());
-											 mBackgroundImage->SetRender3D(mRender3D, GetRenderTargetSize());
-											 mBackgroundImage->SetManualParent(this);
-											 mBackgroundImage->ChangePos(GetFinalPos());
-											 mBackgroundImage->ChangeSize(GetFinalSize());
-											 mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-										 }
-										 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-										 mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
-										 return true;
+		if (!mBackgroundImage)
+		{
+			mBackgroundImage = CreateBackgroundImage();
+		}
+		mBackgroundImage->SetKeepImageRatio(StringConverter::parseBool(val, true));
+		return true;
 	}
 
 	case UIProperty::ALWAYS_ON_TOP:
@@ -409,6 +385,19 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	return __super::SetProperty(prop, val);
+}
+
+ImageBox* Wnd::CreateBackgroundImage(){
+	if (!mBackgroundImage)
+	{
+		mBackgroundImage = (ImageBox*)AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox);
+		mBackgroundImage->SetRuntimeChild(true);
+		mBackgroundImage->SetProperty(UIProperty::NO_MOUSE_EVENT_ALONE, "true");
+		mBackgroundImage->SetVisible(GetVisible());
+		mBackgroundImage->SetUseAbsSize(false);
+		mBackgroundImage->SetGhost(true);
+	}
+	return mBackgroundImage;
 }
 
 bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly)
@@ -614,8 +603,6 @@ void Wnd::SetHwndId(HWND_ID hwndId)
 			win->SetHwndId(hwndId);
 		}
 	}
-	if (mBackgroundImage)
-		mBackgroundImage->SetHwndId(hwndId);
 }
 
 const char* Wnd::GetMsgTranslationUnit() const

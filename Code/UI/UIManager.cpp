@@ -72,6 +72,7 @@ UIManager::UIManager(lua_State* L)
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
 	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
+	SetStyle("blue");
 }
 
 UIManager::~UIManager()
@@ -1080,6 +1081,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		rparam.mOnlyContainer = false;
 		rparam.mIgnoreScissor = mUIEditor ? true : false;
 		rparam.mTestChildren = true;
+		rparam.mNoRuntimeComp = true;
 		rparam.mHwndId = hwndId;
 		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
 		if (mKeyboardFocus != focusWnd)
@@ -1785,8 +1787,8 @@ void UIManager::CopyCompsAtMousePos(const std::vector<IWinBase*>& src){
 		return;
 
 	auto mouse = gFBEnv->pEngine->GetMouse();
-	auto pos = mouse->GetPos();
-	auto offset = pos - src[0]->GetFinalPos();
+	auto pos = mouse->GetPos() - mMouseOveredContainer->GetFinalPos();
+	auto offset = pos - src[0]->GetAlignedPos();
 	std::vector<IWinBase*> cloned;
 	tinyxml2::XMLDocument doc;
 	for (auto& s : src){		
@@ -2090,6 +2092,159 @@ void UIManager::DebugUI(){
 				swprintf_s(buf, L"UIName = %s", AnsiToWide(comp->GetName()));
 				gFBEnv->pRenderer->DrawText(mouse->GetPos(), buf, Color::SkyBlue);
 				break;
+			}
+		}
+	}
+}
+
+void UIManager::SetStyle(const char* style){
+	if (mStyle == style)
+		return;
+	mAlphaInfoTexture.clear();
+	mBorderAlphaRegion.clear();
+	mWindowAlphaRegion.clear();
+
+	char buf[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, buf);
+	mStyle = style;
+	tinyxml2::XMLDocument doc;
+	int err = doc.LoadFile("es/ui/style.xml");
+	if (err){
+		Error("parsing style file(es/ui/style.xml) failed.");
+		if (doc.GetErrorStr1())
+			Error(doc.GetErrorStr1());
+		if (doc.GetErrorStr2())
+			Error(doc.GetErrorStr2());
+		return;
+	}
+
+	auto root = doc.RootElement();
+	if (!root)
+		return;
+
+	auto styleElem = root->FirstChildElement("Style");
+	while (styleElem){
+		auto sz = styleElem->Attribute("name");
+		if (sz && _stricmp(sz, style)==0){
+			auto borderElem = styleElem->FirstChildElement("Border");
+			if (borderElem){
+				const char* atts[] = {
+					"lt", "t", "rt", "l", "r", "lb", "b", "rb"
+				};
+
+				unsigned num = ARRAYCOUNT(atts);
+				for (unsigned i = 0; i < num; ++i){
+					auto sz = borderElem->Attribute(atts[i]);
+					if (sz){
+						mBorderRegions[atts[i]] = sz;
+					}
+				}
+				sz = borderElem->Attribute("alphaInfo");
+				if (sz){
+					mBorderAlphaRegion = sz;
+				}
+			}
+
+			auto winElem = styleElem->FirstChildElement("WindowFrame");
+			if (winElem){
+				const char* atts[] = {
+					"lt", "t", "mt", "rt", "l", "r", "lb", "b", "rb"
+				};
+				unsigned num = ARRAYCOUNT(atts);
+				for (unsigned i = 0; i < num; ++i){
+					auto sz = winElem->Attribute(atts[i]);
+					if (sz){
+						mWindowRegions[atts[i]] = sz;
+					}
+				}
+				sz = winElem->Attribute("alphaInfo");
+				if (sz){
+					mWindowAlphaRegion = sz;
+				}
+			}
+
+			break;
+		}
+
+		styleElem = styleElem->NextSiblingElement();
+	}
+	
+	// RecreateAll borders
+	for (auto& it : mWindows){
+		for (auto& wnd : it.second){
+			wnd->RecreateBorders();
+		}
+	}
+
+}
+
+const char* UIManager::GetBorderRegion(const char* key) const{
+	auto it = mBorderRegions.Find(key);
+	if (it != mBorderRegions.end()){
+		return it->second.c_str();
+	}
+	return "";
+}
+
+const char* UIManager::GetWndBorderRegion(const char* key) const{
+	auto it = mWindowRegions.Find(key);
+	if (it != mWindowRegions.end()){
+		return it->second.c_str();
+	}
+	return "";
+}
+
+ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size){
+	auto it = mAlphaInfoTexture.Find(size);
+	if (it != mAlphaInfoTexture.end()){
+		return it->second;
+	}
+	else{
+		if (mBorderAlphaRegion.empty())
+			return 0;
+
+		// GenerateAlphaTexture
+		auto atlas = gFBEnv->pRenderer->GetTextureAtlas("es/textures/ui.xml");
+		if (!atlas)
+			return 0;
+		
+		auto alphaRegion = atlas->GetRegion(mBorderAlphaRegion.c_str());
+		if (!alphaRegion)
+			return 0;
+
+		const auto& atlasSize = atlas->mTexture->GetSize();
+		if (!mAtlasStaging){
+			mAtlasStaging = gFBEnv->pRenderer->CreateTexture(0, atlasSize.x, atlasSize.y, PIXEL_FORMAT_R8G8B8A8_TYPELESS,
+				BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+			atlas->mTexture->CopyToStaging(mAtlasStaging, 0, 0, 0, 0, 0, 0);
+		}
+		if (!mAtlasStaging)
+			return 0;
+
+		auto mapData = mAtlasStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+		if (!mapData.pData)
+			return 0;
+		unsigned* atlasData = (unsigned*)mapData.pData;
+
+		unsigned* data = (unsigned*)malloc(4 * size.x * size.y);
+		memset(data, 1, 4 * size.x * size.y);
+
+		// copy lt
+		auto ltRegion = atlas->GetRegion(GetBorderRegion("lt"));
+		if (ltRegion){
+			const auto& ltsize = ltRegion->GetSize();
+			for (int r = 0; r < ltsize.y; ++r){
+				memcpy(data + r * size.x, 
+					atlasData + (alphaRegion->mStart.y+r) * mapData.RowPitch + alphaRegion->mStart.x, 
+					ltsize.x);
+			}
+		}
+		auto rtRegion = atlas->GetRegion(GetBorderRegion("rt"));
+		if (rtRegion){
+			const auto& rtsize = rtRegion->GetSize();
+			for (int r = 0; r < rtsize.y; ++r){
+				memcpy(data + r * size.x + size.x - rtsize.x, 
+					atlasData + (alphaRegion->mStart.y+r)*mapData.RowPitch + alphaRegion->mStart.x 
 			}
 		}
 	}

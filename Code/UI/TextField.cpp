@@ -73,6 +73,9 @@ bool TextField::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 						listbox->IterateItem(true, true);
 					}
 				}
+				else{
+					OnEvent(UIEvents::EVENT_ENTER);
+				}
 			}
 		}
 		else if (ch == VK_RETURN)
