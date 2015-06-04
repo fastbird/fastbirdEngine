@@ -57,6 +57,11 @@ namespace fastbird
 	public:		
 
 		RenderStates();
+
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		void Reset();
 		void ResetRasterizerState();
 		void ResetBlendState();

@@ -45,6 +45,7 @@ namespace fastbird
 		virtual void SetDoNotDraw(bool doNotDraw);
 		virtual void SetRenderTargetSize(const Vec2I& rtSize);
 		virtual const Vec2I& GetRenderTargetSize() const;
+		virtual bool HasTexCoord() const;
 
 		//-------------------------------------------------------------------------
 		// IObject interfaces

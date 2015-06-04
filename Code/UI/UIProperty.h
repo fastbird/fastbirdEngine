@@ -77,6 +77,7 @@ namespace fastbird
 			GAUGE_BORDER_COLOR,
 			NO_MOUSE_EVENT,
 			NO_MOUSE_EVENT_ALONE,
+			VISUAL_ONLY_UI, // no mouse & keyboard and region test.
 			INVALIDATE_MOUSE,
 			SCROLLERH,
 			SCROLLERV,
@@ -133,6 +134,8 @@ namespace fastbird
 
 			TABWND_NUM_TABS,
 			TABWND_TAB_NAMES,
+
+			BUTTON_IMAGE_SIZE,
 
 			COUNT
 		};
@@ -209,6 +212,7 @@ namespace fastbird
 			"GAUGE_BORDER_COLOR",
 			"NO_MOUSE_EVENT",
 			"NO_MOUSE_EVENT_ALONE", // not inherited to children
+			"VISUAL_ONLY_UI",
 			"INVALIDATE_MOUSE",
 			"SCROLLERH",
 			"SCROLLERV",
@@ -265,6 +269,8 @@ namespace fastbird
 
 			"TABWND_NUM_TABS",
 			"TABWND_TAB_NAMES",
+
+			"BUTTON_IMAGE_SIZE",
 
 			"COUNT"
 		};
@@ -351,6 +357,8 @@ namespace fastbird
 				return Vec2I::ZERO;
 			case NUMERIC_UPDOWN_MINMAX:
 				return Vec2I(0, 100);
+			case BUTTON_IMAGE_SIZE:
+				return Vec2I(0, 0);
 			}
 			assert(0);
 			return Vec2I::ZERO;
@@ -386,6 +394,8 @@ namespace fastbird
 			case NO_BACKGROUND:
 				return false;			
 			case NO_MOUSE_EVENT:
+				return false;
+			case VISUAL_ONLY_UI:
 				return false;
 			case NO_MOUSE_EVENT_ALONE:
 				return false;

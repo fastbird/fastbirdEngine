@@ -56,7 +56,7 @@ TextureD3D11::~TextureD3D11()
 //----------------------------------------------------------------------------
 bool TextureD3D11::IsReady() const
 {
-	return mSRView!=0;
+	return mSRView!=0 || (*mSRViewParent)!=0;
 }
 
 //----------------------------------------------------------------------------
@@ -111,6 +111,13 @@ void TextureD3D11::SetShaderStage(BINDING_SHADER shader)
 //----------------------------------------------------------------------------
 ID3D11Texture2D* TextureD3D11::GetHardwareTexture() const
 {
+	if (mAdamTexture){
+		TextureD3D11* adam = (TextureD3D11*)mAdamTexture.get();
+		return adam->GetHardwareTexture();
+	}
+	if (!mTexture && mSRView){
+		mSRView->GetResource((ID3D11Resource**)&mTexture);
+	}
 	return mTexture;
 }
 
@@ -182,7 +189,7 @@ ITexture* TextureD3D11::Clone() const
 	assert(mRTViews.empty() && mDSViews.empty());
 
 	TextureD3D11* pNewTexture = TextureD3D11::CreateInstance();
-	pNewTexture->mTexture = mTexture; if (mTexture) mTexture->AddRef();
+	pNewTexture->mTexture = GetHardwareTexture(); if (pNewTexture->mTexture) pNewTexture->mTexture->AddRef();
 	pNewTexture->mSRView = mSRView; if (mSRView) mSRView->AddRef();
 	Texture* pAdam = (Texture*)this;
 	while (pAdam->GetAdamTexture())

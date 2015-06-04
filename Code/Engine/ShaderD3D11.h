@@ -15,6 +15,11 @@ namespace fastbird
 		virtual void Delete();
 
 		virtual ~ShaderD3D11();
+
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		
 		void SetVertexShader(ID3D11VertexShader* pVertexShader);
 		void SetVertexShaderBytecode(ID3DBlob* pVertexShaderBytecode);

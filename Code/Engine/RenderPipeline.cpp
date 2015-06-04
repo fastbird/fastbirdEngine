@@ -24,6 +24,10 @@ RenderPipeline::~RenderPipeline()
 
 }
 
+void RenderPipeline::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 RenderPipeline* RenderPipeline::Clone() const
 {
 	auto newPipeline = FB_NEW(RenderPipeline)(*this);

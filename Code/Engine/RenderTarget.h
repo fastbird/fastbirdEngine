@@ -87,7 +87,12 @@ namespace fastbird
 
 		RenderTarget();
 		virtual ~RenderTarget();
-		
+
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		const Vec2I& GetSize() const;
 		virtual bool CheckOptions(const RenderTargetParam& param);
 		virtual RenderPipeline& GetRenderPipeline() const;

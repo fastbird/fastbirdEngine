@@ -16,6 +16,8 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::ImageBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void OnSizeChanged();
+	virtual void OnParentSizeChanged();
+	void OnAnySizeChanged();
 	virtual void OnStartUpdate(float elapsedTime);
 	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 

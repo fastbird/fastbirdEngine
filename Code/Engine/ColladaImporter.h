@@ -86,6 +86,11 @@ namespace fastbird
 		ColladaImporter();
 		virtual ~ColladaImporter();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		bool ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, 
 			bool useIndexBuffer, bool mergeMaterialGroups, bool keepMeshData, bool generateTangent, bool meshGroup);
 		virtual IteratorWrapper<MeshObjects> GetMeshIterator();

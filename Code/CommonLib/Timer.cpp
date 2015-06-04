@@ -22,6 +22,10 @@ namespace fastbird
 	{
 	}
 
+	void Timer::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
+
 	void Timer::Tick()
 	{
 		mDeltaTimeNotPausable = (GetTickCount() / (TIME_PRECISION)mFreq.QuadPart - mStartTime) - mTimeNotPausable;

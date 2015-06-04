@@ -13,6 +13,7 @@ namespace fastbird
 	class UICommands;
 	class IUIEditor;
 	class TextManipulator;
+	class ITexture;
 	class IUIManager : public IInputListener
 	{
 	public:
@@ -97,7 +98,7 @@ namespace fastbird
 		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src) = 0;
 		virtual const char* GetBorderRegion(const char* key) const = 0;
 		virtual const char* GetWndBorderRegion(const char* key) const = 0;
-		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size) = 0;
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

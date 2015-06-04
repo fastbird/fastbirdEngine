@@ -16,6 +16,11 @@ namespace fastbird
 
 		Mouse();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
@@ -41,6 +46,7 @@ namespace fastbird
 		virtual bool IsLButtonDoubleClicked() const;
 		virtual bool IsLButtonPressed() const;
 		virtual bool IsRButtonDown(float* time = 0) const;
+		virtual bool IsRButtonDownPrev() const;
 		virtual bool IsRButtonClicked() const;
 		virtual bool IsRButtonPressed() const;
 		virtual bool IsMButtonDown() const;
@@ -60,6 +66,8 @@ namespace fastbird
 
 		virtual bool IsIn(const RECT& r);
 		
+		virtual void CursorToCenter();
+
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
 		void GetMouseCoordDelta(long& x, long& y) const;

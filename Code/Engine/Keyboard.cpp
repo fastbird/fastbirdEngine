@@ -18,6 +18,10 @@ namespace fastbird
 		memset(mKeyUp, 0, sizeof(mKeyUp));
 	}
 
+	void Keyboard::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
+
 	//--------------------------------------------------------------------------
 	void Keyboard::PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent)
 	{

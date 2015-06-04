@@ -6,6 +6,7 @@
 #include <UI/ImageBox.h>
 #include <UI/IUIEditor.h>
 #include <Engine/IRenderTarget.h>
+#include <Engine/RendererStructs.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -54,7 +55,7 @@ WinBase::WinBase()
 , mAspectRatio(1.0)
 , mNPos(0, 0)
 , mUIObject(0)
-, mNoMouseEvent(false), mNoMouseEventAlone(false)
+, mNoMouseEvent(false), mNoMouseEventAlone(false), mVisualOnlyUI(false)
 , mUseScissor(true)
 , mUseAbsoluteXPos(true)
 , mUseAbsoluteYPos(true)
@@ -84,6 +85,7 @@ WinBase::WinBase()
 , mAnimScale(1, 1), mAnimatedPos(0, 0), mAnimPos(0, 0)
 , mGatheringException(false)
 , mKeepUIRatio(false)
+, mUpdateAlphaTexture(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -172,33 +174,45 @@ void WinBase::ClearName()
 // Sizing
 //---------------------------------------------------------------------------
 void WinBase::ChangeSize(const Vec2I& size){
+	if (mSize == size)
+		return;
 	SetSize(size);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeSizeX(int sizeX){
+	if (mSize.x == sizeX)
+		return;
 	SetSizeX(sizeX);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeSizeY(int sizeY){
+	if (mSize.y == sizeY)
+		return;
 	SetSizeY(sizeY);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeNSize(const Vec2& nsize){
+	if (mNSize == nsize)
+		return;
 	SetNSize(nsize);
 	OnSizeChanged();
 }
 
 void WinBase::ChangeNSizeX(float x){
+	if (mNSize.x == x)
+		return;
 	SetNSizeX(x);
 	OnSizeChanged();
 }
 void WinBase::ChangeNSizeY(float y){
+	if (mNSize.y == y)
+		return;
 	SetNSizeY(y);
 	OnSizeChanged();
 }
@@ -214,7 +228,10 @@ void WinBase::OnSizeChanged()
 	}
 
 	if (mAlignH != ALIGNH::LEFT || mAlignV != ALIGNV::TOP)
-		UpdateAlignedPos();
+	{
+		OnPosChanged(false);
+		//UpdateAlignedPos();
+	}
 
 	if (!mFixedTextSize && mTextSize != mScaledSize.y) {
 		mTextSize = (float)mScaledSize.y;
@@ -750,6 +767,9 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
 	if (!mVisibility.IsVisible())
+		return false;
+
+	if (mVisualOnlyUI)
 		return false;
 
 	if (mNoMouseEvent || mNoMouseEventAlone)
@@ -1438,6 +1458,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 											 return true;
 	}
 
+	case UIProperty::VISUAL_ONLY_UI:
+	{
+		mVisualOnlyUI = StringConverter::parseBool(val);
+		return true;
+	}
+
 	case UIProperty::USE_SCISSOR:
 		{
 										mUseScissor = StringConverter::parseBool(val);
@@ -1899,9 +1925,17 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		}
 
 		auto data = StringConverter::toString(mNoMouseEventAlone);
-		strcpy_s(val, bufsize, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());	
+		return true;
+	}
 
-		
+	case UIProperty::VISUAL_ONLY_UI:
+	{
+		if (notDefaultOnly) {
+			if (mVisualOnlyUI == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mVisualOnlyUI).c_str());
 		return true;
 	}
 
@@ -2248,7 +2282,53 @@ void WinBase::RefreshBorder()
 	wpos = finalPos + finalSize;
 	mBorders[ORDER_RB]->ChangeWPos(wpos);
 
-	auto texture = gFBUIManager->GetAlphaInfoTexture(finalSize);
+	UpdateAlphaTexture();
+	
+	
+}
+
+void WinBase::UpdateAlphaTexture(){
+	mUpdateAlphaTexture = false;
+
+	const Vec2I& finalSize = GetFinalSize();
+	if (mUIObject){
+		auto mat = mUIObject->GetMaterial();
+		bool callmeLater = false;
+		auto texture = gFBUIManager->GetBorderAlphaInfoTexture(finalSize, callmeLater);
+		if (texture && mat){
+			mat->SetTexture(texture, BINDING_SHADER_PS, 1);
+			if (mat->AddShaderDefine("_ALPHA_TEXTURE", "1"))
+				mat->ApplyShaderDefines();
+
+			if (!mUIObject->HasTexCoord()){
+				Vec2 texcoords[4] = {
+					Vec2(0.f, 1.f),
+					Vec2(0.f, 0.f),
+					Vec2(1.f, 1.f),
+					Vec2(1.f, 0.f)
+				};
+				mUIObject->SetTexCoord(texcoords, 4);
+				INPUT_ELEMENT_DESCS descs;
+				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				mat->SetInputLayout(descs);
+			}
+		}
+		else{
+			if (mat->RemoveShaderDefine("_ALPHA_TEXTURE"))
+				mat->ApplyShaderDefines();
+
+			/*INPUT_ELEMENT_DESCS descs;
+			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			mat->SetInputLayout(descs);*/
+
+			if (!texture && callmeLater){
+				mUpdateAlphaTexture = true;
+			}
+		}
+	}
 }
 
 void WinBase::SetWNScollingOffset(const Vec2& offset)
@@ -2342,6 +2422,9 @@ void WinBase::ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos
 
 void WinBase::OnStartUpdate(float elapsedTime)
 {
+	if (mUpdateAlphaTexture){
+		UpdateAlphaTexture();
+	}
 	// Static Animation.
 	if (mSimplePosAnimEnabled)
 	{
@@ -3378,6 +3461,8 @@ void WinBase::TriggerRedraw()
 
 IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
+	if (mGhost)
+		return 0;
 	if (IsIn(pt, param.mIgnoreScissor))
 		return (IWinBase*)this;
 	return 0;

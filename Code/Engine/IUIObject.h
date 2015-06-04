@@ -46,6 +46,7 @@ namespace fastbird
 
 		virtual void SetRenderTargetSize(const Vec2I& rtSize) = 0;
 		virtual const Vec2I& GetRenderTargetSize() const = 0;
+		virtual bool HasTexCoord() const = 0;
 
 	public:
 		// debug purpose

@@ -10,6 +10,11 @@ namespace fastbird
 	public:
 		Voxelizer();
 		virtual ~Voxelizer();
+
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		// numVoxels : in one axis, total = numVexels ^ 3 
 		virtual bool RunVoxelizer(const char* filename, UINT numVoxels, bool swapYZ, bool oppositCull);
 		virtual IMeshObject* GetMeshObject() const;

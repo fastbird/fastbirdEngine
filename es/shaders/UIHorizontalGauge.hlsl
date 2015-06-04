@@ -7,6 +7,10 @@
 //--------------------------------------------------------------------------------------
 #include "Constants.h"
 
+#if defined(_ALPHA_TEXTURE)
+Texture2D gAlphaTexture : register(t1);
+#endif
+
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
@@ -37,6 +41,11 @@ v2p uihorizontalgauge_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 {	
+#if defined(_ALPHA_TEXTURE)
+	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV).a;
+#else
+	float a = 1.0;
+#endif
 	float ratio = gMaterialParam[0].x;
 	
 	// signed nc
@@ -48,16 +57,22 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	float yPos = abs(snc.y);
 	if ( xPos >= 1.0 - 0.03  / ratio || yPos >= 0.93)
 	{
-		return float4(1.0, 1.0, 1.0, 1.0) * gAmbientColor;
+		float4 color = float4(1.0, 1.0, 1.0, 1.0) * gAmbientColor;
+		color.a *= a;
+		return color;
 	}
 	else if (xPos >= 1.0- 0.06 / ratio || yPos >= 0.88)
 	{
-		return float4(0.87058, 0.87058, 0.847058, 1.0) * gAmbientColor;
+		float4 color = float4(0.87058, 0.87058, 0.847058, 1.0) * gAmbientColor;
+		color.a *= a;
+		return color;
 	}
 	
 	else if (xPos >= 1.0- 0.09 / ratio || yPos >= 0.80)
 	{
-		return float4(0.521568, 0.521568, 0.505882, 1.0) *  gAmbientColor;
+		float4 color = float4(0.521568, 0.521568, 0.505882, 1.0) *  gAmbientColor;
+		color.a *= a;
+		return color;
 	}
 	
 	// param 4
@@ -69,7 +84,9 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		// 1: gauge color
 		// 2: Blink color
 		// 3x: sin
-		return lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
+		float4 color = lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
+		color.a *= a;
+		return color;
 	}
 	
 	//float maximum = gMaterialParam[4].y * 2.0 - 1.0;
@@ -77,6 +94,7 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	//{
 //		return float4(1, 1, 0, 1);
 	//}	
-
-    return gDiffuseColor;
+	float4 color = gDiffuseColor;
+	color.a *= a;
+    return color;
 }

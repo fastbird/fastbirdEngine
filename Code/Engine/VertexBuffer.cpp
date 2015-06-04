@@ -10,6 +10,11 @@ void VertexBuffer::Delete()
 	FB_DELETE(this);
 }
 
+void VertexBuffer::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 void VertexBuffer::Bind()
 {
 	unsigned int offset = 0;

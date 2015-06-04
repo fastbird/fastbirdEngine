@@ -401,4 +401,9 @@ const Vec2I& UIObject::GetRenderTargetSize() const
 	return mRenderTargetSize;
 }
 
+
+bool UIObject::HasTexCoord() const{
+	return !mTexcoords[0].empty() || !mTexcoords[1].empty();
+}
+
 }

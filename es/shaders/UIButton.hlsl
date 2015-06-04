@@ -8,7 +8,7 @@
 #include "Constants.h"
 
 #ifdef _ALPHA_TEXTURE
-Texture2D  gDiffuseTexture : register(t0);
+Texture2D  gAlphaTexture : register(t1);
 #endif 
 
 //--------------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
 	color.rgb += gAmbientColor.rgb;
 	
 #ifdef _ALPHA_TEXTURE	
-	float4 t_color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
+	float4 t_color = gAlphaTexture.Sample(gLinearSampler, INPUT.UV);
 	color.a *= t_color.a;
 #endif
     return color;

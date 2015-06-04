@@ -39,6 +39,10 @@ namespace fastbird
 	public:
 		INIReader(const char* filename);
 	
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		// return 0 if succeed
 		int GetError();
 

@@ -14,6 +14,11 @@ public:
 	RenderPipeline(bool steps[]);
 	~RenderPipeline();
 
+protected:
+	virtual void FinishSmartPtr();
+
+public:
+
 	RenderPipeline* Clone() const;
 	virtual RenderPipeline& SetStep(RenderSteps::Enum step, bool enable);
 	bool GetStep(RenderSteps::Enum step) const;

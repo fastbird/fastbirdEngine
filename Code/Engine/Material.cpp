@@ -118,6 +118,10 @@ Material::~Material()
 	}
 }
 
+void Material::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 //---------------------------------------------------------------------------
 //// only need if you don't use shared ptr
 void Material::Delete()
@@ -130,12 +134,14 @@ void Material::Delete()
 //----------------------------------------------------------------------------
 bool Material::LoadFromFile(const char* filepath)
 {
+	if (!filepath)
+		return false;
 	mName = filepath;
 	tinyxml2::XMLDocument doc;
 	doc.LoadFile(filepath);
 	if (doc.Error())
 	{
-		Error(FB_DEFAULT_DEBUG_ARG, "Error while parsing material!");
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Error while parsing material(%s)!", filepath));
 		if (doc.ErrorID()==tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 		{
 			Log("Material %s is not found!", filepath);
@@ -1127,4 +1133,12 @@ void Material::CloneRenderStates()
 		mRenderStates = mRenderStates->Clone();
 		mRenderStatesCloned = true;
 	}
+}
+
+void Material::SetInputLayout(const INPUT_ELEMENT_DESCS& desc){
+	if (!(mInputElementDescs < desc || desc < mInputElementDescs))
+		return;
+
+	mInputElementDescs = desc;
+	mInputLayout = 0;
 }

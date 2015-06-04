@@ -10,6 +10,11 @@ public:
 	EngineCommand();
 	~EngineCommand();
 
+protected:
+	virtual void FinishSmartPtr();
+
+public:
+
 	float WheelSens;
 	float MouseSens;
 	int MoveEditParticle;

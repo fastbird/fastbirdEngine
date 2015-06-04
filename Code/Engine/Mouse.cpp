@@ -93,6 +93,10 @@ namespace fastbird
 		mDoubleClickSpeed = (float)GetDoubleClickTime() / 1000.0f;
 	}
 
+	void Mouse::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
+
 	void Mouse::PushEvent(HWND handle, const MouseEvent& mouseEvent)
 	{
 		/*DebugOutput("usFlags = %x, usButtonFlags = %x, usButtonData = %x, ulRawButtons = %x, lLastX = %d, lLastY = %d, ulExtraInformation = %d",
@@ -408,6 +412,10 @@ namespace fastbird
 		return (mButtonsDown & MOUSE_BUTTON_RIGHT) !=0;
 	}
 
+	bool Mouse::IsRButtonDownPrev() const{
+		return (mButtonsDownPrev & MOUSE_BUTTON_RIGHT) != 0;
+	}
+
 	bool Mouse::IsRButtonClicked() const
 	{
 		return (mButtonsClicked & MOUSE_BUTTON_RIGHT) != 0;
@@ -569,5 +577,18 @@ namespace fastbird
 
 	bool Mouse::IsIn(const RECT& r){
 		return !(mAbsX < r.left || mAbsX > r.right || mAbsY < r.top || mAbsY > r.bottom);
+	}
+
+	void Mouse::CursorToCenter(){
+		if (gFBEnv->pEngine->IsMainWindowForground()){
+			auto mainHwndId = gFBEnv->pEngine->GetMainWndHandleId();
+			Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(mainHwndId);
+			size = size / 2;
+			SetCurrentMousePos(mainHwndId, size.x, size.y);
+			mAbsX = size.x;
+			mAbsY = size.y;
+			mAbsXPrev = size.x;
+			mAbsYPrev = size.y;
+		}
 	}
 }

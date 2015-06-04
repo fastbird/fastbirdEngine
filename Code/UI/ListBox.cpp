@@ -733,7 +733,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				if (mFocusedListItem) {
 					SearchStartingChacrcter(c, mFocusedListItem->GetRowIndex());
 				}
-				else{
+				else{					
 					SearchStartingChacrcter(c, -1);
 				}
 			}

@@ -705,6 +705,9 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 		result.mIndex = cb.mIndex;
 		return true;
 	}
+	else{
+		result.mRigidBody = 0;
+	}
 	return false;
 }
 

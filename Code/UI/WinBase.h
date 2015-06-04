@@ -101,6 +101,7 @@ namespace fastbird
 		bool mSimplePosAnimEnabled;
 		bool mNoMouseEvent;
 		bool mNoMouseEventAlone;
+		bool mVisualOnlyUI;
 		bool mUseScissor;
 		bool mEnable;
 
@@ -139,6 +140,7 @@ namespace fastbird
 		bool mGhost;
 		bool mGatheringException;
 		bool mKeepUIRatio;
+		bool mUpdateAlphaTexture;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -245,6 +247,7 @@ namespace fastbird
 		virtual const Vec2I& GetSize() const { return mSize; }
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
+		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }
 		virtual void SetUseAbsXPos(bool use) { mUseAbsoluteXPos = use; }
 		virtual void SetUseAbsYPos(bool use) { mUseAbsoluteYPos = use; }
 		virtual bool GetUseAbsXPos() const { return mUseAbsoluteXPos; }
@@ -407,6 +410,7 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const { return mNoMouseEvent; }
 		virtual bool GetNoMouseEventAlone() const { return mNoMouseEventAlone; }
+		virtual bool GetVisualOnly() const { return mVisualOnlyUI; }
 		virtual void RecreateBorders();
 
 	protected:
@@ -433,5 +437,7 @@ namespace fastbird
 
 		void ProcessHighlight(float dt);
 		void ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos, bool& hasScale);
+
+		void UpdateAlphaTexture();
 	};
 }

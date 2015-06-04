@@ -70,6 +70,11 @@ Scene::~Scene()
 	}
 }
 
+void Scene::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 bool Scene::AttachObject(SpatialObject* pSpatialObject)
 {

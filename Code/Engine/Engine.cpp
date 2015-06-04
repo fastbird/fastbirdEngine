@@ -124,6 +124,10 @@ Engine::~Engine()
 #endif
 }
 
+void Engine::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 //------------------------------------------------------------------------
 GlobalEnv* Engine::GetGlobalEnv() const
 {

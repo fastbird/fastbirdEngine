@@ -21,6 +21,7 @@ Button::Button()
 	, mNoButton(false)
 	, mButtonIconSize(0)
 	, mFps(0), mActivatedRot(false), mImageColorOverlay(1, 1, 1, 1)
+	, mImageSize(0, 0)
 {
 	for (int i = 0; i < ButtonImages::Num; i++)
 	{
@@ -72,14 +73,14 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 	if (!mVisibility.IsVisible())
 		return;	
 	assert(mUIObject);
-
-	if (mProgressBar && mInProgress)
-		mProgressBar->GatherVisit(v);
 	
 	if (mMouseIn && mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->GatherVisit(v);
 	else if (mImages[ButtonImages::BackImage])
 		mImages[ButtonImages::BackImage]->GatherVisit(v);
+
+	if (mProgressBar && mInProgress)
+		mProgressBar->GatherVisit(v);
 
 	v.push_back(mUIObject);
 
@@ -241,11 +242,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 							   if (!mImages[ButtonImages::Image])
 							   {
 								   mImages[ButtonImages::Image]= CreateImageBox();
-							   }
-							   else
-							   {
-								   RemoveChild(mImages[ButtonImages::Image]);
-								   mImages[ButtonImages::Image] = CreateImageBox();
+								   UpdateImageSize();
 							   }
 							   
 							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
@@ -287,12 +284,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									 if (!mImages[ButtonImages::Image])
 									 {
 										 mImages[ButtonImages::Image] = CreateImageBox();
-									 }
-									 else
-									 {
-										 RemoveChild(mImages[ButtonImages::Image]);
-										 mImages[ButtonImages::Image] = CreateImageBox();
-									 }
+										 UpdateImageSize();
+									 }									 
 									 
 									 mImages[ButtonImages::Image]->SetTexture(val);
 									 mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
@@ -318,7 +311,9 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									if (!mImages[ButtonImages::ImageHover])
 									{
 										mImages[ButtonImages::ImageHover] = CreateImageBox();
+										UpdateImageSize();
 									}
+
 									SetDefaultImageAtlasPathIfNotSet();
 									if (strlen(val) == 0)
 									{
@@ -451,6 +446,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										if (!mImages[ButtonImages::ActiveImage])
 										{
 											mImages[ButtonImages::ActiveImage] = CreateImageBox();
+											UpdateImageSize();
 										}
 
 										if (strlen(val) == 0)
@@ -475,6 +471,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										  if (!mImages[ButtonImages::DeactiveImage])
 										  {
 											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();
+											  UpdateImageSize();
 										  }
 
 										  if (strlen(val) == 0)
@@ -558,13 +555,24 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::PROGRESSBAR:
 	{
-									RemoveChild(mProgressBar);
-									mProgressBar = (HorizontalGauge*)AddChild(GetFinalPos(), GetFinalSize(), ComponentType::HorizontalGauge);
-									mProgressBar->SetUseAbsSize(false);
-									mProgressBar->SetRuntimeChild(true);
-									mProgressBar->SetGatheringException();
-									mProgressBar->SetMaximum(StringConverter::parseReal(val));									
-									return true;
+		if (strcmp(val, "0")!=0){
+			RemoveChild(mProgressBar);
+			mProgressBar = (HorizontalGauge*)AddChild(Vec2I(0, 0), GetFinalSize(), ComponentType::HorizontalGauge);
+			mProgressBar->SetUseAbsSize(false);
+			mProgressBar->SetRuntimeChild(true);
+			mProgressBar->SetGhost(true);
+			mProgressBar->SetGatheringException();
+			mProgressBar->SetVisible(GetVisible());
+			mProgressBar->SetMaximum(StringConverter::parseReal(val));
+		}
+		return true;
+	}	
+
+	case UIProperty::GAUGE_CUR:
+	{
+		if (mProgressBar)
+			SetPercentage(StringConverter::parseReal(val));
+		return true;
 	}
 
 	case UIProperty::GAUGE_COLOR:
@@ -634,6 +642,13 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 		mat->ApplyShaderDefines();
 		SetAlphaRegionTexture();		
+		return true;
+	}
+
+	case UIProperty::BUTTON_IMAGE_SIZE:
+	{
+		mImageSize = StringConverter::parseVec2I(val);
+		UpdateImageSize();
 		return true;
 	}
 
@@ -900,15 +915,34 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bo
 
 	case UIProperty::PROGRESSBAR:
 	{
-		if (!mProgressBar)
-			return false;
-
 		if (notDefaultOnly)
 		{
 			if (!mProgressBar)
 				return false;
 		}
+		if (!mProgressBar)
+		{
+			strcpy_s(val, bufsize, "0");
+			return true;
+		}
+
 		auto data = StringConverter::toString(mProgressBar->GetMaximum());
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::GAUGE_CUR:
+	{
+		if (notDefaultOnly)
+		{
+			if (!mProgressBar)
+				return false;
+		}
+		if (!mProgressBar){
+			strcpy_s(val, bufsize, "0");
+			return true;
+		}
+		auto data = StringConverter::toString(mProgressBar->GetPercentage());
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -988,6 +1022,16 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bo
 		return true;
 	}
 
+	case UIProperty::BUTTON_IMAGE_SIZE:
+	{
+		if (notDefaultOnly){
+			if (mImageSize == UIProperty::GetDefaultValueVec2I(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mImageSize).c_str());
+		return true;
+	}
+
 	}
 
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -1015,6 +1059,7 @@ void Button::SetVisibleInternal(bool visible){
 ImageBox* Button::CreateImageBox()
 {
 	auto image = AddChild(Vec2I(0, 0), GetFinalSize(), ComponentType::ImageBox);
+	image->SetSpecialOrder(GetSpecialOrder());
 	image->SetUseAbsSize(false);
 	image->SetRuntimeChild(true);
 	image->SetRender3D(mRender3D, GetRenderTargetSize());
@@ -1022,18 +1067,6 @@ ImageBox* Button::CreateImageBox()
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	image->SetGatheringException();
 	return (ImageBox*)image;
-}
-
-void Button::OnStartUpdate(float elapsedTime)
-{
-	__super::OnStartUpdate(elapsedTime);
-	if (mProgressBar)
-		mProgressBar->OnStartUpdate(elapsedTime);
-	for (int i = 0; i < ButtonImages::Num; ++i)
-	{
-		if (mImages[i])
-			mImages[i]->OnStartUpdate(elapsedTime);
-	}
 }
 
 void Button::StartProgress()
@@ -1155,10 +1188,13 @@ void Button::SetAlphaRegionTexture(){
 	auto mat = mUIObject->GetMaterial();
 	assert(mat);
 	if (mAlphaRegion.empty()){
-		mat->SetTexture((ITexture*)0, BINDING_SHADER_PS, 0);
+		mat->SetTexture((ITexture*)0, BINDING_SHADER_PS, 1);
 	}
 	else{
-		auto region = gFBEnv->pRenderer->GetTextureAtlasRegion(mImageAtlas.c_str(), mAlphaRegion.c_str());
+		auto atlas = gFBEnv->pRenderer->GetTextureAtlas(mImageAtlas.c_str());
+		assert(atlas);
+		auto region = atlas->GetRegion(mAlphaRegion.c_str());
+		assert(region);
 		auto& startUv = region->GetStartUV();
 		auto endUv = startUv + region->GetUVSize();		
 		Vec2 texcoords[4] = {
@@ -1168,12 +1204,38 @@ void Button::SetAlphaRegionTexture(){
 			Vec2(endUv.x, startUv.y)
 		};
 		mUIObject->SetTexCoord(texcoords, 4);
+		
+		mat->SetTexture(atlas->mTexture->Clone(), BINDING_SHADER_PS, 1);
 	}
 }
 
 void Button::SetDefaultImageAtlasPathIfNotSet(){
 	if (mImageAtlas.empty()){
 		mImageAtlas = "data/textures/gameui.xml";
+	}
+}
+
+
+void Button::UpdateImageSize(){
+	Vec2I finalSize;
+	if (mImageSize != Vec2I(0, 0)){
+		finalSize = mImageSize;
+	}
+	else{
+		finalSize = GetFinalSize();
+	}
+
+	if (mImages[ButtonImages::Image]){
+		mImages[ButtonImages::Image]->ChangeSize(finalSize);
+	}
+	if (mImages[ButtonImages::ImageHover]){
+		mImages[ButtonImages::ImageHover]->ChangeSize(finalSize);
+	}
+	if (mImages[ButtonImages::ActiveImage]){
+		mImages[ButtonImages::ActiveImage]->ChangeSize(finalSize);
+	}
+	if (mImages[ButtonImages::DeactiveImage]){
+		mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
 	}
 }
 

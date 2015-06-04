@@ -116,12 +116,14 @@ void ImageBox::SetTexture(const char* file)
 	if (mImageFile == file)
 		return;
 	mImageFile = file ? file : "";
-	if (mImageFile.empty())
-	{
-		mImageFile = "data/textures/empty_transparent.dds";
+	if (mImageFile.empty()){
+		SetTexture((ITexture*)0);
 	}
-	ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
-	SetTexture(pTexture);
+	else{
+		ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
+		SetTexture(pTexture);
+	}
+	
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
@@ -258,7 +260,15 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 void ImageBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
-	
+	OnAnySizeChanged();
+}
+
+void ImageBox::OnParentSizeChanged(){
+	__super::OnParentSizeChanged();
+	OnAnySizeChanged();
+}
+
+void ImageBox::OnAnySizeChanged(){
 	if (!mAtlasRegion && mAtlasRegions.empty())
 	{
 		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
@@ -267,7 +277,7 @@ void ImageBox::OnSizeChanged()
 	}
 	else{
 		if (mAtlasRegion)
-		{			
+		{
 			const auto& imagesize = mAtlasRegion->GetSize();
 			if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
 				Vec2 start((float)mAtlasRegion->mStart.x, (float)mAtlasRegion->mStart.y);
@@ -287,7 +297,7 @@ void ImageBox::OnSizeChanged()
 				mAtlasRegion->GetQuadUV(texcoords);
 				mUIObject->SetTexCoord(texcoords, 4);
 			}
-			
+
 		}
 	}
 }
@@ -639,6 +649,7 @@ void ImageBox::DrawAsFixedSizeAtCenter()
 {
 	DrawAsFixedSize();
 	ChangeNPos(Vec2(0.5f, 0.5f));
+	SetUseAbsPos(false);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 }
 

@@ -517,13 +517,13 @@ void Container::RefreshVScrollbar()
 			mScrollerV->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			mScrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");
 			mScrollerV->SetOwner(this);
+			mScrollerV->SetVisible(true);
 		}
 
 		if (mScrollerV)
 		{
 			mScrollerV->ChangeNSizeY(visableRatio);
-			mScrollerV->OnPosChanged(false);
-			mScrollerV->SetVisible(true);
+			//mScrollerV->OnPosChanged(false);			
 			mScrollerV->SetMaxOffset(Vec2(0, length));
 		}
 	}

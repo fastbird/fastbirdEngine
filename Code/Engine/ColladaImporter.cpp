@@ -36,6 +36,10 @@ ColladaImporter::~ColladaImporter()
 	mMeshObjects.clear();
 }
 
+void ColladaImporter::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, bool useIndexBuffer, 
 	bool mergeMatGroups, bool keepMeshData, bool generateTangent, bool meshGroup)
 {

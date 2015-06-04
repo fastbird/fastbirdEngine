@@ -182,6 +182,7 @@ namespace fastbird
 
 		// usually don't need to use this functions
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
+		virtual void SetUseAbsPos(bool use) = 0;
 		virtual void SetUseAbsXPos(bool use) = 0;
 		virtual void SetUseAbsYPos(bool use) = 0;
 		virtual bool GetUseAbsXPos() const = 0;
@@ -247,6 +248,7 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const = 0;
 		virtual bool GetNoMouseEventAlone() const = 0;
+		virtual bool GetVisualOnly() const = 0;
 		virtual void SetSpecialOrder(int specialOrder) = 0;
 
 		virtual void RecreateBorders() = 0;

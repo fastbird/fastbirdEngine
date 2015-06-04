@@ -9,6 +9,11 @@ public:
 	InputLayout() : mVertexComponents(0) {}
 	
 	virtual ~InputLayout(){}
+
+protected:
+	virtual void FinishSmartPtr();
+
+public:
 	
 	virtual void SetDescs(const INPUT_ELEMENT_DESCS& descs);
 	virtual const INPUT_ELEMENT_DESCS& GetDescs() const { return mDescs; }

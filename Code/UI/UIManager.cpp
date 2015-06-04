@@ -57,7 +57,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
-	, mMultiLocating(false)
+	, mMultiLocating(false), mAtlasStaging(0)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -255,7 +255,7 @@ void UIManager::GatherRenderList()
 						auto& list = render3DList[(*it)->GetName()];
 						list.reserve(100);
 						(*it)->GatherVisit(list);
-						std::sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
+						std::stable_sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
 							return a->GetSpecialOrder() < b->GetSpecialOrder();
 						});
 					}
@@ -263,7 +263,7 @@ void UIManager::GatherRenderList()
 					{
 						(*it)->GatherVisit(uiObjects);
 
-						std::sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
+						std::stable_sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
 							return a->GetSpecialOrder() < b->GetSpecialOrder();
 						});
 						start = uiObjects.size();
@@ -1065,7 +1065,7 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	int i = 0;
 	for (; it != itEnd; ++it)
 	{
-		if ((*it)->GetVisible())
+		if ((*it)->GetVisible() && !(*it)->GetVisualOnly())
 		{
 			mMouseIn = (*it)->OnInputFromHandler(pMouse, keyboard) || mMouseIn;
 		}
@@ -2194,7 +2194,12 @@ const char* UIManager::GetWndBorderRegion(const char* key) const{
 	return "";
 }
 
-ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size){
+ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater){
+	callmeLater = false;
+	if (size.x == 0 || size.y == 0){
+		callmeLater = true;
+		return 0;
+	}
 	auto it = mAlphaInfoTexture.Find(size);
 	if (it != mAlphaInfoTexture.end()){
 		return it->second;
@@ -2207,6 +2212,11 @@ ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size){
 		auto atlas = gFBEnv->pRenderer->GetTextureAtlas("es/textures/ui.xml");
 		if (!atlas)
 			return 0;
+
+		if (!atlas->mTexture->IsReady()){
+			callmeLater = true;
+			return 0;
+		}
 		
 		auto alphaRegion = atlas->GetRegion(mBorderAlphaRegion.c_str());
 		if (!alphaRegion)
@@ -2214,7 +2224,7 @@ ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size){
 
 		const auto& atlasSize = atlas->mTexture->GetSize();
 		if (!mAtlasStaging){
-			mAtlasStaging = gFBEnv->pRenderer->CreateTexture(0, atlasSize.x, atlasSize.y, PIXEL_FORMAT_R8G8B8A8_TYPELESS,
+			mAtlasStaging = gFBEnv->pRenderer->CreateTexture(0, atlasSize.x, atlasSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 				BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
 			atlas->mTexture->CopyToStaging(mAtlasStaging, 0, 0, 0, 0, 0, 0);
 		}
@@ -2227,26 +2237,62 @@ ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size){
 		unsigned* atlasData = (unsigned*)mapData.pData;
 
 		unsigned* data = (unsigned*)malloc(4 * size.x * size.y);
-		memset(data, 1, 4 * size.x * size.y);
+		memset(data, 0xffffffff, 4 * size.x * size.y);
 
+		unsigned pitchInPixel = mapData.RowPitch / 4;
 		// copy lt
 		auto ltRegion = atlas->GetRegion(GetBorderRegion("lt"));
 		if (ltRegion){
 			const auto& ltsize = ltRegion->GetSize();
-			for (int r = 0; r < ltsize.y; ++r){
-				memcpy(data + r * size.x, 
-					atlasData + (alphaRegion->mStart.y+r) * mapData.RowPitch + alphaRegion->mStart.x, 
-					ltsize.x);
+			if (size.x > ltsize.x && size.y > ltsize.y){
+				for (int r = 0; r < ltsize.y; ++r){
+					memcpy(data + r * size.x,
+						atlasData + (alphaRegion->mStart.y + r) * pitchInPixel + alphaRegion->mStart.x,
+						ltsize.x * 4);
+				}
 			}
 		}
 		auto rtRegion = atlas->GetRegion(GetBorderRegion("rt"));
 		if (rtRegion){
 			const auto& rtsize = rtRegion->GetSize();
-			for (int r = 0; r < rtsize.y; ++r){
-				memcpy(data + r * size.x + size.x - rtsize.x, 
-					atlasData + (alphaRegion->mStart.y+r)*mapData.RowPitch + alphaRegion->mStart.x 
+			if (size.x > rtsize.x && size.y > rtsize.y){				
+				for (int r = 0; r < rtsize.y; ++r){
+					memcpy(data + r * size.x + size.x - rtsize.x,
+						atlasData + (alphaRegion->mStart.y + r)*pitchInPixel + alphaRegion->mStart.x + alphaRegion->mSize.x - rtsize.x,
+						rtsize.x * 4);
+				}
 			}
 		}
+		auto lbRegion = atlas->GetRegion(GetBorderRegion("lb"));
+		if (lbRegion){
+			const auto& lbsize = lbRegion->GetSize();
+			if (size.x > lbsize.x && size.y > lbsize.y){
+				for (int r = 0; r < lbsize.y; ++r){
+					memcpy(data + (size.y - lbsize.y + r) * size.x,
+						atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - lbsize.y + r) * pitchInPixel + alphaRegion->mStart.x,
+						lbsize.x * 4);
+				}
+			}
+		}
+
+		auto rbRegion = atlas->GetRegion(GetBorderRegion("rb"));
+		if (rbRegion){
+			const auto& rbsize = rbRegion->GetSize();
+			if (size.x > rbsize.x && size.y > rbsize.y){
+				for (int r = 0; r < rbsize.y; ++r){
+					memcpy(data + (size.y - rbsize.y + r) * size.x + size.x - rbsize.x,
+						atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - rbsize.y + r) * pitchInPixel
+						+ alphaRegion->mStart.x + alphaRegion->mSize.x - rbsize.x,
+						rbsize.x * 4);
+				}
+			}
+		}
+
+		auto texture = gFBEnv->pRenderer->CreateTexture(data, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
+		mAlphaInfoTexture[size] = texture;
+		free(data);
+		mAtlasStaging->Unmap(0);
+		return texture;
 	}
 }
 

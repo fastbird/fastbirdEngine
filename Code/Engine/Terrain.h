@@ -67,6 +67,10 @@ namespace fastbird
 		Terrain();
 		virtual ~Terrain();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		//--------------------------------------------------------------------
 		// ITerrain Interfaces
 		//--------------------------------------------------------------------

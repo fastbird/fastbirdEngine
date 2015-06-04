@@ -77,6 +77,11 @@ namespace fastbird
 		explicit Material(const Material& mat);
 		virtual ~Material();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		// only need if you don't use shared ptr
 		virtual void Delete();
 
@@ -160,5 +165,7 @@ namespace fastbird
 		virtual void ClearDepthStencilState(const DEPTH_STENCIL_DESC& desc);
 
 		virtual void CloneRenderStates();
+
+		virtual void SetInputLayout(const INPUT_ELEMENT_DESCS& desc);
 	};
 }

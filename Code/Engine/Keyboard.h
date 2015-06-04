@@ -11,6 +11,10 @@ namespace fastbird
 	public:	
 		Keyboard();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		virtual void PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent);
 		virtual void PushChar(HWND hWnd, unsigned keycode);
 		virtual void EndFrame();

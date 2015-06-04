@@ -166,6 +166,10 @@ EngineCommand::~EngineCommand()
 	}
 }
 
+void EngineCommand::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 void EditParticle(StringVector& arg)
 {
 	if (arg.size() < 2)

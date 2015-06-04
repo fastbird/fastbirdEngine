@@ -210,7 +210,7 @@ namespace fastbird
 		virtual const char* GetBorderRegion(const char* key) const;
 		virtual const char* GetWndBorderRegion(const char* key) const;
 
-		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size);
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

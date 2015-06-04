@@ -14,6 +14,11 @@ namespace fastbird
 		ScriptSystem();
 		virtual ~ScriptSystem();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		virtual lua_State* GetLuaState() const;
 		virtual bool RunScript(const char* filename);
 		// _ENV is empty.

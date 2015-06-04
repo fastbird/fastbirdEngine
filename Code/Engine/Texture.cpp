@@ -23,6 +23,11 @@ Texture::~Texture()
 		mTextures.end());
 }
 
+void Texture::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 //static 
 void ITexture::ReloadTexture(const char* unifiedPath)
 {

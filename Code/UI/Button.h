@@ -27,7 +27,6 @@ public:
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar
 	virtual void Blink(bool blink); // progress bar
-	virtual void OnStartUpdate(float elapsedTime);
 	virtual void EndProgress();
 	virtual void Highlight(bool highlight);
 	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture);
@@ -40,6 +39,8 @@ public:
 	void OnMouseDown(void* arg);
 	bool IsActivated() const { return mActivated; }
 	void AlignIconText();
+
+	void UpdateImageSize();
 
 private:
 
@@ -71,6 +72,7 @@ private:
 	std::string mDeactivatedImage;
 
 	std::string mAlphaRegion;
+	Vec2I mImageSize;
 
 	Color mImageColorOverlay;
 	bool mActivatedRot;

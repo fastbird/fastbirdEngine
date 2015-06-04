@@ -207,6 +207,11 @@ protected:
 public:
 	Renderer();
 	virtual ~Renderer();
+
+protected:
+	virtual void FinishSmartPtr();
+
+public:
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;

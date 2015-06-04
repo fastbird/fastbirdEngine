@@ -65,11 +65,10 @@ namespace fastbird
 	public:
 
 		Engine();
-
+		virtual ~Engine();
 
 	protected:
-
-		virtual ~Engine();
+		virtual void FinishSmartPtr();
 
 
 	public:

@@ -52,6 +52,11 @@ RenderTarget::~RenderTarget()
 	}
 }
 
+void RenderTarget::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 bool RenderTarget::CheckOptions(const RenderTargetParam& param)
 {
 	return param.mSize == mSize && param.mPixelFormat == mFormat && 

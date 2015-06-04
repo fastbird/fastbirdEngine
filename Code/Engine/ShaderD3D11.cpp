@@ -41,6 +41,11 @@ ShaderD3D11::~ShaderD3D11()
 	}
 }
 
+void ShaderD3D11::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 void ShaderD3D11::SetVertexShader(ID3D11VertexShader* pVertexShader)
 {
 	SAFE_RELEASE(m_pVertexShader);

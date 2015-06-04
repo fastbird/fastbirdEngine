@@ -360,7 +360,7 @@ namespace fastbird
 		if (cols[colIndex].GetDataType() != ListItemDataType::String)
 			return -1;
 
-		if (gpTimer->GetTime() - mLastTime > 1.f)
+		if (gpTimer->GetTime() - mLastTime > 2.f)
 		{
 			mCharBuffer.clear();
 			mLastTime = gpTimer->GetTime();

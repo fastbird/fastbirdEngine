@@ -70,6 +70,11 @@ Renderer::~Renderer()
 		gFBEnv->pConsole->RemoveListener(this);
 }
 
+void Renderer::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 // called from inherited classes.
 void Renderer::Deinit()
 {

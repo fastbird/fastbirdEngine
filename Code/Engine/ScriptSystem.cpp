@@ -33,6 +33,10 @@ ScriptSystem::~ScriptSystem()
 	lua_close(mLuaState);
 }
 
+void ScriptSystem::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 //-------------------------------------------------------------------------
 lua_State* ScriptSystem::GetLuaState() const
 {
