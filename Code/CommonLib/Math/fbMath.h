@@ -165,6 +165,11 @@ namespace fastbird
 		{
 			return qa;
 		}
+		if (cosHalfTheta < 0){
+			qb = -qb;
+			return Slerp(qa, qb, t);
+		}
+
 		Quat ret;
 		float halfTheta = acos(cosHalfTheta);
 		float sinHalfTheta = sqrt(1.0f - cosHalfTheta*cosHalfTheta);

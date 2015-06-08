@@ -8,6 +8,7 @@
 #include <UI/ListBoxData.h>
 #include <UI/TextField.h>
 #include <UI/IUIManager.h>
+#include <UI/NumericUpDown.h>
 #include <Engine/TextManipulator.h>
 #include <CommonLib/StringUtils.h>
 
@@ -30,17 +31,13 @@ ListBox::ListBox()
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mColSizes.push_back(0.97f);
 	SetProperty(UIProperty::SCROLLERV, "true");
+	mMultiSelection = GetPropertyAsBool(UIProperty::LISTBOX_MULTI_SELECTION);
 }
 
 ListBox::~ListBox()
 {
 	Clear();
 	FB_DELETE(mData);
-}
-
-void ListBox::GatherVisit(std::vector<IUIObject*>& v)
-{
-	__super::GatherVisit(v);
 }
 
 std::string ListBox::GetSelectedString()
@@ -68,6 +65,8 @@ ListItem* ListBox::CreateNewItem(int row, int col)
 	x = Round(nx * finalSize.x);
 
 	ListItem* item = (ListItem*)AddChild(Vec2I(x, y), Vec2I(Round(mColSizes[col]*finalSize.x), mRowHeight), ComponentType::ListItem);
+	item->SetUseAbsXSize(false);
+	item->SetUseAbsXPos(false);
 	item->SetRuntimeChild(true);
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
@@ -144,6 +143,12 @@ void ListBox::SetItem(const Vec2I& rowcol, bool checked){
 
 void ListBox::SetItem(const Vec2I& rowcol, ITexture* texture){
 	mData->SetData(rowcol, texture);
+	VisualizeData(rowcol.x);
+}
+
+// numeric updown
+void ListBox::SetItem(const Vec2I& rowcol, int number){
+	mData->SetData(rowcol, number);
 	VisualizeData(rowcol.x);
 }
 
@@ -351,6 +356,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			FB_DELETE(mData);
 		}
 		mData = FB_NEW( ListBoxDataSet(mNumCols) );
+		gFBUIManager->DirtyRenderList(GetHwndId());
 		return true;
 	}
 	case UIProperty::LISTBOX_ROW_HEIGHT:
@@ -377,6 +383,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			{
 				mColSizes.push_back(StringConverter::parseReal(strs[i]));
 			}
+			UpdateColSizes();
 			return true;
 		}
 
@@ -413,6 +420,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			{
 				mColAlignes.push_back(lastAlign);
 			}
+			UpdateItemAlign();
 			return true;
 		}
 
@@ -436,65 +444,67 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			StringVector strs = Split(val, ",");
 			assert(strs.size() == mNumCols);			
 			const auto& finalSize = GetFinalSize();
-			if (mHeaders.empty())
+			auto contentWndBackup = mWndContentUI;
+			mWndContentUI = 0;
+			for (auto& h : mHeaders){
+				RemoveChild(h);
+			}
+			mHeaders.clear();
+			for (unsigned i = 0; i < mNumCols; ++i)
 			{
-				for (unsigned i = 0; i < mNumCols; ++i)
+				int posX = 0;
+				if (i >= 1)
 				{
-					int posX = 0;
-					if (i >= 1)
-					{
-						posX = mHeaders[i - 1]->GetPos().x + mHeaders[i - 1]->GetFinalSize().x;
-					}
-
-					mHeaders.push_back(static_cast<ListItem*>(
-						AddChild(Vec2I(posX, 0), Vec2I(Round(mColSizes[i] * finalSize.x), mRowHeight), ComponentType::ListItem)));
-					ListItem* pAddedItem = mHeaders.back();
-					pAddedItem->SetRuntimeChild(true);
-					const RECT& rect = mUIObject->GetRegion();
-					pAddedItem->SetProperty(UIProperty::NO_BACKGROUND, "false");
-					pAddedItem->SetProperty(UIProperty::BACK_COLOR, "0.0, 0.0, 0.0, 0.5");
-					if (!mHeaderTextSize.empty() && i < mHeaderTextSize.size())
-					{
-						pAddedItem->SetProperty(UIProperty::TEXT_SIZE, mHeaderTextSize[i].c_str());
-					}
-					
-					pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
-					pAddedItem->SetRowIndex(-1);
-					pAddedItem->SetColIndex(i);
-					pAddedItem->SetText(AnsiToWide(strs[i].c_str()));
+					posX = mHeaders[i - 1]->GetPos().x + mHeaders[i - 1]->GetFinalSize().x;
 				}
-				assert(!mWndContentUI);
+
+				mHeaders.push_back(static_cast<ListItem*>(
+					AddChild(Vec2I(posX, 0), Vec2I(Round(mColSizes[i] * finalSize.x), mRowHeight), ComponentType::ListItem)));
+				ListItem* pAddedItem = mHeaders.back();
+				pAddedItem->SetVisible(GetVisible());
+				pAddedItem->SetRuntimeChild(true);
+				pAddedItem->SetUseAbsXSize(false);
+				pAddedItem->SetUseAbsXPos(false);
+				const RECT& rect = mUIObject->GetRegion();
+				pAddedItem->SetProperty(UIProperty::NO_BACKGROUND, "false");
+				pAddedItem->SetProperty(UIProperty::BACK_COLOR, "0.0, 0.0, 0.0, 0.5");
+				if (!mHeaderTextSize.empty() && i < mHeaderTextSize.size())
+				{
+					pAddedItem->SetProperty(UIProperty::TEXT_SIZE, mHeaderTextSize[i].c_str());
+				}
+					
+				pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
+				pAddedItem->SetRowIndex(-1);
+				pAddedItem->SetColIndex(i);
+				pAddedItem->SetText(AnsiToWide(strs[i].c_str()));
+			}
+
+			mWndContentUI = contentWndBackup;
+			if (!mWndContentUI){
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 				mWndContentUI->SetRuntimeChild(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
 				mWndContentUI->ModifySize(sizeMod);
-				mWndContentUI->SetUseAbsYSize(true);
-				mWndContentUI->SetPos(Vec2I(0, (mRowHeight + 4)));
+				mWndContentUI->SetUseAbsSize(false);
+				mWndContentUI->ChangePos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
 				if (mUseScrollerV)
 				{
 					mUseScrollerV = false;
 					mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
+					RemoveChild(mScrollerV, true);
+					mScrollerV = 0;
 				}
 			}
-			else
-			{
-				assert(mHeaders.size() == strs.size());
-				int i = 0;
-				for (auto& str : strs)
-				{
-					mHeaders[i]->SetText(AnsiToWide(strs[i].c_str()));
-					++i;
-				}
-			}
-			if (mUseScrollerV)
-			{
-				RemoveChild(mScrollerV, true);
-				mScrollerV = 0;
-			}
-			
+			gFBUIManager->DirtyRenderList(GetHwndId());
 			return true;
 		}
+
+	case UIProperty::LISTBOX_MULTI_SELECTION:
+	{
+		mMultiSelection = StringConverter::parseBool(val);
+		return true;
+	}
 	case UIProperty::TEXTUREATLAS:
 		{
 										 assert(val);
@@ -608,6 +618,17 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 				return false;
 		}
 		strcpy_s(val, bufsize, mStrHeaders.c_str());
+		return true;
+	}
+	case UIProperty::LISTBOX_MULTI_SELECTION:
+	{
+		if (notDefaultOnly){
+			if (mMultiSelection == GetPropertyAsBool(prop)){
+				return false;
+			}
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mMultiSelection).c_str());
 		return true;
 	}
 	case UIProperty::TEXTUREATLAS:
@@ -949,7 +970,7 @@ void ListBox::OnItemClicked(void* arg)
 				ToggleSelection(clickedIndex);
 			}
 		}
-		else if (keyboard->IsKeyDown(VK_CONTROL)){
+		else if (keyboard->IsKeyDown(VK_CONTROL) || mMultiSelection){
 			ToggleSelection(clickedIndex);
 		}		
 		else
@@ -1008,6 +1029,13 @@ void ListBox::OnItemEnter(void* arg){
 		}
 	}
 }
+
+void ListBox::OnNumericChanged(void* arg){
+	NumericUpDown* numeric = (NumericUpDown*)(arg);
+	auto listItem = (ListItem*)numeric->GetParent();
+	mData->SetData(listItem->GetRowCol(), numeric->GetValue());
+}
+
 unsigned ListBox::GetNumRows()
 {
 	return mItems.size();
@@ -1029,6 +1057,7 @@ IWinBase* ListBox::MakeMergedRow(unsigned row)
 		mItems[row][i]->ChangeNPosX(1.f);
 	}
 
+	mItems[row][0]->SetMerged(true);
 	return mItems[row][0];
 }
 
@@ -1063,6 +1092,7 @@ IWinBase* ListBox::MakeMergedRow(unsigned row, const char* backColor, const char
 		mItems[row][0]->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");	
 	mItems[row][0]->SetProperty(UIProperty::TEXT_ALIGN, "center");
 
+	mItems[row][0]->SetMerged(true);
 	return mItems[row][0];
 }
 
@@ -1218,6 +1248,24 @@ void ListBox::FillItem(unsigned index){
 			}
 			if_assert_pass(checkbox){
 				checkbox->SetCheck(data[i].GetChecked());
+			}
+			break;
+		}
+		case ListItemDataType::NumericUpDown:
+		{
+			auto numeric = dynamic_cast<NumericUpDown*>(item->GetChild(0));
+			if (!numeric){
+				item->RemoveAllChild();
+				numeric = (NumericUpDown*)item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::NumericUpDown);
+				numeric->RegisterEventFunc(UIEvents::EVENT_NUMERIC_UP,
+					std::bind(&ListBox::OnNumericChanged, this, std::placeholders::_1));
+				numeric->RegisterEventFunc(UIEvents::EVENT_NUMERIC_DOWN,
+					std::bind(&ListBox::OnNumericChanged, this, std::placeholders::_1));
+				numeric->SetRuntimeChild(true);
+				numeric->SetVisible(mVisibility.IsVisible());
+			}
+			if_assert_pass(numeric){
+				numeric->SetNumber(data[i].GetNumber());
 			}
 			break;
 		}
@@ -1621,5 +1669,31 @@ void ListBox::NoVirtualizingItem(unsigned rowIndex){
 	}
 	mNoVirtualizingRows.insert(rowIndex);
 	VisualizeData(rowIndex);
+}
+
+void ListBox::UpdateColSizes(){
+	for (auto row : mItems){
+		unsigned col = 0;
+		float pos = 0.f;
+		for (auto item : row){
+			if (item->GetMerged())
+				break;
+			item->ChangeNPosX(pos);
+			item->ChangeNSizeX(mColSizes[col]);
+			pos += mColSizes[col++];
+		}
+	}
+}
+
+void ListBox::UpdateItemAlign(){
+	for (auto row : mItems){
+		unsigned col = 0;
+		for (auto item : row){
+			if (item->GetMerged())
+				break;
+			item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
+			col++;
+		}
+	}
 }
 }

@@ -27,6 +27,7 @@ public:
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar
 	virtual void Blink(bool blink); // progress bar
+	virtual void Blink(bool blink, float time); // progress bar
 	virtual void EndProgress();
 	virtual void Highlight(bool highlight);
 	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture);

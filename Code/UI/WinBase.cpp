@@ -44,7 +44,7 @@ WinBase::WinBase()
 , mTextAlignH(ALIGNH::LEFT)
 , mTextAlignV(ALIGNV::MIDDLE)
 , mMatchSize(false)
-, mSize(10, 10)
+, mSize(123, 321)
 , mTextSize(22.f)
 , mFixedTextSize(true)
 , mWNScrollingOffset(0, 0)
@@ -345,9 +345,14 @@ void WinBase::OnParentSizeChanged() {
 	else{
 		mNSize.y = mSize.y / (float)mParent->GetFinalSize().y;
 	}
-
-	if (!mUseAbsoluteXPos || !mUseAbsoluteYPos){
-		UpdateWorldPos();
+	bool posChanged = false;
+	if (!mUseAbsoluteXPos){
+		mPos.x = Round(mParent->GetFinalSize().x * mNPos.x);
+		posChanged = true;
+	}
+	if (!mUseAbsoluteYPos){
+		mPos.y = Round(mParent->GetFinalSize().y * mNPos.y);
+		posChanged = true;
 	}
 
 	if (sizeChanged){
@@ -356,6 +361,9 @@ void WinBase::OnParentSizeChanged() {
 	else{
 		RefreshScissorRects();
 	}
+
+	if (posChanged || mAlignH!=ALIGNH::LEFT || mAlignV!=ALIGNV::MIDDLE)
+		OnPosChanged(false);
 }
 
 //---------------------------------------------------------------------------
@@ -1402,11 +1410,10 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT:
 	{
 							 assert(val);
-							 std::string translated = TranslateText(val);
-							 if (translated != val || strlen(val)==0)
-							 {
-								 mTextBeforeTranslated = val;
-							 }
+							 if (mTextBeforeTranslated == val)
+								 return true;
+							 mTextBeforeTranslated = val;
+							 std::string translated = TranslateText(val);							 
 
 							 if (translated.empty())
 							 {
@@ -1434,11 +1441,10 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TOOLTIP:
 	{
 								assert(val);
-								auto msg = TranslateText(val);
-								if (msg != val)
-								{
-									mTooltipTextBeforeT = val;
-								}
+								if (mTooltipTextBeforeT == val)
+									return true;
+								mTooltipTextBeforeT = val;								
+								auto msg = TranslateText(val);								
 								if (msg.empty())
 									mTooltipText = AnsiToWide(val);
 								else
@@ -2103,6 +2109,13 @@ void WinBase::SetUseBorder(bool use)
 			gFBEnv->pUIManager->DeleteComponent(ib);
 		}
 		mBorders.clear();
+		
+		if (mUIObject){
+			auto mat = mUIObject->GetMaterial();
+			if (mat && mat->RemoveShaderDefine("_ALPHA_TEXTURE"))
+				mat->ApplyShaderDefines();
+		}
+
 		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 }
@@ -2318,11 +2331,6 @@ void WinBase::UpdateAlphaTexture(){
 		else{
 			if (mat->RemoveShaderDefine("_ALPHA_TEXTURE"))
 				mat->ApplyShaderDefines();
-
-			/*INPUT_ELEMENT_DESCS descs;
-			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			mat->SetInputLayout(descs);*/
 
 			if (!texture && callmeLater){
 				mUpdateAlphaTexture = true;

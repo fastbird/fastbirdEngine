@@ -11,6 +11,7 @@
 namespace fastbird
 {
 	void RegisterLuaFuncs(lua_State* mL);
+	void RegisterLuaEnums(lua_State* mL);
 
 	class IWinBase;
 	class IUIObject;

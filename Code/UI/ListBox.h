@@ -49,13 +49,13 @@ protected:
 	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
 	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
 	std::set<unsigned> mNoVirtualizingRows;
+	bool mMultiSelection;
 
 public:
 	ListBox();
 	virtual ~ListBox();
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::ListBox; }
-	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void Scrolled();
 	virtual float GetContentHeight() const;
 
@@ -71,6 +71,7 @@ public:
 	virtual void SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type);
 	virtual void SetItem(const Vec2I& rowcol, bool checked);
 	virtual void SetItem(const Vec2I& rowcol, ITexture* texture);
+	virtual void SetItem(const Vec2I& rowcol, int number); // numeric updown
 
 	virtual bool GetCheckBox(const Vec2I& indexRowCol) const;
 
@@ -86,6 +87,7 @@ public:
 	void OnItemClicked(void* arg);
 	void OnItemDoubleClicked(void* arg);
 	void OnItemEnter(void* arg);
+	void OnNumericChanged(void* arg);
 
 	void ChangeFocusItem(ListItem* newItem);
 
@@ -137,6 +139,9 @@ public:
 	void MakeSureRangeFor(unsigned rowIndex);
 
 	virtual void NoVirtualizingItem(unsigned rowIndex);
+
+	void UpdateColSizes();
+	void UpdateItemAlign();
 
 protected:
 

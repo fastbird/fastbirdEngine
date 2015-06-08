@@ -18,6 +18,7 @@ const float TextField::LEFT_GAP = 0.001f;
 TextField::TextField()
 	: WinBase()
 	, mPasswd(false)
+	, mCursorOffset(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UITextField.material");
@@ -211,7 +212,8 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 {	
 	TriggerRedraw();
 	int cursorPos = mani->GetCursorPos();	
-	const auto& textStartWPos = mUIObject->GetTextStartWPos();
+	Vec2I textStartWPos = mUIObject->GetTextStartWPos();
+	textStartWPos.x += mCursorOffset;
 	if (mani->IsHighlighting())
 	{
 		auto start = mani->GetHighlightStart();
@@ -235,6 +237,10 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 				);
 		}
 		else{
+			gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
+			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
+			Vec2I cursorSize(Round(aWidth), 2);
+			gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
 			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)1, (int)mTextSize));
 			KeyboardCursor::GetKeyboardCursor().SetPos(
 				Vec2I(textStartWPos.x, textStartWPos.y - Round(mTextSize))
@@ -243,18 +249,39 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 	}
 	else
 	{
+		
 		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
 			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I(Round(aWidth), 2));
+			Vec2I cursorSize(Round(aWidth), 2);
+			KeyboardCursor::GetKeyboardCursor().SetSize(cursorSize);
 			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
 				(const char*)mTextw.c_str(), cursorPos * 2);
 
 		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
 
-		KeyboardCursor::GetKeyboardCursor().SetPos(
-			Vec2I(textStartWPos.x + Round(width),
-				textStartWPos.y - WinBase::BOTTOM_GAP - 2)
-			);
+		Vec2I visualCursorPos(textStartWPos.x + Round(width),
+			textStartWPos.y - WinBase::BOTTOM_GAP - 2);
+		KeyboardCursor::GetKeyboardCursor().SetPos(visualCursorPos);
+
+		// check region
+		// right
+		RECT region = GetScissorRegion();
+		if (region.right - mTextGap.y < visualCursorPos.x + cursorSize.x){
+			int offset = visualCursorPos.x + cursorSize.x - (region.right - mTextGap.y);
+			mCursorOffset -= offset;
+			mUIObject->SetTextOffsetForCursorMovement(Vec2I(mCursorOffset, 0));
+			KeyboardCursor::GetKeyboardCursor().SetPos(Vec2I(visualCursorPos.x - offset, visualCursorPos.y));
+		}
+		else{
+			if (region.left + mTextGap.x > visualCursorPos.x){
+				int offset = region.left + mTextGap.x - visualCursorPos.x;
+				mCursorOffset += offset;
+				mUIObject->SetTextOffsetForCursorMovement(Vec2I(mCursorOffset, 0));
+				KeyboardCursor::GetKeyboardCursor().SetPos(Vec2I(visualCursorPos.x + offset, visualCursorPos.y));
+			}
+		}
+		
+
 	}
 }
 void TextField::OnTextChanged(TextManipulator* mani)
@@ -414,6 +441,7 @@ void TextField::OnClicked(void* arg){
 	const auto& finalPos = GetFinalPos();
 	cursorPos = cursorPos - finalPos;
 	cursorPos.x -= mTextGap.x;
+	cursorPos.x += mCursorOffset;
 
 	auto font = gFBEnv->pRenderer->GetFont();
 	if (font)

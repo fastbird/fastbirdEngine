@@ -94,10 +94,10 @@ namespace fastbird
 
 		Quat operator+ (const Quat& qRot) const;
 		Quat operator- (const Quat& qRot) const;
+		Quat operator-(void) const;
 		Quat operator* (const Quat& qRot) const;
 		Quat operator* (float fScalar) const;
 		friend Quat operator* (float fScalar, const Quat& qRot);
-		Quat operator- () const;
 		inline bool operator== (const Quat& rhs) const
 		{
 			return w == rhs.w && x == rhs.x &&

@@ -13,6 +13,7 @@
 #include <UI/DropDown.h>
 #include <UI/ColorRampComp.h>
 #include <UI/CardScroller.h>
+#include <UI/HorizontalGauge.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -93,9 +94,17 @@ namespace fastbird
 	int GetNumListBoxItems(lua_State* L);
 	int SwapListBoxItem(lua_State* L);
 
+	// etc
+	int SetTooltipString(lua_State* L);
+
+	void RegisterLuaEnums(lua_State* mL){
+		ListItemDataType::RegisterToLua(mL);
+	}
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetTooltipString);
+
 		//----------------------------------------------------------------------------
 		// Listbox
 		//--------------------------------------------------------------------------------
@@ -422,14 +431,34 @@ namespace fastbird
 			auto button = dynamic_cast<Button*>(comp);
 			if (button)
 			{
-				button->Blink(blink);
-				lua_pushboolean(L, 1);
-				return 1;
+				if (lua_gettop(L) == 4){
+					float time = (float)luaL_checknumber(L, 4);
+					button->Blink(blink, time);
+				}
+				else{
+					button->Blink(blink);
+				}
+				
+				return 0;
+			}
+			else
+			{
+				auto bar = dynamic_cast<HorizontalGauge*>(comp);
+				if (bar){
+					if (lua_gettop(L) == 4){
+						float time = (float)luaL_checknumber(L, 4);
+						bar->Blink(blink, time);
+					}
+					else{
+						bar->Blink(blink);
+					}
+
+					return 0;
+				}
 			}
 		}
 		assert(0);
-		lua_pushboolean(L, 0);
-		return 1;
+		return 0;
 	}
 
 	int UpdateButtonProgressBar(lua_State* L)
@@ -1072,6 +1101,10 @@ namespace fastbird
 		{
 			listbox->SetItem(Vec2I(rowIndex, colIndex), lua_toboolean(L, 4)!=0);
 		}
+		case ListItemDataType::NumericUpDown:
+		{
+			listbox->SetItem(Vec2I(rowIndex, colIndex), (int)lua_tonumber(L, 4));
+		}
 		default:
 			assert(0);
 		}
@@ -1269,6 +1302,10 @@ namespace fastbird
 				lua_pushboolean(L, itemdata->GetChecked());
 				return 1;
 			}
+			else if (itemdata->GetDataType() == ListItemDataType::NumericUpDown){
+				lua_pushnumber(L, itemdata->GetNumber());
+				return 1;
+			}
 			else
 			{
 				assert(0);
@@ -1384,6 +1421,15 @@ namespace fastbird
 		{
 			listBox->SwapItems(luaL_checkunsigned(L, 3), luaL_checkunsigned(L, 4));
 		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int SetTooltipString(lua_State* L){
+		const char* s = luaL_checkstring(L, 1);
+		gFBUIManager->SetTooltipString(AnsiToWide(s));
+		auto mouse = gFBEnv->pEngine->GetMouse();
+		gFBUIManager->SetTooltipPos(mouse->GetNPos());
 		return 0;
 	}
 

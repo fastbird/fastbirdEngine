@@ -260,6 +260,18 @@ namespace fastbird
 		cols[colIndex].SetTexture(texture);
 	}
 
+	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, int number){
+		unsigned rowIndex = indexRowCol.x;
+		unsigned colIndex = indexRowCol.y + 1;
+
+		if (rowIndex >= mData.size())
+			return;
+		if (colIndex >= mNumCols)
+			return;
+		auto cols = mData[rowIndex];
+		cols[colIndex].SetNumber(number);
+	}
+
 	ListBoxData* ListBoxDataSet::GetData(unsigned index){
 		if (index < mData.size())
 			return mData[index] + 1; // excluding id column.

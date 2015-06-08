@@ -68,7 +68,7 @@ namespace fastbird
 		, mLastWheelPush(0)
 		, mDragStarted(false)
 		, mDragEnd(false)
-		, mLockMouseKey(0)
+		, mLockMouseKey(0), mInvalidatedTemporary(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -310,6 +310,10 @@ namespace fastbird
 		if (buttonClicked)
 			mLastClickTime = 0;
 		mValid = false;
+	}
+
+	void Mouse::InvalidTemporary(bool invalidate){
+		mInvalidatedTemporary = invalidate;
 	}
 
 	//-------------------------------------------------------------------------

@@ -47,6 +47,7 @@ namespace fastbird
 		void SetData(const Vec2I& indexRowCol, const wchar_t* string, ListItemDataType::Enum type);
 		void SetData(const Vec2I& indexRowCol, bool checked);
 		void SetData(const Vec2I& indexRowCol, ITexture* texture);
+		void SetData(const Vec2I& indexRowCol, int number); // numeric Up Down
 
 		
 		unsigned FindRowIndexWithKey(const std::wstring& uniqueKey);

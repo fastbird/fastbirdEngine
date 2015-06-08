@@ -9,6 +9,7 @@ namespace fastbird{
 			Texture,
 			NumberKey,
 			TextField,
+			NumericUpDown,
 
 			Unknown,
 		};
@@ -21,6 +22,7 @@ namespace fastbird{
 			"Texture",
 			"NumberKey",
 			"TextField",
+			"NumericUpDown"
 
 			"Unknown",
 		};
@@ -38,6 +40,6 @@ namespace fastbird{
 					return Enum(i);
 			}
 		}
-		REGISTER_ENUM_TO_LUA(Unknown, OfficerTitle);
+		REGISTER_ENUM_TO_LUA(Unknown, ListItemDataType);
 	}
 }

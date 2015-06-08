@@ -108,7 +108,6 @@ void Physics::Deinitilaize()
 		for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
 		{
 			auto colShape = it->first;
-			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
 			it = mColShapePendingDelete.erase(it);
 			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 			{
@@ -232,7 +231,6 @@ void Physics::_CheckCollisionShapeForDel(float timeStep)
 		if (it->second <= 0)
 		{
 			it = mColShapePendingDelete.erase(it);
-			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
 			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 			{
 				btCompoundShape* compound = (btCompoundShape*)(colShape);

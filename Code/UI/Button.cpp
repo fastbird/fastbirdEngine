@@ -1105,6 +1105,12 @@ void Button::Blink(bool blink)
 		mProgressBar->Blink(blink);
 }
 
+void Button::Blink(bool blink, float time) // progress bar
+{
+	if (mProgressBar)
+		mProgressBar->Blink(blink, time);
+}
+
 void Button::EndProgress()
 {
 	if (!mInProgress)

@@ -92,6 +92,7 @@ namespace fastbird
 			LISTBOX_COL_HEADERS,
 			LISTBOX_COL_HEADERS_TEXT_SIZE,
 			LISTBOX_HIGHLIGHT_COLOR,
+			LISTBOX_MULTI_SELECTION,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
@@ -227,6 +228,7 @@ namespace fastbird
 			"LISTBOX_COL_HEADERS",
 			"LISTBOX_COL_HEADERS_TEXT_SIZE",
 			"LISTBOX_HIGHLIGHT_COLOR",
+			"LISTBOX_MULTI_SELECTION",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
@@ -446,6 +448,8 @@ namespace fastbird
 			case SYNC_WINDOW_POS:
 				return false;
 			case KEEP_UI_RATIO:
+				return false;
+			case LISTBOX_MULTI_SELECTION:
 				return false;
 
 			}

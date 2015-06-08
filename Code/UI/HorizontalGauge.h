@@ -21,6 +21,7 @@ namespace fastbird
 		virtual void SetMaximum(float m);
 		virtual float GetMaximum() const { return mMaximum; }
 		virtual void Blink(bool blink);
+		virtual void Blink(bool blink, float time);
 		virtual void SetGaugeColor(const Color& color);
 		virtual const Color& GetGaugeColor() const;
 		virtual void SetGaugeColorEmpty(const Color& color);
@@ -40,6 +41,7 @@ namespace fastbird
 		Color mBlinkColor;
 		bool mBlink;
 		float mBlinkSpeed;
+		float mBlinkTime;
 
 
 	};

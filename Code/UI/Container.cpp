@@ -494,6 +494,9 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (!mScrollerV && !mUseScrollerV)
+		return;
+
 	// find last wn
 	float contentHeight = GetContentHeight();
 	const auto& finalSize = GetFinalSize();
@@ -522,6 +525,7 @@ void Container::RefreshVScrollbar()
 
 		if (mScrollerV)
 		{
+			mScrollerV->SetVisible(true);
 			mScrollerV->ChangeNSizeY(visableRatio);
 			//mScrollerV->OnPosChanged(false);			
 			mScrollerV->SetMaxOffset(Vec2(0, length));
@@ -551,6 +555,9 @@ void Container::RefreshVScrollbar()
 float Container::GetContentHeight() const
 {
 	float contentWNEnd = 0;
+	if (mChildren.empty())
+		return GetFinalSize().y / (float)GetRenderTargetSize().y;
+
 	for (auto i : mChildren)
 	{
 		WinBase* pWinBase = (WinBase*)i;
@@ -630,7 +637,7 @@ void Container::Scrolled()
 		const Vec2& offset = mScrollerV->GetOffset();
 		float curPos = -offset.y / maxOffset;
 		float nPosY = movable * curPos;
-		mScrollerV->SetNPosY(nPosY);
+		mScrollerV->ChangeNPosY(nPosY);
 		{
 			for (auto child : mChildren)
 			{
@@ -1066,7 +1073,7 @@ void Container::TabPressed()
 
 void Container::TransferChildrenTo(Container* destContainer){
 	for (auto child : mChildren){
-		if (child != destContainer)
+		if (child != destContainer && child != mWndContentUI)
 			destContainer->AddChild(child);
 	}
 	mChildren.clear();

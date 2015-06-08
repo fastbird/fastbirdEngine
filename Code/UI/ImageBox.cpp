@@ -279,7 +279,7 @@ void ImageBox::OnAnySizeChanged(){
 		if (mAtlasRegion)
 		{
 			const auto& imagesize = mAtlasRegion->GetSize();
-			if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
+			/*if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
 				Vec2 start((float)mAtlasRegion->mStart.x, (float)mAtlasRegion->mStart.y);
 				auto xsize = imagesize.x > mSize.x * 2 ? mSize.x : imagesize.x;
 				auto ysize = imagesize.y > mSize.y * 2 ? mSize.y : imagesize.y;
@@ -292,11 +292,11 @@ void ImageBox::OnAnySizeChanged(){
 				texcoords[3] = Vec2(uvEnd.x, mAtlasRegion->mUVStart.y);
 				mUIObject->SetTexCoord(texcoords, 4);
 			}
-			else{
+			else{*/
 				Vec2 texcoords[4];
 				mAtlasRegion->GetQuadUV(texcoords);
 				mUIObject->SetTexCoord(texcoords, 4);
-			}
+			//}
 
 		}
 	}

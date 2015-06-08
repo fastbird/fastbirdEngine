@@ -26,6 +26,7 @@ namespace fastbird
 		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) = 0;
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 		virtual void DeleteLuaUI(const char* uiName) = 0;
+		virtual bool IsLoadedUI(const char* uiName) = 0;
 
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;

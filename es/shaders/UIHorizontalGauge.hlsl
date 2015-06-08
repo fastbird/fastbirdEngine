@@ -89,12 +89,7 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		return color;
 	}
 	
-	//float maximum = gMaterialParam[4].y * 2.0 - 1.0;
-	//if (abs(snc.x-maximum)<0.001)
-	//{
-//		return float4(1, 1, 0, 1);
-	//}	
-	float4 color = gDiffuseColor;
+	float4 color = lerp(gDiffuseColor, gMaterialParam[2], gMaterialParam[3].x);
 	color.a *= a;
     return color;
 }

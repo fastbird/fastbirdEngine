@@ -6,6 +6,7 @@ namespace fastbird{
 		: mDataType(type)
 		, mChecked(checked)
 		, mKey(-1)
+		, mNumber(0)
 	{
 		if (text)
 			mText = text;
@@ -40,5 +41,10 @@ namespace fastbird{
 	{
 		mTexture = texture;
 		mDataType = ListItemDataType::TexturePath;
+	}
+
+	void ListBoxData::SetNumber(int number){
+		mNumber = number;
+		mDataType = ListItemDataType::NumericUpDown;
 	}
 }

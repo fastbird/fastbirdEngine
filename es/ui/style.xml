@@ -1,7 +1,7 @@
 <UIStyles>
 	<Style name="blue">
 		<Border lt="b_lt2" t="b_t2" rt="b_rt2" l="b_l2" r="b_r2" lb="b_lb2" b="b_b2" rb="b_rb2" alphaInfo="BlueAlphaInfo"/>
-		<WindowFrame lt="Pane_LT" t="Pane_T" mt="Pane_MT" rt="Pane_RT" l="Pane_L" r="Pane_R" lb="Pane_LB" b="Pane_B" rb="Pane_RB"/>
+		<WindowFrame lt="BluePane_LT" t="BluePane_T" mt="" rt="BluePane_RT" l="BluePane_L" r="BluePane_R" lb="BluePane_LB" b="BluePane_B" rb="BluePane_RB"/>
 	</Style>
 	<Style name="gray">
 		<Border lt="Box_LT" t="Box_T" rt="Box_RT" l="Box_L" r="Box_R" lb="Box_LB" b="Box_B" rb="Box_RB"/>

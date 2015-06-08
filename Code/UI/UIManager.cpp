@@ -66,6 +66,7 @@ UIManager::UIManager(lua_State* L)
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
 	RegisterLuaFuncs(L);	
+	RegisterLuaEnums(L);
 	mUICommands = FB_NEW(UICommands);
 	PrepareTooltipUI();
 	WinBase::InitMouseCursor();
@@ -523,7 +524,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 
 	std::string scriptPath;
 	const char* sz = pRoot->Attribute("script");
-	if (sz)
+	if (sz && strlen(sz)>0)
 	{
 		Error(DEFAULT_DEBUG_ARG, "cannot clone scriptable ui");
 		return;
@@ -645,6 +646,9 @@ void UIManager::DeleteLuaUI(const char* uiName)
 	{
 		for (auto& win : it->second)
 		{
+			auto eventHandler = dynamic_cast<EventHandler*>(win);
+			if (eventHandler)
+				eventHandler->OnEvent(UIEvents::EVENT_ON_UNLOADED);
 			DirtyRenderList(win->GetHwndId());
 			DeleteWindow(win);			
 		}
@@ -810,6 +814,8 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
+	if (mKeyboardFocus == ui)
+		return;
 	for (auto& reservedUI : mSetFocusReserved)
 	{
 		if (ui == reservedUI)
@@ -1059,7 +1065,9 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 
 	mMouseIn = false;
 	if (mKeyboardFocus && mKeyboardFocus->GetHwndId() != hwndId){
+		pMouse->InvalidTemporary(true);
 		mKeyboardFocus->OnInputFromHandler(pMouse, keyboard);
+		pMouse->InvalidTemporary(false);
 	}
 	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 	int i = 0;

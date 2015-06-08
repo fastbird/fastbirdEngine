@@ -24,8 +24,9 @@ namespace fastbird
 		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
-		virtual bool IsValid() const { return mValid; }
+		virtual bool IsValid() const { return mValid && !mInvalidatedTemporary; }
 		virtual void Invalidate(bool buttonClicked = false);
+		virtual void InvalidTemporary(bool invalidate);
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
 		virtual Vec2I GetDeltaXY() const;
@@ -128,6 +129,7 @@ namespace fastbird
 		bool mDragEnd;
 
 		void* mLockMouseKey;
+		bool mInvalidatedTemporary;
 	};
 }
 

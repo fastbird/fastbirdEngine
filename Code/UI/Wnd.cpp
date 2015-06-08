@@ -32,7 +32,8 @@ Wnd::~Wnd()
 	}
 	for (auto var : mFrames)
 	{
-		gFBEnv->pUIManager->DeleteComponent(var);
+		if (var)
+			gFBEnv->pUIManager->DeleteComponent(var);
 	}
 	mFrames.clear();
 	gFBEnv->pUIManager->DeleteComponent(mTitlebar);
@@ -50,7 +51,8 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 
 	for (auto var : mFrames)
 	{
-		var->GatherVisit(v);
+		if (var)
+			var->GatherVisit(v);
 	}
 	if (mTitlebar)
 		mTitlebar->GatherVisit(v);
@@ -96,60 +98,66 @@ void Wnd::RefreshFrame()
 	}
 	if (mUseFrame)
 	{
+		const char* uixmlPath = "es/textures/ui.xml";
 		if (mFrames.empty())
-		{
+		{			
 			ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			T->SetHwndId(GetHwndId());
 			T->SetRender3D(mRender3D, GetRenderTargetSize());
-			T->ChangeSizeY(16);
-			T->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_T");
 			T->SetManualParent(this);
 			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");
 			T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			T->SetVisible(true);
+			const auto& sizeT = T->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("t"));
+			T->ChangeSize(sizeT);
 			mFrames.push_back(T);			
 
 			ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			L->SetHwndId(GetHwndId());
 			L->SetRender3D(mRender3D, GetRenderTargetSize());
-			L->ChangeSizeX(16);
-			L->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_L");
 			L->SetManualParent(this);
 			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");
 			L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			L->SetVisible(true);
+			const auto& sizeL = L->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("l"));
+			L->ChangeSize(sizeL);
 			mFrames.push_back(L);			
 
 			ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			R->SetHwndId(GetHwndId());
 			R->SetRender3D(mRender3D, GetRenderTargetSize());
-			R->ChangeSizeX(16);
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-			R->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_R");
 			R->SetManualParent(this);
 			R->SetProperty(UIProperty::SPECIAL_ORDER, "1");
 			R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			R->SetVisible(true);
+			const auto& sizeR = R->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("r"));
+			R->ChangeSize(sizeR);
 			mFrames.push_back(R);
 
 			ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			B->SetHwndId(GetHwndId());
 			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-			B->ChangeSizeY(20);
-			B->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_B");
 			B->SetManualParent(this);
 			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");
 			B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
 			B->SetVisible(true);
+			const auto& sizeB = B->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("b"));
+			B->ChangeSize(sizeB);
 			mFrames.push_back(B);
 
 			ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			LT->SetHwndId(GetHwndId());
 			LT->SetRender3D(mRender3D, GetRenderTargetSize());
-			LT->ChangeSize(Vec2I(40, 44));
-			LT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LT");
 			LT->SetManualParent(this);
+			const auto& sizeLT = LT->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("lt"));
+			LT->ChangeSize(sizeLT);			
 			LT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
 			LT->SetVisible(true);
 			mFrames.push_back(LT);
@@ -157,43 +165,53 @@ void Wnd::RefreshFrame()
 			ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			RT->SetHwndId(GetHwndId());
 			RT->SetRender3D(mRender3D, GetRenderTargetSize());
-			RT->ChangeSize(Vec2I(40, 44));
 			RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-			RT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RT");
 			RT->SetManualParent(this);
+			const auto& sizeRT = RT->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("rt"));
+			RT->ChangeSize(sizeRT);
 			RT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
 			RT->SetVisible(true);
 			mFrames.push_back(RT);
 
-			ImageBox* MT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-			MT->SetHwndId(GetHwndId());
-			MT->SetRender3D(mRender3D, GetRenderTargetSize());
-			MT->ChangeSize(Vec2I(302, 44));
-			MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
-			MT->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_MT");
-			MT->SetManualParent(this);
-			MT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
-			MT->SetVisible(true);
-			mFrames.push_back(MT);
+			const char* mtRegion = gFBUIManager->GetWndBorderRegion("mt");
+			if (mtRegion&&strlen(mtRegion)>0){
+				ImageBox* MT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+				MT->SetHwndId(GetHwndId());
+				MT->SetRender3D(mRender3D, GetRenderTargetSize());
+				MT->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
+				MT->SetManualParent(this);
+				const auto& sizeMT = MT->SetTextureAtlasRegion(uixmlPath, mtRegion);
+				MT->ChangeSize(sizeMT);
+				MT->SetProperty(UIProperty::SPECIAL_ORDER, "2");
+				MT->SetVisible(true);
+				mFrames.push_back(MT);
+			}
+			else{
+				mFrames.push_back(0);
+			}
+			
 
 			ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			LB->SetHwndId(GetHwndId());
 			LB->SetRender3D(mRender3D, GetRenderTargetSize());
-			LB->ChangeSize(Vec2I(40, 44));
 			LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-			LB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_LB");
 			LB->SetManualParent(this);
+			const auto& sizeLB = LB->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("lb"));
+			LB->ChangeSize(sizeLB);
 			LB->SetProperty(UIProperty::SPECIAL_ORDER, "2");
 			LB->SetVisible(true);
 			mFrames.push_back(LB);
 
 			ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
 			RB->SetHwndId(GetHwndId());
-			RB->SetRender3D(mRender3D, GetRenderTargetSize());
-			RB->ChangeSize(Vec2I(40, 44));
+			RB->SetRender3D(mRender3D, GetRenderTargetSize());			
 			RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
-			RB->SetTextureAtlasRegion("es/textures/ui.xml", "Pane_RB");
 			RB->SetManualParent(this);
+			const auto& sizeRB = RB->SetTextureAtlasRegion(uixmlPath,
+				gFBUIManager->GetWndBorderRegion("rb"));
+			RB->ChangeSize(sizeRB);
 			RB->SetProperty(UIProperty::SPECIAL_ORDER, "2");
 			RB->SetVisible(true);
 			mFrames.push_back(RB);
@@ -205,13 +223,26 @@ void Wnd::RefreshFrame()
 			mWndContentUI->SetGhost(true);
 			mWndContentUI->SetRuntimeChild(true);
 			mWndContentUI->SetRender3D(mRender3D, GetRenderTargetSize());
-			Vec2I sizeMod = {
-				mUseFrame ? -26 : 0,
-				mUseFrame ? -64 : -44,
-			};
-			mWndContentUI->ModifySize(sizeMod);
-			mWndContentUI->ChangePos(Vec2I(20, 44));
-			mWndContentUI->ModifySize(Vec2I(-20, 0));
+			auto atlas = gFBEnv->pRenderer->GetTextureAtlas(uixmlPath);
+			if (atlas){
+				Vec2I leftTopSize(0, 0);
+				auto ltRegion = atlas->GetRegion(gFBUIManager->GetWndBorderRegion("lt"));
+				if (ltRegion){
+					leftTopSize = ltRegion->GetSize();
+				}
+				Vec2I leftBottomSize(0, 0);
+				auto lbRegion = atlas->GetRegion(gFBUIManager->GetWndBorderRegion("lb"));
+				if (lbRegion){
+					leftBottomSize = lbRegion->GetSize();
+				}
+				const int titleBar = 44;
+				Vec2I sizeMod = {
+					mUseFrame ? -leftTopSize.x*2 : 0, // x
+					mUseFrame ? -(titleBar + leftBottomSize.y) : -titleBar, // y
+				};
+				mWndContentUI->ModifySize(sizeMod);
+				mWndContentUI->ChangePos(Vec2I(leftTopSize.x, titleBar));
+			}
 
 			mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
 			mWndContentUI->SetProperty(UIProperty::USE_NSIZEX, "true");
@@ -225,6 +256,7 @@ void Wnd::RefreshFrame()
 			TransferChildrenTo(mWndContentUI);
 			mWndContentUI->SetVisible(mVisibility.IsVisible());
 		}
+		
 		enum FRAME_ORDER
 		{
 			FRAME_T,
@@ -241,21 +273,22 @@ void Wnd::RefreshFrame()
 		};
 		const auto& finalSize = GetFinalSize();
 		const auto& finalPos = GetFinalPos();
-		mFrames[FRAME_T]->ChangeSizeX(finalSize.x);
-		mFrames[FRAME_T]->ChangePos(finalPos);
+		auto ltSize = mFrames[FRAME_LT]->GetSize();
+		mFrames[FRAME_T]->ChangeSizeX(finalSize.x - ltSize.x*2);
+		mFrames[FRAME_T]->ChangePos(Vec2I(finalPos.x + ltSize.x, finalPos.y));
 
-		mFrames[FRAME_L]->ChangeSizeY(finalSize.y);
-		mFrames[FRAME_L]->ChangePos(finalPos);
+		mFrames[FRAME_L]->ChangeSizeY(finalSize.y - ltSize.y*2);
+		mFrames[FRAME_L]->ChangePos(Vec2I(finalPos.x, finalPos.y + ltSize.y));
 
-		mFrames[FRAME_R]->ChangeSizeY(finalSize.y);
+		mFrames[FRAME_R]->ChangeSizeY(finalSize.y - ltSize.y*2);
 		auto wpos = finalPos;
 		wpos.x += finalSize.x;
-		mFrames[FRAME_R]->ChangePos(wpos);
+		mFrames[FRAME_R]->ChangePos(Vec2I(wpos.x, wpos.y + ltSize.y));
 
-		mFrames[FRAME_B]->ChangeSizeX(finalSize.x);
+		mFrames[FRAME_B]->ChangeSizeX(finalSize.x - ltSize.x*2);
 		wpos = finalPos;
 		wpos.y += finalSize.y;
-		mFrames[FRAME_B]->ChangePos(wpos);
+		mFrames[FRAME_B]->ChangePos(Vec2I(wpos.x + ltSize.x, wpos.y));
 
 		mFrames[FRAME_LT]->ChangePos(finalPos);
 
@@ -263,9 +296,11 @@ void Wnd::RefreshFrame()
 		wpos.x += finalSize.x;
 		mFrames[FRAME_RT]->ChangePos(wpos);
 
-		wpos = finalPos;
-		wpos.x += Round(finalSize.x*.5f);
-		mFrames[FRAME_MT]->ChangePos(wpos);
+		if (mFrames[FRAME_MT]){
+			wpos = finalPos;
+			wpos.x += Round(finalSize.x*.5f);
+			mFrames[FRAME_MT]->ChangePos(wpos);
+		}
 
 		wpos = finalPos;
 		wpos.y += finalSize.y;
@@ -276,18 +311,21 @@ void Wnd::RefreshFrame()
 	}
 	else
 	{
+		// !mUseFrame
 		if (!mFrames.empty())
 		{
 			for (auto var : mFrames)
 			{
-				gFBEnv->pUIManager->DeleteComponent(var);
+				if (var)
+					gFBEnv->pUIManager->DeleteComponent(var);
 			}
 			mFrames.clear();
 			gFBUIManager->DirtyRenderList(GetHwndId());
+			if (mWndContentUI){
+				mWndContentUI->TransferChildrenTo(this);
+				RemoveChild(mWndContentUI);
+			}
 		}
-
-		if (mWndContentUI)
-			mWndContentUI->TransferChildrenTo(this);
 	}
 }
 
@@ -548,7 +586,8 @@ void Wnd::RefreshScissorRects()
 	{
 		for (auto var : mFrames)
 		{
-			var->RefreshScissorRects();
+			if (var)
+				var->RefreshScissorRects();
 		}
 	}
 }
@@ -563,7 +602,8 @@ void Wnd::SetAnimScale(const Vec2& scale)
 	{
 		for (auto var : mFrames)
 		{
-			var->SetAnimScale(scale);
+			if (var)
+				var->SetAnimScale(scale);
 		}
 	}
 
@@ -575,7 +615,8 @@ void Wnd::StartHighlight(float speed)
 {
 	for (auto var : mFrames)
 	{
-		var->StartHighlight(speed);
+		if (var)
+			var->StartHighlight(speed);
 	}
 	__super::StartHighlight(speed);
 }
@@ -583,7 +624,8 @@ void Wnd::StopHighlight()
 {
 	for (auto var : mFrames)
 	{
-		var->StopHighlight();
+		if (var)
+			var->StopHighlight();
 	}
 
 	__super::StopHighlight();

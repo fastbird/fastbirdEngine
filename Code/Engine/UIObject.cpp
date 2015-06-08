@@ -55,6 +55,7 @@ UIObject::UIObject()
 , mDoNotDraw(false) // debugging purpose
 , mScale(1, 1)
 , mPivot(0, 0)
+, mTextOffsetForCursor(0, 0)
 {
 	mObjectConstants.gWorld.MakeIdentity();
 	mObjectConstants.gWorldViewProj.MakeIdentity();
@@ -148,6 +149,10 @@ void UIObject::SetTextOffset(const Vec2I& offset){
 	mTextOffset = offset;
 }
 
+void UIObject::SetTextOffsetForCursorMovement(const Vec2I& offset){
+	mTextOffsetForCursor = offset;
+}
+
 Vec2I UIObject::GetTextStartWPos() const{
 	return Vec2I(mRegion.left, mRegion.top) + mTextOffset;
 }
@@ -182,6 +187,9 @@ void UIObject::PreRender()
 	if (mLastPreRendered == gFBEnv->mFrameCounter)
 		return;
 	mLastPreRendered = gFBEnv->mFrameCounter;
+
+	if (mDirty)
+		UpdateRegion();
 
 	mOut = mScissor && 
 		!IsOverlapped(mRegion, mScissorRect);
@@ -248,8 +256,8 @@ void UIObject::Render()
 			pFont->PrepareRenderResources();
 			pFont->SetRenderStates(false, mScissor);
 			pFont->SetHeight(mTextSize * mScale.x);
-			float x = float(mRegion.left + mTextOffset.x);
-			float y = float(mRegion.top + mTextOffset.y);
+			float x = float(mRegion.left + mTextOffset.x + mTextOffsetForCursor.x);
+			float y = float(mRegion.top + mTextOffset.y + mTextOffsetForCursor.y);
 			Color textColor = mTextColor;
 			textColor.a() *= mAlpha;
 			pFont->Write(x, y, 0.0f, textColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);

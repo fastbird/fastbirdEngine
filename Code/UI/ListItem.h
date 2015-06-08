@@ -23,6 +23,9 @@ namespace fastbird
 
 		void SetColIndex(size_t index) { mColIndex = index; }
 		size_t GetColIndex() const { return mColIndex; }
+
+		Vec2I GetRowCol() const { return Vec2I(mRowIndex, mColIndex); }
+
 		CheckBox* ListItem::GetCheckBox() const;
 
 		void SetBackColor(const char* backColor);
@@ -32,6 +35,9 @@ namespace fastbird
 
 		virtual void OnFocusLost();
 		virtual void OnFocusGain();
+
+		void SetMerged(bool m){ mMerged = m; }
+		bool GetMerged() const { return mMerged; }
 
 		//virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 
@@ -44,5 +50,6 @@ namespace fastbird
 		// backup values
 		std::string mBackColor;
 		bool mNoBackground;
+		bool mMerged;
 	};
 }

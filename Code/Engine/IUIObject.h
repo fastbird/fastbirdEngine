@@ -28,6 +28,7 @@ namespace fastbird
 		virtual void SetText(const wchar_t* s) = 0;
 		virtual void SetTextOffset(const Vec2I& offset) = 0;
 		virtual const Vec2I& GetTextOffset() const = 0;
+		virtual void SetTextOffsetForCursorMovement(const Vec2I& offset) = 0;
 		virtual Vec2I GetTextStartWPos() const = 0;
 		virtual void SetTextColor(const Color& c) = 0;
 		virtual void SetTextSize(float size) = 0;

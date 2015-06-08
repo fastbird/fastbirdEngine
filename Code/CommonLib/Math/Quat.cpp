@@ -230,4 +230,8 @@ namespace fastbird
 				fastbird::IsNaN(y) || fastbird::IsNaN(z);
 	}
 
+	Quat Quat::operator-(void) const{
+		return Quat(-w, -x, -y, -z);
+	}
+
 }
