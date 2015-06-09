@@ -4,6 +4,7 @@
 #include <UI/ComponentType.h>
 #include <UI/Align.h>
 #include <UI/IWinBase.h>
+#include <UI/Styles.h>
 
 namespace fastbird
 {
@@ -97,8 +98,13 @@ namespace fastbird
 		virtual void SuppressPropertyWarning(bool suppress) = 0;
 
 		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src) = 0;
+
+		// styles
 		virtual const char* GetBorderRegion(const char* key) const = 0;
 		virtual const char* GetWndBorderRegion(const char* key) const = 0;
+		virtual const char* GetStyleString(Styles::Enum s) const = 0;
+
+		// alpha
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater) = 0;
 
 	protected:

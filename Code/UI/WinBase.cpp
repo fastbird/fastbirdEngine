@@ -3254,6 +3254,7 @@ void WinBase::GatherVisit(std::vector<IUIObject*>& v)
 {
 	if (!mVisibility.IsVisible())
 		return;
+
 	if (!mBorders.empty())
 	{
 		for (auto var : mBorders)
@@ -3469,8 +3470,9 @@ void WinBase::TriggerRedraw()
 
 IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
-	if (mGhost)
+	if (param.mNoRuntimeComp && mRunTimeChild)
 		return 0;
+
 	if (IsIn(pt, param.mIgnoreScissor))
 		return (IWinBase*)this;
 	return 0;

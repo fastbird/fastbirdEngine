@@ -23,7 +23,6 @@ public:
 	virtual void RefreshScissorRects();
 	
 	// own
-	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 	void MouseConsumer(void* arg){}
 
 	virtual bool IsAlwaysOnTop() const{ return mAlwaysOnTop; }
@@ -40,11 +39,13 @@ protected:
 	virtual void OnPosChanged(bool anim);
 	void RefreshFrame();
 	void OnTitlebarDrag(void *arg);
+	void OnCloseBtnClicked(void* arg);
 
 	ImageBox* CreateBackgroundImage();
 
 private:
 	Button* mTitlebar;
+	Button* mCloseBtn;
 	std::string mTitlebarString;
 	std::string mStrBackground;
 	std::string mStrKeepRatio;

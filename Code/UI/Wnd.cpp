@@ -16,6 +16,7 @@ Wnd::Wnd()
 , mAlwaysOnTop(false)
 , mCloseByEsc(false)
 , mSyncWindowPos(false)
+, mCloseBtn(0)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -36,8 +37,6 @@ Wnd::~Wnd()
 			gFBEnv->pUIManager->DeleteComponent(var);
 	}
 	mFrames.clear();
-	gFBEnv->pUIManager->DeleteComponent(mTitlebar);
-	mTitlebar = 0;
 }
 
 void Wnd::GatherVisit(std::vector<IUIObject*>& v)
@@ -53,34 +52,13 @@ void Wnd::GatherVisit(std::vector<IUIObject*>& v)
 	{
 		if (var)
 			var->GatherVisit(v);
-	}
-	if (mTitlebar)
-		mTitlebar->GatherVisit(v);
-	
-}
-
-bool Wnd::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
-{
-	if (!mVisibility.IsVisible())
-		return false;
-
-	if (!mouse->IsValid() && !keyboard->IsValid())
-		return false;
-	bool mouseIn = false;
-	if (mTitlebar)
-		mouseIn = mTitlebar->OnInputFromHandler(mouse, keyboard);
-
-	return __super::OnInputFromHandler(mouse, keyboard) || mouseIn;
+	}	
 }
 
 void Wnd::OnSizeChanged()
 {
 	__super::OnSizeChanged();
 	RefreshFrame();
-
-	if (mTitlebar){
-		mTitlebar->ChangeSizeX(GetFinalSize().x);
-	}
 }
 
 void Wnd::OnPosChanged(bool anim)
@@ -93,8 +71,7 @@ void Wnd::RefreshFrame()
 {
 	if (mTitlebar)
 	{
-		mTitlebar->ChangeSizeX(GetFinalSize().x);
-		mTitlebar->ChangePos(GetFinalPos());
+		mTitlebar->ChangeSizeX(std::max(40, GetFinalSize().x - 80));
 	}
 	if (mUseFrame)
 	{
@@ -342,32 +319,76 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TITLEBAR:
 	{
 		mTitlebarString = val;
-								 if (!mTitlebar)
-								 {
-									 mTitlebar = (Button*)gFBEnv->pUIManager->CreateComponent(ComponentType::Button);
-									 mTitlebar->SetHwndId(GetHwndId());
-									 mTitlebar->SetRender3D(mRender3D, GetRenderTargetSize());
-									 mTitlebar->SetVisible(mVisibility.IsVisible());
-									 mTitlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
-										 std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
-									 mTitlebar->SetManualParent(this);
-									 mTitlebar->ChangeSizeX(GetFinalSize().x);
-									 mTitlebar->ChangeSizeY(44);
-									 mTitlebar->ChangePos(GetFinalPos());
-									 mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
-									 mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
-									 mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
-									 mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");									 
-									 mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
-									 mTitlebar->SetName("_@TitleBar");
-								 }
-								 auto text = TranslateText(val);
-								 if (text.empty())
-									mTitlebar->SetText(AnsiToWide(val));
-								 else
-									 mTitlebar->SetText(AnsiToWide(text.c_str()));
+		if (!mTitlebarString.empty())
+		{
+			if (!mTitlebar)
+			{
+				BackupContentWnd backup(&mWndContentUI);
+				mTitlebar = (Button*)AddChild(0.5f, 0.f, 1.f, 0.1f, ComponentType::Button);				
+				mTitlebar->SetVisible(mVisibility.IsVisible());				
+				mTitlebar->SetSizeX(std::max(40, GetFinalSize().x - 80));
+				mTitlebar->SetRuntimeChild(true);
+				mTitlebar->ChangeSizeY(44);
+				mTitlebar->SetUseAbsPos(false);
+				mTitlebar->SetProperty(UIProperty::ALIGNH, "center");
+				mTitlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
+				mTitlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
+				mTitlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
+				mTitlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
+				mTitlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
+				mTitlebar->SetName("_@TitleBar");
+				mTitlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
+					std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
+			}
+			auto text = TranslateText(val);
+			if (text.empty())
+				mTitlebar->SetText(AnsiToWide(val));
+			else
+				mTitlebar->SetText(AnsiToWide(text.c_str()));
+		}
+		else{
+			if (mTitlebar){
+				BackupContentWnd backup(&mWndContentUI);
+				RemoveChild(mTitlebar);
+			}
+		}
 								 
-								 return true;
+		return true;
+	}
+
+	case UIProperty::CLOSE_BTN:
+	{
+		bool closeBtn = StringConverter::parseBool(val);
+		if (closeBtn){
+			if (!mCloseBtn){
+				BackupContentWnd backup(&mWndContentUI);
+
+				mCloseBtn = (Button*)AddChild(Vec2I(0, 0), Vec2I(26, 24), ComponentType::Button);
+				DoNotTransfer(mCloseBtn);
+				mCloseBtn->SetVisible(mVisibility.IsVisible());				
+				mCloseBtn->SetInitialOffset(Vec2I(-10, +10));
+				mCloseBtn->ChangeNPos(Vec2(1, 0));
+				mCloseBtn->SetUseAbsPos(false);
+				mCloseBtn->SetRuntimeChild(true);
+				mCloseBtn->SetProperty(UIProperty::ALIGNH, "right");				
+				mCloseBtn->SetProperty(UIProperty::REGION, "x");				
+				mCloseBtn->SetProperty(UIProperty::BACK_COLOR, "0.2, 0.2, 0.6, 0.1");
+				mCloseBtn->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.6, 0.4");
+				mCloseBtn->SetProperty(UIProperty::SPECIAL_ORDER, "4");
+				mCloseBtn->SetName("_@CloseBtn");
+				mCloseBtn->SetProperty(UIProperty::USE_BORDER, "true");
+				mCloseBtn->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+					std::bind(&Wnd::OnCloseBtnClicked, this, std::placeholders::_1));
+			}
+		}
+		else{
+			if (mCloseBtn){
+				BackupContentWnd backup(&mWndContentUI);
+				RemoveChild(mCloseBtn);
+				mCloseBtn = 0;
+			}
+		}
+		return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
 	{
@@ -460,6 +481,18 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 				return false;
 		}
 		strcpy_s(val, bufsize, mTitlebarString.c_str());
+		return true;
+	}
+	case UIProperty::CLOSE_BTN:
+	{
+		bool closeBtn = mCloseBtn != 0;
+		if (notDefaultOnly){			
+			if (closeBtn == UIProperty::GetDefaultValueBool(prop)){
+				return false;
+			}
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(closeBtn).c_str());
 		return true;
 	}
 	case UIProperty::BACKGROUND_IMAGE_NOATLAS:
@@ -559,6 +592,10 @@ void Wnd::OnTitlebarDrag(void *arg)
 		Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
 		SetNPos(GetNPos() + nposOffset);*/
 	}
+}
+
+void Wnd::OnCloseBtnClicked(void* arg){
+	SetVisible(false);
 }
 
 bool Wnd::SetVisible(bool show)

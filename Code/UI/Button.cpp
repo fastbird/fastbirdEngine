@@ -39,7 +39,7 @@ Button::Button()
 
 	// default colors
 	mBackColor = Color(0.0f, 0.0f, 0.0f, 0.7f);
-	mBackColorOver = Color(0.09f, 0.02f, 0.03f, 0.8f);
+	mBackColorOver = Color(0.1f, 0.1f, 0.43f, 0.8f);
 	mBackColorDown = Color(0.3f, 0.3f, 0.f, 0.5f);
 	mEdgeColor = Color(1.f, 1.f, 1.f, 0.7f);
 	mEdgeColorOver = Color(0.9f, 0.85f, 0.0f, 0.7f);
@@ -53,6 +53,8 @@ Button::Button()
 		std::bind(&Button::OnMouseDown, this, std::placeholders::_1));
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&Button::OnMouseHover, this, std::placeholders::_1));
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_IN,
+		std::bind(&Button::OnMouseIn, this, std::placeholders::_1));
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
 		std::bind(&Button::OnMouseOut, this, std::placeholders::_1));
 }
@@ -73,6 +75,8 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 	if (!mVisibility.IsVisible())
 		return;	
 	assert(mUIObject);
+
+//	Profiler p("Button::GatherVisit");
 	
 	if (mMouseIn && mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->GatherVisit(v);
@@ -158,8 +162,8 @@ void Button::OnMouseHover(void* arg)
 	mUIObject->GetMaterial()->SetEmissiveColor(0.8f, 0.8f, 0.1f, 1);
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColorOver.GetVec4());
-	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+	//if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
+		//gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 
 	if (mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -177,6 +181,11 @@ void Button::OnMouseHover(void* arg)
 
 	TriggerRedraw();
 
+}
+
+void Button::OnMouseIn(void* arg){
+	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void Button::OnMouseOut(void* arg)
@@ -245,6 +254,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 								   UpdateImageSize();
 							   }
 							   
+							   SetDefaultImageAtlasPathIfNotSet();
 							   mImages[ButtonImages::Image]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 							   mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
 							   //mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
@@ -268,6 +278,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 								   mImages[ButtonImages::Image] = CreateImageBox();
 							   }
 							   
+							   SetDefaultImageAtlasPathIfNotSet();
 							   mImages[ButtonImages::Image]->SetProperty(UIProperty::TEXTUREATLAS, mImageAtlas.c_str());
 							   mImages[ButtonImages::Image]->SetProperty(prop, val);
 							   mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));

@@ -198,7 +198,7 @@ void UIManager::Update(float elapsedTime)
 
 	if (!mTooltipText.empty()){
 		mDelayForTooltip -= elapsedTime;
-		if (mDelayForTooltip <= 0){
+		if (mDelayForTooltip <= 0 && !mTooltipUI->GetVisible()){
 			ShowTooltip();
 		}
 	}
@@ -232,50 +232,53 @@ void UIManager::GatherRenderList()
 {
 	for (auto& it : mNeedToRegisterUIObject){
 		if (it.second){
+			
 			HWND_ID hwndId = it.first;
-			it.second = false;
-			auto& windows = mWindows[hwndId];
 			std::vector<IUIObject*> uiObjects;
-			uiObjects.reserve(200);
 			std::map<std::string, std::vector<IUIObject*>> render3DList;
-			bool hideAll = !mHideUIExcepts.empty();
-			WINDOWS::iterator it = windows.begin(), itEnd = windows.end();
-			size_t start = 0;
-			for (; it != itEnd; it++)
+			it.second = false;
 			{
-				if (hideAll)
+				Profiler p("GatherRenderList");
+				auto& windows = mWindows[hwndId];
+				uiObjects.reserve(200);				
+				bool hideAll = !mHideUIExcepts.empty();
+				WINDOWS::iterator it = windows.begin(), itEnd = windows.end();
+				size_t start = 0;
+				for (; it != itEnd; it++)
 				{
-					if (std::find(mHideUIExcepts.begin(), mHideUIExcepts.end(), (*it)->GetName()) == mHideUIExcepts.end())
-						continue;
-				}
-				if ((*it)->GetVisible())
-				{
-					if ((*it)->GetRender3D())
+					if (hideAll)
 					{
-						assert(strlen((*it)->GetName()) != 0);
-						auto& list = render3DList[(*it)->GetName()];
-						list.reserve(100);
-						(*it)->GatherVisit(list);
-						std::stable_sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
-							return a->GetSpecialOrder() < b->GetSpecialOrder();
-						});
+						if (std::find(mHideUIExcepts.begin(), mHideUIExcepts.end(), (*it)->GetName()) == mHideUIExcepts.end())
+							continue;
 					}
-					else
+					if ((*it)->GetVisible())
 					{
-						(*it)->GatherVisit(uiObjects);
+						if ((*it)->GetRender3D())
+						{
+							assert(strlen((*it)->GetName()) != 0);
+							auto& list = render3DList[(*it)->GetName()];
+							list.reserve(100);
+							(*it)->GatherVisit(list);
+							std::stable_sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
+								return a->GetSpecialOrder() < b->GetSpecialOrder();
+							});
+						}
+						else
+						{
+							(*it)->GatherVisit(uiObjects);
 
-						std::stable_sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
-							return a->GetSpecialOrder() < b->GetSpecialOrder();
-						});
-						start = uiObjects.size();
+							std::stable_sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
+								return a->GetSpecialOrder() < b->GetSpecialOrder();
+							});
+							start = uiObjects.size();
+						}
 					}
 				}
+
+
+				if (mPopup&& mPopup->GetVisible())
+					mPopup->GatherVisit(uiObjects);
 			}
-
-
-			if (mPopup&& mPopup->GetVisible())
-				mPopup->GatherVisit(uiObjects);
-
 			// rendering order : reverse.
 			gFBEnv->pRenderer->RegisterUIs(hwndId, uiObjects);
 			for (auto it : render3DList)
@@ -1201,7 +1204,7 @@ void UIManager::ShowTooltip()
 		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
 	pFont->SetBackToOrigHeight();
 
-	const int maxWidth = 350;
+	const int maxWidth = 450;
 	width = std::min(maxWidth, width) + 4;
 	mTooltipUI->ChangeSizeX(width + 16);
 	mTooltipTextBox->ChangeSizeX(width);
@@ -1219,6 +1222,10 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 	if (!mTooltipUI->GetVisible())
 		return;
 
+	static Vec2 prevNPos(-1, -1);
+	if (prevNPos == npos)
+		return;
+	prevNPos = npos;
 	HWND_ID hwndId = mTooltipUI->GetHwndId();
 	auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
 	assert(hwndId != -1);
@@ -1958,8 +1965,10 @@ void UIManager::DragUI(){
 		return;
 
 	unsigned num = mUIEditor->GetNumCurEditing();
-	if (!num)
+	if (!num){
+		assert(!sDragStarted);
 		return;
+	}
 
 	Vec2I dragStartPos;
 	bool dragStarted = mouse->IsDragStarted(dragStartPos);
@@ -2171,6 +2180,36 @@ void UIManager::SetStyle(const char* style){
 				}
 			}
 
+			auto listBoxElem = styleElem->FirstChildElement("ListBox");
+			if (listBoxElem){
+				auto sz = listBoxElem->Attribute("headerBackColor");
+				if (sz){
+					mStyleStrings[Styles::ListBoxHeaderBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::ListBoxHeaderBack] = "0.1, 0.1, 0.1, 1";
+				}
+
+				sz = listBoxElem->Attribute("backColor");
+				if (sz){
+					mStyleStrings[Styles::ListBoxBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::ListBoxBack] = "0.0, 0.0, 0.0, 0.5";
+				}
+			}
+
+			auto staticTextElem = styleElem->FirstChildElement("StaticText");
+			if (staticTextElem){
+				auto sz = staticTextElem->Attribute("backColor");
+				if (sz){
+					mStyleStrings[Styles::StaticTextBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::StaticTextBack] = "0.0 0.0 0.0 0.7";
+				}
+			}
+
 			break;
 		}
 
@@ -2200,6 +2239,11 @@ const char* UIManager::GetWndBorderRegion(const char* key) const{
 		return it->second.c_str();
 	}
 	return "";
+}
+
+const char* UIManager::GetStyleString(Styles::Enum s) const{
+	assert(s < Styles::Num);
+	return mStyleStrings[s].c_str();
 }
 
 ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater){

@@ -50,6 +50,7 @@ protected:
 	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
 	std::set<unsigned> mNoVirtualizingRows;
 	bool mMultiSelection;
+	bool mNoHighlight;
 
 public:
 	ListBox();
@@ -72,6 +73,7 @@ public:
 	virtual void SetItem(const Vec2I& rowcol, bool checked);
 	virtual void SetItem(const Vec2I& rowcol, ITexture* texture);
 	virtual void SetItem(const Vec2I& rowcol, int number); // numeric updown
+	virtual void SetItem(const Vec2I& rowcol, float number); // numeric updown
 
 	virtual bool GetCheckBox(const Vec2I& indexRowCol) const;
 
@@ -88,10 +90,11 @@ public:
 	void OnItemDoubleClicked(void* arg);
 	void OnItemEnter(void* arg);
 	void OnNumericChanged(void* arg);
+	void OnDragHeader(void* arg);
 
 	void ChangeFocusItem(ListItem* newItem);
 
-	size_t GetNumItems() const;
+	size_t GetNumData() const;
 
 	unsigned GetNumCols() const { return mNumCols; }
 

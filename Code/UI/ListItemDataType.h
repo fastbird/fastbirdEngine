@@ -10,6 +10,7 @@ namespace fastbird{
 			NumberKey,
 			TextField,
 			NumericUpDown,
+			HorizontalGauge,
 
 			Unknown,
 		};
@@ -22,7 +23,8 @@ namespace fastbird{
 			"Texture",
 			"NumberKey",
 			"TextField",
-			"NumericUpDown"
+			"NumericUpDown",
+			"HorizontalGauge",
 
 			"Unknown",
 		};

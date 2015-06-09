@@ -93,10 +93,12 @@ namespace fastbird
 			LISTBOX_COL_HEADERS_TEXT_SIZE,
 			LISTBOX_HIGHLIGHT_COLOR,
 			LISTBOX_MULTI_SELECTION,
+			LISTBOX_NO_HIGHLIGHT,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
 			TITLEBAR,
+			CLOSE_BTN,
 			USE_BORDER,
 			SPECIAL_ORDER, // higher will render top
 			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
@@ -229,10 +231,12 @@ namespace fastbird
 			"LISTBOX_COL_HEADERS_TEXT_SIZE",
 			"LISTBOX_HIGHLIGHT_COLOR",
 			"LISTBOX_MULTI_SELECTION",
+			"LISTBOX_NO_HIGHLIGHT",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
 			"TITLEBAR",
+			"CLOSE_BTN",
 			"USE_BORDER",
 			"SPECIAL_ORDER",
 			"INHERIT_VISIBLE_TRUE",
@@ -450,6 +454,10 @@ namespace fastbird
 			case KEEP_UI_RATIO:
 				return false;
 			case LISTBOX_MULTI_SELECTION:
+				return false;
+			case LISTBOX_NO_HIGHLIGHT:
+				return false;
+			case CLOSE_BTN:
 				return false;
 
 			}

@@ -269,7 +269,19 @@ namespace fastbird
 		if (colIndex >= mNumCols)
 			return;
 		auto cols = mData[rowIndex];
-		cols[colIndex].SetNumber(number);
+		cols[colIndex].SetInt(number);
+	}
+
+	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, float number){
+		unsigned rowIndex = indexRowCol.x;
+		unsigned colIndex = indexRowCol.y + 1;
+
+		if (rowIndex >= mData.size())
+			return;
+		if (colIndex >= mNumCols)
+			return;
+		auto cols = mData[rowIndex];
+		cols[colIndex].SetFloat(number);
 	}
 
 	ListBoxData* ListBoxDataSet::GetData(unsigned index){

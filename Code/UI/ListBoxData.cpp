@@ -6,8 +6,8 @@ namespace fastbird{
 		: mDataType(type)
 		, mChecked(checked)
 		, mKey(-1)
-		, mNumber(0)
 	{
+		mNumber.i = 0;
 		if (text)
 			mText = text;
 	}
@@ -43,8 +43,13 @@ namespace fastbird{
 		mDataType = ListItemDataType::TexturePath;
 	}
 
-	void ListBoxData::SetNumber(int number){
-		mNumber = number;
+	void ListBoxData::SetInt(int number){
+		mNumber.i = number;
 		mDataType = ListItemDataType::NumericUpDown;
+	}
+
+	void ListBoxData::SetFloat(float f){
+		mNumber.f = f;
+		mDataType = ListItemDataType::HorizontalGauge;
 	}
 }

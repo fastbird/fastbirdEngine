@@ -77,11 +77,16 @@ namespace fastbird
 		// for locating
 		bool mMultiLocating;
 
+		// styles
 		std::string mStyle;
 		VectorMap<std::string, std::string> mBorderRegions;
 		VectorMap<std::string, std::string> mWindowRegions;
 		std::string mBorderAlphaRegion;
 		std::string mWindowAlphaRegion;
+
+		std::string mStyleStrings[Styles::Num];
+
+		// alpha textures
 		VectorMap<Vec2I, SmartPtr<ITexture>> mAlphaInfoTexture;
 		SmartPtr<ITexture> mAtlasStaging;
 
@@ -210,6 +215,7 @@ namespace fastbird
 
 		virtual const char* GetBorderRegion(const char* key) const;
 		virtual const char* GetWndBorderRegion(const char* key) const;
+		virtual const char* GetStyleString(Styles::Enum s) const;
 
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
 

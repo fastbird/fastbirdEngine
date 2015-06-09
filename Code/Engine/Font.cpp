@@ -552,24 +552,27 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 			multilineString.push_back(charId);
 		}
 		dummyMax = std::max(dummyMax, curX);
-		if (outWidth)
+	}
+	maxes.push_back(curX);
+
+	if (outWidth)
+	{
+		if (maxes.empty())
+			*outWidth = dummyMax;
+		else
 		{
-			if (maxes.empty())
-				*outWidth = dummyMax;
-			else
+			float biggest = 0;
+			for (auto val : maxes)
 			{
-				float biggest = 0;
-				for (auto val : maxes)
-				{
-					biggest = std::max(biggest, val);
-					*outWidth = biggest;
-				}
+				biggest = std::max(biggest, val);
+				*outWidth = biggest;
 			}
 		}
-
-		if (outLines)
-			*outLines = lines;
 	}
+
+	if (outLines)
+		*outLines = lines;
+
 	return multilineString;
 }
 //----------------------------------------------------------------------------

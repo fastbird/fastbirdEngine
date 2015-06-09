@@ -440,7 +440,7 @@ namespace fastbird
 		mDragStartX = mDragEndX = -1;
 		mDragStartY = mDragEndY = -1;
 		mDragStarted = false;
-		mDragEnd = false;
+		mDragEnd = true;
 	}
 
 	bool Mouse::IsDragStartIn(const RECT& region) const

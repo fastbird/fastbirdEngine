@@ -104,6 +104,7 @@ namespace fastbird
 		virtual bool GetVisible() const = 0;
 		virtual bool GetFocus(bool includeChildren = false) const = 0;
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v) = 0;		
+		virtual ALIGNH::Enum GetHAlign() const = 0;
 		virtual void GatherVisit(std::vector<IUIObject*>& v) = 0;
 		virtual void ModifySize(const Vec2I& sizemod) = 0;
 

@@ -10,6 +10,7 @@ namespace fastbird
 		const static Color White;
 		const static Color Black;
 		const static Color Red;
+		const static Color BrightRed;
 		const static Color DarkGray;
 		const static Color Gray;
 		const static Color Silver;

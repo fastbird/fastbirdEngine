@@ -265,6 +265,9 @@ namespace fastbird
 		virtual bool GetVisible() const;
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v);
+		virtual ALIGNH::Enum GetHAlign() const{
+			return mAlignH;
+		}
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual bool IsIn(IMouse* mouse) const;
 		virtual bool IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand = 0) const;

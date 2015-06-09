@@ -410,6 +410,9 @@ void Container::OnAlphaChanged()
 
 void Container::GatherVisit(std::vector<IUIObject*>& v)
 {
+	//char buf[512];
+	//sprintf_s(buf, "Container::GatherVisit (%s)", mName.c_str());
+	//Profiler p(buf);
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
 	for (; it!=itEnd; it++)
 	{
@@ -518,6 +521,7 @@ void Container::RefreshVScrollbar()
 				mScrollerV->SetProperty(UIProperty::OFFSETX, "-4");
 			}
 			mScrollerV->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+			mScrollerV->SetUseAbsPos(false);
 			mScrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");
 			mScrollerV->SetOwner(this);
 			mScrollerV->SetVisible(true);
@@ -954,26 +958,29 @@ void Container::SetHwndId(HWND_ID hwndId)
 
 IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
-	if (param.mTestChildren){
-		for (auto child : mChildren)
-		{
-			if (!child->GetVisible())
-				continue;
-			if (param.mOnlyContainer)
+	auto in = IsIn(pt, param.mIgnoreScissor);
+	if (in){
+		if (param.mTestChildren){
+			for (auto child : mChildren)
 			{
-				auto cont = dynamic_cast<Container*>(child);
-				if (!cont)
+				if (!child->GetVisible())
 					continue;
+				if (param.mOnlyContainer)
+				{
+					auto cont = dynamic_cast<Container*>(child);
+					if (!cont)
+						continue;
+				}
+				auto found = child->WinBaseWithPoint(pt, param);
+				if (found)
+					return found;
 			}
-			auto found = child->WinBaseWithPoint(pt, param);
-			if (found)
-				return found;
 		}
 	}
 	if (GetGhost() || (param.mNoRuntimeComp && mRunTimeChild))
 		return 0;
 
-	return __super::WinBaseWithPoint(pt, param);
+	return in ? (IWinBase*)this : 0;
 }
 
 IWinBase* Container::WinBaseWithTabOrder(unsigned tabOrder) const
@@ -1072,11 +1079,19 @@ void Container::TabPressed()
 }
 
 void Container::TransferChildrenTo(Container* destContainer){
+	COMPONENTS remained;
 	for (auto child : mChildren){
-		if (child != destContainer && child != mWndContentUI)
-			destContainer->AddChild(child);
+		if (child != destContainer && child != mWndContentUI){
+			auto found = mDoNotTransfer.find(child);
+			if (found == mDoNotTransfer.end()){
+				destContainer->AddChild(child);
+			}
+			else{
+				remained.push_back(child);
+			}
+		}
 	}
-	mChildren.clear();
+	mChildren = remained;
 	if (mWndContentUI == destContainer)
 		mChildren.push_back(destContainer);
 	mScrollerV = 0;
@@ -1110,4 +1125,7 @@ void Container::AddChild(IWinBase* child){
 	SetChildrenPosSizeChanged();	
 }
 
+void Container::DoNotTransfer(IWinBase* child){
+	mDoNotTransfer.insert(child);
+}
 }

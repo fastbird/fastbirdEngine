@@ -85,13 +85,17 @@ namespace fastbird
 	int GetListBoxSelectedRows(lua_State* L);
 	int GetListBoxSelectedStringKeys(lua_State* L);
 	int GetListBoxSelectedNumericKeys(lua_State* L);
+	int GetListBoxStringKeyCached(lua_State* L);
+	int GetListBoxNumericKeyCached(lua_State* L);
+	int GetListBoxRowIndexCached(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
 	int SelectListBoxItems(lua_State* L);	
 	int GetListItemData(lua_State* L);	
+	int GetListItemDataCachedListBox(lua_State* L);
 	int SetListItemProperty(lua_State* L);
 	int StartUIAnimationForListItem(lua_State* L);
 	int StopUIAnimationForListItem(lua_State* L);	
-	int GetNumListBoxItems(lua_State* L);
+	int GetNumListBoxData(lua_State* L);
 	int SwapListBoxItem(lua_State* L);
 
 	// etc
@@ -109,13 +113,17 @@ namespace fastbird
 		// Listbox
 		//--------------------------------------------------------------------------------
 		LUA_SETCFUNCTION(mL, SwapListBoxItem);
-		LUA_SETCFUNCTION(mL, GetNumListBoxItems);
+		LUA_SETCFUNCTION(mL, GetNumListBoxData);
 		LUA_SETCFUNCTION(mL, StopUIAnimationForListItem);
 		LUA_SETCFUNCTION(mL, StartUIAnimationForListItem);		
 		LUA_SETCFUNCTION(mL, SetListItemProperty);
+		LUA_SETCFUNCTION(mL, GetListItemDataCachedListBox);
 		LUA_SETCFUNCTION(mL, GetListItemData);
 		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);		
+		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
+		LUA_SETCFUNCTION(mL, GetListBoxNumericKeyCached);
+		LUA_SETCFUNCTION(mL, GetListBoxStringKeyCached);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedNumericKeys);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedStringKeys);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedRows);		
@@ -1100,10 +1108,17 @@ namespace fastbird
 		case ListItemDataType::CheckBox:
 		{
 			listbox->SetItem(Vec2I(rowIndex, colIndex), lua_toboolean(L, 4)!=0);
+			break;
 		}
 		case ListItemDataType::NumericUpDown:
 		{
 			listbox->SetItem(Vec2I(rowIndex, colIndex), (int)lua_tonumber(L, 4));
+			break;
+		}
+		case ListItemDataType::HorizontalGauge:
+		{
+			listbox->SetItem(Vec2I(rowIndex, colIndex), (float)lua_tonumber(L, 4));
+			break;
 		}
 		default:
 			assert(0);
@@ -1225,6 +1240,52 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
+	int GetListBoxStringKeyCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 1);
+			auto key = listBox->GetStringKey(row);
+			if (key){
+				lua_pushstring(L, WideToAnsi(key));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxNumericKeyCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 1);
+			auto key = listBox->GetUnsignedKey(row);
+			lua_pushnumber(L, key);
+			return 1;
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxRowIndexCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox)
+		{
+			if (lua_isstring(L, 1)){
+				lua_pushnumber(L, listBox->FindRowIndex(
+					AnsiToWide(luaL_checkstring(L, 1))
+					));
+				return 1;
+			}
+			else{
+				lua_pushnumber(L, listBox->FindRowIndex(
+					luaL_checkunsigned(L, 1)));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
 	int SelectListBoxItem(lua_State* L)
 	{
 		const char* wnd = luaL_checkstring(L, 1);
@@ -1284,15 +1345,9 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	int GetListItemData(lua_State* L)
-	{
-		const char* uiname = luaL_checkstring(L, 1);
-		const char* compName = luaL_checkstring(L, 2);
-		auto listbox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+	int GetListItemDataImpl(lua_State* L, ListBox* listbox, unsigned row, unsigned col){
 		if (listbox)
 		{
-			unsigned row = luaL_checkunsigned(L, 3);
-			unsigned col = luaL_checkunsigned(L, 4);
 			auto itemdata = listbox->GetData(row, col);
 			if (itemdata->IsTextData()){
 				lua_pushstring(L, WideToAnsi(itemdata->GetText()));
@@ -1303,7 +1358,11 @@ namespace fastbird
 				return 1;
 			}
 			else if (itemdata->GetDataType() == ListItemDataType::NumericUpDown){
-				lua_pushnumber(L, itemdata->GetNumber());
+				lua_pushnumber(L, itemdata->GetInt());
+				return 1;
+			}
+			else if (itemdata->GetDataType() == ListItemDataType::HorizontalGauge){
+				lua_pushnumber(L, itemdata->GetFloat());
 				return 1;
 			}
 			else
@@ -1312,6 +1371,25 @@ namespace fastbird
 			}
 		}
 		return 0;
+
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListItemData(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listbox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		unsigned row = luaL_checkunsigned(L, 3);
+		unsigned col = luaL_checkunsigned(L, 4);
+		return GetListItemDataImpl(L, listbox, row, col);
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListItemDataCachedListBox(lua_State* L){
+		auto listbox = gFBUIManager->GetCachedListBox();
+		unsigned row = luaL_checkunsigned(L, 1);
+		unsigned col = luaL_checkunsigned(L, 2);
+		return GetListItemDataImpl(L, listbox, row, col);		
 	}
 
 	//-----------------------------------------------------------------------
@@ -1398,14 +1476,14 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	int GetNumListBoxItems(lua_State* L)
+	int GetNumListBoxData(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
 		auto listBox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
 		if (listBox)
 		{
-			lua_pushunsigned(L, listBox->GetNumItems());
+			lua_pushunsigned(L, listBox->GetNumData());
 			return 1;
 		}
 		return 0;
