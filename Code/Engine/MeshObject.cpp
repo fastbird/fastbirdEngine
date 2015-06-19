@@ -237,7 +237,7 @@ namespace fastbird
 			if (mRenderHighlight && mainRt && !mForceAlphaBlending)
 			{
 				// draw silhouett to samll buffer
-				auto rt = renderer->GetCurRendrTarget();
+				auto rt = renderer->GetCurRenderTarget();
 				assert(rt);
 				rt->SetSmallSilouetteBuffer();
 				{

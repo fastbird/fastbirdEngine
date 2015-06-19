@@ -720,7 +720,7 @@ void Container::SaveChildren(tinyxml2::XMLElement& elem){
 			elem.InsertEndChild(compElem);
 			child->Save(*compElem);
 		}
-		else{
+		else if(!child->IsRuntimeChildRecursive()){
 			auto childCont = dynamic_cast<Container*>(child);
 			if (childCont){
 				childCont->SaveChildren(elem);

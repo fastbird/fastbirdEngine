@@ -1008,7 +1008,9 @@ void Material::Bind(bool inputLayout, unsigned stencilRef)
 
 	if (mGlow)
 	{
-		renderer->GetCurRendrTarget()->SetGlowRenderTarget();
+		auto rt = renderer->GetCurRenderTarget();
+		if (rt->GetRenderPipeline().GetStep(RenderSteps::Glow))
+			rt->SetGlowRenderTarget();
 	}
 }
 
@@ -1016,7 +1018,9 @@ void Material::Unbind()
 {
 	if (mGlow)
 	{
-		gFBEnv->_pInternalRenderer->GetCurRendrTarget()->UnSetGlowRenderTarget();
+		auto rt = gFBEnv->pRenderer->GetCurRenderTarget();
+		if (rt->GetRenderPipeline().GetStep(RenderSteps::Glow))
+			rt->UnSetGlowRenderTarget();
 	}
 }
 

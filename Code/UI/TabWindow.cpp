@@ -28,6 +28,7 @@ namespace fastbird{
 		mMainWindow->SetRuntimeChild(true);
 		mMainWindow->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mMainWindow->SetGhost(true);
+		mMainWindow->SetUseAbsSize(false);
 	}
 	
 	bool TabWindow::SetProperty(UIProperty::Enum prop, const char* val) {
@@ -151,6 +152,7 @@ namespace fastbird{
 			wnd->SetVisible(mVisibility.IsVisible());
 			wnd->Move(Vec2I(0, sButtonSize.y));
 			wnd->ModifySize(Vec2I(0, -sButtonSize.y));
+			wnd->SetUseAbsSize(false);
 			++mNumTabs;
 		}
 

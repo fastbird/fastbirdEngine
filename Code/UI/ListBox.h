@@ -48,9 +48,12 @@ protected:
 	typedef std::vector<std::pair<UIProperty::Enum, std::string>> PropertyData;
 	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
 	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
+	VectorMap<unsigned, PropertyData> mItemPropertyByColumn;
 	std::set<unsigned> mNoVirtualizingRows;
 	bool mMultiSelection;
 	bool mNoHighlight;
+
+	Vec2I mLastChangedItem; // for numeric updown
 
 public:
 	ListBox();
@@ -127,6 +130,8 @@ public:
 
 	virtual void SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val);
 	virtual void SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val);
+	virtual void SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val);
+	virtual void ClearItemProperties();
 
 	virtual void VisualizeData(unsigned index);
 	void FillItem(unsigned index);
@@ -145,6 +150,8 @@ public:
 
 	void UpdateColSizes();
 	void UpdateItemAlign();
+
+	unsigned GetLastChangedRow() const { return mLastChangedItem.x; }
 
 protected:
 

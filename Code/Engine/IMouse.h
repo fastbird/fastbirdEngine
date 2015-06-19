@@ -88,6 +88,10 @@ namespace fastbird
 		virtual bool IsDragStarted(Vec2I& outStartPos) const = 0;
 		virtual bool IsDragEnded() const = 0;
 		virtual void PopDragEvent() = 0;
+
+		virtual bool IsRDragStarted(Vec2I& outStartPos) const = 0;
+		virtual bool IsRDragEnded(Vec2I& outStartPos) const = 0;
+		virtual void PopRDragEvent() = 0;
 		
 
 		virtual long GetWheel() const = 0;
@@ -105,6 +109,7 @@ namespace fastbird
 		virtual bool IsIn(const RECT& r) = 0;
 
 		virtual void CursorToCenter() = 0;
+		virtual void SetCursorPosition(const Vec2I& cursorPos) = 0;
 	};
 }
 

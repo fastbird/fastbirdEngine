@@ -48,7 +48,7 @@ public:
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
 	void SetSpecularColor(const Vec4& color);
-
+	void SetDefaultImageAtlasPathIfNotSet();
 private:
 
 	ImageBox* ImageBox::CreateImageBox();

@@ -48,13 +48,13 @@ namespace fastbird
 		{
 			for (auto& data : mRayResults)
 			{
-				FB_DELETE(data);
+				delete data;
 			}
 		}
 
 		void AddResult(RigidBody* rigidBody, const Vec3& hitPoint, const Vec3& hitNormal, int index)
 		{
-			mRayResults.push_back(FB_NEW(RayResultClosest)(rigidBody, hitPoint, hitNormal, index));
+			mRayResults.push_back(new RayResultClosest(rigidBody, hitPoint, hitNormal, index));
 		}
 
 		std::vector<RayResultClosest*> mRayResults;

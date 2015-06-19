@@ -42,13 +42,13 @@ v2p thickline_VertexShader( in a2v IN )
 	nextScreen.x *= gScreenRatio;
 	
 	float2 dir = normalize(nextScreen - curScreen);
-	float2 normal = float2(dir.y, -dir.x);
+	float2 normal = float2(-dir.y, dir.x);
 	
 	float thickness = IN.uv.z;
 	normal *= thickness * .5f;
 	normal.x /= gScreenRatio;
 	float direction = IN.uv.w; // direction is 1 or -1
-	float4 offset = float4(normal * direction * curProjected.w, 0, 0);
+	float4 offset = float4(normal * direction, 0, 0);
 	OUT.pos = curProjected + offset;
 	OUT.color = IN.color;
 	OUT.uv = IN.uv.xy;

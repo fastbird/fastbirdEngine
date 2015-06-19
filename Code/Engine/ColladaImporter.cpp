@@ -43,13 +43,13 @@ void ColladaImporter::FinishSmartPtr(){
 bool ColladaImporter::ImportCollada(const char* filepath, bool yzSwap, bool oppositeCull, bool useIndexBuffer, 
 	bool mergeMatGroups, bool keepMeshData, bool generateTangent, bool meshGroup)
 {
-	Log("Importing Collada (%s)", filepath);
+	//Log("Importing Collada (%s)", filepath);
 	assert(filepath);
 	mMeshObjects.clear();
 	mGenerateTangent = generateTangent;
-	char buf[255];
+	/*char buf[255];
 	sprintf_s(buf, "Importing Collada (%s)", filepath);
-	Profiler profiler(buf);
+	Profiler profiler(buf);*/
 	bool successful = false;
 	mKeepMeshdata = keepMeshData;
 	mUseMeshGroup = meshGroup;

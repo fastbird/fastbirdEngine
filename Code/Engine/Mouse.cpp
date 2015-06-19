@@ -69,6 +69,8 @@ namespace fastbird
 		, mDragStarted(false)
 		, mDragEnd(false)
 		, mLockMouseKey(0), mInvalidatedTemporary(false)
+		, mRDragStarted(false)
+		, mRDragEnd(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -157,12 +159,24 @@ namespace fastbird
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_DOWN)
 		{
+			mRDragEnd = false;
+			if ((mButtonsDown & MOUSE_BUTTON_RIGHT) == 0)
+			{
+				// drag
+				mRDragStartX = mAbsX;
+				mRDragStartY = mAbsY;
+			}
+
 			mButtonsDown |= MOUSE_BUTTON_RIGHT;
 			mButtonsPressed |= MOUSE_BUTTON_RIGHT;
 
 			mLastRightDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
+		}
+		if (IsMoved() && IsRButtonDown())
+		{
+			mRDragStarted = true;
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_DOWN)
 		{
@@ -232,6 +246,17 @@ namespace fastbird
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
 		{
+			mRDragEndX = mAbsX;
+			mRDragEndY = mAbsY;
+			if (mRDragStarted){
+				mRDragStarted = false;
+			}
+			mRDragEnd = true;
+			if (mRDragStartX == mRDragEndX && mRDragStartY == mRDragEndY)
+			{
+				ClearRDrag();
+			}
+
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;			
 			if (mouseNotMoved && rightElapsedTime < 0.15f)
 			{
@@ -443,6 +468,13 @@ namespace fastbird
 		mDragEnd = true;
 	}
 
+	void Mouse::ClearRDrag(){
+		mRDragStartX = mRDragEndX = -1;
+		mRDragStartY = mRDragEndY = -1;
+		mRDragStarted = false;
+		mRDragEnd = true;
+	}
+
 	bool Mouse::IsDragStartIn(const RECT& region) const
 	{
 		if (mDragStartX < region.left ||
@@ -469,6 +501,22 @@ namespace fastbird
 	void Mouse::PopDragEvent(){
 		mDragStarted = false;
 		mDragEnd = false;
+	}
+
+	bool Mouse::IsRDragStarted(Vec2I& outStartPos) const{
+		if (mRDragStarted){
+			outStartPos = Vec2I(mRDragStartX, mRDragStartY);
+		}
+		return mRDragStarted;
+	}
+
+	bool Mouse::IsRDragEnded(Vec2I& outStartPos) const{
+		return mRDragEnd;
+	}
+
+	void Mouse::PopRDragEvent(){
+		mRDragStarted = false;
+		mRDragEnd = false;
 	}
 
 	long Mouse::GetWheel() const
@@ -557,7 +605,7 @@ namespace fastbird
 	{		
 		LockMousePos(false, (void*)-1);
 		mButtonsDown = 0;
-		EndFrame();
+		//EndFrame();
 	}
 
 	const Ray3& Mouse::GetWorldRay()
@@ -594,5 +642,14 @@ namespace fastbird
 			mAbsXPrev = size.x;
 			mAbsYPrev = size.y;
 		}
+	}
+
+	void Mouse::SetCursorPosition(const Vec2I& cursorPos){
+		auto mainHwndId = gFBEnv->pEngine->GetMainWndHandleId();
+		SetCurrentMousePos(mainHwndId, cursorPos.x, cursorPos.y);
+		mAbsX = cursorPos.x;
+		mAbsY = cursorPos.y;
+		mAbsXPrev = cursorPos.x;
+		mAbsYPrev = cursorPos.y;
 	}
 }

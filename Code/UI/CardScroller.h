@@ -63,6 +63,7 @@ namespace fastbird
 		virtual IWinBase* AddCard();
 		void AddCard(LuaObject& obj);
 		virtual void DeleteCard(IWinBase* card);
+		virtual void DeleteCard(unsigned cardId);
 		virtual void ArrangeSlots();
 
 	private:
@@ -73,7 +74,7 @@ namespace fastbird
 		{
 			float mNYPos;
 			bool mOccupied;
-			IWinBase* mCard;
+			CardItem* mCard;
 			bool operator< (const Slot& other) const;
 		};		
 		std::vector<Slot> mSlots;

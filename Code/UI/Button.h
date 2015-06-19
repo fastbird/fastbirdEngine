@@ -30,7 +30,7 @@ public:
 	virtual void Blink(bool blink, float time); // progress bar
 	virtual void EndProgress();
 	virtual void Highlight(bool highlight);
-	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture);
+	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture, bool drawFixedSize);
 	virtual void OnEnableChanged();
 	const static float LEFT_GAP;
 

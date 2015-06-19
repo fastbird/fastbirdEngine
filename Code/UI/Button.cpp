@@ -521,7 +521,6 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 											 {
 												 mImages[ButtonImages::ActiveImage]->SetVisible(false);
 											 }
-											 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 										 }
 
 										 if (mImages[ButtonImages::DeactiveImage])
@@ -535,6 +534,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 												 mImages[ButtonImages::DeactiveImage]->SetVisible(true);
 											 }
 										 }
+										 gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 										 return true;
 	}
 
@@ -1144,13 +1144,16 @@ void Button::Highlight(bool highlight)
 	}
 }
 
-void Button::SetTexture(ButtonImages::Enum type, ITexture* pTexture)
+void Button::SetTexture(ButtonImages::Enum type, ITexture* pTexture, bool drawFixedSize)
 {
 	if (!mImages[type])
 	{
 		mImages[type] = CreateImageBox();
 	}
 	mImages[type]->SetTexture(pTexture);
+	if (drawFixedSize){
+		mImages[type]->DrawAsFixedSizeAtCenter();
+	}
 }
 
 void Button::OnEnableChanged()
@@ -1251,9 +1254,9 @@ void Button::UpdateImageSize(){
 	if (mImages[ButtonImages::ActiveImage]){
 		mImages[ButtonImages::ActiveImage]->ChangeSize(finalSize);
 	}
-	if (mImages[ButtonImages::DeactiveImage]){
-		mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
-	}
+	//if (mImages[ButtonImages::DeactiveImage]){
+	//	mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
+	//}
 }
 
 }

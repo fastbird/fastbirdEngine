@@ -40,6 +40,10 @@ namespace fastbird
 		virtual bool IsDragStarted(Vec2I& outStartPos) const;
 		virtual bool IsDragEnded() const;
 		virtual void PopDragEvent();
+		virtual void PopRDragEvent();
+
+		virtual bool IsRDragStarted(Vec2I& outStartPos) const;
+		virtual bool IsRDragEnded(Vec2I& outStartPos) const;
 
 		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(float* time = 0) const;
@@ -69,6 +73,8 @@ namespace fastbird
 		
 		virtual void CursorToCenter();
 
+		virtual void SetCursorPosition(const Vec2I& cursorPos);
+
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
 		void GetMouseCoordDelta(long& x, long& y) const;
@@ -77,6 +83,7 @@ namespace fastbird
 
 	private:
 		void ClearDrag();
+		void ClearRDrag();
 
 	private:
 		int mButtonsDown;
@@ -127,6 +134,13 @@ namespace fastbird
 		float mLastWheelPush;
 		bool mDragStarted;
 		bool mDragEnd;
+
+		bool mRDragStarted;
+		bool mRDragEnd;
+		long mRDragStartX;
+		long mRDragStartY;
+		long mRDragEndX;
+		long mRDragEndY;
 
 		void* mLockMouseKey;
 		bool mInvalidatedTemporary;

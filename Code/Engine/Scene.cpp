@@ -288,7 +288,7 @@ void Scene::MakeVisibleSet(ICamera* mainCam)
 		return;
 
 	auto const renderer = gFBEnv->pRenderer;
-	auto curTarget = renderer->GetCurRendrTarget();
+	auto curTarget = renderer->GetCurRenderTarget();
 	assert(curTarget);
 	auto lightCamera = curTarget->GetLightCamera();
 
@@ -415,7 +415,7 @@ void Scene::PreRender()
 void Scene::Render()
 {
 	auto const renderer = (Renderer*)gFBEnv->pRenderer;
-	auto curTarget = renderer->GetCurRendrTarget();
+	auto curTarget = renderer->GetCurRenderTarget();
 	assert(curTarget);
 	auto lightCamera = curTarget->GetLightCamera();
 	auto cam = renderer->GetCamera();
@@ -478,7 +478,7 @@ void Scene::Render()
 			renderer->RenderGeoms();
 		}
 
-		renderer->GetCurRendrTarget()->BindDepthTexture(true);
+		renderer->GetCurRenderTarget()->BindDepthTexture(true);
 		if (!mSkipSpatialObjects)
 		{
 			{

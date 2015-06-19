@@ -87,16 +87,21 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float emissive = 0;
 #endif
 #ifdef NORMAL_TEXTURE
-	float3 normalT = gNormalTexture.Sample(gLinearSampler, INPUT.UV).xyz;
+	float3 normalT = gNormalTexture.Sample(gPointSampler, INPUT.UV).xyz;
 #endif //NORMAL_TEXTURE
 	
 	float3 normal = INPUT.Normal;
 #ifdef NORMAL_TEXTURE
-	normalT = fixNormalSample(normalT);
-	float3 normalMapWS = normalize(normalT.x*INPUT.Tangent + normalT.y*INPUT.Binormal + normalT.z*INPUT.Normal);
-	normal = normalMapWS;
+	if(length(normalT)>0.0001)
+	{
+		normalT = fixNormalSample(normalT);
+		float3 normalMapWS = normalize(normalT.x*INPUT.Tangent + normalT.y*INPUT.Binormal + normalT.z*INPUT.Normal);
+		normal = normalMapWS;
+		
+	}
+	//return float4(abs(INPUT.Binormal), 1);
 #endif //NORMAL_TEXTURE
-
+		
 	// shading	
 	float3 lightColor = gDirectionalLightDiffuse[0].xyz * gDirectionalLightDir_Intensity[0].w;
 	float3 lightColor2 = gDirectionalLightDiffuse[1].xyz * gDirectionalLightDir_Intensity[1].w;
@@ -115,9 +120,9 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float ndl = max(dotNL, 0);
 	float ndl2 = max(-dotNL, 0);
 	float3 h = normalize(toViewDir + toLightDir);
-	float ndh = max( dot(normal, h), 1e-8);
-	float vdh = max( dot(toViewDir, h), 1e-8);
-	float ndv = max( dot( normal, toViewDir), 1e-8);
+	float ndh = max(abs(dot(normal, h)), 0);
+	float vdh = max( abs(dot(toViewDir, h)), 0 );
+	float ndv = max( abs(dot( normal, toViewDir)), 0 );
 	float invShadow = GetShadow(INPUT.LightPos);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(ndl, vdh, ndh, ndv, specColor, roughness));
 	shadedColor +=  ndl2 * lightColor2 * baseColor * 0.3f;

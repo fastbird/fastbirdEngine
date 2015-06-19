@@ -68,12 +68,13 @@ UIManager::UIManager(lua_State* L)
 	RegisterLuaFuncs(L);	
 	RegisterLuaEnums(L);
 	mUICommands = FB_NEW(UICommands);
+	SetStyle("blue");
 	PrepareTooltipUI();
 	WinBase::InitMouseCursor();
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
 	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
-	SetStyle("blue");
+	
 }
 
 UIManager::~UIManager()
@@ -176,7 +177,7 @@ void UIManager::Update(float elapsedTime)
 	for (auto& ui : mMoveToBottomReserved)
 	{
 		auto hwndId = ui->GetHwndId();
-		auto windows = mWindows[hwndId];
+		auto& windows = mWindows[hwndId];
 		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), ui);
 		if (f != windows.end()){
 			// insert f at the mWindows.begin().
@@ -623,7 +624,7 @@ bool UIManager::AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId)
 	}
 	std::string lower = uiName;
 	ToLowerCase(lower);
-	auto it = mLuaUIs.find(uiName);
+	auto it = mLuaUIs.find(lower.c_str());
 	if (it != mLuaUIs.end())
 	{
 		Error("Already registered!");
@@ -1060,9 +1061,16 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		}
 	}
 
-	if (mIgnoreInput) {
+	if (mIgnoreInput && !mUIEditor) {
 		if (mModalWindow)
 			mModalWindow->OnInputFromHandler(pMouse, keyboard);
+		return;
+	}
+
+
+	Vec2I rdragStartedPos;
+	if (pMouse->IsRDragStarted(rdragStartedPos)){
+		mMouseIn = false;
 		return;
 	}
 
@@ -1097,7 +1105,8 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
 		if (mKeyboardFocus != focusWnd)
 		{
-			SetFocusUI(focusWnd);
+			if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+				SetFocusUI(focusWnd);
 		}
 		if (mUIEditor)
 		{
@@ -1560,6 +1569,13 @@ void UIManager::MoveToBottom(const char* moveToBottom)
 	}	
 }
 
+void UIManager::MoveToBottom(IWinBase* moveToBottom){
+	if (moveToBottom){
+		if (ValueNotExistInVector(mMoveToBottomReserved, moveToBottom))
+			mMoveToBottomReserved.push_back(moveToBottom);
+	}
+}
+
 void UIManager::HideUIsExcept(const std::vector<std::string>& excepts)
 {
 	mHideUIExcepts = excepts;
@@ -1643,6 +1659,7 @@ void UIManager::PrepareTooltipUI()
 		mTooltipUI = wnds[0];
 		mTooltipTextBox = FindComp("MouseTooltip", "TooltipTextBox");
 		assert(mTooltipTextBox);
+		//mTooltipTextBox->SetProperty(UIProperty::USE_BORDER, "true");
 	}
 }
 
@@ -1679,6 +1696,7 @@ void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 	rparam.mOnlyContainer = true;
 	rparam.mIgnoreScissor = true;
 	rparam.mTestChildren = true;
+	rparam.mNoRuntimeComp = true;
 	rparam.mHwndId = gFBEnv->pEngine->GetMainWndHandleId();
 	mMouseOveredContainer = (Container*)WinBaseWithPoint(pt, rparam);
 	if (pMouse->IsLButtonDown())

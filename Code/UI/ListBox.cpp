@@ -26,7 +26,7 @@ ListBox::ListBox()
 	, mData(0)
 	, mStartIndex(0)
 	, mEndIndex(10)
-	, mFocusedListItem(0)
+	, mFocusedListItem(0), mLastChangedItem(-1, -1)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -1066,6 +1066,7 @@ void ListBox::OnNumericChanged(void* arg){
 	NumericUpDown* numeric = (NumericUpDown*)(arg);
 	auto listItem = (ListItem*)numeric->GetParent();
 	mData->SetData(listItem->GetRowCol(), numeric->GetValue());
+	mLastChangedItem = listItem->GetRowCol();
 	OnEvent(UIEvents::EVENT_NUMERIC_DOWN);
 }
 
@@ -1480,6 +1481,11 @@ void ListBox::FillItem(unsigned index){
 		else{
 			SetHighlightRowCol(index, i, false);
 		}
+
+		const auto& prop = mItemPropertyByColumn[index];
+		for (auto p : prop){
+			item->SetProperty(p.first, p.second.c_str());
+		}
 	}
 
 	unsigned int key = mData->GetUnsignedKey(index);
@@ -1776,6 +1782,15 @@ void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, c
 	}
 }
 
+void ListBox::SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val){
+	mItemPropertyByColumn[col].push_back(std::make_pair(prop, val));
+	for (auto row : mItems){
+		if (row.size() > col){
+			row[col]->SetProperty(prop, val);
+		}		
+	}
+}
+
 void ListBox::NoVirtualizingItem(unsigned rowIndex){
 	if (!mData){
 		assert(0);
@@ -1849,5 +1864,11 @@ void ListBox::UpdateItemAlign(){
 			}
 		}
 	}
+}
+
+void ListBox::ClearItemProperties(){
+	mItemPropertyByColumn.clear();
+	mItemPropertyByUnsigned.clear();
+	mItemPropertyByString.clear();
 }
 }

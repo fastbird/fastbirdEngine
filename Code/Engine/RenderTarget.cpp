@@ -170,7 +170,9 @@ void RenderTarget::Bind(size_t face)
 	renderer->Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
 		mDepthClear, mStencilClear);
 
-	GetSceneInternal()->SetLightToRenderer();
+	auto scene = GetSceneInternal();
+	assert(scene);
+	scene->SetLightToRenderer();
 	
 	auto cam = GetCamera();
 	renderer->SetCamera(cam);
@@ -440,7 +442,7 @@ void RenderTarget::SetGlowRenderTarget()
 {
 	if (!mRenderPipeline->GetStep(RenderSteps::Glow))
 	{
-		BindTargetOnly(true);
+		BindTargetOnly(mRenderPipeline->GetStep(RenderSteps::HDR));
 		return;
 	}
 	if (mGlowSet)

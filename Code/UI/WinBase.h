@@ -137,6 +137,7 @@ namespace fastbird
 		int mTabOrder;
 		bool mSaveCheck;
 		bool mRunTimeChild;
+		bool mRunTimeChildRecursive;
 		bool mGhost;
 		bool mGatheringException;
 		bool mKeepUIRatio;
@@ -395,7 +396,9 @@ namespace fastbird
 		virtual void SetSaveNameCheck(bool set);
 		virtual bool GetSaveNameCheck() const;
 		virtual void SetRuntimeChild(bool runtime) { mRunTimeChild = runtime; }
+		virtual void SetRuntimeChildRecursive(bool runtime) { mRunTimeChildRecursive = runtime; }
 		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
+		virtual bool IsRuntimeChildRecursive() const { return mRunTimeChildRecursive; }
 		virtual void SetGhost(bool ghost){ mGhost = ghost; }
 		virtual bool GetGhost() const{ return mGhost; }
 

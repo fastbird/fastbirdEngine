@@ -641,6 +641,23 @@ bool ParticleEmitter::IsAlive()
 	return mInActiveList;
 }
 
+void ParticleEmitter::SetAlpha(float alpha){
+	mFinalAlphaMod = alpha;
+	FB_FOREACH(it, mParticles)
+	{
+		auto particles = it->second;
+		PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
+		for (; itParticle != itEndParticle; ++itParticle)
+		{
+			if (itParticle->mMeshObject)
+			{
+				itParticle->mMeshObject->SetForceAlphaBlending(true, alpha);
+			}
+		}
+	}
+	
+}
+
 bool ParticleEmitter::Update(float dt)
 {
 	mCurLifeTime+=dt;
@@ -809,7 +826,7 @@ bool ParticleEmitter::Update(float dt)
 					if (normTime < pt->mFadeInOut.x)
 						p.mAlpha = SmoothStep(0, pt->mFadeInOut.x, normTime) * mFinalAlphaMod;
 					else if (normTime > pt->mFadeInOut.y)
-						p.mAlpha = 1.0f - SmoothStep(pt->mFadeInOut.y, 1.0, normTime) * mFinalAlphaMod;
+						p.mAlpha = (1.0f - SmoothStep(pt->mFadeInOut.y, 1.0, normTime)) * mFinalAlphaMod;
 					else
 						p.mAlpha = 1.0f * mFinalAlphaMod;
 

@@ -8,8 +8,8 @@ using namespace fastbird;
 
 // 12 : float3, 4 : ubyte4
 const unsigned GeometryRenderer::LINE_STRIDE = 16;
-// 12 : float3, 8 : uv, 4 : ubyte4
-const unsigned GeometryRenderer::THICK_LINE_STRIDE = 24;
+// 12 : float3, 16 : uv, 4 : ubyte4, 12 : next
+const unsigned GeometryRenderer::THICK_LINE_STRIDE = 44;
 const unsigned GeometryRenderer::MAX_LINE_VERTEX = 500;
 
 //----------------------------------------------------------------------------
@@ -306,31 +306,20 @@ void GeometryRenderer::Render()
 					if (curProcessingLine.mStrTexture != curTexture || curProcessingLine.mTextureFlow != curTextureFlow)
 						break;
 
-					float halfThick = mThickLines[processedLines].mThickness * .5f;
+					float thickness = mThickLines[processedLines].mThickness;
 					
 					Color colorStart(curProcessingLine.mColor);
 					Color colorEnd(curProcessingLine.mColore);
-					auto left = camDir.Cross((curProcessingLine.mEnd - curProcessingLine.mStart).NormalizeCopy());
-					auto length = left.Normalize();
-					if (length < 0.05f)
-					{
-						left = gFBEnv->pRenderer->GetCamera()->GetRight();
-					}
+					Vec3 dir = curProcessingLine.mEnd - curProcessingLine.mStart;
 					THICK_LINE_VERTEX vertices[6] =
 					{
-						THICK_LINE_VERTEX(curProcessingLine.mStart + left * halfThick, colorStart.Get4Byte(),
-						Vec2(1, 0)),
-						THICK_LINE_VERTEX(curProcessingLine.mEnd - left * halfThick, colorEnd.Get4Byte(),
-						Vec2(0, 1)),
-						THICK_LINE_VERTEX(curProcessingLine.mEnd + left * halfThick, colorEnd.Get4Byte(),
-						Vec2(1, 1)),						
+						THICK_LINE_VERTEX(curProcessingLine.mStart, colorStart.Get4Byte(), Vec4(1, 0, thickness, +1.f), curProcessingLine.mEnd),
+						THICK_LINE_VERTEX(curProcessingLine.mEnd, colorEnd.Get4Byte(), Vec4(0, 1, thickness, -1.f), curProcessingLine.mEnd + dir),
+						THICK_LINE_VERTEX(curProcessingLine.mEnd, colorEnd.Get4Byte(), Vec4(1, 1, thickness, +1.f), curProcessingLine.mEnd + dir),				
 
-						THICK_LINE_VERTEX(curProcessingLine.mEnd - left * halfThick, colorEnd.Get4Byte(),
-						Vec2(0, 1)),
-						THICK_LINE_VERTEX(curProcessingLine.mStart + left * halfThick, colorStart.Get4Byte(),
-						Vec2(1, 0)),
-						THICK_LINE_VERTEX(curProcessingLine.mStart - left * halfThick, colorStart.Get4Byte(),
-						Vec2(0, 0)),
+						THICK_LINE_VERTEX(curProcessingLine.mEnd, colorEnd.Get4Byte(),Vec4(0, 1, thickness, -1.f), curProcessingLine.mEnd + dir),
+						THICK_LINE_VERTEX(curProcessingLine.mStart, colorStart.Get4Byte(),Vec4(1, 0, thickness, +1.f), curProcessingLine.mEnd),
+						THICK_LINE_VERTEX(curProcessingLine.mStart, colorStart.Get4Byte(),Vec4(0, 0, thickness, -1.f), curProcessingLine.mEnd),
 						
 					};
 					unsigned base = numVertex*THICK_LINE_STRIDE;

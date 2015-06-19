@@ -202,11 +202,17 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 							  if (region)
 							  {
 								  auto& regionSize = region->GetSize();
-								  Vec2I imgSize(mScaledFontSize-4, mScaledFontSize-4);
+								  float ratio = regionSize.x / (float)regionSize.y;
+								  Vec2I imgSize = regionSize;
+								  int yoffset = 0;
+								  if (imgSize.y < mScaledFontSize){
+									  yoffset = Round((mScaledFontSize - imgSize.y) * .5f);
+								  }
 								  mTextureMaterial->SetDiffuseColor(Vec4(1, 1, 1, ( (mColor & 0xff000000) >> 24)/255.f ));
-								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y+2), imgSize, region->mUVStart, region->mUVEnd,
+								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y + yoffset), imgSize, region->mUVStart, region->mUVEnd,
 									  Color::White, textureAtlas->mTexture, mTextureMaterial);
-								  x += mScaledFontSize;
+								  
+								  x += imgSize.x;
 								  return true;
 							  }
 						  }

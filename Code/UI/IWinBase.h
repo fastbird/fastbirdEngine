@@ -230,6 +230,8 @@ namespace fastbird
 
 		// runtime child will not be saved.
 		virtual void SetRuntimeChild(bool runtime) = 0;
+		virtual void SetRuntimeChildRecursive(bool runtime) = 0;
+		virtual bool IsRuntimeChildRecursive() const = 0;
 		virtual bool IsRuntimeChild() const = 0;
 		// ghost child will not test to focus
 		virtual void SetGhost(bool ghost) = 0;

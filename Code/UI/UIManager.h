@@ -190,6 +190,7 @@ namespace fastbird
 		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win);
 
 		virtual void MoveToBottom(const char* moveToBottom);
+		virtual void MoveToBottom(IWinBase* moveToBottom);
 		virtual void HideUIsExcept(const std::vector<std::string>& excepts);
 
 		virtual void HighlightUI(const char* uiname);

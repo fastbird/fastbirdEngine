@@ -331,50 +331,56 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::REGION:
 	{
 		mStrRegion = val;
-							   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
-							   return true;
+		if (mTextureAtlasFile.empty()){
+			mTextureAtlasFile = "data/textures/gameui.xml";
+		}
+		SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+		return true;
 	}
 		break;
 
 	case UIProperty::REGIONS:
 	{
 		mStrRegions = val;
-								mAnimation = true;
-								auto useNumberData = Split(val, ":");
-								if (useNumberData.size() >= 2)
-								{
-									auto fromtoData = Split(useNumberData[1], ",");
-									fromtoData[0] = StripBoth(fromtoData[0].c_str());
-									fromtoData[1] = StripBoth(fromtoData[1].c_str());
-									unsigned from = StringConverter::parseUnsignedInt(fromtoData[0].c_str());
-									unsigned to = StringConverter::parseUnsignedInt(fromtoData[1].c_str());
-									assert(to > from);
-									std::vector<std::string> data;
-									char buf[256];
-									for (unsigned i = from; i <= to; i++)
-									{
-										sprintf_s(buf, "%s%u", useNumberData[0].c_str(), i);
-										data.push_back(buf);
-									}
-									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
-								}
-								else
-								{
-									auto data = Split(val, ",");
-									for (auto& str : data)
-									{
-										str = StripBoth(str.c_str());
-									}
-									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
-								}
-								if (!mAtlasRegions.empty())
-								{
-									Vec2 texcoords[4];
-									mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
-									mUIObject->SetTexCoord(texcoords, 4);
-								}
+		if (mTextureAtlasFile.empty()){
+			mTextureAtlasFile = "data/textures/gameui.xml";
+		}
+		mAnimation = true;
+		auto useNumberData = Split(val, ":");
+		if (useNumberData.size() >= 2)
+		{
+			auto fromtoData = Split(useNumberData[1], ",");
+			fromtoData[0] = StripBoth(fromtoData[0].c_str());
+			fromtoData[1] = StripBoth(fromtoData[1].c_str());
+			unsigned from = StringConverter::parseUnsignedInt(fromtoData[0].c_str());
+			unsigned to = StringConverter::parseUnsignedInt(fromtoData[1].c_str());
+			assert(to > from);
+			std::vector<std::string> data;
+			char buf[256];
+			for (unsigned i = from; i <= to; i++)
+			{
+				sprintf_s(buf, "%s%u", useNumberData[0].c_str(), i);
+				data.push_back(buf);
+			}
+			SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+		}
+		else
+		{
+			auto data = Split(val, ",");
+			for (auto& str : data)
+			{
+				str = StripBoth(str.c_str());
+			}
+			SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+		}
+		if (!mAtlasRegions.empty())
+		{
+			Vec2 texcoords[4];
+			mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
+			mUIObject->SetTexCoord(texcoords, 4);
+		}
 								
-								return true;
+		return true;
 
 	}
 		break;

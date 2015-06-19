@@ -30,7 +30,10 @@ void CardScroller::OnSizeChanged()
 {
 	__super::OnSizeChanged();
 	
-	mWidth = 1.0f - (4 / (float)GetParentSize().x);
+	//mWidth = 1.0f - (4 / (float)GetParentSize().x);
+	const auto& size = GetFinalSize();	
+	mWidth = mCardSizeX / (float)size.x;
+	mHeight = mCardSizeY / (float)size.y;
 }
 
 bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
@@ -40,7 +43,7 @@ bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::CARD_SIZEX:
 	{
 		mCardSizeX = StringConverter::parseInt(val);
-		SetCardSizeX(mCardSizeY);
+		SetCardSizeX(mCardSizeX);
 		return true;
 	}
 	case UIProperty::CARD_SIZEY:
@@ -72,6 +75,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardSizeX);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	case UIProperty::CARD_SIZEY:
 	{
@@ -82,6 +86,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardSizeY);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	case UIProperty::CARD_OFFSETY:
 	{
@@ -92,6 +97,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardOffsetY);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	}
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -131,21 +137,22 @@ void CardScroller::SetCardSizeNX(float nx)
 void CardScroller::SetCardSizeX(int x)
 {
 	mCardSizeX = x;
-	auto rtSize = GetParentSize();
+	const auto& rtSize = GetFinalSize();
 	mWidth = x / (float)rtSize.x;
 }
 
 void CardScroller::SetCardSizeY(int y)
 {
 	mCardSizeY = y;
-	auto rtSize = GetParentSize();
+	const auto& rtSize = GetFinalSize();
 	mHeight = y / (float)rtSize.y;
 }
 
 void CardScroller::SetCardOffset(int offset)
 {
 	mCardOffsetY = offset;
-	mNYOffset = offset  /(float)GetParentSize().y;
+	const auto& rtSize = GetFinalSize();
+	mNYOffset = offset / (float)rtSize.y;
 }
 
 CardScroller::Slot* CardScroller::GetNextCardPos(Vec2& pos)
@@ -199,8 +206,8 @@ IWinBase* CardScroller::AddCard()
 	Slot* pDestSlot = GetNextCardPos(pos);
 	assert(pDestSlot);
 	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);	
-	card->SetRuntimeChild(true);
-	pDestSlot->mCard = card;
+	card->SetRuntimeChildRecursive(true);
+	pDestSlot->mCard = (CardItem*)card;
 	return card;
 }
 
@@ -210,8 +217,8 @@ void CardScroller::AddCard(LuaObject& obj)
 	Slot* pDestSlot = GetNextCardPos(pos);
 	assert(pDestSlot);
 	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);
-	card->SetRuntimeChild(true);
-	pDestSlot->mCard = card;
+	card->SetRuntimeChildRecursive(true);
+	pDestSlot->mCard = (CardItem*)card;
 
 	card->ParseLua(obj);
 }
@@ -222,12 +229,29 @@ void CardScroller::DeleteCard(IWinBase* card)
 	unsigned num = mSlots.size();
 	for (unsigned i = 0; i < num; ++i)
 	{
-		if (mSlots[i].mCard == card)
+		if (mSlots[i].mCard && mSlots[i].mCard == card)
 		{
 			mSlots[i].mCard->SetContent(0);
 			mSlots[i].mCard = 0;
 			mSlots[i].mOccupied = false;
 			RemoveChild(card);
+			Sort();
+			return;
+		}
+	}
+}
+
+void CardScroller::DeleteCard(unsigned cardId){
+	Profiler p("DeleteCard");
+	unsigned num = mSlots.size();
+	for (unsigned i = 0; i < num; ++i)
+	{
+		if (mSlots[i].mCard && mSlots[i].mCard->GetCardId() == cardId)
+		{
+			mSlots[i].mCard->SetContent(0);
+			mSlots[i].mCard = 0;
+			mSlots[i].mOccupied = false;
+			RemoveChild(mSlots[i].mCard);
 			Sort();
 			return;
 		}

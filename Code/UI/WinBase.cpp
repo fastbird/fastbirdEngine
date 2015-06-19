@@ -81,7 +81,7 @@ WinBase::WinBase()
 , mCurHighlightTime(0)
 , mHighlightSpeed(0.f)
 , mGoingBright(true), mAlpha(1.f), mShowingTooltip(false), mTabOrder(-1), mSaveCheck(false)
-, mFillX(false), mFillY(false), mRunTimeChild(false), mGhost(false), mAspectRatioSet(false)
+, mFillX(false), mFillY(false), mRunTimeChild(false), mRunTimeChildRecursive(false), mGhost(false), mAspectRatioSet(false)
 , mAnimScale(1, 1), mAnimatedPos(0, 0), mAnimPos(0, 0)
 , mGatheringException(false)
 , mKeepUIRatio(false)
@@ -241,7 +241,7 @@ void WinBase::OnSizeChanged()
 			mUIObject->SetTextSize(mTextSize);
 	}
 	else{
-		if (mTextAlignH != ALIGNH::LEFT && mTextAlignV != ALIGNV::TOP){
+		if (mTextAlignH != ALIGNH::LEFT || mTextAlignV != ALIGNV::TOP){
 			AlignText();
 		}
 	}
@@ -1533,7 +1533,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 											anim->SetTargetUI(this);
 										   anim->ClearData();
 										   anim->AddScale(0.0f, Vec2(1.0f, 1.0f));
-										   anim->AddScale(sFadeInOutTime, Vec2(0.001f, 0.001f));
+										   anim->AddScale(sFadeInOutTime, Vec2(0.1f, 0.1f));
 										   anim->AddAlpha(0.0f, 1.0f);
 										   anim->AddAlpha(sFadeInOutTime, 0.0f);
 										   anim->SetLength(sFadeInOutTime);

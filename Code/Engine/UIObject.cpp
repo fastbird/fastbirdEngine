@@ -228,10 +228,10 @@ void UIObject::Render()
 		renderer->SetScissorRects(&mScissorRect, 1);
 	}
 
+	mMaterial->Bind(true);
 	if (!mNoDrawBackground)
 	{
-		renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
-		mMaterial->Bind(true);
+		renderer->UpdateObjectConstantsBuffer(&mObjectConstants);		
 		//mRasterizerStateShared->Bind();
 		renderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	
