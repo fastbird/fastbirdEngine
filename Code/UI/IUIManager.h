@@ -120,6 +120,7 @@ namespace fastbird
 		friend class TextField;
 		friend class PropertyList;
 		friend class ListBox;
+		friend class CardScroller;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
 		virtual void DeleteComponent(IWinBase* com) = 0;
 

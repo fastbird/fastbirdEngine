@@ -962,9 +962,6 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::CardScroller:
 		pWnd = FB_NEW(CardScroller);
 		break;
-	case ComponentType::CardItem:
-		pWnd = FB_NEW(CardItem);
-		break;
 	case ComponentType::VerticalGauge:
 		pWnd = FB_NEW(VerticalGauge);
 		break;

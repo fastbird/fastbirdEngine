@@ -1241,7 +1241,6 @@ void ListBox::VisualizeData(unsigned index){
 		offset = mScrollerV->GetOffset();
 	}
 
-	ListItem *keyItem = 0, *valueItem = 0;
 	const auto data = mData->GetData(index);
 	if (!data)
 	{

@@ -272,7 +272,9 @@ IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*
 	{
 		if (_stricmp(var->GetName(), name.c_str()) == 0)
 		{
-			return var;
+			auto it = std::find(mPendingDelete.begin(), mPendingDelete.end(), var);
+			if (it == mPendingDelete.end())
+				return var;
 		}
 	}
 	if (includeSubChildren)
@@ -583,16 +585,13 @@ void Container::SetSpecialOrder(int specialOrder){
 bool Container::SetVisible(bool visible)
 {
 	bool changed = __super::SetVisible(visible);
-	if (changed)
+	for (auto var : mChildren)
 	{
-		for (auto var : mChildren)
+		if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
 		{
-			if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
-			{
-				var->SetVisible(visible);
-			}
-			var->OnParentVisibleChanged(visible);
+			var->SetVisible(visible);
 		}
+		var->OnParentVisibleChanged(visible);
 	}
 	if (mMatchHeight)
 	{

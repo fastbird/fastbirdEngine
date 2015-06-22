@@ -100,6 +100,7 @@
     <ClInclude Include="Align.h" />
     <ClInclude Include="Button.h" />
     <ClInclude Include="ButtonImages.h" />
+    <ClInclude Include="CardData.h" />
     <ClInclude Include="CardScroller.h" />
     <ClInclude Include="CheckBox.h" />
     <ClInclude Include="ColorRampComp.h" />
@@ -151,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Button.cpp" />
+    <ClCompile Include="CardData.cpp" />
     <ClCompile Include="CardScroller.cpp" />
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />

@@ -35,7 +35,7 @@ namespace fastbird
 	int AddComponent(lua_State* L);
 	int CreateNewCard(lua_State* L);
 	int DeleteCard(lua_State* L);
-	int GetCardUIId(lua_State* L);
+	int IsExistingCard(lua_State* L);
 	int BlinkButton(lua_State* L);
 	int UpdateButtonProgressBar(lua_State* L);
 	int StartButtonProgressBar(lua_State* L);
@@ -44,6 +44,7 @@ namespace fastbird
 	int SetUIBackground(lua_State* L);
 	int SetUIProperty(lua_State* L);
 	int GetUIProperty(lua_State* L);
+	int SetCardUIProperty(lua_State* L);
 	int RemoveUIEventhandler(lua_State* L);
 	int GetMousePos(lua_State* L);
 	int GetComponentWidth(lua_State* L);
@@ -181,7 +182,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, AddComponent);
 		LUA_SETCFUNCTION(mL, CreateNewCard);
 		LUA_SETCFUNCTION(mL, DeleteCard);
-		LUA_SETCFUNCTION(mL, GetCardUIId);
+		LUA_SETCFUNCTION(mL, IsExistingCard);
 		LUA_SETCFUNCTION(mL, BlinkButton);
 		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
 		LUA_SETCFUNCTION(mL, StartButtonProgressBar);
@@ -190,6 +191,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetUIBackground);
 		LUA_SETCFUNCTION(mL, SetUIProperty);
 		LUA_SETCFUNCTION(mL, GetUIProperty);
+		LUA_SETCFUNCTION(mL, SetCardUIProperty);
 		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
 		LUA_SETCFUNCTION(mL, GetMousePos);
 		LUA_SETCFUNCTION(mL, GetComponentWidth);
@@ -401,7 +403,8 @@ namespace fastbird
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* cardScrollerName = luaL_checkstring(L, 2);
-		LuaObject card(L, 3);
+		unsigned key = luaL_checkunsigned(L, 3);
+		LuaObject card(L, 4);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
@@ -410,7 +413,7 @@ namespace fastbird
 		}
 
 		CardScroller* cardScroller = (CardScroller*)comp;
-		cardScroller->AddCard(card);
+		cardScroller->AddCard(key, card);
 		return 0;
 	}
 
@@ -425,30 +428,27 @@ namespace fastbird
 		}
 
 		CardScroller* cardScroller = (CardScroller*)comp;
-		unsigned cardId = luaL_checkunsigned(L, 3);
-		cardScroller->DeleteCard(cardId);
+		unsigned key = luaL_checkunsigned(L, 3);
+		cardScroller->DeleteCard(key);
 		return 0;
 	}
 
-	int GetCardUIId(lua_State* L)
-	{
+	int IsExistingCard(lua_State* L){
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* cardScrollerName = luaL_checkstring(L, 2);
-		const char* cardName = luaL_checkstring(L, 3);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
-		if (comp)
+		if (!comp)
 		{
-			auto cardComp = comp->GetChild(cardName);
-			if (cardComp)
-			{
-				CardItem* card = (CardItem*)cardComp;
-				lua_pushunsigned(L, card->GetCardId());
-				return 1;
-			}
-		}		
+			Error(DEFAULT_DEBUG_ARG, "No card scroller found!");
+			return 0;
+		}
 
-		lua_pushunsigned(L, -1);
+		CardScroller* cardScroller = (CardScroller*)comp;
+		unsigned key = luaL_checkunsigned(L, 3);
+		bool exist = cardScroller->IsExisting(key);
+		lua_pushboolean(L, exist);
 		return 1;
+
 	}
 
 	int BlinkButton(lua_State* L)
@@ -610,6 +610,22 @@ namespace fastbird
 				return 1;
 			}
 		}
+		return 0;
+	}
+
+	int SetCardUIProperty(lua_State* L){
+		int li = 1;
+		const char* uiname = luaL_checkstring(L, li++);
+		const char* scrollerName = luaL_checkstring(L, li++);
+		unsigned key = luaL_checkunsigned(L, li++);
+		const char* compName = luaL_checkstring(L, li++);
+		const char* prop = luaL_checkstring(L, li++);
+		const char* val = luaL_checkstring(L, li++);
+		auto card = (CardScroller*)gFBUIManager->FindComp(uiname, scrollerName);
+		if (card){
+			card->SetItemProperty(key, compName, prop, val);
+		}
+
 		return 0;
 	}
 
