@@ -153,6 +153,8 @@ public:
 
 	unsigned GetLastChangedRow() const { return mLastChangedItem.x; }
 
+	float GetChildrenContentEnd() const;
+
 protected:
 
 	ListItem* CreateNewItem(int row, int col);

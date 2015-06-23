@@ -43,7 +43,6 @@ namespace fastbird
 
 		Vec2 mAnimPos;			
 		Vec2 mNPos;
-		Vec2 mNPosAligned;
 		Vec2 mWNPos;
 		// scrolling offset;
 		Vec2 mWNScrollingOffset;
@@ -403,6 +402,7 @@ namespace fastbird
 		virtual bool GetGhost() const{ return mGhost; }
 
 		virtual float GetContentHeight() const;
+		virtual float GetContentEnd() const;
 
 		virtual bool IsKeyboardFocused() const;
 

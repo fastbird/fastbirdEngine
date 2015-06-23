@@ -495,6 +495,13 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 			mWndContentUI = contentWndBackup;
 			if (!mWndContentUI){
+				bool prevScrollerV = mUseScrollerV;
+				if (mScrollerV)
+				{
+					mUseScrollerV = false;
+					RemoveChild(mScrollerV, true);
+					mScrollerV = 0;
+				}
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 				mWndContentUI->SetRuntimeChild(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
@@ -502,12 +509,9 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				mWndContentUI->SetUseAbsSize(false);
 				mWndContentUI->ChangePos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
-				if (mUseScrollerV)
-				{
-					mUseScrollerV = false;
-					mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
-					RemoveChild(mScrollerV, true);
-					mScrollerV = 0;
+				if (prevScrollerV)
+				{					
+					mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");					
 				}
 			}
 			gFBUIManager->DirtyRenderList(GetHwndId());
@@ -1869,5 +1873,13 @@ void ListBox::ClearItemProperties(){
 	mItemPropertyByColumn.clear();
 	mItemPropertyByUnsigned.clear();
 	mItemPropertyByString.clear();
+}
+
+float ListBox::GetChildrenContentEnd() const{
+	auto num = mItems.size();
+	int hgap = mRowHeight + mRowGap;
+
+	int sizeY = hgap * num + mRowGap + mRowHeight;
+	return mWNPos.y + sizeY / (float)GetRenderTargetSize().y;
 }
 }

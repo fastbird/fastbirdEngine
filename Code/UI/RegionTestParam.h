@@ -1,5 +1,6 @@
 #pragma once
 namespace fastbird{
+	class IWinBase;
 	struct RegionTestParam{
 		RegionTestParam()
 			: mOnlyContainer(false)
@@ -19,5 +20,6 @@ namespace fastbird{
 		bool mTestChildren;
 		bool mNoRuntimeComp;
 		HWND_ID mHwndId;
+		std::vector<IWinBase*> mExceptions;
 	};
 }

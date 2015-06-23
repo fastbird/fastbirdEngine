@@ -33,7 +33,6 @@ WinBase::WinBase()
 , mAlignH(ALIGNH::LEFT)
 , mAlignV(ALIGNV::TOP)
 , mParent(0)
-, mNPosAligned(0, 0)
 , mMouseIn(false)
 , mMouseInPrev(false)
 , mNext(0)
@@ -73,6 +72,7 @@ WinBase::WinBase()
 , mInheritVisibleTrue(true)
 , mPos(0, 0)
 , mWPos(0, 0)
+, mWNPos(0, 0)
 , mNSize(NotDefined, NotDefined)
 //, mWNSize(NotDefined, NotDefined)
 , mHideCounter(0), mPivot(false)
@@ -253,7 +253,7 @@ void WinBase::OnSizeChanged()
 	RefreshBorder();
 	RefreshScissorRects();
 
-	if (mParent)
+	if (mParent && GetType() != ComponentType::Scroller)
 		mParent->SetChildrenPosSizeChanged();
 }
 
@@ -431,7 +431,7 @@ void WinBase::OnPosChanged(bool anim)
 	RefreshBorder();
 	RefreshScissorRects();
 
-	if (mParent)
+	if (mParent && GetType() != ComponentType::Scroller)
 	{
 		mParent->SetChildrenPosSizeChanged();
 	}
@@ -3475,6 +3475,7 @@ IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& para
 
 	if (IsIn(pt, param.mIgnoreScissor))
 		return (IWinBase*)this;
+
 	return 0;
 }
 
@@ -3514,6 +3515,10 @@ bool WinBase::GetSaveNameCheck() const
 float WinBase::GetContentHeight() const
 {
 	return GetFinalSize().y / (float)GetRenderTargetSize().y;
+}
+
+float WinBase::GetContentEnd() const{
+	return mWNPos.y + GetFinalSize().y / (float)GetRenderTargetSize().y;
 }
 
 bool WinBase::IsKeyboardFocused() const

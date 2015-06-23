@@ -9,6 +9,7 @@ namespace fastbird
 	public:
 		typedef std::vector<IWinBase*> Comps;
 		virtual void OnComponentSelected(IWinBase* comp) {}
+		virtual void OnComponentDeselected(IWinBase* comp) {}
 		virtual void OnComponentDeleted(IWinBase* comp){}
 		virtual IWinBase* GetCurSelected() const { return 0; }
 		virtual unsigned GetNumCurEditing() const { return 0; }

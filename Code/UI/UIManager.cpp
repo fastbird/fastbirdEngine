@@ -1099,17 +1099,38 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		rparam.mTestChildren = true;
 		rparam.mNoRuntimeComp = true;
 		rparam.mHwndId = hwndId;
-		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
-		if (mKeyboardFocus != focusWnd)
-		{
-			if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
-				SetFocusUI(focusWnd);
+		if (keyboard->IsKeyDown(VK_CONTROL) && mUIEditor){
+			auto it = mUIEditor->GetSelectedComps();
+			std::vector<IWinBase*> del;
+			while (it.HasMoreElement()){
+				auto comp = it.GetNext();
+				if (comp->IsIn(mousePos, rparam.mIgnoreScissor)){
+					del.push_back(comp);
+				}
+			}
+			for (auto comp : del){
+				mUIEditor->OnComponentDeselected(comp);
+			}
 		}
-		if (mUIEditor)
-		{
-			if (!keyboard->IsKeyDown(VK_MENU)){
-				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
-					mUIEditor->OnComponentSelected(mKeyboardFocus);
+		else{
+			if (mUIEditor){
+				auto it = mUIEditor->GetSelectedComps();
+				while (it.HasMoreElement()){
+					rparam.mExceptions.push_back(it.GetNext());
+				}
+			}
+			auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+			if (mKeyboardFocus != focusWnd)
+			{
+				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+					SetFocusUI(focusWnd);
+			}
+			if (mUIEditor)
+			{
+				if (!keyboard->IsKeyDown(VK_MENU)){
+					if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
+						mUIEditor->OnComponentSelected(mKeyboardFocus);
+				}
 			}
 		}
 	}

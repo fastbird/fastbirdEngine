@@ -84,6 +84,8 @@ namespace fastbird
 		virtual void GetBiggestTabOrder(int& curBiggest) const;
 		virtual void TabPressed();
 		virtual float GetContentHeight() const;
+		virtual float GetContentEnd() const;
+		virtual float GetChildrenContentEnd() const;
 		
 		virtual void SetSpecialOrder(int specialOrder);
 

@@ -179,7 +179,6 @@ void TextField::OnFocusLost()
 		IWinBase* editingUI = uiEditor->GetCurSelected();
 		std::string key, value;
 		propertyList->GetCurKeyValue(key, value);
-		Log("key = %s, value = %s", key.c_str(), value.c_str());
 		if (editingUI)
 		{
 			char buf[256] = { 0 };

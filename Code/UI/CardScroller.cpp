@@ -253,6 +253,7 @@ void CardScroller::VisualizeData(unsigned index){
 			item->SetVisible(true);
 			RefreshTextures(index);
 			RefreshProps(index);
+			item->SetWNScollingOffset(offset);
 			
 		}
 		else

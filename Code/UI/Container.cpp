@@ -503,7 +503,8 @@ void Container::RefreshVScrollbar()
 		return;
 
 	// find last wn
-	float contentHeight = GetContentHeight();
+	float contentEnd = GetChildrenContentEnd() + 4.f / (float)GetRenderTargetSize().y;
+	float contentHeight = contentEnd - mWNPos.y;
 	const auto& finalSize = GetFinalSize();
 	float wnSizeY = finalSize.y / (float)GetRenderTargetSize().y;
 	
@@ -571,6 +572,30 @@ float Container::GetContentHeight() const
 		contentWNEnd = std::max(wnEnd, contentWNEnd);
 	}
 	return contentWNEnd - mWNPos.y;
+}
+
+float Container::GetContentEnd() const{
+	float end = __super::GetContentEnd();
+	if (mChildren.empty()){
+		return end;
+	}
+
+	for (auto i : mChildren){
+		WinBase* winbase = (WinBase*)i;
+		float cend = winbase->GetContentEnd();
+		end = std::max(end, cend);		
+	}
+	return end;	
+}
+
+float Container::GetChildrenContentEnd() const{
+	float end = 0;
+	for (auto i : mChildren){
+		WinBase* winbase = (WinBase*)i;
+		float cend = winbase->GetContentEnd();
+		end = std::max(end, cend);
+	}
+	return end;
 }
 
 void Container::SetSpecialOrder(int specialOrder){
@@ -971,15 +996,22 @@ IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 						continue;
 				}
 				auto found = child->WinBaseWithPoint(pt, param);
-				if (found)
-					return found;
+				if (found){
+					auto it = std::find(param.mExceptions.begin(), param.mExceptions.end(), found);
+					if (it == param.mExceptions.end())
+						return found;
+				}
 			}
 		}
 	}
 	if (GetGhost() || (param.mNoRuntimeComp && mRunTimeChild))
 		return 0;
-
-	return in ? (IWinBase*)this : 0;
+	if (in && GetVisible()){
+		auto it = std::find(param.mExceptions.begin(), param.mExceptions.end(), this);
+		if (it == param.mExceptions.end())
+			return (IWinBase*)this;
+	}
+	return 0;
 }
 
 IWinBase* Container::WinBaseWithTabOrder(unsigned tabOrder) const
