@@ -39,7 +39,7 @@ ListBox::ListBox()
 
 ListBox::~ListBox()
 {
-	Clear();
+	Clear(false);
 	FB_DELETE(mData);
 }
 
@@ -132,6 +132,11 @@ unsigned ListBox::InsertEmptyData(){
 		}
 	}
 	return index;
+}
+
+bool ListBox::ModifyKey(unsigned row, unsigned key){
+	assert(row < mData->Size());
+	return mData->ModifyKey(row, key);
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type){
@@ -307,14 +312,14 @@ void ListBox::SetHighlightRowAndSelect(size_t row, bool highlight)
 	SetHighlightRow(row, highlight);
 }
 
-void ListBox::Clear()
+void ListBox::Clear(bool immediately)
 {
 	ChangeFocusItem(0);
 	for (auto items : mItems)
 	{
 		for (auto item : items)
 		{
-			RemoveChild(item);
+			RemoveChild(item, immediately);
 		}
 	}
 	mItems.clear();
@@ -496,10 +501,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			mWndContentUI = contentWndBackup;
 			if (!mWndContentUI){
 				bool prevScrollerV = mUseScrollerV;
-				if (mScrollerV)
+				if (mUseScrollerV)
 				{
 					mUseScrollerV = false;
-					RemoveChild(mScrollerV, true);
+					if (mUseScrollerV)
+						RemoveChild(mScrollerV, true);
 					mScrollerV = 0;
 				}
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
@@ -1484,27 +1490,20 @@ void ListBox::FillItem(unsigned index){
 		else{
 			SetHighlightRowCol(index, i, false);
 		}
-
-		const auto& prop = mItemPropertyByColumn[index];
-		for (auto p : prop){
-			item->SetProperty(p.first, p.second.c_str());
-		}
 	}
 
 	unsigned int key = mData->GetUnsignedKey(index);
-	if (key != -1){
-		auto it = mItemPropertyByUnsigned.Find(key);
-		if (it != mItemPropertyByUnsigned.end()){
-			for (auto& property : it->second){
-				for (auto col : mItems[index]){
-					col->SetProperty(property.first, property.second.c_str());
-				}
+	auto it = mItemPropertyByUnsigned.Find(key);
+	if (it != mItemPropertyByUnsigned.end()){
+		for (auto& property : it->second){
+			for (auto col : mItems[index]){
+				col->SetProperty(property.first, property.second.c_str());
 			}
 		}
 	}
-	else{
+	{
 		auto key = mData->GetStringKey(index);
-		if (wcslen(key)!=0) {
+		if (wcslen(key) != 0) {
 			auto it = mItemPropertyByString.Find(key);
 			if (it != mItemPropertyByString.end()){
 				for (auto& property : it->second){
@@ -1512,6 +1511,25 @@ void ListBox::FillItem(unsigned index){
 						col->SetProperty(property.first, property.second.c_str());
 					}
 				}
+			}
+		}
+	}
+
+	for (unsigned i = 0; i < mNumCols; ++i){
+		auto item = mItems[index][i];
+		assert(item);
+		const auto& prop = mItemPropertyByColumn[i];
+		for (auto p : prop){
+			item->SetProperty(p.first, p.second.c_str());
+		}
+	}
+
+	for (auto it = mItemPropertyKeyCol.begin(); it != mItemPropertyKeyCol.end(); it++){
+		if (key == (unsigned)it->first.x){
+			auto item = mItems[index][it->first.y];
+			assert(item);
+			for (auto p : it->second){
+				item->SetProperty(p.first, p.second.c_str());
 			}
 		}
 	}
@@ -1761,36 +1779,77 @@ void ListBox::MakeSureRangeFor(unsigned rowIndex){
 }
 
 void ListBox::SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val){
-	mItemPropertyByUnsigned[uniqueKey].push_back(std::make_pair(prop, val));
+	auto& properties = mItemPropertyByUnsigned[uniqueKey];
+	bool found = false;
+	for (auto it = properties.begin(); it != properties.end(); ++it){
+		if (it->first == prop){
+			found = true;
+			it->second = val;
+		}
+	}
+	if (!found){
+		properties.push_back(std::make_pair(prop, val));
+	}
 	if (!mData)
 		return;
 	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
 	if (rowIndex == -1)
 		return;
-	assert(rowIndex < mItems.size());
-	for (auto item : mItems[rowIndex]){
-		assert(item);
-		item->SetProperty(prop, val);
-	}
+	VisualizeData(rowIndex);
 }
+
 void ListBox::SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val){
-	mItemPropertyByString[uniqueKey].push_back(std::make_pair(prop, val));
+	auto& properties = mItemPropertyByString[uniqueKey];
+	bool found = false;
+	for (auto it = properties.begin(); it != properties.end(); ++it){
+		if (it->first == prop){
+			found = true;
+			it->second = val;
+		}
+	}
+	if (!found){
+		properties.push_back(std::make_pair(prop, val));
+	}
+
 	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
 	if (rowIndex == -1)
 		return;
-	assert(rowIndex < mItems.size());
-	for (auto item : mItems[rowIndex]){
-		assert(item);
-		item->SetProperty(prop, val);
-	}
+	VisualizeData(rowIndex);
 }
 
 void ListBox::SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val){
-	mItemPropertyByColumn[col].push_back(std::make_pair(prop, val));
+	auto& properties = mItemPropertyByColumn[col];
+	bool found = false;
+	for (auto& it : properties){
+		if (it.first == prop){
+			it.second = val;
+			found = true;
+		}
+	}
+	if (!found)
+		properties.push_back(std::make_pair(prop, val));
 	for (auto row : mItems){
-		if (row.size() > col){
+		if (row.size() > col && row[col]){
 			row[col]->SetProperty(prop, val);
 		}		
+	}
+}
+
+void ListBox::SetItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum prop, const char* val){
+	auto& properties = mItemPropertyKeyCol[keyCol];
+	bool found = false;
+	for (auto& it : properties){
+		if (it.first == prop){
+			it.second = val;
+			found = true;
+		}
+	}
+	if (!found)
+		properties.push_back(std::make_pair(prop, val));
+	unsigned row = mData->FindRowIndexWithKey((unsigned)keyCol.x);
+	if (mItems.size() > (unsigned)row && mItems[row][keyCol.y]){
+		if (mItems[row][keyCol.y])
+			mItems[row][keyCol.y]->SetProperty(prop, val);
 	}
 }
 

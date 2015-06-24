@@ -852,13 +852,20 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 					invalidate = true;
 				ToolTipEvent(UIEvents::EVENT_MOUSE_IN, mousepos);
 			}
-
-			if (mouse->IsLButtonClicked())
+			if (mouse->IsLButtonClicked() && mName == "property")
+			{
+				int a = 0;
+				a++;
+			}
+			if (mouse->IsLButtonClicked() && IsIn(mouse) && IsIn(mouse->GetDragStartedPos(), false) )
 			{
 				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK))
 				{
 					invalidate = true;
 					mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
+				}
+				if (invalidate){
+					gFBUIManager->SetFocusUI(this);
 				}
 			}
 			else if (mouse->IsLButtonDoubleClicked())
@@ -870,7 +877,7 @@ bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				}
 
 			}
-			else if (mouse->IsRButtonClicked())
+			else if (mouse->IsRButtonClicked() && IsIn(mouse) && IsIn(mouse->GetDragStartedPos(), false))
 			{
 				if (OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK))
 				{
@@ -1195,20 +1202,20 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::NPOS:
 	{
 							 Vec2 npos = StringConverter::parseVec2(val);
-							 SetNPos(npos);
+							 ChangeNPos(npos);
 							 return true;
 	}
 	case UIProperty::NPOSX:
 	{
 							  float x = StringConverter::parseReal(val);
-							  SetNPosX(x);
+							  ChangeNPosX(x);
 							  OnSizeChanged();
 							  return true;
 	}
 	case UIProperty::NPOSY:
 	{
 							  float y = StringConverter::parseReal(val);
-							  SetNPosY(y);
+							  ChangeNPosY(y);
 							  OnSizeChanged();
 							  return true;
 	}

@@ -31,6 +31,7 @@ namespace fastbird
 		unsigned InsertData(const std::wstring& uniqueKey);
 		unsigned InsertData(unsigned uniqueKey);
 		unsigned InsertEmptyData();
+		bool ModifyKey(unsigned row, unsigned key);
 
 		// string or texture path
 		void SetData(const std::wstring& uniqueKey, unsigned colIndex, const wchar_t* string, ListItemDataType::Enum type);		

@@ -113,7 +113,19 @@ namespace fastbird
 	unsigned ListBoxDataSet::InsertEmptyData(){
 		mData.push_back(FB_ARRNEW(ListBoxData, mNumCols));
 		auto& cols = mData.back();
+		cols[0].SetKey(-1);
 		return mData.size() - 1;
+	}
+
+	bool ListBoxDataSet::ModifyKey(unsigned row, unsigned key){
+		if (row >= mData.size())
+			return false;
+		if (mData[row][0].GetDataType() != ListItemDataType::NumberKey)
+			return false;
+
+		
+		mData[row][0].SetKey(key);
+		return true;
 	}
 
 	void ListBoxDataSet::SetData(const std::wstring& uniqueKey, unsigned colIndex, const wchar_t* string, ListItemDataType::Enum type)

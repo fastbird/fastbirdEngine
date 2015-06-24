@@ -84,6 +84,7 @@ namespace fastbird
 		virtual bool IsMButtonDown() const = 0;
 		virtual bool IsMoved() const = 0;
 		virtual void GetDragStart(long &x, long &y) const = 0;
+		virtual Vec2I GetDragStartedPos() const = 0;
 		virtual bool IsDragStartIn(const RECT& region) const = 0;
 		virtual bool IsDragStarted(Vec2I& outStartPos) const = 0;
 		virtual bool IsDragEnded() const = 0;

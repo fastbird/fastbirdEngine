@@ -49,6 +49,7 @@ protected:
 	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
 	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
 	VectorMap<unsigned, PropertyData> mItemPropertyByColumn;
+	VectorMap<Vec2I, PropertyData> mItemPropertyKeyCol;
 	std::set<unsigned> mNoVirtualizingRows;
 	bool mMultiSelection;
 	bool mNoHighlight;
@@ -71,6 +72,7 @@ public:
 	virtual unsigned InsertItem(unsigned uniqueKey);
 	virtual unsigned InsertItem(const wchar_t* uniqueKey);
 	virtual unsigned InsertEmptyData();
+	virtual bool ModifyKey(unsigned row, unsigned key);
 
 	virtual void SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type);
 	virtual void SetItem(const Vec2I& rowcol, bool checked);
@@ -131,6 +133,7 @@ public:
 	virtual void SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val);
 	virtual void SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val);
 	virtual void SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val);
+	virtual void SetItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop, const char* val);
 	virtual void ClearItemProperties();
 
 	virtual void VisualizeData(unsigned index);
@@ -140,7 +143,7 @@ public:
 
 	
 
-	virtual void Clear();
+	virtual void Clear(bool immediately=false);
 
 	void SearchStartingChacrcter(char c, unsigned curIndex);
 	void IterateItem(bool next, bool apply);

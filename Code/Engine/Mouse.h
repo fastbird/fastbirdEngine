@@ -36,6 +36,7 @@ namespace fastbird
 		virtual void GetNPos(float &x, float &y) const;
 		virtual Vec2 GetNPos() const;
 		virtual void GetDragStart(long &x, long &y) const;
+		virtual Vec2I GetDragStartedPos() const;
 		virtual bool IsDragStartIn(const RECT& region) const;
 		virtual bool IsDragStarted(Vec2I& outStartPos) const;
 		virtual bool IsDragEnded() const;
