@@ -75,6 +75,7 @@ namespace fastbird
 	int GetPropertyCurKeyValue(lua_State* L);	
 	int GetNumUIEvents(lua_State* L);
 	int GetUIEventName(lua_State* L);
+	int ModifyDropDownItem(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -144,6 +145,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, ClearListBox);
 		
 
+		LUA_SETCFUNCTION(mL, ModifyDropDownItem);
 		LUA_SETCFUNCTION(mL, GetUIEventName);
 		LUA_SETCFUNCTION(mL, GetNumUIEvents);
 		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
@@ -1040,6 +1042,22 @@ namespace fastbird
 		UIEvents::Enum e = (UIEvents::Enum)luaL_checkunsigned(L, 1);
 		lua_pushstring(L, UIEvents::ConvertToString(e));
 		return 1;
+	}
+
+	int ModifyDropDownItem(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		unsigned index = luaL_checkunsigned(L, 3);
+		auto prop = UIProperty::ConvertToEnum(luaL_checkstring(L, 4));
+		auto str = luaL_checkstring(L, 5);
+		auto comp = gFBUIManager->FindComp(uiname, compname);
+		if (comp && comp->GetType() == ComponentType::DropDown){
+			auto dropDown = (DropDown*)comp;
+			if (dropDown){
+				dropDown->ModifyItem(index, prop, str);
+			}
+		}
+		return 0;
 	}
 
 

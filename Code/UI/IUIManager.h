@@ -40,6 +40,7 @@ namespace fastbird
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
 		virtual IWinBase* GetKeyboardFocusUI() const = 0;
+		virtual IWinBase* GetNewFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
 		virtual void DirtyRenderList(HWND_ID hwndId) = 0;

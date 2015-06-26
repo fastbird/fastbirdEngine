@@ -71,6 +71,7 @@ ListItem* ListBox::CreateNewItem(int row, int col)
 	item->SetUseAbsXSize(false);
 	item->SetUseAbsXPos(false);
 	item->SetRuntimeChild(true);
+	item->SetRuntimeChildRecursive(true);
 	if (col < (int)mColAlignes.size())
 		item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());
 	if (col < (int)mTextSizes.size())
@@ -482,6 +483,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 					std::bind(&ListBox::OnDragHeader, this, std::placeholders::_1));
 				pAddedItem->SetVisible(GetVisible());
 				pAddedItem->SetRuntimeChild(true);
+				pAddedItem->SetRuntimeChildRecursive(true);
 				pAddedItem->SetUseAbsXSize(false);
 				pAddedItem->SetUseAbsXPos(false);
 				const RECT& rect = mUIObject->GetRegion();
@@ -510,6 +512,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				}
 				mWndContentUI = (Wnd*)AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Window);
 				mWndContentUI->SetRuntimeChild(true);
+				mWndContentUI->SetRuntimeChildRecursive(true);
 				Vec2I sizeMod = { 0, -(mRowHeight + 4) };
 				mWndContentUI->ModifySize(sizeMod);
 				mWndContentUI->SetUseAbsSize(false);
@@ -1323,6 +1326,7 @@ void ListBox::FillItem(unsigned index){
 				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				checkbox->SetRuntimeChild(true);
+				checkbox->SetRuntimeChildRecursive(true);
 				checkbox->SetVisible(mVisibility.IsVisible());
 				checkbox->SetProperty(UIProperty::ALIGNH, mColAlignes[i].c_str());
 				if (checkbox->GetHAlign() == ALIGNH::CENTER){
@@ -1351,6 +1355,7 @@ void ListBox::FillItem(unsigned index){
 				numeric->RegisterEventFunc(UIEvents::EVENT_NUMERIC_DOWN,
 					std::bind(&ListBox::OnNumericChanged, this, std::placeholders::_1));
 				numeric->SetRuntimeChild(true);
+				numeric->SetRuntimeChildRecursive(true);
 				numeric->SetVisible(mVisibility.IsVisible());
 				numeric->SetProperty(UIProperty::ALIGNH, mColAlignes[i].c_str());
 				if (numeric->GetHAlign() == ALIGNH::CENTER){
@@ -1375,6 +1380,7 @@ void ListBox::FillItem(unsigned index){
 				gauge = (HorizontalGauge*)item->AddChild(0.f, 0.f, 0.8f, 0.8f, ComponentType::HorizontalGauge);
 				gauge->SetUseAbsSize(false);				
 				gauge->SetRuntimeChild(true);
+				gauge->SetRuntimeChildRecursive(true);
 				gauge->SetVisible(mVisibility.IsVisible());
 				gauge->SetProperty(UIProperty::ALIGNH, mColAlignes[i].c_str());
 				if (gauge->GetHAlign() == ALIGNH::CENTER){
@@ -1408,6 +1414,7 @@ void ListBox::FillItem(unsigned index){
 				textField->SetProperty(UIProperty::USE_BORDER, "true");
 				textField->SetProperty(UIProperty::TEXT_LEFT_GAP, "4");
 				textField->SetRuntimeChild(true);
+				textField->SetRuntimeChildRecursive(true);
 				textField->SetVisible(mVisibility.IsVisible());
 				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
@@ -1434,6 +1441,7 @@ void ListBox::FillItem(unsigned index){
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
+				imageBox->SetRuntimeChildRecursive(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
 			}
 			if_assert_pass(imageBox){
@@ -1454,6 +1462,7 @@ void ListBox::FillItem(unsigned index){
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
+				imageBox->SetRuntimeChildRecursive(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
 			}
 			if_assert_pass(imageBox){
@@ -1474,6 +1483,7 @@ void ListBox::FillItem(unsigned index){
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
+				imageBox->SetRuntimeChildRecursive(true);
 				imageBox->SetVisible(mVisibility.IsVisible());
 			}
 			if_assert_pass(imageBox){

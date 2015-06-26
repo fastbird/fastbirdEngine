@@ -57,7 +57,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
-	, mMultiLocating(false), mAtlasStaging(0)
+	, mMultiLocating(false), mAtlasStaging(0), mNewFocusWnd(0)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -825,6 +825,7 @@ void UIManager::SetFocusUI(IWinBase* ui)
 		if (ui == reservedUI)
 			return;
 	}
+	mNewFocusWnd = ui;
 
 	if (mKeyboardFocus)
 		mKeyboardFocus->OnFocusLost();
@@ -1485,8 +1486,8 @@ bool UIManager::OnFileChanged(const char* file)
 			auto itFind = mLuaUIs.find(uiname);
 			if (itFind != mLuaUIs.end())
 			{
-				if (!MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
-					"Warning", MB_YESNO))
+				if (MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
+					"Warning", MB_YESNO) ==IDNO)
 					return false;
 
 				tinyxml2::XMLDocument doc;
@@ -1838,7 +1839,11 @@ void UIManager::CopyCompsAtMousePos(const std::vector<IWinBase*>& src){
 		return;
 
 	auto mouse = gFBEnv->pEngine->GetMouse();
-	auto pos = mouse->GetPos() - mMouseOveredContainer->GetFinalPos();
+	auto overedUI = mMouseOveredContainer->GetWndContentUI();
+	if (!overedUI){
+		overedUI = mMouseOveredContainer;
+	}
+	auto pos = mouse->GetPos() - overedUI->GetFinalPos();
 	auto offset = pos - src[0]->GetAlignedPos();
 	std::vector<IWinBase*> cloned;
 	tinyxml2::XMLDocument doc;

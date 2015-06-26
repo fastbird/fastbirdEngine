@@ -27,20 +27,15 @@ namespace fastbird
 		virtual void SetReservedIndex(size_t index);
 		virtual void OnFocusLost();
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
-		virtual void OnParentVisibleChanged(bool show);
-		virtual bool SetVisible(bool show);
-		virtual void SetHwndId(HWND_ID hwndId);
+		virtual void OnParentVisibleChanged(bool show);		
+		virtual void ModifyItem(unsigned index, UIProperty::Enum, const char* szString);
 
 	protected:
 		void SetCommonProperty(IWinBase* item, size_t index);
 		const static float LEFT_GAP;
-		virtual void OnPosChanged(bool anim);
-		virtual void OnSizeChanged();
 
 	private:
 		void OnMouseClick(void* arg);
-		void OnMouseHover(void* arg);
-		void OnMouseOut(void* arg);
 		void OnItemSelected(void* arg);
 
 		void CloseOptions();

@@ -334,7 +334,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									else
 									{
 										mImages[ButtonImages::ImageHover]->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-										mImages[ButtonImages::ImageHover]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+										mImages[ButtonImages::ImageHover]->DrawAsFixedSizeAtCenter();
 									}
 									
 									return true;

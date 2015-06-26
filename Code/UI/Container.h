@@ -93,6 +93,7 @@ namespace fastbird
 		void AddChild(IWinBase* child);
 		void DoNotTransfer(IWinBase* child);
 		
+		Container* GetWndContentUI() const { return mWndContentUI; }
 
 	private:
 		friend class WinBase;

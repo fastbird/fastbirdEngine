@@ -37,6 +37,7 @@ namespace fastbird
 
 		IWinBase* mFocusWnd;
 		IWinBase* mKeyboardFocus;
+		IWinBase* mNewFocusWnd;
 		Container* mMouseOveredContainer;
 		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
@@ -143,6 +144,7 @@ namespace fastbird
 		virtual void SetFocusUI(IWinBase* pWnd);
 		virtual IWinBase* GetFocusUI() const;
 		virtual IWinBase* GetKeyboardFocusUI() const;
+		virtual IWinBase* GetNewFocusUI() const { return mNewFocusWnd; }
 		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
 		virtual void DirtyRenderList(HWND_ID hwndId);

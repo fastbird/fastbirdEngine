@@ -2472,8 +2472,8 @@ void Renderer::RenderUI(HWND_ID hwndId)
 void Renderer::RenderFrameProfiler()
 {
 	wchar_t msg[255];
-	int x = 1100;
-	int y = 34;
+	int x = 1000;
+	int y = 134;
 	int yStep = 18;
 	if (mFont)
 		yStep = (int)mFont->GetHeight();

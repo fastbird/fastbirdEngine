@@ -355,6 +355,8 @@ Wnd* CardScroller::CreateNewCard(unsigned index){
 	int y = hgap * index + mCardOffsetY;
 	
 	auto item = (Wnd*)AddChild(Vec2I(x, y), Vec2I(mCardSizeX, mCardSizeY), ComponentType::Window);
+	item->SetRuntimeChild(true);
+	item->SetRuntimeChildRecursive(true);
 	return item;
 }
 
