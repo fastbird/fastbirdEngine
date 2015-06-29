@@ -95,6 +95,8 @@ namespace fastbird
 		
 		Container* GetWndContentUI() const { return mWndContentUI; }
 
+		bool HasScissorIgnoringChild() const;
+
 	private:
 		friend class WinBase;
 

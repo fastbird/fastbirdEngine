@@ -983,12 +983,20 @@ void Container::SetHwndId(HWND_ID hwndId)
 IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
 	auto in = IsIn(pt, param.mIgnoreScissor);
-	if (in){
+	bool hasScissorIgnoringChild = HasScissorIgnoringChild();
+	if (in || hasScissorIgnoringChild){
 		if (param.mTestChildren){
 			for (auto child : mChildren)
 			{
 				if (!child->GetVisible())
 					continue;
+				
+				if (param.mCheckMouseEvent && child->GetNoMouseEvent())
+					continue;
+
+				if (!in && child->GetUseScissor())
+					continue;
+
 				if (param.mOnlyContainer)
 				{
 					auto cont = dynamic_cast<Container*>(child);
@@ -1006,6 +1014,10 @@ IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 	}
 	if (GetGhost() || (param.mNoRuntimeComp && mRunTimeChild))
 		return 0;
+	
+	if (param.mCheckMouseEvent && GetNoMouseEventAlone())
+		return 0;
+
 	if (in && GetVisible()){
 		auto it = std::find(param.mExceptions.begin(), param.mExceptions.end(), this);
 		if (it == param.mExceptions.end())
@@ -1159,4 +1171,13 @@ void Container::AddChild(IWinBase* child){
 void Container::DoNotTransfer(IWinBase* child){
 	mDoNotTransfer.insert(child);
 }
+
+bool Container::HasScissorIgnoringChild() const{
+	for (auto child : mChildren){
+		if (!child->GetUseScissor())
+			return true;
+	}
+	return false;
+}
+
 }

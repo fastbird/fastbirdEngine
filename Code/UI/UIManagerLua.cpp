@@ -612,6 +612,9 @@ namespace fastbird
 				return 1;
 			}
 		}
+		else{
+			Error("Component %s is not found.", compName);
+		}
 		return 0;
 	}
 

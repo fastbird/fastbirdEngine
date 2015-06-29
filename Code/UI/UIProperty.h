@@ -140,6 +140,8 @@ namespace fastbird
 
 			BUTTON_IMAGE_SIZE,
 
+			WND_NO_FOCUS,
+
 			COUNT
 		};
 
@@ -277,6 +279,8 @@ namespace fastbird
 			"TABWND_TAB_NAMES",
 
 			"BUTTON_IMAGE_SIZE",
+
+			"WND_NO_FOCUS",
 
 			"COUNT"
 		};
@@ -458,6 +462,8 @@ namespace fastbird
 			case LISTBOX_NO_HIGHLIGHT:
 				return false;
 			case CLOSE_BTN:
+				return false;
+			case WND_NO_FOCUS:
 				return false;
 
 			}

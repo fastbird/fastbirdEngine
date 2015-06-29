@@ -58,6 +58,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
 	, mMultiLocating(false), mAtlasStaging(0), mNewFocusWnd(0)
+	, mMouseOvered(0), mMouseDragStartedUI(0)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -188,6 +189,23 @@ void UIManager::Update(float elapsedTime)
 		}
 	}
 	mMoveToBottomReserved.clear();	
+
+	for (auto& ui : mMoveToTopReserved)
+	{
+		auto hwndId = ui->GetHwndId();
+		auto& windows = mWindows[hwndId];
+		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), ui);
+		if (f != windows.end()){
+			// insert f at the mWindows.begin().
+			auto lastIt = windows.end();
+			lastIt--;
+			if (lastIt != f){
+				windows.splice(windows.end(), windows, f);
+				mNeedToRegisterUIObject[hwndId] = true;
+			}
+		}
+	}
+	mMoveToTopReserved.clear();
 
 	for each(auto& it in mWindows){
 		auto& windows = it.second;
@@ -810,6 +828,9 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	if (mMouseOveredContainer == winbase)
 		mMouseOveredContainer = 0;
 
+	if (mMouseOvered == winbase)
+		mMouseOvered = 0;
+
 	if (winbase->GetRender3D())
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
@@ -1078,6 +1099,8 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		mKeyboardFocus->OnInputFromHandler(pMouse, keyboard);
 		pMouse->InvalidTemporary(false);
 	}
+
+	ProcessMouseInput(pMouse, keyboard);
 	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 	int i = 0;
 	for (; it != itEnd; ++it)
@@ -1089,51 +1112,6 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 
 		if (!pMouse->IsValid() && !keyboard->IsValid())
 			break;
-	}
-
-	//Select
-	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
-		auto mousePos = pMouse->GetPos();
-		RegionTestParam rparam;
-		rparam.mOnlyContainer = false;
-		rparam.mIgnoreScissor = mUIEditor ? true : false;
-		rparam.mTestChildren = true;
-		rparam.mNoRuntimeComp = true;
-		rparam.mHwndId = hwndId;
-		if (keyboard->IsKeyDown(VK_CONTROL) && mUIEditor){
-			auto it = mUIEditor->GetSelectedComps();
-			std::vector<IWinBase*> del;
-			while (it.HasMoreElement()){
-				auto comp = it.GetNext();
-				if (comp->IsIn(mousePos, rparam.mIgnoreScissor)){
-					del.push_back(comp);
-				}
-			}
-			for (auto comp : del){
-				mUIEditor->OnComponentDeselected(comp);
-			}
-		}
-		else{
-			if (mUIEditor){
-				auto it = mUIEditor->GetSelectedComps();
-				while (it.HasMoreElement()){
-					rparam.mExceptions.push_back(it.GetNext());
-				}
-			}
-			auto focusWnd = WinBaseWithPoint(mousePos, rparam);
-			if (mKeyboardFocus != focusWnd)
-			{
-				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
-					SetFocusUI(focusWnd);
-			}
-			if (mUIEditor)
-			{
-				if (!keyboard->IsKeyDown(VK_MENU)){
-					if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
-						mUIEditor->OnComponentSelected(mKeyboardFocus);
-				}
-			}
-		}
 	}
 
 	if (keyboard->IsValid() && keyboard->GetChar() == VK_TAB)
@@ -1153,6 +1131,101 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		if (mouseInvalided.IsValid())
 		{
 			mouseInvalided.Call();
+		}
+	}
+}
+
+void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
+
+	//Select
+	if (mouse->IsValid()) {
+		auto mousePos = mouse->GetPos();
+		RegionTestParam rparam;
+		rparam.mOnlyContainer = false;
+		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mTestChildren = true;
+		rparam.mNoRuntimeComp = mUIEditor && keyboard->IsKeyDown(VK_LMENU) ? true : false;
+		rparam.mCheckMouseEvent = !mUIEditor;
+		rparam.mHwndId = hwndId;
+		if (mUIEditor && mouse->IsLButtonClicked() && keyboard->IsKeyDown(VK_CONTROL)){
+			auto it = mUIEditor->GetSelectedComps();
+			std::vector<IWinBase*> del;
+			while (it.HasMoreElement()){
+				auto comp = it.GetNext();
+				if (comp->IsIn(mousePos, rparam.mIgnoreScissor)){
+					del.push_back(comp);
+				}
+			}
+			for (auto comp : del){
+				mUIEditor->OnComponentDeselected(comp);
+			}
+			return;
+		}
+
+		if (mUIEditor && mouse->IsLButtonClicked() && !keyboard->IsKeyDown(VK_MENU)){
+			auto it = mUIEditor->GetSelectedComps();
+			while (it.HasMoreElement()){
+				rparam.mExceptions.push_back(it.GetNext());
+			}
+		}
+
+		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		if (focusWnd != mMouseOvered){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseOut(mouse, keyboard);
+			}
+			mMouseOvered = focusWnd;
+			if (mMouseOvered){
+				mMouseOvered->OnMouseIn(mouse, keyboard);
+			}
+		}
+		else if (focusWnd){
+			//focusWnd == mMouseOvered
+			mMouseOvered->OnMouseHover(mouse, keyboard);
+		}
+
+		if (focusWnd && mouse->IsLButtonDown() && !mMouseDragStartedUI){
+			mMouseDragStartedUI = focusWnd;
+		}
+		if (mouse->IsLButtonDown() && focusWnd){
+			focusWnd->OnMouseDown(mouse, keyboard);
+		}
+		if (mMouseDragStartedUI){
+			mMouseDragStartedUI->OnMouseDrag(mouse, keyboard);
+		}
+
+		if (mouse->IsLButtonClicked()){
+			if (mKeyboardFocus != focusWnd)
+			{
+				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+					SetFocusUI(focusWnd);
+			}
+			bool editorFocused = !gFBEnv->pEngine->IsMainWindowForground();
+			if (mUIEditor && (!keyboard->IsKeyDown(VK_MENU) && !editorFocused))
+			{
+				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
+					mUIEditor->OnComponentSelected(mKeyboardFocus);
+			}
+			else{
+				if (mMouseOvered){
+					mMouseOvered->OnMouseClicked(mouse, keyboard);
+				}
+			}
+		}
+		else if (mouse->IsLButtonDoubleClicked()){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseDoubleClicked(mouse, keyboard);
+			}
+		}
+		else if (mouse->IsRButtonClicked()){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseRButtonClicked(mouse, keyboard);
+			}
+		}
+
+		if (!mouse->IsLButtonDown()){
+			mMouseDragStartedUI = 0;
 		}
 	}
 }
@@ -1247,8 +1320,8 @@ void UIManager::ShowTooltip()
 
 void UIManager::SetTooltipPos(const Vec2& npos)
 {
-	if (!mTooltipUI->GetVisible())
-		return;
+	/*if (!mTooltipUI->GetVisible())
+		return;*/
 
 	static Vec2 prevNPos(-1, -1);
 	if (prevNPos == npos)
@@ -1595,6 +1668,13 @@ void UIManager::MoveToBottom(IWinBase* moveToBottom){
 	}
 }
 
+void UIManager::MoveToTop(IWinBase* moveToTop){
+	if (moveToTop){
+		if (ValueNotExistInVector(mMoveToTopReserved, moveToTop))
+			mMoveToTopReserved.push_back(moveToTop);
+	}
+}
+
 void UIManager::HideUIsExcept(const std::vector<std::string>& excepts)
 {
 	mHideUIExcepts = excepts;
@@ -1657,6 +1737,7 @@ void UIManager::PrepareTooltipUI()
 	tooltip.SetField("BACK_COLOR", "0, 0, 0, 0.8f");
 	tooltip.SetField("ALWAYS_ON_TOP", "true");
 	tooltip.SetField("USE_BORDER", "true");
+	tooltip.SetField("WND_NO_FOCUS", "true");
 	auto tooltipChildren = tooltip.SetFieldTable("children");
 	auto children1 = tooltipChildren.SetSeqTable(1);
 	children1.SetField("name", "TooltipTextBox");
@@ -1753,8 +1834,9 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 {
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
-	for (auto wnd : windows)
-	{
+	auto it = windows.rbegin(), itEnd = windows.rend();
+	for (; it != itEnd; it++){
+		auto wnd = *it;
 		if (!wnd->GetVisible()){			
 			continue;
 		}

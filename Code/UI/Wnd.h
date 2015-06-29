@@ -56,6 +56,7 @@ private:
 	bool mAlwaysOnTop;
 	bool mCloseByEsc;
 	bool mSyncWindowPos;
+	bool mNoFocus;
 };
 
 }

@@ -17,6 +17,7 @@ Wnd::Wnd()
 , mCloseByEsc(false)
 , mSyncWindowPos(false)
 , mCloseBtn(0)
+, mNoFocus(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -441,6 +442,12 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 
+	case UIProperty::WND_NO_FOCUS:
+	{
+		mNoFocus = StringConverter::parseBool(val);
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -564,6 +571,16 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 		return true;
 	}
 
+	case UIProperty::WND_NO_FOCUS:
+	{
+		if (notDefaultOnly){
+			if (mNoFocus == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mNoFocus).c_str());
+		return true;
+	}
+
 	}
 
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -603,8 +620,15 @@ bool Wnd::SetVisible(bool show)
 	bool changed = __super::SetVisible(show);
 	if (changed)
 	{
-		if (!mParent && !mManualParent)
-			gFBEnv->pUIManager->SetFocusUI(this);
+		if (!mParent && !mManualParent){
+			if (mNoFocus){
+				gFBEnv->pUIManager->MoveToTop(this);
+			}
+			else{
+				gFBEnv->pUIManager->SetFocusUI(this);
+			}
+
+		}
 
 		if (mTitlebar)
 			mTitlebar->SetVisible(show);

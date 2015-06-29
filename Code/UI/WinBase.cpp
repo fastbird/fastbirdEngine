@@ -771,149 +771,145 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
+void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	mMouseIn = true;
+	assert(mouse);
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_IN) && mParent){
+		mParent->OnMouseIn(mouse, keyboard);
+		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
+		TriggerRedraw();
+	}
+}
+void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	mMouseIn = false;
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_OUT) && mParent){
+		mParent->OnMouseOut(mouse, keyboard);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
+		TriggerRedraw();
+	}
+}
+void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_HOVER) && mParent){
+		mParent->OnMouseHover(mouse, keyboard);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, npos);
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	if (!OnEvent(UIEvents::EVENT_MOUSE_DOWN) && mParent){
+		mParent->OnMouseDown(mouse, keyboard);
+	}
+	else{
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK) && mParent){
+		mParent->OnMouseClicked(mouse, keyboard);
+	}
+	else{
+		auto type = GetType();
+		bool invaliClickTime =
+			type == ComponentType::Button ||
+			type == ComponentType::DropDown ||
+			type == ComponentType::CheckBox;
+
+		mouse->Invalidate(invaliClickTime);
+		TriggerRedraw();
+	}
+
+}
+
+void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) && mParent){
+		mParent->OnMouseDoubleClicked(mouse, keyboard);
+	}
+	else{
+		mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
+		gFBEnv->pUIManager->CleanTooltip();
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone){
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK) && mParent){
+		mParent->OnMouseRButtonClicked(mouse, keyboard);
+	}
+	else{
+		mouse->Invalidate();
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseDrag(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	long x, y;
+	mouse->GetDeltaXY(x, y);
+	if (x != 0 || y != 0)
+	{
+		if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
+		{
+			mouse->Invalidate();
+		}
+		else if (mDragable != Vec2I::ZERO)
+		{
+			OnDrag(x, y);
+		}
+		else if (mParent){
+			mParent->OnMouseDrag(mouse, keyboard);
+		}
+		TriggerRedraw();
+	}
+}
+
 //---------------------------------------------------------------------------
 bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mVisibility.IsVisible())
-		return false;
-
-	if (mVisualOnlyUI)
-		return false;
-
-	if (mNoMouseEvent || mNoMouseEventAlone)
-	{
-		return false;
-	}
-	auto editor = gFBUIManager->GetUIEditor();
-	if (editor)
-	{		
-		if (GetHwndId() != editor->GetHwndId())
-		{
-			if (!keyboard->IsKeyDown(VK_MENU))
-				return false;
-		}
-	}
-
-	mMouseIn = false;
-	Vec2 mousepos = mouse->GetNPos();
-	if (mouse->IsValid() && !mNoMouseEvent)
-	{
-		// hit test
-		mMouseIn = mMouseDragStartInHere || IsIn(mouse);
-		if (mMouseIn)
-		{
-			bool invalidate = false;
-			if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
-				|| (mMouseDragStartInHere && mouse->IsLButtonDown())
-				)
-			{
-				mMouseDragStartInHere = true;
-				auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
-				RECT rect;
-				GetWindowRect(hwnd, &rect);
-				OSWindowPos.x = rect.left;
-				OSWindowPos.y = rect.top;
-				//invalidate = true;
-			}
-			else
-			{
-				mMouseDragStartInHere = false;
-			}
-			if (mouse->IsLButtonDown() && mMouseDragStartInHere)
-			{
-				long x,  y;
-				mouse->GetDeltaXY(x, y);
-				if (x != 0 || y != 0)
-				{
-					if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
-					{
-						mouse->Invalidate();
-					}
-					else if (mDragable != Vec2I::ZERO)
-					{
-						OnDrag(x, y);
-					}
-				}
-				else
-				{
-					if (OnEvent(UIEvents::EVENT_MOUSE_DOWN))
-						mouse->Invalidate();
-				}
-			}
-			else if (mMouseInPrev)
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_HOVER))
-					invalidate = true;
-				ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, mousepos);
-			}
-			else if (mMouseIn)
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_IN))
-					invalidate = true;
-				ToolTipEvent(UIEvents::EVENT_MOUSE_IN, mousepos);
-			}
-			if (mouse->IsLButtonClicked() && mName == "property")
-			{
-				int a = 0;
-				a++;
-			}
-			if (mouse->IsLButtonClicked() && IsIn(mouse) && IsIn(mouse->GetDragStartedPos(), false) )
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK))
-				{
-					invalidate = true;
-					mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
-				}
-				if (invalidate){
-					gFBUIManager->SetFocusUI(this);
-				}
-			}
-			else if (mouse->IsLButtonDoubleClicked())
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK))
-				{
-					invalidate = true;
-					gFBEnv->pUIManager->CleanTooltip();
-				}
-
-			}
-			else if (mouse->IsRButtonClicked() && IsIn(mouse) && IsIn(mouse->GetDragStartedPos(), false))
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK))
-				{
-					mouse->Invalidate();
-					invalidate = true;
-				}
-			}
-			if (invalidate)
-			{
-				mouse->Invalidate();
-				TriggerRedraw();
-			}
-		}
-		else if (mMouseInPrev)
-		{
-			if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
-			{
-				mouse->Invalidate();
-				TriggerRedraw();
-			}
-			ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
-		}
-
-		mMouseInPrev = mMouseIn;
-	}
-	else if (mMouseInPrev)
-	{
-		if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
-		{
-			mouse->Invalidate();
-			TriggerRedraw();
-		}
-		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
-		mMouseInPrev = false;
-	}
-
 	if (!GetFocus())
 		return mMouseIn;
 
@@ -1461,7 +1457,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::NO_MOUSE_EVENT:
 	{
-									   mNoMouseEvent = StringConverter::parseBool(val);
+		mNoMouseEvent = StringConverter::parseBool(val);
 									   return true;
 	}
 

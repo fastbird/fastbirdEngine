@@ -7,18 +7,21 @@ namespace fastbird{
 			, mIgnoreScissor(false)
 			, mTestChildren(false)
 			, mNoRuntimeComp(false)
-			, mHwndId(1)
+			, mCheckMouseEvent(false)
+			, mHwndId(1)			
 		{}
-		RegionTestParam(bool onlyContainer, bool ignoreScissor, bool testChildren, HWND_ID hwndId)
+		RegionTestParam(bool onlyContainer, bool ignoreScissor, bool testChildren, bool checkMouseEvent, HWND_ID hwndId)
 			: mOnlyContainer(onlyContainer)
 			, mIgnoreScissor(ignoreScissor)
 			, mTestChildren(testChildren)
+			, mCheckMouseEvent(checkMouseEvent)
 			, mHwndId(hwndId)
 		{}
 		bool mOnlyContainer;
 		bool mIgnoreScissor;
 		bool mTestChildren;
 		bool mNoRuntimeComp;
+		bool mCheckMouseEvent;
 		HWND_ID mHwndId;
 		std::vector<IWinBase*> mExceptions;
 	};

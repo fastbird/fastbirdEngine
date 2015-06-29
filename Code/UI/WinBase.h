@@ -419,6 +419,8 @@ namespace fastbird
 		virtual bool GetVisualOnly() const { return mVisualOnlyUI; }
 		virtual void RecreateBorders();
 
+		virtual bool GetUseScissor() const { return mUseScissor; }
+
 	protected:
 		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
@@ -433,6 +435,16 @@ namespace fastbird
 		virtual void CalcTextWidth(); // virtual for mutiline text
 		void OnDrag(int dx, int dy);
 		virtual void OnChildHasDragged(){}
+
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard);
+
 		
 	private:
 		friend class Container;

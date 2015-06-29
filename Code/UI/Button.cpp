@@ -1075,6 +1075,7 @@ ImageBox* Button::CreateImageBox()
 	image->SetRuntimeChild(true);
 	image->SetRender3D(mRender3D, GetRenderTargetSize());
 	image->SetVisible(true);
+	image->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	image->SetGatheringException();
 	return (ImageBox*)image;

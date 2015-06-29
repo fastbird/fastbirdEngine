@@ -38,6 +38,8 @@ namespace fastbird
 		IWinBase* mFocusWnd;
 		IWinBase* mKeyboardFocus;
 		IWinBase* mNewFocusWnd;
+		IWinBase* mMouseOvered;
+		IWinBase* mMouseDragStartedUI;
 		Container* mMouseOveredContainer;
 		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
@@ -60,6 +62,7 @@ namespace fastbird
 		ListBox* mCachedListBox;
 		WinBases mAlwaysOnTopWindows;
 		WINDOWS mMoveToBottomReserved;
+		WINDOWS mMoveToTopReserved;
 		std::vector < IWinBase* > mSetFocusReserved;
 
 		std::vector<std::string> mHideUIExcepts;
@@ -154,6 +157,7 @@ namespace fastbird
 
 		// IInputListener Interfaces
 		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);
+		void ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard);
 		virtual void EnableInputListener(bool enable);
 		virtual bool IsEnabledInputLIstener() const;
 		virtual HCURSOR GetMouseCursorOver() const;
@@ -193,6 +197,7 @@ namespace fastbird
 
 		virtual void MoveToBottom(const char* moveToBottom);
 		virtual void MoveToBottom(IWinBase* moveToBottom);
+		virtual void MoveToTop(IWinBase* moveToTop);
 		virtual void HideUIsExcept(const std::vector<std::string>& excepts);
 
 		virtual void HighlightUI(const char* uiname);
