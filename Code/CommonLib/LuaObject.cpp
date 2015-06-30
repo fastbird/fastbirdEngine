@@ -149,6 +149,7 @@ void LuaObject::FindFunction(lua_State* L, const char* funcName)
 	{
 		*this = obj;
 	}
+	mName = funcName;
 }
 
 void LuaObject::NewTable(lua_State* L)

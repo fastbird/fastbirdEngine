@@ -46,6 +46,8 @@ namespace fastbird
 		virtual unsigned GetNumCollisionShapes() const = 0;
 		virtual unsigned GetNumCollisionShapes(unsigned idx) const = 0;
 
+		virtual bool IsPlayingAction() const = 0;
+
 	private:
 		friend class Engine;
 		virtual void Delete() = 0;

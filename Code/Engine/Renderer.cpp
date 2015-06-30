@@ -70,6 +70,11 @@ Renderer::~Renderer()
 		gFBEnv->pConsole->RemoveListener(this);
 }
 
+void Renderer::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 // called from inherited classes.
 void Renderer::Deinit()
 {
@@ -757,7 +762,7 @@ bool Renderer::IsMainRenderTarget() const
 	return GetMainRenderTarget() == mCurRenderTarget;
 }
 
-IRenderTarget* Renderer::GetCurRendrTarget() const
+IRenderTarget* Renderer::GetCurRenderTarget() const
 {
 	return mCurRenderTarget;
 }
@@ -1119,6 +1124,10 @@ void Renderer::SetDirectionalLight(ILight* pLight, int idx)
 ILight* Renderer::GetDirectionalLight(int idx) const
 {
 	return mDirectionalLight[idx];
+}
+
+ILight* Renderer::GetMainDirectionalLight(int idx) const{
+	return GetMainRenderTarget()->GetScene()->GetLight(idx);
 }
 
 void Renderer::SetEnvironmentTexture(ITexture* pTexture)
@@ -2332,23 +2341,27 @@ void Renderer::Register3DUIs(HWND_ID hwndId, const char* name, std::vector<IUIOb
 		param.mUsePool = true;
 		auto rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
 		assert(rtt);
+		auto rttScene = rtt->CreateScene();
 		mUI3DObjectsRTs.Insert(std::make_pair(std::string(name), rtt));
 		assert(mUI3DRenderObjs.Find(name) == mUI3DRenderObjs.end());
 		auto renderObj = FB_NEW(UI3DObj);
 		mUI3DRenderObjs.Insert(std::make_pair(std::string(name), renderObj));
 		renderObj->SetTexture(rtt->GetRenderTargetTexture());
-		renderObj->AttachToScene();
+		rttScene->AttachObject(renderObj);
 	}
 	else
 	{
-		assert(it->second->GetSize() == objects[0]->GetRenderTargetSize());
-		if (!it->second->GetEnable())
+		auto rtt = it->second;
+		assert(rtt->GetSize() == objects[0]->GetRenderTargetSize());
+		if (!rtt->GetEnable())
 		{
-			it->second->SetEnable(true);
+			rtt->SetEnable(true);
 			auto it2 = mUI3DRenderObjs.Find(name);
 			if_assert_pass(it2 != mUI3DRenderObjs.end())
 			{
-				it2->second->ModifyObjFlag(IObject::OF_HIDE, false);
+				auto uiobj = it2->second;
+				rtt->GetScene()->AttachObject(uiobj);
+				uiobj->ModifyObjFlag(IObject::OF_HIDE, false);
 			}
 		}
 	}
@@ -2361,8 +2374,9 @@ void Renderer::Unregister3DUIs(const char* name)
 	auto it = mUI3DRenderObjs.Find(name);
 	if (it != mUI3DRenderObjs.end())
 	{
-		FB_DELETE(it->second);
-		mUI3DRenderObjs.erase(it);
+		it->second->DetachFromScene();
+		//FB_DELETE(it->second);
+		//mUI3DRenderObjs.erase(it);
 	}
 
 	auto it2 = mUI3DObjectsRTs.Find(name);
@@ -2458,8 +2472,8 @@ void Renderer::RenderUI(HWND_ID hwndId)
 void Renderer::RenderFrameProfiler()
 {
 	wchar_t msg[255];
-	int x = 1100;
-	int y = 34;
+	int x = 1000;
+	int y = 134;
 	int yStep = 18;
 	if (mFont)
 		yStep = (int)mFont->GetHeight();

@@ -2164,7 +2164,7 @@ void RendererD3D11::CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstx,
 	TextureD3D11* pDstD3D11 = static_cast<TextureD3D11*>(dst);
 	TextureD3D11* pSrcD3D11 = static_cast<TextureD3D11*>(src);
 	m_pImmediateContext->CopySubresourceRegion(pDstD3D11->mTexture, dstSubresource,
-		dstx, dsty, dstz, pSrcD3D11->mTexture, srcSubresource, (D3D11_BOX*)pBox);
+		dstx, dsty, dstz, pSrcD3D11->GetHardwareTexture(), srcSubresource, (D3D11_BOX*)pBox);
 }
 
 //----------------------------------------------------------------------------
@@ -2204,7 +2204,7 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 			Error("Unsupported file format!");
 			return;
 		}
-		HRESULT hr = D3DX11SaveTextureToFile(m_pImmediateContext, pTextureD3D11->mTexture, format, filename);
+		HRESULT hr = D3DX11SaveTextureToFile(m_pImmediateContext, pTextureD3D11->GetHardwareTexture(), format, filename);
 		if (FAILED(hr))
 		{
 			Error("Save texture to file is failed.");

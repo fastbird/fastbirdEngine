@@ -9,6 +9,10 @@ namespace fastbird
 	public:
 		Texture();
 		virtual ~Texture();
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 
 		static size_t NextTextureID;
 		

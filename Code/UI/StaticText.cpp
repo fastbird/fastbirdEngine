@@ -16,6 +16,7 @@ StaticText::StaticText()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
+	SetProperty(UIProperty::BACK_COLOR, gFBUIManager->GetStyleString(Styles::StaticTextBack));
 }
 
 StaticText::~StaticText()

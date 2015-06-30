@@ -272,7 +272,9 @@ IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*
 	{
 		if (_stricmp(var->GetName(), name.c_str()) == 0)
 		{
-			return var;
+			auto it = std::find(mPendingDelete.begin(), mPendingDelete.end(), var);
+			if (it == mPendingDelete.end())
+				return var;
 		}
 	}
 	if (includeSubChildren)
@@ -410,6 +412,9 @@ void Container::OnAlphaChanged()
 
 void Container::GatherVisit(std::vector<IUIObject*>& v)
 {
+	//char buf[512];
+	//sprintf_s(buf, "Container::GatherVisit (%s)", mName.c_str());
+	//Profiler p(buf);
 	COMPONENTS::iterator it = mChildren.begin(), itEnd = mChildren.end();
 	for (; it!=itEnd; it++)
 	{
@@ -494,8 +499,12 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (!mScrollerV && !mUseScrollerV)
+		return;
+
 	// find last wn
-	float contentHeight = GetContentHeight();
+	float contentEnd = GetChildrenContentEnd() + 4.f / (float)GetRenderTargetSize().y;
+	float contentHeight = contentEnd - mWNPos.y;
 	const auto& finalSize = GetFinalSize();
 	float wnSizeY = finalSize.y / (float)GetRenderTargetSize().y;
 	
@@ -515,15 +524,17 @@ void Container::RefreshVScrollbar()
 				mScrollerV->SetProperty(UIProperty::OFFSETX, "-4");
 			}
 			mScrollerV->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+			mScrollerV->SetUseAbsPos(false);
 			mScrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");
 			mScrollerV->SetOwner(this);
+			mScrollerV->SetVisible(true);
 		}
 
 		if (mScrollerV)
 		{
-			mScrollerV->ChangeNSizeY(visableRatio);
-			mScrollerV->OnPosChanged(false);
 			mScrollerV->SetVisible(true);
+			mScrollerV->ChangeNSizeY(visableRatio);
+			//mScrollerV->OnPosChanged(false);			
 			mScrollerV->SetMaxOffset(Vec2(0, length));
 		}
 	}
@@ -551,6 +562,9 @@ void Container::RefreshVScrollbar()
 float Container::GetContentHeight() const
 {
 	float contentWNEnd = 0;
+	if (mChildren.empty())
+		return GetFinalSize().y / (float)GetRenderTargetSize().y;
+
 	for (auto i : mChildren)
 	{
 		WinBase* pWinBase = (WinBase*)i;
@@ -560,19 +574,49 @@ float Container::GetContentHeight() const
 	return contentWNEnd - mWNPos.y;
 }
 
+float Container::GetContentEnd() const{
+	float end = __super::GetContentEnd();
+	if (mChildren.empty()){
+		return end;
+	}
+
+	for (auto i : mChildren){
+		WinBase* winbase = (WinBase*)i;
+		float cend = winbase->GetContentEnd();
+		end = std::max(end, cend);		
+	}
+	return end;	
+}
+
+float Container::GetChildrenContentEnd() const{
+	float end = 0;
+	for (auto i : mChildren){
+		WinBase* winbase = (WinBase*)i;
+		float cend = winbase->GetContentEnd();
+		end = std::max(end, cend);
+	}
+	return end;
+}
+
+void Container::SetSpecialOrder(int specialOrder){
+	__super::SetSpecialOrder(specialOrder);
+	for (auto c : mChildren){
+		if (c->IsRuntimeChild()){
+			c->SetSpecialOrder(specialOrder);
+		}
+	}
+}
+
 bool Container::SetVisible(bool visible)
 {
 	bool changed = __super::SetVisible(visible);
-	if (changed)
+	for (auto var : mChildren)
 	{
-		for (auto var : mChildren)
+		if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
 		{
-			if ((visible == true && var->GetInheritVisibleTrue()) || !visible)
-			{
-				var->SetVisible(visible);
-			}
-			var->OnParentVisibleChanged(visible);
+			var->SetVisible(visible);
 		}
+		var->OnParentVisibleChanged(visible);
 	}
 	if (mMatchHeight)
 	{
@@ -621,7 +665,7 @@ void Container::Scrolled()
 		const Vec2& offset = mScrollerV->GetOffset();
 		float curPos = -offset.y / maxOffset;
 		float nPosY = movable * curPos;
-		mScrollerV->SetNPosY(nPosY);
+		mScrollerV->ChangeNPosY(nPosY);
 		{
 			for (auto child : mChildren)
 			{
@@ -700,7 +744,7 @@ void Container::SaveChildren(tinyxml2::XMLElement& elem){
 			elem.InsertEndChild(compElem);
 			child->Save(*compElem);
 		}
-		else{
+		else if(!child->IsRuntimeChildRecursive()){
 			auto childCont = dynamic_cast<Container*>(child);
 			if (childCont){
 				childCont->SaveChildren(elem);
@@ -938,26 +982,48 @@ void Container::SetHwndId(HWND_ID hwndId)
 
 IWinBase* Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
-	if (param.mTestChildren){
-		for (auto child : mChildren)
-		{
-			if (!child->GetVisible())
-				continue;
-			if (param.mOnlyContainer)
+	auto in = IsIn(pt, param.mIgnoreScissor);
+	bool hasScissorIgnoringChild = HasScissorIgnoringChild();
+	if (in || hasScissorIgnoringChild){
+		if (param.mTestChildren){
+			for (auto child : mChildren)
 			{
-				auto cont = dynamic_cast<Container*>(child);
-				if (!cont)
+				if (!child->GetVisible())
 					continue;
+				
+				if (param.mCheckMouseEvent && child->GetNoMouseEvent())
+					continue;
+
+				if (!in && child->GetUseScissor())
+					continue;
+
+				if (param.mOnlyContainer)
+				{
+					auto cont = dynamic_cast<Container*>(child);
+					if (!cont)
+						continue;
+				}
+				auto found = child->WinBaseWithPoint(pt, param);
+				if (found){
+					auto it = std::find(param.mExceptions.begin(), param.mExceptions.end(), found);
+					if (it == param.mExceptions.end())
+						return found;
+				}
 			}
-			auto found = child->WinBaseWithPoint(pt, param);
-			if (found)
-				return found;
 		}
 	}
-	if (GetGhost())
+	if (GetGhost() || (param.mNoRuntimeComp && mRunTimeChild))
+		return 0;
+	
+	if (param.mCheckMouseEvent && GetNoMouseEventAlone())
 		return 0;
 
-	return __super::WinBaseWithPoint(pt, param);
+	if (in && GetVisible()){
+		auto it = std::find(param.mExceptions.begin(), param.mExceptions.end(), this);
+		if (it == param.mExceptions.end())
+			return (IWinBase*)this;
+	}
+	return 0;
 }
 
 IWinBase* Container::WinBaseWithTabOrder(unsigned tabOrder) const
@@ -1056,11 +1122,19 @@ void Container::TabPressed()
 }
 
 void Container::TransferChildrenTo(Container* destContainer){
+	COMPONENTS remained;
 	for (auto child : mChildren){
-		if (child != destContainer)
-			destContainer->AddChild(child);
+		if (child != destContainer && child != mWndContentUI){
+			auto found = mDoNotTransfer.find(child);
+			if (found == mDoNotTransfer.end()){
+				destContainer->AddChild(child);
+			}
+			else{
+				remained.push_back(child);
+			}
+		}
 	}
-	mChildren.clear();
+	mChildren = remained;
 	if (mWndContentUI == destContainer)
 		mChildren.push_back(destContainer);
 	mScrollerV = 0;
@@ -1092,6 +1166,18 @@ void Container::AddChild(IWinBase* child){
 	winbase->OnParentPosChanged();
 
 	SetChildrenPosSizeChanged();	
+}
+
+void Container::DoNotTransfer(IWinBase* child){
+	mDoNotTransfer.insert(child);
+}
+
+bool Container::HasScissorIgnoringChild() const{
+	for (auto child : mChildren){
+		if (!child->GetUseScissor())
+			return true;
+	}
+	return false;
 }
 
 }

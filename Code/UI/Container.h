@@ -10,6 +10,20 @@ namespace fastbird
 		Container();
 		virtual ~Container();
 
+		struct BackupContentWnd{
+			BackupContentWnd(Container** wndContent){
+				mOriginal = wndContent;
+				mWndContent = *wndContent;
+				*wndContent = 0;
+			}
+			~BackupContentWnd(){
+				*mOriginal = mWndContent;
+			}
+
+			Container* mWndContent;
+			Container** mOriginal;
+		};
+
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
 		virtual IWinBase* AddChild(const Vec2I& pos, const Vec2I& size, ComponentType::Enum type);
@@ -70,10 +84,18 @@ namespace fastbird
 		virtual void GetBiggestTabOrder(int& curBiggest) const;
 		virtual void TabPressed();
 		virtual float GetContentHeight() const;
+		virtual float GetContentEnd() const;
+		virtual float GetChildrenContentEnd() const;
+		
+		virtual void SetSpecialOrder(int specialOrder);
 
 		void TransferChildrenTo(Container* destContainer);
 		void AddChild(IWinBase* child);
+		void DoNotTransfer(IWinBase* child);
 		
+		Container* GetWndContentUI() const { return mWndContentUI; }
+
+		bool HasScissorIgnoringChild() const;
 
 	private:
 		friend class WinBase;
@@ -99,5 +121,7 @@ namespace fastbird
 		bool mHandlingInput;
 		COMPONENTS::reverse_iterator mCurInputHandling;
 		bool mCurInputHandlingChanged;
+
+		std::set<IWinBase*> mDoNotTransfer;
 	};
 }

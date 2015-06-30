@@ -78,15 +78,21 @@ namespace fastbird
 		virtual bool IsLButtonDoubleClicked() const = 0;
 		virtual bool IsLButtonPressed() const = 0;
 		virtual bool IsRButtonDown(float* time = 0) const = 0;
+		virtual bool IsRButtonDownPrev() const = 0;
 		virtual bool IsRButtonClicked() const = 0;
 		virtual bool IsRButtonPressed() const = 0;
 		virtual bool IsMButtonDown() const = 0;
 		virtual bool IsMoved() const = 0;
 		virtual void GetDragStart(long &x, long &y) const = 0;
+		virtual Vec2I GetDragStartedPos() const = 0;
 		virtual bool IsDragStartIn(const RECT& region) const = 0;
 		virtual bool IsDragStarted(Vec2I& outStartPos) const = 0;
 		virtual bool IsDragEnded() const = 0;
 		virtual void PopDragEvent() = 0;
+
+		virtual bool IsRDragStarted(Vec2I& outStartPos) const = 0;
+		virtual bool IsRDragEnded(Vec2I& outStartPos) const = 0;
+		virtual void PopRDragEvent() = 0;
 		
 
 		virtual long GetWheel() const = 0;
@@ -102,6 +108,9 @@ namespace fastbird
 		virtual const Ray3& GetWorldRay() = 0;
 
 		virtual bool IsIn(const RECT& r) = 0;
+
+		virtual void CursorToCenter() = 0;
+		virtual void SetCursorPosition(const Vec2I& cursorPos) = 0;
 	};
 }
 

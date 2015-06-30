@@ -13,6 +13,7 @@
 #include <UI/DropDown.h>
 #include <UI/ColorRampComp.h>
 #include <UI/CardScroller.h>
+#include <UI/HorizontalGauge.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -33,7 +34,8 @@ namespace fastbird
 	int RemoveComponent(lua_State* L);
 	int AddComponent(lua_State* L);
 	int CreateNewCard(lua_State* L);
-	int GetCardUIId(lua_State* L);
+	int DeleteCard(lua_State* L);
+	int IsExistingCard(lua_State* L);
 	int BlinkButton(lua_State* L);
 	int UpdateButtonProgressBar(lua_State* L);
 	int StartButtonProgressBar(lua_State* L);
@@ -42,6 +44,7 @@ namespace fastbird
 	int SetUIBackground(lua_State* L);
 	int SetUIProperty(lua_State* L);
 	int GetUIProperty(lua_State* L);
+	int SetCardUIProperty(lua_State* L);
 	int RemoveUIEventhandler(lua_State* L);
 	int GetMousePos(lua_State* L);
 	int GetComponentWidth(lua_State* L);
@@ -72,6 +75,7 @@ namespace fastbird
 	int GetPropertyCurKeyValue(lua_State* L);	
 	int GetNumUIEvents(lua_State* L);
 	int GetUIEventName(lua_State* L);
+	int ModifyDropDownItem(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -84,29 +88,51 @@ namespace fastbird
 	int GetListBoxSelectedRows(lua_State* L);
 	int GetListBoxSelectedStringKeys(lua_State* L);
 	int GetListBoxSelectedNumericKeys(lua_State* L);
+	int GetListBoxStringKey(lua_State* L);
+	int GetListBoxNumericKey(lua_State* L);
+	int GetListBoxStringKeyCached(lua_State* L);
+	int GetListBoxNumericKeyCached(lua_State* L);
+	int GetListBoxRowIndexCached(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
 	int SelectListBoxItems(lua_State* L);	
 	int GetListItemData(lua_State* L);	
+	int GetListItemDataCachedListBox(lua_State* L);
 	int SetListItemProperty(lua_State* L);
 	int StartUIAnimationForListItem(lua_State* L);
 	int StopUIAnimationForListItem(lua_State* L);	
-	int GetNumListBoxItems(lua_State* L);
+	int GetNumListBoxData(lua_State* L);
 	int SwapListBoxItem(lua_State* L);
+	int GetLastChangedRow(lua_State* L);
 
+	// etc
+	int SetTooltipString(lua_State* L);
+
+	void RegisterLuaEnums(lua_State* mL){
+		ListItemDataType::RegisterToLua(mL);
+	}
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetTooltipString);
+
 		//----------------------------------------------------------------------------
 		// Listbox
 		//--------------------------------------------------------------------------------
+		LUA_SETCFUNCTION(mL, GetLastChangedRow);
 		LUA_SETCFUNCTION(mL, SwapListBoxItem);
-		LUA_SETCFUNCTION(mL, GetNumListBoxItems);
+		LUA_SETCFUNCTION(mL, GetNumListBoxData);
 		LUA_SETCFUNCTION(mL, StopUIAnimationForListItem);
 		LUA_SETCFUNCTION(mL, StartUIAnimationForListItem);		
 		LUA_SETCFUNCTION(mL, SetListItemProperty);
+		LUA_SETCFUNCTION(mL, GetListItemDataCachedListBox);
 		LUA_SETCFUNCTION(mL, GetListItemData);
 		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);		
+		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
+		LUA_SETCFUNCTION(mL, GetListBoxNumericKey);
+		LUA_SETCFUNCTION(mL, GetListBoxStringKey);
+		LUA_SETCFUNCTION(mL, GetListBoxNumericKeyCached);
+		LUA_SETCFUNCTION(mL, GetListBoxStringKeyCached);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedNumericKeys);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedStringKeys);
 		LUA_SETCFUNCTION(mL, GetListBoxSelectedRows);		
@@ -119,6 +145,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, ClearListBox);
 		
 
+		LUA_SETCFUNCTION(mL, ModifyDropDownItem);
 		LUA_SETCFUNCTION(mL, GetUIEventName);
 		LUA_SETCFUNCTION(mL, GetNumUIEvents);
 		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
@@ -156,7 +183,8 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, RemoveComponent);
 		LUA_SETCFUNCTION(mL, AddComponent);
 		LUA_SETCFUNCTION(mL, CreateNewCard);
-		LUA_SETCFUNCTION(mL, GetCardUIId);
+		LUA_SETCFUNCTION(mL, DeleteCard);
+		LUA_SETCFUNCTION(mL, IsExistingCard);
 		LUA_SETCFUNCTION(mL, BlinkButton);
 		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
 		LUA_SETCFUNCTION(mL, StartButtonProgressBar);
@@ -165,6 +193,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetUIBackground);
 		LUA_SETCFUNCTION(mL, SetUIProperty);
 		LUA_SETCFUNCTION(mL, GetUIProperty);
+		LUA_SETCFUNCTION(mL, SetCardUIProperty);
 		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
 		LUA_SETCFUNCTION(mL, GetMousePos);
 		LUA_SETCFUNCTION(mL, GetComponentWidth);
@@ -376,7 +405,8 @@ namespace fastbird
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* cardScrollerName = luaL_checkstring(L, 2);
-		LuaObject card(L, 3);
+		unsigned key = luaL_checkunsigned(L, 3);
+		LuaObject card(L, 4);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
@@ -385,29 +415,42 @@ namespace fastbird
 		}
 
 		CardScroller* cardScroller = (CardScroller*)comp;
-		cardScroller->AddCard(card);
+		cardScroller->AddCard(key, card);
 		return 0;
 	}
 
-	int GetCardUIId(lua_State* L)
-	{
+	int DeleteCard(lua_State* L){
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* cardScrollerName = luaL_checkstring(L, 2);
-		const char* cardName = luaL_checkstring(L, 3);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
-		if (comp)
+		if (!comp)
 		{
-			auto cardComp = comp->GetChild(cardName);
-			if (cardComp)
-			{
-				CardItem* card = (CardItem*)cardComp;
-				lua_pushunsigned(L, card->GetCardId());
-				return 1;
-			}
-		}		
+			Error(DEFAULT_DEBUG_ARG, "No card scroller found!");
+			return 0;
+		}
 
-		lua_pushunsigned(L, -1);
+		CardScroller* cardScroller = (CardScroller*)comp;
+		unsigned key = luaL_checkunsigned(L, 3);
+		cardScroller->DeleteCard(key);
+		return 0;
+	}
+
+	int IsExistingCard(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* cardScrollerName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
+		if (!comp)
+		{
+			Error(DEFAULT_DEBUG_ARG, "No card scroller found!");
+			return 0;
+		}
+
+		CardScroller* cardScroller = (CardScroller*)comp;
+		unsigned key = luaL_checkunsigned(L, 3);
+		bool exist = cardScroller->IsExisting(key);
+		lua_pushboolean(L, exist);
 		return 1;
+
 	}
 
 	int BlinkButton(lua_State* L)
@@ -422,14 +465,34 @@ namespace fastbird
 			auto button = dynamic_cast<Button*>(comp);
 			if (button)
 			{
-				button->Blink(blink);
-				lua_pushboolean(L, 1);
-				return 1;
+				if (lua_gettop(L) == 4){
+					float time = (float)luaL_checknumber(L, 4);
+					button->Blink(blink, time);
+				}
+				else{
+					button->Blink(blink);
+				}
+				
+				return 0;
+			}
+			else
+			{
+				auto bar = dynamic_cast<HorizontalGauge*>(comp);
+				if (bar){
+					if (lua_gettop(L) == 4){
+						float time = (float)luaL_checknumber(L, 4);
+						bar->Blink(blink, time);
+					}
+					else{
+						bar->Blink(blink);
+					}
+
+					return 0;
+				}
 			}
 		}
 		assert(0);
-		lua_pushboolean(L, 0);
-		return 1;
+		return 0;
 	}
 
 	int UpdateButtonProgressBar(lua_State* L)
@@ -549,6 +612,25 @@ namespace fastbird
 				return 1;
 			}
 		}
+		else{
+			Error("Component %s is not found.", compName);
+		}
+		return 0;
+	}
+
+	int SetCardUIProperty(lua_State* L){
+		int li = 1;
+		const char* uiname = luaL_checkstring(L, li++);
+		const char* scrollerName = luaL_checkstring(L, li++);
+		unsigned key = luaL_checkunsigned(L, li++);
+		const char* compName = luaL_checkstring(L, li++);
+		const char* prop = luaL_checkstring(L, li++);
+		const char* val = luaL_checkstring(L, li++);
+		auto card = (CardScroller*)gFBUIManager->FindComp(uiname, scrollerName);
+		if (card){
+			card->SetItemProperty(key, compName, prop, val);
+		}
+
 		return 0;
 	}
 
@@ -965,6 +1047,22 @@ namespace fastbird
 		return 1;
 	}
 
+	int ModifyDropDownItem(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		unsigned index = luaL_checkunsigned(L, 3);
+		auto prop = UIProperty::ConvertToEnum(luaL_checkstring(L, 4));
+		auto str = luaL_checkstring(L, 5);
+		auto comp = gFBUIManager->FindComp(uiname, compname);
+		if (comp && comp->GetType() == ComponentType::DropDown){
+			auto dropDown = (DropDown*)comp;
+			if (dropDown){
+				dropDown->ModifyItem(index, prop, str);
+			}
+		}
+		return 0;
+	}
+
 
 	//-----------------------------------------------------------------------
 	// Listbox
@@ -1071,6 +1169,17 @@ namespace fastbird
 		case ListItemDataType::CheckBox:
 		{
 			listbox->SetItem(Vec2I(rowIndex, colIndex), lua_toboolean(L, 4)!=0);
+			break;
+		}
+		case ListItemDataType::NumericUpDown:
+		{
+			listbox->SetItem(Vec2I(rowIndex, colIndex), (int)lua_tonumber(L, 4));
+			break;
+		}
+		case ListItemDataType::HorizontalGauge:
+		{
+			listbox->SetItem(Vec2I(rowIndex, colIndex), (float)lua_tonumber(L, 4));
+			break;
 		}
 		default:
 			assert(0);
@@ -1192,6 +1301,84 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
+	int GetListBoxStringKey(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		ListBox* listBox = dynamic_cast<ListBox*>(comp);
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 3);
+			auto key = listBox->GetStringKey(row);
+			if (key){
+				lua_pushstring(L, WideToAnsi(key));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxNumericKey(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
+		ListBox* listBox = dynamic_cast<ListBox*>(comp);
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 3);
+			auto key = listBox->GetUnsignedKey(row);
+			lua_pushnumber(L, key);
+			return 1;
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxStringKeyCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 1);
+			auto key = listBox->GetStringKey(row);
+			if (key){
+				lua_pushstring(L, WideToAnsi(key));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxNumericKeyCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox){
+			unsigned row = luaL_checkunsigned(L, 1);
+			auto key = listBox->GetUnsignedKey(row);
+			lua_pushnumber(L, key);
+			return 1;
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListBoxRowIndexCached(lua_State* L){
+		auto listBox = gFBUIManager->GetCachedListBox();
+		if (listBox)
+		{
+			if (lua_isstring(L, 1)){
+				lua_pushnumber(L, listBox->FindRowIndex(
+					AnsiToWide(luaL_checkstring(L, 1))
+					));
+				return 1;
+			}
+			else{
+				lua_pushnumber(L, listBox->FindRowIndex(
+					luaL_checkunsigned(L, 1)));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
 	int SelectListBoxItem(lua_State* L)
 	{
 		const char* wnd = luaL_checkstring(L, 1);
@@ -1251,15 +1438,9 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	int GetListItemData(lua_State* L)
-	{
-		const char* uiname = luaL_checkstring(L, 1);
-		const char* compName = luaL_checkstring(L, 2);
-		auto listbox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+	int GetListItemDataImpl(lua_State* L, ListBox* listbox, unsigned row, unsigned col){
 		if (listbox)
 		{
-			unsigned row = luaL_checkunsigned(L, 3);
-			unsigned col = luaL_checkunsigned(L, 4);
 			auto itemdata = listbox->GetData(row, col);
 			if (itemdata->IsTextData()){
 				lua_pushstring(L, WideToAnsi(itemdata->GetText()));
@@ -1269,12 +1450,39 @@ namespace fastbird
 				lua_pushboolean(L, itemdata->GetChecked());
 				return 1;
 			}
+			else if (itemdata->GetDataType() == ListItemDataType::NumericUpDown){
+				lua_pushnumber(L, itemdata->GetInt());
+				return 1;
+			}
+			else if (itemdata->GetDataType() == ListItemDataType::HorizontalGauge){
+				lua_pushnumber(L, itemdata->GetFloat());
+				return 1;
+			}
 			else
 			{
 				assert(0);
 			}
 		}
 		return 0;
+
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListItemData(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listbox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		unsigned row = luaL_checkunsigned(L, 3);
+		unsigned col = luaL_checkunsigned(L, 4);
+		return GetListItemDataImpl(L, listbox, row, col);
+	}
+
+	//-----------------------------------------------------------------------
+	int GetListItemDataCachedListBox(lua_State* L){
+		auto listbox = gFBUIManager->GetCachedListBox();
+		unsigned row = luaL_checkunsigned(L, 1);
+		unsigned col = luaL_checkunsigned(L, 2);
+		return GetListItemDataImpl(L, listbox, row, col);		
 	}
 
 	//-----------------------------------------------------------------------
@@ -1361,14 +1569,14 @@ namespace fastbird
 	}
 
 	//-----------------------------------------------------------------------
-	int GetNumListBoxItems(lua_State* L)
+	int GetNumListBoxData(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
 		auto listBox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
 		if (listBox)
 		{
-			lua_pushunsigned(L, listBox->GetNumItems());
+			lua_pushunsigned(L, listBox->GetNumData());
 			return 1;
 		}
 		return 0;
@@ -1384,6 +1592,31 @@ namespace fastbird
 		{
 			listBox->SwapItems(luaL_checkunsigned(L, 3), luaL_checkunsigned(L, 4));
 		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int GetLastChangedRow(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		if (listBox)
+		{
+			unsigned row = listBox->GetLastChangedRow();
+			if (row != -1){
+				lua_pushunsigned(L, row);
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int SetTooltipString(lua_State* L){
+		const char* s = luaL_checkstring(L, 1);
+		gFBUIManager->SetTooltipString(AnsiToWide(s));
+		auto mouse = gFBEnv->pEngine->GetMouse();
+		gFBUIManager->SetTooltipPos(mouse->GetNPos());
 		return 0;
 	}
 

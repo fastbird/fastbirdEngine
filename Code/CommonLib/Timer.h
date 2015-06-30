@@ -10,6 +10,9 @@ namespace fastbird
 		Timer();	
 		~Timer();
 
+	protected:
+		virtual void FinishSmartPtr();
+
 	public:
 		typedef float TIME_PRECISION;
 		typedef unsigned int FRAME_PRECISION; // unsigned int : safe for 828 'days' at 60 frames/sec

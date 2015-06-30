@@ -108,7 +108,6 @@ void Physics::Deinitilaize()
 		for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
 		{
 			auto colShape = it->first;
-			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
 			it = mColShapePendingDelete.erase(it);
 			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 			{
@@ -232,7 +231,6 @@ void Physics::_CheckCollisionShapeForDel(float timeStep)
 		if (it->second <= 0)
 		{
 			it = mColShapePendingDelete.erase(it);
-			Log("(Info) colShape(0x%x) %d is deleted.", colShape, colShape->getShapeType());
 			if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 			{
 				btCompoundShape* compound = (btCompoundShape*)(colShape);
@@ -637,18 +635,34 @@ void Physics::SetRayCollisionGroup(int group)
 	mRayGroup = group;
 }
 
-bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result)
+bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, std::vector<void*>* except)
 {
 	auto from = FBToBullet(fromWorld);
 	auto to = FBToBullet(toWorld);
 	struct MyclosestRayResultCallBack : public btCollisionWorld::ClosestRayResultCallback
 	{
 		int mIndex;
-
+		std::vector<void*>* mExcept;
 		MyclosestRayResultCallBack(const btVector3&	rayFromWorld, const btVector3&	rayToWorld)
 			:btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
-			, mIndex(-1)
+			, mIndex(-1), mExcept(0)
 		{}
+
+		virtual bool needsCollision(btBroadphaseProxy* proxy0) const
+		{
+			btCollisionObject* colObj = (btCollisionObject*)proxy0->m_clientObject;
+			if (mExcept && colObj)
+			{
+				auto rigidBody = (RigidBody*)colObj->getUserPointer();
+				if (rigidBody){
+					if (std::find(mExcept->begin(), mExcept->end(), rigidBody->GetGamePtr()) != mExcept->end())
+						return false;
+				}
+			}
+			bool collides = (proxy0->m_collisionFilterGroup & m_collisionFilterMask) != 0;
+			collides = collides && (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+			return collides;
+		}
 
 		virtual	btScalar	addSingleResult(btCollisionWorld::LocalRayResult& rayResult, bool normalInWorldSpace)
 		{
@@ -679,6 +693,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 	MyclosestRayResultCallBack cb(from, to);
 	cb.m_collisionFilterGroup = mRayGroup;
 	cb.m_collisionFilterMask = mask;
+	cb.mExcept = except;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
@@ -687,6 +702,9 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 		result.mHitNormalWorld = BulletToFB(cb.m_hitNormalWorld);
 		result.mIndex = cb.mIndex;
 		return true;
+	}
+	else{
+		result.mRigidBody = 0;
 	}
 	return false;
 }

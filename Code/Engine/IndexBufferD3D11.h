@@ -9,7 +9,11 @@ namespace fastbird
 {
 	class IndexBufferD3D11 : public IIndexBuffer
 	{
+	protected:
+		virtual void FinishSmartPtr();
+
 	public:
+		
 		virtual bool IsReady() const;
 		virtual void Bind();
 		virtual INDEXBUFFER_FORMAT GetFormat() const { return mFormat; }
@@ -20,7 +24,6 @@ namespace fastbird
 		unsigned GetOffset() const { return mOffset; }
 		void SetOffset(unsigned offset) { mOffset = offset; }
 
-	protected:
 		IndexBufferD3D11(unsigned numIndices, INDEXBUFFER_FORMAT format);
 		virtual ~IndexBufferD3D11();
 

@@ -97,6 +97,10 @@ namespace fastbird
 			mRegions.clear();
 		}
 
+		virtual void FinishSmartPtr(){
+			FB_DELETE(this);
+		}
+
 		TextureAtlasRegion* CreateRegion()
 		{
 			return FB_NEW(TextureAtlasRegion);

@@ -224,8 +224,6 @@ void* RigidBodyImpl::GetColShapeUserPtr(int idx)
 	{
 		return colShape->getUserPointer();
 	}
-
-	assert(0);
 	return 0;
 }
 

@@ -65,6 +65,10 @@ Console::~Console()
 	FB_DELETE(mCandiData);	
 }
 
+void Console::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 /*
 //--------------------------------------------------------------------------
 void Input(void* arg)
@@ -283,11 +287,6 @@ void Console::Render()
 	pFont->SetHeight((float)sFontSize);
 	const int lineHeight = (int)pFont->GetHeight();
 
-	// Draw Cursor
-	Vec2I cursorPos = mInputPosition;
-	cursorPos.x += (int)pFont->GetTextWidth((char*)mInputStringw.c_str(), mCursorPos * 2);
-	pRenderer->DrawQuad(cursorPos, Vec2I(mCursorWidth, 2), Color::Yellow);
-
 	// DrawHighlight
 	if (mHighlightStart != -1)
 	{
@@ -317,6 +316,10 @@ void Console::Render()
 		Color::DarkGray);
 
 	
+	// Draw Cursor
+	Vec2I cursorPos = mInputPosition;
+	cursorPos.x += (int)pFont->GetTextWidth((char*)mInputStringw.c_str(), mCursorPos * 2);
+	pRenderer->DrawQuad(cursorPos, Vec2I(mCursorWidth, 2), Color::Yellow);
 
 	// Draw prompt
 	pFont->PrepareRenderResources();
@@ -327,6 +330,8 @@ void Console::Render()
 	// Draw Input String
 	pFont->Write((float)mInputPosition.x, (float)mInputPosition.y, 0.f, Color::White, 
 			(char*)mInputStringw.c_str(), -1, FONT_ALIGN_LEFT);
+
+	
 
 	// Draw Buffer
 	WStringVector bufferwRender(mBufferw.size());

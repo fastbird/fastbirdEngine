@@ -10,6 +10,7 @@ namespace fastbird
 		, mBlink(false)
 		, mBlinkSpeed(3.f)
 		, mGaugeColorEmptySet(false)
+		, mBlinkTime(0)
 	{
 		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->SetMaterial("es/Materials/UIHorizontalGauge.material");
@@ -48,10 +49,15 @@ namespace fastbird
 	void HorizontalGauge::OnStartUpdate(float elapsedTime)
 	{
 		__super::OnStartUpdate(elapsedTime);
-		if (mBlink)
+		if (mBlink && mBlinkTime > 0)
 		{
 			IMaterial* mat = mUIObject->GetMaterial();
 			mat->SetMaterialParameters(3, Vec4(sin(gFBEnv->pTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+			mBlinkTime -= elapsedTime;
+			if (mBlinkTime <= 0){
+				Blink(false);
+				
+			}
 		}
 	}
 
@@ -91,11 +97,31 @@ namespace fastbird
 			return;
 
 		mBlink = blink;
+		if (!blink){
+			IMaterial* mat = mUIObject->GetMaterial();
+			mat->SetMaterialParameters(3, Vec4(0, 0, 0, 0));
+			mBlinkTime = 0;
+		}
+		else{
+			mBlinkTime = FLT_MAX;
+		}
+	}
+
+	void HorizontalGauge::Blink(bool blink, float time){
+
+		if (mBlink == blink)
+			return;
+
+		mBlink = blink;
+		mBlinkTime = time;
+
 		if (!blink)
 		{
 			IMaterial* mat = mUIObject->GetMaterial();
 			mat->SetMaterialParameters(3, Vec4(0, 0, 0, 0));
+			mBlinkTime = 0;
 		}
+
 	}
 
 	void HorizontalGauge::SetGaugeColor(const Color& color)

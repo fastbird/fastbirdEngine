@@ -6,6 +6,7 @@
 #include <UI/ImageBox.h>
 #include <UI/IUIEditor.h>
 #include <Engine/IRenderTarget.h>
+#include <Engine/RendererStructs.h>
 #include <CommonLib/StringUtils.h>
 
 namespace fastbird
@@ -32,7 +33,6 @@ WinBase::WinBase()
 , mAlignH(ALIGNH::LEFT)
 , mAlignV(ALIGNV::TOP)
 , mParent(0)
-, mNPosAligned(0, 0)
 , mMouseIn(false)
 , mMouseInPrev(false)
 , mNext(0)
@@ -43,7 +43,7 @@ WinBase::WinBase()
 , mTextAlignH(ALIGNH::LEFT)
 , mTextAlignV(ALIGNV::MIDDLE)
 , mMatchSize(false)
-, mSize(10, 10)
+, mSize(123, 321)
 , mTextSize(22.f)
 , mFixedTextSize(true)
 , mWNScrollingOffset(0, 0)
@@ -54,7 +54,7 @@ WinBase::WinBase()
 , mAspectRatio(1.0)
 , mNPos(0, 0)
 , mUIObject(0)
-, mNoMouseEvent(false), mNoMouseEventAlone(false)
+, mNoMouseEvent(false), mNoMouseEventAlone(false), mVisualOnlyUI(false)
 , mUseScissor(true)
 , mUseAbsoluteXPos(true)
 , mUseAbsoluteYPos(true)
@@ -72,6 +72,7 @@ WinBase::WinBase()
 , mInheritVisibleTrue(true)
 , mPos(0, 0)
 , mWPos(0, 0)
+, mWNPos(0, 0)
 , mNSize(NotDefined, NotDefined)
 //, mWNSize(NotDefined, NotDefined)
 , mHideCounter(0), mPivot(false)
@@ -80,9 +81,11 @@ WinBase::WinBase()
 , mCurHighlightTime(0)
 , mHighlightSpeed(0.f)
 , mGoingBright(true), mAlpha(1.f), mShowingTooltip(false), mTabOrder(-1), mSaveCheck(false)
-, mFillX(false), mFillY(false), mRunTimeChild(false), mGhost(false), mAspectRatioSet(false)
+, mFillX(false), mFillY(false), mRunTimeChild(false), mRunTimeChildRecursive(false), mGhost(false), mAspectRatioSet(false)
 , mAnimScale(1, 1), mAnimatedPos(0, 0), mAnimPos(0, 0)
 , mGatheringException(false)
+, mKeepUIRatio(false)
+, mUpdateAlphaTexture(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -171,33 +174,45 @@ void WinBase::ClearName()
 // Sizing
 //---------------------------------------------------------------------------
 void WinBase::ChangeSize(const Vec2I& size){
+	if (mSize == size)
+		return;
 	SetSize(size);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeSizeX(int sizeX){
+	if (mSize.x == sizeX)
+		return;
 	SetSizeX(sizeX);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeSizeY(int sizeY){
+	if (mSize.y == sizeY)
+		return;
 	SetSizeY(sizeY);
 	OnSizeChanged();
 }
 
 //---------------------------------------------------------------------------
 void WinBase::ChangeNSize(const Vec2& nsize){
+	if (mNSize == nsize)
+		return;
 	SetNSize(nsize);
 	OnSizeChanged();
 }
 
 void WinBase::ChangeNSizeX(float x){
+	if (mNSize.x == x)
+		return;
 	SetNSizeX(x);
 	OnSizeChanged();
 }
 void WinBase::ChangeNSizeY(float y){
+	if (mNSize.y == y)
+		return;
 	SetNSizeY(y);
 	OnSizeChanged();
 }
@@ -213,7 +228,10 @@ void WinBase::OnSizeChanged()
 	}
 
 	if (mAlignH != ALIGNH::LEFT || mAlignV != ALIGNV::TOP)
-		UpdateAlignedPos();
+	{
+		OnPosChanged(false);
+		//UpdateAlignedPos();
+	}
 
 	if (!mFixedTextSize && mTextSize != mScaledSize.y) {
 		mTextSize = (float)mScaledSize.y;
@@ -223,7 +241,7 @@ void WinBase::OnSizeChanged()
 			mUIObject->SetTextSize(mTextSize);
 	}
 	else{
-		if (mTextAlignH != ALIGNH::LEFT && mTextAlignV != ALIGNV::TOP){
+		if (mTextAlignH != ALIGNH::LEFT || mTextAlignV != ALIGNV::TOP){
 			AlignText();
 		}
 	}
@@ -235,7 +253,7 @@ void WinBase::OnSizeChanged()
 	RefreshBorder();
 	RefreshScissorRects();
 
-	if (mParent)
+	if (mParent && GetType() != ComponentType::Scroller)
 		mParent->SetChildrenPosSizeChanged();
 }
 
@@ -327,9 +345,14 @@ void WinBase::OnParentSizeChanged() {
 	else{
 		mNSize.y = mSize.y / (float)mParent->GetFinalSize().y;
 	}
-
-	if (!mUseAbsoluteXPos || !mUseAbsoluteYPos){
-		UpdateWorldPos();
+	bool posChanged = false;
+	if (!mUseAbsoluteXPos){
+		mPos.x = Round(mParent->GetFinalSize().x * mNPos.x);
+		posChanged = true;
+	}
+	if (!mUseAbsoluteYPos){
+		mPos.y = Round(mParent->GetFinalSize().y * mNPos.y);
+		posChanged = true;
 	}
 
 	if (sizeChanged){
@@ -338,6 +361,9 @@ void WinBase::OnParentSizeChanged() {
 	else{
 		RefreshScissorRects();
 	}
+
+	if (posChanged || mAlignH!=ALIGNH::LEFT || mAlignV!=ALIGNV::MIDDLE)
+		OnPosChanged(false);
 }
 
 //---------------------------------------------------------------------------
@@ -405,7 +431,7 @@ void WinBase::OnPosChanged(bool anim)
 	RefreshBorder();
 	RefreshScissorRects();
 
-	if (mParent)
+	if (mParent && GetType() != ComponentType::Scroller)
 	{
 		mParent->SetChildrenPosSizeChanged();
 	}
@@ -450,6 +476,24 @@ void WinBase::UpdateAlignedPos()
 
 	const auto& rt = GetRenderTargetSize();
 	mWNPos = mWAlignedPos / Vec2(rt);
+}
+
+const Vec2I WinBase::GetAlignedPos() const
+{
+	Vec2I alignedPos = mPos;
+	switch (mAlignH)
+	{
+	case ALIGNH::LEFT: /*nothing todo*/ break;
+	case ALIGNH::CENTER: alignedPos.x -= Round(mScaledSize.x / 2.f); break;
+	case ALIGNH::RIGHT: alignedPos.x -= mScaledSize.x; break;
+	}
+	switch (mAlignV)
+	{
+	case ALIGNV::TOP: /*nothing todo*/break;
+	case ALIGNV::MIDDLE: alignedPos.y -= Round(mScaledSize.y / 2.f); break;
+	case ALIGNV::BOTTOM: alignedPos.y -= mScaledSize.y; break;
+	}
+	return alignedPos;
 }
 
 //---------------------------------------------------------------------------
@@ -727,139 +771,145 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
+void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	mMouseIn = true;
+	assert(mouse);
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_IN) && mParent){
+		mParent->OnMouseIn(mouse, keyboard);
+		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
+		TriggerRedraw();
+	}
+}
+void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	mMouseIn = false;
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_OUT) && mParent){
+		mParent->OnMouseOut(mouse, keyboard);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
+		TriggerRedraw();
+	}
+}
+void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	auto npos = mouse->GetNPos();
+	if (!OnEvent(UIEvents::EVENT_MOUSE_HOVER) && mParent){
+		mParent->OnMouseHover(mouse, keyboard);
+	}
+	else{
+		ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, npos);
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	assert(mouse);
+	if (!OnEvent(UIEvents::EVENT_MOUSE_DOWN) && mParent){
+		mParent->OnMouseDown(mouse, keyboard);
+	}
+	else{
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK) && mParent){
+		mParent->OnMouseClicked(mouse, keyboard);
+	}
+	else{
+		auto type = GetType();
+		bool invaliClickTime =
+			type == ComponentType::Button ||
+			type == ComponentType::DropDown ||
+			type == ComponentType::CheckBox;
+
+		mouse->Invalidate(invaliClickTime);
+		TriggerRedraw();
+	}
+
+}
+
+void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) && mParent){
+		mParent->OnMouseDoubleClicked(mouse, keyboard);
+	}
+	else{
+		mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
+		gFBEnv->pUIManager->CleanTooltip();
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone){
+		return;
+	}
+	if (!OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK) && mParent){
+		mParent->OnMouseRButtonClicked(mouse, keyboard);
+	}
+	else{
+		mouse->Invalidate();
+		TriggerRedraw();
+	}
+}
+
+void WinBase::OnMouseDrag(IMouse* mouse, IKeyboard* keyboard){
+	if (mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
+	}
+	long x, y;
+	mouse->GetDeltaXY(x, y);
+	if (x != 0 || y != 0)
+	{
+		if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
+		{
+			mouse->Invalidate();
+		}
+		else if (mDragable != Vec2I::ZERO)
+		{
+			OnDrag(x, y);
+		}
+		else if (mParent){
+			mParent->OnMouseDrag(mouse, keyboard);
+		}
+		TriggerRedraw();
+	}
+}
+
 //---------------------------------------------------------------------------
 bool WinBase::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 {
-	if (!mVisibility.IsVisible())
-		return false;
-
-	if (mNoMouseEvent || mNoMouseEventAlone)
-	{
-		return false;
-	}
-	auto editor = gFBUIManager->GetUIEditor();
-	if (editor)
-	{		
-		if (GetHwndId() != editor->GetHwndId())
-		{
-			if (!keyboard->IsKeyDown(VK_MENU))
-				return false;
-		}
-	}
-
-	mMouseIn = false;
-	Vec2 mousepos = mouse->GetNPos();
-	if (mouse->IsValid() && !mNoMouseEvent)
-	{
-		// hit test
-		mMouseIn = mMouseDragStartInHere || IsIn(mouse);
-		if (mMouseIn)
-		{
-			bool invalidate = false;
-			if ((mouse->IsLButtonDown() && !mouse->IsLButtonDownPrev() && mUIObject && mouse->IsDragStartIn(mUIObject->GetRegion()))
-				|| (mMouseDragStartInHere && mouse->IsLButtonDown())
-				)
-			{
-				mMouseDragStartInHere = true;
-				auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
-				RECT rect;
-				GetWindowRect(hwnd, &rect);
-				OSWindowPos.x = rect.left;
-				OSWindowPos.y = rect.top;
-				//invalidate = true;
-			}
-			else
-			{
-				mMouseDragStartInHere = false;
-			}
-			if (mouse->IsLButtonDown() && mMouseDragStartInHere)
-			{
-				long x,  y;
-				mouse->GetDeltaXY(x, y);
-				if (x != 0 || y != 0)
-				{
-					if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
-					{
-						mouse->Invalidate();
-					}
-					else if (mDragable != Vec2I::ZERO)
-					{
-						OnDrag(x, y);
-					}
-				}
-				else
-				{
-					if (OnEvent(UIEvents::EVENT_MOUSE_DOWN))
-						mouse->Invalidate();
-				}
-			}
-			else if (mMouseInPrev)
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_HOVER))
-					invalidate = true;
-				ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, mousepos);
-			}
-			else if (mMouseIn)
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_IN))
-					invalidate = true;
-				ToolTipEvent(UIEvents::EVENT_MOUSE_IN, mousepos);
-			}
-
-			if (mouse->IsLButtonClicked())
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK))
-				{
-					invalidate = true;
-					mouse->Invalidate(GetType() == ComponentType::Button ? true : false);
-				}
-			}
-			else if (mouse->IsLButtonDoubleClicked())
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK))
-				{
-					invalidate = true;
-					gFBEnv->pUIManager->CleanTooltip();
-				}
-
-			}
-			else if (mouse->IsRButtonClicked())
-			{
-				if (OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK))
-				{
-					mouse->Invalidate();
-					invalidate = true;
-				}
-			}
-			if (invalidate)
-			{
-				mouse->Invalidate();
-				TriggerRedraw();
-			}
-		}
-		else if (mMouseInPrev)
-		{
-			if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
-			{
-				mouse->Invalidate();
-				TriggerRedraw();
-			}
-			ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
-		}
-
-		mMouseInPrev = mMouseIn;
-	}
-	else if (mMouseInPrev)
-	{
-		if (OnEvent(UIEvents::EVENT_MOUSE_OUT))
-		{
-			mouse->Invalidate();
-			TriggerRedraw();
-		}
-		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, mousepos);
-		mMouseInPrev = false;
-	}
-
 	if (!GetFocus())
 		return mMouseIn;
 
@@ -1148,20 +1198,20 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::NPOS:
 	{
 							 Vec2 npos = StringConverter::parseVec2(val);
-							 SetNPos(npos);
+							 ChangeNPos(npos);
 							 return true;
 	}
 	case UIProperty::NPOSX:
 	{
 							  float x = StringConverter::parseReal(val);
-							  SetNPosX(x);
+							  ChangeNPosX(x);
 							  OnSizeChanged();
 							  return true;
 	}
 	case UIProperty::NPOSY:
 	{
 							  float y = StringConverter::parseReal(val);
-							  SetNPosY(y);
+							  ChangeNPosY(y);
 							  OnSizeChanged();
 							  return true;
 	}
@@ -1363,11 +1413,10 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT:
 	{
 							 assert(val);
-							 std::string translated = TranslateText(val);
-							 if (translated != val || strlen(val)==0)
-							 {
-								 mTextBeforeTranslated = val;
-							 }
+							 if (mTextBeforeTranslated == val)
+								 return true;
+							 mTextBeforeTranslated = val;
+							 std::string translated = TranslateText(val);							 
 
 							 if (translated.empty())
 							 {
@@ -1380,14 +1429,25 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 							 return true;
 	}
 
+	case UIProperty::KEEP_UI_RATIO:
+	{
+		mKeepUIRatio = StringConverter::parseBool(val);
+		return true;
+	}
+
+	case UIProperty::UI_RATIO:
+	{
+		mAspectRatio = StringConverter::parseReal(val);
+		return true;
+	}
+
 	case UIProperty::TOOLTIP:
 	{
 								assert(val);
-								auto msg = TranslateText(val);
-								if (msg != val)
-								{
-									mTooltipTextBeforeT = val;
-								}
+								if (mTooltipTextBeforeT == val)
+									return true;
+								mTooltipTextBeforeT = val;								
+								auto msg = TranslateText(val);								
 								if (msg.empty())
 									mTooltipText = AnsiToWide(val);
 								else
@@ -1397,7 +1457,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::NO_MOUSE_EVENT:
 	{
-									   mNoMouseEvent = StringConverter::parseBool(val);
+		mNoMouseEvent = StringConverter::parseBool(val);
 									   return true;
 	}
 
@@ -1405,6 +1465,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 											 mNoMouseEventAlone = StringConverter::parseBool(val);
 											 return true;
+	}
+
+	case UIProperty::VISUAL_ONLY_UI:
+	{
+		mVisualOnlyUI = StringConverter::parseBool(val);
+		return true;
 	}
 
 	case UIProperty::USE_SCISSOR:
@@ -1429,9 +1495,9 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 		case UIProperty::SPECIAL_ORDER:
 		{
-										  mSpecialOrder = StringConverter::parseInt(val);
-										  mUIObject->SetSpecialOrder(mSpecialOrder);
-										return true;
+			int specialOrder = StringConverter::parseInt(val);
+			SetSpecialOrder(specialOrder);
+			return true;
 		}
 
 		case UIProperty::INHERIT_VISIBLE_TRUE:
@@ -1470,7 +1536,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 											anim->SetTargetUI(this);
 										   anim->ClearData();
 										   anim->AddScale(0.0f, Vec2(1.0f, 1.0f));
-										   anim->AddScale(sFadeInOutTime, Vec2(0.001f, 0.001f));
+										   anim->AddScale(sFadeInOutTime, Vec2(0.1f, 0.1f));
 										   anim->AddAlpha(0.0f, 1.0f);
 										   anim->AddAlpha(sFadeInOutTime, 0.0f);
 										   anim->SetLength(sFadeInOutTime);
@@ -1807,6 +1873,28 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		return true;
 	}
 
+	case UIProperty::KEEP_UI_RATIO:
+	{
+		if (notDefaultOnly){
+			if (mKeepUIRatio == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mKeepUIRatio);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::UI_RATIO:
+	{
+		if (notDefaultOnly){
+			if (mAspectRatio == UIProperty::GetDefaultValueFloat(prop))
+				return false;
+		}
+		auto data = StringConverter::toString(mAspectRatio);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
 	case UIProperty::TOOLTIP:
 	{
 		if (notDefaultOnly) {
@@ -1846,9 +1934,17 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		}
 
 		auto data = StringConverter::toString(mNoMouseEventAlone);
-		strcpy_s(val, bufsize, data.c_str());
+		strcpy_s(val, bufsize, data.c_str());	
+		return true;
+	}
 
-		
+	case UIProperty::VISUAL_ONLY_UI:
+	{
+		if (notDefaultOnly) {
+			if (mVisualOnlyUI == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mVisualOnlyUI).c_str());
 		return true;
 	}
 
@@ -2007,87 +2103,7 @@ void WinBase::SetUseBorder(bool use)
 {
 	if (use && mBorders.empty())
 	{
-		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		T->SetHwndId(GetHwndId());
-		mBorders.push_back(T);
-		T->SetRender3D(mRender3D, GetRenderTargetSize());
-		T->SetManualParent(this);
-		T->ChangeSizeY(3);
-		T->SetTextureAtlasRegion("es/textures/ui.xml", "Box_T");	
-		
-
-		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		L->SetHwndId(GetHwndId());
-		mBorders.push_back(L);
-		L->SetRender3D(mRender3D, GetRenderTargetSize());
-		L->SetManualParent(this);
-		L->ChangeSizeX(3);
-		L->SetTextureAtlasRegion("es/textures/ui.xml", "Box_L");		
-
-		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		R->SetHwndId(GetHwndId());
-		mBorders.push_back(R);
-		R->SetRender3D(mRender3D, GetRenderTargetSize());
-		R->SetManualParent(this);
-		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		R->ChangeSizeX(3);
-		R->SetTextureAtlasRegion("es/textures/ui.xml", "Box_R");
-		
-
-		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		B->SetHwndId(GetHwndId());
-		mBorders.push_back(B);
-		B->SetRender3D(mRender3D, GetRenderTargetSize());
-		B->SetManualParent(this);
-		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		B->ChangeSizeY(3);
-		B->SetTextureAtlasRegion("es/textures/ui.xml", "Box_B");
-
-		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		LT->SetHwndId(GetHwndId());
-		mBorders.push_back(LT);
-		LT->SetRender3D(mRender3D, GetRenderTargetSize());
-		LT->SetManualParent(this);
-		LT->ChangeSize(Vec2I(6, 6));
-		LT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LT");		
-
-		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		RT->SetHwndId(GetHwndId());
-		mBorders.push_back(RT);
-		RT->SetRender3D(mRender3D, GetRenderTargetSize());
-		RT->SetManualParent(this);
-		RT->ChangeSize(Vec2I(6, 6));
-		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
-		RT->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RT");		
-
-		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
-		LB->SetHwndId(GetHwndId());
-		mBorders.push_back(LB);
-		LB->SetRender3D(mRender3D, GetRenderTargetSize());
-		LB->SetManualParent(this);
-		LB->ChangeSize(Vec2I(5, 5));
-		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
-		LB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_LB");
-
-		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
-		RB->SetHwndId(GetHwndId());
-		mBorders.push_back(RB);
-		RB->SetRender3D(mRender3D, GetRenderTargetSize());
-		RB->SetManualParent(this);
-		RB->ChangeSize(Vec2I(6, 6));
-		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
-		RB->SetTextureAtlasRegion("es/textures/ui.xml", "Box_RB");
-		
-		RefreshBorder();
-		RefreshScissorRects();
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-
-		auto visible = mVisibility.IsVisible();
-		for (auto borderImage : mBorders)
-		{
-			borderImage->SetVisible(visible);
-		}
-
+		RecreateBorders();
 	}
 	else if (!use && !mBorders.empty())
 	{
@@ -2096,9 +2112,136 @@ void WinBase::SetUseBorder(bool use)
 			gFBEnv->pUIManager->DeleteComponent(ib);
 		}
 		mBorders.clear();
+		
+		if (mUIObject){
+			auto mat = mUIObject->GetMaterial();
+			if (mat && mat->RemoveShaderDefine("_ALPHA_TEXTURE"))
+				mat->ApplyShaderDefines();
+		}
+
 		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 	}
 }
+void WinBase::RecreateBorders(){
+	if (!mBorders.empty()){
+
+		enum ORDER{
+			ORDER_T,
+			ORDER_L,
+			ORDER_R,
+			ORDER_B,
+			ORDER_LT,
+			ORDER_RT,
+			ORDER_LB,
+			ORDER_RB,
+
+			ORDER_NUM
+		};
+		const char* atts[] = {
+			"t", "l", "r", "b", "lt", "rt", "lb", "rb"
+		};
+		const char* uixmlPath = "es/textures/ui.xml";
+		for (auto i = 0; i < ORDER_NUM; ++i){
+			const char* borderRegion = gFBUIManager->GetBorderRegion(atts[i]);
+			const auto& size = mBorders[i]->SetTextureAtlasRegion(uixmlPath, borderRegion);
+			mBorders[i]->ChangeSize(size);
+		}
+	}
+	else{
+		const char* uixmlPath = "es/textures/ui.xml";
+		ImageBox* T = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		T->SetHwndId(GetHwndId());
+		mBorders.push_back(T);
+		T->SetRender3D(mRender3D, GetRenderTargetSize());
+		T->SetManualParent(this);
+		T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		const auto& sizeT = T->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("t"));
+		T->ChangeSizeY(sizeT.y);
+
+		ImageBox* L = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		L->SetHwndId(GetHwndId());
+		mBorders.push_back(L);
+		L->SetRender3D(mRender3D, GetRenderTargetSize());
+		L->SetManualParent(this);
+		L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		const auto& sizeL = L->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("l"));
+		L->ChangeSizeX(sizeL.x);
+
+
+		ImageBox* R = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		R->SetHwndId(GetHwndId());
+		mBorders.push_back(R);
+		R->SetRender3D(mRender3D, GetRenderTargetSize());
+		R->SetManualParent(this);
+		R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		const auto& sizeR = R->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("r"));
+		R->ChangeSizeX(sizeR.x);
+
+		ImageBox* B = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		B->SetHwndId(GetHwndId());
+		mBorders.push_back(B);
+		B->SetRender3D(mRender3D, GetRenderTargetSize());
+		B->SetManualParent(this);
+		B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		const auto& sizeB = B->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("b"));
+		B->ChangeSizeY(sizeB.y);
+
+		ImageBox* LT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		LT->SetHwndId(GetHwndId());
+		mBorders.push_back(LT);
+		LT->SetRender3D(mRender3D, GetRenderTargetSize());
+		LT->SetManualParent(this);
+		const auto& sizeLt = LT->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("lt"));
+		LT->ChangeSize(sizeLt);
+
+		ImageBox* RT = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RT->SetHwndId(GetHwndId());
+		mBorders.push_back(RT);
+		RT->SetRender3D(mRender3D, GetRenderTargetSize());
+		RT->SetManualParent(this);
+		RT->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
+		auto sizeRT = RT->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("rt"));
+		RT->ChangeSize(sizeRT);
+
+		ImageBox* LB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);;
+		LB->SetHwndId(GetHwndId());
+		mBorders.push_back(LB);
+		LB->SetRender3D(mRender3D, GetRenderTargetSize());
+		LB->SetManualParent(this);
+		LB->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
+		const auto& sizeLB = LB->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("lb"));
+		LB->ChangeSize(sizeLB);
+
+		ImageBox* RB = (ImageBox*)gFBEnv->pUIManager->CreateComponent(ComponentType::ImageBox);
+		RB->SetHwndId(GetHwndId());
+		mBorders.push_back(RB);
+		RB->SetRender3D(mRender3D, GetRenderTargetSize());
+		RB->SetManualParent(this);
+		RB->SetAlign(ALIGNH::RIGHT, ALIGNV::BOTTOM);
+		const auto& sizeRB = RB->SetTextureAtlasRegion(uixmlPath,
+			gFBUIManager->GetBorderRegion("rb"));
+		RB->ChangeSize(sizeRB);
+	}
+	RefreshBorder();
+	RefreshScissorRects();
+	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+
+	auto visible = mVisibility.IsVisible();
+	for (auto borderImage : mBorders)
+	{
+		borderImage->SetVisible(visible);
+	}
+}
+
 void WinBase::RefreshBorder()
 {
 	if (mBorders.empty())
@@ -2121,20 +2264,25 @@ void WinBase::RefreshBorder()
 
 	const Vec2I& finalPos = GetFinalPos();
 	const Vec2I& finalSize = GetFinalSize();
-	mBorders[ORDER_T]->ChangeSizeX(finalSize.x);
-	mBorders[ORDER_T]->ChangeWPos(finalPos);
+	const auto& ltsize = mBorders[ORDER_LT]->GetSize();
+	mBorders[ORDER_T]->ChangeSizeX(std::max(0, finalSize.x - ltsize.x* 2));
+	mBorders[ORDER_T]->ChangeWPos(Vec2I(finalPos.x + ltsize.x, finalPos.y));
 
-	mBorders[ORDER_L]->ChangeSizeY(finalSize.y);
-	mBorders[ORDER_L]->ChangeWPos(finalPos);
+	mBorders[ORDER_L]->ChangeSizeY(std::max(0, finalSize.y - ltsize.y*2));
+	mBorders[ORDER_L]->ChangeWPos(Vec2I(finalPos.x, finalPos.y + ltsize.y));
 
-	mBorders[ORDER_R]->ChangeSizeY(finalSize.y);
+	const auto& rtsize = mBorders[ORDER_RT]->GetSize();
+	mBorders[ORDER_R]->ChangeSizeY(std::max(0, finalSize.y - rtsize.y * 2));
 	Vec2I wpos = finalPos;
 	wpos.x += finalSize.x;
+	wpos.y += rtsize.y;
 	mBorders[ORDER_R]->ChangeWPos(wpos);
 
-	mBorders[ORDER_B]->ChangeSizeX(finalSize.x);
+	auto lbsize = mBorders[ORDER_LB]->GetSize();
+	mBorders[ORDER_B]->ChangeSizeX(std::max(0, finalSize.x - lbsize.x*2));
 	wpos = finalPos;
 	wpos.y += finalSize.y;
+	wpos.x += lbsize.x;
 	mBorders[ORDER_B]->ChangeWPos(wpos);
 
 	mBorders[ORDER_LT]->ChangeWPos(finalPos);
@@ -2149,6 +2297,49 @@ void WinBase::RefreshBorder()
 
 	wpos = finalPos + finalSize;
 	mBorders[ORDER_RB]->ChangeWPos(wpos);
+
+	UpdateAlphaTexture();
+	
+	
+}
+
+void WinBase::UpdateAlphaTexture(){
+	mUpdateAlphaTexture = false;
+
+	const Vec2I& finalSize = GetFinalSize();
+	if (mUIObject){
+		auto mat = mUIObject->GetMaterial();
+		bool callmeLater = false;
+		auto texture = gFBUIManager->GetBorderAlphaInfoTexture(finalSize, callmeLater);
+		if (texture && mat){
+			mat->SetTexture(texture, BINDING_SHADER_PS, 1);
+			if (mat->AddShaderDefine("_ALPHA_TEXTURE", "1"))
+				mat->ApplyShaderDefines();
+
+			if (!mUIObject->HasTexCoord()){
+				Vec2 texcoords[4] = {
+					Vec2(0.f, 1.f),
+					Vec2(0.f, 0.f),
+					Vec2(1.f, 1.f),
+					Vec2(1.f, 0.f)
+				};
+				mUIObject->SetTexCoord(texcoords, 4);
+				INPUT_ELEMENT_DESCS descs;
+				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				mat->SetInputLayout(descs);
+			}
+		}
+		else{
+			if (mat->RemoveShaderDefine("_ALPHA_TEXTURE"))
+				mat->ApplyShaderDefines();
+
+			if (!texture && callmeLater){
+				mUpdateAlphaTexture = true;
+			}
+		}
+	}
 }
 
 void WinBase::SetWNScollingOffset(const Vec2& offset)
@@ -2242,6 +2433,9 @@ void WinBase::ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos
 
 void WinBase::OnStartUpdate(float elapsedTime)
 {
+	if (mUpdateAlphaTexture){
+		UpdateAlphaTexture();
+	}
 	// Static Animation.
 	if (mSimplePosAnimEnabled)
 	{
@@ -3063,6 +3257,7 @@ void WinBase::GatherVisit(std::vector<IUIObject*>& v)
 {
 	if (!mVisibility.IsVisible())
 		return;
+
 	if (!mBorders.empty())
 	{
 		for (auto var : mBorders)
@@ -3278,8 +3473,12 @@ void WinBase::TriggerRedraw()
 
 IWinBase* WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
+	if (param.mNoRuntimeComp && mRunTimeChild)
+		return 0;
+
 	if (IsIn(pt, param.mIgnoreScissor))
 		return (IWinBase*)this;
+
 	return 0;
 }
 
@@ -3321,6 +3520,10 @@ float WinBase::GetContentHeight() const
 	return GetFinalSize().y / (float)GetRenderTargetSize().y;
 }
 
+float WinBase::GetContentEnd() const{
+	return mWNPos.y + GetFinalSize().y / (float)GetRenderTargetSize().y;
+}
+
 bool WinBase::IsKeyboardFocused() const
 {
 	return gFBUIManager->GetKeyboardFocusUI() == this;
@@ -3354,4 +3557,11 @@ const char* WinBase::GetEvent(UIEvents::Enum e){
 	return "";
 }
 
+void WinBase::SetSpecialOrder(int specialOrder){
+	mSpecialOrder = specialOrder;
+	if (mUIObject){
+		mUIObject->SetSpecialOrder(specialOrder);
+	}
+	gFBUIManager->DirtyRenderList(GetHwndId());
+}
 }

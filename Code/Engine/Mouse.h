@@ -16,11 +16,17 @@ namespace fastbird
 
 		Mouse();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		virtual void PushEvent(HWND handle, const MouseEvent& mouseEvent);
 
 		virtual void EndFrame();
-		virtual bool IsValid() const { return mValid; }
+		virtual bool IsValid() const { return mValid && !mInvalidatedTemporary; }
 		virtual void Invalidate(bool buttonClicked = false);
+		virtual void InvalidTemporary(bool invalidate);
 		virtual void GetHDDeltaXY(long &x, long &y) const;
 		virtual void GetDeltaXY(long &x, long &y) const;
 		virtual Vec2I GetDeltaXY() const;
@@ -30,10 +36,15 @@ namespace fastbird
 		virtual void GetNPos(float &x, float &y) const;
 		virtual Vec2 GetNPos() const;
 		virtual void GetDragStart(long &x, long &y) const;
+		virtual Vec2I GetDragStartedPos() const;
 		virtual bool IsDragStartIn(const RECT& region) const;
 		virtual bool IsDragStarted(Vec2I& outStartPos) const;
 		virtual bool IsDragEnded() const;
 		virtual void PopDragEvent();
+		virtual void PopRDragEvent();
+
+		virtual bool IsRDragStarted(Vec2I& outStartPos) const;
+		virtual bool IsRDragEnded(Vec2I& outStartPos) const;
 
 		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(float* time = 0) const;
@@ -41,6 +52,7 @@ namespace fastbird
 		virtual bool IsLButtonDoubleClicked() const;
 		virtual bool IsLButtonPressed() const;
 		virtual bool IsRButtonDown(float* time = 0) const;
+		virtual bool IsRButtonDownPrev() const;
 		virtual bool IsRButtonClicked() const;
 		virtual bool IsRButtonPressed() const;
 		virtual bool IsMButtonDown() const;
@@ -60,6 +72,10 @@ namespace fastbird
 
 		virtual bool IsIn(const RECT& r);
 		
+		virtual void CursorToCenter();
+
+		virtual void SetCursorPosition(const Vec2I& cursorPos);
+
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
 		void GetMouseCoordDelta(long& x, long& y) const;
@@ -68,6 +84,7 @@ namespace fastbird
 
 	private:
 		void ClearDrag();
+		void ClearRDrag();
 
 	private:
 		int mButtonsDown;
@@ -119,7 +136,15 @@ namespace fastbird
 		bool mDragStarted;
 		bool mDragEnd;
 
+		bool mRDragStarted;
+		bool mRDragEnd;
+		long mRDragStartX;
+		long mRDragStartY;
+		long mRDragEndX;
+		long mRDragEndY;
+
 		void* mLockMouseKey;
+		bool mInvalidatedTemporary;
 	};
 }
 

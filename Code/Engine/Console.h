@@ -55,6 +55,11 @@ namespace fastbird
 		Console();
 		virtual ~Console();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		//-------------------------------------------------------------------------
 		// IConsole
 		virtual bool Init();

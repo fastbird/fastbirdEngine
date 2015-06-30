@@ -52,6 +52,11 @@ RenderTarget::~RenderTarget()
 	}
 }
 
+void RenderTarget::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 bool RenderTarget::CheckOptions(const RenderTargetParam& param)
 {
 	return param.mSize == mSize && param.mPixelFormat == mFormat && 
@@ -109,12 +114,16 @@ ICamera* RenderTarget::GetOrCreateOverridingCamera()
 	{
 		mOverridingCam = FB_NEW(Camera);
 	}
+	mOverridingCam->SetWidth((int)mCamera->GetWidth());
+	mOverridingCam->SetHeight((int)mCamera->GetHeight());
 	return mOverridingCam;
 }
 
 
 void RenderTarget::RemoveOverridingCamera()
 {
+	if (gFBEnv->pRenderer->GetCamera() == mOverridingCam)
+		gFBEnv->pRenderer->SetCamera(mCamera);
 	mOverridingCam = 0;
 }
 
@@ -161,7 +170,9 @@ void RenderTarget::Bind(size_t face)
 	renderer->Clear(mClearColor.r(), mClearColor.g(), mClearColor.b(), mClearColor.a(),
 		mDepthClear, mStencilClear);
 
-	GetSceneInternal()->SetLightToRenderer();
+	auto scene = GetSceneInternal();
+	assert(scene);
+	scene->SetLightToRenderer();
 	
 	auto cam = GetCamera();
 	renderer->SetCamera(cam);
@@ -431,7 +442,7 @@ void RenderTarget::SetGlowRenderTarget()
 {
 	if (!mRenderPipeline->GetStep(RenderSteps::Glow))
 	{
-		BindTargetOnly(true);
+		BindTargetOnly(mRenderPipeline->GetStep(RenderSteps::HDR));
 		return;
 	}
 	if (mGlowSet)
@@ -1398,7 +1409,7 @@ void RenderTarget::UpdateLightCamera()
 		gFBEnv->pConsole->GetEngineCommand()->r_ShadowCamDist;
 	auto light = GetSceneInternal()->GetLight(0);
 	assert(light);
-	if (target && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
+	if (target && target->GetBoundingVolume() && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
 	{
 		mLightCamera->SetPos(target->GetPos() + light->GetPosition() *shadowCamDist);
 	}

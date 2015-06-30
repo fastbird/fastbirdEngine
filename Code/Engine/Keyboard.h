@@ -11,11 +11,16 @@ namespace fastbird
 	public:	
 		Keyboard();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		virtual void PushEvent(HWND hWnd, const KeyboardEvent& keyboardEvent);
 		virtual void PushChar(HWND hWnd, unsigned keycode);
 		virtual void EndFrame();
-		virtual bool IsValid() const { return mValid; }
+		virtual bool IsValid() const { return mValid && !mInvalidatedTemporary; }
 		virtual void Invalidate(bool buttonClicked = false);
+		virtual void InvalidTemporary(bool invalidate);
 		virtual bool IsKeyDown(unsigned short keycode) const;
 		virtual bool IsKeyPressed(unsigned short keycode) const;
 		virtual bool IsKeyUp(unsigned short keycode) const;
@@ -36,6 +41,7 @@ namespace fastbird
 		std::queue<unsigned> mCurrentChar;
 		float mLastPushKeyTime;
 		float mKeyDownDuration[255];
+		bool mInvalidatedTemporary;
 
 
 	};

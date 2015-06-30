@@ -22,16 +22,15 @@ public:
 	virtual bool SetVisible(bool visible);
 	virtual void SetVisibleInternal(bool visible);
 
-	virtual void OnSizeChanged();
 	virtual void OnPosChanged(bool anim);
 	virtual HorizontalGauge* GetProgressBar()  const { return mProgressBar; }
 	virtual void StartProgress();
 	virtual void SetPercentage(float p); // progress bar
 	virtual void Blink(bool blink); // progress bar
-	virtual void OnStartUpdate(float elapsedTime);
+	virtual void Blink(bool blink, float time); // progress bar
 	virtual void EndProgress();
 	virtual void Highlight(bool highlight);
-	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture);
+	virtual void SetTexture(ButtonImages::Enum type, ITexture* pTexture, bool drawFixedSize);
 	virtual void OnEnableChanged();
 	const static float LEFT_GAP;
 
@@ -42,9 +41,13 @@ public:
 	bool IsActivated() const { return mActivated; }
 	void AlignIconText();
 
+	void UpdateImageSize();
+
 private:
 
 	ImageBox* CreateImageBox();
+	void SetAlphaRegionTexture();
+	void SetDefaultImageAtlasPathIfNotSet();
 
 private:
 	Color mBackColor;
@@ -68,6 +71,10 @@ private:
 	std::string mFrameImageDisabled;
 	std::string mActivatedImage;
 	std::string mDeactivatedImage;
+
+	std::string mAlphaRegion;
+	Vec2I mImageSize;
+
 	Color mImageColorOverlay;
 	bool mActivatedRot;
 	float mFps;

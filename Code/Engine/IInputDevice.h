@@ -10,5 +10,6 @@ namespace fastbird
 		virtual void EndFrame() = 0;
 		virtual bool IsValid() const = 0;
 		virtual void Invalidate(bool buttonClicked = false) = 0;
+		virtual void InvalidTemporary(bool invalidate) = 0;
 	};
 }

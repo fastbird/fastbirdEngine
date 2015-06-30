@@ -4,6 +4,7 @@
 #include <UI/ComponentType.h>
 #include <UI/Align.h>
 #include <UI/IWinBase.h>
+#include <UI/Styles.h>
 
 namespace fastbird
 {
@@ -13,6 +14,7 @@ namespace fastbird
 	class UICommands;
 	class IUIEditor;
 	class TextManipulator;
+	class ITexture;
 	class IUIManager : public IInputListener
 	{
 	public:
@@ -25,6 +27,7 @@ namespace fastbird
 		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) = 0;
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 		virtual void DeleteLuaUI(const char* uiName) = 0;
+		virtual bool IsLoadedUI(const char* uiName) = 0;
 
 		// in screenspace
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID) = 0;
@@ -37,6 +40,7 @@ namespace fastbird
 		virtual void SetFocusUI(IWinBase* pWnd) = 0;
 		virtual IWinBase* GetFocusUI() const = 0;
 		virtual IWinBase* GetKeyboardFocusUI() const = 0;
+		virtual IWinBase* GetNewFocusUI() const = 0;
 		virtual void SetFocusUI(const char* uiName) = 0;
 		virtual bool IsFocused(const IWinBase* pWnd) const = 0;
 		virtual void DirtyRenderList(HWND_ID hwndId) = 0;
@@ -75,6 +79,8 @@ namespace fastbird
 		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win) = 0;
 
 		virtual void MoveToBottom(const char* moveToBottom) = 0;
+		virtual void MoveToBottom(IWinBase* moveToBottom) = 0;
+		virtual void MoveToTop(IWinBase* moveToTop) = 0;
 		virtual void HideUIsExcept(const std::vector<std::string>& excepts)=0;
 
 		virtual void HighlightUI(const char* uiname)=0;
@@ -96,6 +102,14 @@ namespace fastbird
 
 		virtual void CopyCompsAtMousePos(const std::vector<IWinBase*>& src) = 0;
 
+		// styles
+		virtual const char* GetBorderRegion(const char* key) const = 0;
+		virtual const char* GetWndBorderRegion(const char* key) const = 0;
+		virtual const char* GetStyleString(Styles::Enum s) const = 0;
+
+		// alpha
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater) = 0;
+
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;
 
@@ -108,6 +122,7 @@ namespace fastbird
 		friend class TextField;
 		friend class PropertyList;
 		friend class ListBox;
+		friend class CardScroller;
 		virtual IWinBase* CreateComponent(ComponentType::Enum type) = 0;
 		virtual void DeleteComponent(IWinBase* com) = 0;
 

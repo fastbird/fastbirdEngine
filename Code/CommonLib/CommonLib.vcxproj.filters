@@ -226,5 +226,9 @@
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="System.cpp" />
     <ClCompile Include="StackTracer.cpp" />
+    <ClCompile Include="SmartPtr.cpp" />
+    <ClCompile Include="Math\BoundingVolume.cpp">
+      <Filter>MathGeom</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

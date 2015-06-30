@@ -105,6 +105,8 @@
       <Filter>Components</Filter>
     </ClInclude>
     <ClInclude Include="UIEvents.h" />
+    <ClInclude Include="Styles.h" />
+    <ClInclude Include="CardData.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -203,5 +205,6 @@
     <ClCompile Include="TabWindow.cpp">
       <Filter>Components</Filter>
     </ClCompile>
+    <ClCompile Include="CardData.cpp" />
   </ItemGroup>
 </Project>

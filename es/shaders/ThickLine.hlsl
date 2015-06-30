@@ -16,7 +16,8 @@ struct a2v
 {
 	float4 pos		: POSITION;
 	float4 color	: COLOR;
-	float2 uv		: TEXCOORD;
+	float4 uv		: TEXCOORD0;// uv.z is thickness, uv.w is direction
+	float3 next 	: TEXCOORD1; 
 };
 
 //----------------------------------------------------------------------------
@@ -32,9 +33,25 @@ v2p thickline_VertexShader( in a2v IN )
 {
     v2p OUT;
 
-	OUT.pos = mul(gWorldViewProj, IN.pos);
+	float4 curProjected = mul(gWorldViewProj, IN.pos);
+	float2 curScreen = curProjected.xy / curProjected.w;
+	curScreen.x *= gScreenRatio;
+	
+	float4 nextProjected = mul(gWorldViewProj, float4(IN.next.xyz, 1.f));
+	float2 nextScreen = nextProjected.xy / nextProjected.w;
+	nextScreen.x *= gScreenRatio;
+	
+	float2 dir = normalize(nextScreen - curScreen);
+	float2 normal = float2(dir.y, -dir.x);
+	
+	float thickness = IN.uv.z;
+	normal *= thickness * .5f;
+	normal.x /= gScreenRatio;
+	float direction = IN.uv.w; // direction is 1 or -1
+	float4 offset = float4(normal * direction * curProjected.w, 0, 0);
+	OUT.pos = curProjected + offset;
 	OUT.color = IN.color;
-	OUT.uv = IN.uv;
+	OUT.uv = IN.uv.xy;
 
 	return OUT;
 }

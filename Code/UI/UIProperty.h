@@ -46,6 +46,8 @@ namespace fastbird
 			IMAGE_HFLIP,
 			TEXTUREATLAS,
 			TEXTURE_FILE,
+			KEEP_UI_RATIO,
+			UI_RATIO,
 			KEEP_IMAGE_RATIO,
 			REGION,
 			REGIONS,
@@ -75,6 +77,7 @@ namespace fastbird
 			GAUGE_BORDER_COLOR,
 			NO_MOUSE_EVENT,
 			NO_MOUSE_EVENT_ALONE,
+			VISUAL_ONLY_UI, // no mouse & keyboard and region test.
 			INVALIDATE_MOUSE,
 			SCROLLERH,
 			SCROLLERV,
@@ -89,10 +92,13 @@ namespace fastbird
 			LISTBOX_COL_HEADERS,
 			LISTBOX_COL_HEADERS_TEXT_SIZE,
 			LISTBOX_HIGHLIGHT_COLOR,
+			LISTBOX_MULTI_SELECTION,
+			LISTBOX_NO_HIGHLIGHT,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
 			TITLEBAR,
+			CLOSE_BTN,
 			USE_BORDER,
 			SPECIAL_ORDER, // higher will render top
 			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
@@ -101,7 +107,9 @@ namespace fastbird
 			HIDE_ANIMATION,
 			ENABLED,
 			IMAGE_COLOR_OVERLAY,
-			IMAGE_FIXED_SIZE,
+			IMAGE_FIXED_SIZE, // match to image size if not set it will matched to ui size
+			ALPHA_REGION,
+
 			NO_BUTTON,
 			CHECKBOX_CHECKED,
 			MODAL,
@@ -129,6 +137,10 @@ namespace fastbird
 
 			TABWND_NUM_TABS,
 			TABWND_TAB_NAMES,
+
+			BUTTON_IMAGE_SIZE,
+
+			WND_NO_FOCUS,
 
 			COUNT
 		};
@@ -174,6 +186,8 @@ namespace fastbird
 			"IMAGE_HFLIP",
 			"TEXTUREATLAS",
 			"TEXTURE_FILE",
+			"KEEP_UI_RATIO",
+			"UI_RATIO",
 			"KEEP_IMAGE_RATIO",
 			"REGION",
 			"REGIONS",
@@ -203,6 +217,7 @@ namespace fastbird
 			"GAUGE_BORDER_COLOR",
 			"NO_MOUSE_EVENT",
 			"NO_MOUSE_EVENT_ALONE", // not inherited to children
+			"VISUAL_ONLY_UI",
 			"INVALIDATE_MOUSE",
 			"SCROLLERH",
 			"SCROLLERV",
@@ -217,10 +232,13 @@ namespace fastbird
 			"LISTBOX_COL_HEADERS",
 			"LISTBOX_COL_HEADERS_TEXT_SIZE",
 			"LISTBOX_HIGHLIGHT_COLOR",
+			"LISTBOX_MULTI_SELECTION",
+			"LISTBOX_NO_HIGHLIGHT",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
 			"TITLEBAR",
+			"CLOSE_BTN",
 			"USE_BORDER",
 			"SPECIAL_ORDER",
 			"INHERIT_VISIBLE_TRUE",
@@ -230,6 +248,7 @@ namespace fastbird
 			"ENABLED",
 			"IMAGE_COLOR_OVERLAY",
 			"IMAGE_FIXED_SIZE",
+			"ALPHA_REGION",
 			"NO_BUTTON",
 			"CHECKBOX_CHECKED",
 			"MODAL",
@@ -258,6 +277,10 @@ namespace fastbird
 
 			"TABWND_NUM_TABS",
 			"TABWND_TAB_NAMES",
+
+			"BUTTON_IMAGE_SIZE",
+
+			"WND_NO_FOCUS",
 
 			"COUNT"
 		};
@@ -344,6 +367,8 @@ namespace fastbird
 				return Vec2I::ZERO;
 			case NUMERIC_UPDOWN_MINMAX:
 				return Vec2I(0, 100);
+			case BUTTON_IMAGE_SIZE:
+				return Vec2I(0, 0);
 			}
 			assert(0);
 			return Vec2I::ZERO;
@@ -362,6 +387,8 @@ namespace fastbird
 				return 0.f;
 			case GAUGE_BLINK_SPEED:
 				return 3.f;
+			case UI_RATIO:
+				return 1.f;
 			}
 			assert(0);
 			return 0.f;
@@ -377,6 +404,8 @@ namespace fastbird
 			case NO_BACKGROUND:
 				return false;			
 			case NO_MOUSE_EVENT:
+				return false;
+			case VISUAL_ONLY_UI:
 				return false;
 			case NO_MOUSE_EVENT_ALONE:
 				return false;
@@ -425,6 +454,16 @@ namespace fastbird
 			case CLOSE_BY_ESC:
 				return false;
 			case SYNC_WINDOW_POS:
+				return false;
+			case KEEP_UI_RATIO:
+				return false;
+			case LISTBOX_MULTI_SELECTION:
+				return false;
+			case LISTBOX_NO_HIGHLIGHT:
+				return false;
+			case CLOSE_BTN:
+				return false;
+			case WND_NO_FOCUS:
 				return false;
 
 			}

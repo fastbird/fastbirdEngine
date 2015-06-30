@@ -51,24 +51,28 @@ namespace fastbird
 		mUp = (Button*)AddChild(ComponentType::Button);
 		mUp->SetRuntimeChild(true);
 
-		mDown->SetNSizeY(1.0);
-		mDown->SetSizeX(12);
-		mDown->SetNPos(Vec2(0, 0));		
-		mDown->SetText(L"-");		
+		mDown->ChangeSize(Vec2I(20, 20));
+		mDown->ChangeNPos(Vec2(0, 0));
+		mDown->SetUseAbsPos(false);
+
+		mDown->SetProperty(UIProperty::REGION, "DownTriangle");
+		mDown->SetProperty(UIProperty::IMAGE_COLOR_OVERLAY, "1, 1, 0, 1");
 		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mDown->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
 		mDown->SetEnable(mValue >= mMin);
 
-		mUp->SetNSizeY(1.0f);
-		mUp->SetSizeX(12);
-		mUp->SetNPos(Vec2(1, 0));
+		mUp->ChangeSize(Vec2I(20, 20));
+		mUp->ChangeNPos(Vec2(1, 0));
+		mUp->SetUseAbsPos(false);
+		mUp->SetProperty(UIProperty::REGION, "UpTriangle");
+		mUp->SetProperty(UIProperty::IMAGE_COLOR_OVERLAY, "1, 1, 0, 1");
 		mUp->SetProperty(UIProperty::ALIGNH, "right");
 		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
-		mUp->SetText(L"+");		
 		mUp->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
 		mUp->SetEnable(mValue <= mMax);
+
 		SetProperty(UIProperty::TEXT_ALIGN, "center");
 
 		WCHAR buffer[100];

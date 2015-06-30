@@ -22,6 +22,10 @@ namespace fastbird
 		Object();
 		virtual ~Object();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		virtual void Clone(IObject* cloned) const;
 		virtual void OnAttachedToScene(IScene* pScene);
         virtual void OnDetachedFromScene(IScene* pScene);

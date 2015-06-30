@@ -16,6 +16,8 @@ public:
 	virtual ComponentType::Enum GetType() const { return ComponentType::ImageBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void OnSizeChanged();
+	virtual void OnParentSizeChanged();
+	void OnAnySizeChanged();
 	virtual void OnStartUpdate(float elapsedTime);
 	virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 
@@ -27,7 +29,7 @@ public:
 	virtual IRenderTarget* GetRenderTargetTexture() const { return mRenderTarget; }
 	virtual void SetUseHighlight(bool use) { mUseHighlight = use; }
 	// or
-	virtual void SetTextureAtlasRegion(const char* atlas, const char* region);
+	virtual const Vec2I& SetTextureAtlasRegion(const char* atlas, const char* region);
 	virtual void SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data);
 	virtual void ChangeRegion(TextureAtlasRegion* region);
 	virtual void ChangeRegion(const char* region);
@@ -46,6 +48,7 @@ public:
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
 	void SetSpecularColor(const Vec4& color);
+	void SetDefaultImageAtlasPathIfNotSet();
 private:
 
 	ImageBox* ImageBox::CreateImageBox();

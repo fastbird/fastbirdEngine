@@ -41,6 +41,11 @@ namespace fastbird
         Scene();
         virtual ~Scene();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
         virtual bool AttachObject(SpatialObject* pSpatialObject);
         virtual bool DetachObject(SpatialObject* pSpatialObject);
 

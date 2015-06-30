@@ -14,6 +14,7 @@ ListItem::ListItem()
 	, mColIndex(INVALID_INDEX)
 	, mNoBackground(true)
 	, mBackColor("0.1, 0.3, 0.3, 0.7")
+	, mMerged(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;

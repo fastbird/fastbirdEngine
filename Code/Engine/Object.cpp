@@ -33,6 +33,10 @@ Object::~Object()
 	DetachFromScene(true);
 }
 
+void Object::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
 
 void Object::Clone(IObject* cloned) const
 {

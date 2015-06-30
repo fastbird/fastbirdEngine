@@ -56,6 +56,11 @@ Terrain::~Terrain()
 {
 }
 
+void Terrain::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 #undef max
 void Terrain::Init(int numVertX, int numVertY, float distance, 

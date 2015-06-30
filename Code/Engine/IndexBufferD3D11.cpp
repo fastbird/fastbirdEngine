@@ -6,6 +6,10 @@
 
 namespace fastbird
 {
+	void IndexBufferD3D11::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
+
 	IndexBufferD3D11* IndexBufferD3D11::CreateInstance(unsigned int numIndices, INDEXBUFFER_FORMAT format)
 	{
 		IndexBufferD3D11* pIndexBuffer = FB_NEW(IndexBufferD3D11)(numIndices, format);

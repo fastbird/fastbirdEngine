@@ -9,6 +9,10 @@ class VertexBuffer : public IVertexBuffer
 public:
 	virtual ~VertexBuffer(){}
 	virtual void Delete();
+protected:
+	virtual void FinishSmartPtr();
+
+public:
 
 	virtual void Bind();
 	virtual MapData Map(MAP_TYPE type, UINT subResource, MAP_FLAG flag);

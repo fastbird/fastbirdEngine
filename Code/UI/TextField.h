@@ -45,6 +45,7 @@ protected:
 
 private:
 	bool mPasswd;
+	int mCursorOffset;
 };
 
 }

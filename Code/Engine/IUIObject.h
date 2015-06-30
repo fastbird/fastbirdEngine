@@ -15,6 +15,7 @@ namespace fastbird
 		virtual ~IUIObject(){}
 
 		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0) = 0;
+		virtual void ClearTexCoord(unsigned index = 0) = 0;
 		virtual void SetColors(DWORD colors[], DWORD num) = 0;
 
 		virtual void SetUIPos(const Vec2I& pos) = 0;
@@ -27,6 +28,7 @@ namespace fastbird
 		virtual void SetText(const wchar_t* s) = 0;
 		virtual void SetTextOffset(const Vec2I& offset) = 0;
 		virtual const Vec2I& GetTextOffset() const = 0;
+		virtual void SetTextOffsetForCursorMovement(const Vec2I& offset) = 0;
 		virtual Vec2I GetTextStartWPos() const = 0;
 		virtual void SetTextColor(const Color& c) = 0;
 		virtual void SetTextSize(float size) = 0;
@@ -45,6 +47,7 @@ namespace fastbird
 
 		virtual void SetRenderTargetSize(const Vec2I& rtSize) = 0;
 		virtual const Vec2I& GetRenderTargetSize() const = 0;
+		virtual bool HasTexCoord() const = 0;
 
 	public:
 		// debug purpose

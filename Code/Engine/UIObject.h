@@ -13,6 +13,7 @@ namespace fastbird
 		// IUIObject interfaces
 		//-------------------------------------------------------------------------
 		virtual void SetTexCoord(Vec2 coord[], DWORD num, unsigned index=0);
+		virtual void ClearTexCoord(unsigned index = 0);
 		virtual void SetColors(DWORD colors[], DWORD num);
 
 		virtual void SetUIPos(const Vec2I& pos);
@@ -26,6 +27,7 @@ namespace fastbird
 		virtual void SetText(const wchar_t* s);
 		virtual void SetTextOffset(const Vec2I& offset);
 		virtual const Vec2I& GetTextOffset() const { return mTextOffset; }
+		virtual void SetTextOffsetForCursorMovement(const Vec2I& offset);
 		virtual Vec2I GetTextStartWPos() const;
 
 		virtual void SetTextColor(const Color& c);
@@ -44,6 +46,7 @@ namespace fastbird
 		virtual void SetDoNotDraw(bool doNotDraw);
 		virtual void SetRenderTargetSize(const Vec2I& rtSize);
 		virtual const Vec2I& GetRenderTargetSize() const;
+		virtual bool HasTexCoord() const;
 
 		//-------------------------------------------------------------------------
 		// IObject interfaces
@@ -81,6 +84,7 @@ namespace fastbird
 		Vec2 mScale;
 		//Vec2 mTextNPos;
 		Vec2I mTextOffset;
+		Vec2I mTextOffsetForCursor;
 		Color mTextColor;
 		float mTextSize;
 		float mAlpha;

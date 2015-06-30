@@ -77,6 +77,7 @@ namespace fastbird
 		void ToAngleAxis(float& radian, Vec3& axis);
 		void FromAxes(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis);
 		void ToAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis);
+		void FromDirection(const Vec3& dir);
 
 		Vec3 xAxis() const;
 		Vec3 yAxis() const;
@@ -93,10 +94,10 @@ namespace fastbird
 
 		Quat operator+ (const Quat& qRot) const;
 		Quat operator- (const Quat& qRot) const;
+		Quat operator-(void) const;
 		Quat operator* (const Quat& qRot) const;
 		Quat operator* (float fScalar) const;
 		friend Quat operator* (float fScalar, const Quat& qRot);
-		Quat operator- () const;
 		inline bool operator== (const Quat& rhs) const
 		{
 			return w == rhs.w && x == rhs.x &&

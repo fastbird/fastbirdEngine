@@ -207,6 +207,11 @@ protected:
 public:
 	Renderer();
 	virtual ~Renderer();
+
+protected:
+	virtual void FinishSmartPtr();
+
+public:
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;
@@ -271,7 +276,7 @@ public:
 
 	virtual void SetCurRenderTarget(IRenderTarget* renderTarget);
 	virtual bool IsMainRenderTarget() const;
-	virtual IRenderTarget* GetCurRendrTarget() const;
+	virtual IRenderTarget* GetCurRenderTarget() const;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex);
 	virtual const Vec2I& GetRenderTargetSize() const;
@@ -302,6 +307,7 @@ public:
 
 	virtual void SetDirectionalLight(ILight* pLight, int idx);
 	virtual ILight* GetDirectionalLight(int idx) const;
+	virtual ILight* GetMainDirectionalLight(int idx) const;
 
 	virtual void SetEnvironmentTexture(ITexture* pTexture);
 	virtual void SetEnvironmentTextureOverride(ITexture* texture);

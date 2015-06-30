@@ -104,13 +104,14 @@ namespace fastbird
 
 		struct THICK_LINE_VERTEX
 		{
-			THICK_LINE_VERTEX(const Vec3& pos, unsigned c, const Vec2& texcoord)
-			: v(pos), color(c), uv(texcoord)
+			THICK_LINE_VERTEX(const Vec3& pos, unsigned c, const Vec4& texcoord, const Vec3& nextPos)
+				: v(pos), color(c), uv(texcoord), next(nextPos)
 			{
 			}
 			Vec3 v;
 			unsigned color;
-			Vec2 uv;
+			Vec4 uv;
+			Vec3 next;
 		};
 		static const unsigned THICK_LINE_STRIDE;
 

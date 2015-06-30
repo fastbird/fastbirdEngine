@@ -166,7 +166,7 @@ public:
 	virtual const Vec2I& GetMainRTSize() const = 0;
 
 	virtual void SetCurRenderTarget(IRenderTarget* renderTarget) = 0;
-	virtual IRenderTarget* GetCurRendrTarget() const = 0;
+	virtual IRenderTarget* GetCurRenderTarget() const = 0;
 	virtual bool IsMainRenderTarget() const = 0;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
@@ -177,6 +177,7 @@ public:
 	// to restore directionalLight call this function with null light.
 	virtual void SetDirectionalLight(ILight* pLight, int idx) = 0;
 	virtual ILight* GetDirectionalLight(int idx) const = 0;
+	virtual ILight* GetMainDirectionalLight(int idx) const = 0;
 	virtual void DrawFullscreenQuad(IShader* pixelShader, bool farside) = 0;
 
 	virtual IMaterial* CreateMaterial(const char* file) = 0;

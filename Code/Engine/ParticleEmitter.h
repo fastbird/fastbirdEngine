@@ -26,7 +26,7 @@ namespace fastbird
 		virtual bool IsActive() const { return mInActiveList; }
 		virtual void SetEmitterDirection(const fastbird::Vec3& dir){mEmitterDirection = dir;}
 		virtual void SetEmitterColor(const Color& c){ mEmitterColor = c; }
-
+		virtual void SetAlpha(float alpha);
 		virtual void PreRender() {}
 		virtual void Render() {}
 		virtual void PostRender() {}

@@ -3,6 +3,9 @@
 
 namespace fastbird
 {
+	void InputLayout::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
 
 void InputLayout::SetDescs(const INPUT_ELEMENT_DESCS& descs)
 {

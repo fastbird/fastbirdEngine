@@ -116,12 +116,14 @@ void ImageBox::SetTexture(const char* file)
 	if (mImageFile == file)
 		return;
 	mImageFile = file ? file : "";
-	if (mImageFile.empty())
-	{
-		mImageFile = "data/textures/empty_transparent.dds";
+	if (mImageFile.empty()){
+		SetTexture((ITexture*)0);
 	}
-	ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
-	SetTexture(pTexture);
+	else{
+		ITexture* pTexture = gFBEnv->pRenderer->CreateTexture(mImageFile.c_str());
+		SetTexture(pTexture);
+	}
+	
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
@@ -147,36 +149,41 @@ void ImageBox::SetRenderTargetTexture(IRenderTarget* rt){
 	SetTexture(mRenderTarget->GetRenderTargetTexture());
 }
 
-void ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
+const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* region)
 {
 	mTextureAtlas = gFBEnv->pRenderer->GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
-		// need to set to material. matarial will hold its reference counter
-		mTexture = mTextureAtlas->mTexture->Clone();
 		if (mImageFixedSize)
 		{
 			DrawAsFixedSize();
 		}
+		SAMPLER_DESC sdesc;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		TriggerRedraw();
+
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
 		if (!mAtlasRegion)
 		{
+			mTexture = 0;
+			mUIObject->GetMaterial()->SetTexture((ITexture*)0,
+				BINDING_SHADER_PS, 0, sdesc);
+			mUIObject->ClearTexCoord();
 			Error("Cannot find the region %s in the atlas %s", region, atlas);
+			return Vec2I::ZERO;
 		}
-		SAMPLER_DESC sdesc;
-		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		// need to set to material. matarial will hold its reference counter
+		mTexture = mTextureAtlas->mTexture->Clone();
 		mUIObject->GetMaterial()->SetTexture(mTexture, 
 			BINDING_SHADER_PS, 0, sdesc);
-		if (mAtlasRegion)
-		{
-			Vec2 texcoords[4];
-			mAtlasRegion->GetQuadUV(texcoords);
-			mUIObject->SetTexCoord(texcoords, 4);
-			DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
-			mUIObject->SetColors(colors, 4);
-		}
+		Vec2 texcoords[4];
+		mAtlasRegion->GetQuadUV(texcoords);
+		mUIObject->SetTexCoord(texcoords, 4);
+		DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+		mUIObject->SetColors(colors, 4);
+		return mAtlasRegion->GetSize();
 	}
-	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
+	return Vec2I::ZERO;
 }
 
 void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::string>& data)
@@ -253,11 +260,45 @@ void ImageBox::GatherVisit(std::vector<IUIObject*>& v)
 void ImageBox::OnSizeChanged()
 {
 	__super::OnSizeChanged();
+	OnAnySizeChanged();
+}
+
+void ImageBox::OnParentSizeChanged(){
+	__super::OnParentSizeChanged();
+	OnAnySizeChanged();
+}
+
+void ImageBox::OnAnySizeChanged(){
 	if (!mAtlasRegion && mAtlasRegions.empty())
 	{
 		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
 		if (texture)
 			CalcUV(texture->GetSize());
+	}
+	else{
+		if (mAtlasRegion)
+		{
+			const auto& imagesize = mAtlasRegion->GetSize();
+			/*if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
+				Vec2 start((float)mAtlasRegion->mStart.x, (float)mAtlasRegion->mStart.y);
+				auto xsize = imagesize.x > mSize.x * 2 ? mSize.x : imagesize.x;
+				auto ysize = imagesize.y > mSize.y * 2 ? mSize.y : imagesize.y;
+				Vec2 end(start.x + xsize, start.y + ysize);
+				auto uvEnd = end / mTextureAtlas->mTexture->GetSize();
+				Vec2 texcoords[4];
+				texcoords[0] = Vec2(mAtlasRegion->mUVStart.x, uvEnd.y);
+				texcoords[1] = mAtlasRegion->mUVStart;
+				texcoords[2] = uvEnd;
+				texcoords[3] = Vec2(uvEnd.x, mAtlasRegion->mUVStart.y);
+				mUIObject->SetTexCoord(texcoords, 4);
+			}
+			else{*/
+				Vec2 texcoords[4];
+				mAtlasRegion->GetQuadUV(texcoords);
+				mUIObject->SetTexCoord(texcoords, 4);
+			//}
+
+		}
 	}
 }
 
@@ -290,50 +331,56 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::REGION:
 	{
 		mStrRegion = val;
-							   SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
-							   return true;
+		if (mTextureAtlasFile.empty()){
+			mTextureAtlasFile = "data/textures/gameui.xml";
+		}
+		SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+		return true;
 	}
 		break;
 
 	case UIProperty::REGIONS:
 	{
 		mStrRegions = val;
-								mAnimation = true;
-								auto useNumberData = Split(val, ":");
-								if (useNumberData.size() >= 2)
-								{
-									auto fromtoData = Split(useNumberData[1], ",");
-									fromtoData[0] = StripBoth(fromtoData[0].c_str());
-									fromtoData[1] = StripBoth(fromtoData[1].c_str());
-									unsigned from = StringConverter::parseUnsignedInt(fromtoData[0].c_str());
-									unsigned to = StringConverter::parseUnsignedInt(fromtoData[1].c_str());
-									assert(to > from);
-									std::vector<std::string> data;
-									char buf[256];
-									for (unsigned i = from; i <= to; i++)
-									{
-										sprintf_s(buf, "%s%u", useNumberData[0].c_str(), i);
-										data.push_back(buf);
-									}
-									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
-								}
-								else
-								{
-									auto data = Split(val, ",");
-									for (auto& str : data)
-									{
-										str = StripBoth(str.c_str());
-									}
-									SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
-								}
-								if (!mAtlasRegions.empty())
-								{
-									Vec2 texcoords[4];
-									mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
-									mUIObject->SetTexCoord(texcoords, 4);
-								}
+		if (mTextureAtlasFile.empty()){
+			mTextureAtlasFile = "data/textures/gameui.xml";
+		}
+		mAnimation = true;
+		auto useNumberData = Split(val, ":");
+		if (useNumberData.size() >= 2)
+		{
+			auto fromtoData = Split(useNumberData[1], ",");
+			fromtoData[0] = StripBoth(fromtoData[0].c_str());
+			fromtoData[1] = StripBoth(fromtoData[1].c_str());
+			unsigned from = StringConverter::parseUnsignedInt(fromtoData[0].c_str());
+			unsigned to = StringConverter::parseUnsignedInt(fromtoData[1].c_str());
+			assert(to > from);
+			std::vector<std::string> data;
+			char buf[256];
+			for (unsigned i = from; i <= to; i++)
+			{
+				sprintf_s(buf, "%s%u", useNumberData[0].c_str(), i);
+				data.push_back(buf);
+			}
+			SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+		}
+		else
+		{
+			auto data = Split(val, ",");
+			for (auto& str : data)
+			{
+				str = StripBoth(str.c_str());
+			}
+			SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
+		}
+		if (!mAtlasRegions.empty())
+		{
+			Vec2 texcoords[4];
+			mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
+			mUIObject->SetTexCoord(texcoords, 4);
+		}
 								
-								return true;
+		return true;
 
 	}
 		break;
@@ -608,6 +655,7 @@ void ImageBox::DrawAsFixedSizeAtCenter()
 {
 	DrawAsFixedSize();
 	ChangeNPos(Vec2(0.5f, 0.5f));
+	SetUseAbsPos(false);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
 }
 

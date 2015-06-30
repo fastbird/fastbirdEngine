@@ -23,6 +23,10 @@ INIReader::INIReader(const char* filename)
     mError = ini_parse(filename, ValueHandler, this);
 }
 
+void INIReader::FinishSmartPtr(){
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 int INIReader::GetError()
 {

@@ -11,6 +11,11 @@ namespace fastbird
 		RasterizerStateD3D11();
 		virtual ~RasterizerStateD3D11();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
+
 		//--------------------------------------------------------------------
 		// IRasterizerState Interfacec
 		//--------------------------------------------------------------------
@@ -34,6 +39,10 @@ namespace fastbird
 		BlendStateD3D11();
 		virtual ~BlendStateD3D11();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		//--------------------------------------------------------------------
 		// IBlendState Interfacec
 		//--------------------------------------------------------------------
@@ -59,6 +68,10 @@ namespace fastbird
 		DepthStencilStateD3D11();
 		virtual ~DepthStencilStateD3D11();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		//--------------------------------------------------------------------
 		// IDepthStencilState Interfacec
 		//--------------------------------------------------------------------
@@ -81,6 +94,10 @@ namespace fastbird
 		SamplerStateD3D11();
 		virtual ~SamplerStateD3D11();
 
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 		//--------------------------------------------------------------------
 		// ISamplerState Interfacec
 		//--------------------------------------------------------------------

@@ -7,7 +7,8 @@ namespace fastbird
 		enum Enum
 		{
 			Billboard,
-			Direction,
+			Direction, // emitter direction
+			ParticleDirection, 
 			NUM
 		};
 
@@ -15,6 +16,7 @@ namespace fastbird
 		{
 			"Billboard",
 			"Direction",
+			"ParticleDirection",
 		};
 
 		inline const char* ConvertToString(Enum a)
@@ -25,15 +27,13 @@ namespace fastbird
 
 		inline Enum ConvertToEnum(const char* str)
 		{
-			if (_stricmp(str, "Billboard")==0)
-				return Billboard;
-			else if (_stricmp(str, "Direction") == 0)
-				return Direction;
-			else
+			for (unsigned i = 0; i < NUM; ++i)
 			{
-				assert(0); 
-				return NUM;
+				if (_stricmp(str, strings[i]) == 0)
+					return Enum(i);
 			}
+			assert(0); 
+			return NUM;
 		}
 	}
 

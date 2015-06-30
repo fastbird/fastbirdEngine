@@ -19,12 +19,16 @@ namespace fastbird
 			BV_AABB,
 			BV_COUNT,
 		};
-
 		// Create default bounding volume which is a sphere
 		static BoundingVolume* Create(BVType type = BV_SPHERE);
 
 		BoundingVolume() : mAlwaysPass(false) {}
 		virtual ~BoundingVolume(){}
+
+	protected:
+		virtual void FinishSmartPtr();
+
+	public:
 
 		virtual int GetBVType() const = 0;
 		virtual void SetCenter (const Vec3& center) = 0;

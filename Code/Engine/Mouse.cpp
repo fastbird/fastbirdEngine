@@ -68,7 +68,9 @@ namespace fastbird
 		, mLastWheelPush(0)
 		, mDragStarted(false)
 		, mDragEnd(false)
-		, mLockMouseKey(0)
+		, mLockMouseKey(0), mInvalidatedTemporary(false)
+		, mRDragStarted(false)
+		, mRDragEnd(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -91,6 +93,10 @@ namespace fastbird
 		SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &mNumLinesWheelScroll, 0);
 		ClearDrag();
 		mDoubleClickSpeed = (float)GetDoubleClickTime() / 1000.0f;
+	}
+
+	void Mouse::FinishSmartPtr(){
+		FB_DELETE(this);
 	}
 
 	void Mouse::PushEvent(HWND handle, const MouseEvent& mouseEvent)
@@ -129,7 +135,7 @@ namespace fastbird
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
 
-
+		static HWND downHwnd = 0;
 		mButtonsDownPrev = mButtonsDown;
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_LEFT_BUTTON_DOWN)
 		{
@@ -139,6 +145,7 @@ namespace fastbird
 				// drag
 				mDragStartX = mAbsX;
 				mDragStartY = mAbsY;
+				downHwnd = gFBEnv->pEngine->GetForegroundWindow();
 			}
 			mButtonsDown |= MOUSE_BUTTON_LEFT;
 			mButtonsPressed |= MOUSE_BUTTON_LEFT;
@@ -153,12 +160,24 @@ namespace fastbird
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_DOWN)
 		{
+			mRDragEnd = false;
+			if ((mButtonsDown & MOUSE_BUTTON_RIGHT) == 0)
+			{
+				// drag
+				mRDragStartX = mAbsX;
+				mRDragStartY = mAbsY;
+			}
+
 			mButtonsDown |= MOUSE_BUTTON_RIGHT;
 			mButtonsPressed |= MOUSE_BUTTON_RIGHT;
 
 			mLastRightDownTime = gFBEnv->pTimer->GetTime();
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
+		}
+		if (IsMoved() && IsRButtonDown())
+		{
+			mRDragStarted = true;
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_DOWN)
 		{
@@ -196,7 +215,7 @@ namespace fastbird
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_LEFT_BUTTON_UP)
 		{
 			if (mButtonsDown & MOUSE_BUTTON_LEFT)
-			{
+			{				
 				mDragEndX = mAbsX;
 				mDragEndY = mAbsY;
 				if (mDragStarted){
@@ -208,26 +227,45 @@ namespace fastbird
 					ClearDrag();
 				}
 			}
-			mButtonsDown &= ~MOUSE_BUTTON_LEFT;			
-
-			float doubleClickElapsedTime = curTime - mLastClickTime;
-			bool doubleClickMouseNotMoved = abs((mLastClickPos.x - mAbsX)) < 3 && abs((mLastClickPos.y - mAbsY)) < 3;
-			if (doubleClickElapsedTime< mDoubleClickSpeed && doubleClickMouseNotMoved)
-			{
-				mLButtonDoubleClicked = true;
+			auto curHwnd = WindowFromPoint({ mPhysicalX, mPhysicalY });
+			if (curHwnd != downHwnd){
+				Invalidate();
+				EndFrame();
 			}
-			
-			if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
-			{
-				mButtonsClicked |= MOUSE_BUTTON_LEFT;
-				mLastClickTime = gFBEnv->pTimer->GetTime();
-				mLastClickPos = Vec2I(mAbsX, mAbsY);
+			else{
+				mButtonsDown &= ~MOUSE_BUTTON_LEFT;
+
+				float doubleClickElapsedTime = curTime - mLastClickTime;
+				bool doubleClickMouseNotMoved = abs((mLastClickPos.x - mAbsX)) < 6 && abs((mLastClickPos.y - mAbsY)) < 6;
+				if (doubleClickElapsedTime < mDoubleClickSpeed && doubleClickMouseNotMoved)
+				{
+					mLButtonDoubleClicked = true;
+				}
+
+				//if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
+				if (!mLButtonDoubleClicked)
+				{
+					mButtonsClicked |= MOUSE_BUTTON_LEFT;
+					mLastClickTime = gFBEnv->pTimer->GetTime();
+					mLastClickPos = Vec2I(mAbsX, mAbsY);
+				}
 			}
 
 			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
 		{
+			mRDragEndX = mAbsX;
+			mRDragEndY = mAbsY;
+			if (mRDragStarted){
+				mRDragStarted = false;
+			}
+			mRDragEnd = true;
+			if (mRDragStartX == mRDragEndX && mRDragStartY == mRDragEndY)
+			{
+				ClearRDrag();
+			}
+
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;			
 			if (mouseNotMoved && rightElapsedTime < 0.15f)
 			{
@@ -308,6 +346,10 @@ namespace fastbird
 		mValid = false;
 	}
 
+	void Mouse::InvalidTemporary(bool invalidate){
+		mInvalidatedTemporary = invalidate;
+	}
+
 	//-------------------------------------------------------------------------
 	void Mouse::GetHDDeltaXY(long &x, long &y) const
 	{
@@ -353,6 +395,10 @@ namespace fastbird
 	{
 		x = mDragStartX;
 		y = mDragStartY;
+	}
+
+	Vec2I Mouse::GetDragStartedPos() const{
+		return Vec2I(mDragStartX, mDragStartY);
 	}
 
 	Vec2 Mouse::GetNPos() const
@@ -408,6 +454,10 @@ namespace fastbird
 		return (mButtonsDown & MOUSE_BUTTON_RIGHT) !=0;
 	}
 
+	bool Mouse::IsRButtonDownPrev() const{
+		return (mButtonsDownPrev & MOUSE_BUTTON_RIGHT) != 0;
+	}
+
 	bool Mouse::IsRButtonClicked() const
 	{
 		return (mButtonsClicked & MOUSE_BUTTON_RIGHT) != 0;
@@ -425,10 +475,17 @@ namespace fastbird
 
 	void Mouse::ClearDrag()
 	{
-		mDragStartX = mDragEndX = -1;
-		mDragStartY = mDragEndY = -1;
+		//mDragStartX = mDragEndX = -1;
+		//mDragStartY = mDragEndY = -1;
 		mDragStarted = false;
-		mDragEnd = false;
+		mDragEnd = true;
+	}
+
+	void Mouse::ClearRDrag(){
+		mRDragStartX = mRDragEndX = -1;
+		mRDragStartY = mRDragEndY = -1;
+		mRDragStarted = false;
+		mRDragEnd = true;
 	}
 
 	bool Mouse::IsDragStartIn(const RECT& region) const
@@ -457,6 +514,22 @@ namespace fastbird
 	void Mouse::PopDragEvent(){
 		mDragStarted = false;
 		mDragEnd = false;
+	}
+
+	bool Mouse::IsRDragStarted(Vec2I& outStartPos) const{
+		if (mRDragStarted){
+			outStartPos = Vec2I(mRDragStartX, mRDragStartY);
+		}
+		return mRDragStarted;
+	}
+
+	bool Mouse::IsRDragEnded(Vec2I& outStartPos) const{
+		return mRDragEnd;
+	}
+
+	void Mouse::PopRDragEvent(){
+		mRDragStarted = false;
+		mRDragEnd = false;
 	}
 
 	long Mouse::GetWheel() const
@@ -545,7 +618,7 @@ namespace fastbird
 	{		
 		LockMousePos(false, (void*)-1);
 		mButtonsDown = 0;
-		EndFrame();
+		//EndFrame();
 	}
 
 	const Ray3& Mouse::GetWorldRay()
@@ -569,5 +642,27 @@ namespace fastbird
 
 	bool Mouse::IsIn(const RECT& r){
 		return !(mAbsX < r.left || mAbsX > r.right || mAbsY < r.top || mAbsY > r.bottom);
+	}
+
+	void Mouse::CursorToCenter(){
+		if (gFBEnv->pEngine->IsMainWindowForground()){
+			auto mainHwndId = gFBEnv->pEngine->GetMainWndHandleId();
+			Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(mainHwndId);
+			size = size / 2;
+			SetCurrentMousePos(mainHwndId, size.x, size.y);
+			mAbsX = size.x;
+			mAbsY = size.y;
+			mAbsXPrev = size.x;
+			mAbsYPrev = size.y;
+		}
+	}
+
+	void Mouse::SetCursorPosition(const Vec2I& cursorPos){
+		auto mainHwndId = gFBEnv->pEngine->GetMainWndHandleId();
+		SetCurrentMousePos(mainHwndId, cursorPos.x, cursorPos.y);
+		mAbsX = cursorPos.x;
+		mAbsY = cursorPos.y;
+		mAbsXPrev = cursorPos.x;
+		mAbsYPrev = cursorPos.y;
 	}
 }

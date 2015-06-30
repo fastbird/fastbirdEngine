@@ -215,6 +215,7 @@
     <ClCompile Include="LockFreeQueue.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="LuaUtils.cpp" />
+    <ClCompile Include="Math\BoundingVolume.cpp" />
     <ClCompile Include="Math\BVSphere.cpp" />
     <ClCompile Include="Math\BVaabb.cpp" />
     <ClCompile Include="Math\GeomUtils.cpp" />
@@ -233,6 +234,7 @@
     <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="SmartPtr.cpp" />
     <ClCompile Include="SpinLock.cpp" />
     <ClCompile Include="StackTracer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

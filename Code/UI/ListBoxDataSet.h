@@ -31,6 +31,7 @@ namespace fastbird
 		unsigned InsertData(const std::wstring& uniqueKey);
 		unsigned InsertData(unsigned uniqueKey);
 		unsigned InsertEmptyData();
+		bool ModifyKey(unsigned row, unsigned key);
 
 		// string or texture path
 		void SetData(const std::wstring& uniqueKey, unsigned colIndex, const wchar_t* string, ListItemDataType::Enum type);		
@@ -47,6 +48,8 @@ namespace fastbird
 		void SetData(const Vec2I& indexRowCol, const wchar_t* string, ListItemDataType::Enum type);
 		void SetData(const Vec2I& indexRowCol, bool checked);
 		void SetData(const Vec2I& indexRowCol, ITexture* texture);
+		void SetData(const Vec2I& indexRowCol, int number); // numeric Up Down
+		void SetData(const Vec2I& indexRowCol, float number); // horizontal gauge
 
 		
 		unsigned FindRowIndexWithKey(const std::wstring& uniqueKey);

@@ -10,12 +10,16 @@ namespace fastbird
 	//--------------------------------------------------------------------------
 	Keyboard::Keyboard()
 		:mValid(true)
-		, mLastPushKeyTime(0)
+		, mLastPushKeyTime(0), mInvalidatedTemporary(false)
 	{
 		memset(mKeyDown, 0, sizeof(mKeyDown));
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
 		memset(mKeyDownDuration, 0, sizeof(mKeyDownDuration));
 		memset(mKeyUp, 0, sizeof(mKeyUp));
+	}
+
+	void Keyboard::FinishSmartPtr(){
+		FB_DELETE(this);
 	}
 
 	//--------------------------------------------------------------------------
@@ -85,6 +89,10 @@ namespace fastbird
 	void Keyboard::Invalidate(bool buttonClicked)
 	{
 		mValid = false;
+	}
+
+	void Keyboard::InvalidTemporary(bool invalidate){
+		mInvalidatedTemporary = invalidate;
 	}
 
 	//--------------------------------------------------------------------------

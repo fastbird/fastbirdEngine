@@ -43,7 +43,6 @@ namespace fastbird
 
 		Vec2 mAnimPos;			
 		Vec2 mNPos;
-		Vec2 mNPosAligned;
 		Vec2 mWNPos;
 		// scrolling offset;
 		Vec2 mWNScrollingOffset;
@@ -101,6 +100,7 @@ namespace fastbird
 		bool mSimplePosAnimEnabled;
 		bool mNoMouseEvent;
 		bool mNoMouseEventAlone;
+		bool mVisualOnlyUI;
 		bool mUseScissor;
 		bool mEnable;
 
@@ -136,8 +136,11 @@ namespace fastbird
 		int mTabOrder;
 		bool mSaveCheck;
 		bool mRunTimeChild;
+		bool mRunTimeChildRecursive;
 		bool mGhost;
 		bool mGatheringException;
+		bool mKeepUIRatio;
+		bool mUpdateAlphaTexture;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -201,7 +204,7 @@ namespace fastbird
 		virtual void NotifySizeChange() {
 			/*nothing to do if this is not a container.*/
 		} 		
-
+		virtual void SetSpecialOrder(int specialOrder);
 		// Positioning
 		virtual void ChangePos(const Vec2I& pos); // in runtime
 		virtual void ChangePosX(int posx);
@@ -238,15 +241,18 @@ namespace fastbird
 		virtual void SetWPos(const Vec2I& wpos);
 		virtual const Vec2& GetNPos() const { return mNPos; }
 		virtual const Vec2I& GetPos() const { return mPos; }
+		virtual const Vec2I GetAlignedPos() const;
 		//virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
+		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }
 		virtual void SetUseAbsXPos(bool use) { mUseAbsoluteXPos = use; }
 		virtual void SetUseAbsYPos(bool use) { mUseAbsoluteYPos = use; }
 		virtual bool GetUseAbsXPos() const { return mUseAbsoluteXPos; }
 		virtual bool GetUseAbsYPos() const { return mUseAbsoluteYPos; }
+		virtual void SetUseAbsSize(bool use){ mUseAbsoluteXSize = use; mUseAbsoluteYSize = use; }
 		virtual void SetUseAbsXSize(bool use) { mUseAbsoluteXSize = use; }
 		virtual void SetUseAbsYSize(bool use) { mUseAbsoluteYSize = use; }
 		virtual bool GetUseAbsXSize() const { return mUseAbsoluteXSize; }
@@ -259,6 +265,9 @@ namespace fastbird
 		virtual bool GetVisible() const;
 		virtual bool GetFocus(bool includeChildren = false) const;
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v);
+		virtual ALIGNH::Enum GetHAlign() const{
+			return mAlignH;
+		}
 		virtual void OnStartUpdate(float elapsedTime);
 		virtual bool IsIn(IMouse* mouse) const;
 		virtual bool IsIn(const Vec2I& pt, bool ignoreScissor, Vec2I* expand = 0) const;
@@ -386,11 +395,14 @@ namespace fastbird
 		virtual void SetSaveNameCheck(bool set);
 		virtual bool GetSaveNameCheck() const;
 		virtual void SetRuntimeChild(bool runtime) { mRunTimeChild = runtime; }
+		virtual void SetRuntimeChildRecursive(bool runtime) { mRunTimeChildRecursive = runtime; }
 		virtual bool IsRuntimeChild() const { return mRunTimeChild; }
+		virtual bool IsRuntimeChildRecursive() const { return mRunTimeChildRecursive; }
 		virtual void SetGhost(bool ghost){ mGhost = ghost; }
 		virtual bool GetGhost() const{ return mGhost; }
 
 		virtual float GetContentHeight() const;
+		virtual float GetContentEnd() const;
 
 		virtual bool IsKeyboardFocused() const;
 
@@ -404,6 +416,10 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const { return mNoMouseEvent; }
 		virtual bool GetNoMouseEventAlone() const { return mNoMouseEventAlone; }
+		virtual bool GetVisualOnly() const { return mVisualOnlyUI; }
+		virtual void RecreateBorders();
+
+		virtual bool GetUseScissor() const { return mUseScissor; }
 
 	protected:
 		virtual void OnPosChanged(bool anim);
@@ -419,6 +435,16 @@ namespace fastbird
 		virtual void CalcTextWidth(); // virtual for mutiline text
 		void OnDrag(int dx, int dy);
 		virtual void OnChildHasDragged(){}
+
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard);
+
 		
 	private:
 		friend class Container;
@@ -429,5 +455,7 @@ namespace fastbird
 
 		void ProcessHighlight(float dt);
 		void ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos, bool& hasScale);
+
+		void UpdateAlphaTexture();
 	};
 }

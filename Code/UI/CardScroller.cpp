@@ -1,36 +1,48 @@
 #include <UI/StdAfx.h>
 #include <UI/CardScroller.h>
 #include <UI/Scroller.h>
+#include <UI/CardData.h>
+#include <UI/Wnd.h>
+#include <UI/IUIManager.h>
+#include <UI/ImageBox.h>
+#include <UI/NamedPortrait.h>
+#include <UI/Button.h>
 
 using namespace fastbird;
 
-unsigned CardItem::NextCardId = 1;
-
 CardScroller::CardScroller()
-:mNextEmptySlot(-1)
-, mRatio(1)
+: mRatio(1)
 , mNYOffset(0.f)
 , mCardOffsetY(2)
 , mCardSizeY(100)
 , mCardSizeX(200)
+, mStartIndex(0)
+, mEndIndex(10)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUseScrollerV = true;
 	mUIObject->SetNoDrawBackground(true);
+	mCardData = FB_NEW(CardData);
 }
 
 CardScroller::~CardScroller()
 {
-
+	FB_DELETE(mCardData);
+	for (auto ui : mRecycleBin){
+		gFBUIManager->DeleteComponent(ui);
+	}
 }
 
 void CardScroller::OnSizeChanged()
 {
 	__super::OnSizeChanged();
 	
-	mWidth = 1.0f - (4 / (float)GetParentSize().x);
+	//mWidth = 1.0f - (4 / (float)GetParentSize().x);
+	const auto& size = GetFinalSize();	
+	mWidth = mCardSizeX / (float)size.x;
+	mHeight = mCardSizeY / (float)size.y;
 }
 
 bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
@@ -40,7 +52,7 @@ bool CardScroller::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::CARD_SIZEX:
 	{
 		mCardSizeX = StringConverter::parseInt(val);
-		SetCardSizeX(mCardSizeY);
+		SetCardSizeX(mCardSizeX);
 		return true;
 	}
 	case UIProperty::CARD_SIZEY:
@@ -72,6 +84,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardSizeX);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	case UIProperty::CARD_SIZEY:
 	{
@@ -82,6 +95,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardSizeY);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	case UIProperty::CARD_OFFSETY:
 	{
@@ -92,6 +106,7 @@ bool CardScroller::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsi
 		}
 		auto data = StringConverter::toString(mCardOffsetY);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 	}
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -131,192 +146,296 @@ void CardScroller::SetCardSizeNX(float nx)
 void CardScroller::SetCardSizeX(int x)
 {
 	mCardSizeX = x;
-	auto rtSize = GetParentSize();
+	const auto& rtSize = GetFinalSize();
 	mWidth = x / (float)rtSize.x;
 }
 
 void CardScroller::SetCardSizeY(int y)
 {
 	mCardSizeY = y;
-	auto rtSize = GetParentSize();
+	const auto& rtSize = GetFinalSize();
 	mHeight = y / (float)rtSize.y;
 }
 
 void CardScroller::SetCardOffset(int offset)
 {
 	mCardOffsetY = offset;
-	mNYOffset = offset  /(float)GetParentSize().y;
+	const auto& rtSize = GetFinalSize();
+	mNYOffset = offset / (float)rtSize.y;
 }
 
-CardScroller::Slot* CardScroller::GetNextCardPos(Vec2& pos)
+unsigned CardScroller::AddCard(unsigned key, LuaObject& data)
 {
-	float posX = 0.f;
-	float posY;
-	Slot* pDestSlot = 0;
-	if (mNextEmptySlot != -1)
+	unsigned index = mCardData->AddData(key, data);
+	if (mItems.size() <= index){
+		mItems.push_back(0);
+	}
+	VisualizeData(index);
+	return index;
+}
+
+void CardScroller::DeleteCard(unsigned key)
+{
+	unsigned idx = mCardData->DeleteData(key);
+	if (idx >= mStartIndex && idx <= mEndIndex){
+		for (unsigned i = idx; i <= mEndIndex; i++)
+			VisualizeData(i);
+	}
+}
+
+void CardScroller::DeleteCardWithIndex(unsigned index){
+	mCardData->DeleteDataWithIndex(index);
+}
+
+void CardScroller::SetTexture(unsigned key, const char* comp, ITexture* texture){
+	mCardData->SetTexture(key, comp, texture);
+	unsigned index = mCardData->GetIndex(key);
+	if (index != -1)
+		RefreshTextures(index);
+}
+
+void CardScroller::VisualizeData(unsigned index){
+	auto numData = mCardData->GetNumData();
+	if ( numData == 0){
+		RemoveAllChild();
+		mItems.clear();
+		return;
+	}
+	if (numData <= index){
+		MoveToRecycle(index);
+		return;
+	}
+	unsigned key = mCardData->GetKey(index);
+	
+	if (index < mStartIndex || index > mEndIndex)
 	{
-		if (mNextEmptySlot > 0)
+		if (mItems[index])
 		{
-			posY = mSlots[mNextEmptySlot].mNYPos =
-				mSlots[mNextEmptySlot - 1].mNYPos + mHeight + mNYOffset;
+			MoveToRecycle(index);
 		}
-		else
-		{
-			posY = mSlots[mNextEmptySlot].mNYPos;
-		}
-		mSlots[mNextEmptySlot].mOccupied = true;
-		pDestSlot = &mSlots[mNextEmptySlot];
-		++mNextEmptySlot;
-		if (mNextEmptySlot >= (int)mSlots.size())
-		{
-			mNextEmptySlot = -1;
+	}
+
+	int hgap = mCardSizeY + mCardOffsetY;
+	Vec2 offset(0, 0);
+	if (mScrollerV)
+	{
+		offset = mScrollerV->GetOffset();
+	}
+
+	const auto data = mCardData->GetDataWithIndex(index);
+	if (!data.IsValid())
+	{
+		MoveToRecycle(index);
+		return;
+	}
+
+	if (mItems[index])
+	{
+		auto it = mKeys.Find(index);
+		if (it == mKeys.end() || it->second != key){
+			mItems[index]->RemoveAllChild(true);
+			mItems[index]->ParseLua(data);
+			RefreshTextures(index);
+			RefreshProps(index);
 		}
 	}
 	else
 	{
-		bool empty = mSlots.empty();
-		mSlots.push_back(Slot());
-		mSlots.back().mOccupied = true;
-		pDestSlot = &mSlots.back();
-		if (empty)
+		if (!mRecycleBin.empty())
 		{
-			posY = mSlots.back().mNYPos = 0.0f;
+			auto item = mRecycleBin.back();
+			int y = hgap * index + mCardOffsetY;
+			item->SetPosY(y);
+			mChildren.push_back(item);
+			mItems[index] = item;
+			mRecycleBin.pop_back();			
+			item->ParseLua(data);	
+			item->SetVisible(true);
+			RefreshTextures(index);
+			RefreshProps(index);
+			item->SetWNScollingOffset(offset);
+			
 		}
 		else
 		{
-			auto prev = mSlots.end() - 2;
-			posY = mSlots.back().mNYPos = prev->mNYPos + mHeight + mNYOffset;
+			int y = hgap * index + mCardOffsetY;
+			auto item = CreateNewCard(index);
+			mItems[index] = item;
+			item->ParseLua(data);
+			RefreshTextures(index);
+			RefreshProps(index);
+			item->SetWNScollingOffset(offset);
 		}
 	}
-	pos.x = posX;
-	pos.y = posY;
-	return pDestSlot;
+	mKeys[index] = key;
 }
 
-IWinBase* CardScroller::AddCard()
+void CardScroller::Scrolled()
 {
-	Vec2 pos;
-	Slot* pDestSlot = GetNextCardPos(pos);
-	assert(pDestSlot);
-	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);	
-	card->SetRuntimeChild(true);
-	pDestSlot->mCard = card;
-	return card;
-}
+	unsigned prevStart = mStartIndex;
+	unsigned prevEnd = mEndIndex;
+	int hgap = mCardSizeY + mCardOffsetY;
 
-void CardScroller::AddCard(LuaObject& obj)
-{
-	Vec2 pos;
-	Slot* pDestSlot = GetNextCardPos(pos);
-	assert(pDestSlot);
-	IWinBase* card = __super::AddChild(pos.x, pos.y, mWidth, mHeight, ComponentType::CardItem);
-	card->SetRuntimeChild(true);
-	pDestSlot->mCard = card;
-
-	card->ParseLua(obj);
-}
-
-void CardScroller::DeleteCard(IWinBase* card)
-{
-	Profiler p("DeleteCard");
-	unsigned num = mSlots.size();
-	for (unsigned i = 0; i < num; ++i)
+	if (mScrollerV)
 	{
-		if (mSlots[i].mCard == card)
+		Vec2 offset = mScrollerV->GetOffset();
+		int scrolledLen = -Round(offset.y * GetRenderTargetSize().y) - mCardOffsetY;
+		int topToBottom = mSize.y + scrolledLen - mCardOffsetY;
+
+		// decide visual index range		
+		mStartIndex = scrolledLen / hgap;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+	else
+	{
+		// decide visual index range
+		int topToBottom = mSize.y;
+		mStartIndex = 0;
+		mEndIndex = topToBottom / hgap;
+		int remain = topToBottom % hgap;
+		if (remain > 0)
+			mEndIndex += 1;
+	}
+
+	// to recycle
+	while (prevStart < mStartIndex)
+	{
+		unsigned index = prevStart++;
+		MoveToRecycle(index);
+	}
+
+	while (prevEnd > mEndIndex)
+	{
+		unsigned index = prevEnd--;
+		MoveToRecycle(index);
+	}
+
+	//to visual
+	while (prevStart > mStartIndex)
+	{
+		--prevStart;
+		unsigned visualIndex = prevStart;
+		VisualizeData(visualIndex);
+	}
+
+	while (prevEnd < mEndIndex)
+	{
+		++prevEnd;
+		unsigned visualIndex = prevEnd;
+		VisualizeData(visualIndex);
+	}
+
+	__super::Scrolled();
+}
+
+void CardScroller::MoveToRecycle(unsigned index){
+	if (index < mItems.size())
+	{
+		if (mItems[index])
 		{
-			mSlots[i].mCard->SetContent(0);
-			mSlots[i].mCard = 0;
-			mSlots[i].mOccupied = false;
-			RemoveChild(card);
-			Sort();
-			return;
+			if (mItems[index]->IsKeyboardFocused())
+				return;
+
+			auto target = mItems[index];
+			target->RemoveAllChild(true);
+			mRecycleBin.push_back(target);
+			RemoveChildNotDelete(target);
+			mItems[index] = 0;			
+			gFBUIManager->DirtyRenderList(mHwndId);
 		}
 	}
 }
 
-void CardScroller::Sort()
-{
-	Profiler p("DeleteCard");
-	std::sort(mSlots.begin(), mSlots.end());
-	ArrangeSlots();
+Wnd* CardScroller::CreateNewCard(unsigned index){
+	int hgap = mCardSizeY + mCardOffsetY;
+	int x = 0;
+	int y = hgap * index + mCardOffsetY;
 	
+	auto item = (Wnd*)AddChild(Vec2I(x, y), Vec2I(mCardSizeX, mCardSizeY), ComponentType::Window);
+	item->SetRuntimeChild(true);
+	item->SetRuntimeChildRecursive(true);
+	return item;
 }
 
-bool CardScroller::Slot::operator<(const Slot& other) const
-{
-	if (!mOccupied && other.mOccupied)
-		return false;
-	if (mOccupied && !other.mOccupied)
-		return true;
-	if (!mOccupied && !other.mOccupied)
-		return this < &other;
-
-	CardItem* meCard = (CardItem*)mCard;
-	CardItem* otherCard = (CardItem*)other.mCard;
-	assert(meCard && otherCard);
-	return meCard->operator<(*otherCard);
+bool CardScroller::IsExisting(unsigned key){
+	auto data = mCardData->GetData(key);
+	return data.IsValid();
 }
 
-void CardScroller::ArrangeSlots()
-{
-	Profiler p("DeleteCard");
-	size_t num = mSlots.size();
-	mNextEmptySlot = -1;
-	for (size_t i = 0; i < num; ++i)
-	{
-		float y = i*(mHeight + mNYOffset);
-		Slot& slot = mSlots[i];
-		if (!slot.mOccupied)
-		{
-			if (mNextEmptySlot == -1)
-				mNextEmptySlot = i;
-			continue;
+void CardScroller::RefreshTextures(unsigned index){
+	auto key = mCardData->GetKey(index);
+	std::vector<CardData::TextureData> textures;
+	mCardData->GetTextures(key, textures);
+	for (auto& t : textures){		
+		auto root = GetRootWnd();		
+		auto comp = root->GetChild(t.compName.c_str(), true);
+		if (comp){
+			auto texture = t.texture;
+			if (comp->GetType() == ComponentType::ImageBox)
+			{
+				ImageBox* imgBox = (ImageBox*)comp;
+				imgBox->SetTexture(texture);
+
+			}
+			else if (comp->GetType() == ComponentType::NamedPortrait)
+			{
+				NamedPortrait* portrait = (NamedPortrait*)comp;
+				portrait->SetTexture(texture);
+			}
+			else if (comp->GetType() == ComponentType::Button)
+			{
+				Button* btn = (Button*)comp;
+				btn->SetTexture(ButtonImages::Image, texture, true);
+			}
 		}
-		Vec2 curpos = slot.mCard->GetNPos();
-		assert(curpos.y == slot.mNYPos);
-		if (slot.mNYPos == y)
-			continue;
-		slot.mNYPos = y;
-		curpos.y = y;
-		slot.mCard->SetNPos(curpos);
 	}
 }
 
+void CardScroller::RefreshProps(unsigned index){
+	auto key = mCardData->GetKey(index);
+	auto it = mItemProps.Find(key);
+	if (it == mItemProps.end())
+		return;
 
-
-//---------------------------------------------------------------------------
-CardItem::CardItem()
-: mCardData(0)
-{
-	mCardId = NextCardId++;
-	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
-	mUIObject->mOwnerUI = this;
-	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mUIObject->SetNoDrawBackground(true);
-}
-CardItem::~CardItem()
-{
-
-}
-
-// IWinBase
-void CardItem::GatherVisit(std::vector<IUIObject*>& v)
-{
-	/*__super::GatherVisitAlpha(v);*/
-	v.push_back(mUIObject);
-	__super::GatherVisit(v);
+	auto& props = it->second;
+	for (auto p : props){
+		auto comp = GetChild(p.compName.c_str(), true);
+		if (comp){
+			comp->SetProperty(p.prop, p.val.c_str());
+		}
+		else{
+			Error("No component found in CardScroller.");
+		}
+		
+	}
 }
 
-bool CardItem::operator< (const CardItem& other) const
-{
-	if (mCardData && other.mCardData)
-		return *mCardData < *other.mCardData;
+void CardScroller::SetItemProperty(unsigned key, const char* comp, const char* prop, const char* val){
+	auto& props = mItemProps[key];
+	UIProperty::Enum p = UIProperty::ConvertToEnum(prop);
+	bool updated = false;
+	for (auto it = props.begin(); it != props.end(); ++it){
+		if (it->compName == comp && it->prop == p){
+			it->val = val;
+			updated = true;
+			break;
+		}
+	}
+	if (!updated){
+		props.push_back(Props(comp, p, val));
+	}
 
-	return false;
-}
-
-void CardItem::OnStartUpdate(float elapsedTime)
-{
-	bool ae = mSimplePosAnimEnabled;
-	__super::OnStartUpdate(elapsedTime);
+	unsigned idx = mCardData->GetIndex(key);
+	if (idx != -1){		
+		if (mItems[idx]){
+			auto c = mItems[idx]->GetChild(comp, true);
+			if (c)
+				c->SetProperty(p, val);
+			else
+				Error("Cannot find a component in CardScroller.");
+		}
+	}
 }

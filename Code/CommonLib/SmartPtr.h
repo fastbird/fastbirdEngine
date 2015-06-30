@@ -26,7 +26,7 @@ namespace fastbird
 			const int count = InterlockedDecrement(&mRefCounter);
 			if (count == 0)
 			{
-				FB_DELETE(this);
+				FinishSmartPtr();
 			}
 			else if (count < 0)
 			{
@@ -39,6 +39,10 @@ namespace fastbird
 		{
 			return mRefCounter;
 		}
+
+	protected:
+
+		virtual void FinishSmartPtr() = 0;
 
 	private:
 		volatile long mRefCounter;

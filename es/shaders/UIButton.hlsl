@@ -7,8 +7,9 @@
 //--------------------------------------------------------------------------------------
 #include "Constants.h"
 
-//
-Texture2D  gDiffuseTexture : register(t0);
+#ifdef _ALPHA_TEXTURE
+Texture2D  gAlphaTexture : register(t1);
+#endif 
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -55,27 +56,16 @@ float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
 		return gMaterialParam[1];
 #endif
 		
-#ifdef DIFFUSE_TEXTURE
-    float4 t_color = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
-    t_color.rgb = t_color.rgb;
-	float4 color = gDiffuseColor * t_color;
-	float2 uv2 = (INPUT.UV - gMaterialParam[0].zw) / gMaterialParam[0].xy;
-	
-	float3 edgeColor = {0.3, 0.3, 0.3};
-	float gx = smoothstep(1.0-(0.1/ratio), 1.0, abs(uv2.x*2.0-1.0));
-	float gy = smoothstep(0.9, 1.0, abs(uv2.y*2.0-1.0));
-	color.xyz = lerp(color.xyz, edgeColor, max(gx,gy));
-	
-	float highlight = gEmissiveColor.w;	
-	float glowx = smoothstep(.9 / ratio, 1.0, abs(uv2.x*2.0-1.0) * highlight);
-	//float glowx = smoothstep(1.0 - (0.1/ratio), 1.0, abs(uv2.x*2.0-1.0) * highlight);
-	//float glowx = smoothstep(0.9, 1.0, abs(uv2.x*2.0-1.0) * highlight);
-	float glowy = smoothstep(0.9, 1.0, abs(uv2.y*2.0-1.0) * highlight);
-	color.xyz = lerp(color.xyz, gEmissiveColor.xyz, glowx+glowy);
-#else
+#if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)
+    
+#endif
+
 	float4 color = gDiffuseColor;
 	color.rgb += gAmbientColor.rgb;
-#endif
 	
+#ifdef _ALPHA_TEXTURE	
+	float4 t_color = gAlphaTexture.Sample(gLinearSampler, INPUT.UV);
+	color.a *= t_color.a;
+#endif
     return color;
 }

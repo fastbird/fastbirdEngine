@@ -88,8 +88,8 @@ namespace fastbird
 				pointLightDataGathered = true;
 			}
 		}
-
-		if (!pointLightDataGathered && gFBEnv->pRenderer->NeedToRefreshPointLight())
+		
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL && !pointLightDataGathered && gFBEnv->pRenderer->NeedToRefreshPointLight())
 		{
 			if (mAnim)
 			{
@@ -113,12 +113,11 @@ namespace fastbird
 		
 		mObjectConstants.gWorldView = renderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		mObjectConstants.gWorldViewProj = renderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
-
-
 		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
 			renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
-		renderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL)
+			renderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
 
 		renderer->SetPrimitiveTopology(mTopology);
 
@@ -237,7 +236,7 @@ namespace fastbird
 			if (mRenderHighlight && mainRt && !mForceAlphaBlending)
 			{
 				// draw silhouett to samll buffer
-				auto rt = renderer->GetCurRendrTarget();
+				auto rt = renderer->GetCurRenderTarget();
 				assert(rt);
 				rt->SetSmallSilouetteBuffer();
 				{
@@ -1005,6 +1004,10 @@ namespace fastbird
 		{
 			mg.mMaterial = mg.mMaterial->Clone();
 		}
+	}
+
+	bool MeshObject::IsPlayingAction() const{
+		return mAnim && mAnim->IsPlaying();
 	}
 
 	bool MeshObject::CheckNarrowCollision(fastbird::BoundingVolume* pBV) const

@@ -8,6 +8,10 @@ namespace fastbird
 		Reset();
 	}
 
+	void RenderStates::FinishSmartPtr(){
+		FB_DELETE(this);
+	}
+
 	void RenderStates::Reset()
 	{
 		ResetRasterizerState();

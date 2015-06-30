@@ -125,6 +125,8 @@ namespace fastbird
 
 		virtual RenderStates* GetRenderStates() const = 0;
 		virtual void CloneRenderStates() = 0;
+
+		virtual void SetInputLayout(const INPUT_ELEMENT_DESCS& desc) = 0;
 		
 	};
 

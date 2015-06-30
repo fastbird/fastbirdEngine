@@ -113,7 +113,19 @@ namespace fastbird
 	unsigned ListBoxDataSet::InsertEmptyData(){
 		mData.push_back(FB_ARRNEW(ListBoxData, mNumCols));
 		auto& cols = mData.back();
+		cols[0].SetKey(-1);
 		return mData.size() - 1;
+	}
+
+	bool ListBoxDataSet::ModifyKey(unsigned row, unsigned key){
+		if (row >= mData.size())
+			return false;
+		if (mData[row][0].GetDataType() != ListItemDataType::NumberKey)
+			return false;
+
+		
+		mData[row][0].SetKey(key);
+		return true;
 	}
 
 	void ListBoxDataSet::SetData(const std::wstring& uniqueKey, unsigned colIndex, const wchar_t* string, ListItemDataType::Enum type)
@@ -260,6 +272,30 @@ namespace fastbird
 		cols[colIndex].SetTexture(texture);
 	}
 
+	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, int number){
+		unsigned rowIndex = indexRowCol.x;
+		unsigned colIndex = indexRowCol.y + 1;
+
+		if (rowIndex >= mData.size())
+			return;
+		if (colIndex >= mNumCols)
+			return;
+		auto cols = mData[rowIndex];
+		cols[colIndex].SetInt(number);
+	}
+
+	void ListBoxDataSet::SetData(const Vec2I& indexRowCol, float number){
+		unsigned rowIndex = indexRowCol.x;
+		unsigned colIndex = indexRowCol.y + 1;
+
+		if (rowIndex >= mData.size())
+			return;
+		if (colIndex >= mNumCols)
+			return;
+		auto cols = mData[rowIndex];
+		cols[colIndex].SetFloat(number);
+	}
+
 	ListBoxData* ListBoxDataSet::GetData(unsigned index){
 		if (index < mData.size())
 			return mData[index] + 1; // excluding id column.
@@ -360,7 +396,7 @@ namespace fastbird
 		if (cols[colIndex].GetDataType() != ListItemDataType::String)
 			return -1;
 
-		if (gpTimer->GetTime() - mLastTime > 1.f)
+		if (gpTimer->GetTime() - mLastTime > 2.f)
 		{
 			mCharBuffer.clear();
 			mLastTime = gpTimer->GetTime();

@@ -9,6 +9,11 @@ namespace fastbird{
 		unsigned mKey;
 		SmartPtr<ITexture> mTexture;
 		bool mChecked; // for check box data.
+		union Number{
+			int i;
+			float f;
+		};
+		Number mNumber;
 
 	public:
 		ListBoxData();
@@ -19,6 +24,9 @@ namespace fastbird{
 		const wchar_t* GetText() const { return mText.c_str(); }
 		bool GetChecked() const { return mChecked; }
 		unsigned GetKey() const { return mKey; }
+		int GetInt() const { return mNumber.i; }
+		float GetFloat() const { return mNumber.f; }
+		
 		ITexture* GetTexture() const { return mTexture; }
 	
 		void SetDataType(ListItemDataType::Enum type){ mDataType = type; }
@@ -27,6 +35,8 @@ namespace fastbird{
 			// need to set the type manually.
 		}
 		void SetTexture(ITexture* texture);
+		void SetInt(int number); // numeric up down
+		void SetFloat(float f);
 		void SetChecked(bool checked){ mChecked = checked; mDataType = ListItemDataType::CheckBox; }
 		void SetKey(unsigned key){ mKey = key; mDataType = ListItemDataType::NumberKey; }
 

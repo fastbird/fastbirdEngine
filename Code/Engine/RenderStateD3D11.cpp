@@ -21,6 +21,12 @@ RasterizerStateD3D11::~RasterizerStateD3D11()
 	SAFE_RELEASE(mRasterizerState);
 }
 
+void RasterizerStateD3D11::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
+
 //----------------------------------------------------------------------------
 void RasterizerStateD3D11::Bind()
 {
@@ -59,6 +65,11 @@ BlendStateD3D11::BlendStateD3D11()
 BlendStateD3D11::~BlendStateD3D11()
 {
 	SAFE_RELEASE(mBlendState);
+}
+
+void BlendStateD3D11::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
 }
 
 //----------------------------------------------------------------------------
@@ -101,6 +112,11 @@ DepthStencilStateD3D11::~DepthStencilStateD3D11()
 	SAFE_RELEASE(mDepthStencilState);
 }
 
+void DepthStencilStateD3D11::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 //----------------------------------------------------------------------------
 void DepthStencilStateD3D11::Bind(unsigned stencilRef)
 {
@@ -135,6 +151,11 @@ SamplerStateD3D11::SamplerStateD3D11()
 SamplerStateD3D11::~SamplerStateD3D11()
 {
 	SAFE_RELEASE(mSamplerState);
+}
+
+void SamplerStateD3D11::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
 }
 
 void SamplerStateD3D11::Bind(BINDING_SHADER shader, int slot)

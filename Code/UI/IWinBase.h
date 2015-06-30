@@ -78,6 +78,7 @@ namespace fastbird
 		
 		virtual const Vec2& GetNPos() const = 0;
 		virtual const Vec2I& GetPos() const = 0;
+		virtual const Vec2I GetAlignedPos() const = 0;
 		virtual const Vec2& GetWNPos() const = 0;
 		virtual const Vec2I& GetWPos() const = 0;
 		virtual const Vec2I& GetFinalPos() const = 0;
@@ -103,6 +104,7 @@ namespace fastbird
 		virtual bool GetVisible() const = 0;
 		virtual bool GetFocus(bool includeChildren = false) const = 0;
 		virtual void SetAlign(ALIGNH::Enum h, ALIGNV::Enum v) = 0;		
+		virtual ALIGNH::Enum GetHAlign() const = 0;
 		virtual void GatherVisit(std::vector<IUIObject*>& v) = 0;
 		virtual void ModifySize(const Vec2I& sizemod) = 0;
 
@@ -181,10 +183,12 @@ namespace fastbird
 
 		// usually don't need to use this functions
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
+		virtual void SetUseAbsPos(bool use) = 0;
 		virtual void SetUseAbsXPos(bool use) = 0;
 		virtual void SetUseAbsYPos(bool use) = 0;
 		virtual bool GetUseAbsXPos() const = 0;
 		virtual bool GetUseAbsYPos() const = 0;
+		virtual void SetUseAbsSize(bool use) = 0;
 		virtual void SetUseAbsXSize(bool use) = 0;
 		virtual void SetUseAbsYSize(bool use) = 0;
 		virtual bool GetUseAbsXSize() const = 0;
@@ -226,6 +230,8 @@ namespace fastbird
 
 		// runtime child will not be saved.
 		virtual void SetRuntimeChild(bool runtime) = 0;
+		virtual void SetRuntimeChildRecursive(bool runtime) = 0;
+		virtual bool IsRuntimeChildRecursive() const = 0;
 		virtual bool IsRuntimeChild() const = 0;
 		// ghost child will not test to focus
 		virtual void SetGhost(bool ghost) = 0;
@@ -245,6 +251,21 @@ namespace fastbird
 
 		virtual bool GetNoMouseEvent() const = 0;
 		virtual bool GetNoMouseEventAlone() const = 0;
+		virtual bool GetVisualOnly() const = 0;
+		virtual void SetSpecialOrder(int specialOrder) = 0;
+
+		virtual void RecreateBorders() = 0;
+
+		virtual bool GetUseScissor() const = 0;
+
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard) = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

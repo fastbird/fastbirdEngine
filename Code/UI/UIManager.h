@@ -8,10 +8,10 @@
 #include <Engine/IFileChangeListener.h>
 #include <Engine/IRenderListener.h>
 
-
 namespace fastbird
 {
 	void RegisterLuaFuncs(lua_State* mL);
+	void RegisterLuaEnums(lua_State* mL);
 
 	class IWinBase;
 	class IUIObject;
@@ -37,6 +37,9 @@ namespace fastbird
 
 		IWinBase* mFocusWnd;
 		IWinBase* mKeyboardFocus;
+		IWinBase* mNewFocusWnd;
+		IWinBase* mMouseOvered;
+		IWinBase* mMouseDragStartedUI;
 		Container* mMouseOveredContainer;
 		VectorMap<HWND_ID, bool> mNeedToRegisterUIObject;
 		bool mMouseIn;
@@ -59,6 +62,7 @@ namespace fastbird
 		ListBox* mCachedListBox;
 		WinBases mAlwaysOnTopWindows;
 		WINDOWS mMoveToBottomReserved;
+		WINDOWS mMoveToTopReserved;
 		std::vector < IWinBase* > mSetFocusReserved;
 
 		std::vector<std::string> mHideUIExcepts;
@@ -76,6 +80,19 @@ namespace fastbird
 
 		// for locating
 		bool mMultiLocating;
+
+		// styles
+		std::string mStyle;
+		VectorMap<std::string, std::string> mBorderRegions;
+		VectorMap<std::string, std::string> mWindowRegions;
+		std::string mBorderAlphaRegion;
+		std::string mWindowAlphaRegion;
+
+		std::string mStyleStrings[Styles::Num];
+
+		// alpha textures
+		VectorMap<Vec2I, SmartPtr<ITexture>> mAlphaInfoTexture;
+		SmartPtr<ITexture> mAtlasStaging;
 
 
 	protected:
@@ -130,6 +147,7 @@ namespace fastbird
 		virtual void SetFocusUI(IWinBase* pWnd);
 		virtual IWinBase* GetFocusUI() const;
 		virtual IWinBase* GetKeyboardFocusUI() const;
+		virtual IWinBase* GetNewFocusUI() const { return mNewFocusWnd; }
 		virtual void SetFocusUI(const char* uiName);
 		virtual bool IsFocused(const IWinBase* pWnd) const;
 		virtual void DirtyRenderList(HWND_ID hwndId);
@@ -139,6 +157,7 @@ namespace fastbird
 
 		// IInputListener Interfaces
 		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);
+		void ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard);
 		virtual void EnableInputListener(bool enable);
 		virtual bool IsEnabledInputLIstener() const;
 		virtual HCURSOR GetMouseCursorOver() const;
@@ -177,6 +196,8 @@ namespace fastbird
 		virtual void UnRegisterAlwaysOnTopWnd(IWinBase* win);
 
 		virtual void MoveToBottom(const char* moveToBottom);
+		virtual void MoveToBottom(IWinBase* moveToBottom);
+		virtual void MoveToTop(IWinBase* moveToTop);
 		virtual void HideUIsExcept(const std::vector<std::string>& excepts);
 
 		virtual void HighlightUI(const char* uiname);
@@ -197,6 +218,14 @@ namespace fastbird
 		virtual const char* GetUIScriptPath(const char* uiname) const;
 
 		virtual void SuppressPropertyWarning(bool suppress);
+
+		virtual void SetStyle(const char* style);
+
+		virtual const char* GetBorderRegion(const char* key) const;
+		virtual const char* GetWndBorderRegion(const char* key) const;
+		virtual const char* GetStyleString(Styles::Enum s) const;
+
+		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

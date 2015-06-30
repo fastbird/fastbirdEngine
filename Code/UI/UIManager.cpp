@@ -57,7 +57,8 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
-	, mMultiLocating(false)
+	, mMultiLocating(false), mAtlasStaging(0), mNewFocusWnd(0)
+	, mMouseOvered(0), mMouseDragStartedUI(0)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -66,12 +67,15 @@ UIManager::UIManager(lua_State* L)
 		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
 	KeyboardCursor::InitializeKeyboardCursor();
 	RegisterLuaFuncs(L);	
+	RegisterLuaEnums(L);
 	mUICommands = FB_NEW(UICommands);
+	SetStyle("blue");
 	PrepareTooltipUI();
 	WinBase::InitMouseCursor();
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
 	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
+	
 }
 
 UIManager::~UIManager()
@@ -174,7 +178,7 @@ void UIManager::Update(float elapsedTime)
 	for (auto& ui : mMoveToBottomReserved)
 	{
 		auto hwndId = ui->GetHwndId();
-		auto windows = mWindows[hwndId];
+		auto& windows = mWindows[hwndId];
 		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), ui);
 		if (f != windows.end()){
 			// insert f at the mWindows.begin().
@@ -186,6 +190,23 @@ void UIManager::Update(float elapsedTime)
 	}
 	mMoveToBottomReserved.clear();	
 
+	for (auto& ui : mMoveToTopReserved)
+	{
+		auto hwndId = ui->GetHwndId();
+		auto& windows = mWindows[hwndId];
+		WINDOWS::iterator f = std::find(windows.begin(), windows.end(), ui);
+		if (f != windows.end()){
+			// insert f at the mWindows.begin().
+			auto lastIt = windows.end();
+			lastIt--;
+			if (lastIt != f){
+				windows.splice(windows.end(), windows, f);
+				mNeedToRegisterUIObject[hwndId] = true;
+			}
+		}
+	}
+	mMoveToTopReserved.clear();
+
 	for each(auto& it in mWindows){
 		auto& windows = it.second;
 		for (auto& wnd : windows){
@@ -196,7 +217,7 @@ void UIManager::Update(float elapsedTime)
 
 	if (!mTooltipText.empty()){
 		mDelayForTooltip -= elapsedTime;
-		if (mDelayForTooltip <= 0){
+		if (mDelayForTooltip <= 0 && !mTooltipUI->GetVisible()){
 			ShowTooltip();
 		}
 	}
@@ -230,50 +251,53 @@ void UIManager::GatherRenderList()
 {
 	for (auto& it : mNeedToRegisterUIObject){
 		if (it.second){
+			
 			HWND_ID hwndId = it.first;
-			it.second = false;
-			auto& windows = mWindows[hwndId];
 			std::vector<IUIObject*> uiObjects;
-			uiObjects.reserve(200);
 			std::map<std::string, std::vector<IUIObject*>> render3DList;
-			bool hideAll = !mHideUIExcepts.empty();
-			WINDOWS::iterator it = windows.begin(), itEnd = windows.end();
-			size_t start = 0;
-			for (; it != itEnd; it++)
+			it.second = false;
 			{
-				if (hideAll)
+				Profiler p("GatherRenderList");
+				auto& windows = mWindows[hwndId];
+				uiObjects.reserve(200);				
+				bool hideAll = !mHideUIExcepts.empty();
+				WINDOWS::iterator it = windows.begin(), itEnd = windows.end();
+				size_t start = 0;
+				for (; it != itEnd; it++)
 				{
-					if (std::find(mHideUIExcepts.begin(), mHideUIExcepts.end(), (*it)->GetName()) == mHideUIExcepts.end())
-						continue;
-				}
-				if ((*it)->GetVisible())
-				{
-					if ((*it)->GetRender3D())
+					if (hideAll)
 					{
-						assert(strlen((*it)->GetName()) != 0);
-						auto& list = render3DList[(*it)->GetName()];
-						list.reserve(100);
-						(*it)->GatherVisit(list);
-						std::sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
-							return a->GetSpecialOrder() < b->GetSpecialOrder();
-						});
+						if (std::find(mHideUIExcepts.begin(), mHideUIExcepts.end(), (*it)->GetName()) == mHideUIExcepts.end())
+							continue;
 					}
-					else
+					if ((*it)->GetVisible())
 					{
-						(*it)->GatherVisit(uiObjects);
+						if ((*it)->GetRender3D())
+						{
+							assert(strlen((*it)->GetName()) != 0);
+							auto& list = render3DList[(*it)->GetName()];
+							list.reserve(100);
+							(*it)->GatherVisit(list);
+							std::stable_sort(uiObjects.begin(), uiObjects.end(), [](IUIObject* a, IUIObject* b){
+								return a->GetSpecialOrder() < b->GetSpecialOrder();
+							});
+						}
+						else
+						{
+							(*it)->GatherVisit(uiObjects);
 
-						std::sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
-							return a->GetSpecialOrder() < b->GetSpecialOrder();
-						});
-						start = uiObjects.size();
+							std::stable_sort(uiObjects.begin() + start, uiObjects.end(), [](IUIObject* a, IUIObject* b){
+								return a->GetSpecialOrder() < b->GetSpecialOrder();
+							});
+							start = uiObjects.size();
+						}
 					}
 				}
+
+
+				if (mPopup&& mPopup->GetVisible())
+					mPopup->GatherVisit(uiObjects);
 			}
-
-
-			if (mPopup&& mPopup->GetVisible())
-				mPopup->GatherVisit(uiObjects);
-
 			// rendering order : reverse.
 			gFBEnv->pRenderer->RegisterUIs(hwndId, uiObjects);
 			for (auto it : render3DList)
@@ -522,7 +546,7 @@ void UIManager::CloneUI(const char* uiname, const char* newUIname)
 
 	std::string scriptPath;
 	const char* sz = pRoot->Attribute("script");
-	if (sz)
+	if (sz && strlen(sz)>0)
 	{
 		Error(DEFAULT_DEBUG_ARG, "cannot clone scriptable ui");
 		return;
@@ -618,7 +642,7 @@ bool UIManager::AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId)
 	}
 	std::string lower = uiName;
 	ToLowerCase(lower);
-	auto it = mLuaUIs.find(uiName);
+	auto it = mLuaUIs.find(lower.c_str());
 	if (it != mLuaUIs.end())
 	{
 		Error("Already registered!");
@@ -644,6 +668,9 @@ void UIManager::DeleteLuaUI(const char* uiName)
 	{
 		for (auto& win : it->second)
 		{
+			auto eventHandler = dynamic_cast<EventHandler*>(win);
+			if (eventHandler)
+				eventHandler->OnEvent(UIEvents::EVENT_ON_UNLOADED);
 			DirtyRenderList(win->GetHwndId());
 			DeleteWindow(win);			
 		}
@@ -801,6 +828,9 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	if (mMouseOveredContainer == winbase)
 		mMouseOveredContainer = 0;
 
+	if (mMouseOvered == winbase)
+		mMouseOvered = 0;
+
 	if (winbase->GetRender3D())
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
@@ -809,11 +839,14 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
+	if (mKeyboardFocus == ui)
+		return;
 	for (auto& reservedUI : mSetFocusReserved)
 	{
 		if (ui == reservedUI)
 			return;
 	}
+	mNewFocusWnd = ui;
 
 	if (mKeyboardFocus)
 		mKeyboardFocus->OnFocusLost();
@@ -951,9 +984,6 @@ IWinBase* UIManager::CreateComponent(ComponentType::Enum type)
 	case ComponentType::CardScroller:
 		pWnd = FB_NEW(CardScroller);
 		break;
-	case ComponentType::CardItem:
-		pWnd = FB_NEW(CardItem);
-		break;
 	case ComponentType::VerticalGauge:
 		pWnd = FB_NEW(VerticalGauge);
 		break;
@@ -1050,49 +1080,38 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		}
 	}
 
-	if (mIgnoreInput) {
+	if (mIgnoreInput && !mUIEditor) {
 		if (mModalWindow)
 			mModalWindow->OnInputFromHandler(pMouse, keyboard);
 		return;
 	}
 
+
+	Vec2I rdragStartedPos;
+	if (pMouse->IsRDragStarted(rdragStartedPos)){
+		mMouseIn = false;
+		return;
+	}
+
 	mMouseIn = false;
 	if (mKeyboardFocus && mKeyboardFocus->GetHwndId() != hwndId){
+		pMouse->InvalidTemporary(true);
 		mKeyboardFocus->OnInputFromHandler(pMouse, keyboard);
+		pMouse->InvalidTemporary(false);
 	}
+
+	ProcessMouseInput(pMouse, keyboard);
 	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
 	int i = 0;
 	for (; it != itEnd; ++it)
 	{
-		if ((*it)->GetVisible())
+		if ((*it)->GetVisible() && !(*it)->GetVisualOnly())
 		{
 			mMouseIn = (*it)->OnInputFromHandler(pMouse, keyboard) || mMouseIn;
 		}
 
 		if (!pMouse->IsValid() && !keyboard->IsValid())
 			break;
-	}
-
-	//Select
-	if (pMouse->IsValid() && pMouse->IsLButtonClicked()) {
-		auto mousePos = pMouse->GetPos();
-		RegionTestParam rparam;
-		rparam.mOnlyContainer = false;
-		rparam.mIgnoreScissor = mUIEditor ? true : false;
-		rparam.mTestChildren = true;
-		rparam.mHwndId = hwndId;
-		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
-		if (mKeyboardFocus != focusWnd)
-		{
-			SetFocusUI(focusWnd);
-		}
-		if (mUIEditor)
-		{
-			if (!keyboard->IsKeyDown(VK_MENU)){
-				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
-					mUIEditor->OnComponentSelected(mKeyboardFocus);
-			}
-		}
 	}
 
 	if (keyboard->IsValid() && keyboard->GetChar() == VK_TAB)
@@ -1112,6 +1131,101 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		if (mouseInvalided.IsValid())
 		{
 			mouseInvalided.Call();
+		}
+	}
+}
+
+void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
+	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
+
+	//Select
+	if (mouse->IsValid()) {
+		auto mousePos = mouse->GetPos();
+		RegionTestParam rparam;
+		rparam.mOnlyContainer = false;
+		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mTestChildren = true;
+		rparam.mNoRuntimeComp = mUIEditor && keyboard->IsKeyDown(VK_LMENU) ? true : false;
+		rparam.mCheckMouseEvent = !mUIEditor;
+		rparam.mHwndId = hwndId;
+		if (mUIEditor && mouse->IsLButtonClicked() && keyboard->IsKeyDown(VK_CONTROL)){
+			auto it = mUIEditor->GetSelectedComps();
+			std::vector<IWinBase*> del;
+			while (it.HasMoreElement()){
+				auto comp = it.GetNext();
+				if (comp->IsIn(mousePos, rparam.mIgnoreScissor)){
+					del.push_back(comp);
+				}
+			}
+			for (auto comp : del){
+				mUIEditor->OnComponentDeselected(comp);
+			}
+			return;
+		}
+
+		if (mUIEditor && mouse->IsLButtonClicked() && !keyboard->IsKeyDown(VK_MENU)){
+			auto it = mUIEditor->GetSelectedComps();
+			while (it.HasMoreElement()){
+				rparam.mExceptions.push_back(it.GetNext());
+			}
+		}
+
+		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		if (focusWnd != mMouseOvered){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseOut(mouse, keyboard);
+			}
+			mMouseOvered = focusWnd;
+			if (mMouseOvered){
+				mMouseOvered->OnMouseIn(mouse, keyboard);
+			}
+		}
+		else if (focusWnd){
+			//focusWnd == mMouseOvered
+			mMouseOvered->OnMouseHover(mouse, keyboard);
+		}
+
+		if (focusWnd && mouse->IsLButtonDown() && !mMouseDragStartedUI){
+			mMouseDragStartedUI = focusWnd;
+		}
+		if (mouse->IsLButtonDown() && focusWnd){
+			focusWnd->OnMouseDown(mouse, keyboard);
+		}
+		if (mMouseDragStartedUI){
+			mMouseDragStartedUI->OnMouseDrag(mouse, keyboard);
+		}
+
+		if (mouse->IsLButtonClicked()){
+			if (mKeyboardFocus != focusWnd)
+			{
+				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+					SetFocusUI(focusWnd);
+			}
+			bool editorFocused = !gFBEnv->pEngine->IsMainWindowForground();
+			if (mUIEditor && (!keyboard->IsKeyDown(VK_MENU) && !editorFocused))
+			{
+				if (mUIEditor->GetCurSelected() != mKeyboardFocus || keyboard->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
+					mUIEditor->OnComponentSelected(mKeyboardFocus);
+			}
+			else{
+				if (mMouseOvered){
+					mMouseOvered->OnMouseClicked(mouse, keyboard);
+				}
+			}
+		}
+		else if (mouse->IsLButtonDoubleClicked()){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseDoubleClicked(mouse, keyboard);
+			}
+		}
+		else if (mouse->IsRButtonClicked()){
+			if (mMouseOvered){
+				mMouseOvered->OnMouseRButtonClicked(mouse, keyboard);
+			}
+		}
+
+		if (!mouse->IsLButtonDown()){
+			mMouseDragStartedUI = 0;
 		}
 	}
 }
@@ -1191,7 +1305,7 @@ void UIManager::ShowTooltip()
 		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
 	pFont->SetBackToOrigHeight();
 
-	const int maxWidth = 350;
+	const int maxWidth = 450;
 	width = std::min(maxWidth, width) + 4;
 	mTooltipUI->ChangeSizeX(width + 16);
 	mTooltipTextBox->ChangeSizeX(width);
@@ -1206,9 +1320,13 @@ void UIManager::ShowTooltip()
 
 void UIManager::SetTooltipPos(const Vec2& npos)
 {
-	if (!mTooltipUI->GetVisible())
-		return;
+	/*if (!mTooltipUI->GetVisible())
+		return;*/
 
+	static Vec2 prevNPos(-1, -1);
+	if (prevNPos == npos)
+		return;
+	prevNPos = npos;
 	HWND_ID hwndId = mTooltipUI->GetHwndId();
 	auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
 	assert(hwndId != -1);
@@ -1441,8 +1559,8 @@ bool UIManager::OnFileChanged(const char* file)
 			auto itFind = mLuaUIs.find(uiname);
 			if (itFind != mLuaUIs.end())
 			{
-				if (!MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
-					"Warning", MB_YESNO))
+				if (MessageBox(gFBEnv->pEngine->GetForegroundWindow(), "Lua script has changed. Do you want save the current .ui and apply the script?",
+					"Warning", MB_YESNO) ==IDNO)
 					return false;
 
 				tinyxml2::XMLDocument doc;
@@ -1543,6 +1661,20 @@ void UIManager::MoveToBottom(const char* moveToBottom)
 	}	
 }
 
+void UIManager::MoveToBottom(IWinBase* moveToBottom){
+	if (moveToBottom){
+		if (ValueNotExistInVector(mMoveToBottomReserved, moveToBottom))
+			mMoveToBottomReserved.push_back(moveToBottom);
+	}
+}
+
+void UIManager::MoveToTop(IWinBase* moveToTop){
+	if (moveToTop){
+		if (ValueNotExistInVector(mMoveToTopReserved, moveToTop))
+			mMoveToTopReserved.push_back(moveToTop);
+	}
+}
+
 void UIManager::HideUIsExcept(const std::vector<std::string>& excepts)
 {
 	mHideUIExcepts = excepts;
@@ -1605,6 +1737,7 @@ void UIManager::PrepareTooltipUI()
 	tooltip.SetField("BACK_COLOR", "0, 0, 0, 0.8f");
 	tooltip.SetField("ALWAYS_ON_TOP", "true");
 	tooltip.SetField("USE_BORDER", "true");
+	tooltip.SetField("WND_NO_FOCUS", "true");
 	auto tooltipChildren = tooltip.SetFieldTable("children");
 	auto children1 = tooltipChildren.SetSeqTable(1);
 	children1.SetField("name", "TooltipTextBox");
@@ -1626,6 +1759,7 @@ void UIManager::PrepareTooltipUI()
 		mTooltipUI = wnds[0];
 		mTooltipTextBox = FindComp("MouseTooltip", "TooltipTextBox");
 		assert(mTooltipTextBox);
+		//mTooltipTextBox->SetProperty(UIProperty::USE_BORDER, "true");
 	}
 }
 
@@ -1662,6 +1796,7 @@ void UIManager::OnInputForLocating(IMouse* pMouse, IKeyboard* keyboard)
 	rparam.mOnlyContainer = true;
 	rparam.mIgnoreScissor = true;
 	rparam.mTestChildren = true;
+	rparam.mNoRuntimeComp = true;
 	rparam.mHwndId = gFBEnv->pEngine->GetMainWndHandleId();
 	mMouseOveredContainer = (Container*)WinBaseWithPoint(pt, rparam);
 	if (pMouse->IsLButtonDown())
@@ -1699,8 +1834,9 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 {
 	auto hwndId = gFBEnv->pEngine->GetForegroundWindowId();
 	auto windows = mWindows[hwndId];
-	for (auto wnd : windows)
-	{
+	auto it = windows.rbegin(), itEnd = windows.rend();
+	for (; it != itEnd; it++){
+		auto wnd = *it;
 		if (!wnd->GetVisible()){			
 			continue;
 		}
@@ -1785,8 +1921,12 @@ void UIManager::CopyCompsAtMousePos(const std::vector<IWinBase*>& src){
 		return;
 
 	auto mouse = gFBEnv->pEngine->GetMouse();
-	auto pos = mouse->GetPos();
-	auto offset = pos - src[0]->GetFinalPos();
+	auto overedUI = mMouseOveredContainer->GetWndContentUI();
+	if (!overedUI){
+		overedUI = mMouseOveredContainer;
+	}
+	auto pos = mouse->GetPos() - overedUI->GetFinalPos();
+	auto offset = pos - src[0]->GetAlignedPos();
 	std::vector<IWinBase*> cloned;
 	tinyxml2::XMLDocument doc;
 	for (auto& s : src){		
@@ -1948,8 +2088,10 @@ void UIManager::DragUI(){
 		return;
 
 	unsigned num = mUIEditor->GetNumCurEditing();
-	if (!num)
+	if (!num){
+		assert(!sDragStarted);
 		return;
+	}
 
 	Vec2I dragStartPos;
 	bool dragStarted = mouse->IsDragStarted(dragStartPos);
@@ -2092,6 +2234,240 @@ void UIManager::DebugUI(){
 				break;
 			}
 		}
+	}
+}
+
+void UIManager::SetStyle(const char* style){
+	if (mStyle == style)
+		return;
+	mAlphaInfoTexture.clear();
+	mBorderAlphaRegion.clear();
+	mWindowAlphaRegion.clear();
+
+	char buf[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, buf);
+	mStyle = style;
+	tinyxml2::XMLDocument doc;
+	int err = doc.LoadFile("es/ui/style.xml");
+	if (err){
+		Error("parsing style file(es/ui/style.xml) failed.");
+		if (doc.GetErrorStr1())
+			Error(doc.GetErrorStr1());
+		if (doc.GetErrorStr2())
+			Error(doc.GetErrorStr2());
+		return;
+	}
+
+	auto root = doc.RootElement();
+	if (!root)
+		return;
+
+	auto styleElem = root->FirstChildElement("Style");
+	while (styleElem){
+		auto sz = styleElem->Attribute("name");
+		if (sz && _stricmp(sz, style)==0){
+			auto borderElem = styleElem->FirstChildElement("Border");
+			if (borderElem){
+				const char* atts[] = {
+					"lt", "t", "rt", "l", "r", "lb", "b", "rb"
+				};
+
+				unsigned num = ARRAYCOUNT(atts);
+				for (unsigned i = 0; i < num; ++i){
+					auto sz = borderElem->Attribute(atts[i]);
+					if (sz){
+						mBorderRegions[atts[i]] = sz;
+					}
+				}
+				sz = borderElem->Attribute("alphaInfo");
+				if (sz){
+					mBorderAlphaRegion = sz;
+				}
+			}
+
+			auto winElem = styleElem->FirstChildElement("WindowFrame");
+			if (winElem){
+				const char* atts[] = {
+					"lt", "t", "mt", "rt", "l", "r", "lb", "b", "rb"
+				};
+				unsigned num = ARRAYCOUNT(atts);
+				for (unsigned i = 0; i < num; ++i){
+					auto sz = winElem->Attribute(atts[i]);
+					if (sz){
+						mWindowRegions[atts[i]] = sz;
+					}
+				}
+				sz = winElem->Attribute("alphaInfo");
+				if (sz){
+					mWindowAlphaRegion = sz;
+				}
+			}
+
+			auto listBoxElem = styleElem->FirstChildElement("ListBox");
+			if (listBoxElem){
+				auto sz = listBoxElem->Attribute("headerBackColor");
+				if (sz){
+					mStyleStrings[Styles::ListBoxHeaderBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::ListBoxHeaderBack] = "0.1, 0.1, 0.1, 1";
+				}
+
+				sz = listBoxElem->Attribute("backColor");
+				if (sz){
+					mStyleStrings[Styles::ListBoxBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::ListBoxBack] = "0.0, 0.0, 0.0, 0.5";
+				}
+			}
+
+			auto staticTextElem = styleElem->FirstChildElement("StaticText");
+			if (staticTextElem){
+				auto sz = staticTextElem->Attribute("backColor");
+				if (sz){
+					mStyleStrings[Styles::StaticTextBack] = sz;
+				}
+				else{
+					mStyleStrings[Styles::StaticTextBack] = "0.0 0.0 0.0 0.7";
+				}
+			}
+
+			break;
+		}
+
+		styleElem = styleElem->NextSiblingElement();
+	}
+	
+	// RecreateAll borders
+	for (auto& it : mWindows){
+		for (auto& wnd : it.second){
+			wnd->RecreateBorders();
+		}
+	}
+
+}
+
+const char* UIManager::GetBorderRegion(const char* key) const{
+	auto it = mBorderRegions.Find(key);
+	if (it != mBorderRegions.end()){
+		return it->second.c_str();
+	}
+	return "";
+}
+
+const char* UIManager::GetWndBorderRegion(const char* key) const{
+	auto it = mWindowRegions.Find(key);
+	if (it != mWindowRegions.end()){
+		return it->second.c_str();
+	}
+	return "";
+}
+
+const char* UIManager::GetStyleString(Styles::Enum s) const{
+	assert(s < Styles::Num);
+	return mStyleStrings[s].c_str();
+}
+
+ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater){
+	callmeLater = false;
+	if (size.x == 0 || size.y == 0){
+		callmeLater = true;
+		return 0;
+	}
+	auto it = mAlphaInfoTexture.Find(size);
+	if (it != mAlphaInfoTexture.end()){
+		return it->second;
+	}
+	else{
+		if (mBorderAlphaRegion.empty())
+			return 0;
+
+		// GenerateAlphaTexture
+		auto atlas = gFBEnv->pRenderer->GetTextureAtlas("es/textures/ui.xml");
+		if (!atlas)
+			return 0;
+
+		if (!atlas->mTexture->IsReady()){
+			callmeLater = true;
+			return 0;
+		}
+		
+		auto alphaRegion = atlas->GetRegion(mBorderAlphaRegion.c_str());
+		if (!alphaRegion)
+			return 0;
+
+		const auto& atlasSize = atlas->mTexture->GetSize();
+		if (!mAtlasStaging){
+			mAtlasStaging = gFBEnv->pRenderer->CreateTexture(0, atlasSize.x, atlasSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
+				BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+			atlas->mTexture->CopyToStaging(mAtlasStaging, 0, 0, 0, 0, 0, 0);
+		}
+		if (!mAtlasStaging)
+			return 0;
+
+		auto mapData = mAtlasStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+		if (!mapData.pData)
+			return 0;
+		unsigned* atlasData = (unsigned*)mapData.pData;
+
+		unsigned* data = (unsigned*)malloc(4 * size.x * size.y);
+		memset(data, 0xffffffff, 4 * size.x * size.y);
+
+		unsigned pitchInPixel = mapData.RowPitch / 4;
+		// copy lt
+		auto ltRegion = atlas->GetRegion(GetBorderRegion("lt"));
+		if (ltRegion){
+			const auto& ltsize = ltRegion->GetSize();
+			if (size.x > ltsize.x && size.y > ltsize.y){
+				for (int r = 0; r < ltsize.y; ++r){
+					memcpy(data + r * size.x,
+						atlasData + (alphaRegion->mStart.y + r) * pitchInPixel + alphaRegion->mStart.x,
+						ltsize.x * 4);
+				}
+			}
+		}
+		auto rtRegion = atlas->GetRegion(GetBorderRegion("rt"));
+		if (rtRegion){
+			const auto& rtsize = rtRegion->GetSize();
+			if (size.x > rtsize.x && size.y > rtsize.y){				
+				for (int r = 0; r < rtsize.y; ++r){
+					memcpy(data + r * size.x + size.x - rtsize.x,
+						atlasData + (alphaRegion->mStart.y + r)*pitchInPixel + alphaRegion->mStart.x + alphaRegion->mSize.x - rtsize.x,
+						rtsize.x * 4);
+				}
+			}
+		}
+		auto lbRegion = atlas->GetRegion(GetBorderRegion("lb"));
+		if (lbRegion){
+			const auto& lbsize = lbRegion->GetSize();
+			if (size.x > lbsize.x && size.y > lbsize.y){
+				for (int r = 0; r < lbsize.y; ++r){
+					memcpy(data + (size.y - lbsize.y + r) * size.x,
+						atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - lbsize.y + r) * pitchInPixel + alphaRegion->mStart.x,
+						lbsize.x * 4);
+				}
+			}
+		}
+
+		auto rbRegion = atlas->GetRegion(GetBorderRegion("rb"));
+		if (rbRegion){
+			const auto& rbsize = rbRegion->GetSize();
+			if (size.x > rbsize.x && size.y > rbsize.y){
+				for (int r = 0; r < rbsize.y; ++r){
+					memcpy(data + (size.y - rbsize.y + r) * size.x + size.x - rbsize.x,
+						atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - rbsize.y + r) * pitchInPixel
+						+ alphaRegion->mStart.x + alphaRegion->mSize.x - rbsize.x,
+						rbsize.x * 4);
+				}
+			}
+		}
+
+		auto texture = gFBEnv->pRenderer->CreateTexture(data, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
+		mAlphaInfoTexture[size] = texture;
+		free(data);
+		mAtlasStaging->Unmap(0);
+		return texture;
 	}
 }
 

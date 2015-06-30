@@ -29,6 +29,11 @@ Voxelizer::~Voxelizer()
 	mColladaImporter = 0;
 }
 
+void Voxelizer::FinishSmartPtr(){
+	assert(NumRefs() == 0);
+	FB_DELETE(this);
+}
+
 bool Voxelizer::RunVoxelizer(const char* filename, UINT numVoxels, bool swapYZ, bool oppositCull)
 {
 	assert(filename);	
