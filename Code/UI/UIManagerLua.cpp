@@ -76,6 +76,9 @@ namespace fastbird
 	int GetNumUIEvents(lua_State* L);
 	int GetUIEventName(lua_State* L);
 	int ModifyDropDownItem(lua_State* L);
+	int ChangeUISizeX(lua_State* L);
+	int ChangeUISizeY(lua_State* L);
+	int ChangeUISize(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -113,6 +116,10 @@ namespace fastbird
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, ChangeUISizeX);
+		LUA_SETCFUNCTION(mL, ChangeUISizeY);
+		LUA_SETCFUNCTION(mL, ChangeUISize);
+
 		LUA_SETCFUNCTION(mL, SetTooltipString);
 
 		//----------------------------------------------------------------------------
@@ -1617,6 +1624,34 @@ namespace fastbird
 		gFBUIManager->SetTooltipString(AnsiToWide(s));
 		auto mouse = gFBEnv->pEngine->GetMouse();
 		gFBUIManager->SetTooltipPos(mouse->GetNPos());
+		return 0;
+	}
+
+	int ChangeUISizeX(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		auto sizeX = luaL_checknumber(L, 3);
+		comp->ChangeSizeX(sizeX);
+		return 0;
+	}
+	int ChangeUISizeY(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		auto sizeY = luaL_checknumber(L, 3);
+		comp->ChangeSizeY(sizeY);
+		return 0;
+	}
+	int ChangeUISize(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		Vec2I size = luaU_check<Vec2I>(L, 3);
+		comp->ChangeSize(size);
 		return 0;
 	}
 

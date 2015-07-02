@@ -796,13 +796,11 @@ void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
 	assert(mouse);
 	mMouseIn = false;
 	auto npos = mouse->GetNPos();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_OUT) && mParent){
+	ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
+	if (!OnEvent(UIEvents::EVENT_MOUSE_OUT) && mParent){		
 		mParent->OnMouseOut(mouse, keyboard);
 	}
-	else{
-		ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
-		TriggerRedraw();
-	}
+	TriggerRedraw();
 }
 void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
 	if (mNoMouseEvent || mNoMouseEventAlone)

@@ -42,6 +42,7 @@ public:
 	void AlignIconText();
 
 	void UpdateImageSize();
+	virtual void SetEnable(bool enable);
 
 private:
 

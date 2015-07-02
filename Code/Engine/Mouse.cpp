@@ -267,7 +267,7 @@ namespace fastbird
 			}
 
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;			
-			if (mouseNotMoved && rightElapsedTime < 0.15f)
+			if (rightElapsedTime < 0.15f)
 			{
 				mButtonsClicked |= MOUSE_BUTTON_RIGHT;
 				mLastClickTime = gFBEnv->pTimer->GetTime();
@@ -278,12 +278,9 @@ namespace fastbird
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_UP)
 		{
 			mButtonsDown &= ~MOUSE_BUTTON_MIDDLE;
-			if (mouseNotMoved)
-			{
-				mButtonsClicked |= MOUSE_BUTTON_MIDDLE;
-				mLastClickTime = gFBEnv->pTimer->GetTime();
-				mLastClickPos = Vec2I(mAbsX, mAbsY);
-			}
+			mButtonsClicked |= MOUSE_BUTTON_MIDDLE;
+			mLastClickTime = gFBEnv->pTimer->GetTime();
+			mLastClickPos = Vec2I(mAbsX, mAbsY);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_BUTTON_4_UP)
 		{

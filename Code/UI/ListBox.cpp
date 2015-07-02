@@ -497,7 +497,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
 				pAddedItem->SetRowIndex(-1);
 				pAddedItem->SetColIndex(i);
-				pAddedItem->SetText(AnsiToWide(strs[i].c_str()));
+				pAddedItem->SetProperty(UIProperty::TEXT, strs[i].c_str());
 			}
 
 			mWndContentUI = contentWndBackup;

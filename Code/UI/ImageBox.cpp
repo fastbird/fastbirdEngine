@@ -89,7 +89,7 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 		return;
 
 	mPlayingTime += elapsedTime;
-	if (mPlayingTime > mSecPerFrame)
+	if (!mAtlasRegions.empty() && mPlayingTime > mSecPerFrame)
 	{
 		mCurFrame++;
 		if (mCurFrame >= mAtlasRegions.size())
@@ -181,7 +181,8 @@ const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* regi
 		mUIObject->SetTexCoord(texcoords, 4);
 		DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
 		mUIObject->SetColors(colors, 4);
-		return mAtlasRegion->GetSize();
+		mAtlasRegions.clear();
+		return mAtlasRegion->GetSize();		
 	}
 	return Vec2I::ZERO;
 }

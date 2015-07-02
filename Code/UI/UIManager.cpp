@@ -1145,8 +1145,8 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		rparam.mOnlyContainer = false;
 		rparam.mIgnoreScissor = mUIEditor ? true : false;
 		rparam.mTestChildren = true;
-		rparam.mNoRuntimeComp = mUIEditor && keyboard->IsKeyDown(VK_LMENU) ? true : false;
-		rparam.mCheckMouseEvent = !mUIEditor;
+		rparam.mNoRuntimeComp = mUIEditor && gFBEnv->pEngine->IsMainWindowForground() && !keyboard->IsKeyDown(VK_LMENU) ? true : false;
+		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU);
 		rparam.mHwndId = hwndId;
 		if (mUIEditor && mouse->IsLButtonClicked() && keyboard->IsKeyDown(VK_CONTROL)){
 			auto it = mUIEditor->GetSelectedComps();
@@ -1737,6 +1737,7 @@ void UIManager::PrepareTooltipUI()
 	tooltip.SetField("BACK_COLOR", "0, 0, 0, 0.8f");
 	tooltip.SetField("ALWAYS_ON_TOP", "true");
 	tooltip.SetField("USE_BORDER", "true");
+	tooltip.SetField("NO_MOUSE_EVENT", "true");
 	tooltip.SetField("WND_NO_FOCUS", "true");
 	auto tooltipChildren = tooltip.SetFieldTable("children");
 	auto children1 = tooltipChildren.SetSeqTable(1);
@@ -1842,12 +1843,16 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 		}
 		if (param.mHwndId != wnd->GetHwndId())
 			continue;
+		if (param.mCheckMouseEvent && wnd->GetNoMouseEvent())
+			continue;
 		auto found = wnd->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
-
-		if (wnd->IsIn(pt, param.mIgnoreScissor))
-			return wnd;
+		
+		if (!param.mCheckMouseEvent || !wnd->GetNoMouseEventAlone()){
+			if (wnd->IsIn(pt, param.mIgnoreScissor))
+				return wnd;
+		}
 	}
 
 	return 0;

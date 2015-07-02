@@ -198,9 +198,7 @@ void Button::OnMouseOut(void* arg)
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-
-	
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());	
 
 	if (mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -299,7 +297,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									 }									 
 									 
 									 mImages[ButtonImages::Image]->SetTexture(val);
-									 mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
+									 //mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
 									 if (mIconText)
 									 {
 										 OnSizeChanged();
@@ -1259,5 +1257,10 @@ void Button::UpdateImageSize(){
 	//	mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
 	//}
 }
-
+void Button::SetEnable(bool enable){
+	if (!enable){
+		this->OnMouseOut(0);
+	}
+	__super::SetEnable(enable);
+}
 }
