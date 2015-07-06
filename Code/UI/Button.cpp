@@ -1263,4 +1263,13 @@ void Button::SetEnable(bool enable){
 	}
 	__super::SetEnable(enable);
 }
+
+void Button::SetUseBorder(bool use){
+	__super::SetUseBorder(use);
+	for (unsigned i = 0; i < ButtonImages::Num; ++i){
+		if (mImages[i]){
+			mImages[i]->SetBorderAlpha(use);
+		}
+	}
+}
 }

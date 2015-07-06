@@ -135,6 +135,7 @@ namespace fastbird
 		virtual const char* GetShaderFile() const;
 		virtual void* GetShaderByteCode(unsigned& size) const;
 		virtual const Vec4& GetMaterialParameters(unsigned index);
+		virtual bool IsUsingMaterialParameter(unsigned index);
 		virtual bool IsRelatedShader(const char* shaderFile);
 
 		virtual void Bind(bool inputLayout, unsigned stencilRef = 0);
@@ -155,6 +156,9 @@ namespace fastbird
 
 		virtual int GetBindingShaders() const { return mShaders; }
 		virtual void CopyMaterialParamFrom(const IMaterial* src);
+		virtual void CopyMaterialConstFrom(const IMaterial* src);
+		virtual void CopyTexturesFrom(const IMaterial* src);
+		virtual void CopyShaderDefinesFrom(const IMaterial* src);
 
 		virtual void SetRasterizerState(const RASTERIZER_DESC& desc);
 		virtual void SetBlendState(const BLEND_DESC& desc);

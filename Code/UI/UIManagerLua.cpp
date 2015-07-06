@@ -1632,7 +1632,7 @@ namespace fastbird
 		const char* compoName = luaL_checkstring(L, 2);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
 		if (!comp) return 0;
-		auto sizeX = luaL_checknumber(L, 3);
+		auto sizeX = luaL_checkint(L, 3);
 		comp->ChangeSizeX(sizeX);
 		return 0;
 	}
@@ -1641,7 +1641,7 @@ namespace fastbird
 		const char* compoName = luaL_checkstring(L, 2);
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
 		if (!comp) return 0;
-		auto sizeY = luaL_checknumber(L, 3);
+		auto sizeY = luaL_checkint(L, 3);
 		comp->ChangeSizeY(sizeY);
 		return 0;
 	}

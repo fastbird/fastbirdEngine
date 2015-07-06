@@ -44,6 +44,10 @@ public:
 	void UpdateImageSize();
 	virtual void SetEnable(bool enable);
 
+
+protected:
+	virtual void SetUseBorder(bool use);
+
 private:
 
 	ImageBox* CreateImageBox();

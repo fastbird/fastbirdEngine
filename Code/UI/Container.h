@@ -17,7 +17,8 @@ namespace fastbird
 				*wndContent = 0;
 			}
 			~BackupContentWnd(){
-				*mOriginal = mWndContent;
+				if (mWndContent)
+					*mOriginal = mWndContent;
 			}
 
 			Container* mWndContent;
