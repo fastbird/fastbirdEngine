@@ -133,6 +133,9 @@
     <ClInclude Include="ClipboardData.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="StackTracer.h" />
+    <ClInclude Include="CatmullRom.h">
+      <Filter>MathGeom</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">

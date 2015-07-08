@@ -27,6 +27,7 @@
 #include <Engine/Material.h>
 #include <Engine/IFileChangeListener.h>
 #include <Engine/TextManipulator.h>
+#include <Engine/TrailObject.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -843,6 +844,20 @@ IParticleEmitter* Engine::GetParticleEmitter(unsigned id, bool useSmartPtr)
 void Engine::ReleaseParticleEmitter(IParticleEmitter* p)
 {
 	p->Release();
+}
+
+
+ITrailObject* Engine::CreateTrailObject(){
+	auto trail = FB_NEW(TrailObject);
+	gFBEnv->pRenderer->GetMainScene()->AttachObject(trail);
+	return trail;
+}
+
+void Engine::ReleaseTrailObject(ITrailObject* trail){
+	if (!trail)
+		return;
+	trail->DetachFromScene();
+	FB_DELETE(trail);
 }
 
 //---------------------------------------------------------------------------

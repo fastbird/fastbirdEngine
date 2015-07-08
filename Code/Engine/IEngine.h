@@ -54,6 +54,7 @@ namespace fastbird
 	class IDustRenderer;
 	class TextManipulator;
 	class LuaObject;
+	class ITrailObject;
 	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
@@ -129,6 +130,9 @@ namespace fastbird
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr) = 0;
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr) = 0;
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p) = 0;
+
+		virtual ITrailObject* CreateTrailObject() = 0;
+		virtual void ReleaseTrailObject(ITrailObject* trail) = 0;
 
 		// usually you should not use these functions.
 		virtual void GetMousePos(long& x, long& y) = 0;

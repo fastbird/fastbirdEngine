@@ -223,6 +223,7 @@
     <ClInclude Include="ITerrain.h" />
     <ClInclude Include="ITextManipulatorListener.h" />
     <ClInclude Include="ITexture.h" />
+    <ClInclude Include="ITrailObject.h" />
     <ClInclude Include="IUIObject.h" />
     <ClInclude Include="IVertexBuffer.h" />
     <ClInclude Include="IVoxelizer.h" />
@@ -272,6 +273,7 @@
     <ClInclude Include="TextureD3D11.h" />
     <ClInclude Include="TextureUtil.h" />
     <ClInclude Include="ToolConn.h" />
+    <ClInclude Include="TrailObject.h" />
     <ClInclude Include="UI3DObj.h" />
     <ClInclude Include="UIObject.h" />
     <ClInclude Include="VertexBuffer.h" />
@@ -347,6 +349,7 @@
     <ClCompile Include="TextureD3D11.cpp" />
     <ClCompile Include="TextureUtil.cpp" />
     <ClCompile Include="ToolConn.cpp" />
+    <ClCompile Include="TrailObject.cpp" />
     <ClCompile Include="UI3DObj.cpp" />
     <ClCompile Include="UIObject.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />

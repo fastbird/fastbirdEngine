@@ -18,6 +18,7 @@ namespace fastbird
 	class ISkyBox;
 	class IScriptSystem;
 	class ParticleManager;
+	class ITrailObject;
 	class Engine : public IEngine
 	{
 		VectorMap<HWND_ID, HWND> mWindowHandles;
@@ -113,6 +114,10 @@ namespace fastbird
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr);
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr);
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p);
+
+		virtual ITrailObject* CreateTrailObject();
+		virtual void ReleaseTrailObject(ITrailObject* trail);
+
 
 		virtual void GetMousePos(long& x, long& y);
 		virtual bool IsMouseLButtonDown() const;
