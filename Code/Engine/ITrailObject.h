@@ -16,5 +16,7 @@ namespace fastbird{
 		virtual void SetMaxPoints(unsigned num) = 0;
 		virtual void Clear() = 0;
 
+		virtual void Update(float dt) = 0;
+
 	};
 }

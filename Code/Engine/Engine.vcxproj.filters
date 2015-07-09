@@ -644,6 +644,8 @@
     <ClCompile Include="TextManipulator.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
-    <ClCompile Include="TrailObject.cpp" />
+    <ClCompile Include="TrailObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

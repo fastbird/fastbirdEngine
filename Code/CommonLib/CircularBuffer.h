@@ -80,6 +80,11 @@ public:
 		return mVector.size();
 	}
 
+	bool empty() const
+	{
+		return mVector.empty();
+	}
+
 	void DoubleSize()
 	{
 		VECTOR temp;
@@ -121,7 +126,7 @@ public:
 	{
 		while(1)
 		{
-			if (!mBegin->IsAvailable() || mBegin == mEnd )
+			if (!mBegin->IsAvailable() || mBegin == mEnd)
 			{
 				return IteratorWrapper(mBegin, &mVector);
 			}

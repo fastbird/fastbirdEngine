@@ -102,7 +102,7 @@ unsigned ListBox::InsertItem(unsigned uniqueKey){
 			row.push_back(0);
 		}
 	}
-
+	RefreshVScrollbar();
 	return index;
 }
 
@@ -119,6 +119,8 @@ unsigned ListBox::InsertItem(const wchar_t* uniqueKey)
 			row.push_back(0);
 		}
 	}
+	RefreshVScrollbar();
+
 	return index;
 }
 
@@ -132,6 +134,7 @@ unsigned ListBox::InsertEmptyData(){
 			row.push_back(0);
 		}
 	}
+	RefreshVScrollbar();
 	return index;
 }
 
@@ -337,8 +340,14 @@ void ListBox::Clear(bool immediately)
 	mHighlighted.clear();
 	TriggerRedraw();
 	gFBUIManager->DirtyRenderList(GetHwndId());
-	if (mScrollerV){
-		mScrollerV->SetOffset(Vec2(0.f, 0.f));
+	
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
+
+	if (scrollerV){
+		scrollerV->SetOffset(Vec2(0.f, 0.f));
 	}
 }
 
@@ -518,6 +527,8 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				mWndContentUI->SetUseAbsSize(false);
 				mWndContentUI->ChangePos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
+				mWndContentUI->SetChildrenContentEndFunc(std::bind(&ListBox::GetChildrenContentEnd, this));
+				mWndContentUI->SetScrolledFunc(std::bind(&ListBox::Scrolled, this));
 				if (prevScrollerV)
 				{					
 					mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");					
@@ -1248,10 +1259,14 @@ void ListBox::VisualizeData(unsigned index){
 	}
 
 	int hgap = mRowHeight + mRowGap;
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
 	Vec2 offset(0, 0);
-	if (mScrollerV)
+	if (scrollerV)
 	{
-		offset = mScrollerV->GetOffset();
+		offset = scrollerV->GetOffset();
 	}
 
 	const auto data = mData->GetData(index);
@@ -1275,8 +1290,8 @@ void ListBox::VisualizeData(unsigned index){
 			for (unsigned c = 0; c < mNumCols; ++c){
 				items[c]->SetPosY(y);
 				items[c]->SetWNScollingOffset(offset);
-				items[c]->SetRowIndex(index);
-				mChildren.push_back(items[c]);
+				items[c]->SetRowIndex(index);				
+				AddChildSimple(items[c]);
 				mItems[index][c] = items[c];
 			}
 			mRecycleBin.pop_back();
@@ -1617,12 +1632,18 @@ void ListBox::Scrolled()
 	unsigned prevStart = mStartIndex;
 	unsigned prevEnd = mEndIndex;
 	int hgap = mRowHeight + mRowGap;
-
-	if (mScrollerV)
+	auto scrollerV = mScrollerV;
+	unsigned sizeY = mSize.y;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+		sizeY = mWndContentUI->GetSize().y;
+	}
+	
+	if (scrollerV)
 	{
-		Vec2 offset = mScrollerV->GetOffset();
+		Vec2 offset = scrollerV->GetOffset();
 		int scrolledLen = -Round(offset.y * GetRenderTargetSize().y) - mRowGap;
-		int topToBottom = mSize.y + scrolledLen - mRowGap;
+		int topToBottom = sizeY + scrolledLen - mRowGap;
 
 		// decide visual index range		
 		mStartIndex = scrolledLen / hgap;
@@ -1634,7 +1655,7 @@ void ListBox::Scrolled()
 	else
 	{
 		// decide visual index range
-		int topToBottom = mSize.y;
+		int topToBottom = sizeY;
 		mStartIndex = 0;
 		mEndIndex = topToBottom / hgap;
 		int remain = topToBottom % hgap;
@@ -1699,15 +1720,20 @@ void ListBox::SearchStartingChacrcter(char c, unsigned curIndex)
 	unsigned index = mData->FindNext(0, c, curIndex);
 	if (index == -1)
 		return;
+	
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
 
-	if (mScrollerV)
+	if (scrollerV)
 	{
 		if (index < mStartIndex + 1 || index >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
 		{
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * index + mRowGap;
 
-			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+			scrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
 		}
 	}
 	if (mItems[index][0])
@@ -1774,7 +1800,11 @@ void ListBox::IterateItem(bool next, bool apply)
 }
 
 void ListBox::MakeSureRangeFor(unsigned rowIndex){
-	if (mScrollerV)
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
+	if (scrollerV)
 	{
 		if (rowIndex < mStartIndex + 1 ||
 			(rowIndex >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
@@ -1783,7 +1813,7 @@ void ListBox::MakeSureRangeFor(unsigned rowIndex){
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * rowIndex + mRowGap;
 
-			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+			scrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
 		}
 	}
 }

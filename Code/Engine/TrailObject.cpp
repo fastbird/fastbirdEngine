@@ -7,7 +7,8 @@ using namespace fastbird;
 TrailObject::TrailObject()
 	: mMaxPoints(100)
 	, mDirty(false)
-	, mWidth(0.05f)
+	, mWidth(0.025f)
+	, mDeleteTime(2.f)
 {
 	SetMaterial("es/materials/Trail.material");
 }
@@ -51,19 +52,43 @@ IMaterial* TrailObject::GetMaterial(int pass) const{
 
 //for billboard trail - automatically face to the camera
 void TrailObject::AddPoint(const Vec3& worldPos){
+	if (mMaxPoints == 0)
+		return;
+
 	if (!mPoints.empty()){
-		if (mPoints.back().mPos == worldPos)
+		if (mPoints.size() >= 2)
+		{
+			if (IsEqual(mPoints[1].mPos.ToVec3(), worldPos, 0.001f))
+				return;
+		}
+		else if (IsEqual(mPoints[0].mPos.ToVec3(), worldPos, 0.001f))
 			return;
+		
+		
 	}
-	mPoints.push_back( TrailVertex(Vec4(worldPos, 1.f), Color(1, 1, 1, 1)) );
+	if (mPoints.size()>=3){ 
+		mPoints[0] = TrailVertex(Vec4(worldPos, 1.f));
+		mTimes[0] = gpTimer->GetTime();
+		Vec3 dir = mPoints[0].mPos.ToVec3() - mPoints[1].mPos.ToVec3();
+		mPoints.insert(mPoints.begin(), TrailVertex(Vec4(mPoints[0].mPos.ToVec3() + dir, 1.0)));
+		mTimes.insert(mTimes.begin(), gpTimer->GetTime());
+	}
+	else{
+		mPoints.insert(mPoints.begin(), TrailVertex(Vec4(worldPos, 1.f)));
+		mTimes.insert(mTimes.begin(), gpTimer->GetTime());
+	}
 	mDirty = true;
-	while (mPoints.size() >= mMaxPoints){
-		mPoints.erase(mPoints.begin());
+	while (mPoints.size() > mMaxPoints){
+		mPoints.pop_back();
+		mTimes.pop_back();
 	}
 }
 
 void TrailObject::SetWidth(float width){
 	mWidth = width;
+	if (mMaterial){
+		mMaterial->SetMaterialParameters(0, Vec4(mWidth, 0, 0, 0));
+	}
 }
 
 // for manual trail
@@ -78,26 +103,49 @@ void TrailObject::SetMaxPoints(unsigned num){
 }
 
 void TrailObject::Clear(){
-	ClearWithSwap(mPoints);
+	mPoints.clear();
+	mTimes.clear();
 	ClearWithSwap(mPairedPoints);
 	
 	mDirty = true;
 }
 
 void TrailObject::RefreshVertexBuffer(){
-	if (mPoints.size() < 4 && mPairedPoints.size() < 4)
+	unsigned size = mPoints.size();
+	if (size < 3 && mPairedPoints.size() < 3)
 		return;
 	if (!mVB){
-		mVB = gFBEnv->pRenderer->CreateVertexBuffer(0, sizeof(TrailVertex), mMaxPoints, BUFFER_USAGE::BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mVB = gFBEnv->pRenderer->CreateVertexBuffer(0, sizeof(TrailVertex), mMaxPoints+1, BUFFER_USAGE::BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 		assert(mVB);
-	}
+	}	
+
+	size = mPoints.size();
 	auto mapData = mVB->Map(MAP_TYPE_WRITE_DISCARD, 0, MAP_FLAG_NONE);
-	if (mapData.pData){
-		if (!mPoints.empty()){
-			memcpy(mapData.pData, &mPoints[0], sizeof(TrailVertex)*mPoints.size());
+	if (mapData.pData){		
+		for (unsigned i = 0; i < size; ++i){
+			float alpha = (size-i) / (float)size;			
+			mPoints[i].mPos.w = alpha;
 		}
+			
+		memcpy(mapData.pData, &mPoints[0], sizeof(TrailVertex)*size);
 		mVB->Unmap();
 	}
+}
 
+void TrailObject::Update(float dt){
+	if (mPoints.empty())
+		return;
 
+	int size = (int)mTimes.size();
+	auto curTime = gpTimer->GetTime();
+	for (int i = size - 1; i >= 0; --i){
+		if (curTime - mTimes[i] >= mDeleteTime){
+			mTimes.erase(mTimes.begin() + i);
+			mPoints.erase(mPoints.begin() + i);
+			mDirty = true;
+		}
+		else{
+			break;
+		}
+	}
 }

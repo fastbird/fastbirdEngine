@@ -1,27 +1,30 @@
 #pragma once
 #include <Engine/ITrailObject.h>
-
 namespace fastbird{
 	class TrailObject : public ITrailObject{
 	public:
 		struct TrailVertex{
-			TrailVertex(const Vec4& pos, const Color& color)
+			TrailVertex(const Vec4& pos)
 				: mPos(pos)
-			{
-				mColor = color.Get4Byte();
+			{				
 			}
 			Vec4 mPos;
-			unsigned mColor;
 		};
+
+		typedef std::vector<TrailVertex> Points;
+		typedef std::vector<float> Times;
+
 		TrailObject();
 
 	private:
-		std::vector<TrailVertex> mPoints;
+		Points mPoints;
+		Times mTimes;
 		std::queue<std::pair<Vec3, Vec3>> mPairedPoints;
 
 		bool mDirty;
 		float mWidth;
 		unsigned mMaxPoints;
+		float mDeleteTime;
 
 		SmartPtr<IMaterial> mMaterial;
 		SmartPtr<IVertexBuffer> mVB;
@@ -52,6 +55,8 @@ namespace fastbird{
 		
 		virtual void SetMaxPoints(unsigned num);
 		virtual void Clear();
+
+		virtual void Update(float dt) ;
 
 	protected:
 		void RefreshVertexBuffer();

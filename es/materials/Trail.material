@@ -1,5 +1,5 @@
 <Material transparent="true" glow="true">
-	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_ONE"/>
 	<DepthStencilDesc DepthEnable="true" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
 	<RasterizerDesc CullMode="CULL_MODE_NONE"/>
 	<ShaderFile>es/Shaders/Trail.hlsl</ShaderFile>
@@ -11,12 +11,15 @@
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>
 	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">es/textures/trail.dds</Texture>
 	</Textures>
 	<MaterialParameters>
-		<param desc="width">0.05, 0, 0, 0</param>
+		<param desc="width">0.025, 0, 0, 0</param>
 	</MaterialParameters>
+	<ShaderDefines>
+		<Define name="DIFFUSE_TEXTURE" val="1"/>
+	</ShaderDefines>
 	<InputLayout>
-		<input semantic="POSITION" index="0" format="FLOAT4" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
-		<input semantic="COLOR" index="0" format="UBYTE4" slot="0" alignedByteOffset="16" inputSlotClass="VERTEX" stepRate="0"></input>		
+		<input semantic="POSITION" index="0" format="FLOAT4" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>		
 	</InputLayout>
 </Material>

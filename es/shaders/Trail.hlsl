@@ -14,22 +14,19 @@ Texture2D  gDiffuseTexture : register(t0);
 //----------------------------------------------------------------------------
 struct a2v
 {
-	float4 pos		: POSITION; // pos.w : is u (length)
-	float4 color	: COLOR;
+	float4 pos		: POSITION; // pos.w : is alpha (length)
 };
 
 struct v2g
 {
 	float4 pos : TEXTURE0; // pos.w : is u (length)
-	float4 color : TEXTURE1;
 };
 
 //----------------------------------------------------------------------------
 struct g2p
 {
 	float4 pos		: SV_Position;
-	float4 color	: COLOR;
-	float2 uv		: TEXCOORD;
+	float3 uv		: TEXCOORD; // z is alpha
 };
 
 //----------------------------------------------------------------------------
@@ -37,7 +34,6 @@ v2g trail_VertexShader( in a2v IN )
 {
     v2g OUT;
 	OUT.pos = IN.pos;
-	OUT.color = IN.color;
 
 	return OUT;
 }
@@ -63,25 +59,21 @@ void trail_GeometryShader(lineadj v2g In[4], inout TriangleStream<g2p> streamObj
 	
 	g2p OUTPUT;
 	OUTPUT.pos = mul(gViewProj, float4(In[1].pos.xyz - up0 * width, 1));
-	OUTPUT.color = In[1].color;
 	float u = In[1].pos.w;
-	OUTPUT.uv = float2(u, 1);
+	OUTPUT.uv = float3(0, 1, In[1].pos.w);
 	streamObj.Append(OUTPUT);
 	
 	OUTPUT.pos = mul(gViewProj, float4(In[1].pos.xyz + up0 * width, 1));
-	OUTPUT.color = In[1].color;
-	OUTPUT.uv = float2(u, 0);
+	OUTPUT.uv = float3(0, 0, In[1].pos.w);
 	streamObj.Append(OUTPUT);
 	
 	OUTPUT.pos = mul(gViewProj, float4(In[2].pos.xyz - up1 * width, 1));
-	OUTPUT.color = In[2].color;
 	u = In[2].pos.w;
-	OUTPUT.uv = float2(u, 1);
+	OUTPUT.uv = float3(0, 1, In[2].pos.w);
 	streamObj.Append(OUTPUT);
 	
 	OUTPUT.pos = mul(gViewProj, float4(In[2].pos.xyz + up1 * width, 1));
-	OUTPUT.color = In[2].color;
-	OUTPUT.uv = float2(u, 0);
+	OUTPUT.uv = float3(0, 0, In[2].pos.w);
 	streamObj.Append(OUTPUT);
 	
 	streamObj.RestartStrip();
@@ -100,9 +92,9 @@ struct PS_OUT
 PS_OUT trail_PixelShader(in g2p IN) : SV_Target
 {
 	float4 outColor = gDiffuseColor;
-	outColor.a = IN.color.a;
+	outColor.a = IN.uv.z;
 #ifdef DIFFUSE_TEXTURE
-	outColor *= gDiffuseTexture.Sample(gLinearSampler, IN.uv);
+	outColor *= gDiffuseTexture.Sample(gLinearSampler, IN.uv.xy);
 #endif
 	PS_OUT outdata;
 	outdata.color0 = outColor;
