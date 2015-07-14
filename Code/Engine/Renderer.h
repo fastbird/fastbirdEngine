@@ -204,6 +204,8 @@ protected:
 
 	std::vector<IRenderListener*> mRenderListeners;
 
+	std::vector<IVideoPlayer*> mVideoPlayers;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -492,6 +494,9 @@ public:
 
 	virtual void AddRenderListener(IRenderListener* listener);
 	virtual void RemoveRenderListener(IRenderListener* listener);
+
+	virtual void RegisterVideoPlayer(IVideoPlayer* player);
+	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

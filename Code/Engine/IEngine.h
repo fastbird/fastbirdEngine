@@ -27,6 +27,7 @@
 #include <vector>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IInputListener.h>
+#include <Engine/VideoPlayerType.h>
 
 #define FB_DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__
 #define FB_LOG(msg) gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, (msg));
@@ -187,6 +188,9 @@ namespace fastbird
 
 		virtual void StopFileChangeMonitor(const char* filepath) = 0;
 		virtual void ResumeFileChangeMonitor(const char* filepath) = 0;
+		
+		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type) = 0;
+		virtual void ReleaseVideoPlayer(IVideoPlayer* player) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

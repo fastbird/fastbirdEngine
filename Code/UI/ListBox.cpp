@@ -26,7 +26,7 @@ ListBox::ListBox()
 	, mData(0)
 	, mStartIndex(0)
 	, mEndIndex(10)
-	, mFocusedListItem(0), mLastChangedItem(-1, -1)
+	, mFocusedListItem(0), mLastChangedItem(-1, -1), mNoSearch(false)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -550,11 +550,17 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 	case UIProperty::TEXTUREATLAS:
-		{
-										 assert(val);
-										 mTextureAtlas = val;
-										 return true;
-		}
+	{
+										assert(val);
+										mTextureAtlas = val;
+										return true;
+	}
+	case UIProperty::LISTBOX_NO_SEARCH:
+	{
+		mNoSearch = StringConverter::parseBool(val);
+		return true;
+	}
+
 	}
 
 	
@@ -667,7 +673,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	case UIProperty::LISTBOX_MULTI_SELECTION:
 	{
 		if (notDefaultOnly){
-			if (mMultiSelection == GetPropertyAsBool(prop)){
+			if (mMultiSelection == UIProperty::GetDefaultValueBool(prop)){
 				return false;
 			}
 		}
@@ -679,7 +685,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	case UIProperty::LISTBOX_NO_HIGHLIGHT:
 	{
 		if (notDefaultOnly){
-			if (mNoHighlight == GetPropertyAsBool(prop)){
+			if (mNoHighlight == UIProperty::GetDefaultValueBool(prop)){
 				return false;
 			}
 		}
@@ -695,6 +701,17 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 				return false;
 		}
 		strcpy_s(val, bufsize, mTextureAtlas.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_NO_SEARCH:
+	{
+		if (notDefaultOnly){
+			if (mNoSearch == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mNoSearch).c_str());
 		return true;
 	}
 	}
@@ -804,7 +821,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				bool apply = true;
 				IterateItem(next, apply);
 			}
-			else
+			else if (!mNoSearch)
 			{
 				keyboard->PopChar();
 				if (mFocusedListItem) {

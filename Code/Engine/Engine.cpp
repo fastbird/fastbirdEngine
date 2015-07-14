@@ -28,6 +28,7 @@
 #include <Engine/IFileChangeListener.h>
 #include <Engine/TextManipulator.h>
 #include <Engine/TrailObject.h>
+#include <Engine/VideoPlayerOgg.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -1445,4 +1446,14 @@ void Engine::ResumeFileChangeMonitor(const char* filepath)
 		mIgnoreFileChanges.erase(it);
 }
 
+IVideoPlayer* Engine::CreateVideoPlayer(VideoPlayerType::Enum type){
+	switch (type){
+	case VideoPlayerType::OGG:
+		return FB_NEW(VideoPlayerOgg);
+	}
+	return 0;
+}
+void Engine::ReleaseVideoPlayer(IVideoPlayer* player){
+	FB_DELETE(player);
+}
 } // namespace fastbird

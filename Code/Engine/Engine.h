@@ -194,6 +194,9 @@ namespace fastbird
 
 		virtual void StopFileChangeMonitor(const char* filepath);
 		virtual void ResumeFileChangeMonitor(const char* filepath);
+
+		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type);
+		virtual void ReleaseVideoPlayer(IVideoPlayer* player);
 	};
 };
 
