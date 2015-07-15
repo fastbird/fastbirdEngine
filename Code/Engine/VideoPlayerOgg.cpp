@@ -5,94 +5,61 @@
 using namespace fastbird;
 
 VideoPlayerOgg::VideoPlayerOgg()
-	: mSyncState(0)
-	, mInfo(0)
-	, mComment(0)
-	, mSetup(0)
-	, mPacket(0)
+	: mTheoraSetup(0)
+	, mTheoraDecoderCtx(0)
 	, mFile(0)
-	, mStateFlag(0)
-	, mPage(0)
-	, mStreamState(0)
-	, mIsTheora(0)
-	, mIsProcessingTheoraHeader(0)
-	, mDecoderCtx(0)
 	, mPlayTime(0)
 	, mVideoBufTime(0)
+	, mAudioBufTime(0)
 	, mGranulePos(-1)
-	, mVideoBufReady(false)
+	, mDurationAfterFinish(0)
 	, mFinish(false)
+	, mVideoBufReady(false)
 {
 	mPS = gFBEnv->pRenderer->CreateShader("es/shaders/YUVMovie.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
+	
 }
 
 VideoPlayerOgg::~VideoPlayerOgg(){
-	
+	Clear();
+	if (mFile) {
+		fclose(mFile);
+		mFile = 0;
+	}
 }
 
 void VideoPlayerOgg::Clear()
 {
-	mIsTheora = 0;
-	mIsProcessingTheoraHeader = 0;
-	if (mSyncState){
-		ogg_sync_clear(mSyncState);
-		FB_DELETE(mSyncState);
-		mSyncState = 0;
+	if (mTheoraDecoderCtx){
+		th_decode_free(mTheoraDecoderCtx);
 	}
-	if (mComment){
-		th_comment_clear(mComment);
-		FB_DELETE(mComment);
-		mComment = 0;
+	vorbis_comment_clear(&mVorbisComment);
+	vorbis_info_clear(&mVorbisInfo);
+
+	th_comment_clear(&mTheoraComment);
+	th_info_clear(&mTheoraInfo);
+
+	if (mStreamStateVorbis.body_data != 0){
+		ogg_stream_clear(&mStreamStateVorbis);
 	}
-	if (mInfo){
-		th_info_clear(mInfo);
-		FB_DELETE(mInfo);
-		mInfo = 0;
+	if (mStreamStateTheora.body_data != 0){
+		ogg_stream_clear(&mStreamStateTheora);
 	}
 
-	if (mPage){
-		FB_DELETE(mPage);
-		mPage = 0;
-	}
+	ogg_sync_clear(&mSyncState);
+	
+	mGranulePos = -1;
+	mVideoBufTime = 0;
+	mPlayTime = 0;	
 
-	if (mStreamState){
-		FB_DELETE(mStreamState);
-		mStreamState = 0;
-	}
-
-	if (mPacket){
-		FB_DELETE(mPacket);
-		mPacket = 0;
-	}
-	if (mDecoderCtx){
-		th_decode_free(mDecoderCtx);
-		mDecoderCtx = 0;
-	}
-	if (mSetup){
-		th_setup_free(mSetup);
-		mSetup = 0;
-	}
 	gFBEnv->pRenderer->UnregisterVideoPlayer(this);
-}
 
-int VideoPlayerOgg::buffer_data(){
-	assert(mFile && mSyncState);
-	if (!mFile)
-		return;
-	if (!mSyncState)
-		return;
+	for (int i = 0; i < 3; i++)
+	{
+		free(mYCbCr[i].data);
+	}
 
-	char *buffer = ogg_sync_buffer(mSyncState, 4096);
-	int bytes = fread_s(buffer, 4096, 1, 4096, mFile);
-	ogg_sync_wrote(mSyncState, bytes);
-	return(bytes);
-
-}
-
-int VideoPlayerOgg::queue_page(ogg_page *page){
-	if (mIsTheora)
-		ogg_stream_pagein(mStreamState, page);
-	return 0;
+	mFilepath.clear();
 }
 
 bool VideoPlayerOgg::PlayVideo(const char* path){
@@ -101,138 +68,181 @@ bool VideoPlayerOgg::PlayVideo(const char* path){
 		return false;
 	}
 
+	auto error = fopen_s(&mFile, path, "rb");
+	if (error){
+		Error("Cannot open the file %s", path);
+		return false;
+	}
+	if (!mFilepath.empty())
+		Clear();
+
+
+
+	for (int i = 0; i < 3; i++)
+	{
+		mYCbCr[i].data = 0;
+	}
+	ogg_sync_init(&mSyncState);
+	mStreamStateTheora.body_data = 0;
+	mStreamStateVorbis.body_data = 0;
+	th_info_init(&mTheoraInfo);
+	th_comment_init(&mTheoraComment);
+
+	vorbis_info_init(&mVorbisInfo);
+	vorbis_comment_init(&mVorbisComment);
+
 	mFilepath = path;
-	Clear();
-	
-	mSyncState = FB_NEW(ogg_sync_state);
-	ogg_sync_init(mSyncState);
-	mComment = FB_NEW(th_comment);
-	th_comment_init(mComment);
-	mInfo = FB_NEW(th_info);
-	th_info_init(mInfo);
-	mPage = FB_NEW(ogg_page);
-	mStreamState = FB_NEW(ogg_stream_state);
-	mPacket = FB_NEW(ogg_packet);
 
-
-	/* Only interested in Theora streams */
-	while (!mStateFlag){
-		int ret = buffer_data();
-		if (ret == 0)
-			break;
-		while (ogg_sync_pageout(mSyncState, mPage)>0){
-			int got_packet;
-			ogg_stream_state test;
-
-			/* is this a mandated initial header? If not, stop parsing */
-			if (!ogg_page_bos(mPage)){
-				/* don't leak the page; get it into the appropriate stream */
-				queue_page(mPage);
-				mStateFlag = 1;
-				break;
-			}
-
-			ogg_stream_init(&test, ogg_page_serialno(mPage));
-			ogg_stream_pagein(&test, mPage);
-			got_packet = ogg_stream_packetpeek(&test, mPacket);
-
-			/* identify the codec: try theora */
-			if ((got_packet == 1) && !mIsTheora && (mIsProcessingTheoraHeader =
-				th_decode_headerin(mInfo, mComment, &mSetup, mPacket)) >= 0){
-				/* it is theora -- save this stream state */
-				memcpy(mStreamState, &test, sizeof(test));
-				mIsTheora = 1;
-				/*Advance past the successfully processed header.*/
-				if (mIsProcessingTheoraHeader)
-					ogg_stream_packetout(mStreamState, NULL);
-			}
-			else{
-				/* whatever it is, we don't care about it */
-				ogg_stream_clear(&test);
-			}
-		}
-		/* fall through to non-bos page parsing */
+	// read whole data
+	int readed = 0;
+	while (readed = buffer_data()){
+		/* nothing to do*/
+	}
+	if (mFile) {
+		fclose(mFile);
+		mFile = 0;
 	}
 
-	/* we're expecting more header packets. */
-	while (mIsTheora && mIsProcessingTheoraHeader){
-		int ret;
-
-		/* look for further theora headers */
-		while (mIsProcessingTheoraHeader && (ret = ogg_stream_packetpeek(mStreamState, mPacket))){
-			if (ret<0)
-				continue;
-			mIsProcessingTheoraHeader = th_decode_headerin(mInfo, mComment, &mSetup, mPacket);
-			if (mIsProcessingTheoraHeader<0){
-				Error("Error parsing Theora stream headers");
-				return false;
-				fprintf(stderr, "Error parsing Theora stream headers; "
-					"corrupt stream?\n");
-				exit(1);
-			}
-			else if (mIsProcessingTheoraHeader>0){
-				/*Advance past the successfully processed header.*/
-				ogg_stream_packetout(mStreamState, NULL);
-			}
-			mIsTheora++;
-		}
-
-		/*Stop now so we don't fail if there aren't enough pages in a short
-		stream.*/
-		if (!(mIsTheora && mIsProcessingTheoraHeader))
-			break;
-
-		/* The header pages/packets will arrive before anything else we
-		care about, or the stream is not obeying spec */
-
-		if (ogg_sync_pageout(mSyncState, mPage)>0){
-			queue_page(mPage); /* demux into the appropriate stream */
+	ogg_page page;
+	int parsingTheora = 0;
+	while (ogg_sync_pageout(&mSyncState, &page) > 0){
+		if (!ogg_page_bos(&page)){
+			queue_page(&page);
 		}
 		else{
-			int ret = buffer_data(); /* someone needs more data */
-			if (ret == 0){
-				Error("End of file while searching for codec headers.");
+			ogg_stream_state unknownStream;
+			ogg_packet packet;
+			ogg_stream_init(&unknownStream, ogg_page_serialno(&page));
+			ogg_stream_pagein(&unknownStream, &page);
+			int got_packet = ogg_stream_packetpeek(&unknownStream, &packet);
+			if (!got_packet){
+				ogg_stream_clear(&unknownStream);
 				return false;
+			}
+			// check theora
+			bool consumed = false;
+			if (mStreamStateTheora.body_data == 0){
+				parsingTheora = th_decode_headerin(&mTheoraInfo, &mTheoraComment, &mTheoraSetup, &packet);
+				if (parsingTheora > 0){
+					memcpy(&mStreamStateTheora, &unknownStream, sizeof(unknownStream));
+					ogg_stream_packetout(&mStreamStateTheora, NULL);
+					consumed = true;
+				}
+			}
+			if (!consumed){
+				if (mStreamStateVorbis.body_data == 0){
+					auto found = vorbis_synthesis_headerin(&mVorbisInfo, &mVorbisComment, &packet)==0;
+					if (found){
+						memcpy(&mStreamStateVorbis, &unknownStream, sizeof(unknownStream));
+						ogg_stream_packetout(&mStreamStateVorbis, NULL);
+						consumed = true;
+					}
+				}
+			}
+
+			if (!consumed){
+				// ignore this page
+				ogg_stream_clear(&unknownStream);
 			}
 		}
 	}
 
-	/* and now we have it all.  initialize decoders */
-	if (mIsTheora){
-		mDecoderCtx = th_decode_alloc(mInfo, mSetup);
+	if (mStreamStateTheora.body_data != 0){
+		while (parsingTheora > 0){
+			ogg_packet packet;
+			int got_packet = ogg_stream_packetpeek(&mStreamStateTheora, &packet);
+			if (got_packet){
+				parsingTheora = th_decode_headerin(&mTheoraInfo, &mTheoraComment, &mTheoraSetup, &packet);
+				if (parsingTheora){
+					ogg_stream_packetout(&mStreamStateTheora, NULL);
+				}
+			}
+		}
+		mTheoraDecoderCtx = th_decode_alloc(&mTheoraInfo, mTheoraSetup);
 		Log("Ogg logical stream %lx is Theora %dx%d %.02f fps video\n"
 			"Encoded frame content is %dx%d with %dx%d offset\n",
-			mStreamState->serialno, mInfo->frame_width, mInfo->frame_height,
-			(double)mInfo->fps_numerator / mInfo->fps_denominator,
-			mInfo->pic_width, mInfo->pic_height, mInfo->pic_x, mInfo->pic_y);
-	}
-	else{
-		/* tear down the partial theora setup */
-		th_info_clear(mInfo);
-		FB_SAFE_DEL(mInfo);
-		th_comment_clear(mComment);
-		FB_SAFE_DEL(mComment);
-	}
-	/*Either way, we're done with the codec setup data.*/
-	th_setup_free(mSetup);
-	mSetup = 0;
+			mStreamStateTheora.serialno, mTheoraInfo.frame_width, mTheoraInfo.frame_height,
+			(double)mTheoraInfo.fps_numerator / mTheoraInfo.fps_denominator,
+			mTheoraInfo.pic_width, mTheoraInfo.pic_height, mTheoraInfo.pic_x, mTheoraInfo.pic_y);
+		/*Either way, we're done with the codec setup data.*/
+		th_setup_free(mTheoraSetup);
+		mTheoraSetup = 0;
 
-	/* open video */
-	if (mIsTheora){
 		open_video();
-		gFBEnv->pRenderer->RegisterVideoPlayer(this);
+
+		ogg_packet packet;
+		while (ogg_stream_packetout(&mStreamStateTheora, &packet)){
+			mPacketsTheora.push_back(packet);
+		}
+
+
 	}
-	else{
-		Clear();
+
+	if (mStreamStateVorbis.body_data != 0){
+		int count = 2;  // need to parse two more packets
+		while (count > 0){
+			ogg_packet packet;
+			int got_packet = ogg_stream_packetpeek(&mStreamStateVorbis, &packet);
+			if (got_packet){
+				bool succ = vorbis_synthesis_headerin(&mVorbisInfo, &mVorbisComment, &packet) == 0;
+				if (succ){
+					ogg_stream_packetout(&mStreamStateVorbis, NULL);					
+				}
+				else{
+					Error("Cannot parse vorbis header!");
+					break;
+				}
+				--count;
+			}
+			else{
+				Error("Vorbis header data is corrupted.");
+				break;
+			}
+		}
 	}
+	gFBEnv->pRenderer->RegisterVideoPlayer(this);
+
+	return true;
 }
+
+
+int VideoPlayerOgg::buffer_data(){
+	assert(mFile);
+	if (!mFile)
+		return 0;
+
+	char *buffer = ogg_sync_buffer(&mSyncState, 4096);
+	int bytes = fread_s(buffer, 4096, 1, 4096, mFile);
+	ogg_sync_wrote(&mSyncState, bytes);
+	return(bytes);
+
+}
+
+int VideoPlayerOgg::queue_page(ogg_page *page){
+	int ret = -1;
+	auto no = ogg_page_serialno(page);
+
+	if (mStreamStateTheora.serialno == no){
+		ret = ogg_stream_pagein(&mStreamStateTheora, page);
+	}
+	else if (mStreamStateVorbis.serialno == no){
+		ret = ogg_stream_pagein(&mStreamStateVorbis, page);
+	}
+
+	return ret;
+}
+
 
 void VideoPlayerOgg::StopVideo(){
 
 }
 
 void VideoPlayerOgg::RegisterVideoNotifier(VideoNotifierFunc func){
+	mNotifierFunc = func;
+}
 
+void VideoPlayerOgg::SetDurationAfterFinish(float time){
+	mDurationAfterFinish = time;
 }
 
 namespace fastbird{
@@ -243,17 +253,23 @@ namespace fastbird{
 }
 
 void VideoPlayerOgg::StripeDecoded(th_ycbcr_buffer _src, int _fragy0, int _fragy_end){
+	// skipping the data from the last packet.
+	// The decode result of the last packet usually consists of black pixels.
+	// This disturb the fade out effect.
+	if (mPacketsTheora.empty())
+		return;
 	for (int pli = 0; pli<3; pli++){
 		int yshift;
 		int y_end;
 		int y;
-		yshift = pli != 0 && !(mInfo->pixel_fmt & 2);
-		y_end = _fragy_end << 3 - yshift;
+		yshift = pli != 0 && !(mTheoraInfo.pixel_fmt & 2);
+		y_end = _fragy_end << (3 - yshift);
 		/*An implemention intending to display this data would need to check the
 		crop rectangle before proceeding.*/
-		for (y = _fragy0 << 3 - yshift; y<y_end; y++){
+		for (y = _fragy0 << (3 - yshift); y<y_end; y++){
 			memcpy(mYCbCr[pli].data + y*mYCbCr[pli].stride,
-				_src[pli].data + y*_src[pli].stride, _src[pli].width);
+				_src[pli].data + y*_src[pli].stride, 
+				_src[pli].width);
 		}
 	}
 }
@@ -268,70 +284,87 @@ void VideoPlayerOgg::open_video(){
 	for (int pli = 0; pli<3; pli++){
 		int xshift;
 		int yshift;
-		xshift = pli != 0 && !(mInfo->pixel_fmt & 1);
-		yshift = pli != 0 && !(mInfo->pixel_fmt & 2);
+		xshift = pli != 0 && !(mTheoraInfo.pixel_fmt & 1);
+		yshift = pli != 0 && !(mTheoraInfo.pixel_fmt & 2);
 		mYCbCr[pli].data = (unsigned char *)malloc(
-			(mInfo->frame_width >> xshift)*(mInfo->frame_height >> yshift)*sizeof(char));
-		mYCbCr[pli].stride = mInfo->frame_width >> xshift;
-		mYCbCr[pli].width = mInfo->frame_width >> xshift;
-		mYCbCr[pli].height = mInfo->frame_height >> yshift;
+			(mTheoraInfo.frame_width >> xshift)*(mTheoraInfo.frame_height >> yshift)*sizeof(char));
+		mYCbCr[pli].stride = mTheoraInfo.frame_width >> xshift;
+		mYCbCr[pli].width = mTheoraInfo.frame_width >> xshift;
+		mYCbCr[pli].height = mTheoraInfo.frame_height >> yshift;
+
+
 
 		mTextures[pli] = gFBEnv->pRenderer->CreateTexture(0, 	mYCbCr[pli].width, mYCbCr[pli].height,
 			PIXEL_FORMAT_A8_UNORM, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE, TEXTURE_TYPE_DEFAULT);
 		mTextures[pli]->SetShaderStage(BINDING_SHADER_PS);
 		mTextures[pli]->SetSlot(pli);
+		auto mapData = mTextures[pli]->Map(0, MAP_TYPE::MAP_TYPE_WRITE_DISCARD, MAP_FLAG::MAP_FLAG_NONE);
+		if (mapData.pData){
+			memset(mapData.pData, 0, mYCbCr[pli].width * mYCbCr[pli].height);
+			mTextures[pli]->Unmap(0);
+		}
 	}
 	cb.ctx = this;
 	cb.stripe_decoded = (th_stripe_decoded_func)stripe_decoded;
-	th_decode_ctl(mDecoderCtx, TH_DECCTL_SET_STRIPE_CB, &cb, sizeof(cb));
+	th_decode_ctl(mTheoraDecoderCtx, TH_DECCTL_SET_STRIPE_CB, &cb, sizeof(cb));
 }
 
 //---------------------------------------------------------------------------
 void VideoPlayerOgg::Update(float dt){
-	if (!mIsTheora || mFinish)
+	if (mFinish){
+		if (mDurationAfterFinish > 0){
+			Display();
+			mDurationAfterFinish -= dt;
+		}
 		return;
+	}
+
 	mPlayTime += dt;
-	while (!mVideoBufReady){
-		/* theora is one in, one out... */
-		if (ogg_stream_packetout(mStreamState, mPacket)>0){
-			if (th_decode_packetin(mDecoderCtx, mPacket, &mGranulePos) >= 0){
-				mVideoBufTime = th_granule_time(mDecoderCtx, mGranulePos);
-				mVideoBufReady = true;
-			}
+	while (!mVideoBufReady && !mPacketsTheora.empty()){
+		auto packet = mPacketsTheora.front();
+		mPacketsTheora.erase(mPacketsTheora.begin());
+		if (th_decode_packetin(mTheoraDecoderCtx, &packet, &mGranulePos) >= 0){
+			mVideoBufTime = th_granule_time(mTheoraDecoderCtx, mGranulePos);
+			mVideoBufReady = true;
 		}
 		else{
+			Error("Cannot decode the file %s", mFilepath.c_str());
 			break;
 		}
 	}
 
-	if (!mVideoBufReady && feof(mFile)){
+	if (!mVideoBufReady){
 		mFinish = true;
+		Display();
+		if (mNotifierFunc){
+			mNotifierFunc(this);
+		}
 		return;
 	}
 
-	if (!mVideoBufReady){
-		/* no data yet for somebody.  Grab another page */
-		buffer_data();
-		while (ogg_sync_pageout(mSyncState, mPage)>0){
-			queue_page(mPage);
+	if (mVideoBufTime <= mPlayTime){			
+		mVideoBufReady = false;
+		for (int pli = 0; pli<3; pli++){
+			auto mapdata = mTextures[pli]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+			if (mapdata.pData){
+				for (int row = 0; row < mYCbCr[pli].height; ++row){
+					unsigned char* dest = (unsigned char*)mapdata.pData;
+					memcpy(dest + row*mapdata.RowPitch, mYCbCr[pli].data + row*mYCbCr[pli].stride,
+						mYCbCr[pli].width);
+				}
+				mTextures[pli]->Unmap(0);
+			}
 		}
 	}
-	/* dumpvideo frame, and get new one */
-	else {
-		if (mVideoBufTime >= mPlayTime)
-			Display();
-	}
+	Display();
 }
 
 void VideoPlayerOgg::Display(){
-	for (int pli = 0; pli<3; pli++){
-		auto mapdata = mTextures[pli]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
-		if (mapdata.pData){
-			memcpy(mapdata.pData, mYCbCr[pli].data, mYCbCr[pli].width*mYCbCr[pli].height);
-			mTextures[pli]->Unmap(0);
-		}
+	D3DEventMarker mark("Video Rendering");
+	for (int pli = 0; pli<3; pli++){		
 		mTextures[pli]->Bind();
 	}
 	auto renderer = (Renderer*)gFBEnv->pRenderer;
+	renderer->SetNoDepthStencil();
 	renderer->DrawFullscreenQuad(mPS, false);
 }

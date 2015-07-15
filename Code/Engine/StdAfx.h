@@ -28,6 +28,9 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "zdll.lib")
+#pragma comment(lib, "libogg.lib")
+#pragma comment(lib, "libtheora.lib")
+#pragma comment(lib, "libvorbis.lib")
 
 #ifdef _DEBUG
 #pragma comment(lib, "freeimaged.lib")

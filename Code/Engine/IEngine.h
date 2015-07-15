@@ -56,6 +56,7 @@ namespace fastbird
 	class TextManipulator;
 	class LuaObject;
 	class ITrailObject;
+	class IVideoPlayer;
 	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;

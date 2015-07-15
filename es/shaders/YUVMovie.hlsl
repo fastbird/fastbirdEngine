@@ -17,9 +17,10 @@ struct QuadVS_Output
 //---------------------------------------------------------------------------
 float4 yuvmovie_PixelShader(QuadVS_Output Input) : SV_TARGET
 {
-	float y = gYTexture.Sample(gLinearSampler, Input.Tex);
-	float u = gUTexture.Sample(gLinearSampler, Input.Tex);
-	float v = gVTexture.Sample(gLinearSampler, Input.Tex);
-	float3 rgb = float3(y + 1.28033*v, u - 0.21482*u - 0.38059*v, y + 2.12798*u)
+	float y = gYTexture.Sample(gLinearSampler, Input.Tex).a;
+	float u = gUTexture.Sample(gLinearSampler, Input.Tex).a;
+	float v = gVTexture.Sample(gLinearSampler, Input.Tex).a;
+	float3 rgb = float3(y + 1.370705*(v-.5f), y - 0.698001*(v-0.5f) - 0.337633*(u-0.5f), y + 1.732446*(u-0.5f));
+	rgb = saturate(rgb);
 	return float4(rgb, 1);	
 }
