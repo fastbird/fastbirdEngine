@@ -1,23 +1,22 @@
 #include <Engine/StdAfx.h>
 #include <Engine/VideoPlayerOgg.h>
 #include <Engine/Renderer.h>
-
+#include <Engine/Audio.h>
 using namespace fastbird;
 
 VideoPlayerOgg::VideoPlayerOgg()
 	: mTheoraSetup(0)
 	, mTheoraDecoderCtx(0)
 	, mFile(0)
-	, mPlayTime(0)
 	, mVideoBufTime(0)
-	, mAudioBufTime(0)
 	, mGranulePos(-1)
 	, mDurationAfterFinish(0)
 	, mFinish(false)
 	, mVideoBufReady(false)
+	, mAudio(0)
+	, mIsFirstFrame(true)
 {
-	mPS = gFBEnv->pRenderer->CreateShader("es/shaders/YUVMovie.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());
-	
+	mPS = gFBEnv->pRenderer->CreateShader("es/shaders/YUVMovie.hlsl", BINDING_SHADER_PS, IMaterial::SHADER_DEFINES());	
 }
 
 VideoPlayerOgg::~VideoPlayerOgg(){
@@ -33,15 +32,11 @@ void VideoPlayerOgg::Clear()
 	if (mTheoraDecoderCtx){
 		th_decode_free(mTheoraDecoderCtx);
 	}
-	vorbis_comment_clear(&mVorbisComment);
-	vorbis_info_clear(&mVorbisInfo);
 
 	th_comment_clear(&mTheoraComment);
 	th_info_clear(&mTheoraInfo);
 
-	if (mStreamStateVorbis.body_data != 0){
-		ogg_stream_clear(&mStreamStateVorbis);
-	}
+	
 	if (mStreamStateTheora.body_data != 0){
 		ogg_stream_clear(&mStreamStateTheora);
 	}
@@ -50,7 +45,6 @@ void VideoPlayerOgg::Clear()
 	
 	mGranulePos = -1;
 	mVideoBufTime = 0;
-	mPlayTime = 0;	
 
 	gFBEnv->pRenderer->UnregisterVideoPlayer(this);
 
@@ -60,6 +54,10 @@ void VideoPlayerOgg::Clear()
 	}
 
 	mFilepath.clear();
+
+	if (mAudio){
+		FB_SAFE_DEL(mAudio);
+	}
 }
 
 bool VideoPlayerOgg::PlayVideo(const char* path){
@@ -76,7 +74,8 @@ bool VideoPlayerOgg::PlayVideo(const char* path){
 	if (!mFilepath.empty())
 		Clear();
 
-
+	mAudio = FB_NEW(Audio);
+	mAudio->InitOgg();
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -84,12 +83,9 @@ bool VideoPlayerOgg::PlayVideo(const char* path){
 	}
 	ogg_sync_init(&mSyncState);
 	mStreamStateTheora.body_data = 0;
-	mStreamStateVorbis.body_data = 0;
+	
 	th_info_init(&mTheoraInfo);
 	th_comment_init(&mTheoraComment);
-
-	vorbis_info_init(&mVorbisInfo);
-	vorbis_comment_init(&mVorbisComment);
 
 	mFilepath = path;
 
@@ -129,15 +125,10 @@ bool VideoPlayerOgg::PlayVideo(const char* path){
 					consumed = true;
 				}
 			}
-			if (!consumed){
-				if (mStreamStateVorbis.body_data == 0){
-					auto found = vorbis_synthesis_headerin(&mVorbisInfo, &mVorbisComment, &packet)==0;
-					if (found){
-						memcpy(&mStreamStateVorbis, &unknownStream, sizeof(unknownStream));
-						ogg_stream_packetout(&mStreamStateVorbis, NULL);
-						consumed = true;
-					}
-				}
+
+			// check vorbis
+			if (!consumed && mAudio){
+				consumed = mAudio->ProcessOggHeaderPacket(&unknownStream, &packet);				
 			}
 
 			if (!consumed){
@@ -167,44 +158,22 @@ bool VideoPlayerOgg::PlayVideo(const char* path){
 		/*Either way, we're done with the codec setup data.*/
 		th_setup_free(mTheoraSetup);
 		mTheoraSetup = 0;
-
+		mIsFirstFrame = true;
 		open_video();
 
 		ogg_packet packet;
 		while (ogg_stream_packetout(&mStreamStateTheora, &packet)){
 			mPacketsTheora.push_back(packet);
 		}
-
-
 	}
 
-	if (mStreamStateVorbis.body_data != 0){
-		int count = 2;  // need to parse two more packets
-		while (count > 0){
-			ogg_packet packet;
-			int got_packet = ogg_stream_packetpeek(&mStreamStateVorbis, &packet);
-			if (got_packet){
-				bool succ = vorbis_synthesis_headerin(&mVorbisInfo, &mVorbisComment, &packet) == 0;
-				if (succ){
-					ogg_stream_packetout(&mStreamStateVorbis, NULL);					
-				}
-				else{
-					Error("Cannot parse vorbis header!");
-					break;
-				}
-				--count;
-			}
-			else{
-				Error("Vorbis header data is corrupted.");
-				break;
-			}
-		}
-	}
+	if (mAudio)
+		mAudio->ProcessOggHeader();
+	
 	gFBEnv->pRenderer->RegisterVideoPlayer(this);
 
 	return true;
 }
-
 
 int VideoPlayerOgg::buffer_data(){
 	assert(mFile);
@@ -225,13 +194,12 @@ int VideoPlayerOgg::queue_page(ogg_page *page){
 	if (mStreamStateTheora.serialno == no){
 		ret = ogg_stream_pagein(&mStreamStateTheora, page);
 	}
-	else if (mStreamStateVorbis.serialno == no){
-		ret = ogg_stream_pagein(&mStreamStateVorbis, page);
+	else if (mAudio && mAudio->mStreamStateVorbis.serialno == no){
+		ret = ogg_stream_pagein(&mAudio->mStreamStateVorbis, page);
 	}
 
 	return ret;
 }
-
 
 void VideoPlayerOgg::StopVideo(){
 
@@ -319,11 +287,16 @@ void VideoPlayerOgg::Update(float dt){
 		return;
 	}
 
-	mPlayTime += dt;
+	if (mIsFirstFrame){
+		mIsFirstFrame = false;
+		mStartedTime = gpTimer->GetTime();		
+	}
+
 	while (!mVideoBufReady && !mPacketsTheora.empty()){
 		auto packet = mPacketsTheora.front();
 		mPacketsTheora.erase(mPacketsTheora.begin());
-		if (th_decode_packetin(mTheoraDecoderCtx, &packet, &mGranulePos) >= 0){
+		int ret = 0;
+		if ((ret = th_decode_packetin(mTheoraDecoderCtx, &packet, &mGranulePos)) >= 0){
 			mVideoBufTime = th_granule_time(mTheoraDecoderCtx, mGranulePos);
 			mVideoBufReady = true;
 		}
@@ -341,8 +314,8 @@ void VideoPlayerOgg::Update(float dt){
 		}
 		return;
 	}
-
-	if (mVideoBufTime <= mPlayTime){			
+	float curTime = gpTimer->GetTime() - mStartedTime;
+	if (mVideoBufTime < curTime){
 		mVideoBufReady = false;
 		for (int pli = 0; pli<3; pli++){
 			auto mapdata = mTextures[pli]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
@@ -357,6 +330,10 @@ void VideoPlayerOgg::Update(float dt){
 		}
 	}
 	Display();
+
+	if (mAudio){
+		mAudio->Update(dt);
+	}	
 }
 
 void VideoPlayerOgg::Display(){

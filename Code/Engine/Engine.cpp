@@ -29,6 +29,7 @@
 #include <Engine/TextManipulator.h>
 #include <Engine/TrailObject.h>
 #include <Engine/VideoPlayerOgg.h>
+#include <Engine/AudioManager.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -53,6 +54,7 @@ void IEngine::DeleteInstance(IEngine* e)
 
 //------------------------------------------------------------------------
 Engine::Engine()	
+	: mAudioManager(0)
 {
 	FileSystem::Initialize();
 	mErrorStream.open("error.log");
@@ -85,7 +87,10 @@ Engine::Engine()
 Engine::~Engine()
 {
 	mExiting = true;	
-
+	if (mAudioManager){
+		mAudioManager->Deinit();
+		FB_DELETE(mAudioManager);
+	}
 	ParticleManager::FinalizeParticleManager();
 	if (mFileMonitorThread)
 	{
@@ -339,7 +344,9 @@ bool Engine::InitEngine(int rendererType)
 	if (mFileMonitorThread == INVALID_HANDLE_VALUE)
 	{
 		Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the FileChangeNotifier thread!");
-	}
+	}	
+	mAudioManager = FB_NEW(AudioManager);
+	mAudioManager->Init();
 
 	return successful;
 }

@@ -31,6 +31,7 @@
 #pragma comment(lib, "libogg.lib")
 #pragma comment(lib, "libtheora.lib")
 #pragma comment(lib, "libvorbis.lib")
+#pragma comment(lib, "OpenAL32.lib")
 
 #ifdef _DEBUG
 #pragma comment(lib, "freeimaged.lib")
@@ -86,3 +87,7 @@ extern "C" {
 #include <Engine/IMouse.h>
 #include <Engine/D3DEventMarker.h>
 #include <Engine/IConsole.h>
+
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alext.h>

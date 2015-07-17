@@ -1,35 +1,25 @@
 #pragma once
 #include <Engine/IVideoPlayer.h>
 #include <theora/theoradec.h>
-#include <vorbis/codec.h>
 namespace fastbird{
+	class Audio;
 	class VideoPlayerOgg : public IVideoPlayer{
 		ogg_sync_state mSyncState;
 
 		ogg_stream_state mStreamStateTheora;
-		ogg_stream_state mStreamStateVorbis;
-
 		std::vector<ogg_packet> mPacketsTheora;
-		std::vector<ogg_packet> mPacketsVorbis;
 		
 		th_info mTheoraInfo;
 		th_comment mTheoraComment;
 		th_setup_info* mTheoraSetup;
 		th_dec_ctx* mTheoraDecoderCtx;
-		th_ycbcr_buffer mYCbCr;
-
-		vorbis_info mVorbisInfo;
-		vorbis_comment mVorbisComment;
-		vorbis_dsp_state mVorbisDspState;
-		vorbis_block mVorbisBlock;
+		th_ycbcr_buffer mYCbCr;	
 
 		FILE* mFile;
 		
 		std::string mFilepath;
 		
-		double mPlayTime;
 		double mVideoBufTime;
-		double mAudioBufTime;		
 		ogg_int64_t mGranulePos;	
 
 		SmartPtr<ITexture> mTextures[3];
@@ -41,6 +31,10 @@ namespace fastbird{
 		bool mFinish;
 
 		bool mVideoBufReady;
+		bool mIsFirstFrame;
+		float mStartedTime;
+
+		Audio* mAudio;
 		
 
 	private:

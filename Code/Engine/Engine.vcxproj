@@ -73,7 +73,7 @@
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
       <PreprocessorDefinitions>_ENGINE;_DEBUG;CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;$(DXSDK_DIR)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENAL_SOFT_DIR)\include;$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME)\include;$(DXSDK_DIR)include</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ShowIncludes>false</ShowIncludes>
       <SDLCheck>true</SDLCheck>
@@ -84,7 +84,7 @@
       <MapExports>true</MapExports>
       <AssemblyDebug>true</AssemblyDebug>
       <ShowProgress>NotSet</ShowProgress>
-      <AdditionalLibraryDirectories>$(VORBIS_DIR)\win32\VS2010\Win32\Debug;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENAL_SOFT_DIR)\build\$(Configuration);$(VORBIS_DIR)\win32\VS2010\Win32\Debug;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
@@ -103,7 +103,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_ENGINE;CPP;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENAL_SOFT_DIR)\include;$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -113,7 +113,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(VORBIS_DIR)\win32\VS2010\Win32\Release;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENAL_SOFT_DIR)\build\$(Configuration);$(VORBIS_DIR)\win32\VS2010\Win32\Release;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -131,7 +131,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_ENGINE;CPP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENAL_SOFT_DIR)\include;$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -141,7 +141,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(VORBIS_DIR)\win32\VS2010\Win32\Release;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Release</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OPENAL_SOFT_DIR)\build\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;$(THEORA_DIR)\win32\VS2008\Win32\Release_SSE2;$(OGG_DIR)\lib\Release;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\Lib\x86;$(SolutionDir)$(Configuration);$(LUA_DIR)\lib;$(ZLIB_HOME)\lib;$(OpenCOLLADA_HOME)\lib\Release</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua.lib;freeimage.lib;d3d11.lib;d3dx11.lib;dxgi.lib;d3d9.lib;OpenCOLLADASaxFrameworkLoader.lib;OpenCOLLADAFramework.lib;OpenCOLLADABaseUtils.lib;xml.lib;GeneratedSaxParser.lib;UTF.lib;MathMLSolver.lib;pcre.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -158,6 +158,9 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="Audio.h" />
+    <ClInclude Include="AudioHelper.h" />
+    <ClInclude Include="AudioManager.h" />
     <ClInclude Include="BillboardQuad.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CandidatesData.h" />
@@ -289,6 +292,9 @@
   <ItemGroup>
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AnimationData.cpp" />
+    <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="AudioHelper.cpp" />
+    <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="BillboardQuad.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CandidatesData.cpp" />

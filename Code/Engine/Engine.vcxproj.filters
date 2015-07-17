@@ -451,6 +451,15 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="VideoPlayerType.h" />
+    <ClInclude Include="AudioManager.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioHelper.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -661,5 +670,14 @@
       <Filter>Renderer\D3D11</Filter>
     </ClCompile>
     <ClCompile Include="VideoPlayerOgg.cpp" />
+    <ClCompile Include="AudioManager.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioHelper.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

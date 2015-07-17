@@ -19,6 +19,7 @@ namespace fastbird
 	class IScriptSystem;
 	class ParticleManager;
 	class ITrailObject;
+	class AudioManager;
 	class Engine : public IEngine
 	{
 		VectorMap<HWND_ID, HWND> mWindowHandles;
@@ -61,6 +62,7 @@ namespace fastbird
 		bool mExiting;
 		
 		std::set<std::string> mIgnoreFileChanges;
+		AudioManager* mAudioManager;
 	
 
 	public:
