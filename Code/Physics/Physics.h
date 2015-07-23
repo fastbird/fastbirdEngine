@@ -22,7 +22,7 @@ namespace fastbird
 		friend class RigidBody;
 		friend class RigidBodyImpl;
 		btCollisionShape* CreateColShape(IPhysicsInterface* shapeProvider);
-		btCollisionShape* CreateColShape(const std::vector<CollisionShape*>& shapes);
+		btCollisionShape* CreateColShape(CollisionShape* colShapes[], unsigned num);
 		RigidBody* _CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj);
 		BulletDebugDraw mDebugDrawer;
 
@@ -51,7 +51,7 @@ namespace fastbird
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj);
 		virtual RigidBody* CreateRigidBody(IPhysicsInterface* obj);
 		virtual RigidBody* CreateTempRigidBody(CollisionShape* colShape);
-		virtual RigidBody* CreateTempRigidBody(const std::vector<CollisionShape*>& colShape);
+		virtual RigidBody* CreateTempRigidBody(CollisionShape*  shapes[], unsigned num);
 
 		virtual void DeleteRigidBody(RigidBody* rigidBody);
 		btCollisionShape* ParseCollisionFile(const char* collisionFile);
@@ -64,13 +64,14 @@ namespace fastbird
 		virtual void SetDebugMode(int debugMode);
 
 		
-		virtual void AttachBodies(const std::vector<RigidBody*>& bodies);
+		virtual void AttachBodies(RigidBody* bodies[], unsigned num);
 
 		virtual void SetRayCollisionGroup(int group);
-		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, std::vector<void*>* except = 0);
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0);
 		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result);
-		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result);
-		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except);
+		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask);
+		virtual void Release(RayResultAll* r);
+		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, void* ret[], unsigned limit, RigidBody* except);
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b);
 
 		virtual unsigned CreateBTSphereShape(float radius);

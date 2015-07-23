@@ -40,23 +40,32 @@ namespace fastbird
 
 	struct RayResultAll
 	{
+		static const int SIZE = 200;
 		RayResultAll()
+			:mCurSize(0)
 		{
 
 		}
 		~RayResultAll()
 		{
-			for (auto& data : mRayResults)
+			for (unsigned i = 0; i < mCurSize; ++i)
 			{
-				delete data;
+				mRayResults[i]->~RayResultClosest();
+				free(mRayResults[i]);
 			}
 		}
 
 		void AddResult(RigidBody* rigidBody, const Vec3& hitPoint, const Vec3& hitNormal, int index)
 		{
-			mRayResults.push_back(new RayResultClosest(rigidBody, hitPoint, hitNormal, index));
+			if (mCurSize >= SIZE)
+				return;
+			
+			mRayResults[mCurSize++] = (RayResultClosest*)malloc(sizeof(RayResultClosest));
+
+			new (mRayResults[mCurSize-1]) RayResultClosest(rigidBody, hitPoint, hitNormal, index);
 		}
 
-		std::vector<RayResultClosest*> mRayResults;
+		RayResultClosest* mRayResults[SIZE];
+		unsigned mCurSize;
 	};
 }

@@ -66,7 +66,7 @@ namespace fastbird
 		virtual void SetAngularDamping(float damping);
 		virtual void SetDamping(float linear, float angular);
 
-		virtual bool HasContact(std::vector<void*>* gamePtrs = 0);
+		virtual unsigned HasContact(void* gamePtrs[], int limit);
 
 		virtual void RemoveRigidBodyFromWorld();
 		// make sure mColProvider is valid.

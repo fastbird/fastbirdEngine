@@ -76,6 +76,8 @@ namespace fastbird
 
 		virtual void SetCursorPosition(const Vec2I& cursorPos);
 
+		virtual void NoClickOnce();
+
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
 		void GetMouseCoordDelta(long& x, long& y) const;
@@ -145,6 +147,7 @@ namespace fastbird
 
 		void* mLockMouseKey;
 		bool mInvalidatedTemporary;
+		bool mNoClickOnce;
 	};
 }
 

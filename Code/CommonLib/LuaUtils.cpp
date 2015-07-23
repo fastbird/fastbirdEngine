@@ -3,6 +3,7 @@
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/LuaObject.h>
 #include <CommonLib/FileSystem.h>
+
 namespace fastbird
 {
 	const char* GetCWD()

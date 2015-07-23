@@ -109,6 +109,7 @@ namespace fastbird
 
 	// etc
 	int SetTooltipString(lua_State* L);
+	int SetEnableUIInput(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -116,6 +117,8 @@ namespace fastbird
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetEnableUIInput);
+
 		LUA_SETCFUNCTION(mL, ChangeUISizeX);
 		LUA_SETCFUNCTION(mL, ChangeUISizeY);
 		LUA_SETCFUNCTION(mL, ChangeUISize);
@@ -1652,7 +1655,16 @@ namespace fastbird
 		if (!comp) return 0;
 		Vec2I size = luaU_check<Vec2I>(L, 3);
 		comp->ChangeSize(size);
+		return 0;	
+	}
+
+	int SetEnableUIInput(lua_State* L){
+		if (lua_isboolean(L, 1)){
+			auto enable = lua_toboolean(L, 1) != 0;
+			gFBUIManager->EnableInputListener(enable);
+		}
 		return 0;
+		
 	}
 
 }

@@ -20,7 +20,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#pragma comment(lib, "CommonLib.lib")
+#ifdef _DEBUG
+#pragma comment(lib, "CommonLib_Debug.lib")
+#else
+#pragma comment(lib, "CommonLib_Release.lib")
+#endif
 #pragma comment(lib, "lua.lib")
 #pragma comment(lib, "d3dx11d.lib")
 #pragma comment(lib, "d3d11.lib")

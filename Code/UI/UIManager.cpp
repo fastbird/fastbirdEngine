@@ -1101,9 +1101,10 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	ProcessMouseInput(pMouse, keyboard);
-	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
+	windows = mWindows[hwndId];
+	WINDOWS::reverse_iterator it = windows.rbegin();
 	int i = 0;
-	for (; it != itEnd; ++it)
+	for (; it != windows.rend(); ++it)
 	{
 		if ((*it)->GetVisible() && !(*it)->GetVisualOnly())
 		{

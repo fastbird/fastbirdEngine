@@ -102,6 +102,7 @@ namespace fastbird
 		virtual unsigned long GetNumLinesWheelScroll() const = 0;
 
 		virtual void LockMousePos(bool lock, void* key) = 0;
+		virtual void NoClickOnce() = 0;
 		virtual void OnKillFocus() = 0;
 		virtual void OnSetFocus(HWND hWnd) = 0;
 

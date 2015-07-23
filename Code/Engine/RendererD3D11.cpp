@@ -1875,7 +1875,7 @@ void RendererD3D11::SetShaders(IShader* pShader)
 {
 	if (!pShader || !pShader->IsValid())
 	{
-		assert(0);
+		Log("RendererD3D11::SetShader() shader is not valid.");
 		return;
 	}
 	if (mBindedShader == pShader)

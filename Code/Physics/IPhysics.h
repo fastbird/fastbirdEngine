@@ -34,7 +34,7 @@ namespace fastbird
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj) = 0;
 		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider) = 0;
 		virtual RigidBody* CreateTempRigidBody(CollisionShape* colShape) = 0;
-		virtual RigidBody* CreateTempRigidBody(const std::vector<CollisionShape*>& colShape) = 0;
+		virtual RigidBody* CreateTempRigidBody(CollisionShape*  shapes[], unsigned num) = 0;
 		virtual void DeleteRigidBody(RigidBody* rigidBody) = 0;
 		virtual void AddRef(btCollisionShape* colShape) = 0;
 		virtual void Release(btCollisionShape* colShape) = 0;
@@ -43,14 +43,18 @@ namespace fastbird
 		virtual void SetDebugDrawer(IDebugDrawer* debugDrawer) = 0;
 		virtual void SetDebugMode(int debugMode) = 0;
 
-		virtual void AttachBodies(const std::vector<RigidBody*>& bodies) = 0;
+		virtual void AttachBodies(RigidBody* bodies[], unsigned num) = 0;
 		
 		virtual void SetRayCollisionGroup(int group) = 0;
-		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, std::vector<void*>* except = 0) = 0;
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0) = 0;
 		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
-		virtual bool RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result) = 0;
+		// returning RayResultAll*
+		// need to delete with IPhysics::Release(RayResultAll*)
+		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask) = 0;
 
-		virtual void GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except) = 0;		
+		virtual void Release(RayResultAll* r) = 0;
+
+		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, void* ret[], unsigned limit, RigidBody* except) = 0;
 
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
 

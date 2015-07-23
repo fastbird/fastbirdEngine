@@ -23,7 +23,6 @@ Curve* CurveManager::ImportCurve(size_t uniqueId, const char* filepath)
 {
 	if (mCurves.Find(uniqueId) != mCurves.end())
 	{
-		assert(0);
 		return 0;
 	}
 	Curve* curve = FB_NEW(Curve);
