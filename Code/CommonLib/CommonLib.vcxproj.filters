@@ -136,6 +136,12 @@
     <ClInclude Include="CatmullRom.h">
       <Filter>MathGeom</Filter>
     </ClInclude>
+    <ClInclude Include="RecursiveLock.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="RecursiveSpinLock.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math\Quat.cpp">
@@ -232,6 +238,12 @@
     <ClCompile Include="SmartPtr.cpp" />
     <ClCompile Include="Math\BoundingVolume.cpp">
       <Filter>MathGeom</Filter>
+    </ClCompile>
+    <ClCompile Include="RecursiveLock.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="RecursiveSpinLock.cpp">
+      <Filter>Threading</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

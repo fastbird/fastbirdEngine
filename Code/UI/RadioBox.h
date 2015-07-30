@@ -13,6 +13,7 @@ public:
 	RadioBox();
 	virtual ~RadioBox();
 
+	virtual void OnCreated();
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::RadioBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
@@ -30,8 +31,6 @@ public:
 	void OnChildrenClicked(void* arg);
 	void OnClicked(void* arg);
 
-	virtual void OnSizeChanged();
-
 	void OnMouseHover(void* arg);
 
 private:
@@ -42,6 +41,7 @@ private:
 	StaticText* mStaticText;
 	bool mChecked;
 	int mGroupID;
+	std::wstring mTempString;
 };
 
 }

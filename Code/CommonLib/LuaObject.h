@@ -1,6 +1,7 @@
 #pragma once
 #include <CommonLib/VectorMap.h>
 #include <CommonLib/LuaUtils.h>
+#include <CommonLib/SpinLock.h>
 namespace fastbird
 {
 	class LuaObject;
@@ -38,7 +39,8 @@ namespace fastbird
 		int mType;
 		std::string mName;
 		LuaObject* mSelf;
-		static fastbird::VectorMap<int, unsigned> mUsedCount;
+		static fastbird::VectorMap<int, unsigned> sUsedCount;
+		static fastbird::SpinLock<true, false> sUsedCountGuard;
 
 		static void AddUsedCount(int ref);
 		static bool ReleaseUsedCount(int ref);

@@ -112,6 +112,8 @@ namespace fastbird
 
 		virtual void CursorToCenter() = 0;
 		virtual void SetCursorPosition(const Vec2I& cursorPos) = 0;
+
+		virtual void ClearRightDown() = 0;
 	};
 }
 

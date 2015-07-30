@@ -455,6 +455,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										if (!mImages[ButtonImages::ActiveImage])
 										{
 											mImages[ButtonImages::ActiveImage] = CreateImageBox();
+											mImages[ButtonImages::ActiveImage]->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 											UpdateImageSize();
 										}
 
@@ -479,7 +480,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 		mDeactivatedImage = val;
 										  if (!mImages[ButtonImages::DeactiveImage])
 										  {
-											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();
+											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();											  
+											  mImages[ButtonImages::DeactiveImage]->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 											  UpdateImageSize();
 										  }
 
@@ -507,7 +509,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	case UIProperty::BUTTON_ACTIVATED:
-	{
+	{		
 										 mActivated = StringConverter::parseBool(val);
 										 if (mImages[ButtonImages::ActiveImage])
 										 {
@@ -1048,7 +1050,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bo
 
 bool Button::SetVisible(bool visible){
 	bool changed= __super::SetVisible(visible);
-	for (int i = 0; i < ButtonImages::Num; ++i){
+	for (int i = 0; i < ButtonImages::ActiveImage; ++i){
 		if (mImages[i])
 			mImages[i]->SetVisible(visible);
 	}
@@ -1057,7 +1059,7 @@ bool Button::SetVisible(bool visible){
 
 void Button::SetVisibleInternal(bool visible){
 	__super::SetVisibleInternal(visible);
-	for (int i = 0; i < ButtonImages::Num; ++i){
+	for (int i = 0; i < ButtonImages::ActiveImage; ++i){
 		if (mImages[i]){
 			mImages[i]->SetVisible(visible);
 		}

@@ -71,7 +71,7 @@ namespace fastbird
 		, mLockMouseKey(0), mInvalidatedTemporary(false)
 		, mRDragStarted(false)
 		, mRDragEnd(false)
-		, mNoClickOnce(false)
+		, mNoClickOnce(false)		
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -633,7 +633,7 @@ namespace fastbird
 	{
 		if (!mWorldRayCalculated)
 		{
-			ICamera* pCam = gFBEnv->pRenderer->GetCamera();
+			ICamera* pCam = gFBEnv->pRenderer->GetMainCamera();
 			if (pCam)
 			{
 				mWorldRayCalculated = true;
@@ -676,5 +676,9 @@ namespace fastbird
 
 	void Mouse::NoClickOnce(){
 		mNoClickOnce = true;
+	}
+
+	void Mouse::ClearRightDown(){		
+		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
 }

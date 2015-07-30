@@ -193,7 +193,7 @@ void ListBox::RemoveRow(const wchar_t* uniqueKey)
 	if (!mData)
 		return;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 
 	if (deletedIndex != -1)
@@ -211,7 +211,7 @@ void ListBox::RemoveRow(unsigned uniqueKey){
 	if (!mData)
 		return;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 	if (deletedIndex != -1)
 	{
@@ -220,7 +220,9 @@ void ListBox::RemoveRow(unsigned uniqueKey){
 			if (*it == deletedIndex)
 				SetHighlightRow(deletedIndex, false);
 		}
-		VisualizeData(deletedIndex);
+		for (unsigned i = deletedIndex; i <= mEndIndex; ++i){
+			VisualizeData(i);
+		}
 	}
 }
 
@@ -233,7 +235,7 @@ void ListBox::RemoveRowWithIndex(unsigned index){
 		return;
 	}
 	unsigned deletedIndex = mData->DelDataWithIndex(index);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 	if (deletedIndex != -1)
 	{
@@ -1087,7 +1089,7 @@ void ListBox::OnItemDoubleClicked(void* arg)
 }
 
 void ListBox::OnItemEnter(void* arg){
-	if (mFocusedListItem->GetChild(0) == arg)
+	if (mFocusedListItem && mFocusedListItem->GetChild(0) == arg)
 	{
 		unsigned rowIndex = mFocusedListItem->GetRowIndex();
 		unsigned colIndex = mFocusedListItem->GetColIndex();
@@ -1961,6 +1963,9 @@ void ListBox::UpdateItemAlign(){
 	for (auto row : mItems){
 		unsigned col = 0;
 		for (auto item : row){
+			if (!item)
+				continue;
+
 			if (item->GetMerged())
 				break;
 			item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());

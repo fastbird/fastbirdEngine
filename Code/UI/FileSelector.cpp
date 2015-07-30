@@ -11,27 +11,34 @@ namespace fastbird
 {
 FileSelector::FileSelector()
 {	
+}
+
+FileSelector::~FileSelector()
+{
+}
+
+void FileSelector::OnCreated(){
 	SetProperty(UIProperty::BACK_COLOR, "0.15, 0.15, 0.15, 1.0");
 	mStaticText = static_cast<StaticText*>(
-		AddChild(0.05f, 0.01f, 0.9f, 0.05f, ComponentType::StaticText) );
+		AddChild(0.05f, 0.01f, 0.9f, 0.05f, ComponentType::StaticText));
 	mStaticText->SetRuntimeChild(true);
 	mStaticText->SetText(L"Select a file:");
 	char buf[256];
 	DWORD size = GetLogicalDriveStrings(256, buf);
 	StringVector drives;
 	size_t start = 0;
-	for (DWORD i=0; i<size; i++)
+	for (DWORD i = 0; i<size; i++)
 	{
-		if (buf[i]==0)
+		if (buf[i] == 0)
 		{
-			drives.push_back(std::string(buf+start, buf+i));
-			start=i+1;
+			drives.push_back(std::string(buf + start, buf + i));
+			start = i + 1;
 			i++;
 		}
 	}
 	float xpos = 0.05f;
 	size_t numDrives = std::min((size_t)6, drives.size());
-	for (size_t i=0; i<numDrives; i++)
+	for (size_t i = 0; i<numDrives; i++)
 	{
 		mDriveButtons.push_back(static_cast<Button*>(
 			AddChild(xpos, 0.07f, 0.08f, 0.05f, ComponentType::Button)));
@@ -41,24 +48,25 @@ FileSelector::FileSelector()
 		mDriveButtons.back()->SetText(AnsiToWide(drives[i].c_str(), drives[i].size()));
 		mDriveButtons.back()->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 			std::bind(&FileSelector::OnDriveClick, this, std::placeholders::_1));
-		xpos+= 0.082f;
+		xpos += 0.082f;
 	}
 	mFileTextField = static_cast<TextField*>(
-		AddChild(0.05f, 0.13f, 0.9f, 0.05f, ComponentType::TextField) );
+		AddChild(0.05f, 0.13f, 0.9f, 0.05f, ComponentType::TextField));
 	mFileTextField->SetRuntimeChild(true);
 	mFileTextField->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
 
 	mListBox = static_cast<ListBox*>(
-		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox) );
+		AddChild(0.05f, 0.19f, 0.9f, 0.70f, ComponentType::ListBox));
 	mListBox->SetRuntimeChild(true);
 	mListBox->SetProperty(UIProperty::BACK_COLOR, "0.10, 0.10, 0.10, 1.0");
+	mListBox->SetProperty(UIProperty::LISTBOX_COL, "1");
 	mListBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnListClick, this, std::placeholders::_1));
 	mListBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&FileSelector::OnListDoubleClick, this, std::placeholders::_1));
-	
+
 	mOKButton = static_cast<Button*>(
-		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
+		AddChild(0.2f, 0.93f, 0.3f, 0.05f, ComponentType::Button));
 	mOKButton->SetRuntimeChild(true);
 	mOKButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnOK, this, std::placeholders::_1));
@@ -66,19 +74,15 @@ FileSelector::FileSelector()
 	mOKButton->SetText(L"OK");
 
 	mCancelButton = static_cast<Button*>(
-		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button) );
+		AddChild(0.51f, 0.93f, 0.3f, 0.05f, ComponentType::Button));
 	mCancelButton->SetRuntimeChild(true);
 	mCancelButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&FileSelector::OnCancel, this, std::placeholders::_1));
 	mCancelButton->SetProperty(UIProperty::TEXT_ALIGN, "center");
-	mCancelButton->SetText(L"Cancel");	
+	mCancelButton->SetText(L"Cancel");
 
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-}
-
-FileSelector::~FileSelector()
-{
 }
 
 void FileSelector::GatherVisit(std::vector<IUIObject*>& v)
@@ -225,12 +229,14 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 
 	FB_FOREACH(itDir, svDirs)
 	{
-		mListBox->InsertItem(itDir->c_str());
+		auto row = mListBox->InsertItem(itDir->c_str());
+		mListBox->SetItem(Vec2I(row, 0), itDir->c_str(), ListItemDataType::String);
 	}
 
 	FB_FOREACH(itFile, svFiles)
 	{
-		mListBox->InsertItem(itFile->c_str());
+		auto row = mListBox->InsertItem(itFile->c_str());
+		mListBox->SetItem(Vec2I(row, 0), itFile->c_str(), ListItemDataType::String);
 	}
 }
 

@@ -14,6 +14,7 @@
 #include <UI/ColorRampComp.h>
 #include <UI/CardScroller.h>
 #include <UI/HorizontalGauge.h>
+#include <UI/RadioBox.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -110,6 +111,7 @@ namespace fastbird
 	// etc
 	int SetTooltipString(lua_State* L);
 	int SetEnableUIInput(lua_State* L);
+	int SetCheckRadioBox(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -117,6 +119,7 @@ namespace fastbird
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
 		LUA_SETCFUNCTION(mL, ChangeUISizeX);
@@ -1667,4 +1670,13 @@ namespace fastbird
 		
 	}
 
+	int SetCheckRadioBox(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		auto comp = (RadioBox*)gFBUIManager->FindComp(uiname, compname);
+		assert(comp);
+		comp->OnClickRadio(comp);
+		comp->SetCheck(true);
+		return 0;
+	}
 }

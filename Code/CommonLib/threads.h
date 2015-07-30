@@ -185,3 +185,5 @@ public:
 #include <CommonLib/AsyncObjects.h>
 #include <CommonLib/LockFreeQueue.h>
 #include <CommonLib/SpinLock.h>
+#include <CommonLib/RecursiveLock.h>
+#include <CommonLib/RecursiveSpinLock.h>

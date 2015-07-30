@@ -49,7 +49,7 @@ public:
 	void Sync();
 
 	// to re add.
-	void Reset();
+	virtual void Reset();
 };
 
 }

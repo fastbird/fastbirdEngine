@@ -110,13 +110,17 @@ void Voxelizer::CalcDistanceMap()
 	
 	pCam->SetDir(Vec3(-radius, 0, 0).NormalizeCopy());	
 	pDepthRT->Render();
-	//pColorTexture->SaveToFile("test.bmp");
+	pColorTexture->SaveToFile("test_x.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	MapData data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	x_min.assign(numVoxelsSQ, 0);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		x_min.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&x_min[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}
 	}
 	else
 	{
@@ -131,10 +135,14 @@ void Voxelizer::CalcDistanceMap()
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	x_max.assign(numVoxelsSQ, 0);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		x_max.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&x_max[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}
 	}
 	else
 	{
@@ -185,10 +193,14 @@ void Voxelizer::CalcDistanceMap()
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	y_min.assign(numVoxelsSQ, 0);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		y_min.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&y_min[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}
 	}
 	else
 	{
@@ -202,10 +214,14 @@ void Voxelizer::CalcDistanceMap()
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	y_max.assign(numVoxelsSQ, 0);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		y_max.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&y_max[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}		
 	}
 	else
 	{
@@ -252,10 +268,14 @@ void Voxelizer::CalcDistanceMap()
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	z_min.assign(numVoxelsSQ, 0.f);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		z_min.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&z_min[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}
 	}
 	else
 	{
@@ -269,10 +289,14 @@ void Voxelizer::CalcDistanceMap()
 	//pColorTexture->SaveToFile("test.bmp");
 	pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 	data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
+	z_max.assign(numVoxelsSQ, 0.f);
 	if (data.pData)
 	{
 		float* pData = (float*)data.pData;
-		z_max.assign(pData, pData + numVoxelsSQ);
+		BYTE* byteData = (BYTE*)data.pData;
+		for (unsigned row = 0; row < mNumVoxels; ++row){
+			memcpy(&z_max[row * mNumVoxels], byteData + row*data.RowPitch, mNumVoxels*sizeof(float));
+		}
 	}
 	else
 	{

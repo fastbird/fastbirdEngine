@@ -390,6 +390,7 @@ void Camera::SetTarget(SpatialObject* pObj)
 
 void Camera::SetDistanceFromTarget(float dist){
 	mInternalParams.dist = dist;
+	mUserParams.forceChanged= true;
 }
 
 //---------------------------------------------------------------------------

@@ -225,6 +225,8 @@ void Container::RemoveChildNotDelete(IWinBase* child)
 	}
 	if (gFBUIManager->GetKeyboardFocusUI() == child)
 		gFBUIManager->SetFocusUI(this);
+
+	gFBUIManager->DirtyRenderList(GetHwndId());
 }
 
 void Container::RemoveAllChild(bool immediately)

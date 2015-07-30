@@ -165,6 +165,8 @@
     <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="RecursiveLock.h" />
+    <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="SpinLock.h" />
     <ClInclude Include="StackTracer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -240,6 +242,8 @@
     <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="RecursiveLock.cpp" />
+    <ClCompile Include="RecursiveSpinLock.cpp" />
     <ClCompile Include="SmartPtr.cpp" />
     <ClCompile Include="SpinLock.cpp" />
     <ClCompile Include="StackTracer.cpp">

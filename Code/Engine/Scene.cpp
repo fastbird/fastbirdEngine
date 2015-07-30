@@ -296,34 +296,36 @@ void Scene::MakeVisibleSet(ICamera* mainCam)
 	mVisibleObjectsLight[lightCamera].clear();
 	mVisibleTransparentObjects[mainCam].clear();
 	mPreRenderList[mainCam].clear();
-	
-	auto it = mSpatialObjects.begin(), itEnd = mSpatialObjects.end();
-	for (; it!=itEnd; it++)
 	{
-		if ((*it)->GetObjFlag() & IObject::OF_IGNORE_ME)
-			continue;
-		bool inserted = false;
-		if (!mainCam->IsCulled((*it)->GetBoundingVolumeWorld()))
+		LOCK_CRITICAL_SECTION lock(mSpatialObjectsCS);
+		auto it = mSpatialObjects.begin(), itEnd = mSpatialObjects.end();
+		for (; it != itEnd; it++)
 		{
-			IMaterial* pmat = (*it)->GetMaterial();
-			if (pmat && pmat->IsTransparent())
+			if ((*it)->GetObjFlag() & IObject::OF_IGNORE_ME)
+				continue;
+			bool inserted = false;
+			if (!mainCam->IsCulled((*it)->GetBoundingVolumeWorld()))
 			{
-				mVisibleTransparentObjects[mainCam].push_back(*it);
+				IMaterial* pmat = (*it)->GetMaterial();
+				if (pmat && pmat->IsTransparent())
+				{
+					mVisibleTransparentObjects[mainCam].push_back(*it);
+				}
+				else
+				{
+					mVisibleObjectsMain[mainCam].push_back(*it);
+				}
+				inserted = true;
 			}
-			else
+
+			if (lightCamera && !lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
 			{
-				mVisibleObjectsMain[mainCam].push_back(*it);
+				mVisibleObjectsLight[lightCamera].push_back((*it));
+				inserted = true;
 			}
-			inserted = true;
+			if (inserted)
+				mPreRenderList[mainCam].push_back((*it));
 		}
-		
-		if (lightCamera && !lightCamera->IsCulled((*it)->GetBoundingVolumeWorld()))
-		{
-			mVisibleObjectsLight[lightCamera].push_back((*it));
-			inserted = true;
-		}
-		if (inserted)
-			mPreRenderList[mainCam].push_back((*it));
 	}
 
 	const fastbird::Vec3& camPos = gFBEnv->pRenderer->GetCamera()->GetPos();

@@ -130,7 +130,7 @@ void ParticleManager::Update(float elapsedTime)
 
 	Vec3 camDir = gFBEnv->pRenderer->GetCamera()->GetForward();
 	Vec3 camPos = gFBEnv->pRenderer->GetCamera()->GetPos();
-	std::sort(mActiveParticles.begin(), mActiveParticles.end(), [&camDir, &camPos](IParticleEmitter* a, IParticleEmitter* b)->bool
+	std::stable_sort(mActiveParticles.begin(), mActiveParticles.end(), [&camDir, &camPos](IParticleEmitter* a, IParticleEmitter* b)->bool
 	{
 		float da = (a->GetPos() - camPos).Dot(camDir);
 		float db = (b->GetPos() - camPos).Dot(camDir);

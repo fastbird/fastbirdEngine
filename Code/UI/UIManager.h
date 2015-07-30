@@ -34,6 +34,7 @@ namespace fastbird
 		typedef std::list<IWinBase*> WINDOWS;
 		VectorMap<HWND_ID, WINDOWS> mWindows;
 		std::map<std::string, WinBases> mLuaUIs;
+		std::map<std::string, WinBases> mCppUIs;
 
 		IWinBase* mFocusWnd;
 		IWinBase* mKeyboardFocus;
@@ -132,7 +133,7 @@ namespace fastbird
 		virtual void Update(float elapsedTime);
 		virtual void GatherRenderList();
 		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false);
-		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc);
+		virtual bool SaveUI(const char* uiname, tinyxml2::XMLDocument& doc);
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID);
 		virtual void DeleteLuaUI(const char* uiName);
 		virtual bool IsLoadedUI(const char* uiName);

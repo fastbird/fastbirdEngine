@@ -140,6 +140,12 @@ void ParticleRenderObject::Render()
 	mVertexBuffer->Bind();
 	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
 	
+	/*for (auto batch : mBatches){
+		++mNumDrawCalls;
+		pRenderer->Draw(batch.second, batch.first);
+		mNumDrawPrimitives += batch.second;
+	}*/
+
 	//draw
 	UINT num = 0;
 	UINT start = mBatches[0].first;
