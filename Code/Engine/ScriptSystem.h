@@ -6,6 +6,7 @@ namespace fastbird
 {
 	class ScriptSystem : public IScriptSystem
 	{
+		static RecursiveSpinLock<true, false> sLuaLock;
 		lua_State* mLuaState;
 
 		void ExportsDefaultFunctions();
@@ -29,6 +30,9 @@ namespace fastbird
 			const std::string& def);
 		virtual int GetIntVariable(const char* name, int def = 0);
 		virtual float GetRealVariable(const char* name, float def = 0);		
+
+		virtual void LockLua();
+		virtual void UnlockLua();
 
 	};
 }

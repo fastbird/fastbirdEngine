@@ -5,6 +5,7 @@
 #include <UI/UIAnimation.h>
 #include <UI/ImageBox.h>
 #include <UI/IUIEditor.h>
+#include <UI/LuaLock.h>
 #include <Engine/IRenderTarget.h>
 #include <Engine/RendererStructs.h>
 #include <CommonLib/StringUtils.h>
@@ -1080,7 +1081,8 @@ std::string WinBase::TranslateText(const char* text)
 		char varName[255];
 		const char* msgTranslationUnit = GetMsgTranslationUnit();
 		sprintf_s(varName, "%s.%s", msgTranslationUnit, text + 1);
-		auto var = GetLuaVar(gFBEnv->pUIManager->GetLuaState(), varName);
+		LuaLock L;
+		auto var = GetLuaVar(L, varName);
 		if (var.IsString())
 		{
 			return var.GetString();

@@ -1089,7 +1089,7 @@ namespace fastbird
 		}
 	}
 
-	void MeshObject::SetForceAlphaBlending(bool enable, float alpha){
+	void MeshObject::SetForceAlphaBlending(bool enable, float alpha, float forceGlow){
 		mForceAlphaBlending = enable;
 		if (mForceAlphaBlending){
 			for (auto& it : mMaterialGroups)
@@ -1099,6 +1099,10 @@ namespace fastbird
 					if (!it.mForceAlphaMaterial){
 						it.mForceAlphaMaterial = it.mMaterial->Clone();
 						it.mForceAlphaMaterial->CloneRenderStates();
+						if (forceGlow != 0.f){
+							it.mForceAlphaMaterial->AddShaderDefine("_FORCE_GLOW", FormatString(".2f", forceGlow));
+							it.mForceAlphaMaterial->ApplyShaderDefines();
+						}
 					}
 					BLEND_DESC bdesc;
 					bdesc.RenderTarget[0].BlendEnable = alpha != 1.0f;

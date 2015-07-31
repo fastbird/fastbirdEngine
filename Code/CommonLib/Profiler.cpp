@@ -54,6 +54,10 @@ namespace fastbird
 			*mAccumulator += elapsedTime;
 	}
 
+	float Profiler::GetDt(){
+		return (float)(gpTimer->GetTickCount() - mStartTick) / (float)gpTimer->GetFreq();
+	}
+
 	//-----------------------------------------------------------------------
 	// Profile simple
 	ProfilerSimple::ProfilerSimple(const wchar_t* name)

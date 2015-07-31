@@ -155,6 +155,7 @@ namespace fastbird
 
 		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val);
 		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val);
+		virtual void SetEnableComponent(const char* uiname, const char* compname, bool enable);
 
 		// IInputListener Interfaces
 		virtual void OnInput(IMouse* pMouse, IKeyboard* pKeyboard);

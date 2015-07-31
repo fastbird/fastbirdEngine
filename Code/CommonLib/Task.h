@@ -31,6 +31,7 @@ protected:
     bool mScheduled : 1;         // Is this task scheduled?
     bool mAutoDestroy : 1;       // Is this task automatically destroyed after execution?
     bool mIsDependency : 1;      // Is this task a dependency for another task?
+	bool mTriggered : 1;
     
 
 public:
@@ -44,6 +45,8 @@ public:
     {
         return mExecuted && !mSyncCounter;
     }
+
+	bool IsTriggered() const { return mTriggered; }
 
 	// wait to finish
 	void Sync();

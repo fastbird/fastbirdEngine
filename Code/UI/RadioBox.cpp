@@ -31,6 +31,7 @@ void RadioBox::OnCreated(){
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 	mRadioImageBox->SetUseAbsPos(false);
 	mRadioImageBox->SetUseAbsSize(false);
+	UpdateImage();
 
 	mStaticText = static_cast<StaticText*>(
 		AddChild(0.06f, 0.f, 0.79f, 1.0f, ComponentType::StaticText));
@@ -73,8 +74,6 @@ bool RadioBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::RADIO_CHECK:
 	{
-		if (mParent)
-			mParent->OnClickRadio(this);
 		SetCheck(StringConverter::parseBool(val));
 		return true;
 	}

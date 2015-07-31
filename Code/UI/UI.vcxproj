@@ -109,6 +109,7 @@
     <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="LuaLock.h" />
     <ClInclude Include="Styles.h" />
     <ClInclude Include="UIEvents.h" />
     <ClInclude Include="FileSelector.h" />
@@ -161,6 +162,7 @@
     <ClCompile Include="ListBoxDataSet.cpp" />
     <ClCompile Include="ListBoxData.cpp" />
     <ClCompile Include="ListItem.cpp" />
+    <ClCompile Include="LuaLock.cpp" />
     <ClCompile Include="PropertyList.cpp" />
     <ClCompile Include="TabWindow.cpp" />
     <ClCompile Include="UI_DLLMain.cpp" />

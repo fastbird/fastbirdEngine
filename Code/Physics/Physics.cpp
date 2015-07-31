@@ -372,9 +372,12 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 	if_assert_fail(shapeProvider)
 		return 0;
 
-	CollisionShape* shapes[2048];
+	static CollisionShape* shapes[10000];
 	auto num = shapeProvider->GetShapes(shapes);
-	assert(num < 2048);
+	if (num >= 10000){
+		Error("Over counts for colshapes!");
+	}
+	
 	return CreateColShape(shapes, num);
 }
 

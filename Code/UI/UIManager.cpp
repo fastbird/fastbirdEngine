@@ -846,6 +846,10 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	if (mMouseOvered == winbase)
 		mMouseOvered = 0;
 
+	if (mMouseDragStartedUI == winbase){
+		mMouseDragStartedUI = 0;
+	}
+
 	if (winbase->GetRender3D())
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
@@ -951,6 +955,18 @@ void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProper
 	else
 	{
 		Error("Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", compname, uiname, UIProperty::ConvertToString(prop));
+	}
+}
+
+void UIManager::SetEnableComponent(const char* uiname, const char* compname, bool enable){
+	auto comp = FindComp(uiname, compname);
+	if (comp)
+	{
+		comp->SetEnable(enable);
+	}
+	else
+	{
+		Error("Cannot find ui comp(%s) in ui(%s) to set enable flag.", compname, uiname);
 	}
 }
 
