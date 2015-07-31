@@ -11,16 +11,20 @@ You need these libraries to compile the source code. You can find the '.bat' fil
 * _FASTBIRD_ENGINE_DIR
   * Run _FASTBIRD_ENGINE_DIR.bat in code/ directory.
 * FreeImage 3.15.4
-  * Copy code/_FREEIMAGE(3.15.4)_DIR.bat file to your FreeImage directory and run. This will create $(FREEIMAGE_DIR) environment variable and the variable is used in the project setting.
+  * Copy code/_FREEIMAGE(3.15.4)_DIR.bat file to your FreeImage directory and run. This will create a $(FREEIMAGE_DIR) environment variable and the variable is used in the project setting.
 * Lua 5.2.3 
-  * Copy code/_LUA_DIR(5.2.3).bat file to your Lua directory and run. This will create $(LUA_DIR) environment variable.
+  * Copy code/_LUA_DIR(5.2.3).bat file to your Lua directory and run. This will create a $(LUA_DIR) environment variable.
 * Zlib 1.2.8 
-  * Copy code/_ZLIB(1.2.8)_HOME.bat file to your zlib directory and run. This will create $(ZLIB_HOME) environment variable.
+  * Copy code/_ZLIB(1.2.8)_HOME.bat file to your zlib directory and run. This will create a $(ZLIB_HOME) environment variable.
 * OpenCollada 
-  * Copy code/_OpenCOLLADA_HOME.bat file to your opencolldada directory and run. This will create $(OpenCOLLADA_HOME) environment variable.
+  * Copy code/_OpenCOLLADA_HOME.bat file to your opencolldada directory and run. This will create a $(OpenCOLLADA_HOME) environment variable.
 * Bullet Physics 2.82
-  * copy code/_BULLET(2.82)_DIR.bat file to your Bullet directory and run. This will create $(BULLET_DIR) environment variable.
- 
+  * copy code/_BULLET(2.82)_DIR.bat file to your Bullet directory and run. This will create a $(BULLET_DIR) environment variable.
+* Vorbis 1.3.5
+  * copy code/_VORBIS_DIR.bat file to your Vorbis library directory and run. This will create a $(VORBIS_DIR) environment variable.
+* Theora 1.1.1
+  * copy code/_THEORA_DIR.bat file to your Theora library directory and run. This will create a $(THEORA_DIR) environment variable.
+
 The project is being developed in Visual Studio 2013 Community.
  
 
