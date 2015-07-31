@@ -287,7 +287,7 @@ void RigidBodyImpl::SetDamping(float linear, float angular)
 	setDamping(linear, angular);
 }
 
-bool RigidBodyImpl::HasContact(std::vector<void*>* gamePtrs)
+unsigned RigidBodyImpl::HasContact(void* gamePtrs[], int limit)
 {
 	struct Callback : public btCollisionWorld::ContactResultCallback
 	{
@@ -335,13 +335,17 @@ bool RigidBodyImpl::HasContact(std::vector<void*>* gamePtrs)
 	Callback callback(this);
 	Physics* physics = (Physics*)gFBPhysics;
 	physics->_GetDynamicWorld()->contactTest(this, callback);
+	unsigned num = 0;
 	if (gamePtrs && !callback.mCollided.empty())
 	{
 		for (auto& rigidBody : callback.mCollided){
-			gamePtrs->push_back(rigidBody->GetGamePtr());
+			gamePtrs[num++] = rigidBody->GetGamePtr();
 		}
 	}
-	return callback.mHasCollision;
+	else{
+		num = callback.mCollided.size();
+	}
+	return num;
 }
 
 void RigidBodyImpl::RemoveRigidBodyFromWorld()

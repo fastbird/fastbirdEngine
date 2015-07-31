@@ -27,6 +27,7 @@
 #include <vector>
 #include <Engine/GlobalEnv.h>
 #include <Engine/IInputListener.h>
+#include <Engine/VideoPlayerType.h>
 
 #define FB_DEFAULT_DEBUG_ARG "%s(%d): %s() - %s", __FILE__, __LINE__, __FUNCTION__
 #define FB_LOG(msg) gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, (msg));
@@ -54,6 +55,8 @@ namespace fastbird
 	class IDustRenderer;
 	class TextManipulator;
 	class LuaObject;
+	class ITrailObject;
+	class IVideoPlayer;
 	
 	typedef unsigned HWND_ID;
 	static const HWND_ID INVALID_HWND_ID = (HWND_ID)-1;
@@ -130,6 +133,9 @@ namespace fastbird
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr) = 0;
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p) = 0;
 
+		virtual ITrailObject* CreateTrailObject() = 0;
+		virtual void ReleaseTrailObject(ITrailObject* trail) = 0;
+
 		// usually you should not use these functions.
 		virtual void GetMousePos(long& x, long& y) = 0;
 		virtual bool IsMouseLButtonDown() const = 0;
@@ -183,6 +189,9 @@ namespace fastbird
 
 		virtual void StopFileChangeMonitor(const char* filepath) = 0;
 		virtual void ResumeFileChangeMonitor(const char* filepath) = 0;
+		
+		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type) = 0;
+		virtual void ReleaseVideoPlayer(IVideoPlayer* player) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

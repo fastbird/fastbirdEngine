@@ -8,6 +8,17 @@ namespace fastbird
 	const char* GetCWD();
 }
 
+static int traceback(lua_State *L) {
+	const char *msg = lua_tostring(L, 1);
+	if (msg)
+		luaL_traceback(L, L, msg, 1);
+	//else if (!lua_isnoneornil(L, 1)) {  /* is there an error object? */
+	//	if (!luaL_callmeta(L, 1, "__tostring"))  /* try its 'tostring' metamethod */
+	//		lua_pushliteral(L, "(no error message)");
+	//}
+	return 1;
+}
+
 #define CHECK_NUM_LUA_ARGS_FB(x) \
 	int numLuaArgs = lua_gettop(L); \
 if (numLuaArgs != (x)) \
@@ -19,7 +30,7 @@ if (numLuaArgs != (x)) \
 #define LUA_SETCFUNCTION(lua, name) lua_pushcfunction((lua), (name));\
 	lua_setglobal((lua), (#name));
 
-#define LUA_PCALL(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
+#define LUA_PCALL(lua, arg, ret) if(int error = lua_pcall((lua), (arg), ret, 0)) \
 {\
 	const char* errorString = lua_tostring(lua, -1); \
 	fastbird::Error("Failed to call lua function. Error(%d)", error);\
@@ -29,14 +40,22 @@ if (numLuaArgs != (x)) \
 	return;\
 }
 
-#define LUA_PCALL_RET_FALSE(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \
+#define LUA_PCALL_RET_FALSE(lua, arg, ret) \
+int cfuncbase = lua_gettop(lua) - (arg);  /* function index */\
+lua_pushcfunction(lua, traceback);  /* push traceback function */\
+lua_insert(lua, cfuncbase);  /* put it under chunk and args */\
+if(int error = lua_pcall((lua), (arg), ret, cfuncbase)) \
 {\
+	lua_remove(lua, cfuncbase);\
 	const char* errorString = lua_tostring(lua, -1);\
 	fastbird::Error("Failed to call lua function. Error(%d)", error);\
 	fastbird::PrintLuaErrorString(lua, errorString);\
 	lua_pop(lua, 1); \
 	assert(0); \
 	return false; \
+}\
+else{\
+	lua_remove(lua, cfuncbase);\
 }
 
 #define LUA_PCALL_NO_RET(lua, arg, ret) if(int error = lua_pcall((lua), arg, ret, 0)) \

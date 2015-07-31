@@ -24,7 +24,7 @@ namespace fastbird
 
 		virtual bool ParseUI(const char* filepath, std::vector<IWinBase*>& windows, std::string& uiname, 
 			HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false) = 0;
-		virtual void SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) = 0;
+		virtual bool SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) = 0;
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID) = 0;
 		virtual void DeleteLuaUI(const char* uiName) = 0;
 		virtual bool IsLoadedUI(const char* uiName) = 0;
@@ -68,6 +68,7 @@ namespace fastbird
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
 		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val) = 0;
 		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val) = 0;
+		virtual void SetEnableComponent(const char* uiname, const char* compname, bool enable) = 0;
 		virtual void LockFocus(bool lock) = 0;
 		virtual void CloseAllLuaUI()=0;
 

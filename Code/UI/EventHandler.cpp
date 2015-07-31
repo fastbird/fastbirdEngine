@@ -89,7 +89,8 @@ bool EventHandler::OnEvent(UIEvents::Enum e)
 			it->second.PushToStack();
 			WinBase* pComp = dynamic_cast<WinBase*>(this);
 			lua_pushstring(L, pComp->GetName());
-			LUA_PCALL_RET_FALSE(L, it->second.IsMethod() ? 2 : 1, 0);
+			int args = it->second.IsMethod() ? 2 : 1;
+			LUA_PCALL_RET_FALSE(L, args, 0);
 			processed = processed || true;
 		}
 		

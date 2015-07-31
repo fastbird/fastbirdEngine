@@ -71,6 +71,7 @@ namespace fastbird
 		, mLockMouseKey(0), mInvalidatedTemporary(false)
 		, mRDragStarted(false)
 		, mRDragEnd(false)
+		, mNoClickOnce(false)		
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -245,9 +246,14 @@ namespace fastbird
 				//if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
 				if (!mLButtonDoubleClicked)
 				{
-					mButtonsClicked |= MOUSE_BUTTON_LEFT;
-					mLastClickTime = gFBEnv->pTimer->GetTime();
-					mLastClickPos = Vec2I(mAbsX, mAbsY);
+					if (mNoClickOnce){
+						mNoClickOnce = false;						
+					}
+					else{
+						mButtonsClicked |= MOUSE_BUTTON_LEFT;
+						mLastClickTime = gFBEnv->pTimer->GetTime();
+						mLastClickPos = Vec2I(mAbsX, mAbsY);
+					}
 				}
 			}
 
@@ -267,23 +273,25 @@ namespace fastbird
 			}
 
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;			
-			if (mouseNotMoved && rightElapsedTime < 0.15f)
-			{
+
+			
+			if (mNoClickOnce){
+				mNoClickOnce = false;
+			}
+			else{
 				mButtonsClicked |= MOUSE_BUTTON_RIGHT;
 				mLastClickTime = gFBEnv->pTimer->GetTime();
 				mLastClickPos = Vec2I(mAbsX, mAbsY);
 			}
+			
 			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_UP)
 		{
 			mButtonsDown &= ~MOUSE_BUTTON_MIDDLE;
-			if (mouseNotMoved)
-			{
-				mButtonsClicked |= MOUSE_BUTTON_MIDDLE;
-				mLastClickTime = gFBEnv->pTimer->GetTime();
-				mLastClickPos = Vec2I(mAbsX, mAbsY);
-			}
+			mButtonsClicked |= MOUSE_BUTTON_MIDDLE;
+			mLastClickTime = gFBEnv->pTimer->GetTime();
+			mLastClickPos = Vec2I(mAbsX, mAbsY);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_BUTTON_4_UP)
 		{
@@ -625,7 +633,7 @@ namespace fastbird
 	{
 		if (!mWorldRayCalculated)
 		{
-			ICamera* pCam = gFBEnv->pRenderer->GetCamera();
+			ICamera* pCam = gFBEnv->pRenderer->GetMainCamera();
 			if (pCam)
 			{
 				mWorldRayCalculated = true;
@@ -664,5 +672,13 @@ namespace fastbird
 		mAbsY = cursorPos.y;
 		mAbsXPrev = cursorPos.x;
 		mAbsYPrev = cursorPos.y;
+	}
+
+	void Mouse::NoClickOnce(){
+		mNoClickOnce = true;
+	}
+
+	void Mouse::ClearRightDown(){		
+		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
 }

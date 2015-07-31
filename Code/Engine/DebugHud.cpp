@@ -67,10 +67,14 @@ DebugHud::~DebugHud()
 void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color, float size)
 {
-	mTextsForDur.push_back(TextData(pos, text, color, size, secs));
-	while (mTextsForDur.size() > 10)
+	auto it = mTextsForDur.find(pos);
+	if (it == mTextsForDur.end()){
+		it = mTextsForDur.insert(std::make_pair(pos, MessageBuffer())).first;
+	}
+	it->second.push_back(TextData(pos, text, color, size, secs));
+	while (it->second.size() > 10)
 	{
-		mTextsForDur.pop_front();
+		it->second.pop_front();
 	}
 }
 
@@ -308,32 +312,34 @@ void DebugHud::Render()
 	// render text for duration
 	{
 		pFont->SetRenderStates();
-		auto it = mTextsForDur.begin();
-		int count = 0;
-
-		for (; it != mTextsForDur.end(); ++count)
+		auto itDur = mTextsForDur.begin();
+		for (; itDur != mTextsForDur.end(); ++itDur)
 		{
-			it->mSecs -= gFBEnv->pTimer->GetDeltaTime();
-			if (it->mSecs<=0.f)
-			{
-				it = mTextsForDur.erase(it);
-				continue;
-			}
-			else
-			{
-				Vec2I offset(0, 0);
-				offset.y += (int)pFont->GetHeight() * count;
+			int count = 0;
+			auto it = itDur->second.begin();
+			for (; it != itDur->second.end(); ++count){
+				it->mSecs -= gFBEnv->pTimer->GetDeltaTime();
+				if (it->mSecs <= 0.f)
+				{
+					it = itDur->second.erase(it);
+					continue;
+				}
+				else
+				{
+					Vec2I offset(0, 0);
+					offset.y += (int)pFont->GetHeight() * count;
 
-				Vec2I drawPos = it->mPos + offset;
-				pFont->SetHeight(it->mSize);
-				Color color = it->mColor;
-				float proportion = 1.0f - (it->mSecs / it->mDuration);
-				color.a() = 1.0f - (proportion*proportion);
-				pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
-					(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
+					Vec2I drawPos = it->mPos + offset;
+					pFont->SetHeight(it->mSize);
+					Color color = it->mColor;
+					float proportion = 1.0f - (it->mSecs / it->mDuration);
+					color.a() = 1.0f - (proportion*proportion);
+					pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
+						(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
 
 
-				it++;
+					it++;
+				}
 			}
 		}
 		pFont->SetBackToOrigHeight();

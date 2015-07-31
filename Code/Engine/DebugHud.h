@@ -133,7 +133,7 @@ private:
 	typedef std::queue<TextData> MessageQueue;
 	MessageQueue mTexts;
 	typedef std::list<TextData> MessageBuffer;
-	MessageBuffer mTextsForDur;
+	std::map<Vec2I, MessageBuffer> mTextsForDur;
 	std::vector<Line> mScreenLines;
 	std::vector<Line> mWorldLines;
 	std::vector<Line> mWorldLinesBeforeAlphaPass;

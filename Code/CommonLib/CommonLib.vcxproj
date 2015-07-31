@@ -56,7 +56,12 @@
     <Import Project="..\fastbirdLibs.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)_$(Configuration)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>$(ProjectName)_$(Configuration)</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -134,6 +139,7 @@
   <ItemGroup>
     <ClInclude Include="AsyncObjects.h" />
     <ClInclude Include="BlockFrequent.h" />
+    <ClInclude Include="CatmullRom.h" />
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="ClipboardData.h" />
     <ClInclude Include="Collision\GeomCollisions.h" />
@@ -159,6 +165,8 @@
     <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="PerlinNoise.h" />
+    <ClInclude Include="RecursiveLock.h" />
+    <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="SpinLock.h" />
     <ClInclude Include="StackTracer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -234,6 +242,8 @@
     <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="Profiler.cpp" />
+    <ClCompile Include="RecursiveLock.cpp" />
+    <ClCompile Include="RecursiveSpinLock.cpp" />
     <ClCompile Include="SmartPtr.cpp" />
     <ClCompile Include="SpinLock.cpp" />
     <ClCompile Include="StackTracer.cpp">

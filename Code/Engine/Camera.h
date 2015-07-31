@@ -91,19 +91,22 @@ namespace fastbird
 			UserParameters()
 			{
 				Clear();
+				forceChanged = true;
 			}
 			void Clear()
 			{
 				dDist = 0.00f, dYaw = 0.f, dPitch = 0.f;
+				forceChanged = false;
 			}
 
 			bool Changed()
 			{
-				return dDist != 0.f || dYaw != 0.f || dPitch != 0.f;
+				return dDist != 0.f || dYaw != 0.f || dPitch != 0.f || forceChanged;
 			}
 			float dDist;
 			float dYaw;
 			float dPitch;
+			bool forceChanged;
 
 		} mUserParams;
 

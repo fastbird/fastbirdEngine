@@ -776,7 +776,7 @@ bool ParticleEmitter::Update(float dt)
 				}
 				if (pt->mCameraPulling != 0)
 				{
-					p.mPosWorld -= gFBEnv->pRenderer->GetCamera()->GetDir() * pt->mCameraPulling;
+					p.mPosWorld -= gFBEnv->pRenderer->GetMainCamera()->GetDir() * pt->mCameraPulling;
 				}
 
 				//change rot speed
@@ -899,7 +899,7 @@ bool ParticleEmitter::Update(float dt)
 
 	if (mMoveToCam)
 	{
-		auto cam = gFBEnv->pRenderer->GetCamera();
+		auto cam = gFBEnv->pRenderer->GetMainCamera();
 		if (cam)
 		{
 			auto& camPos = cam->GetPos();
@@ -988,7 +988,7 @@ void ParticleEmitter::CopyDataToRenderer(float dt)
 {
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
-	ICamera* pCamera = gFBEnv->pRenderer->GetCamera();
+	ICamera* pCamera = gFBEnv->pRenderer->GetMainCamera();
 	assert(pCamera);
 	//if (pCamera->IsCulled(mBoundingVolumeWorld))
 		//return;
@@ -1404,7 +1404,7 @@ void ParticleEmitter::SetLength(float len)
 //		PARTICLES::VECTOR& v = ps.GetVector();
 //		PARTICLES::iterator& begin = ps.GetRawBeginIter();
 //		PARTICLES::iterator& end = ps.GetRawEndIter();
-//		Vec3 pos = gFBEnv->pRenderer->GetCamera()->GetPos();
+//		Vec3 pos = gFBEnv->pRenderer->GetMainCamera()->GetPos();
 //		std::sort(v.begin(), v.end()-1, [&pos](const PARTICLES::value_type& v1, const PARTICLES::value_type& v2)->bool {
 //			float distance1 = (v1.mPosWorld - pos).LengthSQ();
 //			float distance2 = (v2.mPosWorld - pos).LengthSQ();

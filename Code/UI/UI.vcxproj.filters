@@ -107,6 +107,7 @@
     <ClInclude Include="UIEvents.h" />
     <ClInclude Include="Styles.h" />
     <ClInclude Include="CardData.h" />
+    <ClInclude Include="LuaLock.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Components">
@@ -206,5 +207,6 @@
       <Filter>Components</Filter>
     </ClCompile>
     <ClCompile Include="CardData.cpp" />
+    <ClCompile Include="LuaLock.cpp" />
   </ItemGroup>
 </Project>

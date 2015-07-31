@@ -18,6 +18,8 @@ namespace fastbird
 	class ISkyBox;
 	class IScriptSystem;
 	class ParticleManager;
+	class ITrailObject;
+	class AudioManager;
 	class Engine : public IEngine
 	{
 		VectorMap<HWND_ID, HWND> mWindowHandles;
@@ -60,6 +62,7 @@ namespace fastbird
 		bool mExiting;
 		
 		std::set<std::string> mIgnoreFileChanges;
+		AudioManager* mAudioManager;
 	
 
 	public:
@@ -113,6 +116,10 @@ namespace fastbird
 		virtual IParticleEmitter* GetParticleEmitter(const char* file, bool useSmartPtr);
 		virtual IParticleEmitter* GetParticleEmitter(unsigned id, bool useSmartPtr);
 		virtual void ReleaseParticleEmitter(IParticleEmitter* p);
+
+		virtual ITrailObject* CreateTrailObject();
+		virtual void ReleaseTrailObject(ITrailObject* trail);
+
 
 		virtual void GetMousePos(long& x, long& y);
 		virtual bool IsMouseLButtonDown() const;
@@ -189,6 +196,9 @@ namespace fastbird
 
 		virtual void StopFileChangeMonitor(const char* filepath);
 		virtual void ResumeFileChangeMonitor(const char* filepath);
+
+		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type);
+		virtual void ReleaseVideoPlayer(IVideoPlayer* player);
 	};
 };
 

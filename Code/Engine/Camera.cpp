@@ -27,8 +27,8 @@ Camera::Camera()
 {
 	// proj properties
 	SetFOV(Radian(70));
-	mNear = 1.3f;
-	mFar = 2000.0f;
+	mNear = 0.5f;
+	mFar = 1500.0f;
 }
 
 Camera::~Camera()
@@ -390,6 +390,7 @@ void Camera::SetTarget(SpatialObject* pObj)
 
 void Camera::SetDistanceFromTarget(float dist){
 	mInternalParams.dist = dist;
+	mUserParams.forceChanged= true;
 }
 
 //---------------------------------------------------------------------------

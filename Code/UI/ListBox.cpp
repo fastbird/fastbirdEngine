@@ -26,7 +26,7 @@ ListBox::ListBox()
 	, mData(0)
 	, mStartIndex(0)
 	, mEndIndex(10)
-	, mFocusedListItem(0), mLastChangedItem(-1, -1)
+	, mFocusedListItem(0), mLastChangedItem(-1, -1), mNoSearch(false)
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -102,7 +102,7 @@ unsigned ListBox::InsertItem(unsigned uniqueKey){
 			row.push_back(0);
 		}
 	}
-
+	RefreshVScrollbar();
 	return index;
 }
 
@@ -119,6 +119,8 @@ unsigned ListBox::InsertItem(const wchar_t* uniqueKey)
 			row.push_back(0);
 		}
 	}
+	RefreshVScrollbar();
+
 	return index;
 }
 
@@ -132,6 +134,7 @@ unsigned ListBox::InsertEmptyData(){
 			row.push_back(0);
 		}
 	}
+	RefreshVScrollbar();
 	return index;
 }
 
@@ -190,7 +193,7 @@ void ListBox::RemoveRow(const wchar_t* uniqueKey)
 	if (!mData)
 		return;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 
 	if (deletedIndex != -1)
@@ -208,7 +211,7 @@ void ListBox::RemoveRow(unsigned uniqueKey){
 	if (!mData)
 		return;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 	if (deletedIndex != -1)
 	{
@@ -217,7 +220,9 @@ void ListBox::RemoveRow(unsigned uniqueKey){
 			if (*it == deletedIndex)
 				SetHighlightRow(deletedIndex, false);
 		}
-		VisualizeData(deletedIndex);
+		for (unsigned i = deletedIndex; i <= mEndIndex; ++i){
+			VisualizeData(i);
+		}
 	}
 }
 
@@ -230,7 +235,7 @@ void ListBox::RemoveRowWithIndex(unsigned index){
 		return;
 	}
 	unsigned deletedIndex = mData->DelDataWithIndex(index);
-	if (mFocusedListItem->GetRowIndex() == deletedIndex)
+	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
 	if (deletedIndex != -1)
 	{
@@ -337,8 +342,14 @@ void ListBox::Clear(bool immediately)
 	mHighlighted.clear();
 	TriggerRedraw();
 	gFBUIManager->DirtyRenderList(GetHwndId());
-	if (mScrollerV){
-		mScrollerV->SetOffset(Vec2(0.f, 0.f));
+	
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
+
+	if (scrollerV){
+		scrollerV->SetOffset(Vec2(0.f, 0.f));
 	}
 }
 
@@ -497,7 +508,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				pAddedItem->SetProperty(UIProperty::TEXT_ALIGN, "center");
 				pAddedItem->SetRowIndex(-1);
 				pAddedItem->SetColIndex(i);
-				pAddedItem->SetText(AnsiToWide(strs[i].c_str()));
+				pAddedItem->SetProperty(UIProperty::TEXT, strs[i].c_str());
 			}
 
 			mWndContentUI = contentWndBackup;
@@ -518,6 +529,8 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				mWndContentUI->SetUseAbsSize(false);
 				mWndContentUI->ChangePos(Vec2I(0, (mRowHeight + 4)));
 				mWndContentUI->SetProperty(UIProperty::NO_BACKGROUND, "true");
+				mWndContentUI->SetChildrenContentEndFunc(std::bind(&ListBox::GetChildrenContentEnd, this));
+				mWndContentUI->SetScrolledFunc(std::bind(&ListBox::Scrolled, this));
 				if (prevScrollerV)
 				{					
 					mWndContentUI->SetProperty(UIProperty::SCROLLERV, "true");					
@@ -539,11 +552,17 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 	case UIProperty::TEXTUREATLAS:
-		{
-										 assert(val);
-										 mTextureAtlas = val;
-										 return true;
-		}
+	{
+										assert(val);
+										mTextureAtlas = val;
+										return true;
+	}
+	case UIProperty::LISTBOX_NO_SEARCH:
+	{
+		mNoSearch = StringConverter::parseBool(val);
+		return true;
+	}
+
 	}
 
 	
@@ -656,7 +675,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	case UIProperty::LISTBOX_MULTI_SELECTION:
 	{
 		if (notDefaultOnly){
-			if (mMultiSelection == GetPropertyAsBool(prop)){
+			if (mMultiSelection == UIProperty::GetDefaultValueBool(prop)){
 				return false;
 			}
 		}
@@ -668,7 +687,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	case UIProperty::LISTBOX_NO_HIGHLIGHT:
 	{
 		if (notDefaultOnly){
-			if (mNoHighlight == GetPropertyAsBool(prop)){
+			if (mNoHighlight == UIProperty::GetDefaultValueBool(prop)){
 				return false;
 			}
 		}
@@ -684,6 +703,17 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 				return false;
 		}
 		strcpy_s(val, bufsize, mTextureAtlas.c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_NO_SEARCH:
+	{
+		if (notDefaultOnly){
+			if (mNoSearch == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::toString(mNoSearch).c_str());
 		return true;
 	}
 	}
@@ -793,7 +823,7 @@ bool ListBox::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 				bool apply = true;
 				IterateItem(next, apply);
 			}
-			else
+			else if (!mNoSearch)
 			{
 				keyboard->PopChar();
 				if (mFocusedListItem) {
@@ -1059,7 +1089,7 @@ void ListBox::OnItemDoubleClicked(void* arg)
 }
 
 void ListBox::OnItemEnter(void* arg){
-	if (mFocusedListItem->GetChild(0) == arg)
+	if (mFocusedListItem && mFocusedListItem->GetChild(0) == arg)
 	{
 		unsigned rowIndex = mFocusedListItem->GetRowIndex();
 		unsigned colIndex = mFocusedListItem->GetColIndex();
@@ -1248,10 +1278,14 @@ void ListBox::VisualizeData(unsigned index){
 	}
 
 	int hgap = mRowHeight + mRowGap;
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
 	Vec2 offset(0, 0);
-	if (mScrollerV)
+	if (scrollerV)
 	{
-		offset = mScrollerV->GetOffset();
+		offset = scrollerV->GetOffset();
 	}
 
 	const auto data = mData->GetData(index);
@@ -1275,8 +1309,8 @@ void ListBox::VisualizeData(unsigned index){
 			for (unsigned c = 0; c < mNumCols; ++c){
 				items[c]->SetPosY(y);
 				items[c]->SetWNScollingOffset(offset);
-				items[c]->SetRowIndex(index);
-				mChildren.push_back(items[c]);
+				items[c]->SetRowIndex(index);				
+				AddChildSimple(items[c]);
 				mItems[index][c] = items[c];
 			}
 			mRecycleBin.pop_back();
@@ -1617,12 +1651,18 @@ void ListBox::Scrolled()
 	unsigned prevStart = mStartIndex;
 	unsigned prevEnd = mEndIndex;
 	int hgap = mRowHeight + mRowGap;
-
-	if (mScrollerV)
+	auto scrollerV = mScrollerV;
+	unsigned sizeY = mSize.y;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+		sizeY = mWndContentUI->GetSize().y;
+	}
+	
+	if (scrollerV)
 	{
-		Vec2 offset = mScrollerV->GetOffset();
+		Vec2 offset = scrollerV->GetOffset();
 		int scrolledLen = -Round(offset.y * GetRenderTargetSize().y) - mRowGap;
-		int topToBottom = mSize.y + scrolledLen - mRowGap;
+		int topToBottom = sizeY + scrolledLen - mRowGap;
 
 		// decide visual index range		
 		mStartIndex = scrolledLen / hgap;
@@ -1634,7 +1674,7 @@ void ListBox::Scrolled()
 	else
 	{
 		// decide visual index range
-		int topToBottom = mSize.y;
+		int topToBottom = sizeY;
 		mStartIndex = 0;
 		mEndIndex = topToBottom / hgap;
 		int remain = topToBottom % hgap;
@@ -1699,15 +1739,20 @@ void ListBox::SearchStartingChacrcter(char c, unsigned curIndex)
 	unsigned index = mData->FindNext(0, c, curIndex);
 	if (index == -1)
 		return;
+	
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
 
-	if (mScrollerV)
+	if (scrollerV)
 	{
 		if (index < mStartIndex + 1 || index >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
 		{
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * index + mRowGap;
 
-			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+			scrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
 		}
 	}
 	if (mItems[index][0])
@@ -1774,7 +1819,11 @@ void ListBox::IterateItem(bool next, bool apply)
 }
 
 void ListBox::MakeSureRangeFor(unsigned rowIndex){
-	if (mScrollerV)
+	auto scrollerV = mScrollerV;
+	if (!scrollerV && mWndContentUI){
+		scrollerV = mWndContentUI->GetScrollerV();
+	}
+	if (scrollerV)
 	{
 		if (rowIndex < mStartIndex + 1 ||
 			(rowIndex >(mEndIndex >= 3 ? mEndIndex - 3 : mEndIndex))
@@ -1783,7 +1832,7 @@ void ListBox::MakeSureRangeFor(unsigned rowIndex){
 			unsigned hgap = mRowHeight + mRowGap;
 			unsigned destY = hgap * rowIndex + mRowGap;
 
-			mScrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
+			scrollerV->SetOffset(Vec2(0.f, -(destY / (float)GetRenderTargetSize().y)));
 		}
 	}
 }
@@ -1914,6 +1963,9 @@ void ListBox::UpdateItemAlign(){
 	for (auto row : mItems){
 		unsigned col = 0;
 		for (auto item : row){
+			if (!item)
+				continue;
+
 			if (item->GetMerged())
 				break;
 			item->SetProperty(UIProperty::TEXT_ALIGN, mColAlignes[col].c_str());

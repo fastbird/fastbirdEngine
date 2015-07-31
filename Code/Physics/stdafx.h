@@ -1,6 +1,10 @@
 #include <CommonLib/Config.h>
 
-#pragma comment(lib, "CommonLib.lib")
+#ifdef _DEBUG
+#pragma comment(lib, "CommonLib_Debug.lib")
+#else
+#pragma comment(lib, "CommonLib_Release.lib")
+#endif
 
 #ifdef _DEBUG
 #pragma comment(lib, "BulletCollision_vs2010_debug.lib")

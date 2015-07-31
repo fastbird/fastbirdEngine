@@ -7,6 +7,7 @@ namespace fastbird
 	public:
 		Profiler(const char* name, float* accumulator=0);
 		void SetAccumulator(float* p);
+		float GetDt();
 		virtual ~Profiler();
 
 	protected:

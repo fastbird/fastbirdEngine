@@ -225,6 +225,8 @@ void Container::RemoveChildNotDelete(IWinBase* child)
 	}
 	if (gFBUIManager->GetKeyboardFocusUI() == child)
 		gFBUIManager->SetFocusUI(this);
+
+	gFBUIManager->DirtyRenderList(GetHwndId());
 }
 
 void Container::RemoveAllChild(bool immediately)
@@ -499,6 +501,11 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (mWndContentUI){
+		mWndContentUI->RefreshVScrollbar();
+		return;
+	}
+
 	if (!mScrollerV && !mUseScrollerV)
 		return;
 
@@ -588,7 +595,15 @@ float Container::GetContentEnd() const{
 	return end;	
 }
 
+void Container::SetChildrenContentEndFunc(ChildrenContentEndFunc func){
+	mChildrenContentEndFunc = func;
+}
+
 float Container::GetChildrenContentEnd() const{
+	if (mChildrenContentEndFunc){
+		return mChildrenContentEndFunc();
+	}
+
 	float end = 0;
 	for (auto i : mChildren){
 		WinBase* winbase = (WinBase*)i;
@@ -655,8 +670,15 @@ void Container::OnParentVisibleChanged(bool visible)
 	}
 }
 
+void Container::SetScrolledFunc(ScrolledFunc func){
+	mScrolledFunc = func;
+}
 void Container::Scrolled()
 {
+	if (mScrolledFunc){
+		mScrolledFunc();
+	}
+
 	if (mScrollerV)
 	{
 		float visableRatio = mScrollerV->GetNSize().y;
@@ -678,7 +700,7 @@ void Container::Scrolled()
 		}
 		TriggerRedraw();
 	}
-	else if (mWndContentUI)
+	else if (mWndContentUI && !mWndContentUI->SetScrolledFunc())
 	{
 		mWndContentUI->Scrolled();
 	}
@@ -1166,6 +1188,18 @@ void Container::AddChild(IWinBase* child){
 	winbase->OnParentPosChanged();
 
 	SetChildrenPosSizeChanged();	
+}
+
+void Container::AddChildSimple(IWinBase* child){
+	if (!child)
+		return;
+
+	if (mWndContentUI)
+	{
+		mWndContentUI->AddChildSimple(child);
+		return;
+	}
+	mChildren.push_back(child);
 }
 
 void Container::DoNotTransfer(IWinBase* child){

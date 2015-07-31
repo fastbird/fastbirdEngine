@@ -14,7 +14,10 @@ int _FBPrint(lua_State* L)
 
 namespace fastbird
 {
-	void InitEngineLuaFuncs(lua_State* L);
+
+RecursiveSpinLock<true, false> ScriptSystem::sLuaLock;
+
+void InitEngineLuaFuncs(lua_State* L);
 //-------------------------------------------------------------------------
 ScriptSystem::ScriptSystem()
 {
@@ -176,6 +179,13 @@ float ScriptSystem::GetRealVariable(const char* name, float def)
 void ScriptSystem::ExportsDefaultFunctions()
 {
 	LUA_SETCFUNCTION(mLuaState, _FBPrint);
+}
+
+void ScriptSystem::LockLua(){
+	sLuaLock.Lock();
+}
+void ScriptSystem::UnlockLua(){
+	sLuaLock.Unlock();
 }
 
 }

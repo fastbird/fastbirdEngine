@@ -20,7 +20,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#pragma comment(lib, "CommonLib.lib")
+#ifdef _DEBUG
+#pragma comment(lib, "CommonLib_Debug.lib")
+#else
+#pragma comment(lib, "CommonLib_Release.lib")
+#endif
 #pragma comment(lib, "lua.lib")
 #pragma comment(lib, "d3dx11d.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -28,6 +32,10 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "zdll.lib")
+#pragma comment(lib, "libogg.lib")
+#pragma comment(lib, "libtheora.lib")
+#pragma comment(lib, "libvorbis.lib")
+#pragma comment(lib, "OpenAL32.lib")
 
 #ifdef _DEBUG
 #pragma comment(lib, "freeimaged.lib")
@@ -83,3 +91,7 @@ extern "C" {
 #include <Engine/IMouse.h>
 #include <Engine/D3DEventMarker.h>
 #include <Engine/IConsole.h>
+
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/alext.h>

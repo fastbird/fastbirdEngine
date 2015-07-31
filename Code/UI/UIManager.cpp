@@ -447,47 +447,61 @@ bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& ui
 		{
 			mLuaUIs[lowerUIname].push_back(topWindow);
 		}
-
+	}
+	else{
+		mCppUIs[lowerUIname].clear();
 		for (const auto& topWindow : windows)
 		{
-			auto eventHandler = dynamic_cast<EventHandler*>(topWindow);
-			if (eventHandler)
-				eventHandler->OnEvent(UIEvents::EVENT_ON_LOADED);
-		}
+			mCppUIs[lowerUIname].push_back(topWindow);
+		}		
+	}
 
+	for (const auto& topWindow : windows)
+	{
+		auto eventHandler = dynamic_cast<EventHandler*>(topWindow);
+		if (eventHandler)
+			eventHandler->OnEvent(UIEvents::EVENT_ON_LOADED);
 	}
 
 	return true;
 }
 
 //---------------------------------------------------------------------------
-void UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc)
+bool UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc)
 {
 	std::string lower = uiname;
 	ToLowerCase(lower);
 	auto it = mLuaUIs.find(lower);
-	if (it == mLuaUIs.end())
-	{
-		Error(FB_DEFAULT_DEBUG_ARG, FormatString("no ui found with the name %s", uiname));
-		return;
+	WinBases* topWindows = 0;
+	if (it != mLuaUIs.end()) {
+		topWindows = &it->second;
 	}
-	if (it->second.empty())
+	else{
+		auto it = mCppUIs.find(lower);
+		if (it != mCppUIs.end())
+			topWindows = &it->second;
+	}
+	if (!topWindows){
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("no ui found with the name %s", uiname));
+		return false;
+	}
+	if (topWindows->empty())
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, "doesn't have any window!");
-		return;
+		return false;
 	}
-	if (it->second.size() != 1)
+	if (topWindows->size() != 1)
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, "Only supporting an window per ui.");
-		return;
+		return false;
 	}
-	auto window = it->second[0];
+	auto window = (*topWindows)[0];
 	tinyxml2::XMLElement* root = doc.NewElement("UI");
 	doc.InsertEndChild(root);
 	if (!root)
 	{
 		assert(0);
-		return;
+		return false;
 	}
 
 	root->SetAttribute("name", uiname);
@@ -497,6 +511,7 @@ void UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc)
 	tinyxml2::XMLElement* pComp = doc.NewElement("component");
 	root->InsertEndChild(pComp);
 	window->Save(*pComp);
+	return true;
 }
 
 //---------------------------------------------------------------------------
@@ -831,6 +846,10 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	if (mMouseOvered == winbase)
 		mMouseOvered = 0;
 
+	if (mMouseDragStartedUI == winbase){
+		mMouseDragStartedUI = 0;
+	}
+
 	if (winbase->GetRender3D())
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
@@ -936,6 +955,18 @@ void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProper
 	else
 	{
 		Error("Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", compname, uiname, UIProperty::ConvertToString(prop));
+	}
+}
+
+void UIManager::SetEnableComponent(const char* uiname, const char* compname, bool enable){
+	auto comp = FindComp(uiname, compname);
+	if (comp)
+	{
+		comp->SetEnable(enable);
+	}
+	else
+	{
+		Error("Cannot find ui comp(%s) in ui(%s) to set enable flag.", compname, uiname);
 	}
 }
 
@@ -1080,12 +1111,6 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 		}
 	}
 
-	if (mIgnoreInput && !mUIEditor) {
-		if (mModalWindow)
-			mModalWindow->OnInputFromHandler(pMouse, keyboard);
-		return;
-	}
-
 
 	Vec2I rdragStartedPos;
 	if (pMouse->IsRDragStarted(rdragStartedPos)){
@@ -1101,9 +1126,15 @@ void UIManager::OnInput(IMouse* pMouse, IKeyboard* keyboard)
 	}
 
 	ProcessMouseInput(pMouse, keyboard);
-	WINDOWS::reverse_iterator it = windows.rbegin(), itEnd = windows.rend();
+
+	if (mIgnoreInput && !mUIEditor) {
+		return;
+	}
+
+	windows = mWindows[hwndId];
+	WINDOWS::reverse_iterator it = windows.rbegin();
 	int i = 0;
-	for (; it != itEnd; ++it)
+	for (; it != windows.rend(); ++it)
 	{
 		if ((*it)->GetVisible() && !(*it)->GetVisualOnly())
 		{
@@ -1145,9 +1176,11 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		rparam.mOnlyContainer = false;
 		rparam.mIgnoreScissor = mUIEditor ? true : false;
 		rparam.mTestChildren = true;
-		rparam.mNoRuntimeComp = mUIEditor && keyboard->IsKeyDown(VK_LMENU) ? true : false;
-		rparam.mCheckMouseEvent = !mUIEditor;
+		rparam.mNoRuntimeComp = mUIEditor && gFBEnv->pEngine->IsMainWindowForground() && !keyboard->IsKeyDown(VK_LMENU) ? true : false;
+		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU);
 		rparam.mHwndId = hwndId;
+		rparam.mRestrictToThisWnd = mModalWindow && mModalWindow->GetVisible() ? mModalWindow : 0;
+
 		if (mUIEditor && mouse->IsLButtonClicked() && keyboard->IsKeyDown(VK_CONTROL)){
 			auto it = mUIEditor->GetSelectedComps();
 			std::vector<IWinBase*> del;
@@ -1320,8 +1353,8 @@ void UIManager::ShowTooltip()
 
 void UIManager::SetTooltipPos(const Vec2& npos)
 {
-	/*if (!mTooltipUI->GetVisible())
-		return;*/
+	if (!mTooltipUI->GetVisible())
+		return;
 
 	static Vec2 prevNPos(-1, -1);
 	if (prevNPos == npos)
@@ -1337,6 +1370,8 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
+	Log("backpos x = %f", backPos.x);
+	Log("nsize x = %f", nSize.x);
 	if (backPos.x + nSize.x>1.0f)
 	{
 		backPos.x -= backPos.x + nSize.x - 1.0f;
@@ -1462,14 +1497,24 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 	std::string lower(uiname);
 	ToLowerCase(lower);
 	auto itFind = mLuaUIs.find(lower);
-	if (itFind == mLuaUIs.end())
+	WinBases* windows = 0;
+	if (itFind != mLuaUIs.end())
 	{
+		windows = &itFind->second;
+	}
+	else{
+		auto itFind = mCppUIs.find(lower);
+		if (itFind != mCppUIs.end()){
+			windows = &itFind->second;
+		}
+	}
+	if (!windows){
 		Error("UIManager::SetVisible(): UI(%s) is not found.", uiname);
 		return;
 	}
-	for (const auto& comp : itFind->second)
-	{
-		comp->SetVisible(visible);
+
+	for (auto it : *windows){
+		it->SetVisible(visible);
 	}
 
 
@@ -1737,6 +1782,7 @@ void UIManager::PrepareTooltipUI()
 	tooltip.SetField("BACK_COLOR", "0, 0, 0, 0.8f");
 	tooltip.SetField("ALWAYS_ON_TOP", "true");
 	tooltip.SetField("USE_BORDER", "true");
+	tooltip.SetField("NO_MOUSE_EVENT", "true");
 	tooltip.SetField("WND_NO_FOCUS", "true");
 	auto tooltipChildren = tooltip.SetFieldTable("children");
 	auto children1 = tooltipChildren.SetSeqTable(1);
@@ -1842,12 +1888,19 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 		}
 		if (param.mHwndId != wnd->GetHwndId())
 			continue;
+		if (param.mCheckMouseEvent && wnd->GetNoMouseEvent())
+			continue;
+		if (param.mRestrictToThisWnd && param.mRestrictToThisWnd != wnd)
+			continue;
+
 		auto found = wnd->WinBaseWithPoint(pt, param);
 		if (found)
 			return found;
-
-		if (wnd->IsIn(pt, param.mIgnoreScissor))
-			return wnd;
+		
+		if (!param.mCheckMouseEvent || !wnd->GetNoMouseEventAlone()){
+			if (wnd->IsIn(pt, param.mIgnoreScissor))
+				return wnd;
+		}
 	}
 
 	return 0;

@@ -10,7 +10,7 @@
 //
 Texture2D  gDiffuseTexture : register(t0);
 
-#if defined(_ALPHA_TEXTURE)
+#if defined(_ALPHA_TEXTURE) || defined(_ALPHA_TEXTURE_SEPERATED_UV)
 Texture2D gAlphaTexture : register(t1);
 #endif
 
@@ -22,7 +22,10 @@ struct a2v
 	float3 Position : POSITION;
 	float4 Color	: COLOR;
 #if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)	
-	float2 UV		: TEXCOORD;
+	float2 UV		: TEXCOORD0;
+#endif
+#if defined(_ALPHA_TEXTURE_SEPERATED_UV)
+	float2 UV2 : TEXCOORD1;
 #endif
 };
 
@@ -31,6 +34,9 @@ struct v2p
 	float4 Position   : SV_Position;
 #if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)	
 	float2 UV		: TEXCOORD;
+#endif
+#if defined(_ALPHA_TEXTURE_SEPERATED_UV)
+	float2 UV2 : TEXCOORD1;
 #endif
 };
 
@@ -54,6 +60,9 @@ v2p ui_VertexShader( in a2v INPUT )
 	#endif
 #endif
 
+#if defined(_ALPHA_TEXTURE_SEPERATED_UV)
+	OUTPUT.UV2 = INPUT.UV2;
+#endif
 	return OUTPUT;
 }
 
@@ -84,5 +93,11 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV).a;
 	color.a *= a;
 #endif
+
+#if defined(_ALPHA_TEXTURE_SEPERATED_UV)
+	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV2).a;
+	color.a *= a;
+#endif
     return color;
+
 }

@@ -3,24 +3,29 @@
 #include <CommonLib/StringUtils.h>
 using namespace fastbird;
 
-fastbird::VectorMap<int, unsigned> LuaObject::mUsedCount;
-
+fastbird::VectorMap<int, unsigned> LuaObject::sUsedCount;
+fastbird::SpinLock<true, false> LuaObject::sUsedCountGuard;
 void LuaObject::AddUsedCount(int ref)
 {
 	if (ref == LUA_NOREF)
 		return;
-	mUsedCount[ref]++;
+	sUsedCountGuard.Lock();
+	sUsedCount[ref]+=1;
+	sUsedCountGuard.Unlock();
 }
 bool LuaObject::ReleaseUsedCount(int ref)
 {
 	if (ref == LUA_NOREF)
 		return false;
-	auto itFind = mUsedCount.Find(ref);
-	assert(itFind != mUsedCount.end());
+	sUsedCountGuard.Lock();
+	auto itFind = sUsedCount.Find(ref);
+	assert(itFind != sUsedCount.end());
 	if (--(itFind->second)==0)
 	{
+		sUsedCountGuard.Unlock();
 		return true; // remove it
 	}
+	sUsedCountGuard.Unlock();
 
 	return false; // still alive
 }

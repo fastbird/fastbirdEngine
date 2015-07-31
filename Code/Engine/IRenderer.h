@@ -47,6 +47,7 @@ class ILight;
 class PointLightMan;
 class IScene;
 class IRenderListener;
+class IVideoPlayer;
 
 struct CloudProperties
 {
@@ -345,6 +346,12 @@ public:
 
 	virtual void AddRenderListener(IRenderListener* listener) = 0;
 	virtual void RemoveRenderListener(IRenderListener* listener) = 0;
+
+	
+	// do not need to use these function directly.
+	// check IEngine:CreateVideoPlayer()
+	virtual void RegisterVideoPlayer(IVideoPlayer* player) = 0;
+	virtual void UnregisterVideoPlayer(IVideoPlayer* player) = 0;
 };
 
 }

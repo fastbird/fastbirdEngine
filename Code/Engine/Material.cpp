@@ -944,6 +944,11 @@ const Vec4& Material::GetMaterialParameters(unsigned index)
 	return it->second;
 }
 
+bool Material::IsUsingMaterialParameter(unsigned index){
+	auto it = mMaterialParameters.Find(index);
+	return it != mMaterialParameters.end();
+}
+
 //----------------------------------------------------------------------------
 bool Material::IsRelatedShader(const char* shaderFile)
 {
@@ -1097,6 +1102,23 @@ void Material::CopyMaterialParamFrom(const IMaterial* src)
 	mMaterialParameters = pMat->mMaterialParameters;
 }
 
+void Material::CopyMaterialConstFrom(const IMaterial* src){
+	const Material* srcMat = (const Material*)src;
+	mMaterialConstants = srcMat->mMaterialConstants;
+}
+
+void Material::CopyTexturesFrom(const IMaterial* src){
+	const Material* srcMat = (const Material*)src;
+	mTextures = srcMat->mTextures;
+}
+void Material::CopyShaderDefinesFrom(const IMaterial* src){
+	const Material* srcMat = (const Material*)src;
+	if (mShaderDefines != srcMat->mShaderDefines){
+		mShaderDefines = srcMat->mShaderDefines;
+		ApplyShaderDefines();
+	}
+}
+
 void Material::SetTransparent(bool trans)
 {
 	mTransparent = trans;
@@ -1145,4 +1167,8 @@ void Material::SetInputLayout(const INPUT_ELEMENT_DESCS& desc){
 
 	mInputElementDescs = desc;
 	mInputLayout = 0;
+}
+
+unsigned IMaterial::GetMaxMaterialParameter(){
+	return 5;
 }

@@ -53,6 +53,7 @@ protected:
 	std::set<unsigned> mNoVirtualizingRows;
 	bool mMultiSelection;
 	bool mNoHighlight;
+	bool mNoSearch;
 
 	Vec2I mLastChangedItem; // for numeric updown
 

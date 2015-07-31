@@ -198,9 +198,7 @@ void Button::OnMouseOut(void* arg)
 	//  1 is edge color
 	mUIObject->GetMaterial()->SetMaterialParameters(1, mEdgeColor.GetVec4());
 	if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
-		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
-
-	
+		gFBEnv->pUIManager->DirtyRenderList(GetHwndId());	
 
 	if (mImages[ButtonImages::BackImageHover])
 		mImages[ButtonImages::BackImageHover]->SetSpecularColor(Vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -299,7 +297,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 									 }									 
 									 
 									 mImages[ButtonImages::Image]->SetTexture(val);
-									 mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
+									 //mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
 									 if (mIconText)
 									 {
 										 OnSizeChanged();
@@ -457,6 +455,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 										if (!mImages[ButtonImages::ActiveImage])
 										{
 											mImages[ButtonImages::ActiveImage] = CreateImageBox();
+											mImages[ButtonImages::ActiveImage]->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 											UpdateImageSize();
 										}
 
@@ -481,7 +480,8 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 		mDeactivatedImage = val;
 										  if (!mImages[ButtonImages::DeactiveImage])
 										  {
-											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();
+											  mImages[ButtonImages::DeactiveImage] = CreateImageBox();											  
+											  mImages[ButtonImages::DeactiveImage]->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 											  UpdateImageSize();
 										  }
 
@@ -509,7 +509,7 @@ bool Button::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 
 	case UIProperty::BUTTON_ACTIVATED:
-	{
+	{		
 										 mActivated = StringConverter::parseBool(val);
 										 if (mImages[ButtonImages::ActiveImage])
 										 {
@@ -1050,7 +1050,7 @@ bool Button::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bo
 
 bool Button::SetVisible(bool visible){
 	bool changed= __super::SetVisible(visible);
-	for (int i = 0; i < ButtonImages::Num; ++i){
+	for (int i = 0; i < ButtonImages::ActiveImage; ++i){
 		if (mImages[i])
 			mImages[i]->SetVisible(visible);
 	}
@@ -1059,7 +1059,7 @@ bool Button::SetVisible(bool visible){
 
 void Button::SetVisibleInternal(bool visible){
 	__super::SetVisibleInternal(visible);
-	for (int i = 0; i < ButtonImages::Num; ++i){
+	for (int i = 0; i < ButtonImages::ActiveImage; ++i){
 		if (mImages[i]){
 			mImages[i]->SetVisible(visible);
 		}
@@ -1259,5 +1259,19 @@ void Button::UpdateImageSize(){
 	//	mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
 	//}
 }
+void Button::SetEnable(bool enable){
+	if (!enable){
+		this->OnMouseOut(0);
+	}
+	__super::SetEnable(enable);
+}
 
+void Button::SetUseBorder(bool use){
+	__super::SetUseBorder(use);
+	for (unsigned i = 0; i < ButtonImages::Num; ++i){
+		if (mImages[i]){
+			mImages[i]->SetBorderAlpha(use);
+		}
+	}
+}
 }

@@ -17,6 +17,8 @@ public:
 	FileSelector();
 	~FileSelector();
 
+	virtual void OnCreated();
+
 	// IWinBase
 	virtual ComponentType::Enum GetType() const { return ComponentType::FileSelector; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);

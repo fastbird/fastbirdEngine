@@ -281,10 +281,10 @@ RigidBody* Physics::CreateTempRigidBody(CollisionShape* colShape)
 	return rigidBody;
 }
 
-RigidBody* Physics::CreateTempRigidBody(const std::vector<CollisionShape*>& colShape)
+RigidBody* Physics::CreateTempRigidBody(CollisionShape*  shapes[], unsigned num)
 {
 	btVector3 localInertia(0, 0, 0);
-	auto btcol = CreateColShape(colShape);
+	auto btcol = CreateColShape(shapes, num);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
 	RigidBody* rigidBody = FB_NEW_ALIGNED(RigidBodyImpl, MemAlign)(rbInfo, 0, 0);
 	return rigidBody;
@@ -372,21 +372,31 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 	if_assert_fail(shapeProvider)
 		return 0;
 
-	return CreateColShape(shapeProvider->GetShapes());
+	static CollisionShape* shapes[10000];
+	auto num = shapeProvider->GetShapes(shapes);
+	if (num >= 10000){
+		Error("Over counts for colshapes!");
+	}
+	
+	return CreateColShape(shapes, num);
 }
 
-btCollisionShape* Physics::CreateColShape(const std::vector<CollisionShape*>& shapes)
+btCollisionShape* Physics::CreateColShape(CollisionShape* shapes[], unsigned num)
 {
-	if (shapes.empty())
+	if (num==0)
 	{
 		Error(DEFAULT_DEBUG_ARG, "No collision shapes!");
 		return 0;
 	}
-	if (shapes.size() > 1 || shapes[0]->mPos != Vec3::ZERO || shapes[0]->mRot != Quat::IDENTITY)
+	if (num > 1 || shapes[0]->mPos != Vec3::ZERO || shapes[0]->mRot != Quat::IDENTITY)
 	{
 		btCompoundShape* compound = FB_NEW_ALIGNED(btCompoundShape, MemAlign);
-		for (auto& colShape : shapes)
+		if (compound == 0){
+			Error("FB_NEW_ALIGNED failed!");
+		}
+		for (unsigned i = 0; i < num; ++i)
 		{
+			auto colShape = shapes[i];
 			if (colShape)
 			{
 				btCollisionShape* btshape = CreateBulletColShape(colShape);
@@ -584,7 +594,7 @@ void Physics::SetDebugMode(int debugMode)
 	mDebugDrawer.setDebugMode(debugMode);
 }
 
-void Physics::AttachBodies(const std::vector<RigidBody*>& bodies)
+void Physics::AttachBodies(RigidBody* bodies[], unsigned num)
 {
 	struct ContactCallBack : public btCollisionWorld::ContactResultCallback
 	{
@@ -619,11 +629,10 @@ void Physics::AttachBodies(const std::vector<RigidBody*>& bodies)
 	};
 
 	ContactCallBack ccallback(mDynamicsWorld);
-	unsigned numBodies = bodies.size();
-	for (unsigned i = 0; i < numBodies - 1; ++i)
+	for (unsigned i = 0; i < num - 1; ++i)
 	{
 		RigidBodyImpl* body = (RigidBodyImpl*)bodies[i];
-		for (unsigned t = i + 1; t < numBodies; ++t)
+		for (unsigned t = i + 1; t < num; ++t)
 		{
 			mDynamicsWorld->contactPairTest(body, (RigidBodyImpl*)bodies[t], ccallback);
 		}
@@ -635,27 +644,28 @@ void Physics::SetRayCollisionGroup(int group)
 	mRayGroup = group;
 }
 
-bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, std::vector<void*>* except)
+bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[], unsigned numExcepts)
 {
 	auto from = FBToBullet(fromWorld);
 	auto to = FBToBullet(toWorld);
 	struct MyclosestRayResultCallBack : public btCollisionWorld::ClosestRayResultCallback
 	{
 		int mIndex;
-		std::vector<void*>* mExcept;
+		void** mExcepts;
+		unsigned mNumExcepts;
 		MyclosestRayResultCallBack(const btVector3&	rayFromWorld, const btVector3&	rayToWorld)
 			:btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld)
-			, mIndex(-1), mExcept(0)
+			, mIndex(-1), mExcepts(0), mNumExcepts(0)
 		{}
 
 		virtual bool needsCollision(btBroadphaseProxy* proxy0) const
 		{
 			btCollisionObject* colObj = (btCollisionObject*)proxy0->m_clientObject;
-			if (mExcept && colObj)
+			if (mExcepts && colObj)
 			{
 				auto rigidBody = (RigidBody*)colObj->getUserPointer();
 				if (rigidBody){
-					if (std::find(mExcept->begin(), mExcept->end(), rigidBody->GetGamePtr()) != mExcept->end())
+					if (std::find(&mExcepts[0], &mExcepts[mNumExcepts], rigidBody->GetGamePtr()) != &mExcepts[mNumExcepts])
 						return false;
 				}
 			}
@@ -693,7 +703,8 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 	MyclosestRayResultCallBack cb(from, to);
 	cb.m_collisionFilterGroup = mRayGroup;
 	cb.m_collisionFilterMask = mask;
-	cb.mExcept = except;
+	cb.mExcepts = excepts;
+	cb.mNumExcepts = numExcepts;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
@@ -784,7 +795,7 @@ bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayRe
 	return false;
 }
 
-bool Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultAll& result)
+RayResultAll* Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask)
 {
 	auto from = FBToBullet(fromWorld);
 	auto to = FBToBullet(toWorld);
@@ -832,16 +843,22 @@ bool Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask, R
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
+		RayResultAll* result = FB_NEW(RayResultAll);
 		unsigned numObjects = cb.m_collisionObjects.size();
 		for (unsigned i = 0; i < numObjects; i++)
 		{
-			result.AddResult((RigidBody*)cb.m_collisionObjects[i]->getUserPointer(),
+			result->AddResult((RigidBody*)cb.m_collisionObjects[i]->getUserPointer(),
 				BulletToFB(cb.m_hitPointWorld[i]),
 				BulletToFB(cb.m_hitNormalWorld[i]), cb.mIndex[i]);
 		}
-		return true;
+		return result;
 	}
-	return false;
+
+	return 0;
+}
+
+void Physics::Release(RayResultAll* r){
+	FB_DELETE(r);
 }
 
 ///The AABBOverlapCallback is used to collect object that overlap with a given bounding box defined by aabbMin and aabbMax. 
@@ -850,19 +867,20 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 	btVector3 m_queryAabbMin;
 	btVector3 m_queryAabbMax;
 	RigidBody* mExcept;
-	std::vector<void*>& mRet;
+	void** mRet;
 	int mLimit;
+	int mCurSize;
 	unsigned mColMask;
 
 	int m_numOverlap;
 	AABBOverlapCallback(const btVector3& aabbMin, const btVector3& aabbMax, unsigned colMask,
-		int limit, std::vector<void*>& ret, RigidBody* except)
+		void* ret[], int limit, RigidBody* except)
 		: m_queryAabbMin(aabbMin), m_queryAabbMax(aabbMax), m_numOverlap(0), mExcept(except), mRet(ret)
-		, mLimit(limit), mColMask(colMask)
+		, mLimit(limit), mColMask(colMask), mCurSize(0)
 	{}
 	virtual bool	process(const btBroadphaseProxy* proxy)
 	{
-		if (mRet.size() >= (unsigned)mLimit)
+		if (mCurSize >= mLimit)
 			return false;
 
 		btVector3 proxyAabbMin, proxyAabbMax;
@@ -879,19 +897,20 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 			colObj0->getCollisionShape()->getAabb(colObj0->getWorldTransform(), proxyAabbMin, proxyAabbMax);
 			if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
 			{
-				mRet.push_back(gamePtr);
+				mRet[mCurSize++] = gamePtr;
 			}
 		}
 		return true;
 	}
 };
 
-void Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, unsigned limit, std::vector<void*>& ret, RigidBody* except)
+unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, void* ret[], unsigned limit, RigidBody* except)
 {
 	btVector3 min = FBToBullet(aabb.GetMin());
 	btVector3 max = FBToBullet(aabb.GetMax());
-	AABBOverlapCallback callback(min, max, colMask, limit, ret, except);
+	AABBOverlapCallback callback(min, max, colMask, ret, limit, except);
 	mDynamicsWorld->getBroadphase()->aabbTest(min, max, callback);
+	return callback.mCurSize;
 }
 
 float Physics::GetDistanceBetween(RigidBody* a, RigidBody* b)

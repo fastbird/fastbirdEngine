@@ -14,6 +14,7 @@
 #include <UI/ColorRampComp.h>
 #include <UI/CardScroller.h>
 #include <UI/HorizontalGauge.h>
+#include <UI/RadioBox.h>
 //--------------------------------------------------------------------------------
 
 namespace fastbird
@@ -76,6 +77,9 @@ namespace fastbird
 	int GetNumUIEvents(lua_State* L);
 	int GetUIEventName(lua_State* L);
 	int ModifyDropDownItem(lua_State* L);
+	int ChangeUISizeX(lua_State* L);
+	int ChangeUISizeY(lua_State* L);
+	int ChangeUISize(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -106,6 +110,8 @@ namespace fastbird
 
 	// etc
 	int SetTooltipString(lua_State* L);
+	int SetEnableUIInput(lua_State* L);
+	int SetCheckRadioBox(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -113,6 +119,13 @@ namespace fastbird
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
+		LUA_SETCFUNCTION(mL, SetEnableUIInput);
+
+		LUA_SETCFUNCTION(mL, ChangeUISizeX);
+		LUA_SETCFUNCTION(mL, ChangeUISizeY);
+		LUA_SETCFUNCTION(mL, ChangeUISize);
+
 		LUA_SETCFUNCTION(mL, SetTooltipString);
 
 		//----------------------------------------------------------------------------
@@ -1620,4 +1633,50 @@ namespace fastbird
 		return 0;
 	}
 
+	int ChangeUISizeX(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		auto sizeX = luaL_checkint(L, 3);
+		comp->ChangeSizeX(sizeX);
+		return 0;
+	}
+	int ChangeUISizeY(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		auto sizeY = luaL_checkint(L, 3);
+		comp->ChangeSizeY(sizeY);
+		return 0;
+	}
+	int ChangeUISize(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compoName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compoName);
+		if (!comp) return 0;
+		Vec2I size = luaU_check<Vec2I>(L, 3);
+		comp->ChangeSize(size);
+		return 0;	
+	}
+
+	int SetEnableUIInput(lua_State* L){
+		if (lua_isboolean(L, 1)){
+			auto enable = lua_toboolean(L, 1) != 0;
+			gFBUIManager->EnableInputListener(enable);
+		}
+		return 0;
+		
+	}
+
+	int SetCheckRadioBox(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		auto comp = (RadioBox*)gFBUIManager->FindComp(uiname, compname);
+		assert(comp);
+		comp->OnClickRadio(comp);
+		comp->SetCheck(true);
+		return 0;
+	}
 }

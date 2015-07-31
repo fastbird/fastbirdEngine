@@ -7,6 +7,9 @@ namespace fastbird
 	class Container : public WinBase
 	{
 	public:
+		typedef std::function<float() > ChildrenContentEndFunc;
+		typedef std::function<void() > ScrolledFunc;
+
 		Container();
 		virtual ~Container();
 
@@ -17,7 +20,8 @@ namespace fastbird
 				*wndContent = 0;
 			}
 			~BackupContentWnd(){
-				*mOriginal = mWndContent;
+				if (mWndContent)
+					*mOriginal = mWndContent;
 			}
 
 			Container* mWndContent;
@@ -91,11 +95,19 @@ namespace fastbird
 
 		void TransferChildrenTo(Container* destContainer);
 		void AddChild(IWinBase* child);
+		void AddChildSimple(IWinBase* child);
 		void DoNotTransfer(IWinBase* child);
 		
 		Container* GetWndContentUI() const { return mWndContentUI; }
 
 		bool HasScissorIgnoringChild() const;
+
+		void SetChildrenContentEndFunc(ChildrenContentEndFunc func);
+		void SetScrolledFunc(ScrolledFunc func);
+		ScrolledFunc SetScrolledFunc() const { return mScrolledFunc; }
+
+		Scroller* GetScrollerV() const { return mScrollerV; }
+
 
 	private:
 		friend class WinBase;
@@ -123,5 +135,8 @@ namespace fastbird
 		bool mCurInputHandlingChanged;
 
 		std::set<IWinBase*> mDoNotTransfer;
+		
+		ChildrenContentEndFunc mChildrenContentEndFunc;
+		ScrolledFunc mScrolledFunc;
 	};
 }

@@ -230,9 +230,11 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 	}
 	case TextTags::ColorEnd:
 	{
-							   mColor = mColorBackup.top();
-							   mColorBackup.pop();
-							   break;
+		if (!mColorBackup.empty()){
+			mColor = mColorBackup.top();
+			mColorBackup.pop();
+		}
+		break;
 	}
 	}
 	

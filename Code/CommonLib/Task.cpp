@@ -15,6 +15,7 @@ Task::Task(bool _AutoDestroy, bool _WaitEvent, volatile long* _ExecCounter)
 	, mSyncCounter(0)
 	, mHashNext(NULL)
 	, mMyHash(-1)
+	, mTriggered(false)
 {
     assert(!_WaitEvent || !_AutoDestroy);
 
@@ -47,6 +48,7 @@ void Task::OnExecuted()
 
 void Task::Trigger(TaskScheduler* pScheduler)
 {
+	mTriggered = true;
     Execute(pScheduler);
 
 	mExecuted = true;
@@ -78,6 +80,7 @@ void Task::Reset()
 	Sync();
 	mScheduled = false;
 	mExecuted = false;
+	mTriggered = false;
 	if (mWaitEvent != INVALID_HANDLE_VALUE)
 		ResetEvent(mWaitEvent);
 }

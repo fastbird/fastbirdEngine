@@ -195,8 +195,9 @@ void Wnd::RefreshFrame()
 			mFrames.push_back(RB);
 		}
 
-		if (!mWndContentUI){
+		if (!mWndContentUI && !mTitlebarString.empty()){
 			mWndContentUI = (Wnd*)AddChild(0.f, 0.f, 1.0f, 1.0f, ComponentType::Window);
+			DoNotTransfer(mWndContentUI);
 			mWndContentUI->SetName("_@ContentWindow");
 			mWndContentUI->SetGhost(true);
 			mWndContentUI->SetRuntimeChild(true);
@@ -326,6 +327,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 			{
 				BackupContentWnd backup(&mWndContentUI);
 				mTitlebar = (Button*)AddChild(0.5f, 0.f, 1.f, 0.1f, ComponentType::Button);				
+				DoNotTransfer(mTitlebar);
 				mTitlebar->SetVisible(mVisibility.IsVisible());				
 				mTitlebar->SetSizeX(std::max(40, GetFinalSize().x - 80));
 				mTitlebar->SetRuntimeChild(true);
@@ -340,6 +342,8 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 				mTitlebar->SetName("_@TitleBar");
 				mTitlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
 					std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
+				RefreshFrame();
+
 			}
 			auto text = TranslateText(val);
 			if (text.empty())

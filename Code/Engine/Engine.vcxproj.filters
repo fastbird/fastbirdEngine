@@ -437,6 +437,29 @@
       <Filter>Misc</Filter>
     </ClInclude>
     <ClInclude Include="ITextManipulatorListener.h" />
+    <ClInclude Include="TrailObject.h">
+      <Filter>RenderObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="ITrailObject.h" />
+    <ClInclude Include="VideoPlayerDirectShow.h">
+      <Filter>Renderer\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="IVideoPlayer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoPlayerOgg.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoPlayerType.h" />
+    <ClInclude Include="AudioManager.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioHelper.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />
@@ -638,6 +661,22 @@
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="TextManipulator.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="TrailObject.cpp">
+      <Filter>RenderObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoPlayerDirectShow.cpp">
+      <Filter>Renderer\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoPlayerOgg.cpp" />
+    <ClCompile Include="AudioManager.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioHelper.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
   </ItemGroup>

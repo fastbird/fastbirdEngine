@@ -94,6 +94,7 @@ namespace fastbird
 			LISTBOX_HIGHLIGHT_COLOR,
 			LISTBOX_MULTI_SELECTION,
 			LISTBOX_NO_HIGHLIGHT,
+			LISTBOX_NO_SEARCH,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
@@ -234,6 +235,7 @@ namespace fastbird
 			"LISTBOX_HIGHLIGHT_COLOR",
 			"LISTBOX_MULTI_SELECTION",
 			"LISTBOX_NO_HIGHLIGHT",
+			"LISTBOX_NO_SEARCH",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
@@ -460,6 +462,8 @@ namespace fastbird
 			case LISTBOX_MULTI_SELECTION:
 				return false;
 			case LISTBOX_NO_HIGHLIGHT:
+				return false;
+			case LISTBOX_NO_SEARCH:
 				return false;
 			case CLOSE_BTN:
 				return false;

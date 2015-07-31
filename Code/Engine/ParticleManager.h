@@ -51,6 +51,5 @@ private:
 	PARTICLE_EMITTERS_BY_NAME mParticleEmittersByName;
 	
 	SmartPtr<IParticleEmitter> mEditingParticle;
-	Vec3 mEditingPos;
 };
 }

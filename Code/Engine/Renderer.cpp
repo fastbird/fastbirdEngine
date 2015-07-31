@@ -17,6 +17,7 @@
 #include <Engine/UIObject.h>
 #include <Engine/ParticleManager.h>
 #include <Engine/IRenderListener.h>
+#include <Engine/IVideoPlayer.h>
 #include <CommonLib/Unicode.h>
 
 namespace fastbird
@@ -2104,9 +2105,15 @@ void Renderer::Render(float dt)
 		}
 	}
 	mainRT->BindTargetOnly(false);
+
+	for (auto& it : mVideoPlayers){
+		it->Update(dt);
+	}
+
 	RenderDebugHud();
 	RenderDebugRenderTargets();
-	RenderFade();	
+
+	RenderFade();
 }
 
 void Renderer::RenderDebugRenderTargets()
@@ -2550,4 +2557,13 @@ void Renderer::RemoveRenderListener(IRenderListener* listener)
 	DeleteValuesInVector(mRenderListeners, listener);
 }
 
+
+void Renderer::RegisterVideoPlayer(IVideoPlayer* player){
+	if (ValueNotExistInVector(mVideoPlayers, player)){
+		mVideoPlayers.push_back(player);
+	}
+}
+void Renderer::UnregisterVideoPlayer(IVideoPlayer* player){
+	DeleteValuesInVector(mVideoPlayers, player);
+}
 }

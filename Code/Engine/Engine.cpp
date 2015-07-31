@@ -27,6 +27,9 @@
 #include <Engine/Material.h>
 #include <Engine/IFileChangeListener.h>
 #include <Engine/TextManipulator.h>
+#include <Engine/TrailObject.h>
+#include <Engine/VideoPlayerOgg.h>
+#include <Engine/AudioManager.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -51,6 +54,7 @@ void IEngine::DeleteInstance(IEngine* e)
 
 //------------------------------------------------------------------------
 Engine::Engine()	
+	: mAudioManager(0)
 {
 	FileSystem::Initialize();
 	mErrorStream.open("error.log");
@@ -83,7 +87,10 @@ Engine::Engine()
 Engine::~Engine()
 {
 	mExiting = true;	
-
+	if (mAudioManager){
+		mAudioManager->Deinit();
+		FB_DELETE(mAudioManager);
+	}
 	ParticleManager::FinalizeParticleManager();
 	if (mFileMonitorThread)
 	{
@@ -337,7 +344,9 @@ bool Engine::InitEngine(int rendererType)
 	if (mFileMonitorThread == INVALID_HANDLE_VALUE)
 	{
 		Log(FB_DEFAULT_DEBUG_ARG, "Failed to create the FileChangeNotifier thread!");
-	}
+	}	
+	mAudioManager = FB_NEW(AudioManager);
+	mAudioManager->Init();
 
 	return successful;
 }
@@ -843,6 +852,20 @@ IParticleEmitter* Engine::GetParticleEmitter(unsigned id, bool useSmartPtr)
 void Engine::ReleaseParticleEmitter(IParticleEmitter* p)
 {
 	p->Release();
+}
+
+
+ITrailObject* Engine::CreateTrailObject(){
+	auto trail = FB_NEW(TrailObject);
+	gFBEnv->pRenderer->GetMainScene()->AttachObject(trail);
+	return trail;
+}
+
+void Engine::ReleaseTrailObject(ITrailObject* trail){
+	if (!trail)
+		return;
+	trail->DetachFromScene();
+	FB_DELETE(trail);
 }
 
 //---------------------------------------------------------------------------
@@ -1430,4 +1453,14 @@ void Engine::ResumeFileChangeMonitor(const char* filepath)
 		mIgnoreFileChanges.erase(it);
 }
 
+IVideoPlayer* Engine::CreateVideoPlayer(VideoPlayerType::Enum type){
+	switch (type){
+	case VideoPlayerType::OGG:
+		return FB_NEW(VideoPlayerOgg);
+	}
+	return 0;
+}
+void Engine::ReleaseVideoPlayer(IVideoPlayer* player){
+	FB_DELETE(player);
+}
 } // namespace fastbird

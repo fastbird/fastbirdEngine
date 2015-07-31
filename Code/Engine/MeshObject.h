@@ -100,7 +100,7 @@ namespace fastbird
 		};
 
 		virtual void SetAlpha(float alpha);
-		virtual void SetForceAlphaBlending(bool enable, float alpha);
+		virtual void SetForceAlphaBlending(bool enable, float alpha, float forceGlow = 0.f);
 		virtual void SetAmbientColor(const Color& color);
 
 	private:

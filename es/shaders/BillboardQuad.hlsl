@@ -76,10 +76,9 @@ void billboardquad_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> 
 		OUTPUT.Position = mul(gProj, float4(viewPos, 1.0));
 		OUTPUT.UV = gUVs[i];
 
-		stream.Append(OUTPUT);
-		if (i%4==3)
-			stream.RestartStrip();
+		stream.Append(OUTPUT);			
 	}
+	stream.RestartStrip();
 }
 
 //---------------------------------------------------------------------------
