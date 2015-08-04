@@ -566,6 +566,13 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
+void ImageBox::SetVisibleInternal(bool visible){
+	__super::SetVisibleInternal(visible);
+	if (mRenderTarget){
+		mRenderTarget->SetEnable(visible);
+	}
+}
+
 void ImageBox::SetKeepImageRatio(bool keep)
 {
 	mKeepImageRatio = keep;

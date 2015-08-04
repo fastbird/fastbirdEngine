@@ -133,7 +133,7 @@ float GetShadow(float4 lightPos)
 	{
 		for (int x = -2; x<=2; ++x)
 		{
-			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.00001, float2(x, y));
+			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.001, float2(x, y));
 		}
 	}
 	return min(0.5f + c * 0.02f, 1.0f);

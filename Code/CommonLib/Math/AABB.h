@@ -28,6 +28,15 @@ namespace fastbird
 			mMax.KeepGreater(point);
 		}
 
+		void Merge(const AABB& aabb){
+			mMin.x = std::min(mMin.x, aabb.mMin.x);
+			mMin.y = std::min(mMin.y, aabb.mMin.y);
+			mMin.z = std::min(mMin.z, aabb.mMin.z);
+			mMax.x = std::max(mMax.x, aabb.mMax.x);
+			mMax.y = std::max(mMax.y, aabb.mMax.y);
+			mMax.z = std::max(mMax.z, aabb.mMax.z);
+		}
+
 		const Vec3& GetMin() const { return mMin; }
 		const Vec3& GetMax() const { return mMax; }
 

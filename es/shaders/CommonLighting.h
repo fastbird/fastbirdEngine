@@ -21,15 +21,15 @@ void BlinnPhongShading(float3 lightColor, float3 normal, float3 toLight,
 // referenct :  http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
 float3 Fresnel(	float vdh, float3 F0)
 {
-	float sphg = pow(2.0, (-5.55473*vdh - 6.98316) * vdh);
+	//float sphg = pow(2.0, (-5.55473*vdh - 6.98316) * vdh);
+	float sphg = pow(1.0f - vdh, 5);
 	return F0 + (float3(1.0, 1.0, 1.0) - F0) * sphg;
 }
 
 // Normal Distrubution function (NDF) = Specular D
 // Disney's GGX/Trowbridge-Reitz
-float NormalDistrib(float ndh, float roughness)
+float NormalDistrib(float ndh, float alpha)
 {
-	float alpha = roughness * roughness;
 	float tmp = alpha / (ndh*ndh*(alpha*alpha-1.0)+1.0);
 	return tmp * tmp * INV_PI;
 }
@@ -42,39 +42,48 @@ float G1(float ndw, float k)
 	return 1.0 / ( ndw*(1.0-k) + k ); // k > 0
 }
 
-float Visibility(float ndl, float ndv, float roughness)
-{
-	// visibility is a Cook-Torrance geometry function divided by (n.l)*(n.v)
-	float k = roughness * roughness * 0.5;
-	return G1(ndl,k)*G1(ndv,k);
+// float Visibility(float ndl, float ndv, float alpha)
+// {
+	// // visibility is a Cook-Torrance geometry function divided by (n.l)*(n.v)
+	// float k = alpha * 0.5;
+	// return G1(ndl,k)*G1(ndv,k);
+// }
+
+// reference : http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
+// ldh == vdh
+float NewVisibility(float ldh, float alpha){
+	float k = alpha * 0.5;
+	float k2 = k*k;
+	float invK2 = 1.0f - k2;
+	return rcp(ldh*ldh*invK2 + k2);
 }
 
 // Cook-Torrance microfacet specular shading model
-float3 CookTorrance(float ndl, float vdh, float ndh, float ndv, float3 Ks, float roughness)
+float3 CookTorrance(float vdh, float ndh, float3 Ks, float roughness)
 {	
 // reference : http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
 
+	float alpha = roughness * roughness;
           // F : Frenel
 	return Fresnel(vdh,Ks)
 	   
 	   // D : GGX Distribution
-	* ( NormalDistrib(ndh,roughness)
+	* ( NormalDistrib(ndh,alpha)
 		
 		// V : Schlick approximation of Smith solved with GGX
-	* Visibility(ndl,ndv,roughness) / 4.0 );
+	* NewVisibility(vdh,alpha) * 0.25);
 }
 
 float3 CookTorranceContrib(
 	float vdh,
 	float ndh,
 	float ndl,
-	float ndv,
 	float3 Ks,
 	float roughness)
 {
 // This is the contribution when using importance sampling with the GGX based
 // sample distribution. This means ct_contrib = ct_brdf / ggx_probability
-	return Fresnel(vdh,Ks) * (Visibility(ndl,ndv,roughness) * vdh * ndl / ndh );
+	return Fresnel(vdh,Ks) * (NewVisibility(vdh,roughness) * vdh * ndl / ndh );
 }
 
 vec3 ImportanceSampleLambert(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal)
@@ -172,12 +181,11 @@ float3 GetIrrad(float4 vNormal)
 	// return x1+x2+x3;
 }
 
-float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float ndv, float3 diffColor, float3 specColor)
+float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float3 diffColor, float3 specColor)
 {
 	float3 envContrib = {0, 0, 0};
 #ifdef ENV_TEXTURE
-	vec3 Tp = normalize(tangent
-		- normal*dot(tangent, normal)); // local tangent
+	vec3 Tp = normalize(tangent	- normal*dot(tangent, normal)); // local tangent
 	vec3 Bp = normalize(cross(tangent, normal));
 		
 	static float2 hammersley[16] = (float2[16])gHammersley;
@@ -207,7 +215,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
 			ProbabilityGGX(ndh, vdh, roughness));
 		envContrib += SampleEnvironmentMap(Ln, lodS)
-			  * CookTorranceContrib(vdh, ndh, ndl, ndv, specColor, roughness) * horiz;
+			  * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
 	}
 
 	envContrib /= ENV_SAMPLES;

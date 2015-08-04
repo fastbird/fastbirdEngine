@@ -36,7 +36,7 @@ namespace fastbird
 
 		Vec3I operator/ (int s) const
 		{
-			return Vec3I(x/s, y/s, z*s);
+			return Vec3I(x/s, y/s, z/s);
 		}
 
 		Vec3I operator+ (int s) const
@@ -96,10 +96,21 @@ namespace fastbird
 			return (float)(x*x + y*y + z*z);
 		}
 
+		float distance(const Vec3I& to) const{
+			Vec3I dif = to - *this;
+			return dif.length();
+		}
+
+		float distanceSQ(const Vec3I& to) const{
+			Vec3I dif = to - *this;
+			return dif.lengthSQ();
+		}
+
 		static const Vec3I UNIT_X;
 		static const Vec3I UNIT_Y;
 		static const Vec3I UNIT_Z;
 		static const Vec3I ZERO;
+		static const Vec3I MAX;
 	};
 }
 

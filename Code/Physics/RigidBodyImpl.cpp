@@ -340,6 +340,8 @@ unsigned RigidBodyImpl::HasContact(void* gamePtrs[], int limit)
 	{
 		for (auto& rigidBody : callback.mCollided){
 			gamePtrs[num++] = rigidBody->GetGamePtr();
+			if (num >= (unsigned)limit)
+				break;
 		}
 	}
 	else{

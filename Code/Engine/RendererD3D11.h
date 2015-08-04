@@ -184,6 +184,12 @@ namespace fastbird
 
 		std::vector<ID3D11RenderTargetView*> mCurrentRTViews;
 		ID3D11DepthStencilView* mCurrentDSView;
+
+		std::vector<ITexture*> mCurRTTextures;
+		std::vector<size_t> mCurRTViewIdxes;
+		ITexture* mCurDSTexture;
+		size_t mCurDSViewIdx;
+
 	};
 }
 

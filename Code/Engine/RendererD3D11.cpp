@@ -82,6 +82,9 @@ RendererD3D11::RendererD3D11()
 	mBindedShader = 0;
 	mBindedInputLayout = 0;
 	mCurrentTopology = PRIMITIVE_TOPOLOGY_UNKNOWN;
+
+	mCurDSViewIdx = -1;
+	mCurDSTexture = 0;
 }
 
 //----------------------------------------------------------------------------
@@ -211,6 +214,28 @@ bool RendererD3D11::Init(int threadPool)
 		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
 		return false;
 	}
+
+	//check multithreaded is supported by the hardware
+	D3D11_FEATURE_DATA_THREADING dataThreading;
+	if (SUCCEEDED(m_pDevice->CheckFeatureSupport(D3D11_FEATURE_THREADING, &dataThreading, sizeof(dataThreading)))){
+		if (dataThreading.DriverConcurrentCreates){
+			Log("The hardware supports 'Concurrent Creates'");
+		}
+		else {
+			Log("The hardware doen't support 'Concurrent Creates'");
+		}
+
+		if (dataThreading.DriverCommandLists){
+			Log("The hardware supports command lists.");
+		}
+		else{
+			Log("The hardware doen't support 'Concurrent Creates'");
+		}
+	}
+	else{
+		Log("The hardware doen't support multithreading.");
+	}
+
 	
 	unsigned msQuality = 0;	
 	unsigned msCount = 1;
@@ -810,6 +835,9 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 		{
 		case BINDING_SHADER_VS:
 			m_pImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
+			break;
+		case BINDING_SHADER_GS:
+			m_pImmediateContext->GSSetShaderResources(slot, 1, &pSRV);
 			break;
 		case BINDING_SHADER_PS:
 			m_pImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
@@ -1715,8 +1743,19 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 //-----------------------------------------------------------------------------
 void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num, ITexture* pDepthStencil, size_t dsViewIndex)
 {
+	if (num == mCurRTTextures.size() && mCurDSTexture == pDepthStencil && mCurDSViewIdx == dsViewIndex){
+		bool same = false;
+		for (int i = 0; i < num && !same; ++i){
+			same = pRenderTargets[i] == mCurRTTextures[i] && rtViewIndex[i] == mCurRTViewIdxes[i];
+		}
+		if (same)
+			return;
+	}
+	
 	__super::SetRenderTarget(pRenderTargets, rtViewIndex, num, pDepthStencil, dsViewIndex);
 
+	mCurRTTextures.clear();
+	mCurRTViewIdxes.clear();
 	std::vector<ID3D11RenderTargetView*> rtviews;
 	if (pRenderTargets)
 	{
@@ -1724,17 +1763,25 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewInd
 		{
 			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTargets[i]);
 			rtviews.push_back(pTextureD3D11 ? pTextureD3D11->GetRenderTargetView(rtViewIndex[i]) : 0);
+			
+			mCurRTTextures.push_back(pRenderTargets[i]);
+			mCurRTViewIdxes.push_back(rtViewIndex[i]);			
 		}
 	}
 	else
 	{
 		rtviews.push_back(0);
 	}
+
+	mCurDSTexture = pDepthStencil;
+	mCurDSViewIdx = dsViewIndex;
+
 	ID3D11DepthStencilView* pDepthStencilView = 0;
 	if (pDepthStencil)
 	{
 		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pDepthStencil);
 		pDepthStencilView = pTextureD3D11->GetDepthStencilView(dsViewIndex);
+
 	}
 
 	try
@@ -1875,7 +1922,7 @@ void RendererD3D11::SetShaders(IShader* pShader)
 {
 	if (!pShader || !pShader->IsValid())
 	{
-		Log("RendererD3D11::SetShader() shader is not valid.");
+		//Log("RendererD3D11::SetShader() shader is not valid.");
 		return;
 	}
 	if (mBindedShader == pShader)

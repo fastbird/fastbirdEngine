@@ -1370,8 +1370,6 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
-	Log("backpos x = %f", backPos.x);
-	Log("nsize x = %f", nSize.x);
 	if (backPos.x + nSize.x>1.0f)
 	{
 		backPos.x -= backPos.x + nSize.x - 1.0f;

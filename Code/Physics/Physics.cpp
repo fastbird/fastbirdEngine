@@ -73,7 +73,7 @@ void Physics::Initilaize()
 	mSolver = sol;
 
 	mDynamicsWorld = FB_NEW_ALIGNED(btDiscreteDynamicsWorld, MemAlign)(mDispatcher, mBroadphase, mSolver, mCollisionConfiguration);
-	mDynamicsWorld->getDispatchInfo().m_useContinuous = true;
+	mDynamicsWorld->getDispatchInfo().m_useContinuous = false;
 
 	mDynamicsWorld->setGravity(btVector3(0, 0, 0));
 	mDynamicsWorld->setDebugDrawer(&mDebugDrawer);
