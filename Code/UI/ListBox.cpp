@@ -87,6 +87,9 @@ ListItem* ListBox::CreateNewItem(int row, int col)
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
+	if (mHand){
+		item->RegisterMouseHoverEvent();
+	}
 	return item;
 }
 
@@ -560,6 +563,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::LISTBOX_NO_SEARCH:
 	{
 		mNoSearch = StringConverter::parseBool(val);
+		return true;
+	}
+	case UIProperty::LISTBOX_HAND:
+	{
+		mHand = StringConverter::parseBool(val);
 		return true;
 	}
 
@@ -1996,11 +2004,30 @@ void ListBox::ClearItemProperties(){
 	mItemPropertyByString.clear();
 }
 
+void ListBox::DisableItemEvent(unsigned uniqueKey){
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	auto& row = mItems[rowIndex];
+	for (auto& col : row){
+		if (col){
+			col->SetEnable(false);
+		}
+	}
+}
+
 float ListBox::GetChildrenContentEnd() const{
 	auto num = mItems.size();
 	int hgap = mRowHeight + mRowGap;
 
 	int sizeY = hgap * num + mRowGap + mRowHeight;
 	return mWNPos.y + sizeY / (float)GetRenderTargetSize().y;
+}
+
+void ListBox::RemoveAllChild(bool immediately/* = false*/){
+	__super::RemoveAllChild(immediately);
+	Clear(immediately);
+
 }
 }

@@ -42,11 +42,11 @@ v2p uiverticalgaugeimage_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 float4 uiverticalgaugeimage_PixelShader( in v2p INPUT ) : SV_Target
 {	
-	float minY = gMaterialParam[1].x;
-	float maxY = gMaterialParam[1].y;
+	float minY = gMaterialParam[2].x;
+	float maxY = gMaterialParam[2].y;
 	// 0~1 range.
 	float curY = 1 - (INPUT.uvFilled.y - minY) / (maxY - minY);
-	float percent = gMaterialParam[0].x / gMaterialParam[0].y;
+	float percent = gMaterialParam[1].x / gMaterialParam[1].y;
 	
 	if (curY > percent)
 	{	

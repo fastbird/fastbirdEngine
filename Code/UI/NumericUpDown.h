@@ -42,6 +42,7 @@ namespace fastbird
 		int mValue;
 		int mMin;
 		int mMax;
+		int mShiftStep;
 	};
 
 }

@@ -71,7 +71,7 @@ namespace fastbird
 		, mLockMouseKey(0), mInvalidatedTemporary(false)
 		, mRDragStarted(false)
 		, mRDragEnd(false)
-		, mNoClickOnce(false)		
+		, mNoClickOnce(false)
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -155,10 +155,12 @@ namespace fastbird
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
-		if (IsMoved() && IsLButtonDown())
+		if (IsLButtonDown() && !mDragStarted)
 		{
-			mDragStarted = true;
+			if (std::abs(mDragStartX - mAbsX) > 3 || std::abs(mDragStartY - mAbsY) > 3)
+				mDragStarted = true;
 		}
+
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_DOWN)
 		{
 			mRDragEnd = false;
@@ -176,9 +178,10 @@ namespace fastbird
 			mLastDownPos.x = mAbsX;
 			mLastDownPos.y = mAbsY;
 		}
-		if (IsMoved() && IsRButtonDown())
+		if (IsRButtonDown() && !mRDragStarted)
 		{
-			mRDragStarted = true;
+			if (std::abs(mRDragStartX - mAbsX) > 3 || std::abs(mRDragStartY - mAbsY) > 3)
+				mRDragStarted = true;
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_MIDDLE_BUTTON_DOWN)
 		{

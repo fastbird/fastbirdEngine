@@ -2,6 +2,7 @@
 
 // using same slot : 5
 Texture2D gShadowMap : register(t8);
+Texture2D gGGXMap : register(t9);
 
 void BlinnPhongShading(float3 lightColor, float3 normal, float3 toLight,
     float3 toView, float3 specularT, out float3 diffuse, out float3 specular)
@@ -22,7 +23,8 @@ void BlinnPhongShading(float3 lightColor, float3 normal, float3 toLight,
 float3 Fresnel(	float vdh, float3 F0)
 {
 	//float sphg = pow(2.0, (-5.55473*vdh - 6.98316) * vdh);
-	float sphg = pow(1.0f - vdh, 5);
+	//float sphg = pow(1.0f - vdh, 5);
+	float sphg = exp2(-8.65617024533378044416*vdh); // equivalent to pow(1.0 - vdh, 5.0)
 	return F0 + (float3(1.0, 1.0, 1.0) - F0) * sphg;
 }
 
@@ -58,20 +60,28 @@ float NewVisibility(float ldh, float alpha){
 	return rcp(ldh*ldh*invK2 + k2);
 }
 
+float Pow4(float v){
+	return v*v*v*v;
+}
 // Cook-Torrance microfacet specular shading model
 float3 CookTorrance(float vdh, float ndh, float3 Ks, float roughness)
 {	
+	float D = gGGXMap.Sample(gLinearSampler, float2(Pow4(ndh), roughness)).x;
+	float2 fvHelper = gGGXMap.Sample(gLinearSampler, float2(vdh, roughness)).yz;
+	float3 FV = Ks*fvHelper.x + (1.0 - Ks)*fvHelper.y;
+	float3 specular = D*FV*0.25;
+	return specular;
+	
 // reference : http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
-
-	float alpha = roughness * roughness;
-          // F : Frenel
-	return Fresnel(vdh,Ks)
+	// float alpha = roughness * roughness;
+          // // F : Frenel
+	// return Fresnel(vdh,Ks)
 	   
-	   // D : GGX Distribution
-	* ( NormalDistrib(ndh,alpha)
+	   // // D : GGX Distribution
+	// * ( NormalDistrib(ndh,alpha)
 		
-		// V : Schlick approximation of Smith solved with GGX
-	* NewVisibility(vdh,alpha) * 0.25);
+		// // V : Schlick approximation of Smith solved with GGX
+	// * NewVisibility(vdh,alpha) * 0.25);
 }
 
 float3 CookTorranceContrib(
@@ -81,9 +91,13 @@ float3 CookTorranceContrib(
 	float3 Ks,
 	float roughness)
 {
+	
 // This is the contribution when using importance sampling with the GGX based
 // sample distribution. This means ct_contrib = ct_brdf / ggx_probability
-	return Fresnel(vdh,Ks) * (NewVisibility(vdh,roughness) * vdh * ndl / ndh );
+	float alpha = roughness*roughness;
+	return Fresnel(vdh,Ks) * (NewVisibility(vdh,alpha) * vdh * ndl / ndh ) * 0.25;
+	
+	
 }
 
 vec3 ImportanceSampleLambert(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal)
@@ -112,10 +126,9 @@ float ComputeLOD(vec3 Ln, float p)
 	return max(0.0, (ENV_MAX_LOD - 1.5) - 0.5 * (log(float(ENV_SAMPLES)) + log(p * Distortion(Ln))) * INV_LOG2);
 }
 
-vec3 ImportanceSampleGGX(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal, float roughness)
+vec3 ImportanceSampleGGX(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal, float alpha)
 {
-	float a = roughness*roughness;
-	float cosT = sqrt((1.0 - hamOffset.y) / (1.0 + (a*a - 1.0)*hamOffset.y));
+	float cosT = sqrt((1.0 - hamOffset.y) / (1.0 + (alpha*alpha - 1.0)*hamOffset.y));
 	float sinT = sqrt(1.0 - cosT*cosT);
 	float phi = 2.0*PI*hamOffset.x;
 	return (sinT*cos(phi)) * tan + (sinT*sin(phi)) * bi + cosT * normal;
@@ -187,7 +200,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 #ifdef ENV_TEXTURE
 	vec3 Tp = normalize(tangent	- normal*dot(tangent, normal)); // local tangent
 	vec3 Bp = normalize(cross(tangent, normal));
-		
+	float alpha = roughness * roughness;
 	static float2 hammersley[16] = (float2[16])gHammersley;
 	for(int i=0; i<ENV_SAMPLES; ++i)
 	{
@@ -197,7 +210,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 		float lodD = ComputeLOD(Sd, pdfD);	
 		
 		envContrib +=	SampleEnvironmentMap(Sd, lodD) * diffColor;
-		vec3 Hn = ImportanceSampleGGX(Xi,Tp,Bp,normal,roughness);
+		vec3 Hn = ImportanceSampleGGX(Xi,Tp,Bp,normal,alpha);
 		
 		float3 Ln = -reflect(toViewDir, Hn);
 		Ln.yz = Ln.zy;
@@ -212,10 +225,8 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 
 		float vdh = max( 1e-8, dot(toViewDir, Hn) );
 		float ndh = max( 1e-8, dot(normal, Hn) );
-		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln,
-			ProbabilityGGX(ndh, vdh, roughness));
-		envContrib += SampleEnvironmentMap(Ln, lodS)
-			  * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
+		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln, ProbabilityGGX(ndh, vdh, roughness));
+		envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
 	}
 
 	envContrib /= ENV_SAMPLES;

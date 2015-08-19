@@ -87,6 +87,10 @@ IScene* RenderTarget::GetScene() const
 	return mSceneOverride ? mSceneOverride : mScene;
 }
 
+IScene* RenderTarget::GetOriginalScene() const{
+	return mScene;
+}
+
 Scene* RenderTarget::GetSceneInternal() const
 {
 	return mSceneOverride ? (Scene*)mSceneOverride : (Scene*)mScene;

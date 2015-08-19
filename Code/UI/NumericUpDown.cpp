@@ -14,6 +14,7 @@ namespace fastbird
 		, mMax(100)
 		, mUp(0)
 		, mDown(0)
+		, mShiftStep(5)
 	{
 		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
@@ -78,6 +79,12 @@ namespace fastbird
 		WCHAR buffer[100];
 		swprintf_s(buffer, L"%d", mValue);
 		SetText(buffer);
+
+		if (mUp && mDown){
+			mValue = std::min(mValue, mMax);
+			mValue = std::max(mValue, mMin);
+			SetNumber(mValue);			
+		}
 	}
 
 	void NumericUpDown::SetNumber(int number)
@@ -100,15 +107,23 @@ namespace fastbird
 		mMin = min;
 		mMax = max;
 
-		mUp->SetEnable(mValue < mMax);
-		mDown->SetEnable(mValue > mMin);
+		if (mUp && mDown){
+			mUp->SetEnable(mValue < mMax);
+			mDown->SetEnable(mValue > mMin);
+		}
 	}
 
 	void NumericUpDown::OnDown(void* arg)
 	{
 		if (mValue > mMin)
 		{
-			SetNumber(mValue - 1);
+			if (gFBEnv->pEngine->GetKeyboard()->IsKeyDown(VK_SHIFT)){
+				SetNumber(mValue - mShiftStep);
+			}
+			else{
+				SetNumber(mValue - 1);
+			}
+			
 			OnEvent(UIEvents::EVENT_NUMERIC_DOWN);
 		}
 	}
@@ -117,7 +132,12 @@ namespace fastbird
 	{
 		if (mValue < mMax)
 		{
-			SetNumber(mValue + 1);
+			if (gFBEnv->pEngine->GetKeyboard()->IsKeyDown(VK_SHIFT)){
+				SetNumber(mValue + mShiftStep);
+			}
+			else{
+				SetNumber(mValue + 1);
+			}
 			OnEvent(UIEvents::EVENT_NUMERIC_UP);
 		}
 	}
@@ -146,6 +166,12 @@ namespace fastbird
 		{
 			int num = StringConverter::parseInt(val);
 			SetNumber(num);
+			return true;
+		}
+
+		case UIProperty::NUMERIC_UPDOWN_SHIFT_STEP:
+		{
+			mShiftStep = StringConverter::parseInt(val);
 			return true;
 		}
 		}
@@ -177,6 +203,15 @@ namespace fastbird
 			}
 			auto data = StringConverter::toString(mValue);
 			strcpy_s(val, bufsize, data.c_str());
+			return true;
+		}
+		case UIProperty::NUMERIC_UPDOWN_SHIFT_STEP:
+		{
+			if (notDefaultOnly){
+				if (mShiftStep == UIProperty::GetDefaultValueInt(prop))
+					return false;
+			}
+			strcpy_s(val, bufsize, StringConverter::toString(mShiftStep).c_str());
 			return true;
 		}
 		}

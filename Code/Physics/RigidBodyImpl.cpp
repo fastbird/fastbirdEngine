@@ -12,12 +12,15 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 , mPhysicsInterface(0)
 , mGamePtr(0)
 , mColProvider(colProvider)
+, mGroupedRigidBody(false)
+, mGroupIdx(Vec3I::MAX)
+, mGameFlag(0)
 {
 	auto colShape = getCollisionShape();
 	if (colShape)
 		gFBPhysics->AddRef(colShape);
 	mRotationInfo = FB_NEW(RotationInfo);
-	setUserPointer(0);
+	setUserPointer(this);
 }
 
 RigidBodyImpl::~RigidBodyImpl()
@@ -25,12 +28,7 @@ RigidBodyImpl::~RigidBodyImpl()
 	setUserPointer(0);
 	mGamePtr = 0;
 	FB_DELETE(mRotationInfo);
-	while(getNumConstraintRefs()>0)
-	{
-		btTypedConstraint* pConstraint = getConstraintRef(0);
-		gFBPhysics->RemoveConstraint(pConstraint);
-		
-	}
+	RemoveConstraints();
 
 	auto colShape = getCollisionShape();
 	if (colShape)
@@ -53,20 +51,29 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 	if (prevColShape)
 		gFBPhysics->Release(prevColShape);
 
+	btCollisionShape* colShape = 0;
+	float mass = 1.0f;
 	auto physics = (Physics*)gFBPhysics;
-	auto numColShapes = colProvider->GetNumColShapes();
-	if (numColShapes == 0)
-	{
-		return;
+	if (mGroupedRigidBody){
+		if (colProvider->GetNumColShapes(mGroupIdx) == 0)
+			return;
+
+		colShape = physics->CreateColShapeForGroup(colProvider, mGroupIdx);
+		mass = colProvider->GetMassForGroup(mGroupIdx);
 	}
-	auto colShape = physics->CreateColShape(colProvider);
+	else{
+
+		if (colProvider->GetNumColShapes() == 0)
+			return;
+
+		colShape = physics->CreateColShape(colProvider);
+		mass = colProvider->GetMass();
+	}
 	assert(colShape);
 	setCollisionShape(colShape);
 	if (colShape)
-		gFBPhysics->AddRef(colShape);
-
-
-	float mass = colProvider->GetMass();
+		gFBPhysics->AddRef(colShape);	
+	
 	if (mass > 0 && colShape)
 	{
 		btVector3 inertia;
@@ -197,6 +204,17 @@ void RigidBodyImpl::SetPhysicsInterface(IPhysicsInterface* obj)
 
 	// save actor;
 	mGamePtr = obj->GetUserPtr();
+}
+
+void RigidBodyImpl::SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx){
+	mPhysicsInterface = obj;
+	setUserPointer(this); // to avoid dynamic_cast
+
+	// save actor;
+	mGamePtr = obj->GetUserPtr();
+
+	mGroupIdx = groupIdx;
+	mGroupedRigidBody = true;
 }
 
 IPhysicsInterface* RigidBodyImpl::GetPhysicsInterface() const
@@ -384,8 +402,17 @@ void RigidBodyImpl::SetCCDSweptSphereRadius(float radius)
 
 void RigidBodyImpl::SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore)
 {
-	RigidBodyImpl* rigid = (RigidBodyImpl*)rigidBody;
-	setIgnoreCollisionCheck(rigid, ignore);
+	auto colObj = dynamic_cast<btCollisionObject*>(rigidBody);
+	assert(colObj);
+	if (ignore){
+		int i = m_objectsWithoutCollisionCheck.findLinearSearch(colObj);
+		if (i == m_objectsWithoutCollisionCheck.size()){
+			setIgnoreCollisionCheck(colObj, ignore);
+		}
+	}
+	else{
+		setIgnoreCollisionCheck(colObj, ignore);
+	}
 }
 
 void RigidBodyImpl::SetTransform(const Transformation& t)
@@ -397,10 +424,35 @@ void RigidBodyImpl::SetTransform(const Transformation& t)
 
 }
 
+Vec3 RigidBodyImpl::GetPos() const{
+	return BulletToFB(getWorldTransform().getOrigin());
+}
+
 void RigidBodyImpl::RegisterToWorld()
 {
-	if (mWorld && mColProvider)
+	if (mWorld && mColProvider){
 		mWorld->addRigidBody(this, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
+		auto num = getNumConstraintRefs();
+		for (int i = 0; i < num; ++i){
+			auto constraint = getConstraintRef(i);
+			assert(constraint);
+			constraint->setEnabled(true);			
+		}
+	}
+	else
+		Error(DEFAULT_DEBUG_ARG, "No colprovier exists!");
+}
+
+void RigidBodyImpl::UnregisterFromWorld(){
+	if (mWorld){
+		auto num = getNumConstraintRefs();
+		for (int i = 0; i < num; ++i){
+			auto constraint = getConstraintRef(i);
+			assert(constraint);
+			constraint->setEnabled(false);
+		}
+		mWorld->removeRigidBody(this);
+	}
 	else
 		Error(DEFAULT_DEBUG_ARG, "No colprovier exists!");
 }
@@ -417,4 +469,39 @@ void RigidBodyImpl::SetKinematic(bool enable)
 		int colFlag = getCollisionFlags() & ~CF_KINEMATIC_OBJECT;
 		setCollisionFlags(colFlag);
 	}
+}
+
+void RigidBodyImpl::RemoveConstraints(){
+	while (getNumConstraintRefs()>0)
+	{
+		btTypedConstraint* pConstraint = getConstraintRef(0);
+		gFBPhysics->RemoveConstraint(pConstraint);
+
+	}
+}
+
+void RigidBodyImpl::RemoveConstraint(void* constraintPtr){
+	auto num = getNumConstraintRefs();
+	for (int i = 0; i < num; ++i){
+		btTypedConstraint* pConstraint = getConstraintRef(i);
+		if (pConstraint == constraintPtr){
+			gFBPhysics->RemoveConstraint(pConstraint);
+			break;
+		}
+	}
+}
+
+void* RigidBodyImpl::GetLastConstraintsPtr(){
+	auto num = getNumConstraintRefs();
+	if (num == 0)
+		return 0;
+	return getConstraintRef(num - 1);
+}
+
+void RigidBodyImpl::SetGameFlag(unsigned flag){
+	mGameFlag = flag;
+}
+
+unsigned RigidBodyImpl::GetGameFlag() const{
+	return mGameFlag;
 }

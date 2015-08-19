@@ -99,6 +99,7 @@ namespace fastbird
 
 		virtual void SetScene(IScene* scene);
 		virtual IScene* GetScene() const;
+		virtual IScene* GetOriginalScene() const;
 		Scene* GetSceneInternal() const;
 		virtual void SetSceneOverride(IScene* scene);
 		virtual IScene* GetSceneOverride() const { return mSceneOverride; }

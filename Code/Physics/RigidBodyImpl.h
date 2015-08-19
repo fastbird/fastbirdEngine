@@ -16,6 +16,10 @@ namespace fastbird
 		IPhysicsInterface* mPhysicsInterface;
 
 		void* mGamePtr; // save actor.
+		Vec3I mGroupIdx;
+		bool mGroupedRigidBody;
+
+		unsigned mGameFlag;
 
 	public:
 		RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider);
@@ -50,6 +54,7 @@ namespace fastbird
 		virtual void SetMass(float mass);
 
 		virtual void SetPhysicsInterface(IPhysicsInterface* obj);
+		virtual void SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx);
 		virtual IPhysicsInterface* GetPhysicsInterface() const;
 
 		virtual void* GetColShapeUserPtr(int idx = 0);
@@ -77,9 +82,21 @@ namespace fastbird
 		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore);
 
 		virtual void SetTransform(const Transformation& t);
+		virtual Vec3 GetPos() const;
 
 		virtual void RegisterToWorld();
+		virtual void UnregisterFromWorld();
 
 		virtual void SetKinematic(bool enable);
+
+		virtual const Vec3I& GetGroupIdx() const { return mGroupIdx; }
+		virtual bool IsGrouped() const { return mGroupedRigidBody; }
+
+		virtual void RemoveConstraints();
+		virtual void RemoveConstraint(void* constraintPtr);
+		virtual void* GetLastConstraintsPtr();
+
+		virtual void SetGameFlag(unsigned flag);
+		virtual unsigned GetGameFlag() const;
 	};
 }

@@ -626,8 +626,10 @@ void ParticleEmitter::SetVisibleParticle(bool visible)
 		PARTICLES& particles = *(mParticles[&pt]);
 		for (auto& p : particles)
 		{
-			if (p.mMeshObject)
+			if (p.mMeshObject){
 				p.mMeshObject->SetShow(visible);
+				p.mMeshObject->AttachToScene();
+			}
 			if (p.mPointLight)
 				p.mPointLight->SetEnabled(visible);
 			if (p.mParticleEmitter)
@@ -651,11 +653,23 @@ void ParticleEmitter::SetAlpha(float alpha){
 		{
 			if (itParticle->mMeshObject)
 			{
-				itParticle->mMeshObject->SetForceAlphaBlending(true, alpha);
+				auto mat = itParticle->mMeshObject->GetMaterial();
+				if (!mat->IsTransparent()){
+					itParticle->mMeshObject->SetForceAlphaBlending(true, alpha);
+				}
+				else{
+					auto diffuse =mat->GetDiffuseColor();
+					diffuse.w = alpha;
+					mat->SetDiffuseColor(diffuse);
+				}
 			}
 		}
 	}
 	
+}
+
+float ParticleEmitter::GetAlpha() const{
+	return mFinalAlphaMod;
 }
 
 bool ParticleEmitter::Update(float dt)
@@ -1309,7 +1323,8 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 	{
 		if (!p.mMeshObject)
 			p.mMeshObject = (IMeshObject*)pt.mMeshObject->Clone();
-		p.mMeshObject->AttachToScene();
+		if (GetShow())
+			p.mMeshObject->AttachToScene();
 		p.mMeshObject->SetPos(p.mPosWorld);
 		p.mMeshObject->SetScale(Vec3(scale));
 		p.mMeshObject->SetDir(GetForward());

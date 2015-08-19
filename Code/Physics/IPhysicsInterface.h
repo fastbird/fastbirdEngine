@@ -2,6 +2,7 @@
 #include <Physics/ColShapes.h>
 namespace fastbird
 {
+	class RigidBody;
 	struct RigidBodyEvents
 	{
 		RigidBodyEvents()
@@ -31,10 +32,17 @@ namespace fastbird
 		virtual void* GetUserPtr() const = 0;
 
 		// col shape provider
-		virtual unsigned GetNumColShapes() const = 0;
+		virtual bool IsGroupedBody() const { return false; }
+		virtual unsigned GetShapesForGroup(const Vec3I& groupIdx, CollisionShape* shapes[]) const { assert(0); return 0; }
+		virtual unsigned GetNumGroups() const { assert(0); return 0; }
+		virtual unsigned GetNumColShapes(const Vec3& groupIdx) { assert(0); return 0; }
+		virtual float GetMassForGroup(const Vec3I& group) const { assert(0); return 0; }
+
+		virtual unsigned GetNumColShapes() const = 0;		
 		virtual fastbird::CollisionShape* GetShape(unsigned i) = 0;
 		virtual unsigned GetShapes(CollisionShape* shapes[]) const = 0;
 		virtual float GetMass() const = 0;
+
 		virtual int GetCollisionGroup() const = 0;
 		virtual int GetCollisionMask() const = 0;
 
@@ -49,12 +57,13 @@ namespace fastbird
 		// Events Handler
 		struct CollisionContactInfo
 		{
-			CollisionContactInfo(void* objB, const fastbird::Vec3& worldpos, const fastbird::Vec3& worldNormal, float impulse, int idxA, int idxB)
-			:mObjB(objB), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
+			CollisionContactInfo(RigidBody* a,RigidBody* b, const fastbird::Vec3& worldpos, const fastbird::Vec3& worldNormal, float impulse, int idxA, int idxB)
+			:mA(a), mB(b), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
 			{
 
 			}
-			void* mObjB;
+			RigidBody* mA;
+			RigidBody* mB;
 			Vec3 mWorldPos;
 			const Vec3 mWorldNormal;
 			float mImpulse;
@@ -62,7 +71,7 @@ namespace fastbird
 			int mIdxB;
 		};
 		virtual bool OnCollision(const CollisionContactInfo& contactInfo) = 0;
-		virtual void AddCloseObjects(void* gamePtr) = 0;
+		virtual void AddCloseObjects(RigidBody* gamePtr) {}
 		virtual void OnRigidBodyUpdated(const fastbird::RigidBodyEvents& data){}
 	};
 }

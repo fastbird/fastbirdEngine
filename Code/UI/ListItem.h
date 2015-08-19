@@ -38,6 +38,8 @@ namespace fastbird
 
 		void SetMerged(bool m){ mMerged = m; }
 		bool GetMerged() const { return mMerged; }
+		void OnMouseHover(void* arg);
+		void RegisterMouseHoverEvent();
 
 		//virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 

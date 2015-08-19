@@ -55,14 +55,14 @@ float4 uiverticalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		return float4(0.521568, 0.521568, 0.505882, 1.0);
 	}
 	
-	float percent = gMaterialParam[0].x * 2.0 - 1.0;
+	float percent = gMaterialParam[1].x * 2.0 - 1.0;
 	
 	if (snc.y < percent)
 	{
-		return lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
+		return lerp(gMaterialParam[2], gMaterialParam[3], gMaterialParam[4].x);
 	}
 	
-	float maximum = gMaterialParam[0].y * 2.0 - 1.0;
+	float maximum = gMaterialParam[1].y * 2.0 - 1.0;
 	if (abs(snc.y-maximum)<0.01)
 	{
 		return float4(1, 1, 0, 1);

@@ -38,6 +38,7 @@ namespace fastbird
 		virtual void SetMass(float mass) = 0;
 
 		virtual void SetPhysicsInterface(IPhysicsInterface* obj) = 0;
+		virtual void SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx) = 0;
 		virtual IPhysicsInterface* GetPhysicsInterface() const = 0;
 
 		// idx is for compound shape
@@ -69,8 +70,18 @@ namespace fastbird
 		virtual void SetIgnoreCollisionCheck(RigidBody* rigidBody, bool ignore) = 0;
 
 		virtual void SetTransform(const Transformation& t) = 0;
+		virtual Vec3 GetPos() const = 0;
 
 		virtual void RegisterToWorld() = 0;
+		virtual void UnregisterFromWorld() = 0;
 		virtual void SetKinematic(bool enable) = 0;
+		virtual const Vec3I& GetGroupIdx() const = 0;
+		virtual bool IsGrouped() const = 0;
+		virtual void RemoveConstraints() = 0;
+		virtual void RemoveConstraint(void* constraintPtr)  = 0;
+		virtual void* GetLastConstraintsPtr() = 0;
+
+		virtual void SetGameFlag(unsigned flag) = 0;
+		virtual unsigned GetGameFlag() const = 0;
 	};
 }

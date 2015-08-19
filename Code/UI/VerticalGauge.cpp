@@ -27,10 +27,10 @@ namespace fastbird
 	IMaterial* mat = mUIObject->GetMaterial();
 	mGaugeColor = Color(1, 1, 1, 1);
 	mBlinkColor = Color(1, 0, 0, 1);
-	mat->SetMaterialParameters(1, mGaugeColor.GetVec4());
-	mat->SetMaterialParameters(2, mBlinkColor.GetVec4());
+	mat->SetMaterialParameters(2, mGaugeColor.GetVec4());
+	mat->SetMaterialParameters(3, mBlinkColor.GetVec4());
 	// x is lerp.
-	mat->SetMaterialParameters(3, Vec4(0, 0, 0, 0));
+	mat->SetMaterialParameters(4, Vec4(0, 0, 0, 0));
 	Vec2 texcoords[4] = {
 		Vec2(0.f, 1.f),
 		Vec2(0.f, 0.f),
@@ -62,14 +62,14 @@ void VerticalGauge::SetPercentage(float p)
 {
 	mPercentage = p;
 	IMaterial* mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameters(0, Vec4(mPercentage, mMaximum, 0, 0));
+	mat->SetMaterialParameters(1, Vec4(mPercentage, mMaximum, 0, 0));
 }
 
 void VerticalGauge::SetMaximum(float m)
 {
 	mMaximum = m;
 	IMaterial* mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameters(0, Vec4(mPercentage, m, 0, 0));
+	mat->SetMaterialParameters(1, Vec4(mPercentage, m, 0, 0));
 }
 
 void VerticalGauge::Blink(bool blink)
@@ -86,14 +86,14 @@ void VerticalGauge::SetGaugeColor(const Color& color)
 {
 	mGaugeColor = color;
 	IMaterial* mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameters(1, color.GetVec4());
+	mat->SetMaterialParameters(2, color.GetVec4());
 }
 
 void VerticalGauge::SetBlinkColor(const Color& color)
 {
 	mBlinkColor = color;
 	IMaterial* mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameters(2, color.GetVec4());
+	mat->SetMaterialParameters(3, color.GetVec4());
 }
 
 bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
@@ -326,7 +326,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 		{
 			mMaterialUsingImage = true;
 			mUIObject->SetMaterial("es/Materials/UIVerticalGaugeImage.material");
-			mUIObject->GetMaterial()->SetMaterialParameters(0, Vec4(mPercentage, mMaximum, 0, 0));
+			mUIObject->GetMaterial()->SetMaterialParameters(1, Vec4(mPercentage, mMaximum, 0, 0));
 		}
 		mTextures[index] = mTextureAtlas->mTexture->Clone();
 		mAtlasRegions[index] = mTextureAtlas->GetRegion(region);
@@ -352,7 +352,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 				mUIObject->SetTexCoord(texcoords, 4, 1);
 			float minY = texcoords[1].y;
 			float maxY = texcoords[2].y;
-			mUIObject->GetMaterial()->SetMaterialParameters(1, Vec4(minY, maxY, 0, 0));
+			mUIObject->GetMaterial()->SetMaterialParameters(2, Vec4(minY, maxY, 0, 0));
 			DWORD colors[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
 			mUIObject->SetColors(colors, 4);
 		}

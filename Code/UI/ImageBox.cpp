@@ -115,7 +115,9 @@ void ImageBox::SetTexture(const char* file)
 		return;
 	if (mImageFile == file)
 		return;
+
 	mImageFile = file ? file : "";
+
 	if (mImageFile.empty()){
 		SetTexture((ITexture*)0);
 	}
@@ -130,6 +132,9 @@ void ImageBox::SetTexture(const char* file)
 void ImageBox::SetTexture(ITexture* pTexture)
 {
 	//mImageFile.clear();
+	if (pTexture->GetName().empty()){
+		mImageFile.clear();
+	}
 	mTexture = pTexture;
 	SAMPLER_DESC sd;
 	sd.AddressU = TEXTURE_ADDRESS_BORDER;

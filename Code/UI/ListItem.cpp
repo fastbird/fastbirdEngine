@@ -26,6 +26,11 @@ ListItem::~ListItem()
 
 }
 
+void ListItem::RegisterMouseHoverEvent(){
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
+		std::bind(&ListItem::OnMouseHover, this, std::placeholders::_1));
+}
+
 void ListItem::SetRowIndex(size_t index)
 {
 	mRowIndex = index;
@@ -80,6 +85,11 @@ void ListItem::OnFocusLost()
 
 	}
 	TriggerRedraw();
+}
+
+void ListItem::OnMouseHover(void* arg)
+{
+	SetCursor(WinBase::sCursorOver);
 }
 
 //bool ListItem::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)

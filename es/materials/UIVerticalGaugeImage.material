@@ -13,6 +13,7 @@
 	<Textures>
 	</Textures>
 	<MaterialParameters>
+		<param comment="uStep, vStep, uStart, vStart">0, 0, 0, 0</param>
 		<param comment="percent, 0, 0, 0">0, 0, 0, 0</param>
 		<param comment="uvMin, mvMax, 0, 0">0, 0, 0, 0</param>
 	</MaterialParameters>

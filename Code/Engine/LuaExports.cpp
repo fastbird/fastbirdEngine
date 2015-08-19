@@ -1,4 +1,7 @@
 #include <Engine/StdAfx.h>
+#include <Engine/ICamera.h>
+#include <Engine/IMeshObject.h>
+#include <Engine/IRenderTarget.h>
 #include <CommonLib/luawrapper.hpp>
 #include <CommonLib/LuaObject.h>
 
@@ -18,8 +21,13 @@ namespace fastbird
 	int IsRButtonClicked(lua_State* L);
 	int IsLButtonDown(lua_State* L);
 
+	int GenGGX(lua_State* L);
+	int LoadMesh(lua_State* L);
+
 	void InitEngineLuaFuncs(lua_State* L)
 	{
+		LUA_SETCFUNCTION(L, LoadMesh);
+		LUA_SETCFUNCTION(L, GenGGX);
 		LUA_SETCFUNCTION(L, IsKeyPressed);
 		LUA_SETCFUNCTION(L, IsKeyDown);
 		LUA_SETCFUNCTION(L, IsLButtonClicked);
@@ -116,4 +124,30 @@ namespace fastbird
 		lua_pushboolean(L, gFBEnv->pEngine->GetMouse()->IsLButtonDown());
 		return 1;
 	}
+	
+	int GenGGX(lua_State* L){
+		gFBEnv->pRenderer->GenGGX();
+		return 0;
+	}
+	static IMeshObject* gTempMesh = 0;
+	int LoadMesh(lua_State* L){
+		if (gTempMesh){
+			gFBEnv->pEngine->ReleaseMeshObject(gTempMesh);
+			gTempMesh = 0;
+		}
+
+		auto meshPath = luaL_checkstring(L, 1);
+		gTempMesh = gFBEnv->pEngine->GetMeshObject(meshPath);
+		if (gTempMesh){
+			gFBEnv->pRenderer->GetMainRenderTarget()->GetScene()->AttachObject(gTempMesh);
+			auto mainCam = gFBEnv->pRenderer->GetMainRenderTarget()->GetOrCreateOverridingCamera();
+			mainCam->SetTarget(gTempMesh);
+			mainCam->SetEnalbeInput(true);
+		}
+		else{
+			gFBEnv->pRenderer->GetMainRenderTarget()->RemoveOverridingCamera();
+		}
+		return 0;
+	}
+	
 }

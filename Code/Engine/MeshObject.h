@@ -79,6 +79,7 @@ namespace fastbird
 		virtual void MakeMaterialIndependent();
 		virtual BoundingVolume* GetAABB() const { return mAABB; }
 		virtual bool IsPlayingAction() const;
+		virtual void ClearVertexBuffers();
 
 		struct MaterialGroup
 		{
@@ -100,7 +101,7 @@ namespace fastbird
 		};
 
 		virtual void SetAlpha(float alpha);
-		virtual void SetForceAlphaBlending(bool enable, float alpha, float forceGlow = 0.f);
+		virtual void SetForceAlphaBlending(bool enable, float alpha, float forceGlow = 0.f, bool disableDepth = false);
 		virtual void SetAmbientColor(const Color& color);
 
 	private:

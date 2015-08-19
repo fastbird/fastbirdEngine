@@ -6,6 +6,8 @@
 #include <Physics/ColShapes.h>
 #include <Physics/IPhysicsInterface.h>
 #include <Physics/RayResult.h>
+#include <Physics/IFilterCallback.h>
+#include <Physics/BulletFilterCallback.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
@@ -18,6 +20,7 @@ namespace fastbird{
 unsigned Physics::NextInternalColShapeId = 1;
 Physics::Physics()
 	: mRayGroup(0x40) // default of the current game under development
+	, mFilterCallback(0)
 {
 
 }
@@ -73,7 +76,7 @@ void Physics::Initilaize()
 	mSolver = sol;
 
 	mDynamicsWorld = FB_NEW_ALIGNED(btDiscreteDynamicsWorld, MemAlign)(mDispatcher, mBroadphase, mSolver, mCollisionConfiguration);
-	mDynamicsWorld->getDispatchInfo().m_useContinuous = false;
+	mDynamicsWorld->getDispatchInfo().m_useContinuous = true;
 
 	mDynamicsWorld->setGravity(btVector3(0, 0, 0));
 	mDynamicsWorld->setDebugDrawer(&mDebugDrawer);
@@ -87,6 +90,7 @@ void Physics::Deinitilaize()
 {
 	if (mDynamicsWorld)
 	{
+		RegisterFilterCallback(0);
 
 		int i;
 		for (i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; i--)
@@ -187,8 +191,8 @@ void Physics::_ReportCollisions()
 		IPhysicsInterface* b = (IPhysicsInterface*)obB->GetPhysicsInterface();
 		if (a && b)
 		{
-			a->AddCloseObjects(obB->GetGamePtr());
-			b->AddCloseObjects(obA->GetGamePtr());
+			a->AddCloseObjects((RigidBody*)obB);
+			b->AddCloseObjects((RigidBody*)obA);
 		}
 		else
 		{
@@ -198,6 +202,8 @@ void Physics::_ReportCollisions()
 		for (int j = 0; j < numContacts; j++)
 		{
 			btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			if (pt.m_lifeTime == 0)
+				continue;
 
 			btVector3 ptA = pt.getPositionWorldOnA();
 			btVector3 ptB = pt.getPositionWorldOnB();
@@ -206,13 +212,13 @@ void Physics::_ReportCollisions()
 			float impulse = pt.getAppliedImpulse();
 			if (impulse > 0)
 			{
-				IPhysicsInterface::CollisionContactInfo contactInfo(obB->GetGamePtr(), BulletToFB(ptB), BulletToFB(normal),
+				IPhysicsInterface::CollisionContactInfo contactInfo((RigidBody*)obA, (RigidBody*)obB, BulletToFB(ptB), BulletToFB(normal),
 					impulse, pt.m_index0, pt.m_index1);
 
 				bool processed = a->OnCollision(contactInfo);
 				if (!processed)
 				{
-					IPhysicsInterface::CollisionContactInfo contactInfo(obA->GetGamePtr(), BulletToFB(ptA), BulletToFB(-normal),
+					IPhysicsInterface::CollisionContactInfo contactInfo((RigidBody*)obB, (RigidBody*)obA, BulletToFB(ptA), BulletToFB(-normal),
 						impulse, pt.m_index1, pt.m_index0);
 					b->OnCollision(contactInfo);
 				}
@@ -256,7 +262,7 @@ void Physics::_CheckCollisionShapeForDel(float timeStep)
 RigidBody* Physics::CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj)
 {
 	btCollisionShape* colShape = ParseCollisionFile(collisionFile);
-	return _CreateRigidBodyInternal(colShape, mass, obj);
+	return _CreateRigidBodyInternal(colShape, mass, obj, true);
 }
 
 RigidBody* Physics::CreateRigidBody(IPhysicsInterface* obj)
@@ -269,7 +275,23 @@ RigidBody* Physics::CreateRigidBody(IPhysicsInterface* obj)
 	auto colShape = CreateColShape(obj);
 	if (!colShape)
 		return 0;
-	return _CreateRigidBodyInternal(colShape, obj->GetMass(), obj);
+	return _CreateRigidBodyInternal(colShape, obj->GetMass(), obj, true);
+}
+
+RigidBody* Physics::CreateRigidBodyForGroup(IPhysicsInterface* colProvider, const Vec3I& groupIdx){
+	if (!colProvider){
+		Error(DEFAULT_DEBUG_ARG, "no physics interface is provided!");
+		return 0;
+	}
+
+	auto colShape = CreateColShapeForGroup(colProvider, groupIdx);
+	if (!colShape)
+		return 0;
+	auto rigidBody = _CreateRigidBodyInternal(colShape, colProvider->GetMassForGroup(groupIdx), colProvider, groupIdx==Vec3I::ZERO ? true : false);
+	if (rigidBody)	{
+		rigidBody->SetPhysicsInterface(colProvider, groupIdx);
+	}
+	return rigidBody;
 }
 
 RigidBody* Physics::CreateTempRigidBody(CollisionShape* colShape)
@@ -290,7 +312,7 @@ RigidBody* Physics::CreateTempRigidBody(CollisionShape*  shapes[], unsigned num)
 	return rigidBody;
 }
 
-RigidBody* Physics::_CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj)
+RigidBody* Physics::_CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj, bool createMotionSTate)
 {
 	fbMotionState* motionState = 0;
 	bool dynamic = mass != 0.0f;
@@ -298,9 +320,9 @@ RigidBody* Physics::_CreateRigidBodyInternal(btCollisionShape* colShape, float m
 	if (dynamic)
 	{
 		colShape->calculateLocalInertia(mass, localInertia);
-		if (obj)
+		if (obj && createMotionSTate)
 			motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);
-
+		
 	}
 
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(
@@ -378,6 +400,19 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 		Error("Over counts for colshapes!");
 	}
 	
+	return CreateColShape(shapes, num);
+}
+
+btCollisionShape* Physics::CreateColShapeForGroup(IPhysicsInterface* shapeProvider, const Vec3I& groupIdx){
+	if_assert_fail(shapeProvider)
+		return 0;
+
+	static CollisionShape* shapes[10000];
+	auto num = shapeProvider->GetShapesForGroup(groupIdx, shapes);
+	if (num >= 10000){
+		Error("Over counts for colshapes!");
+	}
+
 	return CreateColShape(shapes, num);
 }
 
@@ -639,6 +674,33 @@ void Physics::AttachBodies(RigidBody* bodies[], unsigned num)
 	}
 }
 
+void Physics::AttachBodiesAlways(RigidBody* bodies[], unsigned num){
+	if (num < 2)
+		return;
+	auto master = bodies[0];
+	auto btMaster = dynamic_cast<btRigidBody*>(master);
+	assert(btMaster);
+	auto masterPos = btMaster->getWorldTransform().getOrigin();
+	for (unsigned i = 1; i < num; ++i){
+		auto target = bodies[i];
+		auto btTarget = dynamic_cast<btRigidBody*>(target);
+		assert(btTarget);
+		auto targetPos = btTarget->getWorldTransform().getOrigin();
+		auto center = (targetPos + masterPos)*0.5f;
+
+		btTransform globalFrame;
+		globalFrame.setIdentity();
+		globalFrame.setOrigin(center);
+		btTransform trA = btMaster->getWorldTransform().inverse() * globalFrame;
+		btTransform trB = btTarget->getWorldTransform().inverse() * globalFrame;
+		
+
+		btFixedConstraint* fixed = FB_NEW_ALIGNED(btFixedConstraint, MemAlign)(*btMaster, *btTarget, trA, trB);
+		fixed->setOverrideNumSolverIterations(30);
+		mDynamicsWorld->addConstraint(fixed, true);
+	}
+}
+
 void Physics::SetRayCollisionGroup(int group)
 {
 	mRayGroup = group;
@@ -867,14 +929,14 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 	btVector3 m_queryAabbMin;
 	btVector3 m_queryAabbMax;
 	RigidBody* mExcept;
-	void** mRet;
+	RigidBody** mRet;
 	int mLimit;
 	int mCurSize;
 	unsigned mColMask;
 
 	int m_numOverlap;
 	AABBOverlapCallback(const btVector3& aabbMin, const btVector3& aabbMax, unsigned colMask,
-		void* ret[], int limit, RigidBody* except)
+		RigidBody* ret[], int limit, RigidBody* except)
 		: m_queryAabbMin(aabbMin), m_queryAabbMax(aabbMax), m_numOverlap(0), mExcept(except), mRet(ret)
 		, mLimit(limit), mColMask(colMask), mCurSize(0)
 	{}
@@ -891,20 +953,17 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 		if ((proxy->m_collisionFilterGroup & mColMask) == 0)
 			return true;
 
-		auto gamePtr = rigidBody->GetGamePtr();
-		if (gamePtr)
+		colObj0->getCollisionShape()->getAabb(colObj0->getWorldTransform(), proxyAabbMin, proxyAabbMax);
+		if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
 		{
-			colObj0->getCollisionShape()->getAabb(colObj0->getWorldTransform(), proxyAabbMin, proxyAabbMax);
-			if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
-			{
-				mRet[mCurSize++] = gamePtr;
-			}
+			mRet[mCurSize++] = rigidBody;
 		}
+
 		return true;
 	}
 };
 
-unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, void* ret[], unsigned limit, RigidBody* except)
+unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except)
 {
 	btVector3 min = FBToBullet(aabb.GetMin());
 	btVector3 max = FBToBullet(aabb.GetMax());
@@ -1045,6 +1104,19 @@ MeshShape* Physics::CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3
 void Physics::DestroyShape(CollisionShape* shape)
 {
 	CollisionShapeMan::DestroyShape(shape);
+}
+
+
+void Physics::RegisterFilterCallback(IFilterCallback* callback){
+	if (mFilterCallback){
+		mDynamicsWorld->getPairCache()->setOverlapFilterCallback(0);
+		FB_SAFE_DEL(mFilterCallback);
+	}
+
+	if (callback){
+		mFilterCallback = FB_NEW(BulletFilterCallback)(callback);
+		mDynamicsWorld->getPairCache()->setOverlapFilterCallback(mFilterCallback);
+	}
 }
 
 }

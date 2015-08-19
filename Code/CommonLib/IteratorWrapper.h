@@ -29,7 +29,7 @@ namespace fastbird
 			return *mCurrent++;
 		}
 
-		ValueType Advance(unsigned dist)
+		void Advance(unsigned dist)
 		{
 			if (dist >= mNumElem)
 			{

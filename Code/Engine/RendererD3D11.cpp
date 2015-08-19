@@ -21,6 +21,7 @@
 #include <CommonLib/Hammersley.h>
 #include <CommonLib/tinydir.h>
 #include <CommonLib/StackTracer.h>
+#include <../es/shaders/CommonDefines.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <d3dcompiler.h>
@@ -400,6 +401,7 @@ bool RendererD3D11::Init(int threadPool)
 		}
 	}
 
+	__super::Init(threadPool);
 	return true;
 }
 
@@ -673,8 +675,8 @@ void RendererD3D11::UpdateRadConstantsBuffer(void* pData)
 	IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
 	memcpy(pConstants->gIrradConstsnts, pData, sizeof(Vec4)* 9);
 	std::vector<Vec2> hammersley;
-	GenerateHammersley(16, hammersley);
-	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* 16);	
+	GenerateHammersley(ENV_SAMPLES, hammersley);
+	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* ENV_SAMPLES);
 	m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);
 	m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 }
@@ -1364,7 +1366,7 @@ ITexture* RendererD3D11::CreateTexture(const Vec2I& size, int mipLevels, int arr
 }
 
 //----------------------------------------------------------------------------
-ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTexture/*=0*/)
+ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTexture/*=0*/, bool async/* = true*/)
 {	
 	std::string filepath(file);
 	ToLowerCase(filepath);
@@ -1417,7 +1419,7 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 	}
 
 	SAFE_RELEASE(pTexture->mSRView);
-	if (m_pThreadPump)
+	if (m_pThreadPump && async)
 	{
 		pTexture->mHr = S_FALSE;
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 

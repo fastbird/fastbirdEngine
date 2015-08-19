@@ -27,6 +27,8 @@ namespace fastbird
 		virtual void SetEmitterDirection(const fastbird::Vec3& dir){mEmitterDirection = dir;}
 		virtual void SetEmitterColor(const Color& c){ mEmitterColor = c; }
 		virtual void SetAlpha(float alpha);
+		virtual float GetAlpha() const ;
+
 		virtual void PreRender() {}
 		virtual void Render() {}
 		virtual void PostRender() {}

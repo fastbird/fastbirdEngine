@@ -233,10 +233,13 @@ void CardScroller::VisualizeData(unsigned index){
 	{
 		auto it = mKeys.Find(index);
 		if (it == mKeys.end() || it->second != key){
+			mItems[index]->SetVisible(false);
 			mItems[index]->RemoveAllChild(true);
 			mItems[index]->ParseLua(data);
+			mItems[index]->SetVisible(true);
 			RefreshTextures(index);
 			RefreshProps(index);
+			
 		}
 	}
 	else

@@ -59,7 +59,7 @@ namespace fastbird
 		virtual IShader* CreateShader(const char* filepath, int shaders,
 			const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0);
 		virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize);
-		virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0);
+		virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0, bool async = true);
 		virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 			BUFFER_USAGE usage, int  buffer_cpu_access, int  type);
 

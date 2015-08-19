@@ -158,7 +158,7 @@ public:
 	virtual IShader* CreateShader(const char* filepath, int shaders,
 		const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0) = 0;
 	virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize) = 0;
-	virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0) = 0;
+	virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0, bool async = true) = 0;
 	virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) = 0;
 
@@ -352,6 +352,7 @@ public:
 	// check IEngine:CreateVideoPlayer()
 	virtual void RegisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player) = 0;
+	virtual void GenGGX() = 0;
 };
 
 }
