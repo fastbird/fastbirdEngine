@@ -293,6 +293,15 @@ namespace fastbird
 		return true;
 	}
 
+	inline bool IsEqual(const Vec2& l, const Vec2& r, float ep = EPSILON)
+	{
+		Vec2 t = l - r;
+		if (abs(t.x) >= ep || abs(t.y) >= ep)
+			return false;
+
+		return true;
+	}
+
 	inline Vec3 Sign(const Vec3& v)
 	{
 		return Vec3(v.x < 0.0f ? -1 : (v.x == 0.0f ? 0.0f : 1.0f), 

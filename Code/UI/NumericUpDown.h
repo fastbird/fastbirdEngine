@@ -26,7 +26,7 @@ namespace fastbird
 
 		virtual void SetEnableUp(bool enable);
 		virtual void SetEnableDown(bool enable);
-
+		virtual void SetEnable(bool enable);
 
 
 	protected:
@@ -42,6 +42,8 @@ namespace fastbird
 		int mValue;
 		int mMin;
 		int mMax;
+		int mShiftStep;
+		int mStep;
 	};
 
 }

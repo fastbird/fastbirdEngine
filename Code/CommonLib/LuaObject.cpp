@@ -193,11 +193,13 @@ void LuaObject::SetGlobalName(lua_State* L, const char* globalName)
 
 void LuaObject::PushToStack() const
 {
-	lua_rawgeti(mL, LUA_REGISTRYINDEX, mRef);
-	if (mSelf)
-	{
-		assert(IsFunction());
-		mSelf->PushToStack();
+	if (IsValid()){
+		lua_rawgeti(mL, LUA_REGISTRYINDEX, mRef);
+		if (mSelf)
+		{
+			assert(IsFunction());
+			mSelf->PushToStack();
+		}
 	}
 }
 

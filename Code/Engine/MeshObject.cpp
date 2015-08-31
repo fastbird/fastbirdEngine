@@ -121,7 +121,7 @@ namespace fastbird
 
 		renderer->SetPrimitiveTopology(mTopology);
 
-		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW && !HasObjFlag(OF_HIGHLIGHT_DEDI))
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !HasObjFlag(OF_NO_DEPTH_PASS))
 		{
 			FB_FOREACH(it, mMaterialGroups)
 			{
@@ -137,7 +137,7 @@ namespace fastbird
 			return;
 		}
 
-		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_DEPTH && !HasObjFlag(OF_HIGHLIGHT_DEDI))
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_DEPTH && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !HasObjFlag(OF_NO_DEPTH_PASS))
 		{
 			FB_FOREACH(it, mMaterialGroups)
 			{
@@ -149,11 +149,12 @@ namespace fastbird
 					renderer->SetPositionInputLayout();
 					materialReady = true;
 				}
-				else if (!(mObjFlag & OF_NO_DEPTH_PASS))
+				else
 				{
 					renderer->SetDepthWriteShader();
 					materialReady = true;
 				}
+
 				if (materialReady)
 				{
 					RenderMaterialGroup(&(*it), true);
@@ -162,7 +163,7 @@ namespace fastbird
 			return;
 		}
 		// PASS_GODRAY_OCC_PRE
-		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !mForceAlphaBlending)
+		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_GODRAY_OCC_PRE && !HasObjFlag(OF_HIGHLIGHT_DEDI) && !HasObjFlag(OF_NO_DEPTH_PASS)  && !mForceAlphaBlending)
 		{
 			renderer->SetPositionInputLayout();
 			FB_FOREACH(it, mMaterialGroups)
@@ -198,6 +199,7 @@ namespace fastbird
 				if (mForceAlphaBlending && !mMaterialGroups.empty()){
 					auto it = mMaterialGroups.begin();
 					renderer->SetPositionInputLayout();
+					
 					bool hasSubMat = it->mMaterial->BindSubPass(RENDER_PASS::PASS_DEPTH_ONLY, false);
 					if (hasSubMat){
 						// write only depth
@@ -1089,7 +1091,7 @@ namespace fastbird
 		}
 	}
 
-	void MeshObject::SetForceAlphaBlending(bool enable, float alpha, float forceGlow){
+	void MeshObject::SetForceAlphaBlending(bool enable, float alpha, float forceGlow, bool disableDepth){
 		mForceAlphaBlending = enable;
 		if (mForceAlphaBlending){
 			for (auto& it : mMaterialGroups)
@@ -1120,6 +1122,9 @@ namespace fastbird
 
 					DEPTH_STENCIL_DESC ds;
 					ds.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+					if (disableDepth){
+						ds.DepthEnable = false;
+					}
 					it.mForceAlphaMaterial->SetDepthStencilState(ds);
 
 					it.mForceAlphaMaterial->SetTransparent(true);
@@ -1140,6 +1145,13 @@ namespace fastbird
 				}
 				it.mMaterial->SetAmbientColor(color.GetVec4());
 			}
+		}
+	}
+
+	void MeshObject::ClearVertexBuffers(){
+		for (auto& it : mMaterialGroups)
+		{
+			it.mVBPos = 0;
 		}
 	}
 }

@@ -149,7 +149,7 @@ namespace fastbird
 
 		void* mLockMouseKey;
 		bool mInvalidatedTemporary;
-		bool mNoClickOnce;
+		bool mNoClickOnce;		
 	};
 }
 

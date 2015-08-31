@@ -206,6 +206,9 @@ protected:
 
 	std::vector<IVideoPlayer*> mVideoPlayers;
 
+	SmartPtr<IShader> mGGXGenShader;
+	SmartPtr<ITexture> mGGXGenTarget;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -214,6 +217,7 @@ protected:
 	virtual void FinishSmartPtr();
 
 public:
+	virtual bool Init(int threadPool);
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;
@@ -262,6 +266,7 @@ public:
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);
+	virtual void DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color);
 	virtual void DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 		const Color& color0, const Color& color1);
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
@@ -497,6 +502,7 @@ public:
 
 	virtual void RegisterVideoPlayer(IVideoPlayer* player);
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
+	virtual void GenGGX();
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

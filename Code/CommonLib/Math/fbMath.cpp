@@ -358,6 +358,32 @@ namespace fastbird
 		}
 	}
 
+	SegmentIntersectResult SegmentIntersect(const Vec2& p, const Vec2& pend,
+		const Vec2& q, const Vec2& qend,
+		Vec2& outIntersect){
+		Vec2 r = pend - p;
+		Vec2 s = qend - q;
+		Vec2 qmp = q - p;
+		float numerator = qmp.Cross(s);
+		float denominator = r.Cross(s);
+		float t = numerator / denominator;
+
+		float u = qmp.Cross(r) / denominator;
+		if (numerator == 0 && denominator == 0){
+			return SIR_COLLINEAR;
+		}
+		if (denominator == 0 && numerator != 0){
+			return SIR_NONINTERSECTING;
+		}
+		if (denominator != 0 && t >= 0 && t <= 1 && u >= 0 && u <= 1){
+			outIntersect = p+ r * t;
+			return SIR_INTERSECT;
+		}
+		else{
+			return SIR_NONINTERSECTING;
+		}
+	}
+
 	void ExpandRect(RECT& r, int size)
 	{
 		r.left -= size;

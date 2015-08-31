@@ -38,6 +38,7 @@ public:
 	virtual void Highlight(bool enable);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
+	virtual void SetVisibleInternal(bool visible);
 
 	void SetKeepImageRatio(bool keep);
 	void SetUVRot(bool set);
@@ -81,5 +82,6 @@ private:
 	bool mAnimation;
 	bool mImageFixedSize;	
 	bool mColorOveraySet;
+	bool mImageRot;
 };
 }

@@ -6,7 +6,7 @@
 using namespace fastbird;
 
 fbMotionState::fbMotionState(IPhysicsInterface* obj)
-: mVisualObj(obj)
+	: mVisualObj(obj)
 {
 }
 

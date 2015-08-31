@@ -15,7 +15,8 @@ namespace fastbird
 	struct CylinderShape;
 	struct CapsuleShape;
 	struct MeshShape;
-
+	struct IFilterCallback;
+	typedef bool(*NeedCollisionForConvexCallback)(RigidBody* a, RigidBody* b);
 	class IPhysics
 	{
 	public:
@@ -33,6 +34,7 @@ namespace fastbird
 
 		virtual RigidBody* CreateRigidBody(const char* collisionFile, float mass, IPhysicsInterface* obj) = 0;
 		virtual RigidBody* CreateRigidBody(IPhysicsInterface* colProvider) = 0;
+		virtual RigidBody* CreateRigidBodyForGroup(IPhysicsInterface* colProvider, const Vec3I& groupIdx) = 0;
 		virtual RigidBody* CreateTempRigidBody(CollisionShape* colShape) = 0;
 		virtual RigidBody* CreateTempRigidBody(CollisionShape*  shapes[], unsigned num) = 0;
 		virtual void DeleteRigidBody(RigidBody* rigidBody) = 0;
@@ -44,17 +46,18 @@ namespace fastbird
 		virtual void SetDebugMode(int debugMode) = 0;
 
 		virtual void AttachBodies(RigidBody* bodies[], unsigned num) = 0;
+		virtual void AttachBodiesAlways(RigidBody* bodies[], unsigned num) = 0;
 		
 		virtual void SetRayCollisionGroup(int group) = 0;
-		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0) = 0;
-		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0) = 0;
+		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, RayResultWithObj& result) = 0;
 		// returning RayResultAll*
 		// need to delete with IPhysics::Release(RayResultAll*)
-		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask) = 0;
+		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask) = 0;
 
 		virtual void Release(RayResultAll* r) = 0;
 
-		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, void* ret[], unsigned limit, RigidBody* except) = 0;
+		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except) = 0;
 
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b) = 0;
 
@@ -73,6 +76,9 @@ namespace fastbird
 		virtual MeshShape* CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,
 			const Vec3& scale, void* userPtr = 0) = 0;
 		virtual void DestroyShape(CollisionShape* shape) = 0;
+
+
+		virtual void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func) = 0;
 	};
 }
 

@@ -117,12 +117,12 @@ EngineCommand::EngineCommand()
 		"Shadow camera near.");
 
 	r_ShadowFar = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowFar", 200.0f);
+		"r_ShadowFar", 300.0f);
 	REGISTER_CVAR(r_ShadowFar, r_ShadowFar, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera far");
 
 	r_ShadowCamDist = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowCamDist", 100.f);
+		"r_ShadowCamDist", 200.f);
 	REGISTER_CVAR(r_ShadowCamDist, r_ShadowCamDist, CVAR_CATEGORY_CLIENT,
 		"Shadow camera far");
 

@@ -29,6 +29,8 @@ namespace fastbird
 		};
 		static unsigned FixColorByteOrder(unsigned c);
 
+		static Color RandomColor();
+
 		Color(){}
 		Color(const Vec3& color)
 			: mValue(color, 1.0f)

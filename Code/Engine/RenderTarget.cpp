@@ -87,6 +87,10 @@ IScene* RenderTarget::GetScene() const
 	return mSceneOverride ? mSceneOverride : mScene;
 }
 
+IScene* RenderTarget::GetOriginalScene() const{
+	return mScene;
+}
+
 Scene* RenderTarget::GetSceneInternal() const
 {
 	return mSceneOverride ? (Scene*)mSceneOverride : (Scene*)mScene;
@@ -401,8 +405,8 @@ void RenderTarget::SetColorTexture(ITexture* pTexture)
 void RenderTarget::SetDepthRenderTarget(bool clear)
 {
 	auto const renderer = gFBEnv->_pInternalRenderer;
-	int width = int(mSize.x*.5f);
-	int height = int(mSize.y*.5f);
+	int width = int(mSize.x);
+	int height = int(mSize.y);
 	if (!mDepthTarget)
 	{ 
 		mDepthTarget = renderer->CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
@@ -433,6 +437,7 @@ void RenderTarget::BindDepthTexture(bool set)
 	if (set)
 	{
 		renderer->SetTexture(mDepthTarget, BINDING_SHADER_PS, 5);
+		renderer->SetTexture(mDepthTarget, BINDING_SHADER_GS, 5);
 	}
 	else 
 		renderer->SetTexture(0, BINDING_SHADER_PS, 5);

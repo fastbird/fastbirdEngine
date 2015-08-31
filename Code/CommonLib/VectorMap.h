@@ -4,8 +4,31 @@
 
 namespace fastbird
 {
-	//------------------------------------------------------------------------
 	template<class _Kty, class _Ty>
+	class VectorMapLess
+	{
+	public:
+		typedef std::pair<const _Kty, _Ty> value_type;
+		typedef std::pair< _Kty, _Ty > _Val_type;
+		typedef typename _Val_type::first_type PairFirstType;
+
+		bool operator()(const value_type& lhs, const value_type& rhs) const
+		{
+			return lhs.first < rhs.first;
+		}
+
+		bool operator()(const value_type& lhs, const PairFirstType& key) const
+		{
+			return lhs.first < key;
+		}
+
+		bool operator()(const PairFirstType& key, const value_type& rhs) const
+		{
+			return key < rhs.first;
+		}
+	};
+	//------------------------------------------------------------------------
+	template<class _Kty, class _Ty, class _Pr = VectorMapLess<_Kty, _Ty> >
 	class VectorMap
 	{
 	public:
@@ -13,32 +36,14 @@ namespace fastbird
 		typedef std::pair< _Kty, _Ty > _Val_type;
 		typedef std::pair<const _Kty, _Ty> value_type;
 		typedef _Kty key_type;		
+		typedef _Pr key_compare;
 		typedef std::vector< _Val_type > VectorMapType;
 		typedef typename VectorMapType::iterator iterator;
 		typedef typename VectorMapType::const_iterator const_iterator;
 		typedef typename VectorMapType::reverse_iterator reverse_iterator;
 		typedef typename VectorMapType::const_reverse_iterator const_reverse_iterator;
 		typedef typename _Val_type::first_type PairFirstType;
-
-		//--------------------------------------------------------------------
-		class Comparison
-		{
-		public:
-			bool operator()(const value_type& lhs, const value_type& rhs) const
-			{
-				return return lhs.first < rhs.first;
-			}
-
-			bool operator()(const value_type& lhs, const PairFirstType& key) const
-			{
-				return lhs.first < key;
-			}
-
-			bool operator()(const PairFirstType& key, const value_type& rhs) const
-			{
-				return key < rhs.first;
-			}
-		};
+		
 		
 		//--------------------------------------------------------------------
 		VectorMap()
@@ -50,7 +55,7 @@ namespace fastbird
 		iterator Insert(const _Val_type& data)
 		{
 			iterator i = std::lower_bound(
-				mVector.begin(), mVector.end(), data.first, Comparison());
+				mVector.begin(), mVector.end(), data.first, key_compare());
 			if(i != mVector.end() && i->first == data.first)
 			{
 				i->second = data.second;		
@@ -66,7 +71,7 @@ namespace fastbird
 		const_iterator Insert(const _Val_type& data) const 
 		{
 			const_iterator i = std::lower_bound(
-				mVector.begin(), mVector.end(), data.first, Comparison());
+				mVector.begin(), mVector.end(), data.first, key_compare());
 			if(i != mVector.end() && i->first == data.first)
 			{
 				i->second = data.second;		
@@ -82,7 +87,7 @@ namespace fastbird
 		_Ty& operator [](const key_type& key )
 		{
 			iterator i =std::lower_bound(
-				mVector.begin(), mVector.end(), key, Comparison());
+				mVector.begin(), mVector.end(), key, key_compare());
 			if(i != mVector.end() && i->first == key)
 			{
 				return i->second;
@@ -100,7 +105,7 @@ namespace fastbird
 		const _Ty& operator [](const key_type& key ) const
 		{
 			const_iterator begin = mVector.begin(), end = mVector.end();
-			const_iterator i = std::lower_bound(begin, end, key, Comparison());
+			const_iterator i = std::lower_bound(begin, end, key, key_compare());
 			if(i != end && i->first == key)
 			{
 				return i->second;
@@ -112,7 +117,7 @@ namespace fastbird
 		iterator Find( const key_type& Key )
 		{
 			iterator i = std::lower_bound(
-				mVector.begin(), mVector.end(), Key, Comparison());
+				mVector.begin(), mVector.end(), Key, key_compare());
 			if(i != mVector.end() && i->first == Key)
 			{
 				return i;
@@ -127,7 +132,7 @@ namespace fastbird
 		const_iterator Find( const key_type& Key ) const
 		{
 			const_iterator i =
-				std::lower_bound(mVector.begin(), mVector.end(), Key, Comparison());
+				std::lower_bound(mVector.begin(), mVector.end(), Key, key_compare());
 			if(i != mVector.end() && i->first == Key)
 			{
 				return i;

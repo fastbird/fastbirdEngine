@@ -104,9 +104,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BulletDebugDraw.h" />
+    <ClInclude Include="BulletFilterCallback.h" />
     <ClInclude Include="ColShapes.h" />
     <ClInclude Include="fbMotionState.h" />
     <ClInclude Include="IDebugDrawer.h" />
+    <ClInclude Include="IFilterCallback.h" />
     <ClInclude Include="IPhysics.h" />
     <ClInclude Include="IPhysicsInterface.h" />
     <ClInclude Include="mathConv.h" />

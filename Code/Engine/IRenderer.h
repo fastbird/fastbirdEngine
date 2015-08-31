@@ -158,7 +158,7 @@ public:
 	virtual IShader* CreateShader(const char* filepath, int shaders,
 		const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0) = 0;
 	virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize) = 0;
-	virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0) = 0;
+	virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0, bool async = true) = 0;
 	virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) = 0;
 
@@ -231,6 +231,7 @@ public:
 		const Color& color0, const Color& color1) = 0;
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
 		const Color& color, const Color& color1) = 0;
+	virtual void DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 
 	// with depth culling
 	virtual void DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
@@ -243,7 +244,7 @@ public:
 	virtual void RenderGeoms() = 0;
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
-	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
+	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs = true) = 0;
 	virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
 	virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
@@ -352,6 +353,7 @@ public:
 	// check IEngine:CreateVideoPlayer()
 	virtual void RegisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player) = 0;
+	virtual void GenGGX() = 0;
 };
 
 }

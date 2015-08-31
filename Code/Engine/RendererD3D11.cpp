@@ -21,6 +21,7 @@
 #include <CommonLib/Hammersley.h>
 #include <CommonLib/tinydir.h>
 #include <CommonLib/StackTracer.h>
+#include <../es/shaders/CommonDefines.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <d3dcompiler.h>
@@ -82,6 +83,9 @@ RendererD3D11::RendererD3D11()
 	mBindedShader = 0;
 	mBindedInputLayout = 0;
 	mCurrentTopology = PRIMITIVE_TOPOLOGY_UNKNOWN;
+
+	mCurDSViewIdx = -1;
+	mCurDSTexture = 0;
 }
 
 //----------------------------------------------------------------------------
@@ -211,6 +215,28 @@ bool RendererD3D11::Init(int threadPool)
 		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
 		return false;
 	}
+
+	//check multithreaded is supported by the hardware
+	D3D11_FEATURE_DATA_THREADING dataThreading;
+	if (SUCCEEDED(m_pDevice->CheckFeatureSupport(D3D11_FEATURE_THREADING, &dataThreading, sizeof(dataThreading)))){
+		if (dataThreading.DriverConcurrentCreates){
+			Log("The hardware supports 'Concurrent Creates'");
+		}
+		else {
+			Log("The hardware doen't support 'Concurrent Creates'");
+		}
+
+		if (dataThreading.DriverCommandLists){
+			Log("The hardware supports command lists.");
+		}
+		else{
+			Log("The hardware doen't support 'Concurrent Creates'");
+		}
+	}
+	else{
+		Log("The hardware doen't support multithreading.");
+	}
+
 	
 	unsigned msQuality = 0;	
 	unsigned msCount = 1;
@@ -375,6 +401,7 @@ bool RendererD3D11::Init(int threadPool)
 		}
 	}
 
+	__super::Init(threadPool);
 	return true;
 }
 
@@ -648,8 +675,8 @@ void RendererD3D11::UpdateRadConstantsBuffer(void* pData)
 	IMMUTABLE_CONSTANTS* pConstants = (IMMUTABLE_CONSTANTS*)mappedResource.pData;
 	memcpy(pConstants->gIrradConstsnts, pData, sizeof(Vec4)* 9);
 	std::vector<Vec2> hammersley;
-	GenerateHammersley(16, hammersley);
-	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* 16);	
+	GenerateHammersley(ENV_SAMPLES, hammersley);
+	memcpy(pConstants->gHammersley, &hammersley[0], sizeof(Vec2)* ENV_SAMPLES);
 	m_pImmediateContext->Unmap(m_pImmutableConstantsBuffer, 0);
 	m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 }
@@ -810,6 +837,9 @@ void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, un
 		{
 		case BINDING_SHADER_VS:
 			m_pImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
+			break;
+		case BINDING_SHADER_GS:
+			m_pImmediateContext->GSSetShaderResources(slot, 1, &pSRV);
 			break;
 		case BINDING_SHADER_PS:
 			m_pImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
@@ -1336,7 +1366,7 @@ ITexture* RendererD3D11::CreateTexture(const Vec2I& size, int mipLevels, int arr
 }
 
 //----------------------------------------------------------------------------
-ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTexture/*=0*/)
+ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTexture/*=0*/, bool async/* = true*/)
 {	
 	std::string filepath(file);
 	ToLowerCase(filepath);
@@ -1389,7 +1419,7 @@ ITexture* RendererD3D11::CreateTexture(const char* file, ITexture* pReloadingTex
 	}
 
 	SAFE_RELEASE(pTexture->mSRView);
-	if (m_pThreadPump)
+	if (m_pThreadPump && async)
 	{
 		pTexture->mHr = S_FALSE;
 		hr = D3DX11CreateShaderResourceViewFromFile(m_pDevice, filepath.c_str(), 
@@ -1715,8 +1745,19 @@ ITexture* RendererD3D11::CreateTexture(void* data, int width, int height, PIXEL_
 //-----------------------------------------------------------------------------
 void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num, ITexture* pDepthStencil, size_t dsViewIndex)
 {
+	if (num == mCurRTTextures.size() && mCurDSTexture == pDepthStencil && mCurDSViewIdx == dsViewIndex){
+		bool same = false;
+		for (int i = 0; i < num && !same; ++i){
+			same = pRenderTargets[i] == mCurRTTextures[i] && rtViewIndex[i] == mCurRTViewIdxes[i];
+		}
+		if (same)
+			return;
+	}
+	
 	__super::SetRenderTarget(pRenderTargets, rtViewIndex, num, pDepthStencil, dsViewIndex);
 
+	mCurRTTextures.clear();
+	mCurRTViewIdxes.clear();
 	std::vector<ID3D11RenderTargetView*> rtviews;
 	if (pRenderTargets)
 	{
@@ -1724,17 +1765,25 @@ void RendererD3D11::SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewInd
 		{
 			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pRenderTargets[i]);
 			rtviews.push_back(pTextureD3D11 ? pTextureD3D11->GetRenderTargetView(rtViewIndex[i]) : 0);
+			
+			mCurRTTextures.push_back(pRenderTargets[i]);
+			mCurRTViewIdxes.push_back(rtViewIndex[i]);			
 		}
 	}
 	else
 	{
 		rtviews.push_back(0);
 	}
+
+	mCurDSTexture = pDepthStencil;
+	mCurDSViewIdx = dsViewIndex;
+
 	ID3D11DepthStencilView* pDepthStencilView = 0;
 	if (pDepthStencil)
 	{
 		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pDepthStencil);
 		pDepthStencilView = pTextureD3D11->GetDepthStencilView(dsViewIndex);
+
 	}
 
 	try
@@ -1875,7 +1924,7 @@ void RendererD3D11::SetShaders(IShader* pShader)
 {
 	if (!pShader || !pShader->IsValid())
 	{
-		Log("RendererD3D11::SetShader() shader is not valid.");
+		//Log("RendererD3D11::SetShader() shader is not valid.");
 		return;
 	}
 	if (mBindedShader == pShader)
@@ -2371,7 +2420,7 @@ void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER
 	
 }
 
-void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color)
+void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs/*= true*/)
 {
 	const auto& rtSize = mCurRenderTarget->GetSize();
 	static OBJECT_CONSTANTS constants =
@@ -2398,13 +2447,15 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Unmap();
 	}
 
+	if (updateRs){
+		UpdateObjectConstantsBuffer(&constants);
+		// set primitive topology
+		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		// set material
+		mMaterials[DEFAULT_MATERIALS::QUAD]->Bind(true);
+	}
 
-	UpdateObjectConstantsBuffer(&constants);
-
-	// set primitive topology
-	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// set material
-	mMaterials[DEFAULT_MATERIALS::QUAD]->Bind(true);
+	
 	// set vertex buffer
 	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Bind();
 	// draw

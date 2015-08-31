@@ -387,11 +387,11 @@ void MeshGroup::SetAlpha(float alpha)
 	}
 }
 
-void MeshGroup::SetForceAlphaBlending(bool enable, float alpha, float forceGlow)
+void MeshGroup::SetForceAlphaBlending(bool enable, float alpha, float forceGlow, bool disableDepth)
 {
 	for (auto& it : mMeshObjects)
 	{
-		it.first->SetForceAlphaBlending(enable, alpha, forceGlow);
+		it.first->SetForceAlphaBlending(enable, alpha, forceGlow, disableDepth);
 	}
 }
 

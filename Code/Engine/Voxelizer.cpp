@@ -36,6 +36,8 @@ void Voxelizer::FinishSmartPtr(){
 
 bool Voxelizer::RunVoxelizer(const char* filename, UINT numVoxels, bool swapYZ, bool oppositCull)
 {
+	mColladaImporter = 0;
+	mColladaImporter = IColladaImporter::CreateColladaImporter();
 	assert(filename);	
 	mColladaImporter->ImportCollada(filename, swapYZ, oppositCull, false, true, false, false, false);
 	

@@ -63,8 +63,8 @@ UIManager::UIManager(lua_State* L)
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
 	FileSystem::Initialize();
-	gFBEnv->pEngine->AddInputListener(this,
-		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);
+	/*gFBEnv->pEngine->AddInputListener(this,
+		fastbird::IInputListener::INPUT_LISTEN_PRIORITY_UI, 0);*/
 	KeyboardCursor::InitializeKeyboardCursor();
 	RegisterLuaFuncs(L);	
 	RegisterLuaEnums(L);
@@ -144,6 +144,11 @@ void Error(const char* szFmt, ...)
 //---------------------------------------------------------------------------
 void UIManager::Update(float elapsedTime)
 {
+	for (auto & ui : mDeleteLuaUIPending){
+		DeleteLuaUI(ui.c_str(), false);
+
+	}
+	mDeleteLuaUIPending.clear();
 	for (auto& ui : mSetFocusReserved)
 	{		
 		auto focusRoot = ui->GetRootWnd();
@@ -674,8 +679,12 @@ bool UIManager::AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId)
 	return p!=0;
 }
 
-void UIManager::DeleteLuaUI(const char* uiName)
+void UIManager::DeleteLuaUI(const char* uiName, bool pending)
 {
+	if (pending)
+	{
+		mDeleteLuaUIPending.push_back(uiName);
+	}
 	std::string lower = uiName;
 	ToLowerCase(lower);
 	auto it = mLuaUIs.find(lower);
@@ -1353,8 +1362,8 @@ void UIManager::ShowTooltip()
 
 void UIManager::SetTooltipPos(const Vec2& npos)
 {
-	if (!mTooltipUI->GetVisible())
-		return;
+	//if (!mTooltipUI->GetVisible())
+//		return;
 
 	static Vec2 prevNPos(-1, -1);
 	if (prevNPos == npos)
@@ -1370,8 +1379,6 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
-	Log("backpos x = %f", backPos.x);
-	Log("nsize x = %f", nSize.x);
 	if (backPos.x + nSize.x>1.0f)
 	{
 		backPos.x -= backPos.x + nSize.x - 1.0f;
@@ -1943,7 +1950,7 @@ void UIManager::LocateComponent()
 	
 	win->SetProperty(UIProperty::NO_BACKGROUND, "false");
 	if (mLocatingComp == ComponentType::Window)
-		win->SetProperty(UIProperty::BACK_COLOR, "0.3, 0.3, 0.5, 0.4");
+		win->SetProperty(UIProperty::BACK_COLOR, "0.05 0.1 0.15 0.8");
 	win->SetProperty(UIProperty::VISIBLE, "true");
 	auto keyboard = gFBEnv->pEngine->GetKeyboard();
 	if (!keyboard->IsKeyDown(VK_SHIFT))

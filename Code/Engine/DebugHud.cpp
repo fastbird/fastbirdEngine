@@ -109,6 +109,15 @@ void DebugHud::DrawLine(const Vec3& start, const Vec3& end,
 	mWorldLines.push_back(line);
 }
 
+void DebugHud::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color){
+	
+	mQuads.push_back(Quad());
+	auto& q = mQuads.back();
+	q.mPos = pos;
+	q.mSize = size;
+	q.mColor = color;
+}
+
 void DebugHud::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end, const Color& color0,
 	const Color& color1)
 {
@@ -296,6 +305,12 @@ void DebugHud::Render()
 		}
 		mScreenLines.clear();
 	}
+	bool updateRs = true;
+	for (auto& q : mQuads){
+		pRenderer->DrawQuad(q.mPos, q.mSize, q.mColor, updateRs);
+		updateRs = false;
+	}
+	mQuads.clear();
 
 	IFont* pFont = gFBEnv->pRenderer->GetFont();
 	pFont->PrepareRenderResources();

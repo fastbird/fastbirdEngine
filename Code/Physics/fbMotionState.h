@@ -3,9 +3,11 @@
 namespace fastbird
 {
 	class IPhysicsInterface;
+	class RigidBody;
 	class fbMotionState : public btMotionState
 	{
 		IPhysicsInterface* mVisualObj;
+
 	public:
 		fbMotionState(IPhysicsInterface* obj);
 		virtual ~fbMotionState();

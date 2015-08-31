@@ -38,7 +38,7 @@ namespace fastbird
 		virtual Transformation GetToLocalTransform(const char* meshName) = 0;
 		virtual Transformation GetLocalMeshTransform(unsigned meshIdx) = 0;
 		virtual void SetAlpha(float alpha) = 0;
-		virtual void SetForceAlphaBlending(bool enable, float alpha, float forceGlow = 0.f) = 0;
+		virtual void SetForceAlphaBlending(bool enable, float alpha, float forceGlow = 0.f, bool disableDepth = false) = 0;
 		virtual void SetAmbientColor(const Color& color) = 0;
 
 		// do not hold a reference.

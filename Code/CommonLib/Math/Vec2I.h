@@ -2,6 +2,7 @@
 
 namespace fastbird
 {
+	class Vec2;
 	class Vec2I
 	{
 	public:
@@ -15,12 +16,15 @@ namespace fastbird
 			: x(_x), y(_y)
 		{
 		}
+		Vec2I(const Vec2& v);
 
 		//-------------------------------------------------------------------
 		Vec2I operator* (int s) const
 		{
 			return Vec2I(x*s, y*s);
 		}
+
+		Vec2I Scale(float f) const;		
 
 		Vec2I operator/ (int s) const
 		{
@@ -82,8 +86,22 @@ namespace fastbird
 			y -= v.y;
 			return *this;
 		}
+		int Cross(const Vec2I& right){
+			return x * right.y - y * right.x;
+		}
+		int Dot(const Vec2I& right){
+			return x * right.x + y * right.y;
+		}
 
 		bool operator<(const Vec2I& v) const;
+
+		float DistanceTo(const Vec2I& d) const{
+			return (*this - d).Length();
+		}
+
+		float Length() const{
+			return (float)sqrt(x*x + y*y);
+		}
 
 		static const Vec2I ZERO;
 	};

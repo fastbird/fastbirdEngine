@@ -80,6 +80,7 @@ namespace fastbird
 		//virtual void Sort() = 0;
 		virtual void SetRelativeVelocity(const Vec3& dir, float speed) = 0;
 		virtual void SetAlpha(float alpha) = 0;
+		virtual float GetAlpha() const = 0;
 		
 	private:
 		friend class ParticleManager;

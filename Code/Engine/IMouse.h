@@ -77,7 +77,7 @@ namespace fastbird
 		virtual bool IsLButtonClicked() const = 0;
 		virtual bool IsLButtonDoubleClicked() const = 0;
 		virtual bool IsLButtonPressed() const = 0;
-		virtual bool IsRButtonDown(float* time = 0) const = 0;
+		virtual bool IsRButtonDown(float* time = 0) const = 0;		
 		virtual bool IsRButtonDownPrev() const = 0;
 		virtual bool IsRButtonClicked() const = 0;
 		virtual bool IsRButtonPressed() const = 0;

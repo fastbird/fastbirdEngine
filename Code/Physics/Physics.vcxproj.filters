@@ -50,6 +50,12 @@
     <ClInclude Include="RayResult.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
+    <ClInclude Include="IFilterCallback.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletFilterCallback.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

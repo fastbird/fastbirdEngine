@@ -59,7 +59,7 @@ namespace fastbird
 		virtual IShader* CreateShader(const char* filepath, int shaders,
 			const IMaterial::SHADER_DEFINES& defines = IMaterial::SHADER_DEFINES(), IShader* pReloadingShader = 0);
 		virtual ITexture* CreateTexture(const Vec2I& size, int mipLevels, int arraySize);
-		virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0);
+		virtual ITexture* CreateTexture(const char* file, ITexture* pReloadingTexture=0, bool async = true);
 		virtual ITexture* CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 			BUFFER_USAGE usage, int  buffer_cpu_access, int  type);
 
@@ -111,7 +111,7 @@ namespace fastbird
 		virtual void SetDepthStencilState(IDepthStencilState* pDepthStencilState, unsigned stencilRef);
 		virtual void SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER shader, int slot);
 
-		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+		virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs = true);
 		virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
 		virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0);
 		virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
@@ -184,6 +184,12 @@ namespace fastbird
 
 		std::vector<ID3D11RenderTargetView*> mCurrentRTViews;
 		ID3D11DepthStencilView* mCurrentDSView;
+
+		std::vector<ITexture*> mCurRTTextures;
+		std::vector<size_t> mCurRTViewIdxes;
+		ITexture* mCurDSTexture;
+		size_t mCurDSViewIdx;
+
 	};
 }
 

@@ -28,7 +28,6 @@ unsigned CardData::DeleteData(unsigned key){
 		mKeys.erase(keyIt);
 		return distance;
 	}
-	assert(0);
 	return -1;
 }
 

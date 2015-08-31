@@ -107,6 +107,8 @@ namespace fastbird
 	int GetNumListBoxData(lua_State* L);
 	int SwapListBoxItem(lua_State* L);
 	int GetLastChangedRow(lua_State* L);
+	int SetListBoxItemProperty(lua_State* L);
+	int DisableListBoxItemEvent(lua_State* L);
 
 	// etc
 	int SetTooltipString(lua_State* L);
@@ -131,6 +133,8 @@ namespace fastbird
 		//----------------------------------------------------------------------------
 		// Listbox
 		//--------------------------------------------------------------------------------
+		LUA_SETCFUNCTION(mL, DisableListBoxItemEvent);
+		LUA_SETCFUNCTION(mL, SetListBoxItemProperty);
 		LUA_SETCFUNCTION(mL, GetLastChangedRow);
 		LUA_SETCFUNCTION(mL, SwapListBoxItem);
 		LUA_SETCFUNCTION(mL, GetNumListBoxData);
@@ -269,7 +273,11 @@ namespace fastbird
 	int DeleteLuaUI(lua_State* L)
 	{
 		const char* uiname = luaL_checkstring(L, 1);
-		UIManager::GetUIManagerStatic()->DeleteLuaUI(uiname);
+		bool pending = false;
+		if (lua_gettop(L) == 2){
+			pending = lua_toboolean(L, 2)!=0;
+		}
+		UIManager::GetUIManagerStatic()->DeleteLuaUI(uiname, pending);
 		return 0;
 	}
 
@@ -1620,6 +1628,36 @@ namespace fastbird
 				lua_pushunsigned(L, row);
 				return 1;
 			}
+		}
+		return 0;
+	}
+
+	int SetListBoxItemProperty(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		if (listBox)
+		{
+			if (lua_type(L, 3) == LUA_TNUMBER){
+				unsigned key = luaL_checkunsigned(L, 3);
+				listBox->SetItemProperty(key, UIProperty::ConvertToEnum(luaL_checkstring(L, 4)), luaL_checkstring(L, 5));
+			}
+			else if (lua_type(L, 4) == LUA_TSTRING){
+				listBox->SetItemProperty(AnsiToWide(luaL_checkstring(L, 3)), UIProperty::ConvertToEnum(luaL_checkstring(L, 4)), luaL_checkstring(L, 5));
+			}
+			else
+				assert(0);
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
+	int DisableListBoxItemEvent(lua_State* L) {
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		if (listBox) {
+			listBox->DisableItemEvent(luaL_checkunsigned(L, 3));
 		}
 		return 0;
 	}

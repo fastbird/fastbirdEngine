@@ -75,6 +75,16 @@ void Renderer::FinishSmartPtr(){
 	assert(NumRefs() == 0);
 	FB_DELETE(this);
 }
+bool Renderer::Init(int threadPool){
+	gFBEnv->pRenderer = this;
+	mGGXGenTarget = CreateTexture("es/textures/ggx.dds", 0, false);
+	if (mGGXGenTarget){
+		mGGXGenTarget->SetShaderStage(BINDING_SHADER::BINDING_SHADER_PS);
+		mGGXGenTarget->SetSlot(9);
+		mGGXGenTarget->Bind();
+	}
+	return true;
+}
 
 // called from inherited classes.
 void Renderer::Deinit()
@@ -122,6 +132,8 @@ void Renderer::Deinit()
 	mFullscreenQuadVSNear = 0;
 	mCopyPS = 0;
 	mCopyPSMS = 0;
+	mGGXGenShader = 0;
+	mGGXGenTarget = 0;
 
 	mDirectionalLight[0] = 0;
 	mDirectionalLight[1] = 0;
@@ -677,6 +689,12 @@ void Renderer::DrawLine(const Vec3& start, const Vec3& end,
 {
 	if (mDebugHud)
 		mDebugHud->DrawLine(start, end, color0, color1);
+}
+
+void Renderer::DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color){
+	if (mDebugHud){
+		mDebugHud->DrawQuad(pos, size, color);
+	}
 }
 
 void Renderer::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
@@ -2566,4 +2584,22 @@ void Renderer::RegisterVideoPlayer(IVideoPlayer* player){
 void Renderer::UnregisterVideoPlayer(IVideoPlayer* player){
 	DeleteValuesInVector(mVideoPlayers, player);
 }
+
+void Renderer::GenGGX(){
+	if (!mGGXGenShader){
+		mGGXGenShader = CreateShader("es/shaders/GGXGen.hlsl", BINDING_SHADER_PS);
+		mGGXGenTarget = CreateTexture(0, 512, 128, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
+			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+	}
+	ITexture* rts[] = { mGGXGenTarget };
+	size_t idx[] = { 0 };
+	SetRenderTarget(rts, idx, 1, 0, 0);
+	Viewport vp = { 0, 0, 512, 128, 0.f, 1.f };
+	SetViewports(&vp, 1);
+	DrawFullscreenQuad(mGGXGenShader, false);
+	GetMainRenderTarget()->BindTargetOnly(false);
+
+	mGGXGenTarget->SaveToFile("es/textures/ggx.dds");
+}
+
 }

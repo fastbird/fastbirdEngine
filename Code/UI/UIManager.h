@@ -95,6 +95,7 @@ namespace fastbird
 		VectorMap<Vec2I, SmartPtr<ITexture>> mAlphaInfoTexture;
 		SmartPtr<ITexture> mAtlasStaging;
 
+		std::vector<std::string> mDeleteLuaUIPending;
 
 	protected:
 
@@ -135,7 +136,7 @@ namespace fastbird
 		virtual bool ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWND_ID hwndId = INVALID_HWND_ID, bool luaUI = false);
 		virtual bool SaveUI(const char* uiname, tinyxml2::XMLDocument& doc);
 		virtual bool AddLuaUI(const char* uiName, LuaObject& data, HWND_ID hwndId = INVALID_HWND_ID);
-		virtual void DeleteLuaUI(const char* uiName);
+		virtual void DeleteLuaUI(const char* uiName, bool pending);
 		virtual bool IsLoadedUI(const char* uiName);
 
 		virtual IWinBase* AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWND_ID hwndId = INVALID_HWND_ID);

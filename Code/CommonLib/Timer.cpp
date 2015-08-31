@@ -30,10 +30,11 @@ namespace fastbird
 	{
 		mDeltaTimeNotPausable = (GetTickCount() / (TIME_PRECISION)mFreq.QuadPart - mStartTime) - mTimeNotPausable;
 		mTimeNotPausable += mDeltaTimeNotPausable;
-		
+
+		++mFrames;
 		if (mPaused)
 			return;
-		++mFrames;
+
 		float previousTime = mTime;
 		mTime += mDeltaTimeNotPausable;
 		mDeltaTime = mDeltaTimeNotPausable;

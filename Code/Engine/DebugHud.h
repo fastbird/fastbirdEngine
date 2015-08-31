@@ -44,6 +44,13 @@ public:
 		unsigned mColore;
 	};
 
+	struct Quad
+	{
+		Vec2I mPos;
+		Vec2I mSize;
+		Color mColor;
+	};
+
 	struct Sphere
 	{
 		Vec3 mPos;
@@ -103,6 +110,8 @@ public:
 		const Color& color1);
 	void DrawLine(const Vec2I& start, const Vec2I& end, const Color& color0, 
 		const Color& color1);
+	void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
+
 	void DrawSphere(const Vec3& pos, float radius, const Color& color);
 	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha);
 	void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
@@ -136,6 +145,7 @@ private:
 	std::map<Vec2I, MessageBuffer> mTextsForDur;
 	std::vector<Line> mScreenLines;
 	std::vector<Line> mWorldLines;
+	std::vector<Quad> mQuads;
 	std::vector<Line> mWorldLinesBeforeAlphaPass;
 	OBJECT_CONSTANTS mObjectConstants;
 	OBJECT_CONSTANTS mObjectConstants_WorldLine;

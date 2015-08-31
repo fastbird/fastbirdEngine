@@ -58,6 +58,10 @@ namespace fastbird
 		return (float)(gpTimer->GetTickCount() - mStartTick) / (float)gpTimer->GetFreq();
 	}
 
+	void Profiler::Reset(){
+		mStartTick = gpTimer->GetTickCount();
+	}
+
 	//-----------------------------------------------------------------------
 	// Profile simple
 	ProfilerSimple::ProfilerSimple(const wchar_t* name)

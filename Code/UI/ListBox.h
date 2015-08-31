@@ -54,6 +54,7 @@ protected:
 	bool mMultiSelection;
 	bool mNoHighlight;
 	bool mNoSearch;
+	bool mHand;
 
 	Vec2I mLastChangedItem; // for numeric updown
 
@@ -136,6 +137,7 @@ public:
 	virtual void SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val);
 	virtual void SetItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop, const char* val);
 	virtual void ClearItemProperties();
+	virtual void DisableItemEvent(unsigned uniqueKey);
 
 	virtual void VisualizeData(unsigned index);
 	void FillItem(unsigned index);
@@ -158,6 +160,8 @@ public:
 	unsigned GetLastChangedRow() const { return mLastChangedItem.x; }
 
 	float GetChildrenContentEnd() const;
+
+	virtual void RemoveAllChild(bool immediately = false);
 
 protected:
 
