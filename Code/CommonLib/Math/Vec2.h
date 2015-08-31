@@ -153,6 +153,10 @@ namespace fastbird
 			return x != other.x || y != other.y;
 		}
 
+		float Cross(const Vec2& right){
+			return x * right.y - y * right.x;
+		}
+
 		inline float Normalize()
 		{
 			float length = sqrt(x*x + y*y);

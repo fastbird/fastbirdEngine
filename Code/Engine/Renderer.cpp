@@ -78,9 +78,11 @@ void Renderer::FinishSmartPtr(){
 bool Renderer::Init(int threadPool){
 	gFBEnv->pRenderer = this;
 	mGGXGenTarget = CreateTexture("es/textures/ggx.dds", 0, false);
-	mGGXGenTarget->SetShaderStage(BINDING_SHADER::BINDING_SHADER_PS);
-	mGGXGenTarget->SetSlot(9);
-	mGGXGenTarget->Bind();
+	if (mGGXGenTarget){
+		mGGXGenTarget->SetShaderStage(BINDING_SHADER::BINDING_SHADER_PS);
+		mGGXGenTarget->SetSlot(9);
+		mGGXGenTarget->Bind();
+	}
 	return true;
 }
 
@@ -687,6 +689,12 @@ void Renderer::DrawLine(const Vec3& start, const Vec3& end,
 {
 	if (mDebugHud)
 		mDebugHud->DrawLine(start, end, color0, color1);
+}
+
+void Renderer::DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color){
+	if (mDebugHud){
+		mDebugHud->DrawQuad(pos, size, color);
+	}
 }
 
 void Renderer::DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,

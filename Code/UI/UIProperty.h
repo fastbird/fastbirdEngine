@@ -110,6 +110,7 @@ namespace fastbird
 			ENABLED,
 			IMAGE_COLOR_OVERLAY,
 			IMAGE_FIXED_SIZE, // match to image size if not set it will matched to ui size
+			IMAGE_ROTATE,
 			ALPHA_REGION,
 
 			NO_BUTTON,
@@ -118,6 +119,7 @@ namespace fastbird
 			NUMERIC_UPDOWN_MINMAX,
 			NUMERIC_UPDOWN_NUMBER,
 			NUMERIC_UPDOWN_SHIFT_STEP,
+			NUMERIC_UPDOWN_STEP,
 			REGION_FILLED, // for vertical gauges for now.
 			REGION_NOT_FILLED,
 			ALWAYS_ON_TOP,
@@ -144,6 +146,7 @@ namespace fastbird
 			BUTTON_IMAGE_SIZE,
 
 			WND_NO_FOCUS,
+			MOUSE_CURSOR_HAND,
 
 			COUNT
 		};
@@ -253,6 +256,7 @@ namespace fastbird
 			"ENABLED",
 			"IMAGE_COLOR_OVERLAY",
 			"IMAGE_FIXED_SIZE",
+			"IMAGE_ROTATE",
 			"ALPHA_REGION",
 			"NO_BUTTON",
 			"CHECKBOX_CHECKED",
@@ -260,6 +264,7 @@ namespace fastbird
 			"NUMERIC_UPDOWN_MINMAX",
 			"NUMERIC_UPDOWN_NUMBER",
 			"NUMERIC_UPDOWN_SHIFT_STEP",
+			"NUMERIC_UPDOWN_STEP",
 			"REGION_FILLED",
 			"REGION_NOT_FILLED",
 			"ALWAYS_ON_TOP",
@@ -287,6 +292,7 @@ namespace fastbird
 			"BUTTON_IMAGE_SIZE",
 
 			"WND_NO_FOCUS",
+			"MOUSE_CURSOR_HAND",
 
 			"COUNT"
 		};
@@ -447,6 +453,8 @@ namespace fastbird
 				return true;
 			case IMAGE_FIXED_SIZE:
 				return false;
+			case IMAGE_ROTATE:
+				return false;
 			case RADIO_CHECK:
 				return false;
 			case TEXTBOX_MATCH_HEIGHT:
@@ -474,6 +482,8 @@ namespace fastbird
 			case WND_NO_FOCUS:
 				return false;
 			case LISTBOX_HAND:
+				return false;
+			case MOUSE_CURSOR_HAND:
 				return false;
 			}
 			assert(0);
@@ -519,6 +529,8 @@ namespace fastbird
 				return 0;
 			case NUMERIC_UPDOWN_SHIFT_STEP:
 				return 5;
+			case NUMERIC_UPDOWN_STEP:
+				return 1;
 			}
 			assert(0);
 			return 0;

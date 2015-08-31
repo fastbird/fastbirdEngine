@@ -266,6 +266,7 @@ public:
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);
+	virtual void DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color);
 	virtual void DrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 		const Color& color0, const Color& color1);
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 

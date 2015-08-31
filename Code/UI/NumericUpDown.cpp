@@ -15,6 +15,7 @@ namespace fastbird
 		, mUp(0)
 		, mDown(0)
 		, mShiftStep(5)
+		, mStep(1)
 	{
 		mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 		mUIObject->mOwnerUI = this;
@@ -61,7 +62,7 @@ namespace fastbird
 		mDown->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mDown->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnDown, this, std::placeholders::_1));
-		mDown->SetEnable(mValue >= mMin);
+		mDown->SetEnable(mValue > mMin && mEnable);
 
 		mUp->ChangeSize(Vec2I(20, 20));
 		mUp->ChangeNPos(Vec2(1, 0));
@@ -72,7 +73,7 @@ namespace fastbird
 		mUp->SetProperty(UIProperty::NO_BACKGROUND, "true");
 		mUp->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 				std::bind(&NumericUpDown::OnUp, this, std::placeholders::_1));
-		mUp->SetEnable(mValue <= mMax);
+		mUp->SetEnable(mValue < mMax && mEnable);
 
 		SetProperty(UIProperty::TEXT_ALIGN, "center");
 
@@ -96,9 +97,9 @@ namespace fastbird
 		swprintf_s(buffer, L"%d", mValue);
 		SetText(buffer);
 		if (mUp)
-			mUp->SetEnable(mValue <= mMax);
+			mUp->SetEnable(mValue < mMax && mEnable);
 		if (mDown)
-			mDown->SetEnable(mValue >= mMin);
+			mDown->SetEnable(mValue > mMin && mEnable);
 		OnEvent(UIEvents::EVENT_NUMERIC_SET);
 	}
 	
@@ -108,8 +109,8 @@ namespace fastbird
 		mMax = max;
 
 		if (mUp && mDown){
-			mUp->SetEnable(mValue < mMax);
-			mDown->SetEnable(mValue > mMin);
+			mUp->SetEnable(mValue < mMax && mEnable);
+			mDown->SetEnable(mValue > mMin && mEnable);
 		}
 	}
 
@@ -121,7 +122,7 @@ namespace fastbird
 				SetNumber(mValue - mShiftStep);
 			}
 			else{
-				SetNumber(mValue - 1);
+				SetNumber(mValue - mStep);
 			}
 			
 			OnEvent(UIEvents::EVENT_NUMERIC_DOWN);
@@ -136,7 +137,7 @@ namespace fastbird
 				SetNumber(mValue + mShiftStep);
 			}
 			else{
-				SetNumber(mValue + 1);
+				SetNumber(mValue + mStep);
 			}
 			OnEvent(UIEvents::EVENT_NUMERIC_UP);
 		}
@@ -144,12 +145,21 @@ namespace fastbird
 
 	void NumericUpDown::SetEnableUp(bool enable)
 	{
-		mUp->SetEnable(enable);
+		if (mUp)
+			mUp->SetEnable(enable&& mEnable);
 	}
 
 	void NumericUpDown::SetEnableDown(bool enable)
 	{
-		mDown->SetEnable(enable);
+		if (mDown)
+			mDown->SetEnable(enable&& mEnable);
+	}
+	void NumericUpDown::SetEnable(bool enable){
+		__super::SetEnable(enable);
+		if (mUp)
+			mUp->SetEnable(mValue < mMax && enable);
+		if (mDown)
+			mDown->SetEnable(mValue > mMin && enable);
 	}
 
 	bool NumericUpDown::SetProperty(UIProperty::Enum prop, const char* val)
@@ -172,6 +182,11 @@ namespace fastbird
 		case UIProperty::NUMERIC_UPDOWN_SHIFT_STEP:
 		{
 			mShiftStep = StringConverter::parseInt(val);
+			return true;
+		}
+		case UIProperty::NUMERIC_UPDOWN_STEP:
+		{
+			mStep = StringConverter::parseInt(val);
 			return true;
 		}
 		}
@@ -212,6 +227,15 @@ namespace fastbird
 					return false;
 			}
 			strcpy_s(val, bufsize, StringConverter::toString(mShiftStep).c_str());
+			return true;
+		}
+		case UIProperty::NUMERIC_UPDOWN_STEP:
+		{
+			if (notDefaultOnly){
+				if (mStep == UIProperty::GetDefaultValueInt(prop))
+					return false;
+			}
+			strcpy_s(val, bufsize, StringConverter::toString(mStep).c_str());
 			return true;
 		}
 		}

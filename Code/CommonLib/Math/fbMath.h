@@ -363,6 +363,14 @@ namespace fastbird
 	// outPos and TimeToTarget have to be specified both if you need.
 	void CalcInterceptPosition(const Vec3& firePos, float ammoSpeed, const Vec3& toTargetDir, float distance, const Vec3& targetVel,
 		Vec3& outVelocity, Vec3* outPos = 0, float* timeToTarget = 0);
+	enum SegmentIntersectResult{
+		SIR_COLLINEAR,
+		SIR_NONINTERSECTING,
+		SIR_INTERSECT,
+	};
+	SegmentIntersectResult SegmentIntersect(const Vec2& p, const Vec2& pend,
+						const Vec2& q, const Vec2& qend, 
+						Vec2& outIntersect);
 
 	void ExpandRect(RECT& r, int size);
 

@@ -231,6 +231,7 @@ public:
 		const Color& color0, const Color& color1) = 0;
 	virtual void DrawLine(const Vec2I& start, const Vec2I& end, 
 		const Color& color, const Color& color1) = 0;
+	virtual void DrawQuadLater(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 
 	// with depth culling
 	virtual void DrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, float thickness,
@@ -243,7 +244,7 @@ public:
 	virtual void RenderGeoms() = 0;
 	virtual void RenderDebugHud() = 0; 
 	virtual inline IFont* GetFont() const = 0;
-	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
+	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs = true) = 0;
 	virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
 	virtual void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,

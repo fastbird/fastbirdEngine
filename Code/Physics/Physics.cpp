@@ -17,6 +17,7 @@
 
 namespace fastbird{
 
+NeedCollisionForConvexCallback Physics::sNeedCollisionForConvexCallback = 0;
 unsigned Physics::NextInternalColShapeId = 1;
 Physics::Physics()
 	: mRayGroup(0x40) // default of the current game under development
@@ -82,15 +83,16 @@ void Physics::Initilaize()
 	mDynamicsWorld->setDebugDrawer(&mDebugDrawer);
 	mDynamicsWorld->setInternalTickCallback(TickCallback);
 
-	//auto& info = mDynamicsWorld->getSolverInfo();
-	//info.m_splitImpulse = 1;
+	//auto& solverInfo = mDynamicsWorld->getSolverInfo();
+	//solverInfo.m_splitImpulse = 0;
+	//solverInfo.m_splitImpulsePenetrationThreshold = -0.02;
 }
 
 void Physics::Deinitilaize()
 {
 	if (mDynamicsWorld)
 	{
-		RegisterFilterCallback(0);
+		RegisterFilterCallback(0, 0);
 
 		int i;
 		for (i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; i--)
@@ -157,7 +159,7 @@ void Physics::Update(float dt)
 {
 	if (mDynamicsWorld)
 	{
-		mDynamicsWorld->stepSimulation(dt, 8);
+		mDynamicsWorld->stepSimulation(dt, 12);
 		if (mDebugDrawer.getDebugMode() != 0)
 		{
 			mDynamicsWorld->debugDrawWorld();
@@ -202,8 +204,8 @@ void Physics::_ReportCollisions()
 		for (int j = 0; j < numContacts; j++)
 		{
 			btManifoldPoint& pt = contactManifold->getContactPoint(j);
-			if (pt.m_lifeTime == 0)
-				continue;
+			//if (pt.m_lifeTime == 0)
+				//continue;
 
 			btVector3 ptA = pt.getPositionWorldOnA();
 			btVector3 ptB = pt.getPositionWorldOnB();
@@ -706,7 +708,7 @@ void Physics::SetRayCollisionGroup(int group)
 	mRayGroup = group;
 }
 
-bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[], unsigned numExcepts)
+bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int additionalRayGroup, int mask, RayResultClosest& result, void* excepts[], unsigned numExcepts)
 {
 	auto from = FBToBullet(fromWorld);
 	auto to = FBToBullet(toWorld);
@@ -763,7 +765,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 
 	};
 	MyclosestRayResultCallBack cb(from, to);
-	cb.m_collisionFilterGroup = mRayGroup;
+	cb.m_collisionFilterGroup = mRayGroup + additionalRayGroup;
 	cb.m_collisionFilterMask = mask;
 	cb.mExcepts = excepts;
 	cb.mNumExcepts = numExcepts;
@@ -782,7 +784,7 @@ bool Physics::RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mas
 	return false;
 }
 
-bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result)
+bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, RayResultWithObj& result)
 {
 	struct ObjectHitsRayResultCallback : public btCollisionWorld::AllHitsRayResultCallback
 	{
@@ -857,7 +859,7 @@ bool Physics::RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayRe
 	return false;
 }
 
-RayResultAll* Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask)
+RayResultAll* Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask)
 {
 	auto from = FBToBullet(fromWorld);
 	auto to = FBToBullet(toWorld);
@@ -901,7 +903,7 @@ RayResultAll* Physics::RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, in
 
 	MyAllHitsRayResultCallback cb(from, to);
 	cb.m_collisionFilterMask = mask;
-	cb.m_collisionFilterGroup = mRayGroup;
+	cb.m_collisionFilterGroup = mRayGroup + additionalGroupFlag;
 	mDynamicsWorld->rayTest(from, to, cb);
 	if (cb.hasHit())
 	{
@@ -1106,17 +1108,35 @@ void Physics::DestroyShape(CollisionShape* shape)
 	CollisionShapeMan::DestroyShape(shape);
 }
 
+bool ConvexResultNeedCollision(btCollisionObject* a, btCollisionObject* b){
+	if (Physics::sNeedCollisionForConvexCallback){
+		RigidBody* rigidBodyA = (RigidBody*)a->getUserPointer();
+		RigidBody* rigidBodyB = (RigidBody*)b->getUserPointer();
+		if (!rigidBodyA || !rigidBodyB)
+			return true; // don't care
 
-void Physics::RegisterFilterCallback(IFilterCallback* callback){
+		return Physics::sNeedCollisionForConvexCallback(rigidBodyA, rigidBodyB);
+	}
+
+	return true;
+}
+
+void Physics::RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func){
 	if (mFilterCallback){
 		mDynamicsWorld->getPairCache()->setOverlapFilterCallback(0);
 		FB_SAFE_DEL(mFilterCallback);
+		mDynamicsWorld->SetConvexResultNeedCollisionCallback(0);
 	}
 
 	if (callback){
 		mFilterCallback = FB_NEW(BulletFilterCallback)(callback);
 		mDynamicsWorld->getPairCache()->setOverlapFilterCallback(mFilterCallback);
 	}
+
+	Physics::sNeedCollisionForConvexCallback = func;
+	mDynamicsWorld->SetConvexResultNeedCollisionCallback(ConvexResultNeedCollision);
 }
+
+
 
 }

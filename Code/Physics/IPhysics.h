@@ -16,7 +16,7 @@ namespace fastbird
 	struct CapsuleShape;
 	struct MeshShape;
 	struct IFilterCallback;
-
+	typedef bool(*NeedCollisionForConvexCallback)(RigidBody* a, RigidBody* b);
 	class IPhysics
 	{
 	public:
@@ -49,11 +49,11 @@ namespace fastbird
 		virtual void AttachBodiesAlways(RigidBody* bodies[], unsigned num) = 0;
 		
 		virtual void SetRayCollisionGroup(int group) = 0;
-		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0) = 0;
-		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result) = 0;
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0) = 0;
+		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, RayResultWithObj& result) = 0;
 		// returning RayResultAll*
 		// need to delete with IPhysics::Release(RayResultAll*)
-		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask) = 0;
+		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask) = 0;
 
 		virtual void Release(RayResultAll* r) = 0;
 
@@ -78,7 +78,7 @@ namespace fastbird
 		virtual void DestroyShape(CollisionShape* shape) = 0;
 
 
-		virtual void RegisterFilterCallback(IFilterCallback* callback) = 0;
+		virtual void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func) = 0;
 	};
 }
 

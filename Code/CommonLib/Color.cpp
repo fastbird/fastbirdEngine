@@ -46,4 +46,9 @@ Color::Color(const char* str)
 		mValue =  StringConverter::parseVec4(str);
 	}
 }
+
+Color Color::RandomColor(){
+	return Color(Random(), Random(), Random(), 1.f);
+}
+
 }

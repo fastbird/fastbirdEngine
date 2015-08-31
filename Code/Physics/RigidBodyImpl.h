@@ -21,6 +21,8 @@ namespace fastbird
 
 		unsigned mGameFlag;
 
+		bool mAddedToWorld;
+		bool mDebug;
 	public:
 		RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider);
 		~RigidBodyImpl();
@@ -98,5 +100,7 @@ namespace fastbird
 
 		virtual void SetGameFlag(unsigned flag);
 		virtual unsigned GetGameFlag() const;
+
+		virtual void SetDebug(bool debug);
 	};
 }

@@ -15,6 +15,8 @@ RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynam
 , mGroupedRigidBody(false)
 , mGroupIdx(Vec3I::MAX)
 , mGameFlag(0)
+, mAddedToWorld(false)
+, mDebug(false)
 {
 	auto colShape = getCollisionShape();
 	if (colShape)
@@ -34,8 +36,10 @@ RigidBodyImpl::~RigidBodyImpl()
 	if (colShape)
 		gFBPhysics->Release(colShape);
 
-	if (mWorld)
+	if (mWorld){
 		mWorld->removeRigidBody(this);
+		mAddedToWorld = false;
+	}
 	FB_DEL_ALIGNED(getMotionState());
 }
 
@@ -47,6 +51,7 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 		return;
 	}
 	mWorld->removeRigidBody(this);
+	mAddedToWorld = false;
 	auto prevColShape = getCollisionShape();
 	if (prevColShape)
 		gFBPhysics->Release(prevColShape);
@@ -80,35 +85,58 @@ void RigidBodyImpl::RefreshColShape(IPhysicsInterface* colProvider)
 		colShape->calculateLocalInertia(mass, inertia);
 		setMassProps(mass, inertia);
 	}
+	assert(!mAddedToWorld);
 	mWorld->addRigidBody(this, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
+	mAddedToWorld = true;
+
 }
 
 void RigidBodyImpl::ApplyForce(const Vec3& force, const Vec3& rel_pos)
 {
+	if (mDebug){
+		Log("ApplyForce = %.3f, %.3f, %.3f", force.x, force.y, force.z);
+		if (force.Length() > 5){
+			int a = 0;
+			a++;
+		}
+	}
 	applyForce(FBToBullet(force), FBToBullet(rel_pos));
 	activate();
 }
 
 void RigidBodyImpl::ApplyImpulse(const Vec3& impulse, const Vec3& rel_pos)
 {
+	if (mDebug){
+		Log("ApplyImpulse = %.3f, %.3f, %.3f", impulse.x, impulse.y, impulse.z);
+	}
 	applyImpulse(FBToBullet(impulse), FBToBullet(rel_pos));
 	activate();
 }
 
 void RigidBodyImpl::ApplyCentralImpulse(const Vec3& impulse)
 {
+	if (mDebug){
+		Log("ApplyCentralImpulse = %.3f, %.3f, %.3f", impulse.x, impulse.y, impulse.z);
+	}
+
 	applyCentralImpulse(FBToBullet(impulse));
 	activate();
 }
 
 void RigidBodyImpl::ApplyTorqueImpulse(const Vec3& torque)
 {
+	if (mDebug){
+		Log("ApplyTorqueImpulse = %.3f, %.3f, %.3f", torque.x, torque.y, torque.z);
+	}
 	applyTorqueImpulse(FBToBullet(torque));
 	activate();
 }
 
 void RigidBodyImpl::ApplyTorque(const Vec3& torque)
 {
+	if (mDebug){
+		Log("ApplyTorque = %.3f, %.3f, %.3f", torque.x, torque.y, torque.z);
+	}
 	applyTorque(FBToBullet(torque));
 	activate();
 }
@@ -421,6 +449,7 @@ void RigidBodyImpl::SetTransform(const Transformation& t)
 	t.GetHomogeneous(mat4);
 	auto btT = FBToBullet(mat4);
 	setWorldTransform(btT);
+	activate();
 
 }
 
@@ -431,12 +460,15 @@ Vec3 RigidBodyImpl::GetPos() const{
 void RigidBodyImpl::RegisterToWorld()
 {
 	if (mWorld && mColProvider){
+		assert(!mAddedToWorld);
 		mWorld->addRigidBody(this, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
+		mAddedToWorld = true;
 		auto num = getNumConstraintRefs();
 		for (int i = 0; i < num; ++i){
 			auto constraint = getConstraintRef(i);
 			assert(constraint);
-			constraint->setEnabled(true);			
+			if (constraint->getRigidBodyA().isInWorld() && constraint->getRigidBodyB().isInWorld())
+				constraint->setEnabled(true);			
 		}
 	}
 	else
@@ -452,6 +484,7 @@ void RigidBodyImpl::UnregisterFromWorld(){
 			constraint->setEnabled(false);
 		}
 		mWorld->removeRigidBody(this);
+		mAddedToWorld = false;
 	}
 	else
 		Error(DEFAULT_DEBUG_ARG, "No colprovier exists!");
@@ -504,4 +537,9 @@ void RigidBodyImpl::SetGameFlag(unsigned flag){
 
 unsigned RigidBodyImpl::GetGameFlag() const{
 	return mGameFlag;
+}
+
+void RigidBodyImpl::SetDebug(bool debug){
+	mDebug = debug;
+	btSetDebug();
 }

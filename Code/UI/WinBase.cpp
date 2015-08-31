@@ -87,6 +87,7 @@ WinBase::WinBase()
 , mGatheringException(false)
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
+, mHand(false), mHandFuncId(-1)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -1569,6 +1570,13 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			mTabOrder = StringConverter::parseUnsignedInt(val);
 			return true;
 		}
+
+		case UIProperty::MOUSE_CURSOR_HAND:
+		{
+			mHand = StringConverter::parseBool(val);
+			OnHandPropChanged();
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning)
 		Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
@@ -2060,6 +2068,17 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		strcpy_s(val, bufsize, data.c_str());
 
 		return true;
+	}
+
+	case UIProperty::MOUSE_CURSOR_HAND:
+	{
+		if (notDefaultOnly){
+			if (mHand == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mHand).c_str());
+		return true;
+
 	}
 	}
 	val = "";
@@ -3564,4 +3583,21 @@ void WinBase::SetSpecialOrder(int specialOrder){
 	}
 	gFBUIManager->DirtyRenderList(GetHwndId());
 }
+
+void WinBase::OnHandPropChanged(){
+	if (mHand && mHandFuncId == -1){
+		mHandFuncId = RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
+			std::bind(&WinBase::OnMouseHoverHand, this, std::placeholders::_1));
+	}
+	else if (mHandFuncId != -1){
+		UnregisterEventFunc(UIEvents::EVENT_MOUSE_HOVER, mHandFuncId);
+		mHandFuncId = -1;
+	}
+}
+
+void WinBase::OnMouseHoverHand(void* arg){
+	SetCursor(WinBase::sCursorOver);
+}
+
+
 }

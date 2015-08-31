@@ -3,6 +3,12 @@
 
 namespace fastbird
 {
+
+	Vec2I::Vec2I(const Vec2& v){
+		x = Round(v.x);
+		y = Round(v.y);
+	}
+
 	const Vec2I Vec2I::ZERO(0, 0);
 	bool Vec2I::operator<(const Vec2I& v) const
 	{
@@ -21,4 +27,8 @@ namespace fastbird
 		return false;
 	}
 
+	Vec2I Vec2I::Scale(float f) const
+	 {
+		 return Vec2I(Round(x*f), Round(y*f));
+	 }
 }

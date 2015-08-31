@@ -241,7 +241,7 @@ int main()
 		param.mShaderResourceView = true;
 		param.mMipmap = false;
 		param.mCubemap = false;
-		param.mHasDepth = false;
+		param.mWillCreateDepth = false;
 		param.mUsePool = false;
 		IRenderTarget* rtt = gFBEnv->pRenderer->CreateRenderTarget(param);
 		auto scene = rtt->CreateScene();

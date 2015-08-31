@@ -45,6 +45,9 @@ namespace fastbird
 	public:
 		Physics::Physics();
 		Physics::~Physics();
+		
+		static NeedCollisionForConvexCallback sNeedCollisionForConvexCallback;
+
 		virtual void Initilaize();
 		virtual void Deinitilaize();
 		virtual void Update(float dt);
@@ -74,9 +77,9 @@ namespace fastbird
 		virtual void AttachBodiesAlways(RigidBody* bodies[], unsigned num);
 
 		virtual void SetRayCollisionGroup(int group);
-		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0);
-		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, RayResultWithObj& result);
-		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int mask);
+		virtual bool RayTestClosest(const Vec3& fromWorld, const Vec3& toWorld, int additionalRayGroup, int mask, RayResultClosest& result, void* excepts[] = 0, unsigned numExcepts = 0);
+		virtual bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, RayResultWithObj& result);
+		virtual RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask);
 		virtual void Release(RayResultAll* r);
 		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except);
 		virtual float GetDistanceBetween(RigidBody* a, RigidBody* b);
@@ -98,6 +101,6 @@ namespace fastbird
 		virtual void DestroyShape(CollisionShape* shape);
 
 
-		virtual void RegisterFilterCallback(IFilterCallback* callback);
+		virtual void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func);
 	};
 }

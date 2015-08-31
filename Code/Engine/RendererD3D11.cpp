@@ -2420,7 +2420,7 @@ void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER
 	
 }
 
-void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color)
+void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs/*= true*/)
 {
 	const auto& rtSize = mCurRenderTarget->GetSize();
 	static OBJECT_CONSTANTS constants =
@@ -2447,13 +2447,15 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Unmap();
 	}
 
+	if (updateRs){
+		UpdateObjectConstantsBuffer(&constants);
+		// set primitive topology
+		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		// set material
+		mMaterials[DEFAULT_MATERIALS::QUAD]->Bind(true);
+	}
 
-	UpdateObjectConstantsBuffer(&constants);
-
-	// set primitive topology
-	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	// set material
-	mMaterials[DEFAULT_MATERIALS::QUAD]->Bind(true);
+	
 	// set vertex buffer
 	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Bind();
 	// draw

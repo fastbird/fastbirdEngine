@@ -82,5 +82,6 @@ private:
 	bool mAnimation;
 	bool mImageFixedSize;	
 	bool mColorOveraySet;
+	bool mImageRot;
 };
 }

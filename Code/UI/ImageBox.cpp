@@ -18,6 +18,7 @@ namespace fastbird
 		, mCurFrame(0), mImageFixedSize(false)
 		, mTexture(0), mColorOveraySet(false)
 		, mRenderTarget(0)
+		, mImageRot(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -132,7 +133,7 @@ void ImageBox::SetTexture(const char* file)
 void ImageBox::SetTexture(ITexture* pTexture)
 {
 	//mImageFile.clear();
-	if (pTexture->GetName().empty()){
+	if (!pTexture || pTexture->GetName().empty()){
 		mImageFile.clear();
 	}
 	mTexture = pTexture;
@@ -452,6 +453,13 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	}
 
+	case UIProperty::IMAGE_ROTATE:
+	{
+		SetUVRot(mImageRot);		
+		return true;
+
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -564,6 +572,18 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 
+	}
+	case UIProperty::IMAGE_ROTATE:
+	{
+		if (notDefaultOnly)
+		{
+			if (mImageRot == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		auto data = StringConverter::toString(mImageRot);
+		strcpy_s(val, bufsize, data.c_str());
+		return true;
 	}
 
 	}

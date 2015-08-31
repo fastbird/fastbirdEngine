@@ -141,6 +141,8 @@ namespace fastbird
 		bool mGatheringException;
 		bool mKeepUIRatio;
 		bool mUpdateAlphaTexture;
+		bool mHand;
+		FunctionID mHandFuncId;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -457,5 +459,9 @@ namespace fastbird
 		void ApplyAnim(IUIAnimation* anim, Vec2& pos, Vec2& scale, bool& hasPos, bool& hasScale);
 
 		void UpdateAlphaTexture();
+
+		void OnHandPropChanged();
+
+		void OnMouseHoverHand(void* arg);
 	};
 }

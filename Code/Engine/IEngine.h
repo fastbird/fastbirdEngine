@@ -101,6 +101,7 @@ namespace fastbird
 		virtual bool CreateTerrain(int numVertX, int numVertY, float distance, const char* heightmapFile = 0) = 0;
 		virtual bool CreateSkyBox() = 0;
 
+		// priority : lower value processed first.
 		virtual void AddInputListener(IInputListener* pInputListener, 
 			IInputListener::INPUT_LISTEN_CATEGORY category, int priority) = 0;
 		virtual void RemoveInputListener(IInputListener* pInputListener) = 0;
