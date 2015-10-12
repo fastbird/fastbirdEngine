@@ -460,6 +460,9 @@
     <ClInclude Include="Audio.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="IRenderTargetListener.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StdAfx.cpp" />

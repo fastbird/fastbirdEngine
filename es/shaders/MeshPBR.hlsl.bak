@@ -117,9 +117,10 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float3 h = normalize(toViewDir + toLightDir);
 	float ndh = max( dot(normal, h), 1e-8);
 	float vdh = max( dot(toViewDir, h), 1e-8);
+	float ndv = max( dot( normal, toViewDir), 1e-8);
 	float invShadow = GetShadow(INPUT.LightPos);
-	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));
-	shadedColor +=  ndl2 * lightColor2 * max(float3(0.2f, 0.2f, 0.2f), diffColor);
+	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(ndl, vdh, ndh, ndv, specColor, roughness));
+	shadedColor +=  ndl2 * lightColor2 * baseColor * 0.3f;
 	float3 irrad = GetIrrad(float4(normal, 1.0f));
 	shadedColor+=irrad;	
 	
@@ -127,7 +128,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	
 	// need to work further.
 #ifdef ENV_TEXTURE
-	envContrib = CalcEnvContrib(normal, INPUT.Tangent, INPUT.Binormal, roughness, toViewDir, diffColor, specColor);
+	envContrib = CalcEnvContrib(normal, INPUT.Tangent, INPUT.Binormal, roughness, toViewDir, ndv, diffColor, specColor);
 #endif
 
 	float3 pointLightResult = CalcPointLights(INPUT.WorldPos, normal) * baseColor;

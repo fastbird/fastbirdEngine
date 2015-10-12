@@ -6,6 +6,7 @@
 #include <Engine/Light.h>
 #include <Engine/GaussianDist.h>
 #include <Engine/StarDef.h>
+#include <Engine/IRenderTargetListener.h>
 #include <../es/shaders/Constants.h>
 
 namespace fastbird
@@ -100,7 +101,8 @@ IScene* RenderTarget::CreateScene()
 {
 	if (mScene)
 	{
-		Log(FB_DEFAULT_DEBUG_ARG, "(info) original scene is replaced!");
+		return mScene;
+		//Log(FB_DEFAULT_DEBUG_ARG, "(info) original scene is replaced!");
 	}
 	mScene = FB_NEW(Scene);
 	mScene->SetRttScene(true);
@@ -118,8 +120,8 @@ ICamera* RenderTarget::GetOrCreateOverridingCamera()
 	{
 		mOverridingCam = FB_NEW(Camera);
 	}
-	mOverridingCam->SetWidth((int)mCamera->GetWidth());
-	mOverridingCam->SetHeight((int)mCamera->GetHeight());
+	mOverridingCam->SetWidth(mCamera->GetWidth());
+	mOverridingCam->SetHeight(mCamera->GetHeight());
 	return mOverridingCam;
 }
 
@@ -389,8 +391,8 @@ void RenderTarget::SetColorTexture(ITexture* pTexture)
 	mViewport.mHeight = (float)mSize.y;
 	mViewport.mMinDepth = 0.f;
 	mViewport.mMaxDepth = 1.0f;
-	mCamera->SetWidth(mSize.x);
-	mCamera->SetHeight(mSize.y);
+	mCamera->SetWidth((float)mSize.x);
+	mCamera->SetHeight((float)mSize.y);
 	if (mSize.x < 100 || mSize.y < 100)
 	{
 		mRenderPipeline->SetStep(RenderSteps::HDR, false);
@@ -1400,14 +1402,32 @@ void RenderTarget::UpdateLightCamera()
 		mLightCamera = FB_NEW(Camera);
 		mLightCamera->SetOrthogonal(true);
 		auto cmd = gFBEnv->pConsole->GetEngineCommand();
-		int width = (int)std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600.f));
-		int height = (int)std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900.f));
-		width = std::max(16, width);
-		height = std::max(16, height);
-		mLightCamera->SetWidth(width);
-		mLightCamera->SetHeight(height);
+		float width = std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600.f));
+		float height = std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900.f));
+		width = std::max(16.f, width);
+		height = std::max(16.f, height);
+		mLightCamSize = Vec2(width, height);
+
+		Vec2 shadowMapSize( (float)std::min((float)cmd->r_ShadowMapWidth, mSize.x / 1600.f * cmd->r_ShadowMapWidth),
+			(float)std::min((float)cmd->r_ShadowMapHeight, mSize.y / 900.f * cmd->r_ShadowMapHeight));
+		shadowMapSize.x = (float)renderer->CropSize8((int)shadowMapSize.x);
+		shadowMapSize.y = (float)renderer->CropSize8((int)shadowMapSize.y);
+		shadowMapSize.x = std::max(16.0f, shadowMapSize.x);
+		shadowMapSize.y = std::max(16.0f, shadowMapSize.y);
+		
+		Vec2 vWorldUnitsPerTexel;		
+		vWorldUnitsPerTexel = Vec2(mLightCamSize.x, mLightCamSize.y);
+		vWorldUnitsPerTexel *= Vec2(1.0f / shadowMapSize.x, 1.0f / shadowMapSize.y);
+		mLightCamSize.x = std::floor(mLightCamSize.x / vWorldUnitsPerTexel.x);
+		mLightCamSize.x *= vWorldUnitsPerTexel.x;
+		mLightCamSize.y = std::floor(mLightCamSize.y / vWorldUnitsPerTexel.y);
+		mLightCamSize.y *= vWorldUnitsPerTexel.y;
+
+		mLightCamera->SetWidth(mLightCamSize.x);
+		mLightCamera->SetHeight(mLightCamSize.y);
 		mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
 	}
+
 
 	auto target = cam->GetTarget();
 	float shadowCamDist =
@@ -1416,11 +1436,11 @@ void RenderTarget::UpdateLightCamera()
 	assert(light);
 	if (target && target->GetBoundingVolume() && target->GetBoundingVolume()->GetRadius() < shadowCamDist)
 	{
-		mLightCamera->SetPos(target->GetPos() + light->GetPosition() *shadowCamDist);
+		mLightCamera->SetPos(target->GetPos() + cam->GetDir() * 10.0f +  light->GetPosition() *shadowCamDist);
 	}
 	else
 	{
-		mLightCamera->SetPos(cam->GetPos() + light->GetPosition() * shadowCamDist);
+		mLightCamera->SetPos(cam->GetPos() + cam->GetDir() * 10.0f + light->GetPosition() * shadowCamDist);
 	}
 	mLightCamera->SetDir(-light->GetPosition());
 }
@@ -1429,7 +1449,7 @@ void RenderTarget::SetLightCamWidth(float width)
 {
 	if (mLightCamera)
 	{
-		mLightCamera->SetWidth((int)std::min(width, mSize.x * (width / 1600)));
+		mLightCamera->SetWidth(std::min(width, mSize.x * (width / 1600)));
 	}
 }
 
@@ -1437,7 +1457,7 @@ void RenderTarget::SetLightCamHeight(float height)
 {
 	if (mLightCamera)
 	{
-		mLightCamera->SetHeight((int)std::min(height, mSize.y * (height / 900)));
+		mLightCamera->SetHeight(std::min(height, mSize.y * (height / 900)));
 	}
 }
 
@@ -1468,5 +1488,12 @@ void RenderTarget::TriggerDrawEvent()
 	mDrawEventTriggered = true;
 }
 
+void RenderTarget::AddListener(IRenderTargetListener* listener){
+	if (ValueNotExistInVector(mListeners, listener))
+		mListeners.push_back(listener);
+}
+void RenderTarget::RemoveListener(IRenderTargetListener* listener){
+	DeleteValuesInVector(mListeners, listener);
+}
 
 }

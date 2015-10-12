@@ -24,7 +24,7 @@ namespace fastbird
 		friend class RigidBodyImpl;
 		btCollisionShape* CreateColShape(IPhysicsInterface* shapeProvider);
 		btCollisionShape* CreateColShapeForGroup(IPhysicsInterface* shapeProvider, const Vec3I& groupIdx);
-		btCollisionShape* CreateColShape(CollisionShape* colShapes[], unsigned num);
+		btCollisionShape* CreateColShape(CollisionShape* colShapes[], unsigned num, bool forceCompound);
 		RigidBody* _CreateRigidBodyInternal(btCollisionShape* colShape, float mass, IPhysicsInterface* obj, bool createMotionSTate);
 		BulletDebugDraw mDebugDrawer;
 
@@ -40,6 +40,7 @@ namespace fastbird
 		VectorMap<unsigned, btCollisionShape*> mInternalShapes;
 
 		BulletFilterCallback* mFilterCallback;
+		bool mEnabled;
 
 
 	public:
@@ -51,6 +52,9 @@ namespace fastbird
 		virtual void Initilaize();
 		virtual void Deinitilaize();
 		virtual void Update(float dt);
+		virtual void EnablePhysics();
+		virtual void DisablePhysics();
+
 		// internal only.
 		void _ReportCollisions();
 		void _CheckCollisionShapeForDel(float timeStep);
@@ -86,6 +90,7 @@ namespace fastbird
 
 		virtual unsigned CreateBTSphereShape(float radius);
 		virtual void DeleteBTShape(unsigned id);
+		virtual void DrawDebugInfo();
 
 		//-------------------------------------------------------------------
 		// collision shape manager
@@ -102,5 +107,7 @@ namespace fastbird
 
 
 		virtual void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func);
+
+		virtual void SetEngine(IEngine* engine);
 	};
 }

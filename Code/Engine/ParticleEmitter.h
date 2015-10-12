@@ -138,6 +138,10 @@ namespace fastbird
 
 		virtual void SetRelativeVelocity(const Vec3& dir, float speed);
 
+		virtual void RemoveShaderDefine(const char* def);
+		virtual void AddShaderDefine(const char* def, const char* val);
+		virtual void ApplyShaderDefine();
+
 	private:
 		ParticleEmitter* mAdam;
 		typedef std::vector<ParticleTemplate> PARTICLE_TEMPLATES;
@@ -179,5 +183,7 @@ namespace fastbird
 		float mRelativeVelocity;
 		Vec3 mStartPos;
 		float mFinalAlphaMod; // for glares in the opposite side of camera.
+
+		VectorMap<std::string, std::string>  mShaderDefines;
 	};
 }

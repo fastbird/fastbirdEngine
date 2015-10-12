@@ -81,6 +81,10 @@ namespace fastbird
 		virtual void SetRelativeVelocity(const Vec3& dir, float speed) = 0;
 		virtual void SetAlpha(float alpha) = 0;
 		virtual float GetAlpha() const = 0;
+
+		virtual void RemoveShaderDefine(const char* def) = 0;
+		virtual void AddShaderDefine(const char* def, const char* val) = 0;
+		virtual void ApplyShaderDefine() = 0;
 		
 	private:
 		friend class ParticleManager;

@@ -684,4 +684,8 @@ namespace fastbird
 	void Mouse::ClearRightDown(){		
 		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
+
+	float Mouse::GetLButtonDownTime() const{
+		return mLastLeftDownTime;
+	}
 }

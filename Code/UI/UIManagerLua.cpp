@@ -80,6 +80,7 @@ namespace fastbird
 	int ChangeUISizeX(lua_State* L);
 	int ChangeUISizeY(lua_State* L);
 	int ChangeUISize(lua_State* L);
+	int HasComponent(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -124,6 +125,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, HasComponent);
 		LUA_SETCFUNCTION(mL, ChangeUISizeX);
 		LUA_SETCFUNCTION(mL, ChangeUISizeY);
 		LUA_SETCFUNCTION(mL, ChangeUISize);
@@ -1716,5 +1718,13 @@ namespace fastbird
 		comp->OnClickRadio(comp);
 		comp->SetCheck(true);
 		return 0;
+	}
+
+	int HasComponent(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		auto comp = gFBUIManager->FindComp(uiname, compname);
+		lua_pushboolean(L, comp != 0);
+		return 1;
 	}
 }

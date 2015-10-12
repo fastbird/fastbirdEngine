@@ -447,10 +447,27 @@ void RigidBodyImpl::SetTransform(const Transformation& t)
 {
 	Mat44 mat4;
 	t.GetHomogeneous(mat4);
-	auto btT = FBToBullet(mat4);
-	setWorldTransform(btT);
+	auto aT = FBToBullet(mat4);
+	setWorldTransform(aT);
+	auto numConstraints = getNumConstraintRefs();
+	for (int i = 0; i < numConstraints; ++i){		
+		auto con = getConstraintRef(i);
+		if (con->isEnabled() && con->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE){
+			btFixedConstraint* fixedCon = (btFixedConstraint*)con;
+			auto a = &con->getRigidBodyA();
+			auto b = &con->getRigidBodyB();
+			auto trA = fixedCon->getFrameOffsetA();
+			auto trB = fixedCon->getFrameOffsetB();			
+			if (b->getUserPointer() == this){				
+				std::swap(a, b);				
+				std::swap(trA, trB);
+			}
+			auto bT = aT * trA * trB.inverse();
+			b->setWorldTransform(bT);
+			b->getMotionState()->setWorldTransform(bT);			
+		}		
+	}
 	activate();
-
 }
 
 Vec3 RigidBodyImpl::GetPos() const{
@@ -542,4 +559,10 @@ unsigned RigidBodyImpl::GetGameFlag() const{
 void RigidBodyImpl::SetDebug(bool debug){
 	mDebug = debug;
 	btSetDebug();
+}
+
+void RigidBodyImpl::ClearAngularVelocity(){
+	setAngularVelocity(btVector3(0, 0, 0));
+	setLinearVelocity(btVector3(0, 0, 0));
+	clearForces();
 }

@@ -28,7 +28,7 @@ namespace fastbird
 		virtual void Clear(float r, float g, float b, float a);// only color
 		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
-		virtual void UpdateObjectConstantsBuffer(void* pData);
+		virtual void UpdateObjectConstantsBuffer(void* pData, bool record = false);
 		virtual void UpdatePointLightConstantsBuffer(void* pData);
 		virtual void UpdateCameraConstantsBuffer();
 		virtual void UpdateRenderTargetConstantsBuffer();

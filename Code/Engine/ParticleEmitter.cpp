@@ -1321,8 +1321,19 @@ IParticleEmitter::Particle* ParticleEmitter::Emit(const ParticleTemplate& pt)
 
 	if (!pt.mGeometryPath.empty())
 	{
-		if (!p.mMeshObject)
+		if (!p.mMeshObject){
 			p.mMeshObject = (IMeshObject*)pt.mMeshObject->Clone();
+			if (!mShaderDefines.empty()){
+				p.mMeshObject->MakeMaterialIndependent();
+				auto mat = p.mMeshObject->GetMaterial();
+				if (mat){
+					for (auto& it : mShaderDefines){
+						mat->AddShaderDefine(it.first.c_str(), it.second.c_str());
+					}
+					mat->ApplyShaderDefines();
+				}
+			}
+		}
 		if (GetShow())
 			p.mMeshObject->AttachToScene();
 		p.mMeshObject->SetPos(p.mPosWorld);
@@ -1438,6 +1449,68 @@ void ParticleEmitter::SetRelativeVelocity(const Vec3& dir, float speed)
 		mRelativeVelocityDir = dir;
 
 	mRelativeVelocity = speed;
+}
+
+void ParticleEmitter::RemoveShaderDefine(const char* def){
+	auto it = mShaderDefines.Find(def);
+	if (it != mShaderDefines.end())
+		mShaderDefines.erase(it);
+
+	for (auto& pt : *mClonedTemplates)
+	{
+		PARTICLES& particles = *(mParticles[&pt]);
+		for (auto& p : particles)
+		{
+			if (p.mMeshObject){
+				p.mMeshObject->MakeMaterialIndependent();
+				auto mat = p.mMeshObject->GetMaterial();
+				if (mat){
+					mat->RemoveShaderDefine(def);
+				}
+			}
+		}
+	}
+}
+void ParticleEmitter::AddShaderDefine(const char* def, const char* val){
+	auto it = mShaderDefines.Find(std::string(def));
+	if (it != mShaderDefines.end())
+	{
+		it->second = val;
+	}
+	else{
+		mShaderDefines[def] = val;
+	}	
+
+	for (auto& pt : *mClonedTemplates)
+	{
+		PARTICLES& particles = *(mParticles[&pt]);
+		for (auto& p : particles)
+		{
+			if (p.mMeshObject){
+				p.mMeshObject->MakeMaterialIndependent();
+				auto mat = p.mMeshObject->GetMaterial();
+				if (mat){
+					mat->AddShaderDefine(def, val);
+				}
+			}
+		}
+	}
+}
+void ParticleEmitter::ApplyShaderDefine(){
+	for (auto& pt : *mClonedTemplates)
+	{
+		PARTICLES& particles = *(mParticles[&pt]);
+		for (auto& p : particles)
+		{
+			if (p.mMeshObject){
+				p.mMeshObject->MakeMaterialIndependent();
+				auto mat = p.mMeshObject->GetMaterial();
+				if (mat){
+					mat->ApplyShaderDefines();
+				}
+			}
+		}
+	}
 }
 
 }

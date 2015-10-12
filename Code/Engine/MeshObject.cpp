@@ -105,16 +105,27 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	void MeshObject::Render()
 	{
+		if (gFBEnv->pConsole->GetEngineCommand()->r_noMesh)
+			return;
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
+		if (mBoundingVolumeWorld){
+			if (mDistToCam > 70 && mBoundingVolumeWorld->GetRadius() < 0.5f)
+				return;
+
+			if (mDistToCam > 100 && mBoundingVolumeWorld->GetRadius() < 2.0f)
+				return;
+
+			if (mDistToCam > 250 && mBoundingVolumeWorld->GetRadius() < 5.0f)
+				return;
+		}
 
 		D3DEventMarker mark("MeshObject");
 		auto const renderer = gFBEnv->_pInternalRenderer;
 		
 		mObjectConstants.gWorldView = renderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		mObjectConstants.gWorldViewProj = renderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
-		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
-			renderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+		renderer->UpdateObjectConstantsBuffer(&mObjectConstants, true);
 
 		if (gFBEnv->mRenderPass == RENDER_PASS::PASS_NORMAL)
 			renderer->UpdatePointLightConstantsBuffer(&mPointLightConstants);
@@ -449,10 +460,12 @@ namespace fastbird
 			it->mPositions.clear();
 			it->mNormals.clear();
 			it->mUVs.clear();
+			it->mColors.clear();
 
 			it->mPositions.resize(0);
 			it->mNormals.resize(0);
 			it->mUVs.resize(0);
+			it->mColors.resize(0);
 		}
 	}
 
@@ -1144,6 +1157,12 @@ namespace fastbird
 					it.mMaterial = it.mMaterial->Clone();
 				}
 				it.mMaterial->SetAmbientColor(color.GetVec4());
+			}
+			if (it.mForceAlphaMaterial){
+				if (!it.mForceAlphaMaterial->NumRefs() != 1){
+					it.mForceAlphaMaterial = it.mForceAlphaMaterial->Clone();
+				}
+				it.mForceAlphaMaterial->SetAmbientColor(color.GetVec4());
 			}
 		}
 	}

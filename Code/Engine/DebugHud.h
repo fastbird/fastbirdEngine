@@ -24,6 +24,7 @@ public:
 	{
 		TextData(const Vec2I& pos, WCHAR* text, const Color& color, float size, float secs)
 			: mPos(pos), mText(text), mColor(color), mSecs(secs), mSize(size), mDuration(secs)
+			, mWidth(10)
 		{
 		}
 
@@ -33,6 +34,7 @@ public:
 		float mSecs;
 		float mDuration;
 		float mSize;
+		float mWidth;
 	};
 
 	struct Line
@@ -101,6 +103,7 @@ public:
 	//--------------------------------------------------------------------
 	void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color, float size);
+	void ClearDurationTexts();
 	void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size);
 	void Draw3DText(const Vec3& pos, WCHAR* text, const Color& color, float size);
 	// if wolrdspace is false, it's in the screenspace 0~width, 0~height
@@ -115,6 +118,7 @@ public:
 	void DrawSphere(const Vec3& pos, float radius, const Color& color);
 	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha);
 	void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
+
 
 private:
 

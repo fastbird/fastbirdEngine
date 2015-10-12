@@ -72,10 +72,20 @@ void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text,
 		it = mTextsForDur.insert(std::make_pair(pos, MessageBuffer())).first;
 	}
 	it->second.push_back(TextData(pos, text, color, size, secs));
+	auto font = gFBEnv->pRenderer->GetFont();
+	if (font){
+		font->SetHeight(size);
+		it->second.back().mWidth = font->GetTextWidth((const char*)text);
+		font->SetBackToOrigHeight();
+	}
 	while (it->second.size() > 10)
 	{
 		it->second.pop_front();
 	}
+}
+
+void DebugHud::ClearDurationTexts() {
+	mTextsForDur.clear();
 }
 
 //----------------------------------------------------------------------------
@@ -348,7 +358,9 @@ void DebugHud::Render()
 					pFont->SetHeight(it->mSize);
 					Color color = it->mColor;
 					float proportion = 1.0f - (it->mSecs / it->mDuration);
-					color.a() = 1.0f - (proportion*proportion);
+					color.a() = 1.0f - (proportion*proportion);					
+					pRenderer->DrawQuad(Vec2I(drawPos.x-4, drawPos.y - (int)it->mSize), Vec2I((int)it->mWidth+4, (int)it->mSize), Color(0, 0, 0, color.a()*0.7f));
+					pFont->PrepareRenderResources();
 					pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
 						(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
 

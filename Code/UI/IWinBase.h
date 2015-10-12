@@ -266,6 +266,7 @@ namespace fastbird
 		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual bool GetNoFocusByClick() const = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

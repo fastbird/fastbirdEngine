@@ -102,5 +102,7 @@ namespace fastbird
 		virtual unsigned GetGameFlag() const;
 
 		virtual void SetDebug(bool debug);
+
+		virtual void ClearAngularVelocity();
 	};
 }

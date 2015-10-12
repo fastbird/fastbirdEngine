@@ -148,6 +148,8 @@ namespace fastbird
 			WND_NO_FOCUS,
 			MOUSE_CURSOR_HAND,
 
+			NO_FOCUS_BY_CLICK,
+
 			COUNT
 		};
 
@@ -293,6 +295,8 @@ namespace fastbird
 
 			"WND_NO_FOCUS",
 			"MOUSE_CURSOR_HAND",
+
+			"NO_FOCUS_BY_CLICK",
 
 			"COUNT"
 		};
@@ -484,6 +488,8 @@ namespace fastbird
 			case LISTBOX_HAND:
 				return false;
 			case MOUSE_CURSOR_HAND:
+				return false;
+			case NO_FOCUS_BY_CLICK:
 				return false;
 			}
 			assert(0);

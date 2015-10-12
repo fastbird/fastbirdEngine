@@ -263,6 +263,7 @@ public:
 		const Color& color, float size = 24);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color, float size = 24);
+	virtual void ClearDurationTexts();
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);

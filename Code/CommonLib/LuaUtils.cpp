@@ -28,6 +28,9 @@ namespace fastbird
 			case 'd':
 				lua_pushnumber(L, va_arg(vl, double));
 				break;
+			case 'f':
+				lua_pushnumber(L, (lua_Number)va_arg(vl, float));
+				break;
 			case 'i':
 				lua_pushinteger(L, va_arg(vl, int));
 				break;
@@ -70,7 +73,15 @@ namespace fastbird
 						*va_arg(vl, double*) = n;
 						break;
 			}
-
+			case 'f':
+			{
+				int isnum;
+				float n = (float)lua_tonumberx(L, nres, &isnum);
+				if (!isnum)
+					fastbird::Error("wrong result type");
+				*va_arg(vl, float*) = n;				
+				break;
+			}
 			case 'i':
 			{
 						int isnum;

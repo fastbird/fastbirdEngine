@@ -42,7 +42,7 @@ namespace fastbird
 			FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			(LPTSTR)&lpMsgBuf, 0, NULL);
 
-		sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, lpMsgBuf);
+		sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, (char*)lpMsgBuf);
 		OutputDebugStringA(buf);
 		std::cerr << buf;
 
@@ -64,7 +64,7 @@ namespace fastbird
 			FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			(LPTSTR)&lpMsgBuf, 0, NULL);
 
-		sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, lpMsgBuf);
+		sprintf_s(buf, 2048, "%s(%d): %s() - %s \n", file, line, function, (char*)lpMsgBuf);
 		LocalFree(lpMsgBuf);
 		return buf;
 	}

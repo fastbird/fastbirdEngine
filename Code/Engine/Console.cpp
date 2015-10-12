@@ -287,6 +287,14 @@ void Console::Render()
 	pFont->SetHeight((float)sFontSize);
 	const int lineHeight = (int)pFont->GetHeight();
 
+	
+
+	// Draw Background
+	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
+		Color::DarkGray);
+
+
 	// DrawHighlight
 	if (mHighlightStart != -1)
 	{
@@ -309,12 +317,6 @@ void Console::Render()
 		pRenderer->DrawQuad(highlightStartPos, highlightEndPos - highlightStartPos,
 			Color::Gray);
 	}
-
-	// Draw Background
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
-	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
-		Color::DarkGray);
-
 	
 	// Draw Cursor
 	Vec2I cursorPos = mInputPosition;

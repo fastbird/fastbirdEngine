@@ -28,6 +28,7 @@ namespace fastbird{
 
 		SmartPtr<IMaterial> mMaterial;
 		SmartPtr<IVertexBuffer> mVB;
+		Vec3 mLastPoint;
 		
 
 	public:
@@ -57,6 +58,8 @@ namespace fastbird{
 		virtual void Clear();
 
 		virtual void Update(float dt) ;
+
+		virtual float GetDistToCam() const;
 
 	protected:
 		void RefreshVertexBuffer();

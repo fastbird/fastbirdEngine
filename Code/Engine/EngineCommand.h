@@ -23,6 +23,8 @@ public:
 	int e_NoMeshLoad;
 	int r_UI;
 	int r_noObjectConstants;
+	int r_noMesh;
+	int r_noSky;
 	int r_noParticleDraw;
 	int r_particleProfile;
 	int r_HDR;

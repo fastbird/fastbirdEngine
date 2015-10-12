@@ -10,6 +10,7 @@ namespace fastbird
 	class RenderPipeline;
 	struct GaussianDist;
 	class Scene;
+	class IRenderTargetListener;
 
 	class RenderTarget : public IRenderTarget
 	{
@@ -52,6 +53,7 @@ namespace fastbird
 		// Shadow
 		SmartPtr<ICamera> mLightCamera;
 		SmartPtr<ITexture> mShadowMap;
+		Vec2 mLightCamSize;
 
 		// Cloud
 		SmartPtr<ITexture> mCloudVolumeDepth;
@@ -76,6 +78,7 @@ namespace fastbird
 		SmartPtr<ITexture> mStarTextures[FB_NUM_STAR_TEXTURES];
 
 		SmartPtr<ITexture> mEnvTexture;
+		std::vector<IRenderTargetListener*> mListeners;
 
 		bool mDrawOnEvent;
 		bool mDrawEventTriggered;
@@ -128,6 +131,9 @@ namespace fastbird
 		virtual bool GetUsePool() const { return mUsePool; }
 
 		virtual void OnInputFromHandler(fastbird::IMouse* pMouse, fastbird::IKeyboard* pKeyboard);
+
+		virtual void AddListener(IRenderTargetListener* listener);
+		virtual void RemoveListener(IRenderTargetListener* listener);
 
 		void SetColorTexture(ITexture* pTexture);
 		virtual ICamera* GetLightCamera() const { return mLightCamera; }
@@ -184,5 +190,6 @@ namespace fastbird
 
 		virtual void DrawOnEvent(bool set);
 		virtual void TriggerDrawEvent();
+
 	};
 }

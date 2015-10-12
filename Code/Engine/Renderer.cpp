@@ -463,6 +463,8 @@ bool Renderer::OnPrepared()
 	for (int i = 0; i < 4; i++)
 		sdesc_border.BorderColor[i] = 0;
 	mDefaultSamplers[SAMPLERS::BLACK_BORDER] = CreateSamplerState(sdesc_border);
+	sdesc_border.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+	mDefaultSamplers[SAMPLERS::POINT_BLACK_BORDER] = CreateSamplerState(sdesc_border);
 
 	
 
@@ -660,6 +662,11 @@ void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* tex
 	const Color& color, float size)
 {
 	DrawTextForDuration(secs, pos, AnsiToWide(text, strlen(text)), color, size);
+}
+
+void Renderer::ClearDurationTexts(){
+	if (mDebugHud)
+		mDebugHud->ClearDurationTexts();
 }
 
 void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size)
@@ -2514,6 +2521,10 @@ void Renderer::RenderFrameProfiler()
 	y += yStep;
 
 	swprintf_s(msg, 255, L"Num vertices = %d", profiler.NumVertexCount);
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep;
+
+	swprintf_s(msg, 255, L"Num UpdateObjectConstantsBuffer = %u", profiler.NumUpdateObjectConst);
 	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 	y += yStep * 2;
 

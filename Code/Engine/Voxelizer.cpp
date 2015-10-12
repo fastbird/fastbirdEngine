@@ -94,8 +94,8 @@ void Voxelizer::CalcDistanceMap()
 	pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 	ICamera* pCam = pDepthRT->GetCamera();
 	pCam->SetOrthogonal(true);
-	pCam->SetWidth((int)(radius*2.0f));
-	pCam->SetHeight((int)(radius*2.0f));
+	pCam->SetWidth(radius*2.0f);
+	pCam->SetHeight(radius*2.0f);
 	pCam->SetNearFar(-radius, radius);
 	pCam->SetPos(Vec3(0, 0, 0));
 	auto scene = pDepthRT->CreateScene();

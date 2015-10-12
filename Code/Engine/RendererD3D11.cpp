@@ -557,8 +557,12 @@ void RendererD3D11::UpdateFrameConstantsBuffer()
 		m_pImmediateContext->PSSetConstantBuffers(6, 1, &m_pImmutableConstantsBuffer);
 }
 //----------------------------------------------------------------------------
-void RendererD3D11::UpdateObjectConstantsBuffer(void* pData)
+void RendererD3D11::UpdateObjectConstantsBuffer(void* pData, bool record)
 {
+	if (gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
+		return;
+	if (record)
+		mFrameProfiler.NumUpdateObjectConst += 1;
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	m_pImmediateContext->Map( m_pObjectConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource );
 	memcpy(mappedResource.pData, pData, sizeof(OBJECT_CONSTANTS));

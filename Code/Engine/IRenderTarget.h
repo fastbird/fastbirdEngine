@@ -13,6 +13,7 @@ namespace fastbird
 	class ILight;
 	class IMouse;
 	class IKeyboard;
+	class IRenderTargetListener;
 
 	class IRenderTarget : public ReferenceCounter
 	{
@@ -68,5 +69,8 @@ namespace fastbird
 
 		virtual void DrawOnEvent(bool set) = 0;
 		virtual void TriggerDrawEvent() = 0;
+
+		virtual void AddListener(IRenderTargetListener* listener) = 0;
+		virtual void RemoveListener(IRenderTargetListener* listener) = 0;
 	};
 }

@@ -87,7 +87,7 @@ WinBase::WinBase()
 , mGatheringException(false)
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
-, mHand(false), mHandFuncId(-1)
+, mHand(false), mHandFuncId(-1), mNoFocusByClick(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -1577,6 +1577,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			OnHandPropChanged();
 			return true;
 		}
+
+		case UIProperty::NO_FOCUS_BY_CLICK:
+		{
+			mNoFocusByClick = StringConverter::parseBool(val);
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning)
 		Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
@@ -2079,6 +2085,16 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		strcpy_s(val, bufsize, StringConverter::toString(mHand).c_str());
 		return true;
 
+	}
+
+	case UIProperty::NO_FOCUS_BY_CLICK:
+	{
+		if (notDefaultOnly){
+			if (mNoFocusByClick == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mNoFocusByClick).c_str());
+		return true;
 	}
 	}
 	val = "";

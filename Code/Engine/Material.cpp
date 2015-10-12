@@ -75,9 +75,20 @@ Material::Material(const Material& mat)
 	mInputLayout =			mat.mInputLayout;
 	
 	mRenderStates = mat.mRenderStates;
-
 	mShaders = mat.mShaders;
-	mTextures = mat.mTextures;
+
+	for (auto it : mat.mTextures){
+		if (it->GetType() == TEXTURE_TYPE_COLOR_RAMP){
+			SetColorRampTexture(mColorRampMap[it], it->GetShaderStage(), it->GetSlot());
+			auto colorIt = mColorRampMap.find(it);
+			mColorRampMap.erase(colorIt);			
+		}
+		else{
+			mTextures.push_back(it);
+		}
+		
+	}
+	
 	mTransparent = mat.mTransparent;
 	mGlow = mat.mGlow;
 	mNoShadowCast = mat.mNoShadowCast;

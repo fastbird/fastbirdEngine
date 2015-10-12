@@ -791,6 +791,9 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 	{
 		mKeyboardFocus = 0;
 	}
+	if (pWnd == mModalWindow){
+		mModalWindow = 0;
+	}
 	OnDeleteWinBase(pWnd);
 	auto hwndId = pWnd->GetHwndId();
 	assert(hwndId != -1);
@@ -867,6 +870,8 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
+	if (mLockFocus)
+		return;
 	if (mKeyboardFocus == ui)
 		return;
 	for (auto& reservedUI : mSetFocusReserved)
@@ -1240,7 +1245,7 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		if (mouse->IsLButtonClicked()){
 			if (mKeyboardFocus != focusWnd)
 			{
-				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+				if (mUIEditor || !focusWnd || (!focusWnd->GetNoMouseEventAlone() && !focusWnd->GetNoFocusByClick()))
 					SetFocusUI(focusWnd);
 			}
 			bool editorFocused = !gFBEnv->pEngine->IsMainWindowForground();
@@ -1646,13 +1651,15 @@ bool UIManager::OnFileChanged(const char* file)
 		}
 		else if (strcmp(extension, "lua") == 0)
 		{
-			int error = luaL_dofile(mL, file);
-			if (error)
-			{
-				char buf[1024];
-				sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
-				Error(DEFAULT_DEBUG_ARG, buf);
-				assert(0);
+			if (strstr(file, "save\\save") != 0){
+				int error = luaL_dofile(mL, file);
+				if (error)
+				{
+					char buf[1024];
+					sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
+					Error(DEFAULT_DEBUG_ARG, buf);
+					assert(0);
+				}
 			}
 		}
 		return true;

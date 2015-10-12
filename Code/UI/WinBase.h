@@ -142,6 +142,7 @@ namespace fastbird
 		bool mKeepUIRatio;
 		bool mUpdateAlphaTexture;
 		bool mHand;
+		bool mNoFocusByClick;
 		FunctionID mHandFuncId;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
@@ -422,7 +423,7 @@ namespace fastbird
 		virtual void RecreateBorders();
 
 		virtual bool GetUseScissor() const { return mUseScissor; }
-
+		virtual bool GetNoFocusByClick() const { return mNoFocusByClick; }
 	protected:
 		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();

@@ -84,9 +84,9 @@ public:
 
 	virtual bool GetCheckBox(const Vec2I& indexRowCol) const;
 
-	virtual void RemoveRow(const wchar_t* key);
-	virtual void RemoveRow(unsigned uniqueKey);
-	virtual void RemoveRowWithIndex(unsigned index);
+	virtual bool RemoveRow(const wchar_t* key);
+	virtual bool RemoveRow(unsigned uniqueKey);
+	virtual bool RemoveRowWithIndex(unsigned index);
 	
 	virtual std::string GetSelectedString();
 	virtual const SelectedRows& GetSelectedRows() const { return mSelectedIndices; }

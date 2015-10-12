@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -144,6 +144,7 @@
     <ClInclude Include="ClipboardData.h" />
     <ClInclude Include="Collision\GeomCollisions.h" />
     <ClInclude Include="Color.h" />
+    <ClInclude Include="dcel2.h" />
     <ClInclude Include="FBColShape.h" />
     <ClInclude Include="CommonLib.h" />
     <ClInclude Include="Config.h" />

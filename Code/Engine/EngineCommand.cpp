@@ -39,6 +39,12 @@ EngineCommand::EngineCommand()
 
 	r_noObjectConstants = gFBEnv->pScriptSystem->GetIntVariable("r_noObjectConstants", 0);
 	REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
+	
+	r_noMesh = gFBEnv->pScriptSystem->GetIntVariable("r_noMesh", 0);
+	REGISTER_CVAR(r_noMesh, r_noMesh, CVAR_CATEGORY_CLIENT, "do not render meshes");
+
+	r_noSky = gFBEnv->pScriptSystem->GetIntVariable("r_noSky", 0);
+	REGISTER_CVAR(r_noSky, r_noSky, CVAR_CATEGORY_CLIENT, "do not render sky");
 
 	r_noParticleDraw = gFBEnv->pScriptSystem->GetIntVariable("r_noParticleDraw", 0);
 	REGISTER_CVAR(r_noParticleDraw, r_noParticleDraw, CVAR_CATEGORY_CLIENT, "No particle Draw");
@@ -112,17 +118,17 @@ EngineCommand::EngineCommand()
 		"ShadowMap height");
 
 	r_ShadowNear = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowNear", 2.0f);
+		"r_ShadowNear", 0.0f);
 	REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera near.");
 
 	r_ShadowFar = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowFar", 300.0f);
+		"r_ShadowFar", 200.0f);
 	REGISTER_CVAR(r_ShadowFar, r_ShadowFar, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera far");
 
 	r_ShadowCamDist = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowCamDist", 200.f);
+		"r_ShadowCamDist", 100.f);
 	REGISTER_CVAR(r_ShadowCamDist, r_ShadowCamDist, CVAR_CATEGORY_CLIENT,
 		"Shadow camera far");
 

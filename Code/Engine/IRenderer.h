@@ -108,7 +108,7 @@ public:
 	virtual void SetCamera(ICamera* pCamera) = 0;
 	virtual ICamera* GetCamera() const = 0; // this is for current carmera.
 	virtual ICamera* GetMainCamera() const = 0;
-	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
+	virtual void UpdateObjectConstantsBuffer(void* pData, bool record = false) = 0;
 	virtual void UpdatePointLightConstantsBuffer(void* pData) = 0;
 	virtual void* MapMaterialParameterBuffer() = 0;
 	virtual void UnmapMaterialParameterBuffer() = 0;
@@ -223,6 +223,7 @@ public:
 		const Color& color, float size = 24) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color, float size = 24) = 0;
+	virtual void ClearDurationTexts() = 0;
 
 	// no depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 

@@ -117,10 +117,11 @@ Engine::~Engine()
 	mMeshGroups.clear();
 	mRenderer = 0;
 	//mCameras.clear();
+	mScriptSystem = 0;
 	mConsole = 0;
 	FB_SAFE_DEL(gFBEnv->pTimer);
 	FB_SAFE_DEL(mINI);
-	mScriptSystem = 0;
+	
 	mMouse = 0;
 	mKeyboard = 0;
 	gFBEnv->pEngine=0;	
