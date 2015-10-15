@@ -55,6 +55,8 @@ public:
 	int r_numPointLights;
 	int r_numParticleEmitters;
 	int r_debugDraw;
+	int r_gameId;
+	Vec2I r_resolution;
 	
 
 private:

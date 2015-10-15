@@ -15,11 +15,6 @@ const unsigned GeometryRenderer::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 GeometryRenderer::GeometryRenderer()
 {
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
-	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
-		(float)size.x,
-		(float)size.y,
-		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
 	mObjectConstants_WorldLine.gWorld.MakeIdentity();
@@ -64,6 +59,14 @@ GeometryRenderer::~GeometryRenderer()
 
 	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
+}
+
+//----------------------------------------------------------------------------
+void GeometryRenderer::SetRenderTargetSize(const Vec2I& size){
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)size.x,
+		(float)size.y,
+		0.f, 1.0f);
 }
 
 //----------------------------------------------------------------------------

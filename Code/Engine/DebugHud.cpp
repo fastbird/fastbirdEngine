@@ -15,11 +15,6 @@ const unsigned DebugHud::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 DebugHud::DebugHud()
 {
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
-	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
-		(float)size.x,
-		(float)size.y,
-		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
 	mObjectConstants_WorldLine.gWorld.MakeIdentity();
@@ -61,6 +56,13 @@ DebugHud::~DebugHud()
 
 	gFBEnv->pEngine->ReleaseMeshObject(mSphereMesh);
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
+}
+
+void DebugHud::SetRenderTargetSize(const Vec2I& size){
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)size.x,
+		(float)size.y,
+		0.f, 1.0f);
 }
 
 //----------------------------------------------------------------------------

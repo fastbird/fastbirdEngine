@@ -19,6 +19,7 @@ namespace fastbird
 		GeometryRenderer();
 		virtual ~GeometryRenderer();
 
+		void SetRenderTargetSize(const Vec2I& size);
 		struct Line
 		{
 			Vec3 mStart;

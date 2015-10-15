@@ -151,6 +151,12 @@ EngineCommand::EngineCommand()
 
 	r_debugDraw = gFBEnv->pScriptSystem->GetIntVariable("r_debugDraw", 1);
 	REGISTER_CVAR(r_debugDraw, r_debugDraw, CVAR_CATEGORY_CLIENT, "Debug draw");
+	
+	r_gameId = gFBEnv->pScriptSystem->GetIntVariable("r_gameId", 0);
+	REGISTER_CVAR(r_gameId, r_gameId, CVAR_CATEGORY_CLIENT, "Draw game id");
+
+	r_resolution = gFBEnv->pScriptSystem->GetVec2IVariable("r_resolution", Vec2I(1600, 900));
+	REGISTER_CVAR(r_resolution, r_resolution, CVAR_CATEGORY_CLIENT, "Resolution");
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);

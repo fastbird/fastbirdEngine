@@ -488,5 +488,6 @@ void SkySphere::SetAlpha(float alpha)
 	mAlpha = param.w = alpha;
 	mMaterial->SetMaterialParameters(3, param);
 	mMaterialParamDest[3].w = alpha;
+	mMaterialParamDest[2].w = alpha;
 }
 }

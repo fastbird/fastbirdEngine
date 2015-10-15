@@ -30,6 +30,7 @@ namespace fastbird
 			const std::string& def);
 		virtual int GetIntVariable(const char* name, int def = 0);
 		virtual float GetRealVariable(const char* name, float def = 0);		
+		virtual Vec2I GetVec2IVariable(const char* name, Vec2I def = Vec2I::ZERO);
 
 		virtual void LockLua();
 		virtual void UnlockLua();

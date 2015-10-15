@@ -9,10 +9,11 @@ class ImageBox : public Container
 {
 public:
 	ImageBox();
-	~ImageBox();
-
+	~ImageBox();	
 	virtual void OnCreated();
+	
 	// IWinBase
+	virtual void OnResolutionChanged(HWND_ID hwndId);
 	virtual ComponentType::Enum GetType() const { return ComponentType::ImageBox; }
 	virtual void GatherVisit(std::vector<IUIObject*>& v);
 	virtual void OnSizeChanged();

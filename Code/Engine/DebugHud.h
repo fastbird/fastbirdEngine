@@ -19,7 +19,7 @@ class DebugHud : public Object, public ISceneListener
 public:
 	DebugHud();
 	virtual ~DebugHud();
-
+	void SetRenderTargetSize(const Vec2I& size);
 	struct TextData
 	{
 		TextData(const Vec2I& pos, WCHAR* text, const Color& color, float size, float secs)
@@ -118,6 +118,7 @@ public:
 	void DrawSphere(const Vec3& pos, float radius, const Color& color);
 	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha);
 	void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
+
 
 
 private:

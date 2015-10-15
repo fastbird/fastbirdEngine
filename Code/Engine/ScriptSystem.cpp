@@ -176,6 +176,17 @@ float ScriptSystem::GetRealVariable(const char* name, float def)
 	return ret;
 }
 
+Vec2I ScriptSystem::GetVec2IVariable(const char* name, Vec2I def){
+	Vec2I ret = def;
+	if (name == 0 || strlen(name) == 0)
+		return ret;
+
+	fastbird::LUA_STACK_WATCHER watcher(mLuaState, "float ScriptSystem::GetVec2IVariable(const char* name, float def)");
+	LuaObject obj(mLuaState, name);
+	ret = obj.GetVec2I(def);
+	return ret;	
+}
+
 void ScriptSystem::ExportsDefaultFunctions()
 {
 	LUA_SETCFUNCTION(mLuaState, _FBPrint);

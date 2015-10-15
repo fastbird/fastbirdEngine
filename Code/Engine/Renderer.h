@@ -221,6 +221,7 @@ public:
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;
+	virtual void ChangeResolution(HWND_ID id, const Vec2I& resol) = 0;
 
 	void CleanDepthWriteResources();
 	void CleanGlowResources();
@@ -416,6 +417,7 @@ public:
 	IShader* GetStarGlareShader();
 	IShader* GetMergeTexturePS();
 	IShader* GetToneMappingPS();
+	OBJECT_CONSTANTS mObjConst;
 
 	void Render(float dt);
 	/*void SetGodRayRenderTarget();

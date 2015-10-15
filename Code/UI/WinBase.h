@@ -14,7 +14,6 @@ namespace fastbird
 		static const int WinBase::LEFT_GAP;
 		static const int WinBase::BOTTOM_GAP;
 		static const float NotDefined;
-		static Vec2I OSWindowPos;
 		static bool sSuppressPropertyWarning;
 
 		static Vec2I sLastPos;
@@ -154,6 +153,7 @@ namespace fastbird
 		static void SuppressPropertyWarning(bool warning);
 
 		virtual void SetHwndId(HWND_ID hwndId);
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 		virtual HWND_ID GetHwndId() const;
 		virtual void OnCreated(){}
 
@@ -248,6 +248,7 @@ namespace fastbird
 		//virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
+		virtual const Vec2I& GetInitialOffset() const { return mAbsOffset; }
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
 		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }

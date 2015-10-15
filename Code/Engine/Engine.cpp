@@ -153,6 +153,7 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 	rect.right = width;
 	rect.bottom = height;
 	AdjustWindowRect(&rect, style, false);
+	mWindowStyle = style;
 
 	int eWidth = rect.right - rect.left;
 	int eHeight = rect.bottom - rect.top;
@@ -212,7 +213,7 @@ const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
 	{
 		return it->second;
 	}
-	static Vec2I def(1000, 1000);
+	static Vec2I def(1600, 900);
 	return def;
 }
 
@@ -1463,5 +1464,20 @@ IVideoPlayer* Engine::CreateVideoPlayer(VideoPlayerType::Enum type){
 }
 void Engine::ReleaseVideoPlayer(IVideoPlayer* player){
 	FB_DELETE(player);
+}
+
+void Engine::ChangeSize(HWND_ID id, const Vec2I& size){
+	auto handle = GetWindowHandle(id);
+	mRequestedWndSize[handle] = size;
+
+	if (id == 1){
+		RECT rect;
+		rect.left = 0;
+		rect.top = 0;
+		rect.right = size.x;
+		rect.bottom = size.y;
+		AdjustWindowRect(&rect, mWindowStyle, false);
+		SetWindowPos(GetMainWndHandle(), 0, 0, 0, rect.right - rect.left, rect.bottom - rect.top, 0);
+	}	
 }
 } // namespace fastbird

@@ -27,6 +27,7 @@ namespace fastbird
 			Container* mWndContent;
 			Container** mOriginal;
 		};
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);

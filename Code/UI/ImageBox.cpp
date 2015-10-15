@@ -39,6 +39,11 @@ void ImageBox::OnCreated()
 	SetProperty(UIProperty::TEXTUREATLAS, "data/textures/gameui.xml");
 }
 
+void ImageBox::OnResolutionChanged(HWND_ID hwndId){
+	__super::OnResolutionChanged(hwndId);
+	OnAnySizeChanged();
+}
+
 void ImageBox::CalcUV(const Vec2I& textureSize)
 {
 	if (mImageFixedSize)

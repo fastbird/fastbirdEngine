@@ -141,6 +141,7 @@ namespace fastbird
 		Vec2 GetVec2(const Vec2& def = Vec2(0, 0)) const;
 		Vec2I GetVec2I(const Vec2I& def = Vec2I(0, 0)) const;
 		Quat GetQuat(const Quat& def = Quat())const;
+		Transformation GetTransformation(const Transformation& def = Transformation()) const;
 
 		std::string GetString(bool& success) const;
 		float GetFloat(bool& success) const;

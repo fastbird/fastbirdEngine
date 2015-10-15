@@ -43,6 +43,13 @@ Container::~Container()
 	}
 }
 
+void Container::OnResolutionChanged(HWND_ID hwndId){
+	__super::OnResolutionChanged(hwndId);
+	for (auto it : mChildren){
+		it->OnResolutionChanged(hwndId);
+	}
+}
+
 IWinBase* Container::AddChild(ComponentType::Enum type)
 {
 	mChildrenChanged = true; // only detecting addition. not deletion.
@@ -1146,19 +1153,21 @@ void Container::TabPressed()
 void Container::TransferChildrenTo(Container* destContainer){
 	COMPONENTS remained;
 	for (auto child : mChildren){
+		bool transferred = false;
 		if (child != destContainer && child != mWndContentUI){
 			auto found = mDoNotTransfer.find(child);
 			if (found == mDoNotTransfer.end()){
 				destContainer->AddChild(child);
-			}
-			else{
-				remained.push_back(child);
-			}
+				transferred = true;
+			}			
+		}
+		if (!transferred){
+			remained.push_back(child);
 		}
 	}
 	mChildren = remained;
-	if (mWndContentUI == destContainer)
-		mChildren.push_back(destContainer);
+	/*if (mWndContentUI == destContainer)
+		mChildren.push_back(destContainer);*/
 	mScrollerV = 0;
 	SetChildrenPosSizeChanged();
 }

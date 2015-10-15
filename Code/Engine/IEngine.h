@@ -193,6 +193,8 @@ namespace fastbird
 		
 		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type) = 0;
 		virtual void ReleaseVideoPlayer(IVideoPlayer* player) = 0;
+
+		virtual void ChangeSize(HWND_ID id, const Vec2I& size) = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

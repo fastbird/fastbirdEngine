@@ -50,6 +50,7 @@ namespace fastbird
 		std::vector<ICVarListener*> mCVarListeners;
 
 		StdOutRedirect* mStdOutRedirect;
+		Vec2I mRTSize;
 
 	public:
 		Console();
@@ -63,6 +64,7 @@ namespace fastbird
 		//-------------------------------------------------------------------------
 		// IConsole
 		virtual bool Init();
+		virtual void SetRenderTargetSize(const Vec2I& size);
 		virtual void RegisterCommand(ConsoleCommand* pCom);
 		virtual void UnregisterCommand(ConsoleCommand* pCom);
 		virtual void RegisterVariable(CVar* cvar);

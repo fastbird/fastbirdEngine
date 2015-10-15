@@ -11,7 +11,7 @@ namespace fastbird
 			Invalidate();
 		}
 
-		bool IsValid()
+		bool IsValid() const
 		{
 			return mMax >= mMin;
 		}

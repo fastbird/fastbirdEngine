@@ -105,7 +105,8 @@ namespace fastbird
 	//----------------------------------------------------------------------------
 	void MeshObject::Render()
 	{
-		if (gFBEnv->pConsole->GetEngineCommand()->r_noMesh)
+		auto ec = gFBEnv->pConsole->GetEngineCommand();
+		if (ec->r_noMesh)
 			return;
 		if (mObjFlag & IObject::OF_HIDE)
 			return;
@@ -301,6 +302,12 @@ namespace fastbird
 				}
 				gFBEnv->mSilouetteRendered = true;
 				rt->BindTargetOnly(true);
+			}
+			// debug
+			if (ec->r_gameId && mGameId != -1){
+				char buf[255];
+				sprintf_s(buf, "%u", mGameId);
+				renderer->Draw3DText(mTransformation.GetTranslation(), buf, Color::White);
 			}
 		}
 	}

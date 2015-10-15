@@ -101,6 +101,7 @@ namespace fastbird
 		virtual RenderPipeline& GetRenderPipeline() const;
 
 		virtual void SetScene(IScene* scene);
+		virtual void ReplaceCamera(ICamera* cam);
 		virtual IScene* GetScene() const;
 		virtual IScene* GetOriginalScene() const;
 		Scene* GetSceneInternal() const;

@@ -956,6 +956,19 @@ Quat LuaObject::GetQuat(const Quat& def) const
 	return ret;
 }
 
+Transformation LuaObject::GetTransformation(const Transformation& def) const{
+	if (!IsTable())
+	{
+		return def;
+	}
+	LUA_STACK_WATCHER watcher(mL, "Transformation LuaObject::GetTransformation(const Transformation& def) const");
+	PushToStack();
+	Transformation ret = luaU_check<Transformation>(mL, -1);
+	lua_pop(mL, 1);	
+
+	return ret;
+}
+
 Quat LuaObject::GetQuat(bool& success)const
 {
 	if (!IsTable())

@@ -17,6 +17,7 @@
 #include <Engine/InputLayoutD3D11.h>
 #include <Engine/RenderStateD3D11.h>
 #include <Engine/RenderTargetD3D11.h>
+#include <Engine/IRenderListener.h>
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/Hammersley.h>
 #include <CommonLib/tinydir.h>
@@ -474,13 +475,14 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 
 //----------------------------------------------------------------------------
 void RendererD3D11::ReleaseSwapChain(HWND_ID id)
-{
+{	
 	auto it = mSwapChainRenderTargets.Find(id);
 	if (it == mSwapChainRenderTargets.end())
 	{
 		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the swap chain with the id %u", id));
 		return;
 	}
+	Log(FormatString("Releasing swap chain %u.", id));
 	mSwapChainRenderTargets.erase(it);
 	auto itSwapChain = mSwapChains.Find(id);
 	if (itSwapChain != mSwapChains.end())
@@ -488,7 +490,25 @@ void RendererD3D11::ReleaseSwapChain(HWND_ID id)
 		SAFE_RELEASE(itSwapChain->second);
 		mSwapChains.erase(itSwapChain);
 	}
-	Log(FormatString("Swap chain %u is released.", id));
+}
+
+//----------------------------------------------------------------------------
+void RendererD3D11::ChangeResolution(HWND_ID id, const Vec2I& resol){
+	gFBEnv->pEngine->ChangeSize(id, resol);	
+	SmartPtr<IScene> scene = (IScene*)GetMainScene();
+	SmartPtr<ICamera> camera = (ICamera*)GetMainCamera();
+	ReleaseSwapChain(id);
+	gFBEnv->pEngine->InitSwapChain(id, resol.x, resol.y);	
+	auto rt = GetMainRenderTarget();
+	rt->SetScene(scene.get());
+	rt->ReplaceCamera(camera);
+	camera->SetWidth((float)resol.x);
+	camera->SetHeight((float)resol.y);
+	rt->Bind();
+	for (auto l : mRenderListeners)
+	{
+		l->OnResolutionChanged(id);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -2426,15 +2446,6 @@ void RendererD3D11::SetSamplerState(ISamplerState* pSamplerState, BINDING_SHADER
 
 void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs/*= true*/)
 {
-	const auto& rtSize = mCurRenderTarget->GetSize();
-	static OBJECT_CONSTANTS constants =
-	{
-		Mat44(2.f / rtSize.x, 0, 0, -1.f,
-			0.f, -2.f / rtSize.y, 0, 1.f,
-			0, 0, 1.f, 0.f,
-			0, 0, 0, 1.f),
-		Mat44(),
-	};
 
 	// vertex buffer
 	MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Map(
@@ -2452,7 +2463,7 @@ void RendererD3D11::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 	}
 
 	if (updateRs){
-		UpdateObjectConstantsBuffer(&constants);
+		UpdateObjectConstantsBuffer(&mObjConst);
 		// set primitive topology
 		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		// set material
@@ -2487,15 +2498,6 @@ void RendererD3D11::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, con
 void RendererD3D11::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 	const Color& color, ITexture* texture, IMaterial* materialOverride)
 {
-	const auto& rtSize = mCurRenderTarget->GetSize();
-	static OBJECT_CONSTANTS constants =
-	{
-		Mat44(2.f / rtSize.x, 0, 0, -1.f,
-		0.f, -2.f / rtSize.y, 0, 1.f,
-		0, 0, 1.f, 0.f,
-		0, 0, 0, 1.f),
-		Mat44(),
-	};
 
 	// vertex buffer
 	MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Map(
@@ -2512,8 +2514,25 @@ void RendererD3D11::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, c
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Unmap();
 	}
 
+	
+	if (mCurRenderTarget == GetMainRenderTarget()){
+		UpdateObjectConstantsBuffer(&mObjConst);
+	}
+	else{
+		const auto& rtSize = mCurRenderTarget->GetSize();
+		OBJECT_CONSTANTS constants =
+		{
+			Mat44(2.f / rtSize.x, 0, 0, -1.f,
+			0.f, -2.f / rtSize.y, 0, 1.f,
+			0, 0, 1.f, 0.f,
+			0, 0, 0, 1.f),
+			Mat44::IDENTITY,
+			Mat44::IDENTITY,
+		};
+		UpdateObjectConstantsBuffer(&constants);
+	}
 
-	UpdateObjectConstantsBuffer(&constants);
+	
 
 	// set primitive topology
 	SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

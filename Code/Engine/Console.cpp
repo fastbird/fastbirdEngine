@@ -32,6 +32,7 @@ Console::Console()
 	, mStdOutRedirect(0)
 	, mHistoryIndex(0)
 	, mHistoryIndexBackup(0)
+	, mRTSize(1600, 900)
 {
 	assert(gFBEnv->pConsole == 0);
 	gFBEnv->pConsole = this;
@@ -110,6 +111,10 @@ bool Console::Init()
 	mInputPosition = Vec2I(20, mHeight - mLineGap);
 
 	return true;
+}
+
+void Console::SetRenderTargetSize(const Vec2I& size){
+	mRTSize = size;
 }
 
 //--------------------------------------------------------------------------
@@ -197,7 +202,7 @@ void Console::Log(const char* szFmt, ...)
 	{
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		int textWidth = (int)pFont->GetTextWidth((char*)strw.c_str());
-		const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+		const auto& size = mRTSize;
 		int consoleWidth = size.x;
 		if (textWidth > consoleWidth)
 		{
@@ -290,7 +295,7 @@ void Console::Render()
 	
 
 	// Draw Background
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+	const auto& size = mRTSize;
 	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
 		Color::DarkGray);
 
@@ -659,6 +664,19 @@ void Console::ProcessCommand(const char* command)
 				{
 					c->SetData(words[1]);
 					OnCVarChanged(c);
+				}
+				else if (numWords == 3){
+					switch (c->mType){
+					case CVAR_TYPE_VEC2I:
+						c->SetData(FormatString("%s, %s", words[1].c_str(), words[2].c_str()));
+						OnCVarChanged(c);
+						break;
+
+					default:
+						assert(0);
+
+					}
+
 				}
 				this->Log("%s %s", c->mName.c_str(), c->GetData().c_str());
 				processed = true;

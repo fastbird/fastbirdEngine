@@ -25,7 +25,6 @@ const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
-Vec2I WinBase::OSWindowPos;
 
 bool WinBase::sSuppressPropertyWarning = false;
 
@@ -141,6 +140,36 @@ void WinBase::SetHwndId(HWND_ID hwndId)
 		{
 			win->SetHwndId(hwndId);
 		}
+	}
+}
+
+void WinBase::OnResolutionChanged(HWND_ID hwndId){
+	if (mUIObject && !mRender3D)
+	{
+		mUIObject->SetRenderTargetSize(
+			gFBEnv->pEngine->GetRequestedWndSize(hwndId)
+			);
+		for (auto it : mBorders){
+			it->OnResolutionChanged(hwndId);
+		}
+		if (!mParent){
+			if (!mUseAbsoluteXPos){
+				ChangeNPosX(mNPos.x);
+			}
+			if (!mUseAbsoluteYPos){
+				ChangeNPosY(mNPos.y);
+			}
+
+			if (!mUseAbsoluteXSize){
+				SetNSizeX(mNSize.x);
+				OnSizeChanged();
+			}
+			if (!mUseAbsoluteYSize){
+				SetNSizeX(mNSize.y);
+				OnSizeChanged();
+			}
+		}
+		RefreshScissorRects();
 	}
 }
 

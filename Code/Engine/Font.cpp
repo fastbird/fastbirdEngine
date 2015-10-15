@@ -111,6 +111,9 @@ Font::~Font()
 //----------------------------------------------------------------------------
 int Font::Init(const char *fontFile)
 {
+
+	if (mInitialized)
+		return 0;
 	Profiler profiler("'Font Init'");
 	// Load the font
 	FILE *f = 0;

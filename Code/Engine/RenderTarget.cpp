@@ -76,6 +76,10 @@ void RenderTarget::SetScene(IScene* scene)
 	mScene = (Scene*)scene;
 }
 
+void RenderTarget::ReplaceCamera(ICamera* cam){
+	mCamera = cam;
+}
+
 void RenderTarget::SetSceneOverride(IScene* scene)
 {
 	if (mLockSceneOverride)

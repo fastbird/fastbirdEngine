@@ -129,6 +129,7 @@ namespace fastbird
 		virtual void BeforeUIRendering(HWND_ID hwndId);
 		virtual void BeforeDebugHudRendered(HWND_ID hwndId);
 		virtual void AfterDebugHudRendered(HWND_ID hwndId);
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);

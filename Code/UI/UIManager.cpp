@@ -252,6 +252,16 @@ void UIManager::AfterDebugHudRendered(HWND_ID hwndId)
 
 }
 
+void UIManager::OnResolutionChanged(HWND_ID hwndId){
+	auto it = mWindows.Find(hwndId);
+	if (it != mWindows.end()){
+		auto& windows = it->second;
+		for (auto& it : windows){
+			it->OnResolutionChanged(hwndId);
+		}
+	}
+}
+
 void UIManager::GatherRenderList()
 {
 	for (auto& it : mNeedToRegisterUIObject){
@@ -1651,7 +1661,7 @@ bool UIManager::OnFileChanged(const char* file)
 		}
 		else if (strcmp(extension, "lua") == 0)
 		{
-			if (strstr(file, "save\\save") != 0){
+			if (strstr(file, "save\\save") == 0){
 				int error = luaL_dofile(mL, file);
 				if (error)
 				{

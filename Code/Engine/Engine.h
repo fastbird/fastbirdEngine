@@ -27,6 +27,7 @@ namespace fastbird
 		VectorMap<HWND, Vec2I> mRequestedWndSize;
 		HWND_ID FindEmptyHwndId() const;
 
+		int mWindowStyle;
 		SmartPtr<IMouse> mMouse;
 		SmartPtr<IKeyboard> mKeyboard;
 		typedef std::vector<IInputListener*> INPUT_LISTENER_VECTOR;
@@ -199,6 +200,8 @@ namespace fastbird
 
 		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type);
 		virtual void ReleaseVideoPlayer(IVideoPlayer* player);
+
+		virtual void ChangeSize(HWND_ID id, const Vec2I& size);
 	};
 };
 

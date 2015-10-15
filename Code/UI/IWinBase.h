@@ -23,6 +23,7 @@ namespace fastbird
 		virtual ~IWinBase() {}
 
 		virtual void SetHwndId(HWND_ID hwndId) = 0;
+		virtual void OnResolutionChanged(HWND_ID hwndId) = 0;
 		virtual HWND_ID GetHwndId() const = 0;
 		virtual void OnCreated() = 0;
 		virtual ComponentType::Enum GetType() const = 0;
@@ -87,6 +88,7 @@ namespace fastbird
 		//virtual const Vec2& GetWNSize() const = 0;
 		virtual const Vec2& GetNSize() const = 0;
 		virtual const Vec2I& GetSize() const = 0;
+		virtual const Vec2I& GetInitialOffset() const = 0;
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;

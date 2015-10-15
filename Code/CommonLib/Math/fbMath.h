@@ -32,7 +32,7 @@ namespace fastbird
 	inline bool IsInf(T value)
 	{
 		return std::numeric_limits<T>::has_infinity &&
-			value == std::numeric_limits<T>::infinity();
+			(value == std::numeric_limits<T>::infinity() || value == -std::numeric_limits<T>::infinity());
 	}
 
 	inline float Degree(float radian)
