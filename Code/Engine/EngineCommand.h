@@ -57,6 +57,7 @@ public:
 	int r_debugDraw;
 	int r_gameId;
 	Vec2I r_resolution;
+	int r_fullscreen; // 0 : window, 1 : full-screen, 2 : fake full-screen
 	
 
 private:

@@ -40,6 +40,7 @@ IRenderer* IRenderer::CreateD3D11Instance()
 //----------------------------------------------------------------------------
 RendererD3D11::RendererD3D11()
 : mCurrentDSView(0)
+, mStandBy(false)
 {
 	m_pDevice = 0;
 	m_pFactory = 0;
@@ -178,6 +179,10 @@ bool RendererD3D11::Init(int threadPool)
 		pAdapter->GetDesc1(&adapterDesc);
 		++i; 
 	}
+	if (vAdapters.empty()){
+		Error("No graphics adapter found!");
+		return false;
+	}
 
 	UINT createDeviceFlags = 0;
 #ifdef _DEBUG
@@ -216,6 +221,10 @@ bool RendererD3D11::Init(int threadPool)
 		gFBEnv->pEngine->Log(FB_DEFAULT_DEBUG_ARG, "D3D11CreateDevice() failed!");
 		return false;
 	}
+
+
+	// Get OuputInformation
+	GetOutputInformationFor(vAdapters[0]);
 
 	//check multithreaded is supported by the hardware
 	D3D11_FEATURE_DATA_THREADING dataThreading;
@@ -406,9 +415,43 @@ bool RendererD3D11::Init(int threadPool)
 	return true;
 }
 
+void RendererD3D11::GetOutputInformationFor(IDXGIAdapter1* adapter){
+	UINT i = 0;
+	IDXGIOutput* pOutput;
+	std::vector<IDXGIOutput*> vOutputs;
+	while (adapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND)
+	{
+		vOutputs.push_back(pOutput);
+		++i;
+	}
+	mOutputInfos.clear();
+	for (auto output : vOutputs){		
+		DXGI_OUTPUT_DESC desc;
+		auto hr = output->GetDesc(&desc);
+		if (SUCCEEDED(hr)){
+			mOutputInfos.push_back(OutputInfo());
+			auto& info = mOutputInfos.back();
+			wcscpy(info.mDeviceName, desc.DeviceName);
+			info.mRect = desc.DesktopCoordinates;
+		}
+		SAFE_RELEASE(output);
+	}
+}
+
 //----------------------------------------------------------------------------
 bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 {
+	Vec2I resol(width, height);
+	if (width == 0 || height == 0){
+		// check the config
+		resol = gFBEnv->pConsole->GetEngineCommand()->r_resolution;
+		width = resol.x;
+		height = resol.y;
+	}
+	else{
+		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resol;
+	}
+
 	HWND hwnd = gFBEnv->pEngine->GetWindowHandle(id);
 	if (!hwnd)
 	{
@@ -422,10 +465,26 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
+	sd.Flags = 0;
+	/*
+	DXGI_SWAP_EFFECT_DISCARD
+	Use this flag to indicate that the contents of the back buffer are 
+	discarded after calling IDXGISwapChain::Present. This flag is valid for 
+	a swap chain with more than one back buffer, although, an application only 
+	has read and write access to buffer 0. Use this flag to enable the display 
+	driver to select the most efficient presentation technique for the swap chain.
+	*/
+	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.OutputWindow = hwnd;
 	sd.SampleDesc = mMultiSampleDesc;
-	sd.Windowed = true;
+	auto r_fullscreen = gFBEnv->pConsole->GetEngineCommand()->r_fullscreen;
+	if (r_fullscreen == 1){
+		sd.Windowed = false;
+	}
+	else{
+		sd.Windowed = true;
+	}
 
 	assert(m_pDevice);
 	IDXGISwapChain* pSwapChain;
@@ -436,36 +495,29 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 		assert(0);
 		return false;
 	}
-	// RenderTargetView
-	ID3D11Texture2D* pBackBuffer = NULL;
-	hr = pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (void**)&pBackBuffer);
-	if (FAILED(hr))
-	{
-		Error(FB_DEFAULT_DEBUG_ARG, "Failed to get backbuffer!");
-		assert(0);
-		SAFE_RELEASE(pSwapChain);
-		return false;
-	}
-	ID3D11RenderTargetView* pRenderTargetView = NULL;
-	hr = m_pDevice->CreateRenderTargetView( pBackBuffer, NULL, &pRenderTargetView);
-	if (FAILED(hr))
-	{
-		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create a render target view!");
-		assert(0);
-		SAFE_RELEASE(pSwapChain);
-		return false;
-	}
-	TextureD3D11* pColorTexture = TextureD3D11::CreateInstance();
-	pColorTexture->SetHardwareTexture(pBackBuffer);
-	pColorTexture->AddRenderTargetView(pRenderTargetView);
-	pColorTexture->SetSize(Vec2I(width, height));
-
-	RenderTarget* pRenderTarget = FB_NEW(RenderTargetD3D11);
-	pRenderTarget->GetRenderPipeline().SetMaximum();
-	pRenderTarget->SetColorTexture(pColorTexture);
-	pRenderTarget->SetDepthStencilDesc(width, height, mDepthStencilFormat, false, false);
-
 	mSwapChains[id] = pSwapChain;
+
+	if (r_fullscreen == 2){
+		// faked fullscreen
+		IDXGIOutput* output;
+		if (SUCCEEDED(pSwapChain->GetContainingOutput(&output))){
+			DXGI_OUTPUT_DESC desc;
+			if (SUCCEEDED(output->GetDesc(&desc))){
+				gFBEnv->pEngine->ChangeStyle(id, 0);
+				gFBEnv->pEngine->ChangeRect(id, desc.DesktopCoordinates);
+			}
+			SAFE_RELEASE(output);
+		}
+		return true;		
+	}
+
+	auto pRenderTarget = CreateRenderTargetFor(pSwapChain, Vec2I(width, height));
+	if (!pRenderTarget){
+		SAFE_RELEASE(pSwapChain);
+		assert(0);
+		return false;
+	}
+	
 	mSwapChainRenderTargets[id] = pRenderTarget;
 
 	OnSwapchainCreated(id);
@@ -479,32 +531,175 @@ void RendererD3D11::ReleaseSwapChain(HWND_ID id)
 	auto it = mSwapChainRenderTargets.Find(id);
 	if (it == mSwapChainRenderTargets.end())
 	{
-		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the swap chain with the id %u", id));
-		return;
+		Log(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the swap chain render target with the id %u", id));		
 	}
-	Log(FormatString("Releasing swap chain %u.", id));
-	mSwapChainRenderTargets.erase(it);
+	else{
+		Log(FormatString("Releasing swap chain %u.", id));
+		mSwapChainRenderTargets.erase(it);
+	}
+
 	auto itSwapChain = mSwapChains.Find(id);
 	if (itSwapChain != mSwapChains.end())
 	{
+		if (id == 1 && gFBEnv->pConsole->GetEngineCommand()->r_fullscreen == 1){
+			/*
+			Destroying a Swap Chain
+			You may not release a swap chain in full-screen mode because doing so 
+			may create thread contention (which will cause DXGI to raise a non-continuable 
+			exception). Before releasing a swap chain, first switch to windowed mode 
+			(using IDXGISwapChain::SetFullscreenState( FALSE, NULL )) and then call IUnknown::Release.
+			*/
+			itSwapChain->second->SetFullscreenState(FALSE, NULL);
+		}
 		SAFE_RELEASE(itSwapChain->second);
 		mSwapChains.erase(itSwapChain);
 	}
 }
 
-//----------------------------------------------------------------------------
+bool RendererD3D11::ResizeSwapChain(HWND_ID hwndId, const Vec2I& resol){
+	m_pImmediateContext->OMSetRenderTargets(0, 0, 0);	
+	mCurrentRTViews.clear();
+	mCurrentDSView = 0;
+	// release render target
+	auto it = mSwapChainRenderTargets.Find(hwndId);
+	if (it == mSwapChainRenderTargets.end())
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Cannot find the swap chain render target with id %u", hwndId));		
+	}
+	else
+	{
+		Log(FormatString("Releasing render target %u.", hwndId));
+
+		if (it->second->NumRefs() != 1){
+			Error("SwapChain render targets ref count error!");
+		}
+		mSwapChainRenderTargets.erase(it);
+	}
+	
+	// resize swap chain
+	auto itSwapChain = mSwapChains.Find(hwndId);
+	if (itSwapChain != mSwapChains.end()) {
+		auto hr = itSwapChain->second->ResizeBuffers(1, resol.x, resol.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+		if (!SUCCEEDED(hr)){
+			Error("Resizing swapchain to %dx%d is failed(0x%x", resol.x, resol.y, hr);
+			const auto& originalSize = gFBEnv->pEngine->GetRequestedWndSize(hwndId);			
+			auto pRenderTarget = CreateRenderTargetFor(itSwapChain->second, originalSize);
+			if (!pRenderTarget){
+				return false;
+			}
+			mSwapChainRenderTargets[hwndId] = pRenderTarget;			
+			return false;
+		}
+		auto pRenderTarget = CreateRenderTargetFor(itSwapChain->second, resol);
+		if (!pRenderTarget){
+			Error("Failed to create Render target for swap chain %d", hwndId);
+			return false;
+		}
+		mSwapChainRenderTargets[hwndId] = pRenderTarget;
+		OnSwapchainCreated(hwndId);
+		return true;
+	}
+	else{
+		Error("No swap chain found for %d", hwndId);
+		assert(0);
+	}
+	return false;
+}
+
+RenderTarget* RendererD3D11::CreateRenderTargetFor(IDXGISwapChain* pSwapChain, const Vec2I& size){
+	// RenderTargetView
+	ID3D11Texture2D* pBackBuffer = NULL;
+	auto hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer);
+	if (FAILED(hr))
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "Failed to get backbuffer!");
+		assert(0);
+		return 0;
+	}
+	ID3D11RenderTargetView* pRenderTargetView = NULL;
+	hr = m_pDevice->CreateRenderTargetView(pBackBuffer, NULL, &pRenderTargetView);
+	if (FAILED(hr))
+	{
+		Error(FB_DEFAULT_DEBUG_ARG, "Failed to create a render target view!");
+		assert(0);		
+		return 0;
+	}
+	TextureD3D11* pColorTexture = TextureD3D11::CreateInstance();
+	pColorTexture->SetHardwareTexture(pBackBuffer);
+	pColorTexture->AddRenderTargetView(pRenderTargetView);
+	pColorTexture->SetSize(size);
+
+	RenderTarget* pRenderTarget = FB_NEW(RenderTargetD3D11);
+	pRenderTarget->GetRenderPipeline().SetMaximum();
+	pRenderTarget->SetColorTexture(pColorTexture);
+	pRenderTarget->SetDepthStencilDesc(size.x, size.y, mDepthStencilFormat, false, false);
+	return pRenderTarget;
+}
+
+// for full-screen
 void RendererD3D11::ChangeResolution(HWND_ID id, const Vec2I& resol){
 	gFBEnv->pEngine->ChangeSize(id, resol);	
+	OnSizeChanged(id, resol);
+}
+
+void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& resol){
+	auto swIt = mSwapChains.Find(id);
+	if (swIt == mSwapChains.end())
+		return;
+
+	const auto& originalResol = gFBEnv->pEngine->GetRequestedWndSize(id);
+
+	{
+		auto rtIt = mSwapChainRenderTargets.Find(id);
+		if (originalResol == resol && rtIt != mSwapChainRenderTargets.end())
+			return;
+	}
+	BOOL fullscreen;
+	IDXGIOutput* output = 0;
+	swIt->second->GetFullscreenState(&fullscreen, &output);
+	if (output){
+		SAFE_RELEASE(output);
+	}
+	if (fullscreen){
+		gFBEnv->pConsole->GetEngineCommand()->r_fullscreen = 1;
+	}
+	else{
+		auto handle = gFBEnv->pEngine->GetWindowHandle(id);
+		LONG_PTR data = GetWindowLongPtr(handle, GWL_STYLE);
+		if ((data & WS_CAPTION) || (data & WS_BORDER)){
+			gFBEnv->pConsole->GetEngineCommand()->r_fullscreen = 0;			
+		}
+		else{
+			gFBEnv->pConsole->GetEngineCommand()->r_fullscreen = 2;
+		}
+	}
+
 	SmartPtr<IScene> scene = (IScene*)GetMainScene();
 	SmartPtr<ICamera> camera = (ICamera*)GetMainCamera();
-	ReleaseSwapChain(id);
-	gFBEnv->pEngine->InitSwapChain(id, resol.x, resol.y);	
+	bool suc = ResizeSwapChain(id, resol);
+	if (suc){
+		gFBEnv->pEngine->OnResolutionChanged(id, resol);
+	}
+	else{
+		Error("ResizeSwapChain failed!");
+		assert(0);
+	}
 	auto rt = GetMainRenderTarget();
-	rt->SetScene(scene.get());
-	rt->ReplaceCamera(camera);
-	camera->SetWidth((float)resol.x);
-	camera->SetHeight((float)resol.y);
+	if (!scene){
+		scene = gFBEnv->pEngine->CreateScene();
+	}
+	rt->SetScene(scene.get());	
+
+	if (camera){
+		rt->ReplaceCamera(camera);
+		camera->SetWidth((float)resol.x);
+		camera->SetHeight((float)resol.y);
+	}
+	
 	rt->Bind();
+
+	
+
 	for (auto l : mRenderListeners)
 	{
 		l->OnResolutionChanged(id);
@@ -780,8 +975,14 @@ void RendererD3D11::Present()
 {
 	for (auto& it : mSwapChains)
 	{
-		HRESULT hr = it.second->Present(1, 0);
+		HRESULT hr = it.second->Present(1, mStandBy ? DXGI_PRESENT_TEST : 0);
 		assert(!FAILED(hr));
+		if (hr == DXGI_STATUS_OCCLUDED){
+			mStandBy = true;
+		}
+		else{
+			mStandBy = false;
+		}
 	}
 	
 	if (m_pThreadPump)
@@ -2607,4 +2808,114 @@ void RendererD3D11::DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c,
 unsigned RendererD3D11::GetNumLoadingTexture() const
 {
 	return mCheckTextures.size();
+}
+
+Vec2I RendererD3D11::FindClosestSize(HWND_ID id, const Vec2I& input){
+	Vec2I closest = input;
+	auto it = mSwapChains.Find(id);
+	if (it == mSwapChains.end()){
+		Error("RendererD3D11::FindClosestSize : swap chain %d is not found", id);
+		return closest;
+	}
+
+	IDXGIOutput* output;
+	if (FAILED(it->second->GetContainingOutput(&output))){
+		Error("RendererD3D11::FindClosestSize : failed to get containing ouput for swap chain %d", id);
+		return closest;
+	}
+	UINT num=0;
+	if (FAILED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, 0))){
+		Error("RendererD3D11::FindClosestSize : GetDisplayModeList #1 is failed for swap chain %d", id);
+		SAFE_RELEASE(output);
+		return closest;
+	}
+
+	float shortestDist = FLT_MAX;
+	DXGI_MODE_DESC* descs = FB_ARRNEW(DXGI_MODE_DESC, num);
+	if (SUCCEEDED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, descs))){
+		for (UINT i = 0; i < num; ++i){
+			auto curSize = Vec2I(descs[i].Width, descs[i].Height);
+			float dist = curSize.DistanceTo(input);
+			if (dist < shortestDist){
+				shortestDist = dist;
+				closest = curSize;
+			}
+			
+		}
+	}
+	SAFE_RELEASE(output);
+	FB_ARRDELETE(descs);
+	return closest;
+}
+
+void RendererD3D11::ChangeFullscreenMode(int mode){
+	auto it = mSwapChains.Find(1);
+	if (it == mSwapChains.end())
+		return;
+	auto swapChain = it->second;	
+	if (mode == 0){
+		swapChain->SetFullscreenState(FALSE, NULL);
+		gFBEnv->pEngine->ChangeStyle(1, gFBEnv->pEngine->GetWindowStyleBackup());
+		gFBEnv->pEngine->ChangeSize(1, gFBEnv->pConsole->GetEngineCommand()->r_resolution);
+	}
+	else if (mode == 1){
+		swapChain->SetFullscreenState(TRUE, NULL);
+	}
+	else if (mode == 2){
+		swapChain->SetFullscreenState(FALSE, NULL);
+		// faked fullscreen
+		IDXGIOutput* output;
+		if (SUCCEEDED(swapChain->GetContainingOutput(&output))){
+			DXGI_OUTPUT_DESC desc;
+			if (SUCCEEDED(output->GetDesc(&desc))){
+				gFBEnv->pEngine->ChangeStyle(1, 0);
+				gFBEnv->pEngine->ChangeRect(1, desc.DesktopCoordinates);
+			}
+			SAFE_RELEASE(output);
+		}
+
+	}
+}
+
+bool RendererD3D11::GetResolutionList(unsigned& outNum, Vec2I* list){
+	auto it = mSwapChains.Find(1);
+	if (it == mSwapChains.end()){
+		Error("RendererD3D11::GetResolutionList : swap chain 1 is not found");
+		return false;
+	}
+
+	IDXGIOutput* output;
+	if (FAILED(it->second->GetContainingOutput(&output))){
+		Error("RendererD3D11::GetResolutionList : failed to get containing ouput for swap chain 1");
+		return false;
+	}
+	UINT num = 0;
+	if (list == 0){
+		if (FAILED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, 0))){
+			Error("RendererD3D11::GetResolutionList : GetDisplayModeList #1 is failed for swap chain 1");
+			SAFE_RELEASE(output);
+			return false;
+		}
+		SAFE_RELEASE(output);
+		outNum = num;
+		return true;
+	}
+	else{
+		num = outNum;
+		DXGI_MODE_DESC* descs = FB_ARRNEW(DXGI_MODE_DESC, num);
+		if (SUCCEEDED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, descs))){
+			for (UINT i = 0; i < num; ++i){
+				list[i] = Vec2I(descs[i].Width, descs[i].Height);
+			}
+		}
+		else{			
+			FB_ARRDELETE(descs);
+			SAFE_RELEASE(output);
+			return false;
+		}
+
+		FB_ARRDELETE(descs);
+		SAFE_RELEASE(output);
+		return true;
+	}
 }

@@ -158,6 +158,9 @@ EngineCommand::EngineCommand()
 	r_resolution = gFBEnv->pScriptSystem->GetVec2IVariable("r_resolution", Vec2I(1600, 900));
 	REGISTER_CVAR(r_resolution, r_resolution, CVAR_CATEGORY_CLIENT, "Resolution");
 
+	r_fullscreen = gFBEnv->pScriptSystem->GetIntVariable("r_fullscreen", 0);
+	REGISTER_CVAR(r_fullscreen, r_fullscreen, CVAR_CATEGORY_CLIENT, "fullscreen");
+
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);
 	REGISTER_CC(&ccDebugRenderTarget);

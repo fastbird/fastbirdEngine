@@ -876,6 +876,11 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
 	}
+
+	auto it = mAlwaysMouseOverCheckComps.find(winbase);
+	if (it != mAlwaysMouseOverCheckComps.end()){
+		mAlwaysMouseOverCheckComps.erase(it);
+	}
 }
 
 void UIManager::SetFocusUI(IWinBase* ui)
@@ -1198,7 +1203,7 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		auto mousePos = mouse->GetPos();
 		RegionTestParam rparam;
 		rparam.mOnlyContainer = false;
-		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mIgnoreScissor = true; // only for FBUIEditor.
 		rparam.mTestChildren = true;
 		rparam.mNoRuntimeComp = mUIEditor && gFBEnv->pEngine->IsMainWindowForground() && !keyboard->IsKeyDown(VK_LMENU) ? true : false;
 		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU);
@@ -1220,14 +1225,18 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 			return;
 		}
 
+
 		if (mUIEditor && mouse->IsLButtonClicked() && !keyboard->IsKeyDown(VK_MENU)){
 			auto it = mUIEditor->GetSelectedComps();
 			while (it.HasMoreElement()){
 				rparam.mExceptions.push_back(it.GetNext());
 			}
 		}
-
-		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		auto focusWnd = WinBaseWithPointCheckAlways(mousePos, rparam);
+		if (!focusWnd){
+			rparam.mIgnoreScissor = false;
+			focusWnd = WinBaseWithPoint(mousePos, rparam);
+		}
 		if (focusWnd != mMouseOvered){
 			if (mMouseOvered){
 				mMouseOvered->OnMouseOut(mouse, keyboard);
@@ -1930,6 +1939,32 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 	return 0;
 }
 
+IWinBase* UIManager::WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param){
+	for (auto it : mAlwaysMouseOverCheckComps){
+		auto wnd = it;
+		if (!wnd->GetVisible()){
+			continue;
+		}
+		if (param.mHwndId != wnd->GetHwndId())
+			continue;
+		if (param.mCheckMouseEvent && wnd->GetNoMouseEvent())
+			continue;
+		if (param.mRestrictToThisWnd && param.mRestrictToThisWnd != wnd)
+			continue;
+
+		auto found = wnd->WinBaseWithPoint(pt, param);
+		if (found)
+			return found;
+
+		if (!param.mCheckMouseEvent || !wnd->GetNoMouseEventAlone()){
+			if (wnd->IsIn(pt, param.mIgnoreScissor))
+				return wnd;
+		}
+	}
+
+	return 0;
+}
+
 void UIManager::LocateComponent()
 {
 	if (mLocatingComp == ComponentType::NUM)
@@ -2545,6 +2580,17 @@ ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLa
 		free(data);
 		mAtlasStaging->Unmap(0);
 		return texture;
+	}
+}
+
+void UIManager::AddAlwaysMouseOverCheck(IWinBase* comp){
+	mAlwaysMouseOverCheckComps.insert(comp);
+}
+
+void UIManager::RemoveAlwaysMouseOverCheck(IWinBase* comp){
+	auto it = mAlwaysMouseOverCheckComps.find(comp);
+	if (it != mAlwaysMouseOverCheckComps.end()){
+		mAlwaysMouseOverCheckComps.erase(it);
 	}
 }
 

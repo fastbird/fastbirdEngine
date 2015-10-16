@@ -55,6 +55,7 @@ void IEngine::DeleteInstance(IEngine* e)
 //------------------------------------------------------------------------
 Engine::Engine()	
 	: mAudioManager(0)
+	, mWindowStyleBackup(0)
 {
 	FileSystem::Initialize();
 	mErrorStream.open("error.log");
@@ -147,13 +148,23 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 	const char* szClassName, const char* title, unsigned style, unsigned exStyle, 
 	WNDPROC winProc)
 {
+	Vec2I resol(width, height);
+	if (width == 0 || height == 0){
+		// check the config
+		resol = gFBEnv->pConsole->GetEngineCommand()->r_resolution;
+		width = resol.x;
+		height = resol.y;
+	}
+	else{
+		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resol;
+	}
+
 	RECT rect;
 	rect.left = 0;
 	rect.top = 0;
 	rect.right = width;
 	rect.bottom = height;
 	AdjustWindowRect(&rect, style, false);
-	mWindowStyle = style;
 
 	int eWidth = rect.right - rect.left;
 	int eHeight = rect.bottom - rect.top;
@@ -174,6 +185,9 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 			style, x, y,
 			eWidth, eHeight, 0, 0, GetModuleHandle(0), 0);
 		auto id = FindEmptyHwndId();
+		if (id == 1){
+			mWindowStyleBackup = style;
+		}
 		mWindowHandles[id] = hWnd;
 		mWindowHandleIds[hWnd] = id;
 		mRequestedWndSize[hWnd] = Vec2I(width, height);
@@ -1029,6 +1043,59 @@ LRESULT Engine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		}
 		return 0;
 
+	case WM_SIZE:
+	{
+		RECT rc;
+		GetClientRect(window, &rc);
+		auto width = rc.right - rc.left;
+		auto height = rc.bottom - rc.top;
+
+		auto hwndId = GetWindowHandleId(window);
+		if (hwndId != INVALID_HWND_ID && mRenderer){
+			mRenderer->OnSizeChanged(hwndId, Vec2I(width, height));
+		}
+		return 0;
+	}
+
+	case WM_SIZING:
+	{
+		if (mRenderer){
+			RECT* pRect = (RECT*)lp;
+			RECT prevRect = *pRect;				
+			auto hwndId = GetWindowHandleId(window);
+			Vec2I size = mRenderer->FindClosestSize(hwndId, Vec2I(prevRect.right - prevRect.left, prevRect.bottom - prevRect.top));
+			pRect->right = pRect->left + size.x;
+			pRect->bottom = pRect->top + size.y;
+			AdjustWindowRect(pRect, GetWindowLongPtr(window, GWL_STYLE), FALSE);
+			RECT adjustedRect = *pRect;		
+			unsigned eWidth = adjustedRect.right - adjustedRect.left;
+			unsigned eHeight = adjustedRect.bottom - adjustedRect.top;
+
+			if (wp == WMSZ_RIGHT || wp == WMSZ_BOTTOMRIGHT || wp == WMSZ_TOPRIGHT || wp==WMSZ_TOP || wp==WMSZ_BOTTOM){
+				pRect->left = prevRect.left;
+				pRect->right = prevRect.left + eWidth;
+			}
+			else{
+				pRect->right = prevRect.right;
+				pRect->left = prevRect.right - eWidth;
+			}
+			
+			
+			if (wp == WMSZ_BOTTOM || wp == WMSZ_BOTTOMLEFT || wp == WMSZ_BOTTOMRIGHT || wp==WMSZ_RIGHT || wp==WMSZ_LEFT){
+				pRect->top = prevRect.top;
+				pRect->bottom = prevRect.top + eHeight;
+			}
+			else{
+				pRect->bottom = prevRect.bottom;
+				pRect->top = pRect->bottom - eHeight;
+			}
+			
+			
+			return 1;
+		}
+		break;
+	}
+
 /*	case WM_ACTIVATE:
 		{
 			if (WA_ACTIVE==LOWORD(wp))
@@ -1467,17 +1534,45 @@ void Engine::ReleaseVideoPlayer(IVideoPlayer* player){
 }
 
 void Engine::ChangeSize(HWND_ID id, const Vec2I& size){
-	auto handle = GetWindowHandle(id);
-	mRequestedWndSize[handle] = size;
-
 	if (id == 1){
-		RECT rect;
-		rect.left = 0;
-		rect.top = 0;
-		rect.right = size.x;
-		rect.bottom = size.y;
-		AdjustWindowRect(&rect, mWindowStyle, false);
-		SetWindowPos(GetMainWndHandle(), 0, 0, 0, rect.right - rect.left, rect.bottom - rect.top, 0);
+		if (!gFBEnv->pConsole->GetEngineCommand()->r_fullscreen){
+			auto handle = GetMainWndHandle();
+			RECT originalRect;
+			GetWindowRect(handle, &originalRect);
+			RECT rect;
+			rect.left = originalRect.left;
+			rect.top = originalRect.right;
+			rect.right = rect.left + size.x;
+			rect.bottom = rect.top + size.y;
+			AdjustWindowRect(&rect, GetWindowLongPtr(handle, GWL_STYLE), FALSE);
+			SetWindowPos(handle, 0, originalRect.left, originalRect.top, rect.right - rect.left, rect.bottom - rect.top, 0);
+		}
 	}	
+}
+
+void Engine::ChangeRect(HWND_ID id, const RECT& rect){
+	SetWindowPos(GetMainWndHandle(), 0, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
+}
+
+void Engine::OnResolutionChanged(HWND_ID id, const Vec2I& size){
+	auto handle = GetWindowHandle(id);
+	if (handle != 0){
+		mRequestedWndSize[handle] = size;
+	}
+}
+
+void Engine::ChangeStyle(HWND_ID id, LONG_PTR newStyle)
+{
+	auto handle = GetWindowHandle(id);
+	if (handle){
+		auto ret = SetWindowLongPtr(handle, GWL_STYLE, newStyle);
+		if (ret == 0){
+			Error("ChangeStyle is failed for window %d, value %u", id, newStyle);
+		}
+		else{
+			SetWindowPos(handle, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);			
+		}
+	}
+
 }
 } // namespace fastbird

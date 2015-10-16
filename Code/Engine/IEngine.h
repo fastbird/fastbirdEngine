@@ -72,6 +72,7 @@ namespace fastbird
 			const char* wndClass, const char* title, unsigned style, unsigned exStyle,
 			WNDPROC winProc) = 0;
 		virtual void DestroyEngineWindow(HWND_ID hwndId) = 0;
+		virtual unsigned GetWindowStyleBackup() const = 0;
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const = 0;
 		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const = 0;
 		virtual HWND GetWindowHandle(HWND_ID id) const = 0;
@@ -194,7 +195,11 @@ namespace fastbird
 		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type) = 0;
 		virtual void ReleaseVideoPlayer(IVideoPlayer* player) = 0;
 
-		virtual void ChangeSize(HWND_ID id, const Vec2I& size) = 0;
+		virtual void ChangeSize(HWND_ID id, const Vec2I& size) = 0;	
+		virtual void ChangeRect(HWND_ID id, const RECT& rect) = 0;
+		virtual void OnResolutionChanged(HWND_ID id, const Vec2I& size) = 0;  // internal
+		virtual void ChangeStyle(HWND_ID id, LONG_PTR newStyle) = 0;
+	public:
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

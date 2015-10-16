@@ -53,6 +53,11 @@ RenderTarget::~RenderTarget()
 	}
 }
 
+void RenderTarget::DeleteBuffers(){
+	mRenderTargetTexture = 0;
+	mDepthStencilTexture = 0;
+}
+
 void RenderTarget::FinishSmartPtr(){
 	assert(NumRefs() == 0);
 	FB_DELETE(this);

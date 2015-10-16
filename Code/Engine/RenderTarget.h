@@ -192,5 +192,7 @@ namespace fastbird
 		virtual void DrawOnEvent(bool set);
 		virtual void TriggerDrawEvent();
 
+		virtual void DeleteBuffers();
+
 	};
 }

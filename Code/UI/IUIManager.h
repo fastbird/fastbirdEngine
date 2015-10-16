@@ -111,6 +111,9 @@ namespace fastbird
 		// alpha
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater) = 0;
 
+		virtual void AddAlwaysMouseOverCheck(IWinBase* comp) = 0;
+		virtual void RemoveAlwaysMouseOverCheck(IWinBase* comp) = 0;
+
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;
 

@@ -209,6 +209,13 @@ protected:
 	SmartPtr<IShader> mGGXGenShader;
 	SmartPtr<ITexture> mGGXGenTarget;
 
+	struct OutputInfo
+	{
+		WCHAR mDeviceName[32];
+		RECT mRect;
+	};
+	std::vector<OutputInfo> mOutputInfos;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -221,7 +228,11 @@ public:
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;
+	// for windowed
+	virtual void ChangeWindowSize(HWND_ID id, const Vec2I& resol);
+	// for full-screen
 	virtual void ChangeResolution(HWND_ID id, const Vec2I& resol) = 0;
+	virtual void OnSizeChanged(HWND_ID id, const Vec2I& resol) = 0;
 
 	void CleanDepthWriteResources();
 	void CleanGlowResources();
@@ -241,12 +252,12 @@ public:
 
 	virtual Vec2I ToSreenPos(HWND_ID id, const Vec3& ndcPos) const;
 	virtual Vec2 ToNdcPos(HWND_ID id, const Vec2I& screenPos) const;
-	virtual unsigned GetWidth(HWND_ID id) const;
+	/*virtual unsigned GetWidth(HWND_ID id) const;
 	virtual unsigned GetHeight(HWND_ID id) const;
 	virtual unsigned GetWidth(HWND hWnd) const;
 	virtual unsigned GetHeight(HWND hWnd) const;
 	virtual unsigned GetCropWidth(HWND hWnd) const;
-	virtual unsigned GetCropHeight(HWND hWnd) const;
+	virtual unsigned GetCropHeight(HWND hWnd) const;*/
 	//virtual void SetWireframe(bool enable); // see RendererD3D11
 	virtual bool GetWireframe() const { return mForcedWireframe; }
 	virtual void SetClearColor(HWND_ID id, const Color& color);
@@ -506,6 +517,7 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player);
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
 	virtual void GenGGX();
+	virtual void ChangeFullscreenMode(int mode) = 0;
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

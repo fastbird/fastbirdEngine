@@ -6,15 +6,18 @@ namespace fastbird
 {
 	class IUIObject;
 	class Button;
+	class Wnd;
 
 	class DropDown : public Container
 	{
 	public:
+		static const int ITEM_HEIGHT;
 		DropDown();
 		virtual ~DropDown();
 
 		// IWinBase
 		virtual void OnCreated();
+		virtual void OnSizeChanged();
 		virtual ComponentType::Enum GetType() const { return ComponentType::DropDown; }
 		virtual void GatherVisit(std::vector<IUIObject*>& v);
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val);
@@ -22,6 +25,7 @@ namespace fastbird
 		virtual size_t AddDropDownItem(WCHAR* szString);
 		// alread added as a child
 		virtual size_t AddDropDownItem(IWinBase* item);
+		virtual void ClearDropDownItems();
 		virtual size_t GetSelectedIndex() const;
 		virtual void SetSelectedIndex(size_t index);
 		virtual void SetReservedIndex(size_t index);
@@ -47,6 +51,8 @@ namespace fastbird
 		std::vector<Button*> mDropDownItems;
 		size_t mCurIdx;
 		size_t mReservedIdx;
+		Wnd* mHolder;
+		int mMaxHeight;
 
 		static DropDown* sCurrentDropDown;
 	};

@@ -131,10 +131,10 @@ public:
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
 	virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) = 0;
 	virtual void Draw(unsigned int vertexCount, unsigned int startVertexLocation) = 0;
-	virtual unsigned GetWidth(HWND hWnd) const = 0;
+	/*virtual unsigned GetWidth(HWND hWnd) const = 0;
 	virtual unsigned GetHeight(HWND hWnd) const = 0;
 	virtual unsigned GetWidth(HWND_ID hWnd) const = 0;
-	virtual unsigned GetHeight(HWND_ID hWnd) const = 0;
+	virtual unsigned GetHeight(HWND_ID hWnd) const = 0;*/
 	virtual void SetWireframe(bool enable) = 0;
 	virtual bool GetWireframe() const = 0;
 	virtual unsigned GetMultiSampleCount() const = 0;
@@ -355,6 +355,9 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void GenGGX() = 0;
+	virtual Vec2I FindClosestSize(HWND_ID id, const Vec2I& input) = 0;
+
+	virtual bool GetResolutionList(unsigned& outNum, Vec2I* list) = 0;
 };
 
 }

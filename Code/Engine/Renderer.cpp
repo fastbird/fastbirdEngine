@@ -178,6 +178,14 @@ void Renderer::Deinit()
 	mRenderTargetPool.clear();	
 }
 
+// for windowed
+void Renderer::ChangeWindowSize(HWND_ID id, const Vec2I& resol){
+	if (id == 1)
+		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resol;
+
+	gFBEnv->pEngine->ChangeSize(id, resol);
+}
+
 void Renderer::CleanDepthWriteResources()
 {
 	mDepthWriteShader = 0;
@@ -522,7 +530,7 @@ void Renderer::OnSwapchainCreated(HWND_ID id)
 			Mat44::IDENTITY,
 		};
 
-		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resolution;
+		//gFBEnv->pConsole->GetEngineCommand()->r_resolution = resolution;
 	}
 }
 
@@ -587,7 +595,6 @@ ICamera* Renderer::GetMainCamera() const
 		return rt->GetCamera();
 	}
 	Error(FB_DEFAULT_DEBUG_ARG, "No main camera!");
-	assert(0);
 	return 0;
 }
 
@@ -634,49 +641,49 @@ Vec2 Renderer::ToNdcPos(HWND_ID id, const Vec2I& screenPos) const
 	ret.y = -((float)screenPos.y / (float)size.y * 2.0f - 1.0f);
 	return ret;
 }
-
-unsigned Renderer::GetWidth(HWND_ID id) const
-{
-	auto it = mWidth.Find(id);
-	if (it != mWidth.end())
-	{
-		return it->second;
-	}
-	Error(FB_DEFAULT_DEBUG_ARG, "Window width not found!");
-	return 100;
-}
-unsigned Renderer::GetHeight(HWND_ID id) const
-{
-	auto it = mHeight.Find(id);
-	if (it != mHeight.end())
-	{
-		return it->second;
-	}
-	Error(FB_DEFAULT_DEBUG_ARG, "Window height not found!");
-	return 100;
-}
-unsigned Renderer::GetWidth(HWND hWnd) const
-{
-	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
-	return GetWidth(id);
-}
-unsigned Renderer::GetHeight(HWND hWnd) const
-{
-	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
-	return GetHeight(id);
-}
-
-unsigned Renderer::GetCropWidth(HWND hWnd) const
-{
-	auto width = GetWidth(hWnd);
-	return CropSize8(width);
-}
-
-unsigned Renderer::GetCropHeight(HWND hWnd) const
-{
-	auto height = GetHeight(hWnd);
-	return CropSize8(height);
-}
+//
+//unsigned Renderer::GetWidth(HWND_ID id) const
+//{
+//	auto it = mWidth.Find(id);
+//	if (it != mWidth.end())
+//	{
+//		return it->second;
+//	}
+//	Error(FB_DEFAULT_DEBUG_ARG, "Window width not found!");
+//	return 100;
+//}
+//unsigned Renderer::GetHeight(HWND_ID id) const
+//{
+//	auto it = mHeight.Find(id);
+//	if (it != mHeight.end())
+//	{
+//		return it->second;
+//	}
+//	Error(FB_DEFAULT_DEBUG_ARG, "Window height not found!");
+//	return 100;
+//}
+//unsigned Renderer::GetWidth(HWND hWnd) const
+//{
+//	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+//	return GetWidth(id);
+//}
+//unsigned Renderer::GetHeight(HWND hWnd) const
+//{
+//	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+//	return GetHeight(id);
+//}
+//
+//unsigned Renderer::GetCropWidth(HWND hWnd) const
+//{
+//	auto width = GetWidth(hWnd);
+//	return CropSize8(width);
+//}
+//
+//unsigned Renderer::GetCropHeight(HWND hWnd) const
+//{
+//	auto height = GetHeight(hWnd);
+//	return CropSize8(height);
+//}
 
 //----------------------------------------------------------------------------
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
@@ -1733,7 +1740,20 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	}
 	else if (strcmp(pCVar->mName.c_str(), "r_resolution") == 0){
 		auto resol = pCVar->GetVec2I();
-		ChangeResolution(1, resol);
+		if (gFBEnv->pConsole->GetEngineCommand()->r_fullscreen==1){
+			ChangeResolution(1, resol);
+		}
+		else if (gFBEnv->pConsole->GetEngineCommand()->r_fullscreen == 0){
+			ChangeWindowSize(1, resol);
+		}
+		else{
+			// cannot change resolution while in faked fullscreen mode.
+		}
+	}
+	else if (strcmp(pCVar->mName.c_str(), "r_fullscreen") == 0){
+		auto fullscreen = pCVar->GetInt();
+		ChangeFullscreenMode(fullscreen);
+
 	}
 
 	return false;

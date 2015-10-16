@@ -27,7 +27,7 @@ namespace fastbird
 		VectorMap<HWND, Vec2I> mRequestedWndSize;
 		HWND_ID FindEmptyHwndId() const;
 
-		int mWindowStyle;
+		unsigned mWindowStyleBackup;
 		SmartPtr<IMouse> mMouse;
 		SmartPtr<IKeyboard> mKeyboard;
 		typedef std::vector<IInputListener*> INPUT_LISTENER_VECTOR;
@@ -83,6 +83,7 @@ namespace fastbird
 			const char* wndClass, const char* title, unsigned style, unsigned exStyle, 
 			WNDPROC winProc);
 		virtual void DestroyEngineWindow(HWND_ID hwndId);
+		virtual unsigned GetWindowStyleBackup() const { return mWindowStyleBackup; }
 		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const;
 		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const;
 		virtual HWND GetWindowHandle(HWND_ID id) const;
@@ -201,7 +202,12 @@ namespace fastbird
 		virtual IVideoPlayer* CreateVideoPlayer(VideoPlayerType::Enum type);
 		virtual void ReleaseVideoPlayer(IVideoPlayer* player);
 
-		virtual void ChangeSize(HWND_ID id, const Vec2I& size);
+		virtual void ChangeSize(HWND_ID id, const Vec2I& size);	
+		virtual void ChangeRect(HWND_ID id, const RECT& rect);
+		virtual void OnResolutionChanged(HWND_ID id, const Vec2I& size); // internal
+		virtual void ChangeStyle(HWND_ID id, LONG_PTR newStyle);
+
+	public:
 	};
 };
 

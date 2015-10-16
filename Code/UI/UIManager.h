@@ -96,6 +96,7 @@ namespace fastbird
 		SmartPtr<ITexture> mAtlasStaging;
 
 		std::vector<std::string> mDeleteLuaUIPending;
+		std::set<IWinBase*> mAlwaysMouseOverCheckComps;
 
 	protected:
 
@@ -216,6 +217,7 @@ namespace fastbird
 		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
 		
 		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param);
+		virtual IWinBase* WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param);
 		virtual TextManipulator* GetTextManipulator() const { return mTextManipulator; }
 		
 		virtual const char* GetUIPath(const char* uiname) const;
@@ -230,6 +232,9 @@ namespace fastbird
 		virtual const char* GetStyleString(Styles::Enum s) const;
 
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
+
+		virtual void AddAlwaysMouseOverCheck(IWinBase* comp);
+		virtual void RemoveAlwaysMouseOverCheck(IWinBase* comp);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

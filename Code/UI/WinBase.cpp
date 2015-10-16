@@ -2821,8 +2821,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 			eventElem = eventElem->NextSiblingElement();
 		}
 	}
-
-
+	OnCreated();
 	return true;
 }
 
@@ -3065,6 +3064,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			}
 		}
 	}
+	OnCreated();
 
 	return true;
 }

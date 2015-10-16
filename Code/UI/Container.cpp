@@ -270,6 +270,25 @@ void Container::RemoveAllChild(bool immediately)
 	SetChildrenPosSizeChanged();
 }
 
+void Container::RemoveAllChildExceptRuntime(){
+	if (mWndContentUI){
+		mWndContentUI->RemoveAllChildExceptRuntime();
+		return;
+	}
+
+	for (auto it = mChildren.begin(); it != mChildren.end();){
+		auto child = *it;
+		if (!child->IsRuntimeChild()){
+			it = mChildren.erase(it);
+		}
+		else{
+			++it;
+		}
+	}
+
+	mChildrenChanged = true;
+}
+
 IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*= false*/)
 {
 	if (mWndContentUI)
@@ -744,7 +763,6 @@ void Container::ParseXMLChildren(tinyxml2::XMLElement* pelem){
 		assert(p);
 		p->SetRender3D(mRender3D, GetRenderTargetSize());
 		p->ParseXML(pchild);
-		p->OnCreated();
 
 		if (dropdown)
 		{
@@ -806,8 +824,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 				IWinBase* p = AddChild(typee);
 				assert(p);
 				p->SetRender3D(mRender3D, GetRenderTargetSize());
-				p->ParseLua(child);
-				p->OnCreated();
+				p->ParseLua(child);				
 
 				if (dropdown)
 				{

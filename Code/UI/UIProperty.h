@@ -125,6 +125,7 @@ namespace fastbird
 			ALWAYS_ON_TOP,
 			CLOSE_BY_ESC,
 			DROPDOWN_INDEX,
+			DROPDOWN_MAX_HEIGHT,
 			COLOR_RAMP_VALUES,
 			DRAGABLE,
 			NAMED_PORTRAIT_IMAGE_SIZE,
@@ -272,6 +273,7 @@ namespace fastbird
 			"ALWAYS_ON_TOP",
 			"CLOSE_BY_ESC",
 			"DROPDOWN_INDEX",
+			"DROPDOWN_MAX_HEIGHT",
 			"COLOR_RAMP_VALUES",
 			"DRAGABLE",
 			"NAMED_PORTRAIT_IMAGE_SIZE",
@@ -537,6 +539,8 @@ namespace fastbird
 				return 5;
 			case NUMERIC_UPDOWN_STEP:
 				return 1;
+			case DROPDOWN_MAX_HEIGHT:
+				return 200;
 			}
 			assert(0);
 			return 0;
