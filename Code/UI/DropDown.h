@@ -33,6 +33,7 @@ namespace fastbird
 		virtual bool OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnParentVisibleChanged(bool show);		
 		virtual void ModifyItem(unsigned index, UIProperty::Enum, const char* szString);
+		const wchar_t* GetItemString(unsigned index);
 
 	protected:
 		void SetCommonProperty(IWinBase* item, size_t index);
@@ -43,6 +44,7 @@ namespace fastbird
 		void OnItemSelected(void* arg);
 
 		void CloseOptions();
+		void SetVisibleDropDownItems(bool visible);
 
 	private:
 		int mCursorPos;
@@ -53,8 +55,10 @@ namespace fastbird
 		size_t mReservedIdx;
 		Wnd* mHolder;
 		int mMaxHeight;
+		bool mTriggerEvent;
 
 		static DropDown* sCurrentDropDown;
+		friend class UIManager;
 	};
 
 }

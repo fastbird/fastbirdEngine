@@ -128,7 +128,7 @@ void WinBase::SetHwndId(HWND_ID hwndId)
 		if (mUIObject)
 		{
 			mUIObject->SetRenderTargetSize(
-				gFBEnv->pEngine->GetRequestedWndSize(hwndId)
+				gFBEnv->pRenderer->GetRenderTargetSize(hwndId)
 				);
 		}
 	}
@@ -147,7 +147,7 @@ void WinBase::OnResolutionChanged(HWND_ID hwndId){
 	if (mUIObject && !mRender3D)
 	{
 		mUIObject->SetRenderTargetSize(
-			gFBEnv->pEngine->GetRequestedWndSize(hwndId)
+			gFBEnv->pRenderer->GetRenderTargetSize(hwndId)
 			);
 		for (auto it : mBorders){
 			it->OnResolutionChanged(hwndId);
@@ -3352,7 +3352,7 @@ Vec2I WinBase::GetRenderTargetSize() const
 		auto root = GetRootWnd();
 		assert(root);
 		auto hwndId = root->GetHwndId();
-		return gFBEnv->pEngine->GetRequestedWndSize(hwndId);
+		return gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
 	}
 }
 

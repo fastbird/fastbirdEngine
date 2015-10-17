@@ -71,7 +71,7 @@ namespace fastbird
 		virtual void UnregisterVariable(CVar* cvar);
 		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates);
 		virtual void Log(const char* szFmt, ...);
-		virtual void ProcessCommand(const char* command);
+		virtual void ProcessCommand(const char* command, bool history = true);
 		virtual void ToggleOpen();
 		virtual void Update();
 		virtual void Render();

@@ -19,6 +19,7 @@ DropDown::DropDown()
 	, mButton(0)
 	, mHolder(0)
 	, mMaxHeight(200)
+	, mTriggerEvent(true)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -142,59 +143,47 @@ void DropDown::OnMouseClick(void* arg)
 {
 	if (mDropDownItems.empty())
 		return;
-	bool vis = mDropDownItems[0]->GetVisible();
+	bool vis = mHolder->GetVisible();
+	SetVisibleDropDownItems(!vis);		
+}
 
-	if (!vis)
-	{
-		// become visible
-		if (sCurrentDropDown)
+
+void DropDown::SetVisibleDropDownItems(bool visible){
+	if (visible){
+		if (sCurrentDropDown && sCurrentDropDown != this)
 			sCurrentDropDown->CloseOptions();
-
 		sCurrentDropDown = this;
-
-	}
-	else
-	{
-		// become invisible
-		if (sCurrentDropDown == this)
-			sCurrentDropDown = 0;
-	}
-
-	mHolder->SetVisible(!vis);
-	if (!vis){
+		mHolder->SetVisible(true);
 		gFBUIManager->AddAlwaysMouseOverCheck(mHolder);
+		for (auto var : mDropDownItems)
+		{
+			var->SetVisible(true);
+		}
 	}
 	else{
+		if (sCurrentDropDown == this){
+			sCurrentDropDown = 0;
+		}
+		mHolder->SetVisible(false);
 		gFBUIManager->RemoveAlwaysMouseOverCheck(mHolder);
+		for (auto var : mDropDownItems)
+		{
+			var->SetVisible(false);
+		}
 	}
-	for (auto var : mDropDownItems)
-	{
-		var->SetVisible(!vis);		
-	}
-	
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
 void DropDown::CloseOptions()
 {
-	gFBUIManager->RemoveAlwaysMouseOverCheck(mHolder);
-	mHolder->SetVisible(false);
-	for (auto var : mDropDownItems)
-	{
-		var->SetVisible(false);
-	}
+	SetVisibleDropDownItems(false);
 }
 
 void DropDown::OnFocusLost()
 {
 	if (gFBUIManager->GetNewFocusUI() == mButton)
 		return;
-	gFBUIManager->RemoveAlwaysMouseOverCheck(mHolder);
-	mHolder->SetVisible(false);
-	for (auto var : mDropDownItems)
-	{
-		var->SetVisible(false);
-	}
+	SetVisibleDropDownItems(false);
 }
 
 void DropDown::OnItemSelected(void* arg)
@@ -213,7 +202,8 @@ void DropDown::OnItemSelected(void* arg)
 	}
 	assert(index != -1);
 	mCurIdx = index; 
-	OnEvent(UIEvents::EVENT_DROP_DOWN_SELECTED);
+	if (mTriggerEvent)
+		OnEvent(UIEvents::EVENT_DROP_DOWN_SELECTED);
 	gFBEnv->pUIManager->DirtyRenderList(GetHwndId());
 }
 
@@ -229,7 +219,9 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 	SetCommonProperty(pDropDownItem, index);
 	if (mDropDownItems.size() == 1)
 	{
+		mTriggerEvent = false;
 		OnItemSelected(mDropDownItems.back());
+		mTriggerEvent = true;
 	}
 	
 
@@ -321,12 +313,8 @@ bool DropDown::OnInputFromHandler(IMouse* mouse, IKeyboard* keyboard)
 	{
 		if (keyboard->IsKeyPressed(VK_ESCAPE))
 		{
-			if (mDropDownItems[0]->GetVisible())
-			{
-				for (auto var : mDropDownItems)
-				{
-					var->SetVisible(false);
-				}
+			if (mHolder->GetVisible()){
+				SetVisibleDropDownItems(false);
 				keyboard->Invalidate();
 			}
 		}
@@ -338,10 +326,7 @@ void DropDown::OnParentVisibleChanged(bool show)
 {
 	if (!show)
 	{
-		for (auto var : mDropDownItems)
-		{
-			var->SetVisible(false);
-		}
+		SetVisibleDropDownItems(false);		
 	}
 }
 
@@ -353,5 +338,14 @@ void DropDown::ModifyItem(unsigned index, UIProperty::Enum prop, const char* szS
 	}
 }
 
+const wchar_t* DropDown::GetItemString(unsigned index){
+	if (index < mDropDownItems.size()){
+		return mDropDownItems[index]->GetText();
+	}
+	else{
+		Error("DropDown::GetItemString : invalid index(%u)", index);
+	}
+	return L"";
+}
 
 }

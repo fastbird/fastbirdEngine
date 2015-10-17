@@ -171,7 +171,8 @@ public:
 	virtual bool IsMainRenderTarget() const = 0;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
-	virtual const Vec2I& GetRenderTargetSize() const = 0;
+	virtual const Vec2I& GetRenderTargetSize(HWND_ID id = INVALID_HWND_ID) const = 0;
+	virtual const Vec2I& GetRenderTargetSize(HWND hwnd = 0) const = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
 	virtual void RestoreScissorRects() = 0;

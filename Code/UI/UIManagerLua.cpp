@@ -62,6 +62,7 @@ namespace fastbird
 	int MoveUIToBottom(lua_State* L);
 	int SetDropDownIndex(lua_State* L);
 	int GetDropDownIndex(lua_State* L);
+	int GetDropDownString(lua_State* L);
 	int SetVisibleLuaUIWithoutFocusing(lua_State* L);
 	int GetColorRampUIValues(lua_State* L);
 	int SetColorRampUIValues(lua_State* L);
@@ -180,6 +181,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
 		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
 		LUA_SETCFUNCTION(mL, GetDropDownIndex);
+		LUA_SETCFUNCTION(mL, GetDropDownString);
 		LUA_SETCFUNCTION(mL, SetDropDownIndex);
 		LUA_SETCFUNCTION(mL, MoveUIToBottom);
 		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
@@ -878,9 +880,9 @@ namespace fastbird
 
 	int SetDropDownIndex(lua_State* L)
 	{
-		unsigned index = luaL_checkunsigned(L, 1);
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
+		unsigned index = luaL_checkunsigned(L, 3);
 		auto dropDown = dynamic_cast<DropDown*>(gFBEnv->pUIManager->FindComp(uiname, compName));
 		if (dropDown)
 		{
@@ -897,6 +899,24 @@ namespace fastbird
 		if (dropDown)
 		{
 			lua_pushunsigned(L, dropDown->GetSelectedIndex());
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetDropDownString(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto dropDown = dynamic_cast<DropDown*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		if (dropDown)
+		{
+			unsigned idx = luaL_checkunsigned(L, 3);
+			auto str = dropDown->GetItemString(idx);
+			if (wcslen(str) == 0){
+				return 0;
+			}
+			std::string cstr = WideToAnsi(str);
+			lua_pushstring(L, cstr.c_str());
 			return 1;
 		}
 		return 0;

@@ -190,7 +190,10 @@ HWND_ID Engine::CreateEngineWindow(int x, int y, int width, int height,
 		}
 		mWindowHandles[id] = hWnd;
 		mWindowHandleIds[hWnd] = id;
-		mRequestedWndSize[hWnd] = Vec2I(width, height);
+		mWindowSize[hWnd] = Vec2I(width, height);
+		RECT rect;
+		GetClientRect(hWnd, &rect);
+		Vec2I windowSize(rect.right - rect.left, rect.bottom - rect.top);
 		RegisterMouseAndKeyboard(hWnd);
 
 		/*HWND console = GetConsoleWindow();
@@ -220,10 +223,10 @@ void Engine::DestroyEngineWindow(HWND_ID hwndId)
 	DestroyWindow(hwnd);
 }
 
-const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
+const Vec2I& Engine::GetWindowSize(HWND hWnd) const
 {
-	auto it = mRequestedWndSize.Find(hWnd);
-	if (it != mRequestedWndSize.end())
+	auto it = mWindowSize.Find(hWnd);
+	if (it != mWindowSize.end())
 	{
 		return it->second;
 	}
@@ -231,10 +234,10 @@ const Vec2I& Engine::GetRequestedWndSize(HWND hWnd) const
 	return def;
 }
 
-const Vec2I& Engine::GetRequestedWndSize(HWND_ID hWndId) const
+const Vec2I& Engine::GetWindowSize(HWND_ID hWndId) const
 {
 	auto hWnd = GetWindowHandle(hWndId);
-	return GetRequestedWndSize(hWnd);
+	return GetWindowSize(hWnd);
 }
 
 //------------------------------------------------------------------------
@@ -1049,6 +1052,8 @@ LRESULT Engine::WinProc( HWND window, UINT msg, WPARAM wp, LPARAM lp )
 		GetClientRect(window, &rc);
 		auto width = rc.right - rc.left;
 		auto height = rc.bottom - rc.top;
+		mWindowSize[window] = Vec2I(width, height);
+		
 
 		auto hwndId = GetWindowHandleId(window);
 		if (hwndId != INVALID_HWND_ID && mRenderer){
@@ -1555,10 +1560,6 @@ void Engine::ChangeRect(HWND_ID id, const RECT& rect){
 }
 
 void Engine::OnResolutionChanged(HWND_ID id, const Vec2I& size){
-	auto handle = GetWindowHandle(id);
-	if (handle != 0){
-		mRequestedWndSize[handle] = size;
-	}
 }
 
 void Engine::ChangeStyle(HWND_ID id, LONG_PTR newStyle)

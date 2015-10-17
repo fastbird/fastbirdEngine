@@ -29,7 +29,7 @@ KeyboardCursor::KeyboardCursor()
 	: mVisible(false)
 {	
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, 
-		gFBEnv->pEngine->GetRequestedWndSize(gFBEnv->pEngine->GetMainWndHandle()));
+		gFBEnv->pEngine->GetWindowSize(gFBEnv->pEngine->GetMainWndHandle()));
 	mUIObject->SetMaterial("es/materials/KeyboardCursor.material");
 	mUIObject->SetDebugString("KeyboardCursor");
 }
@@ -55,7 +55,7 @@ IUIObject* KeyboardCursor::GetUIObject() const
 
 void KeyboardCursor::SetHwndId(HWND_ID hwndId)
 {
-	mUIObject->SetRenderTargetSize(gFBEnv->pEngine->GetRequestedWndSize(hwndId));
+	mUIObject->SetRenderTargetSize(gFBEnv->pRenderer->GetRenderTargetSize(hwndId));
 }
 
 void KeyboardCursor::SetScissorRegion(const RECT& r)

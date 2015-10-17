@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Renderer.h>
+#include <Engine/Engine.h>
 #include <Engine/Font.h>
 #include <Engine/Material.h>
 #include <Engine/DebugHud.h>
@@ -859,8 +860,23 @@ void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int
 	UpdateRenderTargetConstantsBuffer();
 }
 
-const Vec2I& Renderer::GetRenderTargetSize() const
+const Vec2I& Renderer::GetRenderTargetSize(HWND_ID id) const
 {
+	if (id != INVALID_HWND_ID){
+		auto it = mSwapChainRenderTargets.Find(id);
+		if (it != mSwapChainRenderTargets.end()){
+			return it->second->GetSize();
+		}
+	}
+
+	return mCurRTSize;
+}
+
+const Vec2I& Renderer::GetRenderTargetSize(HWND hwnd) const{
+	if (hwnd){
+		auto id = gFBEnv->pEngine->GetWindowHandleId(hwnd);
+		return GetRenderTargetSize(id);
+	}
 	return mCurRTSize;
 }
 
@@ -1752,6 +1768,8 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 	}
 	else if (strcmp(pCVar->mName.c_str(), "r_fullscreen") == 0){
 		auto fullscreen = pCVar->GetInt();
+		Engine* eng = (Engine*)gFBEnv->pEngine;
+		eng->SetFullScreen(fullscreen==1);
 		ChangeFullscreenMode(fullscreen);
 
 	}

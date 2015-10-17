@@ -536,7 +536,7 @@ bool Console::IsEnabledInputLIstener() const
 	return mOpen;
 }
 
-void Console::ProcessCommand(const char* command)
+void Console::ProcessCommand(const char* command, bool history)
 {
 	if (!command || strlen(command)==0 || strlen(command)>512)
 	{
@@ -584,29 +584,31 @@ void Console::ProcessCommand(const char* command)
 	}
 
 	bool pushed = false;
-	if (mHistory.empty() || mHistory.back() != buf)
-	{
-		for (auto it = mHistory.begin(); it != mHistory.end();)
+	if (history){
+		if (mHistory.empty() || mHistory.back() != buf)
 		{
-			if (*it == buf)
+			for (auto it = mHistory.begin(); it != mHistory.end();)
 			{
-				unsigned dist = std::distance(mHistory.begin(), it);
-				it = mHistory.erase(it);
-				mValidHistory.erase(mValidHistory.begin() + dist);
+				if (*it == buf)
+				{
+					unsigned dist = std::distance(mHistory.begin(), it);
+					it = mHistory.erase(it);
+					mValidHistory.erase(mValidHistory.begin() + dist);
+				}
+				else
+				{
+					++it;
+				}
 			}
-			else
-			{
-				++it;
-			}
+			DeleteValuesInVector(mHistory, std::string(buf));
+			mHistory.push_back(buf);
+			mHistoryIndex = mHistory.size();
+			pushed = true;
 		}
-		DeleteValuesInVector(mHistory, std::string(buf));
-		mHistory.push_back(buf);
-		mHistoryIndex = mHistory.size();
-		pushed = true;
-	}
-	else
-	{
-		mHistoryIndex = mHistoryIndexBackup;
+		else
+		{
+			mHistoryIndex = mHistoryIndexBackup;
+		}
 	}
 
 	if (prefixFound)
@@ -618,11 +620,11 @@ void Console::ProcessCommand(const char* command)
 		std::string newstring = std::string("  ") + command;
 		Log(newstring.c_str());
 		processed = gFBEnv->pScriptSystem->ExecuteLua(command);
-		if (pushed)
-			mValidHistory.push_back(processed);
-		if (processed)
-		{			
-			SaveHistoryToDiskCache();
+		if (history){
+			if (pushed)
+				mValidHistory.push_back(processed);
+			if (processed)
+				SaveHistoryToDiskCache();
 		}
 			
 		return;
@@ -683,11 +685,13 @@ void Console::ProcessCommand(const char* command)
 			}
 		}
 	}
-	if (pushed)
-		mValidHistory.push_back(processed);
+	if (history){
+		if (pushed)
+			mValidHistory.push_back(processed);
 
-	if (processed)
-		SaveHistoryToDiskCache();
+		if (processed)
+			SaveHistoryToDiskCache();
+	}
 }
 
 void Console::SaveHistoryToDiskCache()

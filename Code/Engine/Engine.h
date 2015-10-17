@@ -24,7 +24,7 @@ namespace fastbird
 	{
 		VectorMap<HWND_ID, HWND> mWindowHandles;
 		VectorMap<HWND, HWND_ID> mWindowHandleIds;
-		VectorMap<HWND, Vec2I> mRequestedWndSize;
+		VectorMap<HWND, Vec2I> mWindowSize;
 		HWND_ID FindEmptyHwndId() const;
 
 		unsigned mWindowStyleBackup;
@@ -64,6 +64,8 @@ namespace fastbird
 		
 		std::set<std::string> mIgnoreFileChanges;
 		AudioManager* mAudioManager;
+
+		bool mIsFullscreen;
 	
 
 	public:
@@ -84,8 +86,8 @@ namespace fastbird
 			WNDPROC winProc);
 		virtual void DestroyEngineWindow(HWND_ID hwndId);
 		virtual unsigned GetWindowStyleBackup() const { return mWindowStyleBackup; }
-		virtual const Vec2I& GetRequestedWndSize(HWND hWnd) const;
-		virtual const Vec2I& GetRequestedWndSize(HWND_ID hWndId) const;
+		virtual const Vec2I& GetWindowSize(HWND hWnd) const;
+		virtual const Vec2I& GetWindowSize(HWND_ID hWndId) const;
 		virtual HWND GetWindowHandle(HWND_ID id) const;
 		virtual HWND_ID GetWindowHandleId(HWND hWnd) const;
 		virtual HWND_ID GetWindowHandleIdWithMousePoint() const;
@@ -139,6 +141,9 @@ namespace fastbird
 
 		virtual void DrawProfileResult(ProfilerSimple& p, const char* posVarName, int tab = 0);
 		virtual void DrawProfileResult(wchar_t* buf, const char* posVarName, int tab = 0);
+		
+		virtual bool IsFullScreen() const { return mIsFullscreen; }
+		void SetFullScreen(bool fullscreen){ mIsFullscreen = fullscreen; }
 
 	protected:
 		bool InitDirectX9();

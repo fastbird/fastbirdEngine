@@ -870,7 +870,7 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 	if (mMouseDragStartedUI == winbase){
 		mMouseDragStartedUI = 0;
-	}
+	}	
 
 	if (winbase->GetRender3D())
 	{
@@ -900,6 +900,9 @@ void UIManager::SetFocusUI(IWinBase* ui)
 		mKeyboardFocus->OnFocusLost();
 	if (mFocusWnd)
 		mFocusWnd->OnFocusLost();
+	if (DropDown::sCurrentDropDown){
+		DropDown::sCurrentDropDown->OnFocusLost();
+	}
 
 	auto focusRoot = ui ? ui->GetRootWnd() : 0;
 
@@ -1396,7 +1399,7 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 	HWND_ID hwndId = mTooltipUI->GetHwndId();
 	auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
 	assert(hwndId != -1);
-	const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+	const auto& size = gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
 	Vec2 backPos = npos;
 	if (backPos.y > 0.9f)
 	{
@@ -1670,7 +1673,9 @@ bool UIManager::OnFileChanged(const char* file)
 		}
 		else if (strcmp(extension, "lua") == 0)
 		{
-			if (strstr(file, "save\\save") == 0){
+			if (strstr(file, "save\\save") == 0 &&
+				strstr(file, "configGame.lua") == 0 &&
+				strstr(file, "configEngine.lua") == 0){
 				int error = luaL_dofile(mL, file);
 				if (error)
 				{

@@ -441,15 +441,14 @@ void RendererD3D11::GetOutputInformationFor(IDXGIAdapter1* adapter){
 //----------------------------------------------------------------------------
 bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 {
-	Vec2I resol(width, height);
 	if (width == 0 || height == 0){
 		// check the config
-		resol = gFBEnv->pConsole->GetEngineCommand()->r_resolution;
+		Vec2I resol = gFBEnv->pConsole->GetEngineCommand()->r_resolution;
 		width = resol.x;
 		height = resol.y;
 	}
 	else{
-		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resol;
+		gFBEnv->pConsole->GetEngineCommand()->r_resolution = Vec2I(width, height);
 	}
 
 	HWND hwnd = gFBEnv->pEngine->GetWindowHandle(id);
@@ -479,12 +478,12 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	sd.OutputWindow = hwnd;
 	sd.SampleDesc = mMultiSampleDesc;
 	auto r_fullscreen = gFBEnv->pConsole->GetEngineCommand()->r_fullscreen;
-	if (r_fullscreen == 1){
-		sd.Windowed = false;
-	}
-	else{
-		sd.Windowed = true;
-	}
+	/*
+	Since the target output cannot be chosen explicitly when the swap-chain is created, 
+	you should not create a full-screen swap chain. This can reduce presentation performance 
+	if the swap chain size and the output window size do not match. 
+	*/
+	sd.Windowed = true;
 
 	assert(m_pDevice);
 	IDXGISwapChain* pSwapChain;
@@ -510,14 +509,19 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 		}
 		return true;		
 	}
-
+	else if (r_fullscreen == 1){
+		if (SUCCEEDED(pSwapChain->SetFullscreenState(TRUE, NULL))){
+			return true;
+		}
+	}
+	
 	auto pRenderTarget = CreateRenderTargetFor(pSwapChain, Vec2I(width, height));
 	if (!pRenderTarget){
 		SAFE_RELEASE(pSwapChain);
 		assert(0);
 		return false;
 	}
-	
+
 	mSwapChainRenderTargets[id] = pRenderTarget;
 
 	OnSwapchainCreated(id);
@@ -582,7 +586,7 @@ bool RendererD3D11::ResizeSwapChain(HWND_ID hwndId, const Vec2I& resol){
 		auto hr = itSwapChain->second->ResizeBuffers(1, resol.x, resol.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 		if (!SUCCEEDED(hr)){
 			Error("Resizing swapchain to %dx%d is failed(0x%x", resol.x, resol.y, hr);
-			const auto& originalSize = gFBEnv->pEngine->GetRequestedWndSize(hwndId);			
+			const auto& originalSize = gFBEnv->pEngine->GetWindowSize(hwndId);			
 			auto pRenderTarget = CreateRenderTargetFor(itSwapChain->second, originalSize);
 			if (!pRenderTarget){
 				return false;
@@ -642,17 +646,24 @@ void RendererD3D11::ChangeResolution(HWND_ID id, const Vec2I& resol){
 	OnSizeChanged(id, resol);
 }
 
-void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& resol){
+void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& newResol){
 	auto swIt = mSwapChains.Find(id);
 	if (swIt == mSwapChains.end())
 		return;
+	Vec2I resol = newResol;
+	if (gFBEnv->pConsole->GetEngineCommand()->r_fullscreen==1){
+		resol = gFBEnv->pConsole->GetEngineCommand()->r_resolution;
+	}
 
-	const auto& originalResol = gFBEnv->pEngine->GetRequestedWndSize(id);
-
+	Vec2I originalResol(0, 0);
 	{
 		auto rtIt = mSwapChainRenderTargets.Find(id);
-		if (originalResol == resol && rtIt != mSwapChainRenderTargets.end())
-			return;
+		if (rtIt != mSwapChainRenderTargets.end()){
+			originalResol = rtIt->second->GetSize();
+			if (originalResol == resol)
+				return;
+		}
+			
 	}
 	BOOL fullscreen;
 	IDXGIOutput* output = 0;
@@ -660,7 +671,7 @@ void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& resol){
 	if (output){
 		SAFE_RELEASE(output);
 	}
-	if (fullscreen){
+	/*if (fullscreen){
 		gFBEnv->pConsole->GetEngineCommand()->r_fullscreen = 1;
 	}
 	else{
@@ -672,15 +683,12 @@ void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& resol){
 		else{
 			gFBEnv->pConsole->GetEngineCommand()->r_fullscreen = 2;
 		}
-	}
+	}*/
 
 	SmartPtr<IScene> scene = (IScene*)GetMainScene();
 	SmartPtr<ICamera> camera = (ICamera*)GetMainCamera();
 	bool suc = ResizeSwapChain(id, resol);
-	if (suc){
-		gFBEnv->pEngine->OnResolutionChanged(id, resol);
-	}
-	else{
+	if (!suc){	
 		Error("ResizeSwapChain failed!");
 		assert(0);
 	}
@@ -698,12 +706,11 @@ void RendererD3D11::OnSizeChanged(HWND_ID id, const Vec2I& resol){
 	
 	rt->Bind();
 
-	
-
 	for (auto l : mRenderListeners)
 	{
 		l->OnResolutionChanged(id);
 	}
+	
 }
 
 //----------------------------------------------------------------------------

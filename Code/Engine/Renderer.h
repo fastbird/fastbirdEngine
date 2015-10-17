@@ -299,7 +299,8 @@ public:
 	virtual IRenderTarget* GetCurRenderTarget() const;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex);
-	virtual const Vec2I& GetRenderTargetSize() const;
+	virtual const Vec2I& GetRenderTargetSize(HWND_ID id = INVALID_HWND_ID) const;
+	virtual const Vec2I& GetRenderTargetSize(HWND hwnd = 0) const;
 	
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e);

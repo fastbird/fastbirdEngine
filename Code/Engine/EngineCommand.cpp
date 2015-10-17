@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/EngineCommand.h>
+#include <Engine/Engine.h>
 #include <Engine/IConsole.h>
 #include <Engine/IParticleEmitter.h>
 #include <Engine/ICamera.h>
@@ -160,6 +161,8 @@ EngineCommand::EngineCommand()
 
 	r_fullscreen = gFBEnv->pScriptSystem->GetIntVariable("r_fullscreen", 0);
 	REGISTER_CVAR(r_fullscreen, r_fullscreen, CVAR_CATEGORY_CLIENT, "fullscreen");
+	Engine* engine = (Engine*)gFBEnv->pEngine;
+	engine->SetFullScreen(r_fullscreen);
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);
