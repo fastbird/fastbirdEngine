@@ -58,8 +58,8 @@ if (!(V))
 
 
 #if defined(_DEBUG)
-#define CHECK(exp)          if(!(exp)) { DebugBreak(); } else {}
-#define VERIFY(exp)         if(!(exp)) { DebugBreak(); } else {}
+#define CHECK(exp)          if(!(exp)) { FBDebugBreak(); } else {}
+#define VERIFY(exp)         if(!(exp)) { FBDebugBreak(); } else {}
 #else
 #define CHECK(exp)
 #define VERIFY(exp)         (exp)

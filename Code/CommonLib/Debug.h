@@ -6,5 +6,5 @@ namespace fastbird
 // this is only for printing a msg into the DebugOuputWindow.
 // and CommonLib internal.
 void DebugOutput(const char* fmt, ...);
-
+void FBDebugBreak();
 }

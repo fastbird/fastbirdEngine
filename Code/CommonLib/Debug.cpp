@@ -14,4 +14,11 @@ void DebugOutput(const char* fmt, ...)
 		
 	OutputDebugString(buf);
 }
+
+void FBDebugBreak(){
+#ifdef _DEBUG
+	DebugBreak();
+#else
+#endif
+}
 }

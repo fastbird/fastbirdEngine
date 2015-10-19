@@ -596,7 +596,7 @@ void WinBase::SetWPos(const Vec2I& wpos){
 	Vec2I lpos = wpos;
 	if (mParent)
 	{
-		lpos -= mParent->GetWPos();
+		lpos -= mParent->GetFinalPos();
 	}
 	SetPos(lpos);
 }

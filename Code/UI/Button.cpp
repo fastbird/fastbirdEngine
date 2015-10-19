@@ -1255,9 +1255,9 @@ void Button::UpdateImageSize(){
 	if (mImages[ButtonImages::ActiveImage]){
 		mImages[ButtonImages::ActiveImage]->ChangeSize(finalSize);
 	}
-	//if (mImages[ButtonImages::DeactiveImage]){
-	//	mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
-	//}
+	/*if (mImages[ButtonImages::DeactiveImage]){
+		mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
+	}*/
 }
 void Button::SetEnable(bool enable){
 	if (!enable){

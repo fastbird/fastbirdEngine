@@ -74,8 +74,7 @@ UIManager::UIManager(lua_State* L)
 	WinBase::InitMouseCursor();
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
-	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
-	
+	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();	
 }
 
 UIManager::~UIManager()
