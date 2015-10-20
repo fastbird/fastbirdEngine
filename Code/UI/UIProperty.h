@@ -150,6 +150,8 @@ namespace fastbird
 			MOUSE_CURSOR_HAND,
 
 			NO_FOCUS_BY_CLICK,
+			SEND_EVENT_TO_CHILDREN,
+			RECEIVE_EVENT_FROM_PARENT,
 
 			COUNT
 		};
@@ -299,6 +301,9 @@ namespace fastbird
 			"MOUSE_CURSOR_HAND",
 
 			"NO_FOCUS_BY_CLICK",
+
+			"SEND_EVENT_TO_CHILDREN",
+			"RECEIVE_EVENT_FROM_PARENT",
 
 			"COUNT"
 		};
@@ -492,6 +497,10 @@ namespace fastbird
 			case MOUSE_CURSOR_HAND:
 				return false;
 			case NO_FOCUS_BY_CLICK:
+				return false;
+			case SEND_EVENT_TO_CHILDREN:
+				return false;
+			case RECEIVE_EVENT_FROM_PARENT:
 				return false;
 			}
 			assert(0);

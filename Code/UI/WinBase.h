@@ -142,6 +142,7 @@ namespace fastbird
 		bool mUpdateAlphaTexture;
 		bool mHand;
 		bool mNoFocusByClick;
+		bool mReceiveEventFromParent;
 		FunctionID mHandFuncId;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
@@ -425,6 +426,9 @@ namespace fastbird
 
 		virtual bool GetUseScissor() const { return mUseScissor; }
 		virtual bool GetNoFocusByClick() const { return mNoFocusByClick; }
+		virtual bool GetReceiveEventFromParent() const { return mReceiveEventFromParent; }
+
+
 	protected:
 		virtual void OnPosChanged(bool anim);
 		virtual void OnSizeChanged();
@@ -440,9 +444,9 @@ namespace fastbird
 		void OnDrag(int dx, int dy);
 		virtual void OnChildHasDragged(){}
 
-		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard);
-		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard);
-		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
 		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard);

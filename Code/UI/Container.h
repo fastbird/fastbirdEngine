@@ -111,6 +111,7 @@ namespace fastbird
 		Scroller* GetScrollerV() const { return mScrollerV; }
 
 
+
 	private:
 		friend class WinBase;
 
@@ -120,6 +121,10 @@ namespace fastbird
 		virtual void OnSizeChanged();
 		virtual void OnPosChanged(bool anim);
 		friend class UIManager;
+
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
 
 	protected:
 		typedef std::list<IWinBase*> COMPONENTS;
@@ -133,6 +138,7 @@ namespace fastbird
 		bool mChildrenChanged;  // only detecting addition. not deletion.
 		bool mMatchHeight;
 		bool mHandlingInput;
+		bool mSendEventToChildren;
 		COMPONENTS::reverse_iterator mCurInputHandling;
 		bool mCurInputHandlingChanged;
 

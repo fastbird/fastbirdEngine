@@ -260,15 +260,17 @@ namespace fastbird
 
 		virtual bool GetUseScissor() const = 0;
 
-		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard) = 0;
-		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard) = 0;
-		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
 		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual bool GetNoFocusByClick() const = 0;
+
+		virtual bool GetReceiveEventFromParent() const = 0;
 
 	protected:
 		virtual void NotifySizeChange() = 0;

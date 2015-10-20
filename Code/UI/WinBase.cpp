@@ -86,7 +86,7 @@ WinBase::WinBase()
 , mGatheringException(false)
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
-, mHand(false), mHandFuncId(-1), mNoFocusByClick(false)
+, mHand(false), mHandFuncId(-1), mNoFocusByClick(false), mReceiveEventFromParent(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -165,7 +165,7 @@ void WinBase::OnResolutionChanged(HWND_ID hwndId){
 				OnSizeChanged();
 			}
 			if (!mUseAbsoluteYSize){
-				SetNSizeX(mNSize.y);
+				SetNSizeY(mNSize.y);
 				OnSizeChanged();
 			}
 		}
@@ -802,8 +802,8 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
-void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -819,8 +819,8 @@ void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
 		TriggerRedraw();
 	}
 }
-void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -833,8 +833,8 @@ void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
 	}
 	TriggerRedraw();
 }
-void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -1612,6 +1612,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			mNoFocusByClick = StringConverter::parseBool(val);
 			return true;
 		}
+
+		case UIProperty::RECEIVE_EVENT_FROM_PARENT:
+		{
+			mReceiveEventFromParent = StringConverter::parseBool(val);
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning)
 		Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
@@ -2125,6 +2131,16 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		strcpy_s(val, bufsize, StringConverter::toString(mNoFocusByClick).c_str());
 		return true;
 	}
+
+	case UIProperty::SEND_EVENT_TO_CHILDREN:
+	{
+		if (notDefaultOnly){
+			if (mReceiveEventFromParent == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mReceiveEventFromParent).c_str());
+		return true;
+	}
 	}
 	val = "";
 	return false;
@@ -2577,23 +2593,6 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	if (sz)
 		SetName(sz);
 
-	sz = pelem->Attribute("useNPosX");
-	if (sz){
-		mUseAbsoluteXPos = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNPosY");
-	if (sz){
-		mUseAbsoluteYPos = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeX");
-	if (sz){
-		mUseAbsoluteXSize = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeY");
-	if (sz){
-		mUseAbsoluteYSize = !StringConverter::parseBool(sz);
-	}
-
 	// positions
 	sz = pelem->Attribute("pos");
 	if (sz)
@@ -2628,16 +2627,22 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("npos");
 	if (sz)
 	{
+		mUseAbsoluteXPos = false;
+		mUseAbsoluteYPos = false;
 		Vec2 npos = StringConverter::parseVec2(sz);
 		SetNPos(npos);
 	}
 	sz = pelem->Attribute("nposX");
-	if (sz)
+	if (sz){
+		mUseAbsoluteXPos = false;
 		SetNPosX(StringConverter::parseReal(sz));
+	}
 
 	sz = pelem->Attribute("nposY");
-	if (sz)
+	if (sz){
+		mUseAbsoluteYPos = false;
 		SetNPosY(StringConverter::parseReal(sz));
+	}
 
 	sz = pelem->Attribute("offset");
 	{
@@ -2685,6 +2690,9 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		else
 			y = StringConverter::parseReal(data[1].c_str());
 
+		mUseAbsoluteXSize = false;
+		mUseAbsoluteYSize = false;
+
 		Vec2 nsize(x, y);
 		SetNSize(nsize);
 	}
@@ -2709,6 +2717,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		{
 			x = StringConverter::parseReal(sz);
 		}
+		mUseAbsoluteXSize = false;
 		SetNSizeX(x);
 	}
 
@@ -2725,6 +2734,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		{
 			y = StringConverter::parseReal(sz);
 		}
+		mUseAbsoluteYSize = false;
 		SetNSizeY(y);
 	}
 
@@ -2771,6 +2781,23 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	{
 		int y = StringConverter::parseInt(sz);
 		ModifySize(Vec2I(0, y));
+	}
+
+	sz = pelem->Attribute("useNPosX");
+	if (sz){
+		mUseAbsoluteXPos = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNPosY");
+	if (sz){
+		mUseAbsoluteYPos = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeX");
+	if (sz){
+		mUseAbsoluteXSize = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeY");
+	if (sz){
+		mUseAbsoluteYSize = !StringConverter::parseBool(sz);
 	}
 
 	OnSizeChanged();
@@ -2835,26 +2862,12 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	if (success)
 		SetName(name.c_str());
 
-	bool b = compTable.GetField("useNPosX").GetBool(success);
-	if (success){
-		mUseAbsoluteXPos = !b;
-	}
-	b = compTable.GetField("useNPosY").GetBool(success);
-	if (success){
-		mUseAbsoluteYPos = !b;
-	}
-	b = compTable.GetField("useNSizeX").GetBool(success);
-	if (success){
-		mUseAbsoluteXSize = !b;
-	}
-	b = compTable.GetField("useNSizeY").GetBool(success);
-	if (success){
-		mUseAbsoluteYSize = !b;
-	}
-
 	auto npos = compTable.GetField("npos").GetVec2(success);
-	if (success)
+	if (success){
+		mUseAbsoluteXPos = false;
+		mUseAbsoluteYPos = false;
 		SetNPos(npos);
+	}
 
 	// positions
 	auto pos = compTable.GetField("pos").GetVec2I(success);
@@ -2865,12 +2878,16 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	}
 
 	auto nPosX = compTable.GetField("nposX").GetFloat(success);
-	if (success)
+	if (success){
+		mUseAbsoluteXPos = false;
 		SetNPosX(nPosX);
+	}
 
 	auto nPosY = compTable.GetField("nposY").GetFloat(success);
-	if (success)
+	if (success){
+		mUseAbsoluteYPos = false;
 		SetNPosY(nPosY);
+	}
 
 
 	int x = compTable.GetField("posX").GetInt(success);
@@ -2914,6 +2931,8 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	Vec2 nsize = compTable.GetField("nsize").GetVec2(success);
 	if (success)
 	{
+		mUseAbsoluteXSize = false;
+		mUseAbsoluteYSize = false;
 		SetNSize(nsize);
 	}
 
@@ -2927,6 +2946,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		float x = compTable.GetField("nsizeX").GetFloat(success);
 		if (success)
 		{
+			mUseAbsoluteXSize = false;
 			SetNSizeX(x);
 		}
 		else
@@ -2934,6 +2954,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			std::string str = compTable.GetField("nsizeX").GetString(success);
 			if (success && _stricmp(str.c_str(), "fill") == 0)
 			{
+				mUseAbsoluteXSize = false;
 				SetNSizeX(1.0f - mNPos.x);
 			}
 		}
@@ -2943,6 +2964,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		float y = compTable.GetField("nsizeY").GetFloat(success);
 		if (success)
 		{
+			mUseAbsoluteYSize = false;
 			SetNSizeY(y);
 		}
 		else
@@ -2950,6 +2972,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			std::string str = compTable.GetField("nsizeY").GetString(success);
 			if (_stricmp(str.c_str(), "fill") == 0)
 			{
+				mUseAbsoluteYSize = false;
 				SetNSizeY(1.0f - mNPos.y);
 			}
 		}
@@ -3008,6 +3031,23 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		if (success) {
 			ModifySize(Vec2I(0, y));
 		}
+	}
+
+	bool b = compTable.GetField("useNPosX").GetBool(success);
+	if (success){
+		mUseAbsoluteXPos = !b;
+	}
+	b = compTable.GetField("useNPosY").GetBool(success);
+	if (success){
+		mUseAbsoluteYPos = !b;
+	}
+	b = compTable.GetField("useNSizeX").GetBool(success);
+	if (success){
+		mUseAbsoluteXSize = !b;
+	}
+	b = compTable.GetField("useNSizeY").GetBool(success);
+	if (success){
+		mUseAbsoluteYSize = !b;
 	}
 
 	OnSizeChanged();
