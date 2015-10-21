@@ -98,6 +98,8 @@ namespace fastbird
 		std::vector<std::string> mDeleteLuaUIPending;
 		std::set<IWinBase*> mAlwaysMouseOverCheckComps;
 
+		Vec2 mPrevTooltipNPos;
+
 	protected:
 
 		virtual void OnDeleteWinBase(IWinBase* winbase);
@@ -171,7 +173,10 @@ namespace fastbird
 		virtual bool IsMouseInUI() const { return mMouseIn; }		
 
 		virtual void SetTooltipString(const std::wstring& ts);
-		virtual void SetTooltipPos(const Vec2& npos);
+		virtual void SetTooltipPos(const Vec2& npos, bool checkNewPos = true);
+	private:
+		void RefreshTooltipPos();
+	public:
 		virtual void CleanTooltip();
 
 		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func);

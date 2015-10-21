@@ -621,9 +621,7 @@ void Wnd::OnCloseBtnClicked(void* arg){
 
 bool Wnd::SetVisible(bool show)
 {
-	bool changed = __super::SetVisible(show);
-	if (changed)
-	{
+	if (show){
 		if (!mParent && !mManualParent){
 			if (mNoFocus){
 				gFBEnv->pUIManager->MoveToTop(this);
@@ -633,6 +631,11 @@ bool Wnd::SetVisible(bool show)
 			}
 
 		}
+	}
+	bool changed = __super::SetVisible(show);
+	if (changed)
+	{
+		
 
 		if (mTitlebar)
 			mTitlebar->SetVisible(show);

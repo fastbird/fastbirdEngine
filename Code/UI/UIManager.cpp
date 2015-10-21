@@ -58,7 +58,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
 	, mMultiLocating(false), mAtlasStaging(0), mNewFocusWnd(0)
-	, mMouseOvered(0), mMouseDragStartedUI(0)
+	, mMouseOvered(0), mMouseDragStartedUI(0), mPrevTooltipNPos(-1, -1)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -1379,22 +1379,22 @@ void UIManager::ShowTooltip()
 	mTooltipTextBox->ChangeSizeX(width);
 	mTooltipTextBox->SetText(mTooltipText.c_str());
 	int textWidth = mTooltipTextBox->GetTextWidth();
-	mTooltipUI->ChangeSizeX(textWidth + 16);
+	mTooltipUI->ChangeSizeX(textWidth + 16);	
 	mTooltipTextBox->ChangeSizeX(textWidth + 4);
 	int sizeY = mTooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
 	mTooltipUI->ChangeSizeY(sizeY + 8);
 	mTooltipUI->SetVisible(true);
+	RefreshTooltipPos();
 }
 
-void UIManager::SetTooltipPos(const Vec2& npos)
+void UIManager::SetTooltipPos(const Vec2& npos, bool checkNewPos)
 {
 	//if (!mTooltipUI->GetVisible())
 //		return;
 
-	static Vec2 prevNPos(-1, -1);
-	if (prevNPos == npos)
+	if (checkNewPos && mPrevTooltipNPos == npos)
 		return;
-	prevNPos = npos;
+	mPrevTooltipNPos = npos;
 	HWND_ID hwndId = mTooltipUI->GetHwndId();
 	auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
 	assert(hwndId != -1);
@@ -1405,14 +1405,24 @@ void UIManager::SetTooltipPos(const Vec2& npos)
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
 	const Vec2& nSize = mTooltipUI->GetNSize();
+	Log("nPos = %f, nSize = %f", npos.x, nSize.x);
 	if (backPos.x + nSize.x>1.0f)
 	{
-		backPos.x -= backPos.x + nSize.x - 1.0f;
+		float mod = backPos.x + nSize.x - 1.0f;
+		backPos.x -= mod;
+		Log("backPos mod %f, %f", mod, backPos.x);
+	}
+	else{
+		Log("backPos not mod %f", backPos.x);
 	}
 	backPos.y += gTooltipFontSize / (float)size.y;
 	mTooltipUI->ChangeNPos(backPos);
 }
 
+void UIManager::RefreshTooltipPos()
+{
+	SetTooltipPos(mPrevTooltipNPos, false);
+}
 void UIManager::CleanTooltip()
 {
 	if (!mTooltipText.empty())

@@ -49,7 +49,7 @@ namespace fastbird
 		virtual bool IsMouseInUI() const = 0;
 		virtual void DisplayMsg(const std::string& msg, ...) = 0;
 		virtual void SetTooltipString(const std::wstring& ts) = 0;
-		virtual void SetTooltipPos(const Vec2& npos) = 0;
+		virtual void SetTooltipPos(const Vec2& npos, bool checkNewPos = true) = 0;
 		virtual void CleanTooltip() = 0;
 		enum POPUP_TYPE
 		{
