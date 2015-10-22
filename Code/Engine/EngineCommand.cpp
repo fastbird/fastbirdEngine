@@ -162,7 +162,7 @@ EngineCommand::EngineCommand()
 	r_fullscreen = gFBEnv->pScriptSystem->GetIntVariable("r_fullscreen", 0);
 	REGISTER_CVAR(r_fullscreen, r_fullscreen, CVAR_CATEGORY_CLIENT, "fullscreen");
 	Engine* engine = (Engine*)gFBEnv->pEngine;
-	engine->SetFullScreen(r_fullscreen);
+	engine->SetFullScreen(r_fullscreen!=0);
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);

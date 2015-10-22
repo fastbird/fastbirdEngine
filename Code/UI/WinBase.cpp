@@ -144,6 +144,7 @@ void WinBase::SetHwndId(HWND_ID hwndId)
 }
 
 void WinBase::OnResolutionChanged(HWND_ID hwndId){
+
 	if (mUIObject && !mRender3D)
 	{
 		mUIObject->SetRenderTargetSize(
@@ -156,20 +157,28 @@ void WinBase::OnResolutionChanged(HWND_ID hwndId){
 			if (!mUseAbsoluteXPos){
 				ChangeNPosX(mNPos.x);
 			}
+
 			if (!mUseAbsoluteYPos){
 				ChangeNPosY(mNPos.y);
-			}
+			}			
 
 			if (!mUseAbsoluteXSize){
 				SetNSizeX(mNSize.x);
 				OnSizeChanged();
 			}
+			
 			if (!mUseAbsoluteYSize){
 				SetNSizeY(mNSize.y);
 				OnSizeChanged();
 			}
 		}
+		
 		RefreshScissorRects();
+
+		CalcTextWidth();
+		AlignText();
+		if (mUIObject)
+			mUIObject->SetTextSize(mTextSize);
 	}
 }
 
@@ -358,33 +367,54 @@ void WinBase::SetWNSize(const fastbird::Vec2& size)
 }
 
 //---------------------------------------------------------------------------
+void WinBase::OnParentPosChanged(){
+	OnPosChanged(false);
+}
+
+//---------------------------------------------------------------------------
 void WinBase::OnParentSizeChanged() {
 	assert(mParent);
-	bool sizeChanged = false;
-	if (!mUseAbsoluteXSize){
-		mSize.x = Round(mParent->GetFinalSize().x * mNSize.x);
-		sizeChanged = true;
-	}
-	else{
-		mNSize.x = mSize.x / (float)mParent->GetFinalSize().x;
-	}
+	
+	const auto& parentSize = mParent->GetFinalSize();
 
-	if (!mUseAbsoluteYSize) {
-		mSize.y = Round(mParent->GetFinalSize().y * mNSize.y);
-		sizeChanged = true;
+	bool posChanged = false;
+	if (mUseAbsoluteXPos){
+		mNPos.x = mPos.x / (float)parentSize.x;
 	}
 	else{
-		mNSize.y = mSize.y / (float)mParent->GetFinalSize().y;
-	}
-	bool posChanged = false;
-	if (!mUseAbsoluteXPos){
 		mPos.x = Round(mParent->GetFinalSize().x * mNPos.x);
 		posChanged = true;
 	}
-	if (!mUseAbsoluteYPos){
+	if (mUseAbsoluteYPos){
+		mNPos.y = mPos.y / (float)parentSize.y;
+	}
+	else{
 		mPos.y = Round(mParent->GetFinalSize().y * mNPos.y);
 		posChanged = true;
 	}
+
+	bool sizeChanged = false;
+	if (!mUseAbsoluteXSize){
+		if (mFillX){
+			mNSize.x = 1.0f - mNPos.x;					
+		}
+		mSize.x = Round(parentSize.x * mNSize.x);
+		sizeChanged = true;
+	}
+	else{
+		mNSize.x = mSize.x / (float)parentSize.x;
+	}
+
+	if (!mUseAbsoluteYSize) {
+		if (mFillY){
+			mNSize.y = 1.0f - mNPos.y;			
+		}
+		mSize.y = Round(parentSize.y * mNSize.y);
+		sizeChanged = true;
+	}
+	else{
+		mNSize.y = mSize.y / (float)parentSize.y;
+	}	
 
 	if (sizeChanged){
 		OnSizeChanged();
@@ -466,11 +496,6 @@ void WinBase::OnPosChanged(bool anim)
 	{
 		mParent->SetChildrenPosSizeChanged();
 	}
-}
-
-//---------------------------------------------------------------------------
-void WinBase::OnParentPosChanged(){
-	OnPosChanged(false);
 }
 
 //---------------------------------------------------------------------------
@@ -2955,6 +2980,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			if (success && _stricmp(str.c_str(), "fill") == 0)
 			{
 				mUseAbsoluteXSize = false;
+				mFillX = true;
 				SetNSizeX(1.0f - mNPos.x);
 			}
 		}
@@ -2964,7 +2990,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		float y = compTable.GetField("nsizeY").GetFloat(success);
 		if (success)
 		{
-			mUseAbsoluteYSize = false;
+			mUseAbsoluteYSize = false;			
 			SetNSizeY(y);
 		}
 		else
@@ -2973,6 +2999,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			if (_stricmp(str.c_str(), "fill") == 0)
 			{
 				mUseAbsoluteYSize = false;
+				mFillY = true;
 				SetNSizeY(1.0f - mNPos.y);
 			}
 		}

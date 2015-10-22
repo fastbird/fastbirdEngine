@@ -1404,17 +1404,12 @@ void UIManager::SetTooltipPos(const Vec2& npos, bool checkNewPos)
 	{
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
-	const Vec2& nSize = mTooltipUI->GetNSize();
-	Log("nPos = %f, nSize = %f", npos.x, nSize.x);
+	const Vec2& nSize = mTooltipUI->GetNSize();	
 	if (backPos.x + nSize.x>1.0f)
 	{
-		float mod = backPos.x + nSize.x - 1.0f;
-		backPos.x -= mod;
-		Log("backPos mod %f, %f", mod, backPos.x);
-	}
-	else{
-		Log("backPos not mod %f", backPos.x);
-	}
+		float mod = backPos.x + nSize.x - 1.0f + (4.0f /size.x);
+		backPos.x -= mod;		
+	}	
 	backPos.y += gTooltipFontSize / (float)size.y;
 	mTooltipUI->ChangeNPos(backPos);
 }

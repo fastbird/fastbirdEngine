@@ -615,6 +615,10 @@ namespace fastbird
 		const char* compName = luaL_checkstring(L, 2);
 		const char* prop = luaL_checkstring(L, 3);
 		const char* val = luaL_checkstring(L, 4);
+		if (strcmp(compName, "uranium") == 0){
+			int a = 0;
+			a++;
+		}
 		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val);
 		return 0;
 

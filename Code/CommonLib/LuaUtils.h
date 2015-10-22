@@ -174,6 +174,8 @@ namespace fastbird
 	std::string GetLuaVarAsString(lua_State* L, const char* varName, const char* luaFile=0);
 	bool GetLuaVarAsBoolean(lua_State* L, const char* varName);
 	Vec2I GetLuaVarAsVec2I(lua_State* L, const char* varname);
+	float GetLuaVarAsFloat(lua_State* L, const char* varName);
+	unsigned GetLuaVarAsUnsigned(lua_State* L, const char* varName);
 	void SetLuaVar(lua_State* L, const char* varName, bool value);
 	
 }

@@ -252,6 +252,17 @@ namespace fastbird
 		return ret;
 	}
 
+	float GetLuaVarAsFloat(lua_State* L, const char* varName){
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return (float)luaL_checknumber(L, -1);
+	}
+	unsigned GetLuaVarAsUnsigned(lua_State* L, const char* varName){
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return (unsigned)luaL_checknumber(L, -1);
+	}
+
 	void SetLuaVar(lua_State* L, const char* varName, bool value)
 	{
 		LUA_STACK_WATCHER w(L, "void SetLuaVar(lua_State* L, const char* varName, bool value)");

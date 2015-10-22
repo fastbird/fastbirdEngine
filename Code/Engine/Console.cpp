@@ -17,6 +17,15 @@ IConsole* IConsole::CreateConsole()
 	return pCon;
 }
 
+bool gConsoleInvalidParam = false;
+static void InvalidParamHandler(const wchar_t *pszExpression,
+	const wchar_t *pszFunction,
+	const wchar_t *pszFile,
+	unsigned int nLine,
+	uintptr_t pReserved){
+	gConsoleInvalidParam = true;
+}
+
 const char* cacheFile = "consoleCache.tmp";
 //--------------------------------------------------------------------------
 Console::Console()
@@ -189,11 +198,17 @@ void Console::Log(const char* szFmt, ...)
 {
 	LOCK_CRITICAL_SECTION lock(mBufferwCS);
 	char buf[4096];
-
+	auto oldHandler = _set_invalid_parameter_handler(InvalidParamHandler);
 	va_list args;
 	va_start(args, szFmt);
 	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
+	if (gConsoleInvalidParam){
+		strcpy_s(buf, szFmt);
+		gConsoleInvalidParam = false;
+	}
+	_set_invalid_parameter_handler(oldHandler);
+	
 
 	std::cerr << buf << std::endl;
 

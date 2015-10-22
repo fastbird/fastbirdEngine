@@ -36,6 +36,7 @@ namespace fastbird
 		ImageBox* mImage;
 		std::string mStrBackImage;
 		std::string mStrKeepRatio;
+		std::wstring mMultiLineText;
 	};
 
 }

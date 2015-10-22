@@ -74,6 +74,7 @@ namespace fastbird
 			unsigned height = GetTextBoxHeight();
 			ChangeSizeY(height);
 		}
+
 		TriggerRedraw();
 	}
 
@@ -84,10 +85,10 @@ namespace fastbird
 		unsigned width = mSize.x;
 		pFont->SetHeight(mTextSize);
 		float textWidth;
-		mTextw = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
+		mMultiLineText = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
 		mTextWidth = (unsigned)Round(textWidth);
 		pFont->SetBackToOrigHeight();
-		mUIObject->SetText(mTextw.c_str());
+		mUIObject->SetText(mMultiLineText.c_str());
 	}
 
 	bool TextBox::SetProperty(UIProperty::Enum prop, const char* val)
