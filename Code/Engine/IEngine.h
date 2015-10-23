@@ -199,9 +199,10 @@ namespace fastbird
 		virtual void ChangeRect(HWND_ID id, const RECT& rect) = 0;
 		virtual void OnResolutionChanged(HWND_ID id, const Vec2I& size) = 0;  // internal
 		virtual void ChangeStyle(HWND_ID id, LONG_PTR newStyle) = 0;
-		virtual bool IsFullScreen() const = 0;
+		virtual bool IsFullScreen() const = 0;		
 		
 	public:
+		virtual void StopParticles() = 0;
 	};
 
 	typedef SmartPtr<IEngine> EnginePtr;

@@ -27,6 +27,8 @@ public:
 
 	unsigned GetNumActiveParticles() const;
 
+	void StopParticles();
+
 private:
 	friend class ParticleEmitter;
 	void AddActiveParticle(IParticleEmitter* pEmitter);

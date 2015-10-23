@@ -210,10 +210,12 @@ namespace fastbird
 		virtual void ChangeSize(HWND_ID id, const Vec2I& size);	
 		virtual void ChangeRect(HWND_ID id, const RECT& rect);
 		virtual void OnResolutionChanged(HWND_ID id, const Vec2I& size); // internal
-		virtual void ChangeStyle(HWND_ID id, LONG_PTR newStyle);
+		virtual void ChangeStyle(HWND_ID id, LONG_PTR newStyle);		
 		
 
 	public:
+		virtual void StopParticles();
+
 	};
 };
 

@@ -518,7 +518,7 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player);
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
 	virtual void GenGGX();
-	virtual void ChangeFullscreenMode(int mode) = 0;
+	virtual void ChangeFullscreenMode(int mode) = 0;	
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

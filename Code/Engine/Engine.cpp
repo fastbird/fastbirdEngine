@@ -1576,4 +1576,8 @@ void Engine::ChangeStyle(HWND_ID id, LONG_PTR newStyle)
 	}
 
 }
+
+void Engine::StopParticles(){
+	ParticleManager::GetParticleManager().StopParticles();
+}
 } // namespace fastbird

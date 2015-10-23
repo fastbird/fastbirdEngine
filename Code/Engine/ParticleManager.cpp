@@ -344,4 +344,12 @@ unsigned ParticleManager::GetNumActiveParticles() const
 	return mActiveParticles.size();
 }
 
+void ParticleManager::StopParticles(){
+	Emitters::iterator it = mActiveParticles.begin();
+	for (; it != mActiveParticles.end(); it++)
+	{
+		(*it)->StopImmediate();			
+	}
+}
+
 }

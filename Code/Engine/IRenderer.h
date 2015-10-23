@@ -358,7 +358,7 @@ public:
 	virtual void GenGGX() = 0;
 	virtual Vec2I FindClosestSize(HWND_ID id, const Vec2I& input) = 0;
 
-	virtual bool GetResolutionList(unsigned& outNum, Vec2I* list) = 0;
+	virtual bool GetResolutionList(unsigned& outNum, Vec2I* list) = 0;	
 };
 
 }
