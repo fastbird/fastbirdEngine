@@ -30,13 +30,14 @@ namespace fastbird
 	{
 		if (mCurVisibility == Visibility::Showing)
 		{
-			mCurShowTime -= dt;
-			if (mCurShowTime <= 0)
-			{
-				mCurShowTime = 0;
-				mCurVisibility = Visibility::Shown;
+			if (mCurShowTime > 0.f){
+				mCurShowTime -= dt;
+				if (mCurShowTime <= 0)
+				{
+					mCurShowTime = 0;
+					mCurVisibility = Visibility::Shown;
+				}				
 			}
-			mWinBase->TriggerRedraw();
 		}
 		else if (mCurVisibility == Visibility::Hiding)
 		{
@@ -47,7 +48,6 @@ namespace fastbird
 				mCurVisibility = Visibility::Hided;
 				mWinBase->SetVisibleInternal(false);
 			}
-			mWinBase->TriggerRedraw();
 		}
 	}
 
@@ -64,14 +64,19 @@ namespace fastbird
 				switch (mCurVisibility)
 				{
 				case Visibility::Hided:
-				{
-					mCurVisibility = Visibility::Showing;
-					mCurShowTime = mShowTime;
-					mWinBase->SetVisibleInternal(true);
-					for (auto anim : mShowAnimations)
-					{
-						anim->SetActivated(true);
+				{					
+					if (mShowTime > 0){
+						mCurVisibility = Visibility::Showing;
+						mCurShowTime = mShowTime;
+						for (auto anim : mShowAnimations)
+						{
+							anim->SetActivated(true);
+						}
 					}
+					else{
+						mCurVisibility = Visibility::Shown;
+					}
+					mWinBase->SetVisibleInternal(true);						
 					return true;
 				}
 				case Visibility::Hiding:
@@ -108,11 +113,17 @@ namespace fastbird
 				{
 				case Visibility::Shown:
 				{
-					mCurVisibility = Visibility::Hiding;
-					mCurHideTime = mHideTime;
-					for (auto anim : mHideAnimations)
-					{
-						anim->SetActivated(true);
+					if (mHideTime > 0){
+						mCurVisibility = Visibility::Hiding;
+						mCurHideTime = mHideTime;
+						for (auto anim : mHideAnimations)
+						{
+							anim->SetActivated(true);
+						}
+					}
+					else{
+						mCurVisibility = Visibility::Hided;
+						mWinBase->SetVisibleInternal(false);
 					}
 
 					return false; // still visible.

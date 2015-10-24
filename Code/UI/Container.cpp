@@ -263,9 +263,10 @@ void Container::RemoveAllChild(bool immediately)
 			if (childCont)
 				childCont->RemoveAllChild(false);
 			child->ClearName();
-			if (ValueNotExistInVector(mPendingDelete, child))
-				mPendingDelete.push_back(child);
-		}
+			if (ValueNotExistInVector(mPendingDelete, child)){
+				mPendingDelete.push_back(child);				
+			}
+		}		
 	}
 	SetChildrenPosSizeChanged();
 }

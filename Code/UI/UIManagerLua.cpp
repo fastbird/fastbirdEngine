@@ -369,10 +369,15 @@ namespace fastbird
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
+		bool immedi = false;
+		if (lua_gettop(L) == 3){
+			immedi = lua_toboolean(L, 3) != 0;
+		}
+
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
 		if (comp)
 		{
-			comp->RemoveAllChild(false);
+			comp->RemoveAllChild(immedi);
 			lua_pushboolean(L, 1);
 		}
 		else

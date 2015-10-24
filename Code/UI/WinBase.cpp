@@ -727,6 +727,7 @@ void WinBase::SetVisibleInternal(bool visible)
 			borderImage->SetVisible(visible);
 		}
 	}
+	TriggerRedraw();
 }
 
 bool WinBase::GetVisible() const
