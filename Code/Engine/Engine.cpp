@@ -549,6 +549,12 @@ void Engine::HandleUserInput()
 				mConsole->ToggleOpen();
 			}
 		}
+
+		if (mKeyboard->IsKeyPressed(VK_SNAPSHOT)){
+			if (mRenderer){
+				mRenderer->TakeScreenshot();
+			}
+		}
 	}
 
 

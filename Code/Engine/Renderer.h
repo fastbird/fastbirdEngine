@@ -215,6 +215,7 @@ protected:
 		RECT mRect;
 	};
 	std::vector<OutputInfo> mOutputInfos;
+	bool mTakeScreenShot;
 
 public:
 	Renderer();
@@ -518,7 +519,10 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player);
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
 	virtual void GenGGX();
-	virtual void ChangeFullscreenMode(int mode) = 0;	
+	virtual void ChangeFullscreenMode(int mode) = 0;
+	virtual void TakeScreenshot();
+
+	const char* GetNextScreenshotFile();
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)
