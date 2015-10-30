@@ -28,6 +28,8 @@ namespace fastbird
 		//virtual void Initilaize() = 0;
 		virtual void Deinitilaize() = 0;
 		virtual void Update(float dt) = 0;
+		virtual void EnablePhysics() = 0;
+		virtual void DisablePhysics() = 0;
 
 		//virtual void CreateRigidBody(float mass, const Transformation& startTransform, 
 			//btCollisionShape)
@@ -63,6 +65,7 @@ namespace fastbird
 
 		virtual unsigned CreateBTSphereShape(float radius) = 0;
 		virtual void DeleteBTShape(unsigned id) = 0;
+		virtual void DrawDebugInfo() = 0;
 
 		//-------------------------------------------------------------------
 		// collision shape manager
@@ -79,6 +82,8 @@ namespace fastbird
 
 
 		virtual void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func) = 0;
+
+		virtual void SetEngine(IEngine* engine) = 0;
 	};
 }
 

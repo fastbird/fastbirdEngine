@@ -32,6 +32,7 @@ SamplerComparisonState gShadowSampler : register(s3);
 SamplerState gPointWrapSampler : register(s4);
 SamplerState gLinearWrapSampler : register(s5);
 SamplerState gLinearBlackBorderSampler : register(s6);
+SamplerState gPointBlackBorderSampler : register(s7);
 
 #endif // !CPP
 

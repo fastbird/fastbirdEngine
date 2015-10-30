@@ -46,6 +46,8 @@ namespace fastbird
 		virtual bool GetShow() const = 0;
 		virtual void SetGameType(int type) = 0;
 		virtual int GetGameType() const = 0;
+		virtual void SetGameId(unsigned id) = 0;
+		virtual unsigned GetGameId() const = 0;
 		virtual void SetGamePtr(void* ptr) = 0;
 		virtual void* GetGamePtr() const = 0;
 		virtual void SetRadius(float r) = 0;

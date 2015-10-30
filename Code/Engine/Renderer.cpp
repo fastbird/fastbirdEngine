@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/Renderer.h>
+#include <Engine/Engine.h>
 #include <Engine/Font.h>
 #include <Engine/Material.h>
 #include <Engine/DebugHud.h>
@@ -178,6 +179,14 @@ void Renderer::Deinit()
 	mRenderTargetPool.clear();	
 }
 
+// for windowed
+void Renderer::ChangeWindowSize(HWND_ID id, const Vec2I& resol){
+	if (id == 1)
+		gFBEnv->pConsole->GetEngineCommand()->r_resolution = resol;
+
+	gFBEnv->pEngine->ChangeSize(id, resol);
+}
+
 void Renderer::CleanDepthWriteResources()
 {
 	mDepthWriteShader = 0;
@@ -213,272 +222,289 @@ void Renderer::CleanGodRayResources()
 //----------------------------------------------------------------------------
 bool Renderer::OnPrepared()
 {
-	mMaterials[DEFAULT_MATERIALS::QUAD] = fastbird::IMaterial::CreateMaterial(
-		"es/materials/quad.material");
-	mMaterials[DEFAULT_MATERIALS::QUAD_TEXTURE] = fastbird::IMaterial::CreateMaterial(
-		"es/materials/QuadWithTexture.material");
-	mMaterials[DEFAULT_MATERIALS::BILLBOARDQUAD] = fastbird::IMaterial::CreateMaterial(
-		"es/materials/billboardQuad.material");
+	static bool firstCall = true;
+	if (firstCall){
+		firstCall = false;
+		mMaterials[DEFAULT_MATERIALS::QUAD] = fastbird::IMaterial::CreateMaterial(
+			"es/materials/quad.material");
+		mMaterials[DEFAULT_MATERIALS::QUAD_TEXTURE] = fastbird::IMaterial::CreateMaterial(
+			"es/materials/QuadWithTexture.material");
+		mMaterials[DEFAULT_MATERIALS::BILLBOARDQUAD] = fastbird::IMaterial::CreateMaterial(
+			"es/materials/billboardQuad.material");
 
-	// POSITION
-	{
-		INPUT_ELEMENT_DESC desc("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION].push_back(desc);
-	}
-
-	// POSITION_COLOR
-	{
-		INPUT_ELEMENT_DESC desc[] = 
+		// POSITION
 		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, 
+			INPUT_ELEMENT_DESC desc("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION].push_back(desc);
+		}
+
+		// POSITION_COLOR
+		{
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
 				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12, 
+				INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12,
 				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[1]);
-	}
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR].push_back(desc[1]);
+		}
 
-	// POSITION_COLOR_TEXCOORD
-	{
-		INPUT_ELEMENT_DESC desc[] =
+		// POSITION_COLOR_TEXCOORD
 		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 16,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[1]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[2]);
-	}
-
-	// POSITION_HDR_COLOR
-	{
-		INPUT_ELEMENT_DESC desc[] =
-		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[1]);
-	}
-
-	// POSITION_NORMAL,
-	{
-		INPUT_ELEMENT_DESC desc[] = 
-		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-			INPUT_ELEMENT_DESC("NORMAL", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 12,
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL].push_back(desc[1]);
-	}
-	
-	//POSITION_TEXCOORD,
-	{
-		INPUT_ELEMENT_DESC desc[] = 
-		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, 
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
 				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 12, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_TEXCOORD].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_TEXCOORD].push_back(desc[1]);
-	}
-	//POSITION_COLOR_TEXCOORD_BLENDINDICES,
-	{
-		INPUT_ELEMENT_DESC desc[] = 
-		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 16, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-			INPUT_ELEMENT_DESC("BLENDINDICES", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 24, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
-			.push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
-			.push_back(desc[1]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
-			.push_back(desc[2]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
-			.push_back(desc[3]);
-	}
+				INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 16,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[1]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD].push_back(desc[2]);
+		}
 
-	//POSITION_NORMAL_TEXCOORD,
-	{
-		INPUT_ELEMENT_DESC desc[] = 
+		// POSITION_HDR_COLOR
 		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, 
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_HDR_COLOR].push_back(desc[1]);
+		}
+
+		// POSITION_NORMAL,
+		{
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("NORMAL", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL].push_back(desc[1]);
+		}
+
+		//POSITION_TEXCOORD,
+		{
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_TEXCOORD].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_TEXCOORD].push_back(desc[1]);
+		}
+		//POSITION_COLOR_TEXCOORD_BLENDINDICES,
+		{
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 16,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("BLENDINDICES", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 24,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0)
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
+				.push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
+				.push_back(desc[1]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
+				.push_back(desc[2]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES]
+				.push_back(desc[3]);
+		}
+
+		//POSITION_NORMAL_TEXCOORD,
+		{
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
 				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
 				INPUT_ELEMENT_DESC("NORMAL", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 12,
 				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 24, 
-				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 ),
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[1]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[2]);
-	}
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 0, 24,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[1]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_NORMAL_TEXCOORD].push_back(desc[2]);
+		}
 
-	// POSITION_VEC4,
-	{
-		INPUT_ELEMENT_DESC desc[] =
+		// POSITION_VEC4,
 		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[1]);
-	}
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[1]);
+		}
 
-	// POSITION_VEC4_COLOR,
-	{
-		INPUT_ELEMENT_DESC desc[] =
+		// POSITION_VEC4_COLOR,
 		{
-			INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-			INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 28,
-			INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
-		};
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[0]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[1]);
-		mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[2]);
+			INPUT_ELEMENT_DESC desc[] =
+			{
+				INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT4, 0, 12,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+				INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 0, 28,
+				INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+			};
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[0]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[1]);
+			mInputLayoutDescs[DEFAULT_INPUTS::POSITION_VEC4].push_back(desc[2]);
+		}
+
+		//-----------------------------------------------------------------------
+		mDynVBs[DEFAULT_INPUTS::POSITION] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_P),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PC),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PCT),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_NORMAL] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PN),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_TEXCOORD] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PT),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES] =
+			CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PCTB),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_VEC4] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PV4),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mDynVBs[DEFAULT_INPUTS::POSITION_VEC4_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PV4C),
+			DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+
+		//-----------------------------------------------------------------------
+		static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
+
+		mFont = FB_NEW(Font);
+		std::string fontName = gFBEnv->pScriptSystem->GetStringVariable("r_font");
+		if (fontName.empty())
+		{
+			fontName = "es/fonts/nanum_pen_bin.fnt";
+		}
+		mFont->Init(fontName.c_str());
+		mFont->SetTextEncoding(IFont::UTF16);
+
+		mDebugHud = FB_NEW(DebugHud);
+		mGeomRenderer = FB_NEW(GeometryRenderer);
+
+		if (gFBEnv->pConsole)
+			gFBEnv->pConsole->Init();
+
+		mDefaultRasterizerState = CreateRasterizerState(RASTERIZER_DESC());
+		mDefaultBlendState = CreateBlendState(BLEND_DESC());
+		mDefaultDepthStencilState = CreateDepthStencilState(DEPTH_STENCIL_DESC());
+		DEPTH_STENCIL_DESC ddesc;
+		ddesc.DepthEnable = false;
+		ddesc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+		mNoDepthStencilState = CreateDepthStencilState(ddesc);
+
+
+		IMaterial::SHADER_DEFINES emptyShaderDefines;
+		mFullscreenQuadVSNear = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
+			emptyShaderDefines);
+		IMaterial::SHADER_DEFINES shaderDefinesFar;
+		shaderDefinesFar.push_back(IMaterial::ShaderDefine("_FAR_SIDE_QUAD", "1"));
+		mFullscreenQuadVSFar = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
+			shaderDefinesFar);
+
+		mCopyPS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
+			emptyShaderDefines);
+		IMaterial::SHADER_DEFINES multiSampleSD;
+		multiSampleSD.push_back(IMaterial::ShaderDefine("_MULTI_SAMPLE", "1"));
+		mCopyPSMS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
+			multiSampleSD);
+
+		SAMPLER_DESC sdesc;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		mDefaultSamplers[SAMPLERS::POINT] = CreateSamplerState(sdesc);
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+		mDefaultSamplers[SAMPLERS::LINEAR] = CreateSamplerState(sdesc);
+		sdesc.Filter = TEXTURE_FILTER_ANISOTROPIC;
+		mDefaultSamplers[SAMPLERS::ANISOTROPIC] = CreateSamplerState(sdesc);
+
+		sdesc.Filter = TEXTURE_FILTER_COMPARISON_ANISOTROPIC;
+		sdesc.AddressU = TEXTURE_ADDRESS_BORDER;
+		sdesc.AddressV = TEXTURE_ADDRESS_BORDER;
+		sdesc.AddressW = TEXTURE_ADDRESS_BORDER;
+		for (int i = 0; i < 4; i++)
+			sdesc.BorderColor[i] = 1.0f;
+		sdesc.ComparisonFunc = COMPARISON_LESS_EQUAL;
+		mDefaultSamplers[SAMPLERS::SHADOW] = CreateSamplerState(sdesc);
+
+		sdesc.ComparisonFunc = COMPARISON_ALWAYS;
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		sdesc.AddressU = TEXTURE_ADDRESS_WRAP;
+		sdesc.AddressV = TEXTURE_ADDRESS_WRAP;
+		sdesc.AddressW = TEXTURE_ADDRESS_WRAP;
+		mDefaultSamplers[SAMPLERS::POINT_WRAP] = CreateSamplerState(sdesc);
+		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+		mDefaultSamplers[SAMPLERS::LINEAR_WRAP] = CreateSamplerState(sdesc);
+
+		SAMPLER_DESC sdesc_border;
+		sdesc_border.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+		sdesc_border.AddressU = TEXTURE_ADDRESS_BORDER;
+		sdesc_border.AddressV = TEXTURE_ADDRESS_BORDER;
+		sdesc_border.AddressW = TEXTURE_ADDRESS_BORDER;
+		for (int i = 0; i < 4; i++)
+			sdesc_border.BorderColor[i] = 0;
+		mDefaultSamplers[SAMPLERS::BLACK_BORDER] = CreateSamplerState(sdesc_border);
+		sdesc_border.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		mDefaultSamplers[SAMPLERS::POINT_BLACK_BORDER] = CreateSamplerState(sdesc_border);
+
+
+
+		for (int i = 0; i < SAMPLERS::NUM; ++i)
+		{
+			assert(mDefaultSamplers[i] != 0);
+			SetSamplerState((SAMPLERS::Enum)i, BINDING_SHADER_PS, i);
+		}
+
+		SetSamplerState(SAMPLERS::POINT, BINDING_SHADER_VS, SAMPLERS::POINT);
+
+		mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
+		mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
+		mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
+
+		SkySphere::CreateSharedEnvRT();
+
+		UpdateRareConstantsBuffer();
 	}
 
-	//-----------------------------------------------------------------------
-	mDynVBs[DEFAULT_INPUTS::POSITION] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_P), 
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PC), 
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PCT),
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_NORMAL] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PN), 
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_TEXCOORD] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PT), 
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES] = 
-		CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PCTB), 
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_VEC4] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PV4),
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-	mDynVBs[DEFAULT_INPUTS::POSITION_VEC4_COLOR] = CreateVertexBuffer(0, sizeof(DEFAULT_INPUTS::V_PV4C),
-		DEFAULT_DYN_VERTEX_COUNTS, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
-
-	//-----------------------------------------------------------------------
-	static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
-
-	mFont = FB_NEW(Font);
-	std::string fontName = gFBEnv->pScriptSystem->GetStringVariable("r_font");
-	if (fontName.empty())
-	{
-		fontName = "es/fonts/nanum_pen_bin.fnt";
-	}
-	mFont->Init(fontName.c_str());
+	const auto& rtSize = GetMainRTSize();
 	if (mFont)
 	{
-
-		mFont->SetRenderTargetSize(GetMainRTSize());
+		mFont->SetRenderTargetSize(rtSize);
+	}	
+	if (mDebugHud){
+		mDebugHud->SetRenderTargetSize(rtSize);
 	}
-	mFont->SetTextEncoding(IFont::UTF16);
+	if (mGeomRenderer){
+		mGeomRenderer->SetRenderTargetSize(rtSize);
+	}	
 
-	mDebugHud = FB_NEW(DebugHud);
-	mGeomRenderer = FB_NEW(GeometryRenderer);
-
-	if (gFBEnv->pConsole)
-		gFBEnv->pConsole->Init();
-
-	mDefaultRasterizerState = CreateRasterizerState(RASTERIZER_DESC());
-	mDefaultBlendState = CreateBlendState(BLEND_DESC());
-	mDefaultDepthStencilState = CreateDepthStencilState(DEPTH_STENCIL_DESC());
-	DEPTH_STENCIL_DESC ddesc;
-	ddesc.DepthEnable = false;
-	ddesc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-	mNoDepthStencilState = CreateDepthStencilState(ddesc);
-
-
-	IMaterial::SHADER_DEFINES emptyShaderDefines;
-	mFullscreenQuadVSNear = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
-		emptyShaderDefines);
-	IMaterial::SHADER_DEFINES shaderDefinesFar;
-	shaderDefinesFar.push_back(IMaterial::ShaderDefine("_FAR_SIDE_QUAD", "1"));
-	mFullscreenQuadVSFar = CreateShader("es/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS,
-		shaderDefinesFar);
-
-	mCopyPS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
-		emptyShaderDefines);
-	IMaterial::SHADER_DEFINES multiSampleSD;
-	multiSampleSD.push_back(IMaterial::ShaderDefine("_MULTI_SAMPLE", "1"));
-	mCopyPSMS = CreateShader("es/shaders/copyps.hlsl", BINDING_SHADER_PS,
-		multiSampleSD);
-
-	SkySphere::CreateSharedEnvRT();
-
-	SAMPLER_DESC sdesc;
-	sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-	mDefaultSamplers[SAMPLERS::POINT] = CreateSamplerState(sdesc);
-	sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-	mDefaultSamplers[SAMPLERS::LINEAR] = CreateSamplerState(sdesc);
-	sdesc.Filter = TEXTURE_FILTER_ANISOTROPIC;
-	mDefaultSamplers[SAMPLERS::ANISOTROPIC] = CreateSamplerState(sdesc);
-
-	sdesc.Filter = TEXTURE_FILTER_COMPARISON_ANISOTROPIC;
-	sdesc.AddressU = TEXTURE_ADDRESS_BORDER;
-	sdesc.AddressV = TEXTURE_ADDRESS_BORDER;
-	sdesc.AddressW = TEXTURE_ADDRESS_BORDER;
-	for (int i = 0; i < 4; i++)
-		sdesc.BorderColor[i] = 1.0f;
-	sdesc.ComparisonFunc = COMPARISON_LESS_EQUAL;
-	mDefaultSamplers[SAMPLERS::SHADOW] = CreateSamplerState(sdesc);
-
-	sdesc.ComparisonFunc = COMPARISON_ALWAYS;
-	sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-	sdesc.AddressU = TEXTURE_ADDRESS_WRAP;
-	sdesc.AddressV = TEXTURE_ADDRESS_WRAP;
-	sdesc.AddressW = TEXTURE_ADDRESS_WRAP;
-	mDefaultSamplers[SAMPLERS::POINT_WRAP] = CreateSamplerState(sdesc);
-	sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-	mDefaultSamplers[SAMPLERS::LINEAR_WRAP] = CreateSamplerState(sdesc);
-
-	SAMPLER_DESC sdesc_border;
-	sdesc_border.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-	sdesc_border.AddressU = TEXTURE_ADDRESS_BORDER;
-	sdesc_border.AddressV = TEXTURE_ADDRESS_BORDER;
-	sdesc_border.AddressW = TEXTURE_ADDRESS_BORDER;
-	for (int i = 0; i < 4; i++)
-		sdesc_border.BorderColor[i] = 0;
-	mDefaultSamplers[SAMPLERS::BLACK_BORDER] = CreateSamplerState(sdesc_border);
-
-	
-
-	for (int i = 0; i < SAMPLERS::NUM; ++i)
-	{	
-		assert(mDefaultSamplers[i] != 0);
-		SetSamplerState((SAMPLERS::Enum)i, BINDING_SHADER_PS, i);
-	}
-	
-	SetSamplerState(SAMPLERS::POINT, BINDING_SHADER_VS, SAMPLERS::POINT);
-
-	mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
-	mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
-	mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
-	UpdateRareConstantsBuffer();
-
+	if (gFBEnv->pConsole){
+		gFBEnv->pConsole->SetRenderTargetSize(rtSize);
+	}	
 
 	return true;
 }
@@ -493,6 +519,19 @@ void Renderer::OnSwapchainCreated(HWND_ID id)
 	{
 		rt->Bind();
 		OnPrepared();
+
+		auto& resolution = rt->GetSize();
+		mObjConst =
+		{
+			Mat44(2.f / resolution.x, 0, 0, -1.f,
+			0.f, -2.f / resolution.y, 0, 1.f,
+			0, 0, 1.f, 0.f,
+			0, 0, 0, 1.f),
+			Mat44::IDENTITY,
+			Mat44::IDENTITY,
+		};
+
+		//gFBEnv->pConsole->GetEngineCommand()->r_resolution = resolution;
 	}
 }
 
@@ -557,7 +596,6 @@ ICamera* Renderer::GetMainCamera() const
 		return rt->GetCamera();
 	}
 	Error(FB_DEFAULT_DEBUG_ARG, "No main camera!");
-	assert(0);
 	return 0;
 }
 
@@ -604,49 +642,49 @@ Vec2 Renderer::ToNdcPos(HWND_ID id, const Vec2I& screenPos) const
 	ret.y = -((float)screenPos.y / (float)size.y * 2.0f - 1.0f);
 	return ret;
 }
-
-unsigned Renderer::GetWidth(HWND_ID id) const
-{
-	auto it = mWidth.Find(id);
-	if (it != mWidth.end())
-	{
-		return it->second;
-	}
-	Error(FB_DEFAULT_DEBUG_ARG, "Window width not found!");
-	return 100;
-}
-unsigned Renderer::GetHeight(HWND_ID id) const
-{
-	auto it = mHeight.Find(id);
-	if (it != mHeight.end())
-	{
-		return it->second;
-	}
-	Error(FB_DEFAULT_DEBUG_ARG, "Window height not found!");
-	return 100;
-}
-unsigned Renderer::GetWidth(HWND hWnd) const
-{
-	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
-	return GetWidth(id);
-}
-unsigned Renderer::GetHeight(HWND hWnd) const
-{
-	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
-	return GetHeight(id);
-}
-
-unsigned Renderer::GetCropWidth(HWND hWnd) const
-{
-	auto width = GetWidth(hWnd);
-	return CropSize8(width);
-}
-
-unsigned Renderer::GetCropHeight(HWND hWnd) const
-{
-	auto height = GetHeight(hWnd);
-	return CropSize8(height);
-}
+//
+//unsigned Renderer::GetWidth(HWND_ID id) const
+//{
+//	auto it = mWidth.Find(id);
+//	if (it != mWidth.end())
+//	{
+//		return it->second;
+//	}
+//	Error(FB_DEFAULT_DEBUG_ARG, "Window width not found!");
+//	return 100;
+//}
+//unsigned Renderer::GetHeight(HWND_ID id) const
+//{
+//	auto it = mHeight.Find(id);
+//	if (it != mHeight.end())
+//	{
+//		return it->second;
+//	}
+//	Error(FB_DEFAULT_DEBUG_ARG, "Window height not found!");
+//	return 100;
+//}
+//unsigned Renderer::GetWidth(HWND hWnd) const
+//{
+//	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+//	return GetWidth(id);
+//}
+//unsigned Renderer::GetHeight(HWND hWnd) const
+//{
+//	auto id = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+//	return GetHeight(id);
+//}
+//
+//unsigned Renderer::GetCropWidth(HWND hWnd) const
+//{
+//	auto width = GetWidth(hWnd);
+//	return CropSize8(width);
+//}
+//
+//unsigned Renderer::GetCropHeight(HWND hWnd) const
+//{
+//	auto height = GetHeight(hWnd);
+//	return CropSize8(height);
+//}
 
 //----------------------------------------------------------------------------
 void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
@@ -660,6 +698,11 @@ void Renderer::DrawTextForDuration(float secs, const Vec2I& pos, const char* tex
 	const Color& color, float size)
 {
 	DrawTextForDuration(secs, pos, AnsiToWide(text, strlen(text)), color, size);
+}
+
+void Renderer::ClearDurationTexts(){
+	if (mDebugHud)
+		mDebugHud->ClearDurationTexts();
 }
 
 void Renderer::DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size)
@@ -817,8 +860,23 @@ void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int
 	UpdateRenderTargetConstantsBuffer();
 }
 
-const Vec2I& Renderer::GetRenderTargetSize() const
+const Vec2I& Renderer::GetRenderTargetSize(HWND_ID id) const
 {
+	if (id != INVALID_HWND_ID){
+		auto it = mSwapChainRenderTargets.Find(id);
+		if (it != mSwapChainRenderTargets.end()){
+			return it->second->GetSize();
+		}
+	}
+
+	return mCurRTSize;
+}
+
+const Vec2I& Renderer::GetRenderTargetSize(HWND hwnd) const{
+	if (hwnd){
+		auto id = gFBEnv->pEngine->GetWindowHandleId(hwnd);
+		return GetRenderTargetSize(id);
+	}
 	return mCurRTSize;
 }
 
@@ -1625,12 +1683,12 @@ void Renderer::GetSampleOffsets_DownScale2x2(DWORD texWidth, DWORD texHeight, Ve
 bool Renderer::OnChangeCVar(CVar* pCVar)
 {
 	// name is always lower case
-	if (pCVar->mName == "r_hdr")
+	if (strcmp(pCVar->mName.c_str(), "r_hdr")==0)
 	{
 		CleanHDRResources();
 		return true;
 	}
-	else if (pCVar->mName == "r_hdrcpuluminance")
+	else if (strcmp(pCVar->mName.c_str(), "r_hdrcpuluminance")==0)
 	{
 		if (pCVar->GetInt())
 		{
@@ -1641,60 +1699,79 @@ bool Renderer::OnChangeCVar(CVar* pCVar)
 			ToneMapLuminanceOnCpu(false);
 		}
 	}
-	else if (pCVar->mName == "r_hdrfilmic")
+	else if (strcmp(pCVar->mName.c_str(), "r_hdrfilmic")==0)
 	{
 		UseFilmicToneMapping(pCVar->GetInt() != 0);
 	}
-	else if (pCVar->mName == "r_hdrmiddlegray")
+	else if (strcmp(pCVar->mName.c_str(), "r_hdrmiddlegray")==0)
 	{
 		mMiddleGray = gFBEnv->pConsole->GetEngineCommand()->r_HDRMiddleGray;
 		UpdateRareConstantsBuffer();
 	}
-	else if (pCVar->mName == "r_bloompower")
+	else if (strcmp(pCVar->mName.c_str(), "r_bloompower")==0)
 	{
 		mBloomPower = gFBEnv->pConsole->GetEngineCommand()->r_BloomPower;
 		UpdateRareConstantsBuffer();
 	}
-	else if (pCVar->mName == "r_starpower")
+	else if (strcmp(pCVar->mName.c_str(), "r_starpower")==0)
 	{
 		mStarPower = gFBEnv->pConsole->GetEngineCommand()->r_StarPower;
 		UpdateRareConstantsBuffer();
 	}
-	else if (pCVar->mName == "r_shadowmapwidth" ||
-		pCVar->mName == "r_shadowmapheight")
+	else if (strcmp(pCVar->mName.c_str(), "r_shadowmapwidth")==0 ||
+		strcmp(pCVar->mName.c_str(), "r_shadowmapheight")==0)
 	{
 		for (auto it : mSwapChainRenderTargets)
 		{
 			it.second->DeleteShadowMap();
 		}
 	}
-	else if (pCVar->mName == "r_shadowcamwidth" )
+	else if (strcmp(pCVar->mName.c_str(), "r_shadowcamwidth") == 0)
 	{
 		for (auto it : mSwapChainRenderTargets)
 		{
 			it.second->SetLightCamWidth(pCVar->GetFloat());
 		}
 	}
-	else if (pCVar->mName == "r_shadowcamheight")
+	else if (strcmp(pCVar->mName.c_str(), "r_shadowcamheight")==0)
 	{
 		for (auto it : mSwapChainRenderTargets)
 		{
 			it.second->SetLightCamHeight(pCVar->GetFloat());
 		}
 	}
-	else if (pCVar->mName == "r_shadownear")
+	else if (strcmp(pCVar->mName.c_str(), "r_shadownear")==0)
 	{
 		for (auto it : mSwapChainRenderTargets)
 		{
 			it.second->SetLightCamNear(pCVar->GetFloat());
 		}
 	}
-	else if (pCVar->mName == "r_shadowfar")
+	else if (strcmp(pCVar->mName.c_str(), "r_shadowfar")==0)
 	{
 		for (auto it : mSwapChainRenderTargets)
 		{
 			it.second->SetLightCamFar(pCVar->GetFloat());
 		}
+	}
+	else if (strcmp(pCVar->mName.c_str(), "r_resolution") == 0){
+		auto resol = pCVar->GetVec2I();
+		if (gFBEnv->pConsole->GetEngineCommand()->r_fullscreen==1){
+			ChangeResolution(1, resol);
+		}
+		else if (gFBEnv->pConsole->GetEngineCommand()->r_fullscreen == 0){
+			ChangeWindowSize(1, resol);
+		}
+		else{
+			// cannot change resolution while in faked fullscreen mode.
+		}
+	}
+	else if (strcmp(pCVar->mName.c_str(), "r_fullscreen") == 0){
+		auto fullscreen = pCVar->GetInt();
+		Engine* eng = (Engine*)gFBEnv->pEngine;
+		eng->SetFullScreen(fullscreen==1);
+		ChangeFullscreenMode(fullscreen);
+
 	}
 
 	return false;
@@ -2515,6 +2592,10 @@ void Renderer::RenderFrameProfiler()
 
 	swprintf_s(msg, 255, L"Num vertices = %d", profiler.NumVertexCount);
 	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+	y += yStep;
+
+	swprintf_s(msg, 255, L"Num UpdateObjectConstantsBuffer = %u", profiler.NumUpdateObjectConst);
+	DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 	y += yStep * 2;
 
 	swprintf_s(msg, 255, L"Num Particles = %d", ParticleManager::GetParticleManager().GetNumActiveParticles());
@@ -2566,7 +2647,7 @@ void Renderer::SetScene(IScene* scene)
 
 void Renderer::AddRenderListener(IRenderListener* listener)
 {
-	if (ValueNotExistInVector(mRenderListeners, listener))
+	if (listener && ValueNotExistInVector(mRenderListeners, listener))
 		mRenderListeners.push_back(listener);
 }
 

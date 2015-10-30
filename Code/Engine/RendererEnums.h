@@ -445,6 +445,7 @@ namespace fastbird
 			POINT_WRAP,
 			LINEAR_WRAP,
 			BLACK_BORDER,
+			POINT_BLACK_BORDER,
 
 			NUM
 		};

@@ -17,6 +17,15 @@ IConsole* IConsole::CreateConsole()
 	return pCon;
 }
 
+bool gConsoleInvalidParam = false;
+static void InvalidParamHandler(const wchar_t *pszExpression,
+	const wchar_t *pszFunction,
+	const wchar_t *pszFile,
+	unsigned int nLine,
+	uintptr_t pReserved){
+	gConsoleInvalidParam = true;
+}
+
 const char* cacheFile = "consoleCache.tmp";
 //--------------------------------------------------------------------------
 Console::Console()
@@ -32,6 +41,7 @@ Console::Console()
 	, mStdOutRedirect(0)
 	, mHistoryIndex(0)
 	, mHistoryIndexBackup(0)
+	, mRTSize(1600, 900)
 {
 	assert(gFBEnv->pConsole == 0);
 	gFBEnv->pConsole = this;
@@ -112,6 +122,10 @@ bool Console::Init()
 	return true;
 }
 
+void Console::SetRenderTargetSize(const Vec2I& size){
+	mRTSize = size;
+}
+
 //--------------------------------------------------------------------------
 void Console::RegisterCommand(ConsoleCommand* pCom)
 {
@@ -184,11 +198,17 @@ void Console::Log(const char* szFmt, ...)
 {
 	LOCK_CRITICAL_SECTION lock(mBufferwCS);
 	char buf[4096];
-
+	auto oldHandler = _set_invalid_parameter_handler(InvalidParamHandler);
 	va_list args;
 	va_start(args, szFmt);
 	vsprintf_s(buf, 4096, szFmt, args);
 	va_end(args);
+	if (gConsoleInvalidParam){
+		strcpy_s(buf, szFmt);
+		gConsoleInvalidParam = false;
+	}
+	_set_invalid_parameter_handler(oldHandler);
+	
 
 	std::cerr << buf << std::endl;
 
@@ -197,7 +217,7 @@ void Console::Log(const char* szFmt, ...)
 	{
 		IFont* pFont = gFBEnv->pRenderer->GetFont();
 		int textWidth = (int)pFont->GetTextWidth((char*)strw.c_str());
-		const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
+		const auto& size = mRTSize;
 		int consoleWidth = size.x;
 		if (textWidth > consoleWidth)
 		{
@@ -287,6 +307,14 @@ void Console::Render()
 	pFont->SetHeight((float)sFontSize);
 	const int lineHeight = (int)pFont->GetHeight();
 
+	
+
+	// Draw Background
+	const auto& size = mRTSize;
+	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
+		Color::DarkGray);
+
+
 	// DrawHighlight
 	if (mHighlightStart != -1)
 	{
@@ -309,12 +337,6 @@ void Console::Render()
 		pRenderer->DrawQuad(highlightStartPos, highlightEndPos - highlightStartPos,
 			Color::Gray);
 	}
-
-	// Draw Background
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
-	pRenderer->DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
-		Color::DarkGray);
-
 	
 	// Draw Cursor
 	Vec2I cursorPos = mInputPosition;
@@ -529,7 +551,7 @@ bool Console::IsEnabledInputLIstener() const
 	return mOpen;
 }
 
-void Console::ProcessCommand(const char* command)
+void Console::ProcessCommand(const char* command, bool history)
 {
 	if (!command || strlen(command)==0 || strlen(command)>512)
 	{
@@ -577,29 +599,31 @@ void Console::ProcessCommand(const char* command)
 	}
 
 	bool pushed = false;
-	if (mHistory.empty() || mHistory.back() != buf)
-	{
-		for (auto it = mHistory.begin(); it != mHistory.end();)
+	if (history){
+		if (mHistory.empty() || mHistory.back() != buf)
 		{
-			if (*it == buf)
+			for (auto it = mHistory.begin(); it != mHistory.end();)
 			{
-				unsigned dist = std::distance(mHistory.begin(), it);
-				it = mHistory.erase(it);
-				mValidHistory.erase(mValidHistory.begin() + dist);
+				if (*it == buf)
+				{
+					unsigned dist = std::distance(mHistory.begin(), it);
+					it = mHistory.erase(it);
+					mValidHistory.erase(mValidHistory.begin() + dist);
+				}
+				else
+				{
+					++it;
+				}
 			}
-			else
-			{
-				++it;
-			}
+			DeleteValuesInVector(mHistory, std::string(buf));
+			mHistory.push_back(buf);
+			mHistoryIndex = mHistory.size();
+			pushed = true;
 		}
-		DeleteValuesInVector(mHistory, std::string(buf));
-		mHistory.push_back(buf);
-		mHistoryIndex = mHistory.size();
-		pushed = true;
-	}
-	else
-	{
-		mHistoryIndex = mHistoryIndexBackup;
+		else
+		{
+			mHistoryIndex = mHistoryIndexBackup;
+		}
 	}
 
 	if (prefixFound)
@@ -611,11 +635,11 @@ void Console::ProcessCommand(const char* command)
 		std::string newstring = std::string("  ") + command;
 		Log(newstring.c_str());
 		processed = gFBEnv->pScriptSystem->ExecuteLua(command);
-		if (pushed)
-			mValidHistory.push_back(processed);
-		if (processed)
-		{			
-			SaveHistoryToDiskCache();
+		if (history){
+			if (pushed)
+				mValidHistory.push_back(processed);
+			if (processed)
+				SaveHistoryToDiskCache();
 		}
 			
 		return;
@@ -658,16 +682,31 @@ void Console::ProcessCommand(const char* command)
 					c->SetData(words[1]);
 					OnCVarChanged(c);
 				}
+				else if (numWords == 3){
+					switch (c->mType){
+					case CVAR_TYPE_VEC2I:
+						c->SetData(FormatString("%s, %s", words[1].c_str(), words[2].c_str()));
+						OnCVarChanged(c);
+						break;
+
+					default:
+						assert(0);
+
+					}
+
+				}
 				this->Log("%s %s", c->mName.c_str(), c->GetData().c_str());
 				processed = true;
 			}
 		}
 	}
-	if (pushed)
-		mValidHistory.push_back(processed);
+	if (history){
+		if (pushed)
+			mValidHistory.push_back(processed);
 
-	if (processed)
-		SaveHistoryToDiskCache();
+		if (processed)
+			SaveHistoryToDiskCache();
+	}
 }
 
 void Console::SaveHistoryToDiskCache()

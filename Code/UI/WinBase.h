@@ -14,7 +14,6 @@ namespace fastbird
 		static const int WinBase::LEFT_GAP;
 		static const int WinBase::BOTTOM_GAP;
 		static const float NotDefined;
-		static Vec2I OSWindowPos;
 		static bool sSuppressPropertyWarning;
 
 		static Vec2I sLastPos;
@@ -142,6 +141,8 @@ namespace fastbird
 		bool mKeepUIRatio;
 		bool mUpdateAlphaTexture;
 		bool mHand;
+		bool mNoFocusByClick;
+		bool mReceiveEventFromParent;
 		FunctionID mHandFuncId;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
@@ -153,6 +154,7 @@ namespace fastbird
 		static void SuppressPropertyWarning(bool warning);
 
 		virtual void SetHwndId(HWND_ID hwndId);
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 		virtual HWND_ID GetHwndId() const;
 		virtual void OnCreated(){}
 
@@ -247,6 +249,7 @@ namespace fastbird
 		//virtual const Vec2& GetWNSize() const { return mWNSize; }
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
+		virtual const Vec2I& GetInitialOffset() const { return mAbsOffset; }
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
 		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }
@@ -422,6 +425,9 @@ namespace fastbird
 		virtual void RecreateBorders();
 
 		virtual bool GetUseScissor() const { return mUseScissor; }
+		virtual bool GetNoFocusByClick() const { return mNoFocusByClick; }
+		virtual bool GetReceiveEventFromParent() const { return mReceiveEventFromParent; }
+
 
 	protected:
 		virtual void OnPosChanged(bool anim);
@@ -438,9 +444,9 @@ namespace fastbird
 		void OnDrag(int dx, int dy);
 		virtual void OnChildHasDragged(){}
 
-		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard);
-		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard);
-		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard);
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
 		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard);
 		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard);

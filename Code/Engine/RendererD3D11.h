@@ -21,14 +21,21 @@ namespace fastbird
 		RendererD3D11();
 		virtual ~RendererD3D11();
 		virtual bool Init(int threadPool);
+	private:
+		void GetOutputInformationFor(IDXGIAdapter1* adapter);
+	public:
 		virtual bool InitSwapChain(HWND_ID id, int width, int height);
 		virtual void ReleaseSwapChain(HWND_ID id);
+		// For full screen.
+		// See Renderer::ChangeWindowSize for windowed.
+		virtual void ChangeResolution(HWND_ID id, const Vec2I& resol);
+		virtual void OnSizeChanged(HWND_ID id, const Vec2I& resol);
 		virtual void Deinit();
 		virtual void Clear(float r, float g, float b, float a, float z, UINT8 stencil);
 		virtual void Clear(float r, float g, float b, float a);// only color
 		virtual void ClearState();
 		virtual void UpdateFrameConstantsBuffer();
-		virtual void UpdateObjectConstantsBuffer(void* pData);
+		virtual void UpdateObjectConstantsBuffer(void* pData, bool record = false);
 		virtual void UpdatePointLightConstantsBuffer(void* pData);
 		virtual void UpdateCameraConstantsBuffer();
 		virtual void UpdateRenderTargetConstantsBuffer();
@@ -123,12 +130,18 @@ namespace fastbird
 		virtual void DrawTriangleNow(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, IMaterial* mat);
 
 		virtual unsigned GetNumLoadingTexture() const;
+		virtual Vec2I FindClosestSize(HWND_ID id, const Vec2I& input);
+		virtual void ChangeFullscreenMode(int mode);
+		virtual bool GetResolutionList(unsigned& outNum, Vec2I* list);
 
 	private:
 		IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			void* byteCode, int byteLength);
 		MapData MapBuffer(ID3D11Resource* pResource, 
 			UINT subResource, MAP_TYPE type, MAP_FLAG flag);
+
+		bool ResizeSwapChain(HWND_ID hwndId, const Vec2I& resol);
+		RenderTarget* CreateRenderTargetFor(IDXGISwapChain* swapChain, const Vec2I& size);
 
 	private:
 		ID3D11Device*			m_pDevice; // free-threaded
@@ -190,7 +203,11 @@ namespace fastbird
 		ITexture* mCurDSTexture;
 		size_t mCurDSViewIdx;
 
+		bool mStandBy;
+
 	};
 }
+
+
 
 #endif //__Rendererd3d11_header_included__

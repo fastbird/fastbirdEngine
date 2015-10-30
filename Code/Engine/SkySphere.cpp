@@ -234,7 +234,7 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin)
 	renderer->GetMainRenderTarget()->BindTargetOnly(false);
 
 	pTexture->GenerateMips();
-	pTexture->SaveToFile("environment.dds");
+	//pTexture->SaveToFile("environment.dds");
 	// for bight test.
 	//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 	GenerateRadianceCoef(pTexture);
@@ -488,5 +488,6 @@ void SkySphere::SetAlpha(float alpha)
 	mAlpha = param.w = alpha;
 	mMaterial->SetMaterialParameters(3, param);
 	mMaterialParamDest[3].w = alpha;
+	mMaterialParamDest[2].w = alpha;
 }
 }

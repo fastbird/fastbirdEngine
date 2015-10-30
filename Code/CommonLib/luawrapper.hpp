@@ -343,6 +343,15 @@ void luaW_release(lua_State* L, T* obj)
     lua_pop(L, 1); // ...
 }
 
+template <typename T>
+void luaW_clearstore(lua_State* L, T* obj)
+{
+	luaW_wrapperfield<T>(L, LUAW_STORAGE_KEY); // storage
+	LuaWrapper<T>::identifier(L, obj); // storage id
+	lua_pushnil(L); // storage id nil
+	lua_settable(L, -3); // storage
+	lua_pop(L, 1); // 
+}
 // This function is called from Lua, not C++
 //
 // Calls the lua post-constructor (LUAW_POSTCTOR_KEY or "__postctor") on a
@@ -458,6 +467,35 @@ int luaW_newindex(lua_State* L)
     lua_settable(L, -3); // obj key value ... store
 
     return 0;
+}
+
+// This function is called from Lua, not C++
+//
+template <typename T>
+int luaW_pairs(lua_State* L)
+{
+	// obj
+	T* obj = luaW_check<T>(L, 1);
+	luaW_wrapperfield<T>(L, LUAW_STORAGE_KEY); // obj storage
+	LuaWrapper<T>::identifier(L, obj); // obj storage id
+	lua_pushvalue(L, -1); // obj storage id id
+	lua_gettable(L, -3); // obj storage id store
+
+	// Add the storage table if there isn't one already
+	if (lua_isnil(L, -1))
+	{
+		lua_pop(L, 1); // obj storage id
+		lua_newtable(L); // obj storage id store
+		lua_pushvalue(L, -1); // obj storage id store store
+		lua_insert(L, -3); // obj storage store id store
+		lua_settable(L, -4); // obj storage store
+	}
+
+
+	lua_getglobal(L, "next"); // obj storage id store next
+	lua_insert(L, -2); // obj storage id next store 	
+	lua_pushnil(L);// obj storage id next store nil
+	return 3;	
 }
 
 // This function is called from Lua, not C++
@@ -588,6 +626,7 @@ void luaW_setfuncs(lua_State* L, const char* classname, const luaL_Reg* table, c
     { 
         { "__index", luaW_index<T> }, 
         { "__newindex", luaW_newindex<T> }, 
+		{ "__pairs", luaW_pairs<T>},
         { "__gc", luaW_gc<T> }, 
         { NULL, NULL } 
     };

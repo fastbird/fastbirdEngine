@@ -23,6 +23,7 @@ namespace fastbird
 		virtual ~IWinBase() {}
 
 		virtual void SetHwndId(HWND_ID hwndId) = 0;
+		virtual void OnResolutionChanged(HWND_ID hwndId) = 0;
 		virtual HWND_ID GetHwndId() const = 0;
 		virtual void OnCreated() = 0;
 		virtual ComponentType::Enum GetType() const = 0;
@@ -87,6 +88,7 @@ namespace fastbird
 		//virtual const Vec2& GetWNSize() const = 0;
 		virtual const Vec2& GetNSize() const = 0;
 		virtual const Vec2I& GetSize() const = 0;
+		virtual const Vec2I& GetInitialOffset() const = 0;
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;
@@ -258,16 +260,20 @@ namespace fastbird
 
 		virtual bool GetUseScissor() const = 0;
 
-		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard) = 0;
-		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard) = 0;
-		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false) = 0;
 		virtual void OnMouseDown(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard) = 0;
 		virtual void OnMouseDrag(IMouse* mouse, IKeyboard* keyboard) = 0;
+		virtual bool GetNoFocusByClick() const = 0;
+
+		virtual bool GetReceiveEventFromParent() const = 0;
 
 	protected:
+		friend class UIManager;
 		virtual void NotifySizeChange() = 0;
 		virtual void OnPosChanged(bool anim) = 0;
 		virtual void OnSizeChanged() = 0;

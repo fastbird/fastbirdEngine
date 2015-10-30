@@ -21,6 +21,7 @@ public:
 	virtual bool SetVisible(bool show);
 	virtual void SetAnimScale(const Vec2& scale);
 	virtual void RefreshScissorRects();
+	virtual void OnResolutionChanged(HWND_ID hwndId);
 	
 	// own
 	void MouseConsumer(void* arg){}

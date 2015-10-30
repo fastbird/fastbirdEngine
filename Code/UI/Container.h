@@ -27,6 +27,7 @@ namespace fastbird
 			Container* mWndContent;
 			Container** mOriginal;
 		};
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 
 		virtual IWinBase* AddChild(float posX, float posY, float width, float height, ComponentType::Enum type);
 		virtual IWinBase* AddChild(float posX, float posY, const Vec2& width_aspectRatio, ComponentType::Enum type);
@@ -36,6 +37,7 @@ namespace fastbird
 		virtual void RemoveChild(IWinBase* child, bool immediately = false);
 		virtual void RemoveChildNotDelete(IWinBase* child);
 		virtual void RemoveAllChild(bool immediately = false);
+		virtual void RemoveAllChildExceptRuntime();
 		virtual void RemoveAllEvents(bool includeChildren);
 		virtual IWinBase* GetChild(const std::string& name, bool includeSubChildren = false);
 		virtual IWinBase* GetChild(unsigned idx);
@@ -109,6 +111,7 @@ namespace fastbird
 		Scroller* GetScrollerV() const { return mScrollerV; }
 
 
+
 	private:
 		friend class WinBase;
 
@@ -118,6 +121,10 @@ namespace fastbird
 		virtual void OnSizeChanged();
 		virtual void OnPosChanged(bool anim);
 		friend class UIManager;
+
+		virtual void OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
+		virtual void OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated = false);
 
 	protected:
 		typedef std::list<IWinBase*> COMPONENTS;
@@ -131,6 +138,7 @@ namespace fastbird
 		bool mChildrenChanged;  // only detecting addition. not deletion.
 		bool mMatchHeight;
 		bool mHandlingInput;
+		bool mSendEventToChildren;
 		COMPONENTS::reverse_iterator mCurInputHandling;
 		bool mCurInputHandlingChanged;
 

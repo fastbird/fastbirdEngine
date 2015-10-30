@@ -73,5 +73,7 @@ namespace fastbird
 		virtual bool OnCollision(const CollisionContactInfo& contactInfo) = 0;
 		virtual void AddCloseObjects(RigidBody* gamePtr) {}
 		virtual void OnRigidBodyUpdated(const fastbird::RigidBodyEvents& data){}
+
+		virtual bool ForceCompound() const { return false; }
 	};
 }

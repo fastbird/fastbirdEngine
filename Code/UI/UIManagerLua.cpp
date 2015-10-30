@@ -62,6 +62,7 @@ namespace fastbird
 	int MoveUIToBottom(lua_State* L);
 	int SetDropDownIndex(lua_State* L);
 	int GetDropDownIndex(lua_State* L);
+	int GetDropDownString(lua_State* L);
 	int SetVisibleLuaUIWithoutFocusing(lua_State* L);
 	int GetColorRampUIValues(lua_State* L);
 	int SetColorRampUIValues(lua_State* L);
@@ -80,6 +81,7 @@ namespace fastbird
 	int ChangeUISizeX(lua_State* L);
 	int ChangeUISizeY(lua_State* L);
 	int ChangeUISize(lua_State* L);
+	int HasComponent(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -124,6 +126,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, HasComponent);
 		LUA_SETCFUNCTION(mL, ChangeUISizeX);
 		LUA_SETCFUNCTION(mL, ChangeUISizeY);
 		LUA_SETCFUNCTION(mL, ChangeUISize);
@@ -178,6 +181,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
 		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
 		LUA_SETCFUNCTION(mL, GetDropDownIndex);
+		LUA_SETCFUNCTION(mL, GetDropDownString);
 		LUA_SETCFUNCTION(mL, SetDropDownIndex);
 		LUA_SETCFUNCTION(mL, MoveUIToBottom);
 		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
@@ -365,10 +369,15 @@ namespace fastbird
 	{
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
+		bool immedi = false;
+		if (lua_gettop(L) == 3){
+			immedi = lua_toboolean(L, 3) != 0;
+		}
+
 		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, compName);
 		if (comp)
 		{
-			comp->RemoveAllChild(false);
+			comp->RemoveAllChild(immedi);
 			lua_pushboolean(L, 1);
 		}
 		else
@@ -610,8 +619,13 @@ namespace fastbird
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
 		const char* prop = luaL_checkstring(L, 3);
-		const char* val = luaL_checkstring(L, 4);
-		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val);
+		const char* val = luaL_checkstring(L, 4);		
+		bool updatePosSize = false;
+		if (lua_gettop(L) == 5){
+			updatePosSize = lua_toboolean(L, 5) != 0;			
+		}
+		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val, updatePosSize);
+		
 		return 0;
 
 	}
@@ -876,9 +890,9 @@ namespace fastbird
 
 	int SetDropDownIndex(lua_State* L)
 	{
-		unsigned index = luaL_checkunsigned(L, 1);
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
+		unsigned index = luaL_checkunsigned(L, 3);
 		auto dropDown = dynamic_cast<DropDown*>(gFBEnv->pUIManager->FindComp(uiname, compName));
 		if (dropDown)
 		{
@@ -895,6 +909,24 @@ namespace fastbird
 		if (dropDown)
 		{
 			lua_pushunsigned(L, dropDown->GetSelectedIndex());
+			return 1;
+		}
+		return 0;
+	}
+
+	int GetDropDownString(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* compName = luaL_checkstring(L, 2);
+		auto dropDown = dynamic_cast<DropDown*>(gFBEnv->pUIManager->FindComp(uiname, compName));
+		if (dropDown)
+		{
+			unsigned idx = luaL_checkunsigned(L, 3);
+			auto str = dropDown->GetItemString(idx);
+			if (wcslen(str) == 0){
+				return 0;
+			}
+			std::string cstr = WideToAnsi(str);
+			lua_pushstring(L, cstr.c_str());
 			return 1;
 		}
 		return 0;
@@ -1716,5 +1748,13 @@ namespace fastbird
 		comp->OnClickRadio(comp);
 		comp->SetCheck(true);
 		return 0;
+	}
+
+	int HasComponent(lua_State* L){
+		auto uiname = luaL_checkstring(L, 1);
+		auto compname = luaL_checkstring(L, 2);
+		auto comp = gFBUIManager->FindComp(uiname, compname);
+		lua_pushboolean(L, comp != 0);
+		return 1;
 	}
 }

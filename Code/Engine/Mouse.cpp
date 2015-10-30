@@ -27,6 +27,17 @@ namespace fastbird
 		ScreenToClient(hWnd, &cursor);
 		x = cursor.x;
 		y = cursor.y;
+		auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+		if (gFBEnv->pRenderer && gFBEnv->pEngine->IsFullScreen() && hwndId == 1){
+			const auto& windowSize = gFBEnv->pEngine->GetWindowSize(hwndId);
+			const auto& rtSize = gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
+			if (windowSize != rtSize){
+				float xr = rtSize.x / (float)windowSize.x;
+				float yr = rtSize.y / (float)windowSize.y;
+				x = Round(x * xr);
+				y = Round(y * yr);
+			}
+		}
 #else
 		assert(0);
 #endif _FBENGINE_FOR_WINDOWS_
@@ -34,16 +45,29 @@ namespace fastbird
 
 	void Mouse::SetCurrentMousePos(HWND_ID hwndId, long x, long y)
 	{
-		auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
+		auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);		
 		SetCurrentMousePos(hWnd, x, y);
 	}
 
 	void Mouse::SetCurrentMousePos(HWND hWnd, long x, long y)
 	{
 #ifdef _FBENGINE_FOR_WINDOWS_
+		auto hwndId = gFBEnv->pEngine->GetWindowHandleId(hWnd);
+		if (gFBEnv->pEngine->IsFullScreen() && hwndId == 1){
+			const auto& windowSize = gFBEnv->pEngine->GetWindowSize(hwndId);
+			const auto& rtSize = gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
+			if (windowSize != rtSize){
+				float xr = windowSize.x / (float)rtSize.x;
+				float yr = windowSize.y / (float)rtSize.y;
+				x = Round(x*xr);
+				y = Round(y*yr);
+			}
+		}
+
 		POINT cursor;
 		cursor.x = x;
 		cursor.y = y;
+
 		ClientToScreen(hWnd, &cursor);
 		SetCursorPos(cursor.x, cursor.y);
 #else
@@ -71,7 +95,7 @@ namespace fastbird
 		, mLockMouseKey(0), mInvalidatedTemporary(false)
 		, mRDragStarted(false)
 		, mRDragEnd(false)
-		, mNoClickOnce(false)
+		, mNoClickOnce(false)		
 	{
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -80,7 +104,7 @@ namespace fastbird
 		mButtonsDoubleClicked = 0;
 		GetCurrentMousePos(gFBEnv->pEngine->GetMainWndHandleId(), mAbsX, mAbsY, mPhysicalX, mPhysicalY);
 		auto hWnd = gFBEnv->pEngine->GetMainWndHandle();
-		Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+		Vec2I size = gFBEnv->pEngine->GetWindowSize(hWnd);
 
 		mNPosX = (float)mAbsX / (float)size.x;
 		mNPosY = (float)mAbsY / (float)size.y;
@@ -114,7 +138,7 @@ namespace fastbird
 		if (!mLockMouse)
 		{
 			GetCurrentMousePos(handle, mAbsX, mAbsY, mPhysicalX, mPhysicalY);
-			const auto& size = gFBEnv->pEngine->GetRequestedWndSize(handle);
+			const auto& size = gFBEnv->pRenderer->GetRenderTargetSize(handle);
 			mNPosX = (float)mAbsX / (float)size.x;
 			mNPosY = (float)mAbsY / (float)size.y;
 			if (!IsLButtonDown()){
@@ -414,8 +438,9 @@ namespace fastbird
 
 	Vec2 Mouse::GetNPos() const
 	{
-		auto hWnd = gFBEnv->pEngine->GetForegroundWindow();
-		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+		HWND_ID hwndId;
+		auto hWnd = gFBEnv->pEngine->GetForegroundWindow(&hwndId);
+		const auto& size = gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
 		return Vec2((float)mAbsX / (float)size.x,
 			(float)mAbsY / (float)size.y);
 	}
@@ -611,7 +636,7 @@ namespace fastbird
 	void Mouse::OnSetFocus(HWND hWnd)
 	{
 		GetCurrentMousePos(hWnd, mAbsX, mAbsY, mPhysicalX, mPhysicalY);
-		const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+		const auto& size = gFBEnv->pRenderer ? gFBEnv->pRenderer->GetRenderTargetSize(hWnd) : gFBEnv->pEngine->GetWindowSize(hWnd);
 		mNPosX = (float)mAbsX / (float)size.x;
 		mNPosY = (float)mAbsY / (float)size.y;
 		mAbsXPrev = mAbsX;
@@ -658,7 +683,7 @@ namespace fastbird
 	void Mouse::CursorToCenter(){
 		if (gFBEnv->pEngine->IsMainWindowForground()){
 			auto mainHwndId = gFBEnv->pEngine->GetMainWndHandleId();
-			Vec2I size = gFBEnv->pEngine->GetRequestedWndSize(mainHwndId);
+			Vec2I size = gFBEnv->pRenderer->GetRenderTargetSize(mainHwndId);
 			size = size / 2;
 			SetCurrentMousePos(mainHwndId, size.x, size.y);
 			mAbsX = size.x;
@@ -684,4 +709,9 @@ namespace fastbird
 	void Mouse::ClearRightDown(){		
 		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
+
+	float Mouse::GetLButtonDownTime() const{
+		return mLastLeftDownTime;
+	}
+
 }

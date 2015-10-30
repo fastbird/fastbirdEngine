@@ -56,8 +56,7 @@ namespace fastbird
 		auto pRenderer = gFBEnv->pRenderer;
 		mObjectConstants.gWorldView = pRenderer->GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		mObjectConstants.gWorldViewProj = pRenderer->GetCamera()->GetViewProjMat() * mObjectConstants.gWorld;
-		if (!gFBEnv->pConsole->GetEngineCommand()->r_noObjectConstants)
-			pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
+		pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
 		pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		mMaterial->Bind(true);

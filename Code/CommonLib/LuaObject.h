@@ -77,27 +77,35 @@ namespace fastbird
 		LuaTableIterator GetTableIterator() const;
 		LuaSequenceIterator GetSequenceIterator() const;
 
-		LuaObject SetFieldTable(const char* fieldName);
-		void SetField(const char* fieldName, double num);
-		void SetField(const char* fieldName, int num);
-		void SetField(const char* fieldName, unsigned num);
-		void SetField(const char* fieldName, bool b);
-		void SetField(const char* fieldName, const char* str);
-		void SetField(const char* fieldName, const Vec3& v);
-		void SetField(const char* fieldName, const Vec3I& v);
-		void SetField(const char* fieldName, const Vec2& v);
-		void SetField(const char* fieldName, const Vec2I& v);
-		void SetField(const char* fieldName, const Transformation& t);
+		LuaObject SetFieldTable(const char* fieldName) const;
+		void SetField(const char* fieldName, double num) const;
+		void SetField(const char* fieldName, int num) const;
+		void SetField(const char* fieldName, unsigned num) const;
+		void SetField(const char* fieldName, bool b) const;
+		void SetField(const char* fieldName, const char* str) const;
+		void SetField(const char* fieldName, const Vec3& v) const;
+		void SetField(const char* fieldName, const Vec3I& v) const;
+		void SetField(const char* fieldName, const Vec4& v) const;
+		void SetField(const char* fieldName, const Vec2& v) const;
+		void SetField(const char* fieldName, const Vec2I& v) const;
+		void SetField(const char* fieldName, const Transformation& t) const;
+		void SetField(const char* fieldName, LuaObject& value) const;
+		void SetField(LuaObject& key, LuaObject& value) const;
 
 		LuaObject SetSeqTable(int n) const;
 		LuaObject GetSeqTable(int n);
-		void SetSeq(int n, const char* str);
-		void SetSeq(int n, char* str);
-		void SetSeq(int n, unsigned num);
-		void SetSeq(int n, float num);
-		void SetSeq(int n, const Vec4& val);
+		void SetSeq(int n, const char* str)  const;
+		void SetSeq(int n, char* str) const;
+		void SetSeq(int n, unsigned num) const;
+		void SetSeq(int n, int num) const;
+		void SetSeq(int n, float num) const;
+		void SetSeq(int n, double num) const;
+		void SetSeq(int n, const Vec4& val) const;
+		void SetSeq(int n, const Vec3I& val) const;
+		void SetSeq(int n, const Vec3& val) const;
+		void SetSeq(int n, LuaObject& value) const;
 		template<class T>
-		void SetSeq(int n, T* val)
+		void SetSeq(int n, T* val) const
 		{
 			LUA_STACK_WATCHER w(mL, "void SetSeq(int n, T* val)");
 			PushToStack();
@@ -106,7 +114,7 @@ namespace fastbird
 			lua_pop(mL, 1);
 		}
 		template <class T>
-		void SetSeqTemplate(int n, T v)
+		void SetSeqTemplate(int n, T v) const
 		{
 			LUA_STACK_WATCHER w(mL, "void SetSeqTemplate(int n, T v)");
 			PushToStack();
@@ -115,11 +123,14 @@ namespace fastbird
 			lua_pop(mL, 1);
 		}
 
+		void AppendTable(LuaObject& table) const;
+
 		double GetNumberAt(int index) const;
 		unsigned GetUnsignedAt(int index) const;
 		LuaObject GetTableAt(int index) const;
 		std::string GetString(std::string& def = std::string()) const;		
 		float GetFloat(float def = 0.f) const;
+		double GetDouble(double def = 0.) const;
 		int GetInt(int def = 0) const;
 		unsigned GetUnsigned(unsigned def = 0) const;
 		unsigned GetUnsignedFromString(unsigned def = 0) const;
@@ -130,6 +141,7 @@ namespace fastbird
 		Vec2 GetVec2(const Vec2& def = Vec2(0, 0)) const;
 		Vec2I GetVec2I(const Vec2I& def = Vec2I(0, 0)) const;
 		Quat GetQuat(const Quat& def = Quat())const;
+		Transformation GetTransformation(const Transformation& def = Transformation()) const;
 
 		std::string GetString(bool& success) const;
 		float GetFloat(bool& success) const;

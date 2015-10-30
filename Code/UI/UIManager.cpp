@@ -58,7 +58,7 @@ UIManager::UIManager(lua_State* L)
 	, mUIEditor(0), mMouseOveredContainer(0), mTextManipulator(0)
 	, mUIFolder("data/ui")
 	, mMultiLocating(false), mAtlasStaging(0), mNewFocusWnd(0)
-	, mMouseOvered(0), mMouseDragStartedUI(0)
+	, mMouseOvered(0), mMouseDragStartedUI(0), mPrevTooltipNPos(-1, -1)
 {
 	gFBUIManager = gFBEnv->pUIManager = this;
 	gpTimer = gFBEnv->pTimer;
@@ -74,8 +74,7 @@ UIManager::UIManager(lua_State* L)
 	WinBase::InitMouseCursor();
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
-	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();
-	
+	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();	
 }
 
 UIManager::~UIManager()
@@ -84,13 +83,14 @@ UIManager::~UIManager()
 	mTextManipulator = 0;
 	gFBEnv->pRenderer->RemoveRenderListener(this);
 	gFBEnv->pEngine->RemoveFileChangeListener(this);
-	gFBEnv->pConsole->ProcessCommand("KillUIEditor");
-
+	if (gFBEnv->pConsole)
+		gFBEnv->pConsole->ProcessCommand("KillUIEditor");
+	mUIEditor = 0;
+	mUIEditorModuleHandle = 0;
 	WinBase::FinalizeMouseCursor();
 	if (mUIEditorModuleHandle)
 	{
-		FreeLibrary(mUIEditorModuleHandle);
-		mUIEditorModuleHandle = 0;
+		FreeLibrary(mUIEditorModuleHandle);		
 	}
 	FB_DELETE(mUICommands);
 	for (auto it : mAnimations)
@@ -250,6 +250,16 @@ void UIManager::AfterDebugHudRendered(HWND_ID hwndId)
 		mUIEditor->DrawFocusBoxes();
 	}*/
 
+}
+
+void UIManager::OnResolutionChanged(HWND_ID hwndId){
+	auto it = mWindows.Find(hwndId);
+	if (it != mWindows.end()){
+		auto& windows = it->second;
+		for (auto& it : windows){
+			it->OnResolutionChanged(hwndId);
+		}
+	}
 }
 
 void UIManager::GatherRenderList()
@@ -791,6 +801,9 @@ void UIManager::DeleteWindow(IWinBase* pWnd)
 	{
 		mKeyboardFocus = 0;
 	}
+	if (pWnd == mModalWindow){
+		mModalWindow = 0;
+	}
 	OnDeleteWinBase(pWnd);
 	auto hwndId = pWnd->GetHwndId();
 	assert(hwndId != -1);
@@ -857,16 +870,23 @@ void UIManager::OnDeleteWinBase(IWinBase* winbase)
 
 	if (mMouseDragStartedUI == winbase){
 		mMouseDragStartedUI = 0;
-	}
+	}	
 
 	if (winbase->GetRender3D())
 	{
 		gFBEnv->pRenderer->Unregister3DUIs(winbase->GetName());
 	}
+
+	auto it = mAlwaysMouseOverCheckComps.find(winbase);
+	if (it != mAlwaysMouseOverCheckComps.end()){
+		mAlwaysMouseOverCheckComps.erase(it);
+	}
 }
 
 void UIManager::SetFocusUI(IWinBase* ui)
 {
+	if (mLockFocus)
+		return;
 	if (mKeyboardFocus == ui)
 		return;
 	for (auto& reservedUI : mSetFocusReserved)
@@ -880,6 +900,9 @@ void UIManager::SetFocusUI(IWinBase* ui)
 		mKeyboardFocus->OnFocusLost();
 	if (mFocusWnd)
 		mFocusWnd->OnFocusLost();
+	if (DropDown::sCurrentDropDown){
+		DropDown::sCurrentDropDown->OnFocusLost();
+	}
 
 	auto focusRoot = ui ? ui->GetRootWnd() : 0;
 
@@ -947,11 +970,11 @@ void UIManager::DirtyRenderList(HWND_ID hwndId)
 	}
 }
 
-void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val)
+void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize)
 {
-	SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val);
+	SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val, updatePosSize);
 }
-void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val)
+void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val, bool updatePosSize)
 {
 	if_assert_fail(uiname && compname && val)
 		return;
@@ -960,6 +983,10 @@ void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProper
 	if (comp)
 	{
 		comp->SetProperty(prop, val);
+		if (updatePosSize){
+			comp->OnSizeChanged();
+			comp->OnPosChanged(false);			
+		}
 	}
 	else
 	{
@@ -1183,7 +1210,7 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		auto mousePos = mouse->GetPos();
 		RegionTestParam rparam;
 		rparam.mOnlyContainer = false;
-		rparam.mIgnoreScissor = mUIEditor ? true : false;
+		rparam.mIgnoreScissor = true; // only for FBUIEditor.
 		rparam.mTestChildren = true;
 		rparam.mNoRuntimeComp = mUIEditor && gFBEnv->pEngine->IsMainWindowForground() && !keyboard->IsKeyDown(VK_LMENU) ? true : false;
 		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU);
@@ -1205,14 +1232,18 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 			return;
 		}
 
+
 		if (mUIEditor && mouse->IsLButtonClicked() && !keyboard->IsKeyDown(VK_MENU)){
 			auto it = mUIEditor->GetSelectedComps();
 			while (it.HasMoreElement()){
 				rparam.mExceptions.push_back(it.GetNext());
 			}
 		}
-
-		auto focusWnd = WinBaseWithPoint(mousePos, rparam);
+		auto focusWnd = WinBaseWithPointCheckAlways(mousePos, rparam);
+		if (!focusWnd){
+			rparam.mIgnoreScissor = false;
+			focusWnd = WinBaseWithPoint(mousePos, rparam);
+		}
 		if (focusWnd != mMouseOvered){
 			if (mMouseOvered){
 				mMouseOvered->OnMouseOut(mouse, keyboard);
@@ -1240,7 +1271,7 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		if (mouse->IsLButtonClicked()){
 			if (mKeyboardFocus != focusWnd)
 			{
-				if (mUIEditor || !focusWnd || !focusWnd->GetNoMouseEventAlone())
+				if (mUIEditor || !focusWnd || (!focusWnd->GetNoMouseEventAlone() && !focusWnd->GetNoFocusByClick()))
 					SetFocusUI(focusWnd);
 			}
 			bool editorFocused = !gFBEnv->pEngine->IsMainWindowForground();
@@ -1353,40 +1384,45 @@ void UIManager::ShowTooltip()
 	mTooltipTextBox->ChangeSizeX(width);
 	mTooltipTextBox->SetText(mTooltipText.c_str());
 	int textWidth = mTooltipTextBox->GetTextWidth();
-	mTooltipUI->ChangeSizeX(textWidth + 16);
+	mTooltipUI->ChangeSizeX(textWidth + 16);	
 	mTooltipTextBox->ChangeSizeX(textWidth + 4);
 	int sizeY = mTooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
 	mTooltipUI->ChangeSizeY(sizeY + 8);
 	mTooltipUI->SetVisible(true);
+	RefreshTooltipPos();
 }
 
-void UIManager::SetTooltipPos(const Vec2& npos)
+void UIManager::SetTooltipPos(const Vec2& npos, bool checkNewPos)
 {
 	//if (!mTooltipUI->GetVisible())
 //		return;
 
-	static Vec2 prevNPos(-1, -1);
-	if (prevNPos == npos)
+	if (checkNewPos && mPrevTooltipNPos == npos)
 		return;
-	prevNPos = npos;
+	mPrevTooltipNPos = npos;
 	HWND_ID hwndId = mTooltipUI->GetHwndId();
 	auto hWnd = gFBEnv->pEngine->GetWindowHandle(hwndId);
 	assert(hwndId != -1);
-	const auto& size = gFBEnv->pEngine->GetRequestedWndSize(hWnd);
+	const auto& size = gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
 	Vec2 backPos = npos;
 	if (backPos.y > 0.9f)
 	{
 		backPos.y -= (gTooltipFontSize * 2.0f + 10) / (float)size.y;
 	}
-	const Vec2& nSize = mTooltipUI->GetNSize();
+	const Vec2& nSize = mTooltipUI->GetNSize();	
 	if (backPos.x + nSize.x>1.0f)
 	{
-		backPos.x -= backPos.x + nSize.x - 1.0f;
-	}
+		float mod = backPos.x + nSize.x - 1.0f + (4.0f /size.x);
+		backPos.x -= mod;		
+	}	
 	backPos.y += gTooltipFontSize / (float)size.y;
 	mTooltipUI->ChangeNPos(backPos);
 }
 
+void UIManager::RefreshTooltipPos()
+{
+	SetTooltipPos(mPrevTooltipNPos, false);
+}
 void UIManager::CleanTooltip()
 {
 	if (!mTooltipText.empty())
@@ -1646,13 +1682,17 @@ bool UIManager::OnFileChanged(const char* file)
 		}
 		else if (strcmp(extension, "lua") == 0)
 		{
-			int error = luaL_dofile(mL, file);
-			if (error)
-			{
-				char buf[1024];
-				sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
-				Error(DEFAULT_DEBUG_ARG, buf);
-				assert(0);
+			if (strstr(file, "save\\save") == 0 &&
+				strstr(file, "configGame.lua") == 0 &&
+				strstr(file, "configEngine.lua") == 0){
+				int error = luaL_dofile(mL, file);
+				if (error)
+				{
+					char buf[1024];
+					sprintf_s(buf, "\n%s/%s", GetCWD(), lua_tostring(mL, -1));
+					Error(DEFAULT_DEBUG_ARG, buf);
+					assert(0);
+				}
 			}
 		}
 		return true;
@@ -1798,6 +1838,7 @@ void UIManager::PrepareTooltipUI()
 	children1.SetField("pos", Vec2I(6, 4));
 	children1.SetField("size", Vec2I(350, (int)gTooltipFontSize));
 	children1.SetField("TEXTBOX_MATCH_HEIGHT", "true");
+	children1.SetField("TEXT_VALIGN", "top");
 	children1.SetField("TEXT_SIZE", StringConverter::toString(gTooltipFontSize).c_str());	
 	bool success = AddLuaUI("MouseTooltip", tooltip, gFBEnv->pEngine->GetMainWndHandleId());
 	if (!success)
@@ -1904,6 +1945,32 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 		if (found)
 			return found;
 		
+		if (!param.mCheckMouseEvent || !wnd->GetNoMouseEventAlone()){
+			if (wnd->IsIn(pt, param.mIgnoreScissor))
+				return wnd;
+		}
+	}
+
+	return 0;
+}
+
+IWinBase* UIManager::WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param){
+	for (auto it : mAlwaysMouseOverCheckComps){
+		auto wnd = it;
+		if (!wnd->GetVisible()){
+			continue;
+		}
+		if (param.mHwndId != wnd->GetHwndId())
+			continue;
+		if (param.mCheckMouseEvent && wnd->GetNoMouseEvent())
+			continue;
+		if (param.mRestrictToThisWnd && param.mRestrictToThisWnd != wnd)
+			continue;
+
+		auto found = wnd->WinBaseWithPoint(pt, param);
+		if (found)
+			return found;
+
 		if (!param.mCheckMouseEvent || !wnd->GetNoMouseEventAlone()){
 			if (wnd->IsIn(pt, param.mIgnoreScissor))
 				return wnd;
@@ -2528,6 +2595,17 @@ ITexture* UIManager::GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLa
 		free(data);
 		mAtlasStaging->Unmap(0);
 		return texture;
+	}
+}
+
+void UIManager::AddAlwaysMouseOverCheck(IWinBase* comp){
+	mAlwaysMouseOverCheckComps.insert(comp);
+}
+
+void UIManager::RemoveAlwaysMouseOverCheck(IWinBase* comp){
+	auto it = mAlwaysMouseOverCheckComps.find(comp);
+	if (it != mAlwaysMouseOverCheckComps.end()){
+		mAlwaysMouseOverCheckComps.erase(it);
 	}
 }
 

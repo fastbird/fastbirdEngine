@@ -80,6 +80,8 @@ namespace fastbird
 
 		virtual void ClearRightDown();
 
+		virtual float GetLButtonDownTime() const;		
+
 		/*bool ButtonDown(MOUSE_BUTTON button) const;
 		bool ButtonUp(MOUSE_BUTTON button) const;		
 		void GetMouseCoordDelta(long& x, long& y) const;

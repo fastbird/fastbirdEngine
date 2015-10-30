@@ -38,6 +38,8 @@ Camera::~Camera()
 		mTarget->RemoveCameraTargetingMe(this);
 		mTarget = 0;
 	}
+	if (gFBEnv->pRenderer->GetCamera() == this)
+		gFBEnv->pRenderer->SetCamera(0);
 }
 
 //----------------------------------------------------------------------------

@@ -23,6 +23,8 @@ public:
 	int e_NoMeshLoad;
 	int r_UI;
 	int r_noObjectConstants;
+	int r_noMesh;
+	int r_noSky;
 	int r_noParticleDraw;
 	int r_particleProfile;
 	int r_HDR;
@@ -53,6 +55,9 @@ public:
 	int r_numPointLights;
 	int r_numParticleEmitters;
 	int r_debugDraw;
+	int r_gameId;
+	Vec2I r_resolution;
+	int r_fullscreen; // 0 : window, 1 : full-screen, 2 : fake full-screen
 	
 
 private:

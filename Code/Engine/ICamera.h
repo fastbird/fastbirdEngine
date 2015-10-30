@@ -45,8 +45,8 @@ namespace fastbird
 		virtual void SetNearFar(float nearPlane, float farPlane) = 0;
 		virtual void GetNearFar(float& nearPlane, float& farPlane) const = 0;
 		// width and height of the view volume at the near view-plane
-		virtual void SetWidth(int width) = 0;
-		virtual void SetHeight(int height) = 0;
+		virtual void SetWidth(float width) = 0;
+		virtual void SetHeight(float height) = 0;
 		virtual float GetWidth() const = 0;
 		virtual float GetHeight() const = 0;
 		virtual void SetName(const char* name) = 0;

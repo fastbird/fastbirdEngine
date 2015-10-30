@@ -191,10 +191,10 @@ bool ListBox::GetCheckBox(const Vec2I& indexRowCol) const{
 	return item.GetChecked();
 }
 
-void ListBox::RemoveRow(const wchar_t* uniqueKey)
+bool ListBox::RemoveRow(const wchar_t* uniqueKey)
 {
 	if (!mData)
-		return;
+		return false;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
 	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
@@ -207,12 +207,14 @@ void ListBox::RemoveRow(const wchar_t* uniqueKey)
 				SetHighlightRow(deletedIndex, false);
 		}
 		VisualizeData(deletedIndex);
+		return true;
 	}
+	return false;
 }
 
-void ListBox::RemoveRow(unsigned uniqueKey){
+bool ListBox::RemoveRow(unsigned uniqueKey){
 	if (!mData)
-		return;
+		return false;
 	unsigned deletedIndex = mData->DelDataWithKey(uniqueKey);
 	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
 		ChangeFocusItem(0);
@@ -226,16 +228,18 @@ void ListBox::RemoveRow(unsigned uniqueKey){
 		for (unsigned i = deletedIndex; i <= mEndIndex; ++i){
 			VisualizeData(i);
 		}
+		return true;
 	}
+	return false;
 }
 
-void ListBox::RemoveRowWithIndex(unsigned index){
+bool ListBox::RemoveRowWithIndex(unsigned index){
 	if (!mData)
-		return;
+		return false;
 	if (index >= mItems.size())
 	{
 		Log(FB_DEFAULT_DEBUG_ARG, "Out of index.");
-		return;
+		return false;
 	}
 	unsigned deletedIndex = mData->DelDataWithIndex(index);
 	if (mFocusedListItem && mFocusedListItem->GetRowIndex() == deletedIndex)
@@ -249,7 +253,9 @@ void ListBox::RemoveRowWithIndex(unsigned index){
 		}
 
 		VisualizeData(deletedIndex);
+		return true;
 	}
+	return false;
 }
 
 void ListBox::SetHighlightRow(size_t row, bool highlight)
@@ -1323,6 +1329,7 @@ void ListBox::VisualizeData(unsigned index){
 			}
 			mRecycleBin.pop_back();
 			FillItem(index);
+			gFBUIManager->DirtyRenderList(mHwndId);
 		}
 		else
 		{
@@ -2002,6 +2009,7 @@ void ListBox::ClearItemProperties(){
 	mItemPropertyByColumn.clear();
 	mItemPropertyByUnsigned.clear();
 	mItemPropertyByString.clear();
+	mItemPropertyKeyCol.clear();
 }
 
 void ListBox::DisableItemEvent(unsigned uniqueKey){

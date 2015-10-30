@@ -1,5 +1,6 @@
 #include <Engine/StdAfx.h>
 #include <Engine/EngineCommand.h>
+#include <Engine/Engine.h>
 #include <Engine/IConsole.h>
 #include <Engine/IParticleEmitter.h>
 #include <Engine/ICamera.h>
@@ -39,6 +40,12 @@ EngineCommand::EngineCommand()
 
 	r_noObjectConstants = gFBEnv->pScriptSystem->GetIntVariable("r_noObjectConstants", 0);
 	REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
+	
+	r_noMesh = gFBEnv->pScriptSystem->GetIntVariable("r_noMesh", 0);
+	REGISTER_CVAR(r_noMesh, r_noMesh, CVAR_CATEGORY_CLIENT, "do not render meshes");
+
+	r_noSky = gFBEnv->pScriptSystem->GetIntVariable("r_noSky", 0);
+	REGISTER_CVAR(r_noSky, r_noSky, CVAR_CATEGORY_CLIENT, "do not render sky");
 
 	r_noParticleDraw = gFBEnv->pScriptSystem->GetIntVariable("r_noParticleDraw", 0);
 	REGISTER_CVAR(r_noParticleDraw, r_noParticleDraw, CVAR_CATEGORY_CLIENT, "No particle Draw");
@@ -112,17 +119,17 @@ EngineCommand::EngineCommand()
 		"ShadowMap height");
 
 	r_ShadowNear = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowNear", 2.0f);
+		"r_ShadowNear", 0.0f);
 	REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera near.");
 
 	r_ShadowFar = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowFar", 300.0f);
+		"r_ShadowFar", 200.0f);
 	REGISTER_CVAR(r_ShadowFar, r_ShadowFar, CVAR_CATEGORY_CLIENT, 
 		"Shadow camera far");
 
 	r_ShadowCamDist = gFBEnv->pScriptSystem->GetRealVariable(
-		"r_ShadowCamDist", 200.f);
+		"r_ShadowCamDist", 100.f);
 	REGISTER_CVAR(r_ShadowCamDist, r_ShadowCamDist, CVAR_CATEGORY_CLIENT,
 		"Shadow camera far");
 
@@ -145,6 +152,17 @@ EngineCommand::EngineCommand()
 
 	r_debugDraw = gFBEnv->pScriptSystem->GetIntVariable("r_debugDraw", 1);
 	REGISTER_CVAR(r_debugDraw, r_debugDraw, CVAR_CATEGORY_CLIENT, "Debug draw");
+	
+	r_gameId = gFBEnv->pScriptSystem->GetIntVariable("r_gameId", 0);
+	REGISTER_CVAR(r_gameId, r_gameId, CVAR_CATEGORY_CLIENT, "Draw game id");
+
+	r_resolution = gFBEnv->pScriptSystem->GetVec2IVariable("r_resolution", Vec2I(1600, 900));
+	REGISTER_CVAR(r_resolution, r_resolution, CVAR_CATEGORY_CLIENT, "Resolution");
+
+	r_fullscreen = gFBEnv->pScriptSystem->GetIntVariable("r_fullscreen", 0);
+	REGISTER_CVAR(r_fullscreen, r_fullscreen, CVAR_CATEGORY_CLIENT, "fullscreen");
+	Engine* engine = (Engine*)gFBEnv->pEngine;
+	engine->SetFullScreen(r_fullscreen!=0);
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);

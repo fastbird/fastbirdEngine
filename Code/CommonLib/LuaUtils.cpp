@@ -28,6 +28,9 @@ namespace fastbird
 			case 'd':
 				lua_pushnumber(L, va_arg(vl, double));
 				break;
+			case 'f':
+				lua_pushnumber(L, (lua_Number)va_arg(vl, float));
+				break;
 			case 'i':
 				lua_pushinteger(L, va_arg(vl, int));
 				break;
@@ -70,7 +73,15 @@ namespace fastbird
 						*va_arg(vl, double*) = n;
 						break;
 			}
-
+			case 'f':
+			{
+				int isnum;
+				float n = (float)lua_tonumberx(L, nres, &isnum);
+				if (!isnum)
+					fastbird::Error("wrong result type");
+				*va_arg(vl, float*) = n;				
+				break;
+			}
 			case 'i':
 			{
 						int isnum;
@@ -239,6 +250,17 @@ namespace fastbird
 
 		lua_pop(L, 1);
 		return ret;
+	}
+
+	float GetLuaVarAsFloat(lua_State* L, const char* varName){
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return (float)luaL_checknumber(L, -1);
+	}
+	unsigned GetLuaVarAsUnsigned(lua_State* L, const char* varName){
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return (unsigned)luaL_checknumber(L, -1);
 	}
 
 	void SetLuaVar(lua_State* L, const char* varName, bool value)

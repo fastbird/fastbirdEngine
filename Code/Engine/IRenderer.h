@@ -108,7 +108,7 @@ public:
 	virtual void SetCamera(ICamera* pCamera) = 0;
 	virtual ICamera* GetCamera() const = 0; // this is for current carmera.
 	virtual ICamera* GetMainCamera() const = 0;
-	virtual void UpdateObjectConstantsBuffer(void* pData) = 0;
+	virtual void UpdateObjectConstantsBuffer(void* pData, bool record = false) = 0;
 	virtual void UpdatePointLightConstantsBuffer(void* pData) = 0;
 	virtual void* MapMaterialParameterBuffer() = 0;
 	virtual void UnmapMaterialParameterBuffer() = 0;
@@ -131,10 +131,10 @@ public:
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
 	virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) = 0;
 	virtual void Draw(unsigned int vertexCount, unsigned int startVertexLocation) = 0;
-	virtual unsigned GetWidth(HWND hWnd) const = 0;
+	/*virtual unsigned GetWidth(HWND hWnd) const = 0;
 	virtual unsigned GetHeight(HWND hWnd) const = 0;
 	virtual unsigned GetWidth(HWND_ID hWnd) const = 0;
-	virtual unsigned GetHeight(HWND_ID hWnd) const = 0;
+	virtual unsigned GetHeight(HWND_ID hWnd) const = 0;*/
 	virtual void SetWireframe(bool enable) = 0;
 	virtual bool GetWireframe() const = 0;
 	virtual unsigned GetMultiSampleCount() const = 0;
@@ -171,7 +171,8 @@ public:
 	virtual bool IsMainRenderTarget() const = 0;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtViewIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex) = 0;
-	virtual const Vec2I& GetRenderTargetSize() const = 0;
+	virtual const Vec2I& GetRenderTargetSize(HWND_ID id = INVALID_HWND_ID) const = 0;
+	virtual const Vec2I& GetRenderTargetSize(HWND hwnd = 0) const = 0;
 	virtual void SetViewports(Viewport viewports[], int num) = 0;
 	virtual void SetScissorRects(RECT rects[], int num) = 0;
 	virtual void RestoreScissorRects() = 0;
@@ -223,6 +224,7 @@ public:
 		const Color& color, float size = 24) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color, float size = 24) = 0;
+	virtual void ClearDurationTexts() = 0;
 
 	// no depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
@@ -354,6 +356,9 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player) = 0;
 	virtual void GenGGX() = 0;
+	virtual Vec2I FindClosestSize(HWND_ID id, const Vec2I& input) = 0;
+
+	virtual bool GetResolutionList(unsigned& outNum, Vec2I* list) = 0;	
 };
 
 }

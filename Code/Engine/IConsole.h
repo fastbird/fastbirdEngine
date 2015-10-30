@@ -27,7 +27,8 @@ namespace fastbird
 	{
 		CVAR_TYPE_INT,
 		CVAR_TYPE_FLOAT,
-		CVAR_TYPE_STRING
+		CVAR_TYPE_STRING,
+		CVAR_TYPE_VEC2I,
 	};
 
 	struct CVar
@@ -63,6 +64,16 @@ namespace fastbird
 			_storage = _def;
 		}
 
+		CVar(const char* _name, const Vec2I& _def, Vec2I& _storage,
+			CVAR_CATEGORY _category, const std::string& _desc)
+			: mName(_name), mCategory(_category), mDesc(_desc)
+			, mStorage(&_storage)
+			, mType(CVAR_TYPE_VEC2I)
+		{
+			ToLowerCase(mName);
+			_storage = _def;
+		}
+
 		int GetInt() const
 		{
 			assert(mType == CVAR_TYPE_INT);
@@ -80,6 +91,11 @@ namespace fastbird
 			assert(mType == CVAR_TYPE_STRING);
 			return *(std::string*)mStorage;
 		}
+		Vec2I& GetVec2I() const
+		{
+			assert(mType == CVAR_TYPE_VEC2I);
+			return *(Vec2I*)mStorage;
+		}
 
 		void SetData(const std::string& data)
 		{
@@ -96,6 +112,13 @@ namespace fastbird
 			case CVAR_TYPE_STRING:
 				*(std::string*)mStorage = data;
 				break;
+
+			case CVAR_TYPE_VEC2I:
+				*(Vec2I*)mStorage = StringConverter::parseVec2I(data);
+				break;
+
+			default:
+				assert(0 && "Not implemented");
 			}
 		}
 
@@ -116,6 +139,11 @@ namespace fastbird
 
 			case CVAR_TYPE_STRING:
 				return (*(std::string*)mStorage);
+				break;
+
+			case CVAR_TYPE_VEC2I:
+				ss << StringConverter::toString(*(Vec2I*)mStorage);
+				return ss.str();
 				break;
 			}
 			assert(0);
@@ -160,13 +188,14 @@ namespace fastbird
 		static IConsole* CreateConsole();
 
 		virtual bool Init() = 0;
+		virtual void SetRenderTargetSize(const Vec2I& size) = 0;
 		virtual void RegisterCommand(ConsoleCommand* pCom) = 0;
 		virtual void UnregisterCommand(ConsoleCommand* pCom) = 0;
 		virtual void RegisterVariable(CVar* cvar) = 0;
 		virtual void UnregisterVariable(CVar* cvar) = 0;
 		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates) = 0;
 		virtual void Log(const char* szFmt, ...) = 0;
-		virtual void ProcessCommand(const char* command) = 0;
+		virtual void ProcessCommand(const char* command, bool history = true) = 0;
 		virtual void ToggleOpen() = 0;
 		virtual void Update() = 0;
 		virtual void Render() = 0;

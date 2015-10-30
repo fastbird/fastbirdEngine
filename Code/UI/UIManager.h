@@ -96,6 +96,9 @@ namespace fastbird
 		SmartPtr<ITexture> mAtlasStaging;
 
 		std::vector<std::string> mDeleteLuaUIPending;
+		std::set<IWinBase*> mAlwaysMouseOverCheckComps;
+
+		Vec2 mPrevTooltipNPos;
 
 	protected:
 
@@ -129,6 +132,7 @@ namespace fastbird
 		virtual void BeforeUIRendering(HWND_ID hwndId);
 		virtual void BeforeDebugHudRendered(HWND_ID hwndId);
 		virtual void AfterDebugHudRendered(HWND_ID hwndId);
+		virtual void OnResolutionChanged(HWND_ID hwndId);
 
 		// IUIManager Interfaces
 		virtual void Update(float elapsedTime);
@@ -154,8 +158,8 @@ namespace fastbird
 		virtual bool IsFocused(const IWinBase* pWnd) const;
 		virtual void DirtyRenderList(HWND_ID hwndId);
 
-		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val);
-		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val);
+		virtual void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize = false);
+		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val, bool updatePosSize = false);
 		virtual void SetEnableComponent(const char* uiname, const char* compname, bool enable);
 
 		// IInputListener Interfaces
@@ -169,7 +173,10 @@ namespace fastbird
 		virtual bool IsMouseInUI() const { return mMouseIn; }		
 
 		virtual void SetTooltipString(const std::wstring& ts);
-		virtual void SetTooltipPos(const Vec2& npos);
+		virtual void SetTooltipPos(const Vec2& npos, bool checkNewPos = true);
+	private:
+		void RefreshTooltipPos();
+	public:
 		virtual void CleanTooltip();
 
 		virtual void PopupDialog(WCHAR* msg, POPUP_TYPE type, std::function< void(void*) > func);
@@ -215,6 +222,7 @@ namespace fastbird
 		virtual HMODULE GetUIEditorModuleHandle() const { return mUIEditorModuleHandle; }
 		
 		virtual IWinBase* WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param);
+		virtual IWinBase* WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param);
 		virtual TextManipulator* GetTextManipulator() const { return mTextManipulator; }
 		
 		virtual const char* GetUIPath(const char* uiname) const;
@@ -229,6 +237,9 @@ namespace fastbird
 		virtual const char* GetStyleString(Styles::Enum s) const;
 
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
+
+		virtual void AddAlwaysMouseOverCheck(IWinBase* comp);
+		virtual void RemoveAlwaysMouseOverCheck(IWinBase* comp);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

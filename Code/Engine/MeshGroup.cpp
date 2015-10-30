@@ -147,6 +147,14 @@ void MeshGroup::Render()
 	if (mObjFlag & IObject::OF_HIDE)
 		return;
 
+	if (mBoundingVolumeWorld){
+		if (mDistToCam > 100 && mBoundingVolumeWorld->GetRadius() < 5.0f)
+			return;
+
+		if (mDistToCam > 150 && mBoundingVolumeWorld->GetRadius() < 10.0f)
+			return;
+	}
+
 	FB_FOREACH(it, mMeshObjects)
 	{
 		it->first->Render();

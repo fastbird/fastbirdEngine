@@ -15,11 +15,6 @@ const unsigned DebugHud::MAX_LINE_VERTEX = 500;
 //----------------------------------------------------------------------------
 DebugHud::DebugHud()
 {
-	const auto& size = gFBEnv->_pInternalRenderer->GetMainRTSize();
-	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0, 
-		(float)size.x,
-		(float)size.y,
-		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
 	mObjectConstants_WorldLine.gWorld.MakeIdentity();
@@ -63,6 +58,13 @@ DebugHud::~DebugHud()
 	gFBEnv->pEngine->ReleaseMeshObject(mBoxMesh);
 }
 
+void DebugHud::SetRenderTargetSize(const Vec2I& size){
+	mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+		(float)size.x,
+		(float)size.y,
+		0.f, 1.0f);
+}
+
 //----------------------------------------------------------------------------
 void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
 		const Color& color, float size)
@@ -71,11 +73,21 @@ void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text,
 	if (it == mTextsForDur.end()){
 		it = mTextsForDur.insert(std::make_pair(pos, MessageBuffer())).first;
 	}
-	it->second.push_back(TextData(pos, text, color, size, secs));
-	while (it->second.size() > 10)
+	it->second.insert(it->second.begin(), TextData(pos, text, color, size, secs));
+	auto font = gFBEnv->pRenderer->GetFont();
+	if (font){
+		font->SetHeight(size);
+		it->second.begin()->mWidth = font->GetTextWidth((const char*)text);
+		font->SetBackToOrigHeight();
+	}
+	/*while (it->second.size() > 10)
 	{
 		it->second.pop_front();
-	}
+	}*/
+}
+
+void DebugHud::ClearDurationTexts() {
+	mTextsForDur.clear();
 }
 
 //----------------------------------------------------------------------------
@@ -326,29 +338,48 @@ void DebugHud::Render()
 
 	// render text for duration
 	{
+		auto dt = gFBEnv->pTimer->GetDeltaTime();
 		pFont->SetRenderStates();
 		auto itDur = mTextsForDur.begin();
 		for (; itDur != mTextsForDur.end(); ++itDur)
+		{			
+			float weight = 1.0f;
+			auto& textList = itDur->second;
+			auto it = textList.rbegin();
+			for (; it != textList.rend(); ++it){
+				it->mSecs -= dt * weight;
+				weight *= 0.92f;
+
+			}
+		}
+		itDur = mTextsForDur.begin();
+		for (; itDur != mTextsForDur.end(); ++itDur)
 		{
-			int count = 0;
-			auto it = itDur->second.begin();
-			for (; it != itDur->second.end(); ++count){
-				it->mSecs -= gFBEnv->pTimer->GetDeltaTime();
+			int count = 0;			
+			auto& textList = itDur->second;
+			auto it = textList.begin();			
+			for (; it != textList.end(); ++count){				
 				if (it->mSecs <= 0.f)
 				{
-					it = itDur->second.erase(it);
+					it = textList.erase(it);
 					continue;
 				}
 				else
 				{
-					Vec2I offset(0, 0);
-					offset.y += (int)pFont->GetHeight() * count;
-
-					Vec2I drawPos = it->mPos + offset;
+					Vec2I drawPos = it->mPos;
+					drawPos.y -= Round(pFont->GetHeight() * count);
+					if (drawPos.y < 140){
+						for (auto delIt = it; delIt != textList.end();){
+							delIt = textList.erase(delIt);
+						}
+						break;
+					}
 					pFont->SetHeight(it->mSize);
 					Color color = it->mColor;
 					float proportion = 1.0f - (it->mSecs / it->mDuration);
-					color.a() = 1.0f - (proportion*proportion);
+					color.a() = 1.0f - (proportion*proportion);					
+					pRenderer->DrawQuad(Vec2I(drawPos.x-4, drawPos.y - (int)it->mSize), Vec2I((int)it->mWidth+8, (int)it->mSize), Color(0, 0, 0, color.a()*0.7f));
+					pFont->PrepareRenderResources();
 					pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
 						(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
 

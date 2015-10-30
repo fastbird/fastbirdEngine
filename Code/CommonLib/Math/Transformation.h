@@ -162,17 +162,20 @@ struct luaU_Impl<fastbird::Transformation>
 		lua_rawgeti(L, index, n++);
 		assert(lua_isboolean(L, -1));
 		bi = lua_toboolean(L, -1) != 0;
+		lua_pop(L, 1);
 
 		auto& brs = ret._GetRSSeperated();
-		lua_rawgeti(L, index, n++);
+		lua_rawgeti(L, index, n++);		
 		assert(lua_isboolean(L, -1));
 		brs = lua_toboolean(L, -1) != 0;
+		lua_pop(L, 1);
 
 		auto& bu = ret._GetUniformScale();
-		lua_rawgeti(L, index, n++);
+		lua_rawgeti(L, index, n++);		
 		assert(lua_isboolean(L, -1));
 		bu = lua_toboolean(L, -1) != 0;
-		
+		lua_pop(L, 1);
+
 		return ret;
 	}
 
@@ -213,14 +216,17 @@ struct luaU_Impl<fastbird::Transformation>
 		auto& bi = ret._GetIdentity();
 		lua_rawgeti(L, index, n++);
 		bi = lua_toboolean(L, -1) != 0;
+		lua_pop(L, 1);
 
 		auto& brs = ret._GetRSSeperated();
 		lua_rawgeti(L, index, n++);
 		brs = lua_toboolean(L, -1) != 0;
+		lua_pop(L, 1);
 
 		auto& bu = ret._GetUniformScale();
 		lua_rawgeti(L, index, n++);
 		bu = lua_toboolean(L, -1) != 0;
+		lua_pop(L, 1);
 
 		return ret;
 	}
@@ -235,42 +241,41 @@ struct luaU_Impl<fastbird::Transformation>
 	{
 		lua_createtable(L, 22, 0);
 
-		int n = 1;
-		fastbird::Transformation ret;
-		auto& mat33 = ret._GetMat33();
+		int n = 1;		
+		auto& mat33 = val._GetMat33();
 		for (int r = 0; r < 3; ++r)
 			for (int c = 0; c < 3; ++c){
 				lua_pushnumber(L, mat33.m[r][c]);
 				lua_rawseti(L, -2, n++);
 			}
 
-		auto& rot = ret._GetQuat();
+		auto& rot = val._GetQuat();
 		for (int i = 0; i < 4; ++i){
 			lua_pushnumber(L, *(&rot.w+i));
 			lua_rawseti(L, -2, n++);			
 		}
 
-		auto& t = ret._GetT();
+		auto& t = val._GetT();
 		for (int i = 0; i < 3; ++i){
 			lua_pushnumber(L, *(&t.x + i));
 			lua_rawseti(L, -2, n++);			
 		}
 
-		auto& s = ret._GetS();
+		auto& s = val._GetS();
 		for (int i = 0; i < 3; ++i){
 			lua_pushnumber(L, *(&s.x + i));
 			lua_rawseti(L, -2, n++);			
 		}
 
-		auto& bi = ret._GetIdentity();
+		auto& bi = val._GetIdentity();
 		lua_pushboolean(L, bi);
 		lua_rawseti(L, -2, n++);		
 
-		auto& brs = ret._GetRSSeperated();
+		auto& brs = val._GetRSSeperated();
 		lua_pushboolean(L, brs);
 		lua_rawseti(L, -2, n++);
 
-		auto& bu = ret._GetUniformScale();
+		auto& bu = val._GetUniformScale();
 		lua_pushboolean(L, bu);
 		lua_rawseti(L, -2, n++);
 	}

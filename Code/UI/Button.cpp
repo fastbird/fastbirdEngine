@@ -87,7 +87,7 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 		mProgressBar->GatherVisit(v);
 
 	v.push_back(mUIObject);
-
+	
 	if (mImages[ButtonImages::ActiveImage] && mImages[ButtonImages::ActiveImage]->GetVisible())
 	{
 		if (mChangeImageActivation)
@@ -134,7 +134,7 @@ void Button::GatherVisit(std::vector<IUIObject*>& v)
 
 void Button::OnMouseDown(void* arg)
 {
-	if (!mEnable || mNoButton)
+	if (mNoButton)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColorDown.GetVec4());
 	mUIObject->GetMaterial()->SetEmissiveColor(1.0f, 1.0f, 0.2f, 1);
@@ -153,7 +153,7 @@ void Button::OnMouseDown(void* arg)
 
 void Button::OnMouseHover(void* arg)
 {
-	if (!mEnable || mNoButton)
+	if (mNoButton)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColorOver.GetVec4());
 	mUIObject->SetTextColor(mEnable ? mTextColorHover : mTextColorHover * .5f);
@@ -190,7 +190,7 @@ void Button::OnMouseIn(void* arg){
 
 void Button::OnMouseOut(void* arg)
 {
-	if (!mEnable || mNoButton)
+	if (mNoButton)
 		return;
 	mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
 	mUIObject->SetTextColor(mEnable ? mTextColor : mTextColor*.5f);
@@ -1255,9 +1255,9 @@ void Button::UpdateImageSize(){
 	if (mImages[ButtonImages::ActiveImage]){
 		mImages[ButtonImages::ActiveImage]->ChangeSize(finalSize);
 	}
-	//if (mImages[ButtonImages::DeactiveImage]){
-	//	mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
-	//}
+	/*if (mImages[ButtonImages::DeactiveImage]){
+		mImages[ButtonImages::DeactiveImage]->ChangeSize(finalSize);
+	}*/
 }
 void Button::SetEnable(bool enable){
 	if (!enable){

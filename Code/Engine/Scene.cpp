@@ -385,7 +385,7 @@ void Scene::PreRender()
 		}
 	}	
 
-	if (mSkyRendering)
+	if (mSkyRendering && !gFBEnv->pConsole->GetEngineCommand()->r_noSky)
 	{
 		if (mSkySphere)
 		{
@@ -447,7 +447,7 @@ void Scene::Render()
 
 	if (!(gFBEnv->mRenderPass == RENDER_PASS::PASS_SHADOW || gFBEnv->mRenderPass == RENDER_PASS::PASS_DEPTH))
 	{
-		if (mSkyRendering)
+		if (mSkyRendering && !gFBEnv->pConsole->GetEngineCommand()->r_noSky)
 		{
 			D3DEventMarker mark("SkyRendering");
 			if (mSkyBox)

@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/TrailObject.h>
 #include <Engine/Renderer.h>
+#include <Engine/ICamera.h>
 
 using namespace fastbird;
 
@@ -9,6 +10,7 @@ TrailObject::TrailObject()
 	, mDirty(false)
 	, mWidth(0.025f)
 	, mDeleteTime(2.f)
+	, mLastPoint(0, 0, 0)
 {
 	SetMaterial("es/materials/Trail.material");
 }
@@ -23,9 +25,8 @@ void TrailObject::PreRender(){
 void TrailObject::Render(){
 	if (mObjFlag & IObject::OF_HIDE || !mVB)
 		return;
-	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL)
+	if (gFBEnv->mRenderPass != RENDER_PASS::PASS_NORMAL || mPoints.empty())
 		return;
-
 	D3DEventMarker mark("TrailObject");
 	auto const renderer = gFBEnv->_pInternalRenderer;
 	renderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ);
@@ -52,7 +53,11 @@ IMaterial* TrailObject::GetMaterial(int pass) const{
 
 //for billboard trail - automatically face to the camera
 void TrailObject::AddPoint(const Vec3& worldPos){
+	mLastPoint = worldPos;
 	if (mMaxPoints == 0)
+		return;
+
+	if (GetDistToCam() > 100.0f)
 		return;
 
 	if (!mPoints.empty()){
@@ -93,6 +98,9 @@ void TrailObject::SetWidth(float width){
 
 // for manual trail
 void TrailObject::AddPoint(const Vec3& worldPosA, const Vec3& worldPosB){
+	mLastPoint = worldPosB;
+	if (GetDistToCam() > 100.0f)
+		return;
 	mPairedPoints.push(std::make_pair(worldPosA, worldPosB));
 	mDirty = true;
 }
@@ -148,4 +156,9 @@ void TrailObject::Update(float dt){
 			break;
 		}
 	}
+}
+
+float TrailObject::GetDistToCam() const{
+	auto cam =  gFBEnv->pRenderer->GetMainCamera();
+	return cam->GetPos().DistanceTo(mLastPoint);
 }

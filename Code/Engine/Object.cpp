@@ -21,6 +21,7 @@ Object::Object()
 	: mObjFlag(0)
 	, mGameType(-1)
 	, mGamePtr(0)
+	, mGameId(-1)
 	, mLastPreRendered(0)
 {
 	mBoundingVolume = BoundingVolume::Create();

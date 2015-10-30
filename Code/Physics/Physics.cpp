@@ -14,6 +14,9 @@
 #include <BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h>
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
+#include <Engine/IRenderer.h>
+
+fastbird::GlobalEnv* gFBEnv = 0;
 
 namespace fastbird{
 
@@ -22,6 +25,7 @@ unsigned Physics::NextInternalColShapeId = 1;
 Physics::Physics()
 	: mRayGroup(0x40) // default of the current game under development
 	, mFilterCallback(0)
+	, mEnabled(true)
 {
 
 }
@@ -157,7 +161,7 @@ void Physics::Deinitilaize()
 
 void Physics::Update(float dt)
 {
-	if (mDynamicsWorld)
+	if (mEnabled && mDynamicsWorld)
 	{
 		mDynamicsWorld->stepSimulation(dt, 12);
 		if (mDebugDrawer.getDebugMode() != 0)
@@ -165,6 +169,13 @@ void Physics::Update(float dt)
 			mDynamicsWorld->debugDrawWorld();
 		}
 	}
+}
+
+void Physics::EnablePhysics(){
+	mEnabled = true;
+}
+void Physics::DisablePhysics(){
+	mEnabled = false;
 }
 
 void Physics::_ReportCollisions()
@@ -308,7 +319,7 @@ RigidBody* Physics::CreateTempRigidBody(CollisionShape* colShape)
 RigidBody* Physics::CreateTempRigidBody(CollisionShape*  shapes[], unsigned num)
 {
 	btVector3 localInertia(0, 0, 0);
-	auto btcol = CreateColShape(shapes, num);
+	auto btcol = CreateColShape(shapes, num, false);
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
 	RigidBody* rigidBody = FB_NEW_ALIGNED(RigidBodyImpl, MemAlign)(rbInfo, 0, 0);
 	return rigidBody;
@@ -402,7 +413,7 @@ btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider)
 		Error("Over counts for colshapes!");
 	}
 	
-	return CreateColShape(shapes, num);
+	return CreateColShape(shapes, num, shapeProvider->ForceCompound());
 }
 
 btCollisionShape* Physics::CreateColShapeForGroup(IPhysicsInterface* shapeProvider, const Vec3I& groupIdx){
@@ -415,17 +426,17 @@ btCollisionShape* Physics::CreateColShapeForGroup(IPhysicsInterface* shapeProvid
 		Error("Over counts for colshapes!");
 	}
 
-	return CreateColShape(shapes, num);
+	return CreateColShape(shapes, num, shapeProvider->ForceCompound());
 }
 
-btCollisionShape* Physics::CreateColShape(CollisionShape* shapes[], unsigned num)
+btCollisionShape* Physics::CreateColShape(CollisionShape* shapes[], unsigned num, bool forceCompound)
 {
 	if (num==0)
 	{
 		Error(DEFAULT_DEBUG_ARG, "No collision shapes!");
 		return 0;
 	}
-	if (num > 1 || shapes[0]->mPos != Vec3::ZERO || shapes[0]->mRot != Quat::IDENTITY)
+	if (forceCompound || num > 1 || shapes[0]->mPos != Vec3::ZERO || shapes[0]->mRot != Quat::IDENTITY)
 	{
 		btCompoundShape* compound = FB_NEW_ALIGNED(btCompoundShape, MemAlign);
 		if (compound == 0){
@@ -1137,6 +1148,26 @@ void Physics::RegisterFilterCallback(IFilterCallback* callback, NeedCollisionFor
 	mDynamicsWorld->SetConvexResultNeedCollisionCallback(ConvexResultNeedCollision);
 }
 
+void Physics::DrawDebugInfo(){
+	if (mDynamicsWorld){
+		auto num = mDynamicsWorld->getNumCollisionObjects();
+		Vec2I pos(20, 48);
+		char buf[256];
+		sprintf_s(buf, "Num RigidBodies : %d", num);
+		gFBEnv->pRenderer->DrawText(pos, buf, Color::White);
+		pos.y += 24;
+		num = mDynamicsWorld->getNumConstraints();
+		sprintf_s(buf, "Num Constraints : %d", num);
+		gFBEnv->pRenderer->DrawText(pos, buf, Color::White);
+		
+	}
+}
 
+void Physics::SetEngine(IEngine* engine){
+	if (engine){
+		gFBEnv = engine->GetGlobalEnv();
+	}
+	
+}
 
 }

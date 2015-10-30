@@ -49,7 +49,7 @@ namespace fastbird
 		virtual bool IsMouseInUI() const = 0;
 		virtual void DisplayMsg(const std::string& msg, ...) = 0;
 		virtual void SetTooltipString(const std::wstring& ts) = 0;
-		virtual void SetTooltipPos(const Vec2& npos) = 0;
+		virtual void SetTooltipPos(const Vec2& npos, bool checkNewPos = true) = 0;
 		virtual void CleanTooltip() = 0;
 		enum POPUP_TYPE
 		{
@@ -66,8 +66,8 @@ namespace fastbird
 
 		virtual bool GetVisible(const char* uiname) const = 0;
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
-		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val) = 0;
-		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val, bool updatePosSize = false) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val, bool updatePosSize = false) = 0;
 		virtual void SetEnableComponent(const char* uiname, const char* compname, bool enable) = 0;
 		virtual void LockFocus(bool lock) = 0;
 		virtual void CloseAllLuaUI()=0;
@@ -110,6 +110,9 @@ namespace fastbird
 
 		// alpha
 		virtual ITexture* GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater) = 0;
+
+		virtual void AddAlwaysMouseOverCheck(IWinBase* comp) = 0;
+		virtual void RemoveAlwaysMouseOverCheck(IWinBase* comp) = 0;
 
 	protected:
 		virtual void OnDeleteWinBase(IWinBase* winbase) = 0;

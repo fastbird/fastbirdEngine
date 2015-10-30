@@ -296,7 +296,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufs
 	}
 	}
 
-	return __super::SetProperty(prop, val);
+	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 }
 
 void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* region)

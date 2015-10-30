@@ -141,24 +141,21 @@ float ProbabilityGGX(float ndh, float vdh, float Roughness)
 
 
 float GetShadow(float4 lightPos)
-{
-	
-	lightPos.xyz /= lightPos.w;
-	float2 uv;
-	uv = lightPos * float2(0.5, -0.5) + 0.5;
-	
+{	
+	float2 uv = lightPos.xy * float2(0.5, -0.5) + 0.5;	
 	float c = 0.0;
-	if (lightPos.z>=1.0f)
-		return 1.0f;
-	
+	//if (lightPos.z>=0.1f){
+		//float3 camDir = {gCamTransform[0][1], gCamTransform[1][1], gCamTransform[2][1]};		
+		//return saturate(saturate(dot(gDirectionalLightDir_Intensity[0].xyz, camDir)) + 0.5);
+	//}
 	for (int y=-2; y<=2; ++y)
 	{
 		for (int x = -2; x<=2; ++x)
 		{
-			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.001, float2(x, y));
+			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.002, float2(x, y));
 		}
-	}
-	return min(0.5f + c * 0.02f, 1.0f);
+	}	
+	return min(0.5 + c * 0.02f, 1.0f);
 }
 
 float3 GetIrrad(float4 vNormal)

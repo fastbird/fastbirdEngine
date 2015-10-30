@@ -602,7 +602,7 @@ void Wnd::OnTitlebarDrag(void *arg)
 		auto hwnd = gFBEnv->pEngine->GetWindowHandle(mHwndId);
 		RECT rect;
 		GetWindowRect(hwnd, &rect);
-		MoveWindow(hwnd, OSWindowPos.x + x - sx, OSWindowPos.y + y - sy, rect.right - rect.left, rect.bottom - rect.top, FALSE);
+		MoveWindow(hwnd, rect.left + x - sx, rect.top + y - sy, rect.right - rect.left, rect.bottom - rect.top, TRUE);
 	}
 	else
 	{
@@ -621,9 +621,7 @@ void Wnd::OnCloseBtnClicked(void* arg){
 
 bool Wnd::SetVisible(bool show)
 {
-	bool changed = __super::SetVisible(show);
-	if (changed)
-	{
+	if (show){
 		if (!mParent && !mManualParent){
 			if (mNoFocus){
 				gFBEnv->pUIManager->MoveToTop(this);
@@ -633,6 +631,11 @@ bool Wnd::SetVisible(bool show)
 			}
 
 		}
+	}
+	bool changed = __super::SetVisible(show);
+	if (changed)
+	{
+		
 
 		if (mTitlebar)
 			mTitlebar->SetVisible(show);
@@ -653,6 +656,18 @@ void Wnd::RefreshScissorRects()
 		{
 			if (var)
 				var->RefreshScissorRects();
+		}
+	}
+}
+
+void Wnd::OnResolutionChanged(HWND_ID hwndId){
+	__super::OnResolutionChanged(hwndId);
+	//if (mBackgroundImage){
+	//	mBackgroundImage->OnResolutionChanged(hwndId);
+	//}
+	for (auto it : mFrames){
+		if (it){
+			it->OnResolutionChanged(hwndId);
 		}
 	}
 }

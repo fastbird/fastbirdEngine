@@ -25,7 +25,6 @@ const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
-Vec2I WinBase::OSWindowPos;
 
 bool WinBase::sSuppressPropertyWarning = false;
 
@@ -87,7 +86,7 @@ WinBase::WinBase()
 , mGatheringException(false)
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
-, mHand(false), mHandFuncId(-1)
+, mHand(false), mHandFuncId(-1), mNoFocusByClick(false), mReceiveEventFromParent(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -129,7 +128,7 @@ void WinBase::SetHwndId(HWND_ID hwndId)
 		if (mUIObject)
 		{
 			mUIObject->SetRenderTargetSize(
-				gFBEnv->pEngine->GetRequestedWndSize(hwndId)
+				gFBEnv->pRenderer->GetRenderTargetSize(hwndId)
 				);
 		}
 	}
@@ -141,6 +140,45 @@ void WinBase::SetHwndId(HWND_ID hwndId)
 		{
 			win->SetHwndId(hwndId);
 		}
+	}
+}
+
+void WinBase::OnResolutionChanged(HWND_ID hwndId){
+
+	if (mUIObject && !mRender3D)
+	{
+		mUIObject->SetRenderTargetSize(
+			gFBEnv->pRenderer->GetRenderTargetSize(hwndId)
+			);
+		for (auto it : mBorders){
+			it->OnResolutionChanged(hwndId);
+		}
+		if (!mParent){
+			if (!mUseAbsoluteXPos){
+				ChangeNPosX(mNPos.x);
+			}
+
+			if (!mUseAbsoluteYPos){
+				ChangeNPosY(mNPos.y);
+			}			
+
+			if (!mUseAbsoluteXSize){
+				SetNSizeX(mNSize.x);
+				OnSizeChanged();
+			}
+			
+			if (!mUseAbsoluteYSize){
+				SetNSizeY(mNSize.y);
+				OnSizeChanged();
+			}
+		}
+		
+		RefreshScissorRects();
+
+		CalcTextWidth();
+		AlignText();
+		if (mUIObject)
+			mUIObject->SetTextSize(mTextSize);
 	}
 }
 
@@ -329,33 +367,54 @@ void WinBase::SetWNSize(const fastbird::Vec2& size)
 }
 
 //---------------------------------------------------------------------------
+void WinBase::OnParentPosChanged(){
+	OnPosChanged(false);
+}
+
+//---------------------------------------------------------------------------
 void WinBase::OnParentSizeChanged() {
 	assert(mParent);
-	bool sizeChanged = false;
-	if (!mUseAbsoluteXSize){
-		mSize.x = Round(mParent->GetFinalSize().x * mNSize.x);
-		sizeChanged = true;
-	}
-	else{
-		mNSize.x = mSize.x / (float)mParent->GetFinalSize().x;
-	}
+	
+	const auto& parentSize = mParent->GetFinalSize();
 
-	if (!mUseAbsoluteYSize) {
-		mSize.y = Round(mParent->GetFinalSize().y * mNSize.y);
-		sizeChanged = true;
+	bool posChanged = false;
+	if (mUseAbsoluteXPos){
+		mNPos.x = mPos.x / (float)parentSize.x;
 	}
 	else{
-		mNSize.y = mSize.y / (float)mParent->GetFinalSize().y;
-	}
-	bool posChanged = false;
-	if (!mUseAbsoluteXPos){
 		mPos.x = Round(mParent->GetFinalSize().x * mNPos.x);
 		posChanged = true;
 	}
-	if (!mUseAbsoluteYPos){
+	if (mUseAbsoluteYPos){
+		mNPos.y = mPos.y / (float)parentSize.y;
+	}
+	else{
 		mPos.y = Round(mParent->GetFinalSize().y * mNPos.y);
 		posChanged = true;
 	}
+
+	bool sizeChanged = false;
+	if (!mUseAbsoluteXSize){
+		if (mFillX){
+			mNSize.x = 1.0f - mNPos.x;					
+		}
+		mSize.x = Round(parentSize.x * mNSize.x);
+		sizeChanged = true;
+	}
+	else{
+		mNSize.x = mSize.x / (float)parentSize.x;
+	}
+
+	if (!mUseAbsoluteYSize) {
+		if (mFillY){
+			mNSize.y = 1.0f - mNPos.y;			
+		}
+		mSize.y = Round(parentSize.y * mNSize.y);
+		sizeChanged = true;
+	}
+	else{
+		mNSize.y = mSize.y / (float)parentSize.y;
+	}	
 
 	if (sizeChanged){
 		OnSizeChanged();
@@ -437,11 +496,6 @@ void WinBase::OnPosChanged(bool anim)
 	{
 		mParent->SetChildrenPosSizeChanged();
 	}
-}
-
-//---------------------------------------------------------------------------
-void WinBase::OnParentPosChanged(){
-	OnPosChanged(false);
 }
 
 //---------------------------------------------------------------------------
@@ -567,7 +621,7 @@ void WinBase::SetWPos(const Vec2I& wpos){
 	Vec2I lpos = wpos;
 	if (mParent)
 	{
-		lpos -= mParent->GetWPos();
+		lpos -= mParent->GetFinalPos();
 	}
 	SetPos(lpos);
 }
@@ -673,6 +727,7 @@ void WinBase::SetVisibleInternal(bool visible)
 			borderImage->SetVisible(visible);
 		}
 	}
+	TriggerRedraw();
 }
 
 bool WinBase::GetVisible() const
@@ -773,8 +828,8 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
-void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -790,8 +845,8 @@ void WinBase::OnMouseIn(IMouse* mouse, IKeyboard* keyboard){
 		TriggerRedraw();
 	}
 }
-void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -804,8 +859,8 @@ void WinBase::OnMouseOut(IMouse* mouse, IKeyboard* keyboard){
 	}
 	TriggerRedraw();
 }
-void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
@@ -821,7 +876,7 @@ void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -835,7 +890,7 @@ void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -856,7 +911,7 @@ void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -871,7 +926,7 @@ void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone){
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone){
 		return;
 	}
 	if (!OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK) && mParent){
@@ -884,7 +939,7 @@ void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseDrag(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -1060,7 +1115,7 @@ void WinBase::CalcTextWidth()
 	if (mMatchSize && mTextWidth != 0)// && !mLockTextSizeChange)
 	{
 		//mLockTextSizeChange = true;
-		ChangeSize(Vec2I((int)(mTextWidth + 4), mScaledSize.y));
+		ChangeSize(Vec2I((int)(mTextWidth + 4 + mTextGap.x + mTextGap.y), mScaledSize.y));
 		//mLockTextSizeChange = false;
 	}
 }
@@ -1577,6 +1632,18 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			OnHandPropChanged();
 			return true;
 		}
+
+		case UIProperty::NO_FOCUS_BY_CLICK:
+		{
+			mNoFocusByClick = StringConverter::parseBool(val);
+			return true;
+		}
+
+		case UIProperty::RECEIVE_EVENT_FROM_PARENT:
+		{
+			mReceiveEventFromParent = StringConverter::parseBool(val);
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning)
 		Error(DEFAULT_DEBUG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
@@ -2080,6 +2147,26 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		return true;
 
 	}
+
+	case UIProperty::NO_FOCUS_BY_CLICK:
+	{
+		if (notDefaultOnly){
+			if (mNoFocusByClick == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mNoFocusByClick).c_str());
+		return true;
+	}
+
+	case UIProperty::SEND_EVENT_TO_CHILDREN:
+	{
+		if (notDefaultOnly){
+			if (mReceiveEventFromParent == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mReceiveEventFromParent).c_str());
+		return true;
+	}
 	}
 	val = "";
 	return false;
@@ -2532,23 +2619,6 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	if (sz)
 		SetName(sz);
 
-	sz = pelem->Attribute("useNPosX");
-	if (sz){
-		mUseAbsoluteXPos = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNPosY");
-	if (sz){
-		mUseAbsoluteYPos = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeX");
-	if (sz){
-		mUseAbsoluteXSize = !StringConverter::parseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeY");
-	if (sz){
-		mUseAbsoluteYSize = !StringConverter::parseBool(sz);
-	}
-
 	// positions
 	sz = pelem->Attribute("pos");
 	if (sz)
@@ -2583,16 +2653,22 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	sz = pelem->Attribute("npos");
 	if (sz)
 	{
+		mUseAbsoluteXPos = false;
+		mUseAbsoluteYPos = false;
 		Vec2 npos = StringConverter::parseVec2(sz);
 		SetNPos(npos);
 	}
 	sz = pelem->Attribute("nposX");
-	if (sz)
+	if (sz){
+		mUseAbsoluteXPos = false;
 		SetNPosX(StringConverter::parseReal(sz));
+	}
 
 	sz = pelem->Attribute("nposY");
-	if (sz)
+	if (sz){
+		mUseAbsoluteYPos = false;
 		SetNPosY(StringConverter::parseReal(sz));
+	}
 
 	sz = pelem->Attribute("offset");
 	{
@@ -2640,6 +2716,9 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		else
 			y = StringConverter::parseReal(data[1].c_str());
 
+		mUseAbsoluteXSize = false;
+		mUseAbsoluteYSize = false;
+
 		Vec2 nsize(x, y);
 		SetNSize(nsize);
 	}
@@ -2664,6 +2743,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		{
 			x = StringConverter::parseReal(sz);
 		}
+		mUseAbsoluteXSize = false;
 		SetNSizeX(x);
 	}
 
@@ -2680,6 +2760,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		{
 			y = StringConverter::parseReal(sz);
 		}
+		mUseAbsoluteYSize = false;
 		SetNSizeY(y);
 	}
 
@@ -2726,6 +2807,23 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	{
 		int y = StringConverter::parseInt(sz);
 		ModifySize(Vec2I(0, y));
+	}
+
+	sz = pelem->Attribute("useNPosX");
+	if (sz){
+		mUseAbsoluteXPos = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNPosY");
+	if (sz){
+		mUseAbsoluteYPos = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeX");
+	if (sz){
+		mUseAbsoluteXSize = !StringConverter::parseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeY");
+	if (sz){
+		mUseAbsoluteYSize = !StringConverter::parseBool(sz);
 	}
 
 	OnSizeChanged();
@@ -2776,8 +2874,7 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 			eventElem = eventElem->NextSiblingElement();
 		}
 	}
-
-
+	OnCreated();
 	return true;
 }
 
@@ -2791,26 +2888,12 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	if (success)
 		SetName(name.c_str());
 
-	bool b = compTable.GetField("useNPosX").GetBool(success);
-	if (success){
-		mUseAbsoluteXPos = !b;
-	}
-	b = compTable.GetField("useNPosY").GetBool(success);
-	if (success){
-		mUseAbsoluteYPos = !b;
-	}
-	b = compTable.GetField("useNSizeX").GetBool(success);
-	if (success){
-		mUseAbsoluteXSize = !b;
-	}
-	b = compTable.GetField("useNSizeY").GetBool(success);
-	if (success){
-		mUseAbsoluteYSize = !b;
-	}
-
 	auto npos = compTable.GetField("npos").GetVec2(success);
-	if (success)
+	if (success){
+		mUseAbsoluteXPos = false;
+		mUseAbsoluteYPos = false;
 		SetNPos(npos);
+	}
 
 	// positions
 	auto pos = compTable.GetField("pos").GetVec2I(success);
@@ -2821,12 +2904,16 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	}
 
 	auto nPosX = compTable.GetField("nposX").GetFloat(success);
-	if (success)
+	if (success){
+		mUseAbsoluteXPos = false;
 		SetNPosX(nPosX);
+	}
 
 	auto nPosY = compTable.GetField("nposY").GetFloat(success);
-	if (success)
+	if (success){
+		mUseAbsoluteYPos = false;
 		SetNPosY(nPosY);
+	}
 
 
 	int x = compTable.GetField("posX").GetInt(success);
@@ -2870,6 +2957,8 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 	Vec2 nsize = compTable.GetField("nsize").GetVec2(success);
 	if (success)
 	{
+		mUseAbsoluteXSize = false;
+		mUseAbsoluteYSize = false;
 		SetNSize(nsize);
 	}
 
@@ -2883,6 +2972,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		float x = compTable.GetField("nsizeX").GetFloat(success);
 		if (success)
 		{
+			mUseAbsoluteXSize = false;
 			SetNSizeX(x);
 		}
 		else
@@ -2890,6 +2980,8 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			std::string str = compTable.GetField("nsizeX").GetString(success);
 			if (success && _stricmp(str.c_str(), "fill") == 0)
 			{
+				mUseAbsoluteXSize = false;
+				mFillX = true;
 				SetNSizeX(1.0f - mNPos.x);
 			}
 		}
@@ -2899,6 +2991,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		float y = compTable.GetField("nsizeY").GetFloat(success);
 		if (success)
 		{
+			mUseAbsoluteYSize = false;			
 			SetNSizeY(y);
 		}
 		else
@@ -2906,6 +2999,8 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			std::string str = compTable.GetField("nsizeY").GetString(success);
 			if (_stricmp(str.c_str(), "fill") == 0)
 			{
+				mUseAbsoluteYSize = false;
+				mFillY = true;
 				SetNSizeY(1.0f - mNPos.y);
 			}
 		}
@@ -2966,6 +3061,23 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 		}
 	}
 
+	bool b = compTable.GetField("useNPosX").GetBool(success);
+	if (success){
+		mUseAbsoluteXPos = !b;
+	}
+	b = compTable.GetField("useNPosY").GetBool(success);
+	if (success){
+		mUseAbsoluteYPos = !b;
+	}
+	b = compTable.GetField("useNSizeX").GetBool(success);
+	if (success){
+		mUseAbsoluteXSize = !b;
+	}
+	b = compTable.GetField("useNSizeY").GetBool(success);
+	if (success){
+		mUseAbsoluteYSize = !b;
+	}
+
 	OnSizeChanged();
 	OnPosChanged(false);
 
@@ -3020,6 +3132,7 @@ bool WinBase::ParseLua(const fastbird::LuaObject& compTable)
 			}
 		}
 	}
+	OnCreated();
 
 	return true;
 }
@@ -3244,9 +3357,9 @@ void WinBase::SetEnable(bool enable)
 		return;
 
 	mEnable = enable;
-	IEventHandler* pevent = dynamic_cast<IEventHandler*>(this);
+	/*IEventHandler* pevent = dynamic_cast<IEventHandler*>(this);
 	if (pevent)
-		pevent->SetEnableEvent(enable);
+		pevent->SetEnableEvent(enable);*/
 
 	if (mUIObject)
 	{
@@ -3307,7 +3420,7 @@ Vec2I WinBase::GetRenderTargetSize() const
 		auto root = GetRootWnd();
 		assert(root);
 		auto hwndId = root->GetHwndId();
-		return gFBEnv->pEngine->GetRequestedWndSize(hwndId);
+		return gFBEnv->pRenderer->GetRenderTargetSize(hwndId);
 	}
 }
 

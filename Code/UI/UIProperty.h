@@ -125,6 +125,7 @@ namespace fastbird
 			ALWAYS_ON_TOP,
 			CLOSE_BY_ESC,
 			DROPDOWN_INDEX,
+			DROPDOWN_MAX_HEIGHT,
 			COLOR_RAMP_VALUES,
 			DRAGABLE,
 			NAMED_PORTRAIT_IMAGE_SIZE,
@@ -147,6 +148,10 @@ namespace fastbird
 
 			WND_NO_FOCUS,
 			MOUSE_CURSOR_HAND,
+
+			NO_FOCUS_BY_CLICK,
+			SEND_EVENT_TO_CHILDREN,
+			RECEIVE_EVENT_FROM_PARENT,
 
 			COUNT
 		};
@@ -270,6 +275,7 @@ namespace fastbird
 			"ALWAYS_ON_TOP",
 			"CLOSE_BY_ESC",
 			"DROPDOWN_INDEX",
+			"DROPDOWN_MAX_HEIGHT",
 			"COLOR_RAMP_VALUES",
 			"DRAGABLE",
 			"NAMED_PORTRAIT_IMAGE_SIZE",
@@ -293,6 +299,11 @@ namespace fastbird
 
 			"WND_NO_FOCUS",
 			"MOUSE_CURSOR_HAND",
+
+			"NO_FOCUS_BY_CLICK",
+
+			"SEND_EVENT_TO_CHILDREN",
+			"RECEIVE_EVENT_FROM_PARENT",
 
 			"COUNT"
 		};
@@ -485,6 +496,12 @@ namespace fastbird
 				return false;
 			case MOUSE_CURSOR_HAND:
 				return false;
+			case NO_FOCUS_BY_CLICK:
+				return false;
+			case SEND_EVENT_TO_CHILDREN:
+				return false;
+			case RECEIVE_EVENT_FROM_PARENT:
+				return false;
 			}
 			assert(0);
 			return false;
@@ -531,6 +548,8 @@ namespace fastbird
 				return 5;
 			case NUMERIC_UPDOWN_STEP:
 				return 1;
+			case DROPDOWN_MAX_HEIGHT:
+				return 200;
 			}
 			assert(0);
 			return 0;

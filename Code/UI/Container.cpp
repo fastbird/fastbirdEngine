@@ -13,7 +13,7 @@ Container::Container()
 	: mScrollerV(0)
 	, mUseScrollerH(false), mUseScrollerV(false), mChildrenPosSizeChanged(false)
 	, mWndContentUI(0), mChildrenChanged(false), mMatchHeight(false)
-	, mCurInputHandlingChanged(false), mHandlingInput(false)
+	, mCurInputHandlingChanged(false), mHandlingInput(false), mSendEventToChildren(false)
 {
 }
 
@@ -40,6 +40,13 @@ Container::~Container()
 	for (; it!=itEnd; it++)
 	{
 		gFBEnv->pUIManager->DeleteComponent(*it);
+	}
+}
+
+void Container::OnResolutionChanged(HWND_ID hwndId){
+	__super::OnResolutionChanged(hwndId);
+	for (auto it : mChildren){
+		it->OnResolutionChanged(hwndId);
 	}
 }
 
@@ -256,11 +263,31 @@ void Container::RemoveAllChild(bool immediately)
 			if (childCont)
 				childCont->RemoveAllChild(false);
 			child->ClearName();
-			if (ValueNotExistInVector(mPendingDelete, child))
-				mPendingDelete.push_back(child);
-		}
+			if (ValueNotExistInVector(mPendingDelete, child)){
+				mPendingDelete.push_back(child);				
+			}
+		}		
 	}
 	SetChildrenPosSizeChanged();
+}
+
+void Container::RemoveAllChildExceptRuntime(){
+	if (mWndContentUI){
+		mWndContentUI->RemoveAllChildExceptRuntime();
+		return;
+	}
+
+	for (auto it = mChildren.begin(); it != mChildren.end();){
+		auto child = *it;
+		if (!child->IsRuntimeChild()){
+			it = mChildren.erase(it);
+		}
+		else{
+			++it;
+		}
+	}
+
+	mChildrenChanged = true;
 }
 
 IWinBase* Container::GetChild(const std::string& name, bool includeSubChildren/*= false*/)
@@ -737,7 +764,6 @@ void Container::ParseXMLChildren(tinyxml2::XMLElement* pelem){
 		assert(p);
 		p->SetRender3D(mRender3D, GetRenderTargetSize());
 		p->ParseXML(pchild);
-		p->OnCreated();
 
 		if (dropdown)
 		{
@@ -799,8 +825,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 				IWinBase* p = AddChild(typee);
 				assert(p);
 				p->SetRender3D(mRender3D, GetRenderTargetSize());
-				p->ParseLua(child);
-				p->OnCreated();
+				p->ParseLua(child);				
 
 				if (dropdown)
 				{
@@ -871,6 +896,11 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 								mMatchHeight = StringConverter::parseBool(val);
 								return true;
 	}
+	case UIProperty::SEND_EVENT_TO_CHILDREN:
+	{
+		mSendEventToChildren = StringConverter::parseBool(val);
+		return true;
+	}
 
 	}
 
@@ -931,7 +961,15 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize,
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
-
+	case UIProperty::SEND_EVENT_TO_CHILDREN:
+	{
+		if (notDefaultOnly){
+			if (mSendEventToChildren == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mSendEventToChildren).c_str());		
+		return true;
+	}
 	}
 
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -1146,19 +1184,21 @@ void Container::TabPressed()
 void Container::TransferChildrenTo(Container* destContainer){
 	COMPONENTS remained;
 	for (auto child : mChildren){
+		bool transferred = false;
 		if (child != destContainer && child != mWndContentUI){
 			auto found = mDoNotTransfer.find(child);
 			if (found == mDoNotTransfer.end()){
 				destContainer->AddChild(child);
-			}
-			else{
-				remained.push_back(child);
-			}
+				transferred = true;
+			}			
+		}
+		if (!transferred){
+			remained.push_back(child);
 		}
 	}
 	mChildren = remained;
-	if (mWndContentUI == destContainer)
-		mChildren.push_back(destContainer);
+	/*if (mWndContentUI == destContainer)
+		mChildren.push_back(destContainer);*/
 	mScrollerV = 0;
 	SetChildrenPosSizeChanged();
 }
@@ -1212,6 +1252,37 @@ bool Container::HasScissorIgnoringChild() const{
 			return true;
 	}
 	return false;
+}
+
+void Container::OnMouseIn(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	__super::OnMouseIn(mouse, keyboard, propergated);
+	if (mSendEventToChildren){
+		for (auto& it : mChildren){
+			if (it->GetReceiveEventFromParent()){
+				it->OnMouseIn(mouse, keyboard, true);
+			}
+		}
+	}
+}
+void Container::OnMouseOut(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	__super::OnMouseOut(mouse, keyboard, propergated);
+	if (mSendEventToChildren){
+		for (auto& it : mChildren){
+			if (it->GetReceiveEventFromParent()){
+				it->OnMouseOut(mouse, keyboard, true);
+			}
+		}
+	}
+}
+void Container::OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated){
+	__super::OnMouseHover(mouse, keyboard, propergated);
+	if (mSendEventToChildren){
+		for (auto& it : mChildren){
+			if (it->GetReceiveEventFromParent()){
+				it->OnMouseHover(mouse, keyboard, true);
+			}
+		}
+	}
 }
 
 }

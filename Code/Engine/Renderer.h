@@ -209,6 +209,13 @@ protected:
 	SmartPtr<IShader> mGGXGenShader;
 	SmartPtr<ITexture> mGGXGenTarget;
 
+	struct OutputInfo
+	{
+		WCHAR mDeviceName[32];
+		RECT mRect;
+	};
+	std::vector<OutputInfo> mOutputInfos;
+
 public:
 	Renderer();
 	virtual ~Renderer();
@@ -221,6 +228,11 @@ public:
 	virtual void Deinit();
 	virtual bool InitSwapChain(HWND_ID id, int width, int height) = 0;
 	virtual void ReleaseSwapChain(HWND_ID id) = 0;
+	// for windowed
+	virtual void ChangeWindowSize(HWND_ID id, const Vec2I& resol);
+	// for full-screen
+	virtual void ChangeResolution(HWND_ID id, const Vec2I& resol) = 0;
+	virtual void OnSizeChanged(HWND_ID id, const Vec2I& resol) = 0;
 
 	void CleanDepthWriteResources();
 	void CleanGlowResources();
@@ -240,12 +252,12 @@ public:
 
 	virtual Vec2I ToSreenPos(HWND_ID id, const Vec3& ndcPos) const;
 	virtual Vec2 ToNdcPos(HWND_ID id, const Vec2I& screenPos) const;
-	virtual unsigned GetWidth(HWND_ID id) const;
+	/*virtual unsigned GetWidth(HWND_ID id) const;
 	virtual unsigned GetHeight(HWND_ID id) const;
 	virtual unsigned GetWidth(HWND hWnd) const;
 	virtual unsigned GetHeight(HWND hWnd) const;
 	virtual unsigned GetCropWidth(HWND hWnd) const;
-	virtual unsigned GetCropHeight(HWND hWnd) const;
+	virtual unsigned GetCropHeight(HWND hWnd) const;*/
 	//virtual void SetWireframe(bool enable); // see RendererD3D11
 	virtual bool GetWireframe() const { return mForcedWireframe; }
 	virtual void SetClearColor(HWND_ID id, const Color& color);
@@ -263,6 +275,7 @@ public:
 		const Color& color, float size = 24);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
 		const Color& color, float size = 24);
+	virtual void ClearDurationTexts();
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
 		const Color& color0, const Color& color1);
@@ -286,7 +299,8 @@ public:
 	virtual IRenderTarget* GetCurRenderTarget() const;
 	virtual void SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int num,
 		ITexture* pDepthStencil, size_t dsViewIndex);
-	virtual const Vec2I& GetRenderTargetSize() const;
+	virtual const Vec2I& GetRenderTargetSize(HWND_ID id = INVALID_HWND_ID) const;
+	virtual const Vec2I& GetRenderTargetSize(HWND hwnd = 0) const;
 	
 	virtual const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 		DEFAULT_INPUTS::Enum e);
@@ -415,6 +429,7 @@ public:
 	IShader* GetStarGlareShader();
 	IShader* GetMergeTexturePS();
 	IShader* GetToneMappingPS();
+	OBJECT_CONSTANTS mObjConst;
 
 	void Render(float dt);
 	/*void SetGodRayRenderTarget();
@@ -503,6 +518,7 @@ public:
 	virtual void RegisterVideoPlayer(IVideoPlayer* player);
 	virtual void UnregisterVideoPlayer(IVideoPlayer* player);
 	virtual void GenGGX();
+	virtual void ChangeFullscreenMode(int mode) = 0;	
 };
 
 inline bool operator < (const INPUT_ELEMENT_DESCS& left, const INPUT_ELEMENT_DESCS& right)

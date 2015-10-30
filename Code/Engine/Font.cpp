@@ -9,6 +9,7 @@
 #include <Engine/IVertexBuffer.h>
 #include <Engine/IShader.h>
 #include <Engine/IInputLayout.h>
+#include <UI/IUIManager.h>
 #include <CommonLib/Math/fbMath.h>
 #include <CommonLib/Math/Vec2.h>
 #include <CommonLib/Profiler.h>
@@ -111,6 +112,9 @@ Font::~Font()
 //----------------------------------------------------------------------------
 int Font::Init(const char *fontFile)
 {
+
+	if (mInitialized)
+		return 0;
 	Profiler profiler("'Font Init'");
 	// Load the font
 	FILE *f = 0;
@@ -239,6 +243,51 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 	}
 	
 	return false;
+}
+
+int Font::SkipTags(const char* text, TextTags::Enum* tag, int* imgLen)
+{
+	static TextureAtlas* textureAtlas = gFBEnv->pRenderer->GetTextureAtlas("data/textures/gameui.xml");
+	if (tag)
+	{
+		*tag = TextTags::Num;
+	}
+
+	if (text[0] == 0)
+	{
+		return 0;
+	}
+
+	if (text[0] == '[' && text[2] == '$')
+	{
+		// found end
+		int pos = 4;
+		for (; text[pos] != 0; pos += 2)
+		{
+			if (text[pos] == '$' && text[pos + 2] == ']')
+			{
+				int endLen = pos + 4;
+				char buf[256];
+				TextTags::Enum tagType = GetTagType(text, endLen, buf);
+
+				if (tag)
+				{
+					*tag = tagType;
+				}
+				if (imgLen && tagType == TextTags::Img && textureAtlas){
+					auto region = textureAtlas->GetRegion(buf);
+					if (region)
+					{
+						auto& regionSize = region->GetSize();
+						*imgLen = regionSize.x;
+					}
+					
+				}
+				return endLen;
+			}
+		}
+	}
+	return 0;
 }
 
 TextTags::Enum Font::GetTagType(const char* tagStart, int length, char* buf) const
@@ -478,22 +527,25 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 	for (int n = 0; n < count;)
 	{
 		TextTags::Enum tag = TextTags::Num;
-		int numSkip = SkipTags(&text[n], &tag);
+		int imgLen = 0;
+		int numSkip = SkipTags(&text[n], &tag, &imgLen);
 		if (numSkip)
 		{
 			do
 			{
 				if (tag == TextTags::Img)
 				{
-					curX += mScaledFontSize;
+					curX += imgLen;
+					lengthAfterSpace += imgLen;
 				}
 				int startN = n;
 				for (; n < startN + numSkip;)
 				{
 					int charId = GetTextChar(text, n, &n);
+					++inputBeforeSpace;
 					multilineString.push_back(charId);
 				}
-				numSkip = SkipTags(&text[n], &tag);
+				numSkip = SkipTags(&text[n], &tag, &imgLen);
 
 			} while (numSkip);
 			if (n >= count)
@@ -521,30 +573,13 @@ std::wstring Font::InsertLineFeed(const char *text, int count, unsigned wrapAt, 
 		
 		if (curX > wrapAt)
 		{
-			int numTagChar = 0;
-			auto it = multilineString.end() - 1;
-			if (*(it) == ']' && *(it-1) == '$')
-			{
-				auto startIt = it - 2;
-				for (startIt; startIt >= multilineString.begin(); startIt--)
-				{
-					if (*startIt == '[' && *(startIt + 1) == '$')
-					{
-						numTagChar = std::distance(startIt, it)+1;
-						break;
-					}
-					if (startIt == multilineString.begin())
-					{
-						numTagChar = 0;
-						break;
-					}
-				}
-			}
-			multilineString.insert(multilineString.end() - inputBeforeSpace - numTagChar, L'\n');
+			multilineString.insert(multilineString.end() - inputBeforeSpace, L'\n');
 			maxes.push_back(curX - lengthAfterSpace);
 			curX = lengthAfterSpace;
 			multilineString.push_back(charId);
 			++lines;
+			inputBeforeSpace = 0;
+			lengthAfterSpace = 0;
 		}
 		else
 		{
@@ -596,20 +631,21 @@ float Font::GetTextWidth(const char *text, int count, float *outMinY/* = 0*/, fl
 	for( int n = 0; n < count; )
 	{
 		TextTags::Enum tag;
-		int skiplen = SkipTags(&text[n], &tag);
+		int imgLen;
+		int skiplen = SkipTags(&text[n], &tag, &imgLen);
 		if (skiplen>0)
 		{
 			if (tag == TextTags::Img)
 			{
-				x += mScaledFontSize;
+				x += imgLen;
 			}
 			do
 			{
 				n += skiplen;
-				skiplen = SkipTags(&text[n], &tag);
+				skiplen = SkipTags(&text[n], &tag, &imgLen);
 				if (tag == TextTags::Img)
 				{
-					x += mScaledFontSize;
+					x += imgLen;
 				}
 			} while (skiplen > 0);
 		}
@@ -677,38 +713,6 @@ void Font::SetRenderStates(bool depthEnable, bool scissorEnable)
 		desc.DepthEnable = false;
 		mTextureMaterial->SetDepthStencilState(desc);
 	}
-}
-
-int Font::SkipTags(const char* text, TextTags::Enum* tag)
-{
-	if (tag)
-	{
-		*tag = TextTags::Num;
-	}
-
-	if (text[0] == 0)
-	{		
-		return 0;
-	}
-
-	if (text[0] == '[' && text[2] == '$')
-	{
-		// found end
-		int pos = 4;
-		for (;text[pos]!=0; pos +=2)
-		{
-			if (text[pos] == '$' && text[pos + 2] == ']')
-			{
-				int endLen = pos+4;
-				if (tag)
-				{
-					*tag = GetTagType(text, endLen);
-				}
-				return endLen;
-			}
-		}
-	}
-	return 0;
 }
 
 //----------------------------------------------------------------------------

@@ -175,6 +175,7 @@ namespace fastbird
 
 			NumDrawIndexedCall = 0;
 			NumIndexCount = 0;
+			NumUpdateObjectConst = 0;
 		}
 
 		void UpdateFrameRate(float dt)
@@ -199,6 +200,8 @@ namespace fastbird
 		float FrameRate;
 		float FrameRateDisplay;
 		float FrameRateDisplayUpdateTime;
+
+		unsigned int NumUpdateObjectConst;
 	};
 
 	struct INPUT_ELEMENT_DESC
@@ -213,7 +216,7 @@ namespace fastbird
 			, mInstanceDataStepRate(instanceDataStepRate)
 		{
 			memset(mSemanticName, 0, 256);
-			strcpy(mSemanticName, semantic);
+			strcpy_s(mSemanticName, semantic);
 		}
 		INPUT_ELEMENT_DESC()
 		{

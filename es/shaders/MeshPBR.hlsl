@@ -119,7 +119,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float vdh = max( dot(toViewDir, h), 1e-8);
 	float invShadow = GetShadow(INPUT.LightPos);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));
-	shadedColor +=  ndl2 * lightColor2 * baseColor * 0.3f;
+	shadedColor +=  ndl2 * lightColor2 * max(float3(0.2f, 0.2f, 0.2f), diffColor);
 	float3 irrad = GetIrrad(float4(normal, 1.0f));
 	shadedColor+=irrad;	
 	

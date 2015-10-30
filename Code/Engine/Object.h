@@ -44,6 +44,9 @@ namespace fastbird
 		virtual bool GetShow() const;
 		virtual void SetGameType(int type);
 		virtual int GetGameType() const;
+		virtual void SetGameId(unsigned id) { mGameId = id; }
+		virtual unsigned GetGameId() const { return mGameId; }
+		
 		virtual void SetGamePtr(void* ptr);
 		virtual void* GetGamePtr() const;
 		virtual void SetRadius(float r);
@@ -86,6 +89,7 @@ namespace fastbird
 	protected:
 		std::vector<IObjectEventListener*> mEventListener;
 		int mGameType;
+		unsigned mGameId;
 		void* mGamePtr;
 	};
 }

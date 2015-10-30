@@ -24,8 +24,8 @@ void RenderTargetD3D11::SetColorTextureDesc(int width, int height, PIXEL_FORMAT 
 		type |= TEXTURE_TYPE_CUBE_MAP;
 	mRenderTargetTexture = gFBEnv->pRenderer->CreateTexture(0, width, height, format,
 		BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
-	mCamera->SetWidth(width);
-	mCamera->SetHeight(height);
+	mCamera->SetWidth((float)width);
+	mCamera->SetHeight((float)height);
 
 	mViewport.mTopLeftX = 0;
 	mViewport.mTopLeftY = 0;
