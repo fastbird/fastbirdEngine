@@ -619,12 +619,13 @@ namespace fastbird
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* compName = luaL_checkstring(L, 2);
 		const char* prop = luaL_checkstring(L, 3);
-		const char* val = luaL_checkstring(L, 4);
-		if (strcmp(compName, "uranium") == 0){
-			int a = 0;
-			a++;
+		const char* val = luaL_checkstring(L, 4);		
+		bool updatePosSize = false;
+		if (lua_gettop(L) == 5){
+			updatePosSize = lua_toboolean(L, 5) != 0;			
 		}
-		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val);
+		UIManager::GetUIManagerStatic()->SetUIProperty(uiname, compName, prop, val, updatePosSize);
+		
 		return 0;
 
 	}

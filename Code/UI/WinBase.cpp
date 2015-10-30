@@ -876,7 +876,7 @@ void WinBase::OnMouseHover(IMouse* mouse, IKeyboard* keyboard, bool propergated)
 }
 
 void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -890,7 +890,7 @@ void WinBase::OnMouseDown(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -911,7 +911,7 @@ void WinBase::OnMouseClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -926,7 +926,7 @@ void WinBase::OnMouseDoubleClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone){
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone){
 		return;
 	}
 	if (!OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK) && mParent){
@@ -939,7 +939,7 @@ void WinBase::OnMouseRButtonClicked(IMouse* mouse, IKeyboard* keyboard){
 }
 
 void WinBase::OnMouseDrag(IMouse* mouse, IKeyboard* keyboard){
-	if (mNoMouseEvent || mNoMouseEventAlone)
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
 		return;
 	}
@@ -1115,7 +1115,7 @@ void WinBase::CalcTextWidth()
 	if (mMatchSize && mTextWidth != 0)// && !mLockTextSizeChange)
 	{
 		//mLockTextSizeChange = true;
-		ChangeSize(Vec2I((int)(mTextWidth + 4), mScaledSize.y));
+		ChangeSize(Vec2I((int)(mTextWidth + 4 + mTextGap.x + mTextGap.y), mScaledSize.y));
 		//mLockTextSizeChange = false;
 	}
 }
@@ -3357,9 +3357,9 @@ void WinBase::SetEnable(bool enable)
 		return;
 
 	mEnable = enable;
-	IEventHandler* pevent = dynamic_cast<IEventHandler*>(this);
+	/*IEventHandler* pevent = dynamic_cast<IEventHandler*>(this);
 	if (pevent)
-		pevent->SetEnableEvent(enable);
+		pevent->SetEnableEvent(enable);*/
 
 	if (mUIObject)
 	{

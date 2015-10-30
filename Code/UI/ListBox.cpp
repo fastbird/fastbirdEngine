@@ -2009,6 +2009,7 @@ void ListBox::ClearItemProperties(){
 	mItemPropertyByColumn.clear();
 	mItemPropertyByUnsigned.clear();
 	mItemPropertyByString.clear();
+	mItemPropertyKeyCol.clear();
 }
 
 void ListBox::DisableItemEvent(unsigned uniqueKey){

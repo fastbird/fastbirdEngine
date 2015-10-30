@@ -66,8 +66,8 @@ namespace fastbird
 
 		virtual bool GetVisible(const char* uiname) const = 0;
 		virtual void SetVisible(const char* uiname, bool visible) = 0;
-		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val) = 0;
-		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, const char* UIProperty, const char* val, bool updatePosSize = false) = 0;
+		virtual void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum UIProperty, const char* val, bool updatePosSize = false) = 0;
 		virtual void SetEnableComponent(const char* uiname, const char* compname, bool enable) = 0;
 		virtual void LockFocus(bool lock) = 0;
 		virtual void CloseAllLuaUI()=0;

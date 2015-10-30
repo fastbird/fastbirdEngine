@@ -83,13 +83,14 @@ UIManager::~UIManager()
 	mTextManipulator = 0;
 	gFBEnv->pRenderer->RemoveRenderListener(this);
 	gFBEnv->pEngine->RemoveFileChangeListener(this);
-	gFBEnv->pConsole->ProcessCommand("KillUIEditor");
-
+	if (gFBEnv->pConsole)
+		gFBEnv->pConsole->ProcessCommand("KillUIEditor");
+	mUIEditor = 0;
+	mUIEditorModuleHandle = 0;
 	WinBase::FinalizeMouseCursor();
 	if (mUIEditorModuleHandle)
 	{
-		FreeLibrary(mUIEditorModuleHandle);
-		mUIEditorModuleHandle = 0;
+		FreeLibrary(mUIEditorModuleHandle);		
 	}
 	FB_DELETE(mUICommands);
 	for (auto it : mAnimations)
@@ -969,11 +970,11 @@ void UIManager::DirtyRenderList(HWND_ID hwndId)
 	}
 }
 
-void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val)
+void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize)
 {
-	SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val);
+	SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val, updatePosSize);
 }
-void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val)
+void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val, bool updatePosSize)
 {
 	if_assert_fail(uiname && compname && val)
 		return;
@@ -982,6 +983,10 @@ void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProper
 	if (comp)
 	{
 		comp->SetProperty(prop, val);
+		if (updatePosSize){
+			comp->OnSizeChanged();
+			comp->OnPosChanged(false);			
+		}
 	}
 	else
 	{
@@ -1833,6 +1838,7 @@ void UIManager::PrepareTooltipUI()
 	children1.SetField("pos", Vec2I(6, 4));
 	children1.SetField("size", Vec2I(350, (int)gTooltipFontSize));
 	children1.SetField("TEXTBOX_MATCH_HEIGHT", "true");
+	children1.SetField("TEXT_VALIGN", "top");
 	children1.SetField("TEXT_SIZE", StringConverter::toString(gTooltipFontSize).c_str());	
 	bool success = AddLuaUI("MouseTooltip", tooltip, gFBEnv->pEngine->GetMainWndHandleId());
 	if (!success)

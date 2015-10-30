@@ -1,6 +1,7 @@
 #include <UI/StdAfx.h>
 #include <UI/UICommands.h>
 #include <UI/UIManager.h>
+#include <UI/LuaLock.h>
 using namespace fastbird;
 
 static void StartUIEditor(StringVector& arg);
@@ -60,8 +61,10 @@ void StartUIEditor(StringVector& arg)
 			gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
 			startFunc(gFBEnv);
 			uiEditorInitialized = true;
+			LuaLock L;
+			lua_pushboolean(L, 1);
+			lua_setglobal(L, "gThreatHold");
 		}
-
 	}
 }
 
@@ -78,6 +81,9 @@ void KillUIEditor(StringVector& arg)
 		finalizeFunc = (FinalizeProc)GetProcAddress(moduleHandle, "KillUIEditor");
 		if (finalizeFunc)
 			finalizeFunc();
+		LuaLock L;
+		lua_pushboolean(L, 0);
+		lua_setglobal(L, "gThreatHold");
 
 		//FreeLibrary(gFBEnv->pUIManager->GetUIEditorModuleHandle());
 		//gFBEnv->pUIManager->SetUIEditorModuleHandle(0);

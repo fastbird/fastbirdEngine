@@ -273,6 +273,7 @@ namespace fastbird
 		virtual bool GetReceiveEventFromParent() const = 0;
 
 	protected:
+		friend class UIManager;
 		virtual void NotifySizeChange() = 0;
 		virtual void OnPosChanged(bool anim) = 0;
 		virtual void OnSizeChanged() = 0;
