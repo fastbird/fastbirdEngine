@@ -20,6 +20,8 @@
 #include <Engine/IRenderListener.h>
 #include <Engine/IVideoPlayer.h>
 #include <CommonLib/Unicode.h>
+#include <CommonLib/tinydir.h>
+#include <regex>
 
 namespace fastbird
 {
@@ -45,6 +47,7 @@ namespace fastbird
 		, mUseFilmicToneMapping(true)
 		, mFadeAlpha(0.0f)
 		, m3DUIEnabled(true)
+		, mTakeScreenShot(false)
 {
 	assert(gFBEnv->pConsole);
 	gFBEnv->pConsole->AddListener(this);
@@ -2681,6 +2684,45 @@ void Renderer::GenGGX(){
 	GetMainRenderTarget()->BindTargetOnly(false);
 
 	mGGXGenTarget->SaveToFile("es/textures/ggx.dds");
+}
+
+void Renderer::TakeScreenshot(){
+	mTakeScreenShot = true;
+}
+
+const char* Renderer::GetNextScreenshotFile(){
+	tinydir_dir dir;
+	if (tinydir_open(&dir, "Screenshot") == -1){
+		FileSystem::CreateFolder("Screenshot");
+		if (tinydir_open(&dir, "Screenshot") == -1){
+			Error("Cannot open a folder 'Screenshot'");
+			return 0;
+		}
+	}
+	unsigned n = 0;
+	while (dir.has_next)
+	{
+		tinydir_file file;
+		if (tinydir_readfile(&dir, &file) == -1)
+		{
+			break;
+		}
+		std::regex match("screenshot_([0-9]+)\\.bmp");
+		std::smatch result;
+		std::string filename = file.name;
+		if (std::regex_match(filename, result, match)){
+			if (result.size() == 2){
+				std::ssub_match subMatch = result[1];
+				std::string matchNumber = subMatch.str();
+				unsigned thisn = StringConverter::parseUnsignedInt(matchNumber);
+				if (thisn >= n){
+					n = thisn + 1;
+				}
+			}
+		}
+		tinydir_next(&dir);
+	}
+	return FormatString("Screenshot/screenshot_%d.bmp", n);
 }
 
 }

@@ -990,6 +990,19 @@ void RendererD3D11::Present()
 		else{
 			mStandBy = false;
 		}
+		if (mTakeScreenShot){
+			mTakeScreenShot = false;
+			auto mainRt = mSwapChainRenderTargets.Find(1);
+			if (mainRt != mSwapChainRenderTargets.end()){
+				auto srcTexture = mainRt->second->GetRenderTargetTexture();			
+				SmartPtr<ITexture> pStaging = gFBEnv->pRenderer->CreateTexture(0, srcTexture->GetWidth(), srcTexture->GetHeight(), srcTexture->GetFormat(),
+					BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+				CopyToStaging(pStaging, 0, 0, 0, 0, srcTexture, 0, 0);					
+				const char* filepath = GetNextScreenshotFile();
+				pStaging->SaveToFile(filepath);
+			}
+			
+		}
 	}
 	
 	if (m_pThreadPump)
