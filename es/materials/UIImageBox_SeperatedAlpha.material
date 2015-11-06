@@ -19,7 +19,7 @@
 		<Define name="_ALPHA_TEXTURE_SEPERATED_UV" val="1"></Define>
 	</ShaderDefines>
 	<InputLayout>
-		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="POSITION" index="0" format="FLOAT4" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="COLOR" index="0" format="UBYTE4" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="2" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="TEXCOORD" index="1" format="FLOAT2" slot="3" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>

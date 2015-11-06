@@ -26,6 +26,8 @@ static void InvalidParamHandler(const wchar_t *pszExpression,
 	gConsoleInvalidParam = true;
 }
 
+const float Console::sFontSize = 22.f;
+
 const char* cacheFile = "consoleCache.tmp";
 //--------------------------------------------------------------------------
 Console::Console()
@@ -113,7 +115,7 @@ void Output(void* arg)
 bool Console::Init()
 {
 	// calc background size
-	mHeight = (sFontSize + mLineGap) * mLines;
+	mHeight = Round((sFontSize + mLineGap) * mLines);
 
 	mPrompt = AnsiToWide(">", 1);
 	mPromptStart = 2;
@@ -213,9 +215,9 @@ void Console::Log(const char* szFmt, ...)
 	std::cerr << buf << std::endl;
 
 	std::wstring strw = AnsiToWide(buf, strlen(buf));
-	if (gFBEnv->pRenderer && gFBEnv->pRenderer->GetFont())
+	if (gFBEnv->pRenderer && gFBEnv->pRenderer->GetFont(sFontSize))
 	{
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
+		IFont* pFont = gFBEnv->pRenderer->GetFont(sFontSize);
 		int textWidth = (int)pFont->GetTextWidth((char*)strw.c_str());
 		const auto& size = mRTSize;
 		int consoleWidth = size.x;
@@ -295,6 +297,10 @@ void Console::Update()
 			Log(buf);
 		}
 	}
+	for (auto& it : mQueue){
+		ProcessCommand(it.mString.c_str(), it.mHistory);
+	}
+	mQueue.clear();
 }
 
 //--------------------------------------------------------------------------
@@ -303,7 +309,7 @@ void Console::Render()
 	if (!mOpen)
 		return;
 	IRenderer* pRenderer = gFBEnv->pRenderer;
-	IFont* pFont = pRenderer->GetFont();
+	IFont* pFont = pRenderer->GetFont(sFontSize);
 	pFont->SetHeight((float)sFontSize);
 	const int lineHeight = (int)pFont->GetHeight();
 
@@ -707,6 +713,12 @@ void Console::ProcessCommand(const char* command, bool history)
 		if (processed)
 			SaveHistoryToDiskCache();
 	}
+}
+
+void Console::QueueProcessCommand(const char* command, bool history){
+	if (!command || strlen(command) == 0)
+		return;
+	mQueue.push_back(processQData(command, history));
 }
 
 void Console::SaveHistoryToDiskCache()

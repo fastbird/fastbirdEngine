@@ -20,6 +20,7 @@ public:
 	virtual void SetText(const wchar_t* szText);
 	virtual bool SetProperty(UIProperty::Enum prop, const char* val);
 	virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
+	virtual void OnSizeChanged();
 
 	// IRadioBox
 	virtual void SetCheck(bool check);

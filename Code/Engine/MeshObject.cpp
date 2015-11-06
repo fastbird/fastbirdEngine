@@ -7,6 +7,7 @@
 #include <Engine/Animation.h>
 #include <Engine/FBCollisionShape.h>
 #include <Engine/IRenderTarget.h>
+#include <Engine/EngineCommand.h>
 
 namespace fastbird
 {

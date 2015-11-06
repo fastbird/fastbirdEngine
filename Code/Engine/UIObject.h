@@ -47,6 +47,7 @@ namespace fastbird
 		virtual void SetRenderTargetSize(const Vec2I& rtSize);
 		virtual const Vec2I& GetRenderTargetSize() const;
 		virtual bool HasTexCoord() const;
+		virtual void EnableLinearSampler(bool linear);
 
 		//-------------------------------------------------------------------------
 		// IObject interfaces
@@ -73,7 +74,6 @@ namespace fastbird
 		static SmartPtr<IRasterizerState> mRasterizerStateShared;
 		SmartPtr<IMaterial> mMaterial;
 		SmartPtr<IVertexBuffer> mVertexBuffer;
-		OBJECT_CONSTANTS mObjectConstants; // for ndc space x, y;
 		
 		std::wstring mText;
 		Vec2 mNDCPos; // ndc pos
@@ -81,31 +81,29 @@ namespace fastbird
 		Vec2 mNOffset;
 		Vec2 mAnimNDCOffset;
 		Vec2 mAnimNOffset;
-		Vec2 mScale;
-		//Vec2 mTextNPos;
+		Vec2 mScale;		
 		Vec2I mTextOffset;
 		Vec2I mTextOffsetForCursor;
 		Color mTextColor;
 		float mTextSize;
 		float mAlpha;
 		RECT mRegion;
-		//Vec2 mNSize; // normalized (0~1)
-		//Vec2 mNPos;
 		Vec2I mUISize;
 		Vec2I mUIPos;
 		std::string mDebugString;
 		bool mNoDrawBackground;
-		std::vector<Vec3> mPositions;
 		std::vector<DWORD> mColors;
 		std::vector<Vec2> mTexcoords[2];
 		SmartPtr<IVertexBuffer> mVBColor;
 		SmartPtr<IVertexBuffer> mVBTexCoords[2];
 		RECT mScissorRect;
 		int mSpecialOrder;
-		bool mDirty;
 		bool mScissor;
 		bool mOut;
 		bool mMultiline;
+		bool mNeedToUpdatePosVB;
+		bool mNeedToUpdateColorVB;
+		bool mNeedToUpdateTexcoordVB;
 
 		bool mDoNotDraw;
 		Vec2 mPivot;

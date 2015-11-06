@@ -394,7 +394,7 @@ namespace fastbird
 	enum DEPTH_WRITE_MASK
 	{
 		DEPTH_WRITE_MASK_ZERO 	=0,
-		DEPTH_WRITE_MASK_ALL  	=1,
+		DEPTH_WRITE_MASK_ALL  	=1,		
 	};
 
 	DEPTH_WRITE_MASK DepthWriteMaskFromString(const char* str);

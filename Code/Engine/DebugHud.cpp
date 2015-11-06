@@ -3,6 +3,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/IMeshObject.h>
 #include <Engine/Renderer.h>
+#include <Engine/EngineCommand.h>
 
 using namespace fastbird;
 
@@ -74,11 +75,9 @@ void DebugHud::DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text,
 		it = mTextsForDur.insert(std::make_pair(pos, MessageBuffer())).first;
 	}
 	it->second.insert(it->second.begin(), TextData(pos, text, color, size, secs));
-	auto font = gFBEnv->pRenderer->GetFont();
-	if (font){
-		font->SetHeight(size);
-		it->second.begin()->mWidth = font->GetTextWidth((const char*)text);
-		font->SetBackToOrigHeight();
+	auto font = gFBEnv->pRenderer->GetFont(size);
+	if (font){		
+		it->second.begin()->mWidth = font->GetTextWidth((const char*)text);		
 	}
 	/*while (it->second.size() > 10)
 	{
@@ -324,13 +323,18 @@ void DebugHud::Render()
 	}
 	mQuads.clear();
 
-	IFont* pFont = gFBEnv->pRenderer->GetFont();
+	IFont* pFont = gFBEnv->pRenderer->GetFont(20.f);
+	float curFontHeight = 20.f;
+
 	pFont->PrepareRenderResources();
 	pFont->SetRenderStates(false, false);
 	while (!mTexts.empty())
 	{
 		const TextData& textData = mTexts.front();
-		pFont->SetHeight(textData.mSize);
+		if (curFontHeight != textData.mSize){
+			pFont = gFBEnv->pRenderer->GetFont(textData.mSize);
+			curFontHeight = textData.mSize;
+		}
 		pFont->Write((float)textData.mPos.x, (float)textData.mPos.y, 0.5f, textData.mColor.Get4Byte(), 
 			(const char*)textData.mText.c_str(), -1, FONT_ALIGN_LEFT);
 		mTexts.pop();
@@ -353,6 +357,7 @@ void DebugHud::Render()
 			}
 		}
 		itDur = mTextsForDur.begin();
+		float accHeight = 0.f;
 		for (; itDur != mTextsForDur.end(); ++itDur)
 		{
 			int count = 0;			
@@ -367,21 +372,25 @@ void DebugHud::Render()
 				else
 				{
 					Vec2I drawPos = it->mPos;
-					drawPos.y -= Round(pFont->GetHeight() * count);
+					drawPos.y -= Round(accHeight);
 					if (drawPos.y < 140){
 						for (auto delIt = it; delIt != textList.end();){
 							delIt = textList.erase(delIt);
 						}
 						break;
 					}
-					pFont->SetHeight(it->mSize);
+					if (it->mSize != curFontHeight){
+						pFont->SetHeight(it->mSize);
+						curFontHeight = it->mSize;
+					}
 					Color color = it->mColor;
 					float proportion = 1.0f - (it->mSecs / it->mDuration);
 					color.a() = 1.0f - (proportion*proportion);					
-					pRenderer->DrawQuad(Vec2I(drawPos.x-4, drawPos.y - (int)it->mSize), Vec2I((int)it->mWidth+8, (int)it->mSize), Color(0, 0, 0, color.a()*0.7f));
+					pRenderer->DrawQuad(Vec2I(drawPos.x-4, drawPos.y - (int)it->mSize - 2 ), Vec2I((int)it->mWidth+8, (int)it->mSize+4), Color(0, 0, 0, color.a()*0.7f));
 					pFont->PrepareRenderResources();
 					pFont->Write((float)drawPos.x, (float)drawPos.y, 0.5f, color.Get4Byte(),
 						(const char*)it->mText.c_str(), -1, FONT_ALIGN_LEFT);
+					accHeight += pFont->GetHeight()+4.f;
 
 
 					it++;

@@ -13,11 +13,13 @@ namespace fastbird
 				: mGlow(false), mDepthFade(true)
 			{
 				memset(mTexturePath, 0, 256);
+				memset(padding, 0, 2);
 			}
 			Key(const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade)
 				:mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
 			{
 				strcpy_s(mTexturePath, texturePath);
+				memset(padding, 0, 2);
 			}
 
 			bool operator==(const Key& other) const
@@ -34,6 +36,7 @@ namespace fastbird
 			BLEND_DESC mBDesc;
 			bool mGlow;
 			bool mDepthFade;
+			char padding[2];
 		};
 		static const int MAX_SHARED_VERTICES;
 		static ParticleRenderObject* GetRenderObject(Key& key, bool& created);

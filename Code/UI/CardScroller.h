@@ -63,6 +63,7 @@ namespace fastbird
 		virtual unsigned AddCard(unsigned key, LuaObject& data);
 		virtual void DeleteCard(unsigned key);
 		virtual void DeleteCardWithIndex(unsigned index);
+		virtual void DeleteAllCard();
 		virtual void SetTexture(unsigned key, const char* comp, ITexture* texture);
 		
 		void SetItemProperty(unsigned key, const char* comp, const char* prop, const char* val);

@@ -51,13 +51,13 @@ public:
 
 	int r_UseShaderCache;
 	int r_GenerateShaderCache;
-	int r_numRenderTargets;
-	int r_numPointLights;
+	int r_numRenderTargets;	
 	int r_numParticleEmitters;
 	int r_debugDraw;
 	int r_gameId;
 	Vec2I r_resolution;
 	int r_fullscreen; // 0 : window, 1 : full-screen, 2 : fake full-screen
+	int r_noText;
 	
 
 private:

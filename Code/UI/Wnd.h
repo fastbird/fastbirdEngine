@@ -58,6 +58,7 @@ private:
 	bool mCloseByEsc;
 	bool mSyncWindowPos;
 	bool mNoFocus;
+	bool mMoveToBottom;
 };
 
 }

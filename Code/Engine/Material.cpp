@@ -152,7 +152,7 @@ bool Material::LoadFromFile(const char* filepath)
 	doc.LoadFile(filepath);
 	if (doc.Error())
 	{
-		Error(FB_DEFAULT_DEBUG_ARG, FormatString("Error while parsing material(%s)!", filepath));
+		Log(FB_DEFAULT_DEBUG_ARG, FormatString("Error while parsing material(%s)!", filepath));
 		if (doc.ErrorID()==tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 		{
 			Log("Material %s is not found!", filepath);

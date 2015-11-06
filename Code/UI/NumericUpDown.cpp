@@ -45,12 +45,15 @@ namespace fastbird
 	void NumericUpDown::InitializeButtons()
 	{
 		//mDown = (Button*)AddChild(0.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
+		assert(!mDown);
 		mDown = (Button*)AddChild(ComponentType::Button);
+		mDown->SetName("down");
 		mDown->SetRuntimeChild(true);
 
 
 		//mUp = (Button*)AddChild(1.0, 0.0, 0.33333f, 1.0f, ComponentType::Button);
 		mUp = (Button*)AddChild(ComponentType::Button);
+		mUp->SetName("up");
 		mUp->SetRuntimeChild(true);
 
 		mDown->ChangeSize(Vec2I(20, 20));

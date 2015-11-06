@@ -20,15 +20,25 @@ unsigned CardData::AddData(unsigned key, LuaObject& data){
 
 unsigned CardData::DeleteData(unsigned key){
 	auto it = mData.Find(key);
+	unsigned distance = -1;
 	if (it != mData.end()){
 		mData.erase(it);
 		auto keyIt = std::find(mKeys.begin(), mKeys.end(), key);
 		assert(keyIt != mKeys.end());
-		unsigned distance = std::distance(mKeys.begin(), keyIt);
-		mKeys.erase(keyIt);
-		return distance;
+		distance = std::distance(mKeys.begin(), keyIt);
+		mKeys.erase(keyIt);		
 	}
-	return -1;
+	auto textureIt = mTextures.Find(key);
+	if (textureIt != mTextures.end()){
+		mTextures.erase(textureIt);
+	}
+	return distance;
+}
+
+void CardData::Clear(){
+	mData.clear();
+	mTextures.clear();
+	mKeys.clear();
 }
 
 void CardData::DeleteDataWithIndex(unsigned index){
@@ -49,11 +59,13 @@ void CardData::SetTexture(unsigned key, const char* comp, ITexture* texture){
 	for (auto i = v.begin(); i != v.end(); ++i){
 		if (strcmp(i->compName.c_str(), comp) == 0){
 			found = true;
+			assert(i->texture == texture);
 			break;
 		}
 	}
 	if (!found)
-		it->second.push_back(TextureData(texture, comp));
+		it->second.push_back(TextureData(texture, comp));	
+
 }
 
 void CardData::GetTextures(unsigned key, std::vector<TextureData>& textures){

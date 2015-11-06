@@ -23,9 +23,11 @@ namespace fastbird
 
 	int GenGGX(lua_State* L);
 	int LoadMesh(lua_State* L);
+	int FBConsole(lua_State* L);
 
 	void InitEngineLuaFuncs(lua_State* L)
 	{
+		LUA_SETCFUNCTION(L, FBConsole);
 		LUA_SETCFUNCTION(L, LoadMesh);
 		LUA_SETCFUNCTION(L, GenGGX);
 		LUA_SETCFUNCTION(L, IsKeyPressed);
@@ -147,6 +149,12 @@ namespace fastbird
 		else{
 			gFBEnv->pRenderer->GetMainRenderTarget()->RemoveOverridingCamera();
 		}
+		return 0;
+	}
+
+	int FBConsole(lua_State* L){
+		auto str = luaL_checkstring(L, 1);
+		gFBEnv->pConsole->QueueProcessCommand(str, false);
 		return 0;
 	}
 	

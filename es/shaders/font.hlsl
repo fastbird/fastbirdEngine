@@ -54,8 +54,6 @@ v2p font_VertexShader( in a2v IN )
 float4 font_PixelShader( in v2p IN ) : SV_Target
 {
 	float4 color = gFontTexture.Sample(gLinearSampler, IN.uv);
-	if (color.a<0.1f)
-		discard;
 	if( dot(vector<int, 4>(1,1,1,1), IN.channel) )
     {
         // Get the pixel value
@@ -64,8 +62,8 @@ float4 font_PixelShader( in v2p IN ) : SV_Target
         // A value above .5 is part of the actual character glyph
         // A value below .5 is part of the glyph outline
 		color.rgb = val > 0.5 ? 2*val-1 : 0;
-		color.a   = val > 0.5 ? 1 : 2*val;
+		color.a   = val > 0.5 ? 1 : 2*val;		
     }
 	color *= IN.color;
-	return float4(IN.color.rgb, color.a);
+	return color;
 }

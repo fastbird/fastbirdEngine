@@ -142,6 +142,7 @@ namespace fastbird
 
 		bool ResizeSwapChain(HWND_ID hwndId, const Vec2I& resol);
 		RenderTarget* CreateRenderTargetFor(IDXGISwapChain* swapChain, const Vec2I& size);
+		bool FindClosestMatchingMode(const DXGI_MODE_DESC* finding, DXGI_MODE_DESC* best, HMONITOR monitor);
 
 	private:
 		ID3D11Device*			m_pDevice; // free-threaded
@@ -203,6 +204,8 @@ namespace fastbird
 		ITexture* mCurDSTexture;
 		size_t mCurDSViewIdx;
 
+		std::vector<DXGI_OUTPUT_DESC> mOutputInfos;
+		VectorMap<HMONITOR, std::vector<DXGI_MODE_DESC>> mDisplayModes;
 		bool mStandBy;
 
 	};

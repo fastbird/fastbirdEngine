@@ -2,7 +2,6 @@
 #include <functional>
 #include <CommonLib/SmartPtr.h>
 #include <CommonLib/StringUtils.h>
-#include <Engine/EngineCommand.h>
 #include <sstream>
 
 #define REGISTER_CVAR(name, def, category, desc) \
@@ -16,6 +15,7 @@
 
 namespace fastbird
 {
+	class EngineCommand;
 	class StdOutRedirect;
 	enum CVAR_CATEGORY
 	{
@@ -196,6 +196,7 @@ namespace fastbird
 		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates) = 0;
 		virtual void Log(const char* szFmt, ...) = 0;
 		virtual void ProcessCommand(const char* command, bool history = true) = 0;
+		virtual void QueueProcessCommand(const char* command, bool history = true) = 0;
 		virtual void ToggleOpen() = 0;
 		virtual void Update() = 0;
 		virtual void Render() = 0;

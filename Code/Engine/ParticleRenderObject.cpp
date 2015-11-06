@@ -1,6 +1,7 @@
 #include <Engine/StdAfx.h>
 #include <Engine/ParticleRenderObject.h>
 #include <Engine/IConsole.h>
+#include <Engine/EngineCommand.h>
 
 namespace fastbird
 {

@@ -6,8 +6,15 @@
 
 int _FBPrint(lua_State* L)
 {
-	std::string msg = std::string("Lua: ") + luaL_checkstring(L, -1);
-	fastbird::Log(msg.c_str());
+	std::string msg = std::string("Lua: ") + luaL_checkstring(L, -1);	
+	auto font = gFBEnv->pRenderer->GetFont(22.f);
+	if (font){
+		std::wstring tagRemoved = font->StripTags(fastbird::AnsiToWide(msg.c_str()));
+		fastbird::Log(fastbird::WideToAnsi(tagRemoved.c_str()));
+	}
+	else{
+		fastbird::Log(msg.c_str());
+	}
 
 	return 0;
 }

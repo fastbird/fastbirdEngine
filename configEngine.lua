@@ -1,5 +1,7 @@
-r_font="es/fonts/nanum_pen_bin.fnt"
-
+r_multiFont = {
+	"es/fonts/font32.fnt",
+	"es/fonts/font22.fnt",
+}
 r_ReportDeviceObjectLeak = 0
 r_particleprofile = 1
 

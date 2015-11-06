@@ -222,24 +222,24 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 			std::swap(start, end);
 		}
 		if (end - start > 0){
-			gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
-			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				((const char*)mTextw.c_str()) + (start * 2),
-				(end - start+1) * 2);
-			float leftGap = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				(const char*)mTextw.c_str(), start * 2);
-			gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
-			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)width, (int)mTextSize));
-			KeyboardCursor::GetKeyboardCursor().SetPos(
-				Vec2I(textStartWPos.x + (int)leftGap,
-				textStartWPos.y - Round(mTextSize))
-				);
+			auto font = gFBEnv->pRenderer->GetFont(mTextSize);
+			if (font){
+				float width = font->GetTextWidth(
+					((const char*)mTextw.c_str()) + (start * 2),
+					(end - start + 1) * 2);
+				float leftGap = font->GetTextWidth(
+					(const char*)mTextw.c_str(), start * 2);				
+				KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)width, (int)mTextSize));
+				KeyboardCursor::GetKeyboardCursor().SetPos(
+					Vec2I(textStartWPos.x + (int)leftGap,
+					textStartWPos.y - Round(mTextSize))
+					);
+			}
 		}
 		else{
-			gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
-			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-			Vec2I cursorSize(Round(aWidth), 2);
-			gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+			auto font = gFBEnv->pRenderer->GetFont(mTextSize);			
+			float aWidth = font->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
+			Vec2I cursorSize(Round(aWidth), 2);			
 			KeyboardCursor::GetKeyboardCursor().SetSize(Vec2I((int)1, (int)mTextSize));
 			KeyboardCursor::GetKeyboardCursor().SetPos(
 				Vec2I(textStartWPos.x, textStartWPos.y - Round(mTextSize))
@@ -248,15 +248,12 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 	}
 	else
 	{
-		
-		gFBEnv->pRenderer->GetFont()->SetHeight(mTextSize);
-			float aWidth = gFBEnv->pRenderer->GetFont()->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
-			Vec2I cursorSize(Round(aWidth), 2);
-			KeyboardCursor::GetKeyboardCursor().SetSize(cursorSize);
-			float width = gFBEnv->pRenderer->GetFont()->GetTextWidth(
-				(const char*)mTextw.c_str(), cursorPos * 2);
-
-		gFBEnv->pRenderer->GetFont()->SetBackToOrigHeight();
+		auto font = gFBEnv->pRenderer->GetFont(mTextSize);		
+		float aWidth = font->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
+		Vec2I cursorSize(Round(aWidth), 2);
+		KeyboardCursor::GetKeyboardCursor().SetSize(cursorSize);
+		float width = font->GetTextWidth(
+			(const char*)mTextw.c_str(), cursorPos * 2);	
 
 		Vec2I visualCursorPos(textStartWPos.x + Round(width),
 			textStartWPos.y - WinBase::BOTTOM_GAP - 2);
@@ -442,10 +439,9 @@ void TextField::OnClicked(void* arg){
 	cursorPos.x -= mTextGap.x;
 	cursorPos.x += mCursorOffset;
 
-	auto font = gFBEnv->pRenderer->GetFont();
+	auto font = gFBEnv->pRenderer->GetFont(mTextSize);
 	if (font)
-	{
-		font->SetHeight(mTextSize);
+	{		
 		float length = 0.f;
 		if (cursorPos.x >= (int)mTextWidth){
 			gFBUIManager->GetTextManipulator()->SetCursorPos(mTextw.size());
@@ -462,8 +458,7 @@ void TextField::OnClicked(void* arg){
 				}
 				length += halfLength;
 			}
-		}
-		font->SetBackToOrigHeight();
+		}		
 	}
 	mouse->Invalidate();
 
