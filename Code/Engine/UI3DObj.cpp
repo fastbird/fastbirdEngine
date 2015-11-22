@@ -5,6 +5,7 @@
 #include <Engine/IFont.h>
 #include <Engine/IConsole.h>
 #include <Engine/ICamera.h>
+#include <Engine/EngineCommand.h>
 #include <UI/ComponentType.h>
 
 

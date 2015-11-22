@@ -81,9 +81,8 @@ namespace fastbird
 	void TextBox::CalcTextWidth()
 	{
 		// analyze the text length
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
-		unsigned width = mSize.x;
-		pFont->SetHeight(mTextSize);
+		IFont* pFont = gFBEnv->pRenderer->GetFont(mTextSize);
+		unsigned width = mSize.x;		
 		float textWidth;
 		mMultiLineText = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
 		mTextWidth = (unsigned)Round(textWidth);
@@ -197,9 +196,8 @@ namespace fastbird
 
 	unsigned TextBox::GetTextBoxHeight() const
 	{
-		IFont* pFont = gFBEnv->pRenderer->GetFont();
-		pFont->SetHeight(mTextSize);
-		float height = pFont->GetBaseHeight();
+		IFont* pFont = gFBEnv->pRenderer->GetFont(mTextSize);		
+		float height = pFont->GetHeight();
 		pFont->SetBackToOrigHeight();
 		return Round(height * mNumTextLines) + 16;
 	}

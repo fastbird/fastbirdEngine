@@ -57,7 +57,7 @@ namespace fastbird
 		virtual void SetVertexBuffer(unsigned int startSlot, unsigned int numBuffers,
 			IVertexBuffer* pVertexBuffers[], unsigned int strides[], unsigned int offsets[]);
 		virtual void SetIndexBuffer(IIndexBuffer* pIndexBuffer);
-		virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot);
+		virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) const;
 		virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot);
 		virtual void GenerateMips(ITexture* pTexture);
 		virtual IVertexBuffer* CreateVertexBuffer(void* data, unsigned stride, unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
@@ -99,7 +99,7 @@ namespace fastbird
 		virtual void UnmapVertexBuffer(IVertexBuffer* pBuffer, UINT subResource);
 
 		virtual MapData MapTexture(ITexture* pTexture, UINT subResource, 
-			MAP_TYPE type, MAP_FLAG flag);
+			MAP_TYPE type, MAP_FLAG flag) const;
 		virtual void UnmapTexture(ITexture* pTexture, UINT subResource);
 
 		virtual void CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,
@@ -138,10 +138,11 @@ namespace fastbird
 		IInputLayout* RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			void* byteCode, int byteLength);
 		MapData MapBuffer(ID3D11Resource* pResource, 
-			UINT subResource, MAP_TYPE type, MAP_FLAG flag);
+			UINT subResource, MAP_TYPE type, MAP_FLAG flag) const;
 
 		bool ResizeSwapChain(HWND_ID hwndId, const Vec2I& resol);
 		RenderTarget* CreateRenderTargetFor(IDXGISwapChain* swapChain, const Vec2I& size);
+		bool FindClosestMatchingMode(const DXGI_MODE_DESC* finding, DXGI_MODE_DESC* best, HMONITOR monitor);
 
 	private:
 		ID3D11Device*			m_pDevice; // free-threaded
@@ -203,6 +204,8 @@ namespace fastbird
 		ITexture* mCurDSTexture;
 		size_t mCurDSViewIdx;
 
+		std::vector<DXGI_OUTPUT_DESC> mOutputInfos;
+		VectorMap<HMONITOR, std::vector<DXGI_MODE_DESC>> mDisplayModes;
 		bool mStandBy;
 
 	};

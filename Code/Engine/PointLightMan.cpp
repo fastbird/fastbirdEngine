@@ -21,8 +21,7 @@ namespace fastbird
 
 	void PointLightMan::Update(float dt)
 	{
-		static std::vector<unsigned> deleted;
-		deleted.reserve(50);
+		static std::vector<unsigned> deleted;		
 
 		unsigned i = 0;
 		for (auto& pointLight : mPointLights)
@@ -37,18 +36,10 @@ namespace fastbird
 				}
 			}
 			++i;
-		}
-
-		if (gFBEnv->pConsole->GetEngineCommand()->r_numPointLights)
-		{
-			wchar_t buf[255];
-			swprintf_s(buf, L"num point lights = %u", mPointLights.size());
-
-			gFBEnv->pRenderer->DrawText(Vec2I(100, 200), buf, Color::White);
-		}
+		}		
 
 		int numDeleted = (int)deleted.size();
-		for (int i = numDeleted - 1; i >= 0; i++)
+		for (int i = numDeleted - 1; i >= 0; i--)
 		{
 			FB_DELETE(*(mPointLights.begin() + deleted[i]));
 			mPointLights.erase(mPointLights.begin() + deleted[i]);			

@@ -71,12 +71,12 @@ namespace fastbird
 
 		static const unsigned int MAX_BATCH;
 
-		bool ApplyTag(const char* text, int start, int end, float& x, float& y);
+		bool ApplyTag(const char* text, int start, int end, int& x, int& y);
 		TextTags::Enum GetTagType(const char* tagStart, int length, char* buf = 0) const;
-		void InternalWrite(float x, float y, float z, const char *text, int count, float spacing = 0);
+		void InternalWrite(int x, int y, float z, const char *text, int count, int spacing = 0);
 		void Flush(int page, const FontVertex* pVertices, unsigned int vertexCount);
 
-		float AdjustForKerningPairs(int first, int second);
+		int AdjustForKerningPairs(int first, int second);
 		SCharDescr *GetChar(int id);
 
 		int GetTextLength(const char *text);
@@ -110,10 +110,6 @@ namespace fastbird
 		bool mInitialized;
 
 		OBJECT_CONSTANTS mObjectConstants;
-
-		
-		
-
 		Vec2I mRenderTargetSize;
 	};
 }

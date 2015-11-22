@@ -18,7 +18,7 @@ namespace fastbird
 		WStringVector mBufferw; // display buffer
 		FB_CRITICAL_SECTION mBufferwCS;
 
-		static const int sFontSize=22;
+		static const float sFontSize;
 		int mBufferBtmLine; // bottom line
 		int mLines;
 		bool mOpen;
@@ -52,6 +52,18 @@ namespace fastbird
 		StdOutRedirect* mStdOutRedirect;
 		Vec2I mRTSize;
 
+		struct processQData{
+			processQData(const char* str, bool history)
+				: mString(str)
+				, mHistory(history)
+			{
+
+			}
+			std::string mString;
+			bool mHistory;
+		};
+		std::vector<processQData> mQueue;
+
 	public:
 		Console();
 		virtual ~Console();
@@ -72,6 +84,7 @@ namespace fastbird
 		virtual void AddCandidatesTo(const char* parent, const StringVector& candidates);
 		virtual void Log(const char* szFmt, ...);
 		virtual void ProcessCommand(const char* command, bool history = true);
+		virtual void QueueProcessCommand(const char* command, bool history = true);
 		virtual void ToggleOpen();
 		virtual void Update();
 		virtual void Render();

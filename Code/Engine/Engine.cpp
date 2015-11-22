@@ -30,6 +30,7 @@
 #include <Engine/TrailObject.h>
 #include <Engine/VideoPlayerOgg.h>
 #include <Engine/AudioManager.h>
+#include <Engine/EngineCommand.h>
 #include <CommonLib/INIReader.h>
 #include <CommonLib/StringUtils.h>
 #include <UI/IWinBase.h>
@@ -477,9 +478,7 @@ void Engine::UpdateInput()
 
 void Engine::UpdateFrame(float dt)
 {
-	static ProfilerSimple profiler(L"Update Engine");
-	bool profiling = gFBEnv->pConsole->GetEngineCommand()->e_profile !=0;
-	profiler.Reset();
+	bool profiling = gFBEnv->pConsole->GetEngineCommand()->e_profile !=0;	
 	static ProfilerSimple profilerParticle(L"Update Particle");
 
 	auto const renderer = gFBEnv->_pInternalRenderer;
@@ -499,9 +498,15 @@ void Engine::UpdateFrame(float dt)
 
 	if (mConsole)
 		mConsole->Update();
-
+	
+	static ProfilerSimple profiler(L"Rendering");
+	profiler.Reset();
 	// Render
 	Render(dt);
+	if (profiling)
+	{
+		DrawProfileResult(profiler, "ProfilePosEngine");
+	}
 
 	if (mMouse) mMouse->EndFrame();
 	if (mKeyboard) mKeyboard->EndFrame();
@@ -511,15 +516,12 @@ void Engine::UpdateFrame(float dt)
 	// to sync with the game.
 	// light update
 	if (mRenderer)
-		mRenderer->Update(dt);
+		mRenderer->Update(dt);	
 
 	// hot reloading
 	HotReloading();
 
-	if (profiling)
-	{
-		DrawProfileResult(profiler, "ProfilePosEngine");
-	}
+	
 }
 
 void Engine::HandleUserInput()
@@ -1321,24 +1323,23 @@ void Engine::DeleteScene(IScene* p)
 //------------------------------------------------------------------------
 void Engine::Log(const char* szFmt, ...) const
 {
-	char buf[4096];
-
-	int len = 0;
-	if (gFBEnv && gFBEnv->pTimer)
-	{
-		Timer::TIME_PRECISION time = gFBEnv->pTimer->GetTime();
-		sprintf_s(buf, "[%.3f] \n", time);
-		len = strlen(buf);
-	}
-		
+	char buf[4096];		
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf + len, 4096 - len, szFmt, args);
-	va_end(args);
-	strcat_s(buf, 4096, "\n");
+	vsprintf_s(buf, 4096, szFmt, args);
+	va_end(args);	
+	if (gFBEnv && gFBEnv->pTimer)
+	{
+		char timebuf[128];
+		Timer::TIME_PRECISION time = gFBEnv->pTimer->GetTime();
+		sprintf_s(timebuf, " [%.3f] ", time);
+		strcat_s(buf, timebuf);
+	}
+	strcat_s(buf, "\n");
+	buf[strlen(buf)] = 0;
+
 	std::cout << buf;
-	OutputDebugString(buf);
-	buf[strlen(buf) - 1] = 0;
+	OutputDebugString(buf);	
 
 	if (gFBEnv && gFBEnv->pConsole)
 		gFBEnv->pConsole->Log(buf);
@@ -1348,24 +1349,23 @@ void Engine::Log(const char* szFmt, ...) const
 void Engine::Error(const char* szFmt, ...) const
 {
 	char buf[4096];
+	va_list args;
+	va_start(args, szFmt);
+	vsprintf_s(buf, 4096, szFmt, args);
+	va_end(args);	
 
-	int len = 0;
 	if (gFBEnv && gFBEnv->pTimer)
 	{
 		char timebuf[128];
 		Timer::TIME_PRECISION time = gFBEnv->pTimer->GetTime();
-		sprintf_s(timebuf, "Error [%.3f] : \n", time);
-		OutputDebugString(timebuf);
-	}
-				
-	va_list args;
-	va_start(args, szFmt);
-	vsprintf_s(buf, 4096, szFmt, args);
-	va_end(args);		
-		
-	strcat_s(buf, 4096, "\n");
-	OutputDebugString(buf);
+		sprintf_s(timebuf, " (error) [%.3f] ", time);
+		strcat_s(buf, timebuf);
+	}		
+	strcat_s(buf, "\n\n");
 	buf[strlen(buf) - 1] = 0;
+
+	std::cout << buf;
+	OutputDebugString(buf);	
 
 	if (gFBEnv && gFBEnv->pConsole)
 		gFBEnv->pConsole->Log(buf);

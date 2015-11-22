@@ -4,6 +4,7 @@
 #include <Engine/ParticleRenderObject.h>
 #include <Engine/ICamera.h>
 #include <Engine/IRenderTarget.h>
+#include <Engine/EngineCommand.h>
 #include <CommonLib/tinydir.h>
 namespace fastbird
 {
@@ -220,10 +221,7 @@ void ParticleManager::RenderProfile()
 	wchar_t msg[255];
 	int x = 700;
 	int y = 20;
-	int yStep = 18;
-	IFont* pFont = gFBEnv->pRenderer->GetFont();
-	if (pFont)
-		yStep = (int)pFont->GetHeight();
+	int yStep = 20;	
 	IRenderer* r = gFBEnv->pRenderer;
 	swprintf_s(msg, 255, L"Emitter Types= %u", mParticleEmitters.size());
 	r->DrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));

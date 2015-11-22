@@ -26,6 +26,7 @@ const char* WinBase::sHideAnim = "_HideAnim";
 const float WinBase::sFadeInOutTime = 0.2f;
 Vec2I WinBase::sLastPos(0, 0);
 
+float gTextSizeMod = 0.f;
 bool WinBase::sSuppressPropertyWarning = false;
 
 WinBase::WinBase()
@@ -44,7 +45,7 @@ WinBase::WinBase()
 , mTextAlignV(ALIGNV::MIDDLE)
 , mMatchSize(false)
 , mSize(123, 321)
-, mTextSize(22.f)
+, mTextSize(22.f + gTextSizeMod)
 , mFixedTextSize(true)
 , mWNScrollingOffset(0, 0)
 , mMouseDragStartInHere(false)
@@ -60,7 +61,7 @@ WinBase::WinBase()
 , mUseAbsoluteYPos(true)
 , mUseAbsoluteXSize(true)
 , mUseAbsoluteYSize(true)
-, mAbsOffset(0, 0)
+, mAbsOffset(0, 0), mSizeMod(0, 0)
 , mNOffset(0, 0)
 , mManualParent(0)
 , mCustomContent(0)
@@ -274,7 +275,7 @@ void WinBase::OnSizeChanged()
 	}
 
 	if (!mFixedTextSize && mTextSize != mScaledSize.y) {
-		mTextSize = (float)mScaledSize.y;
+		mTextSize = (float)mScaledSize.y + gTextSizeMod;
 		CalcTextWidth();
 		AlignText();
 		if (mUIObject)
@@ -359,6 +360,40 @@ void WinBase::SetNSizeY(float y) // normalized size (0.0~1.0)
 	mSize.y = Round(rtY * mNSize.y);
 }
 
+void WinBase::SetFillX(bool fill){
+	mFillX = fill;
+	if (fill){
+		mNSize.x = 1.0f - mNPos.x;
+		auto parentSize = GetParentSize();
+		mSize.x = Round(parentSize.x * mNSize.x) + mSizeMod.x;
+		if (mSizeMod.x != 0){						
+			mNSize.x = mSize.x / (float)parentSize.x;
+		}		
+		OnSizeChanged();
+		mUseAbsoluteXSize = false;
+	}
+}
+void WinBase::SetFillY(bool fill){
+	mFillY = fill;
+	if (fill){
+		mNSize.y = 1.0f - mNPos.y;
+		auto parentSize = GetParentSize();
+		mSize.y = Round(parentSize.y * mNSize.y) + mSizeMod.y;
+		if (mSizeMod.y != 0){			
+			mNSize.y = mSize.y / (float)parentSize.y;
+		}
+		OnSizeChanged();
+		mUseAbsoluteYSize = false;
+	}
+}
+
+bool WinBase::GetFillX() const{
+	return mFillX;
+}
+bool WinBase::GetFillY() const{
+	return mFillY;
+}
+
 //---------------------------------------------------------------------------
 void WinBase::SetWNSize(const fastbird::Vec2& size)
 {
@@ -397,8 +432,12 @@ void WinBase::OnParentSizeChanged() {
 	if (!mUseAbsoluteXSize){
 		if (mFillX){
 			mNSize.x = 1.0f - mNPos.x;					
+			mSize.x = Round(parentSize.x * mNSize.x) + mSizeMod.x;
+			mNSize.x = mSize.x / (float)parentSize.x;
+		}		
+		else{
+			mSize.x = Round(parentSize.x * mNSize.x);
 		}
-		mSize.x = Round(parentSize.x * mNSize.x);
 		sizeChanged = true;
 	}
 	else{
@@ -408,8 +447,13 @@ void WinBase::OnParentSizeChanged() {
 	if (!mUseAbsoluteYSize) {
 		if (mFillY){
 			mNSize.y = 1.0f - mNPos.y;			
+			mSize.y = Round(parentSize.y * mNSize.y) + mSizeMod.y;
+			mNSize.y = mSize.y / (float)parentSize.y;
 		}
-		mSize.y = Round(parentSize.y * mNSize.y);
+		else{
+			mSize.y = Round(parentSize.y * mNSize.y);
+		}
+		
 		sizeChanged = true;
 	}
 	else{
@@ -430,9 +474,18 @@ void WinBase::OnParentSizeChanged() {
 //---------------------------------------------------------------------------
 void WinBase::ModifySize(const Vec2I& sizemod)
 {
+	mSizeMod = sizemod;
 	Vec2I newSize = mSize + sizemod;
 	ChangeSize(newSize);
 	//SetSize(newSize);
+}
+
+void WinBase::SetSizeMod(const Vec2I& mod){
+	Vec2I originalSize = mSize - mSizeMod;
+	mSizeMod = mod;
+	Vec2I newSize = originalSize + mod;
+	ChangeSize(newSize);
+
 }
 
 //---------------------------------------------------------------------------
@@ -1106,11 +1159,9 @@ void WinBase::CalcTextWidth()
 		mTextWidth = 0;
 		return;
 	}
-	IFont* pFont = gFBEnv->pRenderer->GetFont();
-	pFont->SetHeight(mTextSize);
-	mTextWidth = (int)gFBEnv->pRenderer->GetFont()->GetTextWidth(
-		(const char*)mTextw.c_str(), mTextw.size() * 2);
-	pFont->SetBackToOrigHeight();
+	IFont* pFont = gFBEnv->pRenderer->GetFont(mTextSize);	
+	mTextWidth = (int)pFont->GetTextWidth(
+		(const char*)mTextw.c_str(), mTextw.size() * 2);	
 
 	if (mMatchSize && mTextWidth != 0)// && !mLockTextSizeChange)
 	{
@@ -1364,7 +1415,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 								  if (mUIObject)
 								  {
-									  mTextSize = StringConverter::parseReal(val, 22.0f);
+									  mTextSize = StringConverter::parseReal(val, 22.0f) + gTextSizeMod;
 									  CalcTextWidth();
 									  AlignText();
 									  mUIObject->SetTextSize(mTextSize);
@@ -1760,12 +1811,12 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	case UIProperty::TEXT_SIZE:
 	{
 		if (notDefaultOnly) {
-			if (mTextSize == UIProperty::GetDefaultValueFloat(prop)) {
+			if (mTextSize - gTextSizeMod == UIProperty::GetDefaultValueFloat(prop)) {
 				return false;
 			}
 		}
 
-		auto data = StringConverter::toString(mTextSize);
+		auto data = StringConverter::toString(mTextSize - gTextSizeMod);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -2845,9 +2896,11 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		IUIAnimation* pAnim = FB_NEW(UIAnimation);
 		pAnim->LoadFromXML(pElem);
 		std::string name = pAnim->GetName();
-		if (mAnimations.Find(name) != mAnimations.end())
+		auto it = mAnimations.Find(name);
+		if (it != mAnimations.end())
 		{
-			FB_DELETE(pAnim);
+			FB_DELETE(it->second);
+			mAnimations.erase(it);
 		}
 		mAnimations[pAnim->GetName()] = pAnim;
 		
@@ -3222,6 +3275,10 @@ void WinBase::Save(tinyxml2::XMLElement& elem)
 	{
 		elem.SetAttribute("offset", StringConverter::toString(mAbsOffset).c_str());
 	}	
+
+	if (mSizeMod != Vec2I::ZERO){
+		elem.SetAttribute("sizeMod", StringConverter::toString(mSizeMod).c_str());
+	}
 		
 	for (int i = UIProperty::BACK_COLOR; i < UIProperty::COUNT; ++i)
 	{

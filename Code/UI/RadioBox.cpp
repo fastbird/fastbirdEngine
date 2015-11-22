@@ -22,7 +22,7 @@ RadioBox::~RadioBox()
 
 void RadioBox::OnCreated(){
 	mRadioImageBox = static_cast<ImageBox*>(
-		AddChild(Vec2I(0, 0), Vec2I(24, 24), ComponentType::ImageBox));
+		AddChild(Vec2I(0, 0), Vec2I(mSize.y, mSize.y), ComponentType::ImageBox));
 	mRadioImageBox->SetRuntimeChild(true);	
 	mRadioImageBox->SetTextureAtlasRegion("es/textures/ui.xml", "radiobox_unchecked");
 	mRadioImageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
@@ -31,6 +31,8 @@ void RadioBox::OnCreated(){
 		std::bind(&RadioBox::OnMouseHover, this, std::placeholders::_1));
 	mRadioImageBox->SetUseAbsPos(false);
 	mRadioImageBox->SetUseAbsSize(false);
+	mRadioImageBox->SetProperty(UIProperty::KEEP_UI_RATIO, "false");
+	mRadioImageBox->SetProperty(UIProperty::IMAGE_LINEAR_SAMPLER, "true");
 	UpdateImage();
 
 	mStaticText = static_cast<StaticText*>(
@@ -109,6 +111,12 @@ bool RadioBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 	}
 	}
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
+}
+
+void RadioBox::OnSizeChanged(){
+	__super::OnSizeChanged();
+	if (mRadioImageBox)
+		mRadioImageBox->ChangeSize(Vec2I(mSize.y, mSize.y));
 }
 
 void RadioBox::SetText(const wchar_t* szText)

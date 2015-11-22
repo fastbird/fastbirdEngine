@@ -19,6 +19,7 @@
 #include <Engine/ParticleManager.h>
 #include <Engine/IRenderListener.h>
 #include <Engine/IVideoPlayer.h>
+#include <Engine/EngineCommand.h>
 #include <CommonLib/Unicode.h>
 #include <CommonLib/tinydir.h>
 #include <regex>
@@ -143,7 +144,7 @@ void Renderer::Deinit()
 	mDirectionalLight[1] = 0;
 	mDebugHud = 0;
 	mGeomRenderer = 0;
-	mFont = 0;
+	mFonts.clear();
 	mMissingMaterial = 0;
 	mEnvironmentTexture = 0;
 
@@ -398,14 +399,37 @@ bool Renderer::OnPrepared()
 		//-----------------------------------------------------------------------
 		static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
 
-		mFont = FB_NEW(Font);
-		std::string fontName = gFBEnv->pScriptSystem->GetStringVariable("r_font");
-		if (fontName.empty())
-		{
-			fontName = "es/fonts/nanum_pen_bin.fnt";
+		LuaObject multiFontSet(gFBEnv->pScriptSystem->GetLuaState(), "r_multiFont");
+		if (multiFontSet.IsValid()){
+			auto it = multiFontSet.GetSequenceIterator();
+			LuaObject data;
+			while (it.GetNext(data)){
+				auto fontPath = data.GetString();
+				if (!fontPath.empty()){
+					SmartPtr<IFont> font = FB_NEW(Font);
+					auto err = font->Init(fontPath.c_str());
+					if (!err){
+						font->SetTextEncoding(IFont::UTF16);
+						int height = Round(font->GetHeight());
+						mFonts[height] = font;
+					}
+				}
+			}
 		}
-		mFont->Init(fontName.c_str());
-		mFont->SetTextEncoding(IFont::UTF16);
+		else{
+			SmartPtr<IFont> font = FB_NEW(Font);
+			std::string fontPath = gFBEnv->pScriptSystem->GetStringVariable("r_font");
+			if (fontPath.empty())
+			{
+				fontPath = "es/fonts/font22.fnt";
+			}
+			auto err = font->Init(fontPath.c_str());
+			if (!err){
+				font->SetTextEncoding(IFont::UTF16);
+				int height = Round(font->GetHeight());
+				mFonts[height] = font;
+			}
+		}
 
 		mDebugHud = FB_NEW(DebugHud);
 		mGeomRenderer = FB_NEW(GeometryRenderer);
@@ -494,9 +518,8 @@ bool Renderer::OnPrepared()
 	}
 
 	const auto& rtSize = GetMainRTSize();
-	if (mFont)
-	{
-		mFont->SetRenderTargetSize(rtSize);
+	for (auto it : mFonts){
+		it.second->SetRenderTargetSize(rtSize);
 	}	
 	if (mDebugHud){
 		mDebugHud->SetRenderTargetSize(rtSize);
@@ -812,13 +835,50 @@ void Renderer::RenderDebugHud()
 }
 
 //-------------------------------------------------------------------------
-inline IFont* Renderer::GetFont() const
+inline IFont* Renderer::GetFont(float fontHeight) const
 {
-	return mFont;
-}
+	if (mFonts.empty()){		
+		return 0;
+	}
 
+	if (mFonts.size() == 1){
+		auto it = mFonts.begin();
+		it->second->SetHeight(fontHeight);
+		return it->second;
+	}
+
+	int requestedHeight = Round(fontHeight);	
+	int bestMatchHeight = mFonts.begin()->first;
+	int curGap = std::abs(requestedHeight - bestMatchHeight);
+	IFont* bestFont = mFonts.begin()->second;
+	for (auto it : mFonts){
+		auto newGap = std::abs(requestedHeight - it.first);
+		if (newGap < curGap){
+			bestMatchHeight = it.first;
+			curGap = newGap;
+			bestFont = it.second;
+		}
+	}
+	if (!bestFont){
+		Error("Font not found with size %f", fontHeight);
+	}
+	else{
+		bestFont->SetHeight(fontHeight);
+	}
+	return bestFont;
+	
+	
+}
+bool gCheck = false;
 void Renderer::SetCurRenderTarget(IRenderTarget* renderTarget)
 {
+	if (gCheck){
+		auto it = mSwapChainRenderTargets.Find(2);
+		if (it != mSwapChainRenderTargets.end() && it->second == renderTarget){
+			int a = 0;
+			a++;
+		}
+	}
 	mCurRenderTarget = renderTarget;
 }
 
@@ -857,8 +917,9 @@ void Renderer::SetRenderTarget(ITexture* pRenderTargets[], size_t rtIndex[], int
 	{
 		mCurRTSize = GetMainRTSize();
 	}
-	if (mFont)
-		mFont->SetRenderTargetSize(mCurRTSize);
+	for (auto it : mFonts){
+		it.second->SetRenderTargetSize(mCurRTSize);
+	}	
 
 	UpdateRenderTargetConstantsBuffer();
 }
@@ -2179,6 +2240,7 @@ void Renderer::Render(float dt)
 
 	ProcessRenderTarget();
 	Render3DUIsToTexture();
+	gCheck = false;
 	auto mainRT = GetMainRenderTarget();
 	for (auto it : mSwapChainRenderTargets)
 	{
@@ -2202,6 +2264,7 @@ void Renderer::Render(float dt)
 			}
 		}
 	}
+	gCheck = true;
 	mainRT->BindTargetOnly(false);
 
 	for (auto& it : mVideoPlayers){
@@ -2579,9 +2642,7 @@ void Renderer::RenderFrameProfiler()
 	wchar_t msg[255];
 	int x = 1000;
 	int y = 134;
-	int yStep = 18;
-	if (mFont)
-		yStep = (int)mFont->GetHeight();
+	int yStep = 20;	
 
 	const RENDERER_FRAME_PROFILER& profiler = mFrameProfiler;
 

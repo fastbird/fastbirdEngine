@@ -58,6 +58,7 @@ namespace fastbird
 		WinBase* mManualParent;
 
 		Vec2I mAbsOffset; // when loading;
+		Vec2I mSizeMod;
 		Vec2 mNOffset;
 
 
@@ -199,6 +200,10 @@ namespace fastbird
 		virtual void SetNSize(const Vec2& size); // normalized size (0.0~1.0)
 		virtual void SetNSizeX(float x);
 		virtual void SetNSizeY(float y);
+		virtual void SetFillX(bool fill);
+		virtual void SetFillY(bool fill);
+		virtual bool GetFillX() const;
+		virtual bool GetFillY() const;
 
 		virtual void ModifySize(const Vec2I& sizemod);
 		virtual void SetWNSize(const fastbird::Vec2& size);
@@ -250,6 +255,8 @@ namespace fastbird
 		virtual const Vec2& GetNSize() const { return mNSize; }
 		virtual const Vec2I& GetSize() const { return mSize; }
 		virtual const Vec2I& GetInitialOffset() const { return mAbsOffset; }
+		virtual const Vec2I& GetSizeMod() const { return mSizeMod; }
+		virtual void SetSizeMod(const Vec2I& mod);
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
 		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }

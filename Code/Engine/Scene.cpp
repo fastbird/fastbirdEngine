@@ -16,6 +16,7 @@
 #include <Engine/ParticleRenderObject.h>
 #include <Engine/IRenderTarget.h>
 #include <Engine/Camera.h>
+#include <Engine/EngineCommand.h>
 using namespace fastbird;
 
 IScene* IScene::CreateScene()

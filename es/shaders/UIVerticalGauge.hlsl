@@ -12,7 +12,7 @@
 //--------------------------------------------------------------------------------------
 struct a2v
 {
-	float3 Position : POSITION;
+	float4 Position : POSITION;
 	float4 Color	: COLOR;
 	float2 UV		: TEXCOORD;
 };
@@ -27,7 +27,7 @@ v2p uiverticalgauge_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
-	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
+	OUTPUT.Position = INPUT.Position;
 	OUTPUT.UV = INPUT.UV;
 
 	return OUTPUT;

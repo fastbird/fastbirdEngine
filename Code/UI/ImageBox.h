@@ -84,5 +84,6 @@ private:
 	bool mImageFixedSize;	
 	bool mColorOveraySet;
 	bool mImageRot;
+	bool mLinearSampler;
 };
 }

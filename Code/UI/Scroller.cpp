@@ -2,6 +2,7 @@
 #include <UI/Scroller.h>
 #include <UI/Container.h>
 #include <Engine/IConsole.h>
+#include <Engine/EngineCommand.h>
 
 namespace fastbird
 {

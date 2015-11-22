@@ -20,6 +20,7 @@ namespace fastbird
 			, MultisampleEnable(true)
 			, AntialiasedLineEnable(true)
 		{
+			memset(padding, 0, 3);
 		}
 
 		bool operator<(const RASTERIZER_DESC& other) const
@@ -28,15 +29,16 @@ namespace fastbird
 		}
 
 		FILL_MODE		FillMode;
-		CULL_MODE		CullMode;
-		bool            FrontCounterClockwise;
+		CULL_MODE		CullMode;		
 		int             DepthBias;
 		float           DepthBiasClamp;
 		float           SlopeScaledDepthBias;
+		bool            FrontCounterClockwise;
 		bool            DepthClipEnable;
 		bool            ScissorEnable;
 		bool            MultisampleEnable;
 		bool            AntialiasedLineEnable;
+		char			padding[3];
 	};
 
 	struct SAMPLER_DESC
@@ -75,7 +77,9 @@ namespace fastbird
 
 	struct RENDER_TARGET_BLEND_DESC
 	{
-		bool			BlendEnable;
+		RENDER_TARGET_BLEND_DESC(){
+			memset(padding, 0, 2);
+		}
 		BLEND			SrcBlend;
 		BLEND			DestBlend;
 		BLEND_OP		BlendOp;
@@ -83,6 +87,8 @@ namespace fastbird
 		BLEND			DestBlendAlpha;
 		BLEND_OP		BlendOpAlpha;
 		unsigned char	RenderTargetWriteMask;
+		bool			BlendEnable;
+		char			padding[2];
 	};
 
 	struct BLEND_DESC
@@ -91,6 +97,7 @@ namespace fastbird
 			:AlphaToCoverageEnable(false)
 			, IndependentBlendEnable(false)
 		{
+			memset(padding, 0, 2);
 			for (int i=0; i<8; i++)
 			{
 				RenderTarget[i].BlendEnable = false;
@@ -111,6 +118,7 @@ namespace fastbird
 
 		bool						AlphaToCoverageEnable;
 		bool						IndependentBlendEnable;
+		char						padding[2];
 		RENDER_TARGET_BLEND_DESC	RenderTarget[8];
 	};
 
@@ -150,14 +158,15 @@ namespace fastbird
 			return memcmp(this, &other, sizeof(DEPTH_STENCIL_DESC)) < 0;
 		}
 
-		bool DepthEnable;
 		DEPTH_WRITE_MASK DepthWriteMask;
-		COMPARISON_FUNC DepthFunc;
+		COMPARISON_FUNC DepthFunc;				
+		DEPTH_STENCILOP_DESC FrontFace;
+		DEPTH_STENCILOP_DESC BackFace;
+		bool DepthEnable;
 		bool StencilEnable;
 		unsigned char StencilReadMask;
 		unsigned char StencilWriteMask;
-		DEPTH_STENCILOP_DESC FrontFace;
-		DEPTH_STENCILOP_DESC BackFace;
+		
 	};
 
 	struct RENDERER_FRAME_PROFILER

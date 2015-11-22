@@ -38,7 +38,7 @@ protected:
 	SmartPtr<ILight>		mDirectionalLight[2];
 	SmartPtr<DebugHud>		mDebugHud;
 	SmartPtr<GeometryRenderer> mGeomRenderer;
-	SmartPtr<IFont> mFont;
+	VectorMap<int, SmartPtr<IFont>> mFonts;
 	SmartPtr<IMaterial> mMaterials[DEFAULT_MATERIALS::COUNT];
 	SmartPtr<IMaterial> mMissingMaterial;
 	SmartPtr<IRasterizerState> mDefaultRasterizerState;
@@ -208,13 +208,7 @@ protected:
 
 	SmartPtr<IShader> mGGXGenShader;
 	SmartPtr<ITexture> mGGXGenTarget;
-
-	struct OutputInfo
-	{
-		WCHAR mDeviceName[32];
-		RECT mRect;
-	};
-	std::vector<OutputInfo> mOutputInfos;
+	
 	bool mTakeScreenShot;
 
 public:
@@ -268,14 +262,14 @@ public:
 	virtual ICamera* GetMainCamera() const;
 	virtual void InitFrameProfiler(float dt);
 	virtual const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
-	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24);
-	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 24);
-	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 24);
-	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 24);
+	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 20);
+	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 20);
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 20);
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 20);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color, float size = 24);
+		const Color& color, float size = 20);
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
-		const Color& color, float size = 24);
+		const Color& color, float size = 20);
 	virtual void ClearDurationTexts();
 	// without depth culling
 	virtual void DrawLine(const Vec3& start, const Vec3& end, 
@@ -293,7 +287,7 @@ public:
 	virtual void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha);
 	virtual void RenderDebugHud(); 
 	virtual void RenderGeoms();
-	virtual inline IFont* GetFont() const;
+	virtual inline IFont* GetFont(float fontHeight) const;
 
 	virtual void SetCurRenderTarget(IRenderTarget* renderTarget);
 	virtual bool IsMainRenderTarget() const;

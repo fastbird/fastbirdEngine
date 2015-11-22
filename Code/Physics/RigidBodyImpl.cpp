@@ -464,7 +464,9 @@ void RigidBodyImpl::SetTransform(const Transformation& t)
 			}
 			auto bT = aT * trA * trB.inverse();
 			b->setWorldTransform(bT);
-			b->getMotionState()->setWorldTransform(bT);			
+			auto ms = b->getMotionState();
+			if (ms)
+				ms->setWorldTransform(bT);			
 		}		
 	}
 	activate();
@@ -558,7 +560,7 @@ unsigned RigidBodyImpl::GetGameFlag() const{
 
 void RigidBodyImpl::SetDebug(bool debug){
 	mDebug = debug;
-	btSetDebug();
+	btSetDebug(debug);
 }
 
 void RigidBodyImpl::ClearAngularVelocity(){

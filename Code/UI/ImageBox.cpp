@@ -6,19 +6,20 @@
 namespace fastbird
 {
 
-	ImageBox::ImageBox()
-		: mTextureAtlas(0)
-		, mAtlasRegion(0)
-		, mUseHighlight(false)
-		, mKeepImageRatio(true)
-		, mFrameImage(0)
-		, mAnimation(false)
-		, mSecPerFrame(0)
-		, mPlayingTime(0)
-		, mCurFrame(0), mImageFixedSize(false)
-		, mTexture(0), mColorOveraySet(false)
-		, mRenderTarget(0)
-		, mImageRot(false)
+ImageBox::ImageBox()
+	: mTextureAtlas(0)
+	, mAtlasRegion(0)
+	, mUseHighlight(false)
+	, mKeepImageRatio(true)
+	, mFrameImage(0)
+	, mAnimation(false)
+	, mSecPerFrame(0)
+	, mPlayingTime(0)
+	, mCurFrame(0), mImageFixedSize(false)
+	, mTexture(0), mColorOveraySet(false)
+	, mRenderTarget(0)
+	, mImageRot(false)
+	, mLinearSampler(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->SetMaterial("es/Materials/UIImageBox.material");
@@ -465,6 +466,15 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	}
 
+	case UIProperty::IMAGE_LINEAR_SAMPLER:
+	{
+		mLinearSampler = StringConverter::parseBool(val);
+		if (mUIObject){
+			mUIObject->EnableLinearSampler(mLinearSampler);
+		}
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -588,6 +598,16 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 
 		auto data = StringConverter::toString(mImageRot);
 		strcpy_s(val, bufsize, data.c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_LINEAR_SAMPLER:
+	{
+		if (notDefaultOnly){
+			if (mLinearSampler == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mLinearSampler).c_str());
 		return true;
 	}
 

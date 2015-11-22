@@ -7,6 +7,7 @@
 #include <Engine/GaussianDist.h>
 #include <Engine/StarDef.h>
 #include <Engine/IRenderTargetListener.h>
+#include <Engine/EngineCommand.h>
 #include <../es/shaders/Constants.h>
 
 namespace fastbird
@@ -210,12 +211,13 @@ void RenderTarget::Bind(size_t face)
 
 void RenderTarget::BindTargetOnly(bool hdr)
 {
+	auto const renderer = gFBEnv->pRenderer;
+	renderer->SetCurRenderTarget(this);
 	if (hdr && mRenderPipeline->GetStep(RenderSteps::HDR) &&
 			gFBEnv->pConsole->GetEngineCommand()->r_HDR ){
 		SetHDRTarget();
 	}
 	else{
-		auto const renderer = gFBEnv->pRenderer;
 		if (mRenderTargetTexture)
 			mRenderTargetTexture->Unbind();
 		ITexture* rt[] = { mRenderTargetTexture };

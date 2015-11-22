@@ -141,7 +141,6 @@ IWinBase* Container::AddChild(const fastbird::LuaObject& compTable)
 	IWinBase* p = AddChild(type);
 	assert(p);
 	p->ParseLua(compTable);
-	p->OnCreated();	
 
 	if (dropdown)
 	{
@@ -817,7 +816,7 @@ bool Container::ParseLua(const fastbird::LuaObject& compTable)
 			{
 				Error("Component should have type_ attribute.");
 				assert(0);
-				break;
+				continue;
 			}
 			auto typee = ComponentType::ConvertToEnum(type.c_str());
 			if (typee != ComponentType::NUM)

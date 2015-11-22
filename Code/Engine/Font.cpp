@@ -9,6 +9,7 @@
 #include <Engine/IVertexBuffer.h>
 #include <Engine/IShader.h>
 #include <Engine/IInputLayout.h>
+#include <Engine/EngineCommand.h>
 #include <UI/IUIManager.h>
 #include <CommonLib/Math/fbMath.h>
 #include <CommonLib/Math/Vec2.h>
@@ -179,7 +180,7 @@ int Font::Init(const char *fontFile)
 		0.f, 1.0f);
 	mObjectConstants.gWorld.MakeIdentity();
 
-	
+	SetBackToOrigHeight();
 	return r;
 }
 
@@ -189,7 +190,7 @@ void Font::SetTextEncoding(EFontTextEncoding encoding)
 	mEncoding = encoding;
 }
 
-bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
+bool Font::ApplyTag(const char* text, int start, int end, int& x, int& y)
 {
 	static TextureAtlas* textureAtlas = gFBEnv->pRenderer->GetTextureAtlas("data/textures/gameui.xml");
 
@@ -213,7 +214,7 @@ bool Font::ApplyTag(const char* text, int start, int end, float& x, float& y)
 									  yoffset = Round((mScaledFontSize - imgSize.y) * .5f);
 								  }
 								  mTextureMaterial->SetDiffuseColor(Vec4(1, 1, 1, ( (mColor & 0xff000000) >> 24)/255.f ));
-								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I((int)x, (int)y + yoffset), imgSize, region->mUVStart, region->mUVEnd,
+								  gFBEnv->pRenderer->DrawQuadWithTextureUV(Vec2I(x, y + yoffset), imgSize, region->mUVStart, region->mUVEnd,
 									  Color::White, textureAtlas->mTexture, mTextureMaterial);
 								  
 								  x += imgSize.x;
@@ -331,11 +332,11 @@ TextTags::Enum Font::GetTagType(const char* tagStart, int length, char* buf) con
 }
 
 //----------------------------------------------------------------------------
-void Font::InternalWrite(float x, float y, float z, const char *text, int count, float spacing)
+void Font::InternalWrite(int x, int y, float z, const char *text, int count, int spacing)
 {
 	static FontVertex vertices[MAX_BATCH];
 
-	const float initialX = x;
+	const int initialX = x;
 	int page = -1;
 	y -= mScaledFontSize;
 	unsigned int batchingVertices = 0;
@@ -346,7 +347,7 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		if (skiplen>0)
 		{
 			do
-			{
+			{				
 				reapplyRender = ApplyTag(text, n, n + skiplen, x, y) || reapplyRender;
 				n += skiplen;
 				skiplen = SkipTags(&text[n]);
@@ -368,7 +369,7 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		
 		if (charId == L'\n')
 		{
-			y += mScale * mBase;
+			y += mScaledFontSize;
 			x = initialX;
 			if (batchingVertices > 0)
 			{
@@ -384,18 +385,16 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 		if( ch == 0 ) 
 			ch = &mDefChar;
 
-		// Map the center of the texel to the corners
-		// in order to get pixel perfect mapping
 		float u = (float(ch->srcX)) / (float)mScaleW;
 		float v = (float(ch->srcY)) / (float)mScaleH;
 		float u2 = u + float(ch->srcW) / (float)mScaleW;
 		float v2 = v + float(ch->srcH) / (float)mScaleH;
 
-		float a = mScale * float(ch->xAdv);
-		float w = mScale * float(ch->srcW);
-		float h = mScale * float(ch->srcH);
-		float ox = mScale * float(ch->xOff);
-		float oy = mScale * float(ch->yOff);
+		int a = Round(mScale * float(ch->xAdv));
+		int w = Round(mScale * float(ch->srcW));
+		int h = Round(mScale * float(ch->srcH));
+		int ox = Round(mScale * float(ch->xOff));
+		int oy = Round(mScale * float(ch->yOff));
 
 		if( ch->page != page)
 		{
@@ -415,22 +414,42 @@ void Font::InternalWrite(float x, float y, float z, const char *text, int count,
 			mVertexLocation = 0;
 		}
 
-		float left = x+ox;
-		float top = y + oy;
-		float right = left + w;
-		float bottom = top + h;
+		int left = x + ox;
+		int top = y + oy;
+		int right = left + w;
+		int bottom = top + h;
+
+		//Vec4 pos = mOrthogonalMat * Vec4(left, top, z, 1.0f);
+		//vertices[mVertexLocation + batchingVertices++] = FontVertex(
+		//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u, v), ch->chnl);
+		//pos = mOrthogonalMat * Vec4(right, top, z, 1.0f);
+		//vertices[mVertexLocation + batchingVertices++] = FontVertex(
+		//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u2, v), ch->chnl);
+		//pos = mOrthogonalMat * Vec4(left, bottom, z, 1.0f);
+		//vertices[mVertexLocation + batchingVertices++] = FontVertex(
+		//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u, v2), ch->chnl);
+		//pos = mOrthogonalMat * Vec4(right, bottom, z, 1.0f);
+		//vertices[mVertexLocation + batchingVertices++] = FontVertex(
+		//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u2, v2), ch->chnl);
 
 		vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			Vec3(left, top, z), mColor, Vec2(u, v), ch->chnl);
+			Vec3((float)left, (float)top, z), mColor, Vec2(u, v), ch->chnl);
 		vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			Vec3(right, top, z), mColor, Vec2(u2, v), ch->chnl);
+			Vec3((float)right, (float)top, z), mColor, Vec2(u2, v), ch->chnl);
 		vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			Vec3(left, bottom, z), mColor, Vec2(u, v2), ch->chnl);
+			Vec3((float)left, (float)bottom, z), mColor, Vec2(u, v2), ch->chnl);
+
 		vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			Vec3(right, bottom, z), mColor, Vec2(u2, v2), ch->chnl);		
+			Vec3((float)right, (float)top, z), mColor, Vec2(u2, v), ch->chnl);
+		vertices[mVertexLocation + batchingVertices++] = FontVertex(
+			Vec3((float)right, (float)bottom, z), mColor, Vec2(u2, v2), ch->chnl);
+		vertices[mVertexLocation + batchingVertices++] = FontVertex(
+			Vec3((float)left, (float)bottom, z), mColor, Vec2(u, v2), ch->chnl);
+		
+
 
 		x += a;
-		if( charId == ' ' )
+		if( charId == L' ' )
 			x += spacing;
 
 		if( n < count )
@@ -456,7 +475,7 @@ void Font::Flush(int page, const FontVertex* pVertices, unsigned int vertexCount
 
 	pRenderer->UnmapVertexBuffer(mVertexBuffer, 0);	
 	mVertexBuffer->Bind();
-	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	pRenderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pRenderer->Draw(vertexCount, mVertexLocation);
 }
 
@@ -465,6 +484,8 @@ void Font::Write(float x, float y, float z, unsigned int color,
 	const char *text, int count, FONT_ALIGN mode)
 {
 	if (!mInitialized)
+		return;
+	if (gFBEnv->pConsole->GetEngineCommand()->r_noText)
 		return;
 
 	//
@@ -486,19 +507,20 @@ void Font::Write(float x, float y, float z, unsigned int color,
 
 	gFBEnv->pRenderer->UpdateObjectConstantsBuffer(&mObjectConstants);
 
-	InternalWrite(x, y, z, text, count);
+	InternalWrite(Round(x), Round(y), z, text, count);
 }
 
 //----------------------------------------------------------------------------
 void Font::SetHeight(float h)
 {
-	mScale = h / float(mFontHeight);
+	mScale = (h) / float(mFontHeight);
 	mScaledFontSize = short(Round(h));
 }
 
 void Font::SetBackToOrigHeight()
 {
-	mScale = 1.f;
+	SetHeight(mFontHeight);
+	//mScale = 1.f;
 }
 
 //----------------------------------------------------------------------------
@@ -756,14 +778,14 @@ float Font::GetTopOffset()
 }
 
 //----------------------------------------------------------------------------
-float Font::AdjustForKerningPairs(int first, int second)
+int Font::AdjustForKerningPairs(int first, int second)
 {	
 	SCharDescr *ch = GetChar(first);
 	if( ch == 0 ) return 0;
 	for( UINT n = 0; n < ch->kerningPairs.size(); n += 2 )
 	{
 		if( ch->kerningPairs[n] == second )
-			return ch->kerningPairs[n+1] * mScale;
+			return Round(ch->kerningPairs[n+1] * mScale);
 	}
 
 	return 0;
@@ -838,12 +860,14 @@ std::wstring Font::StripTags(const wchar_t* text)
 				if (text[e] == '$' && text[e+1] == ']')
 				{
 					i = e + 2;
-					if (i >= len)
-					{
-						break;
-					}
+					break;
+					
 				}
 			}
+		}
+		if (i >= len)
+		{
+			break;
 		}
 		newText.push_back(text[i]);
 	}

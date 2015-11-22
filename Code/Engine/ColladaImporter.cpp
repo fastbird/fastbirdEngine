@@ -662,8 +662,7 @@ ColladaImporter::MeshInfo* ColladaImporter::CopyData(COLLADAFW::Mesh* pColladaMe
 				{
 					std::string file = GetMaterialFilepath( meshPrimitives[i]->getMaterial().c_str() );
 					if (file.empty())
-					{
-						Log("Loading Missing materrial! for %s", file.c_str());
+					{						
 						file = "es/materials/missing.material";
 					}
 					meshInfo.mMaterials.push_back(IMaterial::CreateMaterial(file.c_str()));

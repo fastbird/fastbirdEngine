@@ -18,6 +18,7 @@ Wnd::Wnd()
 , mSyncWindowPos(false)
 , mCloseBtn(0)
 , mNoFocus(false)
+, mMoveToBottom(false)
 {
 	mUIObject = gFBEnv->pEngine->CreateUIObject(false, GetRenderTargetSize());
 	mUIObject->mOwnerUI = this;
@@ -452,6 +453,12 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 
+	case UIProperty::WND_MOVE_TO_BOTTOM:
+	{
+		mMoveToBottom = StringConverter::parseBool(val);
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -585,6 +592,16 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 		return true;
 	}
 
+	case UIProperty::WND_MOVE_TO_BOTTOM:
+	{
+		if (notDefaultOnly){
+			if (mMoveToBottom == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::toString(mMoveToBottom).c_str());
+		return true;
+	}
+
 	}
 
 	return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -623,11 +640,14 @@ bool Wnd::SetVisible(bool show)
 {
 	if (show){
 		if (!mParent && !mManualParent){
-			if (mNoFocus){
+			if (mNoFocus && !mMoveToBottom){
 				gFBEnv->pUIManager->MoveToTop(this);
 			}
 			else{
 				gFBEnv->pUIManager->SetFocusUI(this);
+			}
+			if (mMoveToBottom){
+				gFBEnv->pUIManager->MoveToBottom(this);
 			}
 
 		}

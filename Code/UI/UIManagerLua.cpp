@@ -36,6 +36,7 @@ namespace fastbird
 	int AddComponent(lua_State* L);
 	int CreateNewCard(lua_State* L);
 	int DeleteCard(lua_State* L);
+	int DeleteAllCard(lua_State* L);
 	int IsExistingCard(lua_State* L);
 	int BlinkButton(lua_State* L);
 	int UpdateButtonProgressBar(lua_State* L);
@@ -205,6 +206,7 @@ namespace fastbird
 		LUA_SETCFUNCTION(mL, AddComponent);
 		LUA_SETCFUNCTION(mL, CreateNewCard);
 		LUA_SETCFUNCTION(mL, DeleteCard);
+		LUA_SETCFUNCTION(mL, DeleteAllCard);
 		LUA_SETCFUNCTION(mL, IsExistingCard);
 		LUA_SETCFUNCTION(mL, BlinkButton);
 		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
@@ -465,6 +467,21 @@ namespace fastbird
 		return 0;
 	}
 
+	int DeleteAllCard(lua_State* L){
+		const char* uiname = luaL_checkstring(L, 1);
+		const char* cardScrollerName = luaL_checkstring(L, 2);
+		auto comp = UIManager::GetUIManagerStatic()->FindComp(uiname, cardScrollerName);
+		if (!comp)
+		{
+			Error(DEFAULT_DEBUG_ARG, "No card scroller found!");
+			return 0;
+		}
+
+		CardScroller* cardScroller = (CardScroller*)comp;
+		cardScroller->DeleteAllCard();
+		return 0;
+	}
+
 	int IsExistingCard(lua_State* L){
 		const char* uiname = luaL_checkstring(L, 1);
 		const char* cardScrollerName = luaL_checkstring(L, 2);
@@ -648,7 +665,7 @@ namespace fastbird
 			}
 		}
 		else{
-			Error("Component %s is not found.", compName);
+			Log("Component(%s) in the ui(%s) is not found.", compName, uiname);
 		}
 		return 0;
 	}

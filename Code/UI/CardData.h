@@ -11,7 +11,7 @@ namespace fastbird{
 			{
 
 			}
-			ITexture* texture;
+			SmartPtr<ITexture> texture;
 			std::string compName;
 		};
 
@@ -24,6 +24,7 @@ namespace fastbird{
 	public:
 		unsigned AddData(unsigned key, LuaObject& data);
 		unsigned DeleteData(unsigned key);
+		void Clear();
 		void DeleteDataWithIndex(unsigned index);
 		void SetTexture(unsigned key, const char* comp, ITexture* texture);
 		void GetTextures(unsigned key, std::vector<TextureData>& textures);

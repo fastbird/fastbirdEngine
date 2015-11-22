@@ -117,8 +117,8 @@ IObject* MeshGroup::Clone() const
 		cloned->mMeshObjects.push_back(MESH_OBJECTS::value_type((IMeshObject*)it.first->Clone(), it.second));
 		cloned->mLocalTransforms.push_back(Transformation::IDENTITY);
 		cloned->mChanges.push_back(true);
-		cloned->mHierarchyMap = mHierarchyMap;
 	}
+	cloned->mHierarchyMap = mHierarchyMap;
 	cloned->mRootAuxCloned = mRootAuxCloned ? mRootAuxCloned : &mRootAuxil;
 	cloned->mAuxCloned = mAuxCloned ? mAuxCloned : (AUXIL_MAP*)&mAuxil;
 	cloned->mCollisionsCloned = mCollisionsCloned ? mCollisionsCloned : (COLLISION_SHAPES*)&mCollisions;

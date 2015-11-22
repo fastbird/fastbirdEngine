@@ -54,6 +54,10 @@ namespace fastbird
 		virtual void SetNSize(const Vec2& size) = 0;
 		virtual void SetNSizeX(float x) = 0;
 		virtual void SetNSizeY(float y) = 0;
+		virtual void SetFillX(bool fill) = 0;
+		virtual void SetFillY(bool fill) = 0;
+		virtual bool GetFillX() const = 0;
+		virtual bool GetFillY() const = 0;
 		virtual void SetWNSize(const fastbird::Vec2& size) = 0;
 		virtual void OnParentSizeChanged() = 0;
 
@@ -89,6 +93,8 @@ namespace fastbird
 		virtual const Vec2& GetNSize() const = 0;
 		virtual const Vec2I& GetSize() const = 0;
 		virtual const Vec2I& GetInitialOffset() const = 0;
+		virtual const Vec2I& GetSizeMod() const = 0;
+		virtual void SetSizeMod(const Vec2I& mod) = 0;
 		virtual void SetName(const char* name) = 0;		
 		virtual const char* GetName() const = 0;
 		virtual void ClearName() = 0;

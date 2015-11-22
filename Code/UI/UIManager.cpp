@@ -32,6 +32,7 @@
 #include <Engine/IUIObject.h>
 #include <Engine/IScriptSystem.h>
 #include <Engine/TextManipulator.h>
+#include <Engine/EngineCommand.h>
 
 fastbird::GlobalEnv* gFBEnv = 0;
 
@@ -39,8 +40,9 @@ namespace fastbird
 {
 
 
-static float gTooltipFontSize = 26;
+static float gTooltipFontSize = 24;
 static float gDelayForTooltip = 0.7f;
+extern float gTextSizeMod;
 //---------------------------------------------------------------------------
 UIManager::UIManager(lua_State* L)
 	: mInputListenerEnable(true)
@@ -75,6 +77,11 @@ UIManager::UIManager(lua_State* L)
 	gFBEnv->pEngine->RegisterFileChangeListener(this);
 	gFBEnv->pRenderer->AddRenderListener(this);
 	mTextManipulator = gFBEnv->pEngine->CreateTextManipulator();	
+
+	LuaObject textSizeMod(L, "ui_textSizeMod");
+	if (textSizeMod.IsValid()){
+		gTextSizeMod = textSizeMod.GetFloat(0);
+	}
 }
 
 UIManager::~UIManager()
@@ -1213,7 +1220,7 @@ void UIManager::ProcessMouseInput(IMouse* mouse, IKeyboard* keyboard){
 		rparam.mIgnoreScissor = true; // only for FBUIEditor.
 		rparam.mTestChildren = true;
 		rparam.mNoRuntimeComp = mUIEditor && gFBEnv->pEngine->IsMainWindowForground() && !keyboard->IsKeyDown(VK_LMENU) ? true : false;
-		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU);
+		rparam.mCheckMouseEvent = !mUIEditor || keyboard->IsKeyDown(VK_LMENU) || !gFBEnv->pEngine->IsMainWindowForground();
 		rparam.mHwndId = hwndId;
 		rparam.mRestrictToThisWnd = mModalWindow && mModalWindow->GetVisible() ? mModalWindow : 0;
 
@@ -1372,11 +1379,9 @@ void UIManager::SetTooltipString(const std::wstring& ts)
 void UIManager::ShowTooltip()
 {
 	assert(!mTooltipText.empty());	
-	IFont* pFont = gFBEnv->pRenderer->GetFont();
-	pFont->SetHeight(gTooltipFontSize);
-	int width = (int)gFBEnv->pRenderer->GetFont()->GetTextWidth(
-		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
-	pFont->SetBackToOrigHeight();
+	IFont* pFont = gFBEnv->pRenderer->GetFont(gTooltipFontSize);	
+	int width = (int)pFont->GetTextWidth(
+		(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);	
 
 	const int maxWidth = 450;
 	width = std::min(maxWidth, width) + 4;
@@ -1387,7 +1392,7 @@ void UIManager::ShowTooltip()
 	mTooltipUI->ChangeSizeX(textWidth + 16);	
 	mTooltipTextBox->ChangeSizeX(textWidth + 4);
 	int sizeY = mTooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
-	mTooltipUI->ChangeSizeY(sizeY + 8);
+	mTooltipUI->ChangeSizeY(sizeY);
 	mTooltipUI->SetVisible(true);
 	RefreshTooltipPos();
 }
@@ -1552,7 +1557,7 @@ void UIManager::SetVisible(const char* uiname, bool visible)
 		}
 	}
 	if (!windows){
-		Error("UIManager::SetVisible(): UI(%s) is not found.", uiname);
+		Log("UIManager::SetVisible(): UI(%s) is not found.", uiname);
 		return;
 	}
 
@@ -1750,6 +1755,7 @@ void UIManager::MoveToBottom(const char* moveToBottom)
 	{
 		if (ValueNotExistInVector(mMoveToBottomReserved, ui))
 			mMoveToBottomReserved.push_back(ui);
+		DeleteValuesInVector(mMoveToTopReserved, ui);
 	}	
 }
 
@@ -1757,6 +1763,7 @@ void UIManager::MoveToBottom(IWinBase* moveToBottom){
 	if (moveToBottom){
 		if (ValueNotExistInVector(mMoveToBottomReserved, moveToBottom))
 			mMoveToBottomReserved.push_back(moveToBottom);
+		DeleteValuesInVector(mMoveToTopReserved, moveToBottom);
 	}
 }
 
@@ -1764,6 +1771,7 @@ void UIManager::MoveToTop(IWinBase* moveToTop){
 	if (moveToTop){
 		if (ValueNotExistInVector(mMoveToTopReserved, moveToTop))
 			mMoveToTopReserved.push_back(moveToTop);
+		DeleteValuesInVector(mMoveToBottomReserved, moveToTop);
 	}
 }
 
@@ -1957,7 +1965,7 @@ IWinBase* UIManager::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& pa
 IWinBase* UIManager::WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param){
 	for (auto it : mAlwaysMouseOverCheckComps){
 		auto wnd = it;
-		if (!wnd->GetVisible()){
+		if (!wnd->GetVisible() || wnd->GetVisualOnly()){
 			continue;
 		}
 		if (param.mHwndId != wnd->GetHwndId())

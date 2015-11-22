@@ -3,6 +3,7 @@
 #include <Engine/ICamera.h>
 #include <Engine/IMeshObject.h>
 #include <Engine/Renderer.h>
+#include <Engine/EngineCommand.h>
 
 using namespace fastbird;
 

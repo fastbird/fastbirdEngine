@@ -142,10 +142,8 @@ EngineCommand::EngineCommand()
 	REGISTER_CVAR(r_GenerateShaderCache, r_GenerateShaderCache, CVAR_CATEGORY_CLIENT, "generate shader cache");
 
 	r_numRenderTargets = gFBEnv->pScriptSystem->GetIntVariable("r_numRenderTargets", 0);
-	REGISTER_CVAR(r_numRenderTargets, r_numRenderTargets, CVAR_CATEGORY_CLIENT, "Log render targets");
+	REGISTER_CVAR(r_numRenderTargets, r_numRenderTargets, CVAR_CATEGORY_CLIENT, "Log render targets");	
 	
-	r_numPointLights = gFBEnv->pScriptSystem->GetIntVariable("r_numPointLights", 0);
-	REGISTER_CVAR(r_numPointLights, r_numPointLights, CVAR_CATEGORY_CLIENT, "Log number of points lights");
 
 	r_numParticleEmitters = gFBEnv->pScriptSystem->GetIntVariable("r_numParticleEmitters", 0);
 	REGISTER_CVAR(r_numParticleEmitters, r_numParticleEmitters, CVAR_CATEGORY_CLIENT, "Log number of particle emitters");
@@ -163,6 +161,9 @@ EngineCommand::EngineCommand()
 	REGISTER_CVAR(r_fullscreen, r_fullscreen, CVAR_CATEGORY_CLIENT, "fullscreen");
 	Engine* engine = (Engine*)gFBEnv->pEngine;
 	engine->SetFullScreen(r_fullscreen!=0);
+
+	r_noText = gFBEnv->pScriptSystem->GetIntVariable("r_noText", 0);
+	REGISTER_CVAR(r_noText, r_noText, CVAR_CATEGORY_CLIENT, "r_noText");
 
 	REGISTER_CC(&ccSpawnParticle);
 	REGISTER_CC(&ccRun);

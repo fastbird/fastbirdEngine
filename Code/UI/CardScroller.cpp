@@ -187,6 +187,14 @@ void CardScroller::DeleteCardWithIndex(unsigned index){
 	mCardData->DeleteDataWithIndex(index);
 }
 
+void CardScroller::DeleteAllCard(){
+	mCardData->Clear();
+	for (auto ui : mRecycleBin){
+		gFBUIManager->DeleteComponent(ui);
+	}
+	VisualizeData(0);
+}
+
 void CardScroller::SetTexture(unsigned key, const char* comp, ITexture* texture){
 	mCardData->SetTexture(key, comp, texture);
 	unsigned index = mCardData->GetIndex(key);

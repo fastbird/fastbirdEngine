@@ -19,7 +19,7 @@ Texture2D gAlphaTexture : register(t1);
 //--------------------------------------------------------------------------------------
 struct a2v
 {
-	float3 Position : POSITION;
+	float4 Position : POSITION;
 	float4 Color	: COLOR;
 #if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)	
 	float2 UV		: TEXCOORD0;
@@ -44,7 +44,7 @@ v2p ui_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
-	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
+	OUTPUT.Position = INPUT.Position;
 #if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)
 	#ifdef _UV_ROT
 		float2 center = gMaterialParam[0].xy;
@@ -72,7 +72,11 @@ v2p ui_VertexShader( in a2v INPUT )
 float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 {	
 #ifdef DIFFUSE_TEXTURE
+	#ifdef _USE_LINEAR_SAMPLER
+	float4 color = gDiffuseTexture.Sample(gLinearBlackBorderSampler, INPUT.UV);
+	#else
 	float4 color = gDiffuseTexture.Sample(gPointBlackBorderSampler, INPUT.UV);
+	#endif
 	color *= gDiffuseColor;
 	float highlight = gEmissiveColor.w;
 	float2 glowss = smoothstep(0.9, 1.0, abs(saturate(INPUT.UV)*2.0-1.0) * highlight);

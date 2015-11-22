@@ -14,7 +14,7 @@ Texture2D  gImageNotFilled : register(t1);
 //--------------------------------------------------------------------------------------
 struct a2v
 {
-	float3 Position : POSITION;
+	float4 Position : POSITION;
 	float4 Color	: COLOR;
 	float2 uvFilled		: TEXCOORD0;
 	float2 uvNotFilled 	: TEXCOORD1;
@@ -30,7 +30,7 @@ struct v2p
 v2p uiverticalgaugeimage_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
-	OUTPUT.Position = mul(gWorld, float4(INPUT.Position, 1));
+	OUTPUT.Position = INPUT.Position;
 	OUTPUT.uvFilled = INPUT.uvFilled;
 	OUTPUT.uvNotFilled = INPUT.uvNotFilled;
 

@@ -18,6 +18,7 @@
 #include <Engine/RenderStateD3D11.h>
 #include <Engine/RenderTargetD3D11.h>
 #include <Engine/IRenderListener.h>
+#include <Engine/EngineCommand.h>
 #include <CommonLib/StringUtils.h>
 #include <CommonLib/Hammersley.h>
 #include <CommonLib/tinydir.h>
@@ -225,26 +226,29 @@ bool RendererD3D11::Init(int threadPool)
 
 	// Get OuputInformation
 	GetOutputInformationFor(vAdapters[0]);
+	for (auto it : vAdapters){
+		it->Release();
+	}
 
 	//check multithreaded is supported by the hardware
 	D3D11_FEATURE_DATA_THREADING dataThreading;
 	if (SUCCEEDED(m_pDevice->CheckFeatureSupport(D3D11_FEATURE_THREADING, &dataThreading, sizeof(dataThreading)))){
 		if (dataThreading.DriverConcurrentCreates){
-			Log("The hardware supports 'Concurrent Creates'");
+			Log("Hardware supports 'Concurrent Creates'");
 		}
 		else {
-			Log("The hardware doen't support 'Concurrent Creates'");
+			Log("Hardware doen't support 'Concurrent Creates'");
 		}
 
 		if (dataThreading.DriverCommandLists){
-			Log("The hardware supports command lists.");
+			Log("Hardware supports multi threaded command lists.");
 		}
 		else{
-			Log("The hardware doen't support 'Concurrent Creates'");
+			Log("Hardware doen't support 'Concurrent Creates'");
 		}
 	}
 	else{
-		Log("The hardware doen't support multithreading.");
+		Log("Hardware doen't support multithreading.");
 	}
 
 	
@@ -429,13 +433,40 @@ void RendererD3D11::GetOutputInformationFor(IDXGIAdapter1* adapter){
 		DXGI_OUTPUT_DESC desc;
 		auto hr = output->GetDesc(&desc);
 		if (SUCCEEDED(hr)){
-			mOutputInfos.push_back(OutputInfo());
-			auto& info = mOutputInfos.back();
-			wcscpy(info.mDeviceName, desc.DeviceName);
-			info.mRect = desc.DesktopCoordinates;
+			mOutputInfos.push_back(desc);			
+			auto& modes = mDisplayModes[desc.Monitor];			
 		}
 		SAFE_RELEASE(output);
 	}
+}
+
+bool RendererD3D11::FindClosestMatchingMode(const DXGI_MODE_DESC* finding, DXGI_MODE_DESC* best, HMONITOR monitor){
+	IDXGIAdapter1 * adapter;
+	UINT i = 0;
+	while (m_pFactory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND)
+	{
+		UINT j = 0;
+		IDXGIOutput* output;
+		while (adapter->EnumOutputs(j, &output) != DXGI_ERROR_NOT_FOUND)
+		{
+			DXGI_OUTPUT_DESC desc;
+			if (SUCCEEDED(output->GetDesc(&desc))){
+				if (desc.Monitor == monitor){
+					if (SUCCEEDED(output->FindClosestMatchingMode(finding, best, m_pDevice))){
+						adapter->Release();
+						output->Release();
+						return true;
+					}
+				}
+			}
+			output->Release();
+			++j;
+		}
+		adapter->Release();
+		++i;
+	}
+
+	return false;
 }
 
 //----------------------------------------------------------------------------
@@ -465,6 +496,32 @@ bool RendererD3D11::InitSwapChain(HWND_ID id, int width, int height)
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator = 1;
 	sd.Flags = 0;
+	
+	DXGI_MODE_DESC findingMode;
+	findingMode.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	findingMode.Width = width;
+	findingMode.Height = height;
+	findingMode.RefreshRate.Numerator = 60;
+	findingMode.RefreshRate.Denominator = 1;
+	findingMode.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	findingMode.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	DXGI_MODE_DESC bestMatch;
+	if (id == 1){
+		HMONITOR monitorHandle = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+		if (monitorHandle){
+			bool found = FindClosestMatchingMode(&findingMode, &bestMatch, monitorHandle);
+			if (found){
+				sd.BufferDesc.Width = bestMatch.Width;
+				sd.BufferDesc.Height = bestMatch.Height;
+				sd.BufferDesc.Format = bestMatch.Format;
+				sd.BufferDesc.RefreshRate.Numerator = bestMatch.RefreshRate.Numerator;
+				sd.BufferDesc.RefreshRate.Denominator = bestMatch.RefreshRate.Denominator;
+				sd.BufferDesc.Scaling = bestMatch.Scaling;
+				sd.BufferDesc.ScanlineOrdering = bestMatch.ScanlineOrdering;
+			}
+		}
+	}
+
 	/*
 	DXGI_SWAP_EFFECT_DISCARD
 	Use this flag to indicate that the contents of the back buffer are 
@@ -982,7 +1039,7 @@ void RendererD3D11::Present()
 {
 	for (auto& it : mSwapChains)
 	{
-		HRESULT hr = it.second->Present(1, mStandBy ? DXGI_PRESENT_TEST : 0);
+		HRESULT hr = it.second->Present(0, mStandBy ? DXGI_PRESENT_TEST : 0);		
 		assert(!FAILED(hr));
 		if (hr == DXGI_STATUS_OCCLUDED){
 			mStandBy = true;
@@ -1000,6 +1057,13 @@ void RendererD3D11::Present()
 				CopyToStaging(pStaging, 0, 0, 0, 0, srcTexture, 0, 0);					
 				const char* filepath = GetNextScreenshotFile();
 				pStaging->SaveToFile(filepath);
+				auto& size = GetMainRTSize();
+				//DrawTextForDuration(3.f, Vec2I(5, size.y - 32), FormatString("screenshot %s is created", filepath), Color::White, 32.0f);
+				Log("Screenshot %s is created.", filepath);
+				/*SmartPtr<ITexture> pStaging2 = gFBEnv->pRenderer->CreateTexture(filepath, 0, false);
+				auto newfile = ReplaceExtension(filepath, "png");
+				pStaging2->SaveToFile(newfile.c_str());
+				*/
 			}
 			
 		}
@@ -1071,7 +1135,7 @@ void RendererD3D11::SetIndexBuffer(IIndexBuffer* pIndexBuffer)
 }
 
 //----------------------------------------------------------------------------
-void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot)
+void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) const
 {
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTexture);
 	
@@ -1178,15 +1242,7 @@ IVertexBuffer* RendererD3D11::CreateVertexBuffer(void* data, unsigned stride,
 	initData.SysMemSlicePitch = 0;
 
 	ID3D11Buffer* pHardwareBuffer = 0;
-	HRESULT hr;
-	if (data)
-	{
-		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &pHardwareBuffer);	
-	}
-	else
-	{
-		hr = m_pDevice->CreateBuffer(&bufferDesc, 0, &pHardwareBuffer);
-	}
+	HRESULT hr = m_pDevice->CreateBuffer(&bufferDesc, data ? &initData : 0, &pHardwareBuffer);	
 
 	if (FAILED(hr))
 	{
@@ -2375,7 +2431,7 @@ void RendererD3D11::SetWireframe(bool enable)
 
 //----------------------------------------------------------------------------
 MapData RendererD3D11::MapBuffer(ID3D11Resource* pResource, 
-			UINT subResource, MAP_TYPE type, MAP_FLAG flag)
+			UINT subResource, MAP_TYPE type, MAP_FLAG flag) const
 {
 	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
 	D3D11_MAP maptype = ConvertEnumD3D11(type);
@@ -2416,7 +2472,7 @@ void RendererD3D11::UnmapVertexBuffer(IVertexBuffer* pBuffer, unsigned int subRe
 
 //----------------------------------------------------------------------------
 MapData RendererD3D11::MapTexture(ITexture* pTexture, UINT subResource, 
-			MAP_TYPE type, MAP_FLAG flag)
+			MAP_TYPE type, MAP_FLAG flag) const
 {
 	TextureD3D11* pTextureD3D11 = dynamic_cast<TextureD3D11*>(pTexture);
 	assert(pTextureD3D11);
@@ -2489,7 +2545,7 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 //----------------------------------------------------------------------------
 IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& desc)
 {
-	size_t numRS = 0;
+	static size_t numRS = 0;
 	RasterizerStateD3D11* pRS = 0;
 	auto find = mRasterizerMap.find(desc);
 	if (find == mRasterizerMap.end())

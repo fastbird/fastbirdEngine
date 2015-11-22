@@ -111,6 +111,7 @@ namespace fastbird
 			IMAGE_COLOR_OVERLAY,
 			IMAGE_FIXED_SIZE, // match to image size if not set it will matched to ui size
 			IMAGE_ROTATE,
+			IMAGE_LINEAR_SAMPLER,
 			ALPHA_REGION,
 
 			NO_BUTTON,
@@ -147,6 +148,7 @@ namespace fastbird
 			BUTTON_IMAGE_SIZE,
 
 			WND_NO_FOCUS,
+			WND_MOVE_TO_BOTTOM, // when focused
 			MOUSE_CURSOR_HAND,
 
 			NO_FOCUS_BY_CLICK,
@@ -262,6 +264,7 @@ namespace fastbird
 			"IMAGE_COLOR_OVERLAY",
 			"IMAGE_FIXED_SIZE",
 			"IMAGE_ROTATE",
+			"IMAGE_LINEAR_SAMPLER",
 			"ALPHA_REGION",
 			"NO_BUTTON",
 			"CHECKBOX_CHECKED",
@@ -298,6 +301,7 @@ namespace fastbird
 			"BUTTON_IMAGE_SIZE",
 
 			"WND_NO_FOCUS",
+			"WND_MOVE_TO_BOTTOM",
 			"MOUSE_CURSOR_HAND",
 
 			"NO_FOCUS_BY_CLICK",
@@ -466,6 +470,8 @@ namespace fastbird
 				return false;
 			case IMAGE_ROTATE:
 				return false;
+			case IMAGE_LINEAR_SAMPLER:
+				return false;
 			case RADIO_CHECK:
 				return false;
 			case TEXTBOX_MATCH_HEIGHT:
@@ -491,6 +497,8 @@ namespace fastbird
 			case CLOSE_BTN:
 				return false;
 			case WND_NO_FOCUS:
+				return false;
+			case WND_MOVE_TO_BOTTOM:
 				return false;
 			case LISTBOX_HAND:
 				return false;

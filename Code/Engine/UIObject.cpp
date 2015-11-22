@@ -4,6 +4,7 @@
 #include <Engine/Renderer.h>
 #include <Engine/IFont.h>
 #include <Engine/IConsole.h>
+#include <Engine/EngineCommand.h>
 #include <UI/ComponentType.h>
 
 
@@ -45,7 +46,6 @@ UIObject::UIObject()
 , mUISize(100, 100)
 , mDebugString("UIObject")
 , mNoDrawBackground(false)
-, mDirty(true)
 , mTextSize(22.f)
 , mScissor(false)
 , mOut(false)
@@ -56,12 +56,16 @@ UIObject::UIObject()
 , mScale(1, 1)
 , mPivot(0, 0)
 , mTextOffsetForCursor(0, 0)
+, mNeedToUpdatePosVB(true)
+, mNeedToUpdateColorVB(false)
+, mNeedToUpdateTexcoordVB(false)
 {
-	mObjectConstants.gWorld.MakeIdentity();
-	mObjectConstants.gWorldViewProj.MakeIdentity();
 	SetMaterial("es/materials/UI.material");
 	mOwnerUI = 0;
 	mTextColor = Color(0.8f, 0.8f, 0.8f);
+
+	mVertexBuffer = gFBEnv->pRenderer->CreateVertexBuffer(0,
+		sizeof(Vec4), 4, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 }
 UIObject::~UIObject()
 {
@@ -75,13 +79,13 @@ void UIObject::SetTexCoord(Vec2 coord[], DWORD num, unsigned index)
 	if (coord)
 		mTexcoords[index].assign(coord, coord + num);
 
-	mDirty = true;
+	mNeedToUpdateTexcoordVB = true;
 }
 
 void UIObject::ClearTexCoord(unsigned index){
 	assert(index < 2);
 	mTexcoords[index].clear();
-	mDirty = true;
+	mNeedToUpdateTexcoordVB = true;
 }
 
 void UIObject::SetColors(DWORD colors[], DWORD num)
@@ -89,7 +93,7 @@ void UIObject::SetColors(DWORD colors[], DWORD num)
 	mColors.clear();
 	if (colors)
 		mColors.assign(colors, colors+num);
-	mDirty = true;
+	mNeedToUpdateColorVB = true;
 }
 
 
@@ -98,8 +102,7 @@ void UIObject::SetUIPos(const Vec2I& pos){
 		return;
 
 	mUIPos = pos;
-	mDirty = true;
-
+	mNeedToUpdatePosVB = true;	
 }
 
 const Vec2I& UIObject::GetUIPos() const{
@@ -111,7 +114,7 @@ void UIObject::SetUISize(const Vec2I& size){
 		return;
 
 	mUISize = size;
-	mDirty = true;
+	mNeedToUpdatePosVB = true;	
 }
 
 const Vec2I& UIObject::GetUISize() const{
@@ -188,7 +191,7 @@ void UIObject::PreRender()
 		return;
 	mLastPreRendered = gFBEnv->mFrameCounter;
 
-	if (mDirty)
+	if (mNeedToUpdatePosVB)
 		UpdateRegion();
 
 	mOut = mScissor && 
@@ -200,12 +203,6 @@ void UIObject::PreRender()
 	{
 		const Vec4& prev = mMaterial->GetMaterialParameters(4);
 		mMaterial->SetMaterialParameters(4, Vec4(prev.x, prev.y, prev.z, mAlpha));
-	}
-
-	if (mDirty)
-	{
-		PrepareVBs();
-		mDirty = false;
 	}
 }
 
@@ -231,7 +228,9 @@ void UIObject::Render()
 	mMaterial->Bind(true);
 	if (!mNoDrawBackground)
 	{
-		renderer->UpdateObjectConstantsBuffer(&mObjectConstants);		
+		PrepareVBs();
+		
+		//renderer->UpdateObjectConstantsBuffer(&mObjectConstants);		
 		//mRasterizerStateShared->Bind();
 		renderer->SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	
@@ -250,18 +249,16 @@ void UIObject::Render()
 
 	if (!mText.empty())
 	{
-		IFont* pFont = renderer->GetFont();
+		IFont* pFont = renderer->GetFont(mTextSize * mScale.x);
 		if (pFont)
 		{
 			pFont->PrepareRenderResources();
-			pFont->SetRenderStates(false, mScissor);
-			pFont->SetHeight(mTextSize * mScale.x);
+			pFont->SetRenderStates(false, mScissor);			
 			float x = float(mRegion.left + mTextOffset.x + mTextOffsetForCursor.x);
 			float y = float(mRegion.top + mTextOffset.y + mTextOffsetForCursor.y);
 			Color textColor = mTextColor;
 			textColor.a() *= mAlpha;
-			pFont->Write(x, y, 0.0f, textColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);
-			pFont->SetBackToOrigHeight();
+			pFont->Write(x, y, 0.0f, textColor.Get4Byte(), (const char*)mText.c_str(), -1, FONT_ALIGN_LEFT);			
 		}
 	}
 
@@ -296,42 +293,67 @@ void UIObject::PostRender()
 
 void UIObject::PrepareVBs()
 {
-	mPositions.clear();
-	mPositions.reserve(4);
-	mPositions.push_back(Vec3((float)mUIPos.x, (float)(mUIPos.y + mUISize.y), 0.f));
-	mPositions.push_back(Vec3(Vec2(mUIPos), 0.f));
-	mPositions.push_back(Vec3((float)(mUIPos.x + mUISize.x), (float)(mUIPos.y + mUISize.y), 0.f));
-	mPositions.push_back(Vec3((float)(mUIPos.x + mUISize.x), (float)mUIPos.y, 0.f));	
-	
-
-	if (!mPositions.empty())
-	{
-		mVertexBuffer = gFBEnv->pRenderer->CreateVertexBuffer(&mPositions[0],
-			sizeof(Vec3), mPositions.size(), BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE);
-	}
-	if (!mColors.empty())
-	{
-		mVBColor = gFBEnv->pRenderer->CreateVertexBuffer(&mColors[0],
-			sizeof(DWORD), mColors.size(), BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE);
-
-	}
-	else
-	{
-		mVBColor = 0;
+	if (mNeedToUpdatePosVB){
+		mNeedToUpdatePosVB = false;
+		auto mapData = gFBEnv->pRenderer->MapVertexBuffer(mVertexBuffer, 0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapData.pData){
+			Vec4 positions[4] = {
+				Vec4((float)mUIPos.x, (float)(mUIPos.y + mUISize.y), 0.f, 1.0f),
+				Vec4((float)mUIPos.x, (float)mUIPos.y, 0.f, 1.0f),
+				Vec4((float)(mUIPos.x + mUISize.x), (float)(mUIPos.y + mUISize.y), 0.f, 1.0f),
+				Vec4((float)(mUIPos.x + mUISize.x), (float)mUIPos.y, 0.f, 1.0f),
+			};
+			Mat44 worldMat(2.f / mRenderTargetSize.x, 0, 0, -1.f,
+				0.f, -2.f / mRenderTargetSize.y, 0, 1.f,
+				0, 0, 1.f, 0.f,
+				0, 0, 0, 1.f);
+			for (auto& pos : positions){
+				pos = worldMat * pos;
+			}
+			memcpy(mapData.pData, positions, sizeof(Vec4) * 4);
+			gFBEnv->pRenderer->UnmapVertexBuffer(mVertexBuffer, 0);
+		}
 	}
 
-	for (int i = 0; i < 2; i++)
-	{
-		if (!mTexcoords[i].empty())
+	if (mNeedToUpdateColorVB){
+		mNeedToUpdateColorVB = false;
+
+		if (!mColors.empty())
 		{
-			mVBTexCoords[i] = gFBEnv->pRenderer->CreateVertexBuffer(&mTexcoords[i][0],
-				sizeof(Vec2), mTexcoords[i].size(), BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE);
+			mVBColor = gFBEnv->pRenderer->CreateVertexBuffer(&mColors[0],
+				sizeof(DWORD), mColors.size(), BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+
 		}
 		else
 		{
-			mVBTexCoords[i] = 0;
+			mVBColor = 0;
 		}
-	}	
+	}
+
+	if (mNeedToUpdateTexcoordVB){
+		mNeedToUpdateTexcoordVB = false;
+		for (int i = 0; i < 2; i++)
+		{
+			if (!mTexcoords[i].empty())
+			{
+				if (!mVBTexCoords[i]){
+					mVBTexCoords[i] = gFBEnv->pRenderer->CreateVertexBuffer(&mTexcoords[i][0],
+						sizeof(Vec2), mTexcoords[i].size(), BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+				}
+				else{
+					auto map = gFBEnv->pRenderer->MapVertexBuffer(mVBTexCoords[i], 0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+					if (map.pData){
+						memcpy(map.pData, &mTexcoords[i][0], sizeof(Vec2)* mTexcoords[i].size());
+						gFBEnv->pRenderer->UnmapVertexBuffer(mVBTexCoords[i], 0);
+					}
+				}				
+			}
+			else
+			{
+				mVBTexCoords[i] = 0;
+			}
+		}
+	}
 }
 
 void UIObject::SetTextColor(const Color& c)
@@ -394,14 +416,7 @@ void UIObject::SetDoNotDraw(bool doNotDraw)
 void UIObject::SetRenderTargetSize(const Vec2I& rtSize)
 {
 	mRenderTargetSize = rtSize;
-	mObjectConstants = {
-		Mat44(2.f / rtSize.x, 0, 0, -1.f,
-		0.f, -2.f / rtSize.y, 0, 1.f,
-		0, 0, 1.f, 0.f,
-		0, 0, 0, 1.f),
-		Mat44(),
-		Mat44(),
-	};
+	mNeedToUpdatePosVB = true;
 }
 
 const Vec2I& UIObject::GetRenderTargetSize() const
@@ -414,4 +429,18 @@ bool UIObject::HasTexCoord() const{
 	return !mTexcoords[0].empty() || !mTexcoords[1].empty();
 }
 
+void UIObject::EnableLinearSampler(bool linear){
+	if (mMaterial){
+		if (!mMaterial->GetAdam())
+			mMaterial = mMaterial->Clone();
+		if (linear){
+			mMaterial->AddShaderDefine("_USE_LINEAR_SAMPLER", "1");
+			mMaterial->ApplyShaderDefines();
+		}
+		else{
+			if (mMaterial->RemoveShaderDefine("_USE_LINEAR_SAMPLER"))
+				mMaterial->ApplyShaderDefines();
+		}
+	}
+}
 }

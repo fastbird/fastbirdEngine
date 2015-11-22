@@ -125,7 +125,7 @@ public:
 	virtual void SetDSShader(IShader* pShader) = 0;
 	virtual void SetHSShader(IShader* pShader) = 0;
 	virtual void SetInputLayout(IInputLayout* pInputLayout) = 0;
-	virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) = 0;
+	virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) const = 0;
 	virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot) = 0;
 	virtual void GenerateMips(ITexture* pTexture) = 0;
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
@@ -143,7 +143,7 @@ public:
 		MAP_TYPE type, MAP_FLAG flag) = 0;
 	virtual void UnmapVertexBuffer(IVertexBuffer* pBuffer, unsigned int subResource) = 0;
 	virtual MapData MapTexture(ITexture* pTexture, UINT subResource, 
-		MAP_TYPE type, MAP_FLAG flag) = 0;
+		MAP_TYPE type, MAP_FLAG flag) const = 0;
 	virtual void UnmapTexture(ITexture* pTexture, UINT subResource) = 0;
 	virtual void CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,
 		ITexture* src, UINT srcSubresource, Box3D* pBox) = 0;
@@ -216,14 +216,14 @@ public:
 	virtual Vec2I ToSreenPos(HWND_ID id, const Vec3& ndcPos) const = 0;
 	virtual Vec2 ToNdcPos(HWND_ID id, const Vec2I& screenPos) const = 0;
 
-	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 24) = 0;
-	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 24) = 0;
-	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 24) = 0;
-	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 24) = 0;
+	virtual void DrawText(const Vec2I& pos, WCHAR* text, const Color& color, float size = 20) = 0;
+	virtual void DrawText(const Vec2I& pos, const char* text, const Color& color, float size = 20) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, float size = 20) = 0;
+	virtual void Draw3DText(const Vec3& worldpos, const char* text, const Color& color, float size = 20) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, WCHAR* text, 
-		const Color& color, float size = 24) = 0;
+		const Color& color, float size = 20) = 0;
 	virtual void DrawTextForDuration(float secs, const Vec2I& pos, const char* text, 
-		const Color& color, float size = 24) = 0;
+		const Color& color, float size = 20) = 0;
 	virtual void ClearDurationTexts() = 0;
 
 	// no depth culling
@@ -245,7 +245,8 @@ public:
 	virtual void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha) = 0;
 	virtual void RenderGeoms() = 0;
 	virtual void RenderDebugHud() = 0; 
-	virtual inline IFont* GetFont() const = 0;
+	// will return the font matching the request font height best.
+	virtual inline IFont* GetFont(float fontHeight) const = 0;
 	virtual void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs = true) = 0;
 	virtual void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) = 0;
 	virtual void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, ITexture* texture, IMaterial* materialOverride = 0) = 0;
