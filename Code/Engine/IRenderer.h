@@ -125,7 +125,7 @@ public:
 	virtual void SetDSShader(IShader* pShader) = 0;
 	virtual void SetHSShader(IShader* pShader) = 0;
 	virtual void SetInputLayout(IInputLayout* pInputLayout) = 0;
-	virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) = 0;
+	virtual void SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) const = 0;
 	virtual void SetTextures(ITexture* pTextures[], int num, BINDING_SHADER shaderType, int startSlot) = 0;
 	virtual void GenerateMips(ITexture* pTexture) = 0;
 	virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
@@ -143,7 +143,7 @@ public:
 		MAP_TYPE type, MAP_FLAG flag) = 0;
 	virtual void UnmapVertexBuffer(IVertexBuffer* pBuffer, unsigned int subResource) = 0;
 	virtual MapData MapTexture(ITexture* pTexture, UINT subResource, 
-		MAP_TYPE type, MAP_FLAG flag) = 0;
+		MAP_TYPE type, MAP_FLAG flag) const = 0;
 	virtual void UnmapTexture(ITexture* pTexture, UINT subResource) = 0;
 	virtual void CopyToStaging(ITexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,
 		ITexture* src, UINT srcSubresource, Box3D* pBox) = 0;

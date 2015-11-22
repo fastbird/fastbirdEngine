@@ -1135,7 +1135,7 @@ void RendererD3D11::SetIndexBuffer(IIndexBuffer* pIndexBuffer)
 }
 
 //----------------------------------------------------------------------------
-void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot)
+void RendererD3D11::SetTexture(ITexture* pTexture, BINDING_SHADER shaderType, unsigned int slot) const
 {
 	TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pTexture);
 	
@@ -2431,7 +2431,7 @@ void RendererD3D11::SetWireframe(bool enable)
 
 //----------------------------------------------------------------------------
 MapData RendererD3D11::MapBuffer(ID3D11Resource* pResource, 
-			UINT subResource, MAP_TYPE type, MAP_FLAG flag)
+			UINT subResource, MAP_TYPE type, MAP_FLAG flag) const
 {
 	D3D11_MAPPED_SUBRESOURCE mappedSubresource;
 	D3D11_MAP maptype = ConvertEnumD3D11(type);
@@ -2472,7 +2472,7 @@ void RendererD3D11::UnmapVertexBuffer(IVertexBuffer* pBuffer, unsigned int subRe
 
 //----------------------------------------------------------------------------
 MapData RendererD3D11::MapTexture(ITexture* pTexture, UINT subResource, 
-			MAP_TYPE type, MAP_FLAG flag)
+			MAP_TYPE type, MAP_FLAG flag) const
 {
 	TextureD3D11* pTextureD3D11 = dynamic_cast<TextureD3D11*>(pTexture);
 	assert(pTextureD3D11);
@@ -2545,7 +2545,7 @@ void RendererD3D11::SaveTextureToFile(ITexture* texture, const char* filename)
 //----------------------------------------------------------------------------
 IRasterizerState* RendererD3D11::CreateRasterizerState(const RASTERIZER_DESC& desc)
 {
-	size_t numRS = 0;
+	static size_t numRS = 0;
 	RasterizerStateD3D11* pRS = 0;
 	auto find = mRasterizerMap.find(desc);
 	if (find == mRasterizerMap.end())

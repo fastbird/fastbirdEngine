@@ -105,7 +105,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_ENGINE;CPP;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(OPENAL_SOFT_DIR)\include;$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OPENAL_SOFT_DIR)\include;$(VORBIS_DIR)\include;$(THEORA_DIR)\include;$(OGG_DIR)\include;$(FASTBIRD_ENGINE_DIR);$(LUA_DIR)\include;$(FREEIMAGE_DIR)\Dist;$(DXSDK_DIR)\include;$(ZLIB_HOME)\include;$(OpenCOLLADA_HOME);$(OpenCOLLADA_HOME)\include</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>Engine/StdAfx.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <FloatingPointModel>Fast</FloatingPointModel>
