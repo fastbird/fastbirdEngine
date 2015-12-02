@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="IRenderTargetListener.h" />
+    <ClInclude Include="RenderStates.h" />
+    <ClInclude Include="RenderTarget.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureAtlas.h" />
+    <ClInclude Include="IRenderTargetObserver.h" />
+    <ClInclude Include="IRendererObserver.h" />
+    <ClInclude Include="VertexBuffer.h" />
+    <ClInclude Include="IndexBuffer.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="RenderStrategyDefault.h" />
+    <ClInclude Include="IRenderStrategy.h" />
+    <ClInclude Include="GaussianDistribution.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="InputElementDesc.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererEnums.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererStructs.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderEventMarker.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderParam.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderSteps.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderDefines.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="StarDef.h" />
+    <ClInclude Include="RenderTargetParam.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="TextTags.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="IPlatformRenderer.h" />
+    <ClInclude Include="IPlatformTexture.h" />
+    <ClInclude Include="IPlatformVertexBuffer.h" />
+    <ClInclude Include="IPlatformShader.h" />
+    <ClInclude Include="IPlatformInputLayout.h" />
+    <ClInclude Include="IPlatformIndexBuffer.h" />
+    <ClInclude Include="IPlatformRenderStates.h" />
+    <ClInclude Include="InputLayout.h" />
+    <ClInclude Include="TextureBinding.h" />
+    <ClInclude Include="SystemTextures.h" />
+    <ClInclude Include="PointLightManager.h" />
+    <ClInclude Include="PointLight.h" />
+    <ClInclude Include="DebugHud.h" />
+    <ClInclude Include="GeometryRenderer.h" />
+    <ClInclude Include="ShaderConstants.h" />
+    <ClInclude Include="IVideoPlayer.h" />
+    <ClInclude Include="ResourceTypes.h" />
+    <ClInclude Include="ResourceProvider.h" />
+    <ClInclude Include="NullPlatformRenderer.h" />
+    <ClInclude Include="RenderPass.h" />
+    <ClInclude Include="RenderStrategyMinimum.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="ICamera.h" />
+    <ClInclude Include="ICameraObserver.h" />
+    <ClInclude Include="RendererOptions.h" />
+    <ClInclude Include="ConsoleRenderer.h" />
+    <ClInclude Include="PixelFormats.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableObject.h" />
+    <ClInclude Include="PrimitiveTopology.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="RenderStates.cpp" />
+    <ClCompile Include="RenderTarget.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureAtlas.cpp" />
+    <ClCompile Include="VertexBuffer.cpp" />
+    <ClCompile Include="IndexBuffer.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="RenderStrategyDefault.cpp" />
+    <ClCompile Include="RendererEnums.cpp">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderEventMarker.cpp">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderDefines.cpp">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="StarDef.cpp" />
+    <ClCompile Include="InputElementDesc.cpp">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="TextureBinding.cpp" />
+    <ClCompile Include="PointLightManager.cpp" />
+    <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="DebugHud.cpp" />
+    <ClCompile Include="GeometryRenderer.cpp" />
+    <ClCompile Include="InputLayout.cpp" />
+    <ClCompile Include="ResourceProvider.cpp" />
+    <ClCompile Include="NullPlatformRenderer.cpp" />
+    <ClCompile Include="GaussianDistribution.cpp" />
+    <ClCompile Include="RenderStrategyMinimum.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="RendererOptions.cpp" />
+    <ClCompile Include="ConsoleRenderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Enum&amp;Structures">
+      <UniqueIdentifier>{da81eda7-6040-4597-b79b-0adcaa69480e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

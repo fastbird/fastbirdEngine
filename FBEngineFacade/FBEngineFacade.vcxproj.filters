@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="EngineFacade.h" />
+    <ClInclude Include="EngineOptions.h" />
+    <ClInclude Include="CollisionShapeInfo.h" />
+    <ClInclude Include="RenderTargetParamEx.h" />
+    <ClInclude Include="Voxelizer.h" />
+    <ClInclude Include="MeshFacade.h" />
+    <ClInclude Include="SkyFacade.h" />
+    <ClInclude Include="TrailFacade.h" />
+    <ClInclude Include="DustFacade.h" />
+    <ClInclude Include="BillboardQuadFacade.h" />
+    <ClInclude Include="MeshLoadOptions.h" />
+    <ClInclude Include="ParticleEmitterFacade.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="EngineFacade.cpp" />
+    <ClCompile Include="EngineOptions.cpp" />
+    <ClCompile Include="Voxelizer.cpp" />
+    <ClCompile Include="MeshFacade.cpp" />
+    <ClCompile Include="SkyFacade.cpp" />
+    <ClCompile Include="TrailFacade.cpp" />
+    <ClCompile Include="DustFacade.cpp" />
+    <ClCompile Include="BillboardQuadFacade.cpp" />
+    <ClCompile Include="ParticleEmitterFacade.cpp" />
+    <ClCompile Include="EngineLua.cpp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="BulletDebugDraw.h" />
+    <ClInclude Include="BulletFilterCallback.h" />
+    <ClInclude Include="ColShapes.h" />
+    <ClInclude Include="fbMotionState.h" />
+    <ClInclude Include="IDebugDrawer.h" />
+    <ClInclude Include="IFilterCallback.h" />
+    <ClInclude Include="IPhysics.h" />
+    <ClInclude Include="IPhysicsInterface.h" />
+    <ClInclude Include="mathConv.h" />
+    <ClInclude Include="Physics.h" />
+    <ClInclude Include="RayResult.h" />
+    <ClInclude Include="RigidBody.h" />
+    <ClInclude Include="RigidBodyImpl.h" />
+    <ClInclude Include="RotationInfo.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="RigidBodyEvents.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ColShapes.cpp" />
+    <ClCompile Include="fbMotionState.cpp" />
+    <ClCompile Include="Physics.cpp" />
+    <ClCompile Include="Physics_DLLMain.cpp" />
+    <ClCompile Include="RigidBodyImpl.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="BulletDebugDraw.cpp" />
+    <ClCompile Include="BulletFilterCallback.cpp" />
+    <ClCompile Include="RayResult.cpp" />
+    <ClCompile Include="RigidBodyEvents.cpp" />
+  </ItemGroup>
+</Project>
