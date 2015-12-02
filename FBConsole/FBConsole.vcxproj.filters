@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="CandidatesData.cpp" />
+    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="ConsoleDataType.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CandidatesData.h" />
+    <ClInclude Include="Console.h" />
+    <ClInclude Include="ConsoleDataType.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="ICVarObserver.h" />
+    <ClInclude Include="IConsoleRenderer.h" />
+  </ItemGroup>
+</Project>

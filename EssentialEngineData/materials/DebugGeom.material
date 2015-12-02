@@ -1,0 +1,21 @@
+<Material transparent="true" >
+	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
+	<DepthStencilDesc DepthEnable="true" DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	
+	<ShaderFile>EssentialEngineData/shaders/DebugDraw.hlsl</ShaderFile>
+	<Shaders>VS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 0</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+	</Textures>
+	<MaterialParameters>
+		<param desc="color"></param>
+	</MaterialParameters>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

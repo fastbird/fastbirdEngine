@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="ISceneObserver.h" />
+    <ClInclude Include="SceneObject.h" />
+    <ClInclude Include="SceneObjectFlag.h" />
+    <ClInclude Include="SpatialObject.h" />
+    <ClInclude Include="SpatialSceneObject.h" />
+    <ClInclude Include="IScene.h" />
+    <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="ISpatialObject.h" />
+    <ClInclude Include="DirectionalLightIndex.h" />
+    <ClInclude Include="SceneObjectType.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="SceneObject.cpp" />
+    <ClCompile Include="SpatialObject.cpp" />
+    <ClCompile Include="SpatialSceneObject.cpp" />
+    <ClCompile Include="DirectionalLight.cpp" />
+  </ItemGroup>
+</Project>

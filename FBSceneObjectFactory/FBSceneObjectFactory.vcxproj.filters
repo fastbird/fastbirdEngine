@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="MeshObject.h" />
+    <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="CollisionInfo.h" />
+    <ClInclude Include="SceneObjectType.h" />
+    <ClInclude Include="SkySphere.h" />
+    <ClInclude Include="SceneObjectFactory.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="MeshImportDesc.h" />
+    <ClInclude Include="BillboardQuad.h" />
+    <ClInclude Include="DustRenderer.h" />
+    <ClInclude Include="MeshGroup.h" />
+    <ClInclude Include="TrailObject.h" />
+    <ClInclude Include="MeshAuxiliary.h" />
+    <ClInclude Include="MeshVertexBufferType.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MeshObject.cpp" />
+    <ClCompile Include="FBCollisionShape.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="SceneObjectFactory.cpp" />
+    <ClCompile Include="BillboardQuad.cpp" />
+    <ClCompile Include="DustRenderer.cpp" />
+    <ClCompile Include="MeshGroup.cpp" />
+    <ClCompile Include="TrailObject.cpp" />
+    <ClCompile Include="SkySphere.cpp" />
+  </ItemGroup>
+</Project>

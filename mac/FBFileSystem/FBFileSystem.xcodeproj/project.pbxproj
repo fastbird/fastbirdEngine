@@ -1,0 +1,282 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		98B4E4371BEF838000B829CE /* FBFileSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98B4E4321BEF838000B829CE /* FBFileSystem.cpp */; };
+		98B4E4381BEF838000B829CE /* FBFileSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = 98B4E4331BEF838000B829CE /* FBFileSystem.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		98B4E4391BEF838000B829CE /* FBFileSystemDLL.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98B4E4341BEF838000B829CE /* FBFileSystemDLL.cpp */; };
+		98B4E43A1BEF838000B829CE /* stdafx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 98B4E4351BEF838000B829CE /* stdafx.cpp */; };
+		98B4E43B1BEF838000B829CE /* stdafx.h in Headers */ = {isa = PBXBuildFile; fileRef = 98B4E4361BEF838000B829CE /* stdafx.h */; };
+		98B4E43D1BEF860700B829CE /* PrefixHeader.pch in Headers */ = {isa = PBXBuildFile; fileRef = 98B4E43C1BEF860700B829CE /* PrefixHeader.pch */; };
+		98B4E4401BEF8BA100B829CE /* libFBDebugLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B4E43E1BEF8BA100B829CE /* libFBDebugLib.a */; };
+		98B4E4411BEF8BA100B829CE /* libFBStringLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B4E43F1BEF8BA100B829CE /* libFBStringLib.a */; };
+		98B4E4431BEF8C0C00B829CE /* libboost_filesystem.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B4E4421BEF8C0C00B829CE /* libboost_filesystem.a */; };
+		98B4E4451BEF8D0600B829CE /* libboost_system.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B4E4441BEF8D0600B829CE /* libboost_system.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		98B4E42A1BEF833800B829CE /* libFBFileSystem.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libFBFileSystem.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		98B4E4321BEF838000B829CE /* FBFileSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FBFileSystem.cpp; path = ../../FBFileSystem/FBFileSystem.cpp; sourceTree = "<group>"; };
+		98B4E4331BEF838000B829CE /* FBFileSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FBFileSystem.h; path = ../../FBFileSystem/FBFileSystem.h; sourceTree = "<group>"; };
+		98B4E4341BEF838000B829CE /* FBFileSystemDLL.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FBFileSystemDLL.cpp; path = ../../FBFileSystem/FBFileSystemDLL.cpp; sourceTree = "<group>"; };
+		98B4E4351BEF838000B829CE /* stdafx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = stdafx.cpp; path = ../../FBFileSystem/stdafx.cpp; sourceTree = "<group>"; };
+		98B4E4361BEF838000B829CE /* stdafx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stdafx.h; path = ../../FBFileSystem/stdafx.h; sourceTree = "<group>"; };
+		98B4E43C1BEF860700B829CE /* PrefixHeader.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PrefixHeader.pch; path = ../../FBFileSystem/PrefixHeader.pch; sourceTree = "<group>"; };
+		98B4E43E1BEF8BA100B829CE /* libFBDebugLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFBDebugLib.a; path = "../../../../../Library/Developer/Xcode/DerivedData/fastbirdEngine_NewAPI-cvkvrjhbzpdswecjpucblstrmfgw/Build/Products/Debug/libFBDebugLib.a"; sourceTree = "<group>"; };
+		98B4E43F1BEF8BA100B829CE /* libFBStringLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFBStringLib.a; path = "../../../../../Library/Developer/Xcode/DerivedData/fastbirdEngine_NewAPI-cvkvrjhbzpdswecjpucblstrmfgw/Build/Products/Debug/libFBStringLib.a"; sourceTree = "<group>"; };
+		98B4E4421BEF8C0C00B829CE /* libboost_filesystem.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost_filesystem.a; path = ../../../boost_1_59_0/stage/lib/libboost_filesystem.a; sourceTree = "<group>"; };
+		98B4E4441BEF8D0600B829CE /* libboost_system.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost_system.a; path = ../../../boost_1_59_0/stage/lib/libboost_system.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		98B4E4271BEF833800B829CE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				98B4E4451BEF8D0600B829CE /* libboost_system.a in Frameworks */,
+				98B4E4431BEF8C0C00B829CE /* libboost_filesystem.a in Frameworks */,
+				98B4E4401BEF8BA100B829CE /* libFBDebugLib.a in Frameworks */,
+				98B4E4411BEF8BA100B829CE /* libFBStringLib.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		98B4E4211BEF833800B829CE = {
+			isa = PBXGroup;
+			children = (
+				98B4E4441BEF8D0600B829CE /* libboost_system.a */,
+				98B4E4421BEF8C0C00B829CE /* libboost_filesystem.a */,
+				98B4E43E1BEF8BA100B829CE /* libFBDebugLib.a */,
+				98B4E43F1BEF8BA100B829CE /* libFBStringLib.a */,
+				98B4E43C1BEF860700B829CE /* PrefixHeader.pch */,
+				98B4E4321BEF838000B829CE /* FBFileSystem.cpp */,
+				98B4E4331BEF838000B829CE /* FBFileSystem.h */,
+				98B4E4341BEF838000B829CE /* FBFileSystemDLL.cpp */,
+				98B4E4351BEF838000B829CE /* stdafx.cpp */,
+				98B4E4361BEF838000B829CE /* stdafx.h */,
+				98B4E42B1BEF833800B829CE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		98B4E42B1BEF833800B829CE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				98B4E42A1BEF833800B829CE /* libFBFileSystem.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		98B4E4281BEF833800B829CE /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				98B4E4381BEF838000B829CE /* FBFileSystem.h in Headers */,
+				98B4E43B1BEF838000B829CE /* stdafx.h in Headers */,
+				98B4E43D1BEF860700B829CE /* PrefixHeader.pch in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		98B4E4291BEF833800B829CE /* FBFileSystem */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 98B4E42E1BEF833800B829CE /* Build configuration list for PBXNativeTarget "FBFileSystem" */;
+			buildPhases = (
+				98B4E4261BEF833800B829CE /* Sources */,
+				98B4E4271BEF833800B829CE /* Frameworks */,
+				98B4E4281BEF833800B829CE /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FBFileSystem;
+			productName = FBFileSystem;
+			productReference = 98B4E42A1BEF833800B829CE /* libFBFileSystem.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98B4E4221BEF833800B829CE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0710;
+				ORGANIZATIONNAME = "정완 변";
+				TargetAttributes = {
+					98B4E4291BEF833800B829CE = {
+						CreatedOnToolsVersion = 7.1;
+					};
+				};
+			};
+			buildConfigurationList = 98B4E4251BEF833800B829CE /* Build configuration list for PBXProject "FBFileSystem" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 98B4E4211BEF833800B829CE;
+			productRefGroup = 98B4E42B1BEF833800B829CE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				98B4E4291BEF833800B829CE /* FBFileSystem */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		98B4E4261BEF833800B829CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				98B4E43A1BEF838000B829CE /* stdafx.cpp in Sources */,
+				98B4E4371BEF838000B829CE /* FBFileSystem.cpp in Sources */,
+				98B4E4391BEF838000B829CE /* FBFileSystemDLL.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		98B4E42C1BEF833800B829CE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		98B4E42D1BEF833800B829CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		98B4E42F1BEF833800B829CE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				HEADER_SEARCH_PATHS = /Users/fastbird/Documents/Development/boost_1_59_0;
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/../../../boost_1_59_0/stage/lib\"";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		98B4E4301BEF833800B829CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				EXECUTABLE_PREFIX = lib;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				HEADER_SEARCH_PATHS = /Users/fastbird/Documents/Development/boost_1_59_0;
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/../../../boost_1_59_0/stage/lib\"";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		98B4E4251BEF833800B829CE /* Build configuration list for PBXProject "FBFileSystem" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98B4E42C1BEF833800B829CE /* Debug */,
+				98B4E42D1BEF833800B829CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		98B4E42E1BEF833800B829CE /* Build configuration list for PBXNativeTarget "FBFileSystem" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98B4E42F1BEF833800B829CE /* Debug */,
+				98B4E4301BEF833800B829CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 98B4E4221BEF833800B829CE /* Project object */;
+}

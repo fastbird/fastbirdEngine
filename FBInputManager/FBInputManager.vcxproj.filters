@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="IMouse.h" />
+    <ClInclude Include="IKeyboard.h" />
+    <ClInclude Include="Keyboard.h" />
+    <ClInclude Include="Mouse.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="IInputDevice.h" />
+    <ClInclude Include="KeyCodes.h" />
+    <ClInclude Include="InputManager.h" />
+    <ClInclude Include="KeyboardEvent.h" />
+    <ClInclude Include="MouseEvent.h" />
+    <ClInclude Include="IInputInjector.h" />
+    <ClInclude Include="InputInjector.h" />
+    <ClInclude Include="FBInputDevice.h" />
+    <ClInclude Include="IInputConsumer.h" />
+    <ClInclude Include="TextManipulator.h" />
+    <ClInclude Include="ITextManipulatorObserver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Mouse.cpp" />
+    <ClCompile Include="Keyboard.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="InputManager.cpp" />
+    <ClCompile Include="InputInjector.cpp" />
+    <ClCompile Include="TextManipulator.cpp" />
+  </ItemGroup>
+</Project>

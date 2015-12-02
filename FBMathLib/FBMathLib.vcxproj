@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AABB.cpp" />
+    <ClCompile Include="BoundingVolume.cpp" />
+    <ClCompile Include="BVaabb.cpp" />
+    <ClCompile Include="BVSphere.cpp" />
+    <ClCompile Include="Color.cpp" />
+    <ClCompile Include="ColorRamp.cpp" />
+    <ClCompile Include="Math.cpp" />
+    <ClCompile Include="GeomUtils.cpp" />
+    <ClCompile Include="Mat33.cpp" />
+    <ClCompile Include="Mat44.cpp" />
+    <ClCompile Include="MurmurHash.cpp" />
+    <ClCompile Include="Plane3.cpp" />
+    <ClCompile Include="Quat.cpp" />
+    <ClCompile Include="Ray3.cpp" />
+    <ClCompile Include="Transformation.cpp" />
+    <ClCompile Include="Vec2.cpp" />
+    <ClCompile Include="Vec2I.cpp" />
+    <ClCompile Include="Vec3.cpp" />
+    <ClCompile Include="Vec3I.cpp" />
+    <ClCompile Include="Vec4.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AABB.h" />
+    <ClInclude Include="BoundingVolume.h" />
+    <ClInclude Include="BVaabb.h" />
+    <ClInclude Include="BVSphere.h" />
+    <ClInclude Include="Color.h" />
+    <ClInclude Include="ColorRamp.h" />
+    <ClInclude Include="Math.h" />
+    <ClInclude Include="GeomUtils.h" />
+    <ClInclude Include="Mat33.h" />
+    <ClInclude Include="Mat44.h" />
+    <ClInclude Include="MathDefines.h" />
+    <ClInclude Include="MurmurHash.h" />
+    <ClInclude Include="OBB.h" />
+    <ClInclude Include="Plane3.h" />
+    <ClInclude Include="Quat.h" />
+    <ClInclude Include="Random.h" />
+    <ClInclude Include="Ray3.h" />
+    <ClInclude Include="Rect.h" />
+    <ClInclude Include="Transformation.h" />
+    <ClInclude Include="Vec2.h" />
+    <ClInclude Include="Vec2I.h" />
+    <ClInclude Include="Vec3.h" />
+    <ClInclude Include="Vec3I.h" />
+    <ClInclude Include="Vec4.h" />
+    <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2DF8E079-28E5-4E7D-9C6A-FF87C1329EB5}</ProjectGuid>
+    <RootNamespace>FBMath</RootNamespace>
+    <ProjectName>FBMathLib</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
