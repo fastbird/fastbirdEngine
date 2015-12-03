@@ -72,12 +72,14 @@ public:
 	void Update(TIME_PRECISION dt){
 		for (auto it = mScenes.begin(); it != mScenes.end(); ){
 			auto scene = it->second.lock();
-			++it;
 			if (!scene){
-				mScenes.erase(it);
+				auto curIt = it;
+				++it;
+				mScenes.erase(curIt);
 				continue;
-			}
+			}			
 			scene->Update(dt);
+			++it;
 		}
 	}
 
@@ -89,6 +91,9 @@ public:
 			auto sLight = s->GetDirectionalLight(srcLightSlot);
 			if (dLight && sLight)
 				dLight->CopyLight(sLight);
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid Arg.");
 		}
 	}
 };

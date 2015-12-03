@@ -16,6 +16,7 @@
     <ClInclude Include="MeshAuxiliary.h" />
     <ClInclude Include="MeshVertexBufferType.h" />
     <ClInclude Include="CollisionShapeType.h" />
+    <ClInclude Include="SkyBox.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />
@@ -27,5 +28,6 @@
     <ClCompile Include="MeshGroup.cpp" />
     <ClCompile Include="TrailObject.cpp" />
     <ClCompile Include="SkySphere.cpp" />
+    <ClCompile Include="SkyBox.cpp" />
   </ItemGroup>
 </Project>

@@ -259,8 +259,8 @@ namespace fb{
 		const Vec2I& GetRenderTargetSize(HWindowId id = INVALID_HWND_ID) const;
 		const Vec2I& GetRenderTargetSize(HWindow hwnd = 0) const;
 		void SetDirectionalLightInfo(int idx, const DirectionalLightInfo& info);		
-		void InitFrameProfiler(Real dt);
 		const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
+		void DisplayFrameProfiler();
 		inline FontPtr GetFont(Real fontHeight) const;
 		const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 			DEFAULT_INPUTS::Enum e);

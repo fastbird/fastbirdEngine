@@ -55,8 +55,8 @@ namespace fb{
 		virtual void PreRenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut) = 0;
 		virtual void RenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut) = 0;			
 		virtual const Color& GetFogColor() const = 0;
-		virtual void AttachSkySphere(SkySpherePtr p) = 0;
-		virtual void DetachSkySphere() = 0;
+		virtual void AttachSky(SceneObjectPtr p) = 0;
+		virtual void DetachSky() = 0;
 		virtual bool AttachObjectFB(SceneObjectPtr object, SceneObject* rawPointer) = 0;
 		virtual bool DetachObject(SceneObject* object) = 0;
 		virtual bool AttachObjectFB(SpatialSceneObjectPtr object, SpatialSceneObject* rawPointer) = 0;

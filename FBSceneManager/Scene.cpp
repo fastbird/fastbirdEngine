@@ -62,7 +62,7 @@ public:
 	/*std::vector<SceneObjectWeakPtr> mMarkObjects;
 	std::vector<SceneObjectWeakPtr> mHPBarObjects;*/
 
-	SkySpherePtr mSkySphere;
+	SceneObjectPtr mSky;
 	DirectionalLightPtr mDirectionalLight[2];
 	bool mSkipSpatialObjects;
 	bool mSkyRendering;
@@ -268,9 +268,9 @@ public:
 
 		if (mSkyRendering)
 		{
-			if (mSkySphere)
+			if (mSky)
 			{
-				mSkySphere->PreRender(renderParam, renderParamOut);
+				mSky->PreRender(renderParam, renderParamOut);
 			}
 		}
 
@@ -322,9 +322,9 @@ public:
 		{
 			if (mSkyRendering)
 			{
-				if (mSkySphere)
+				if (mSky)
 				{
-					mSkySphere->Render(param, paramOut);
+					mSky->Render(param, paramOut);
 				}
 
 			}
@@ -478,24 +478,24 @@ public:
 		}
 	}
 
-	void AttachSkySphere(SkySpherePtr p){
-		if (mSkySphere)
-			mSkySphere->OnDetachedFromScene(mSelfPtr.lock());
-		mSkySphere = p;
-		if (mSkySphere){			
-			mSkySphere->OnAttachedToScene(mSelfPtr.lock());
+	void AttachSky(SceneObjectPtr p){
+		if (mSky)
+			mSky->OnDetachedFromScene(mSelfPtr.lock());
+		mSky = p;
+		if (mSky){
+			mSky->OnAttachedToScene(mSelfPtr.lock());
 		}
 	}
 
-	void DetachSkySphere(){
-		if (mSkySphere){
-			mSkySphere->OnDetachedFromScene(mSelfPtr.lock());
-			mSkySphere = 0;
+	void DetachSky(){
+		if (mSky){
+			mSky->OnDetachedFromScene(mSelfPtr.lock());
+			mSky = 0;
 		}
 	}
 
-	SkySpherePtr GetSkySphere(){
-		return mSkySphere;
+	SceneObjectPtr GetSky(){
+		return mSky;
 	}
 
 	void ToggleSkyRendering(){
@@ -659,16 +659,16 @@ void Scene::PrintSpatialObject() {
 	mImpl->PrintSpatialObject();
 }
 
-void Scene::AttachSkySphere(SkySpherePtr p) {
-	mImpl->AttachSkySphere(p);
+void Scene::AttachSky(SceneObjectPtr p) {
+	mImpl->AttachSky(p);
 }
 
-void Scene::DetachSkySphere() {
-	mImpl->DetachSkySphere();
+void Scene::DetachSky() {
+	mImpl->DetachSky();
 }
 
-SkySpherePtr Scene::GetSkySphere() {
-	return mImpl->GetSkySphere();
+SceneObjectPtr Scene::GetSky() {
+	return mImpl->GetSky();
 }
 
 void Scene::ToggleSkyRendering() {

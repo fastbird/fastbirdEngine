@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "EngineTest.h"
 #include "MeshGroupTest.h"
+#include "SkyBoxTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
 EngineFacadePtr gEngine;
@@ -15,6 +16,7 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 HWND gHWnd = 0;
 MeshGroupTestPtr gMeshGroupTest;
+SkyBoxTestPtr gSkyBoxTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -43,11 +45,14 @@ void StartTest(){
 	gEngine->SetMainCameraPos(Vec3(0, -50, 0));
 	gEngine->EnableCameraInput(true);
 	gMeshGroupTest->SetCameraTarget();
+
+	gSkyBoxTest = SkyBoxTest::Create();
 	
 }
 
 void EndTest(){
 	gMeshGroupTest = 0;
+	gSkyBoxTest = 0;
 }
 
 // Forward declarations of functions included in this code module:

@@ -33,6 +33,9 @@
     <ClInclude Include="MeshGroupTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SkyBoxTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -42,6 +45,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MeshGroupTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBoxTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

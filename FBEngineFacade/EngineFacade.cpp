@@ -296,6 +296,9 @@ public:
 
 	void Render(){
 		mRenderer->Render();
+		
+		if (mEngineOptions->e_profile)
+			mRenderer->DisplayFrameProfiler();
 	}
 
 	void AddTempMesh(MeshFacadePtr mesh){
@@ -597,8 +600,9 @@ DirectionalLightPtr EngineFacade::GetMainSceneLight(DirectionalLightIndex::Enum 
 }
 
 
-void EngineFacade::DetachBlendingSky(IScenePtr scene){
-	auto sky = std::static_pointer_cast<Scene>(scene)->GetSkySphere();
+void EngineFacade::DetachBlendingSky(IScenePtr iscene){
+	auto scene = std::static_pointer_cast<Scene>(iscene);
+	auto sky = std::dynamic_pointer_cast<SkySphere>(scene->GetSky());
 	if (sky){
 		sky->DetachBlendingSky();
 	}

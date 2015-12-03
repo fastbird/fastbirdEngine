@@ -42,6 +42,7 @@
 #include "MeshObject.h"
 #include "MeshGroup.h"
 #include "SkySphere.h"
+#include "SkyBox.h"
 #include "BillboardQuad.h"
 #include "DustRenderer.h"
 #include "TrailObject.h"
@@ -415,6 +416,10 @@ public:
 		return SkySphere::Create();
 	}
 
+	SkyBoxPtr CreateSkyBox(const char* materialPath){
+		return SkyBox::Create(materialPath);
+	}
+
 	BillboardQuadPtr CreateBillboardQuad(){
 		return BillboardQuad::Create();
 	}
@@ -465,7 +470,7 @@ SceneObjectFactory::SceneObjectFactory()
 }
 
 SceneObjectFactory::~SceneObjectFactory(){
-
+	ColladaImporter::CleanUP();
 }
 
 void SceneObjectFactory::SetEnableMeshLoad(bool enable) {
@@ -498,6 +503,10 @@ MeshGroupPtr SceneObjectFactory::CreateMeshGroup(const char* file, const MeshImp
 
 SkySpherePtr SceneObjectFactory::CreateSkySphere() {
 	return mImpl->CreateSkySphere();
+}
+
+SkyBoxPtr SceneObjectFactory::CreateSkyBox(const char* materialPath){
+	return mImpl->CreateSkyBox(materialPath);
 }
 
 BillboardQuadPtr SceneObjectFactory::CreateBillboardQuad() {

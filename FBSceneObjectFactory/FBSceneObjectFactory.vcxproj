@@ -82,6 +82,7 @@
     <ClInclude Include="MeshVertexBufferType.h" />
     <ClInclude Include="SceneObjectFactory.h" />
     <ClInclude Include="SceneObjectType.h" />
+    <ClInclude Include="SkyBox.h" />
     <ClInclude Include="SkySphere.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TrailObject.h" />
@@ -92,6 +93,7 @@
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="MeshGroup.cpp" />
     <ClCompile Include="MeshObject.cpp" />
+    <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="SkySphere.cpp" />
     <ClCompile Include="TrailObject.cpp" />
   </ItemGroup>

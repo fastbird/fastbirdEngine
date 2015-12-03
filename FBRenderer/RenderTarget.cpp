@@ -121,6 +121,10 @@ public:
 	IRenderStrategyPtr SetRenderStrategy(IRenderStrategyPtr strategy){
 		auto prev = mStrategy;
 		mStrategy = strategy;
+		if (strategy){
+			strategy->SetScene(mScene.lock());
+			strategy->SetRenderTarget(mSelfPtr.lock());
+		}
 		return prev;
 	}
 

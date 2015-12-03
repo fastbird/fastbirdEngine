@@ -58,6 +58,8 @@ namespace fb
 	public:
 
 		static ColladaImporterPtr Create();
+		// only call once before the process terminates
+		static void CleanUP();
 
 		struct ImportOptions{
 			bool mSwapYZ;

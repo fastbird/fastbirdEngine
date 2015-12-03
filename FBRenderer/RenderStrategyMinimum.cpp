@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include "ResourceProvider.h"
 #include "Camera.h"
 #include "FBMathLib/BoundingVolume.h"
+#include "FBTimer/Timer.h"
 #include "FBSceneManager/IScene.h"
 #include "FBSceneManager/ISpatialObject.h"
 #include "FBSceneManager/DirectionalLight.h"
@@ -130,12 +131,18 @@ public:
 
 	void Render(size_t face){
 		auto scene = mScene.lock();
-		if (!scene)
-			return;
 		auto renderTarget = mRenderTarget.lock();
-		auto& renderer = Renderer::GetInstance();
-		if (!scene || !renderTarget)
+		if (!renderTarget)
 			return;
+		if (!scene){
+			scene = renderTarget->GetScene();
+			mScene = scene;
+			if (!scene){
+				Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "RenderStrategy cannot find a scene.");
+				return;
+			}
+		}		
+		auto& renderer = Renderer::GetInstance();
 
 		RenderEventMarker marker("Rendering with minimum strategy.");
 		RenderParam renderParam;

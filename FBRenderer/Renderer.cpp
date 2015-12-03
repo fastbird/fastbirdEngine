@@ -88,8 +88,8 @@ public:
 	typedef fb::Factory<IPlatformRenderer>::CreateCallback CreateCallback;
 	typedef std::vector<RenderTargetWeakPtr> RenderTargets;
 
-	RendererWeakPtr mSelf;
-	Renderer* mObject;	
+	RendererWeakPtr mSelfPtr;
+	Renderer* mSelf;
 
 	std::string mPlatformRendererType;
 	struct PlatformRendererHolder{
@@ -222,13 +222,12 @@ public:
 	VectorMap<std::string, RenderTargetPtr> mUI3DObjectsRTs;
 	VectorMap<std::string, UI3DObjPtr> mUI3DRenderObjs;	
 	std::vector<IVideoPlayerPtr> mVideoPlayers;
-	INT64 mLastRenderedTime;
 	unsigned mMainWindowStyle;
 	bool mWindowSizeInternallyChanging;
 	
 	//-----------------------------------------------------------------------
 	Impl(Renderer* renderer)
-		: mObject(renderer)
+		: mSelf(renderer)
 		, mNullRenderer(NullPlatformRenderer::Create())
 		, mCurrentTopology(PRIMITIVE_TOPOLOGY_UNKNOWN)
 		, mForcedWireframe(false)
@@ -236,7 +235,6 @@ public:
 		, mFadeAlpha(0.)
 		, mLuminance(0.5f)
 		, mLuminanceOnCpu(false)
-		, mLastRenderedTime(0)
 		, mWindowSizeInternallyChanging(false)
 		, mConsoleRenderer(ConsoleRenderer::Create())
 		, mRendererOptions(RendererOptions::Create())
@@ -248,7 +246,6 @@ public:
 		Logger::Init(filepath);
 
 		gpTimer = Timer::GetMainTimer().get();
-		mLastRenderedTime = gpTimer->GetTickCount();
 		auto& envBindings = mSystemTextureBindings[SystemTextures::Environment];
 		envBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 4 });
 		auto& depthBindings = mSystemTextureBindings[SystemTextures::Depth];
@@ -669,8 +666,8 @@ public:
 		auto mainRT = GetMainRenderTarget();
 		if (!mainRT)
 			return;
-		Real dt = (gpTimer->GetTickCount() - mLastRenderedTime) / (Real)gpTimer->GetFrequency();
-		InitFrameProfiler(dt);
+		mFrameProfiler.Clear();
+		auto startTime = gpTimer->GetTickCount();		
 		UpdateFrameConstantsBuffer();
 
 		for (auto pRT : mRenderTargetsEveryFrame)
@@ -689,7 +686,7 @@ public:
 			assert(rt);
 			bool rendered = rt->Render();
 			if (rendered) {
-				auto& observers = mObject->mObservers_[IRendererObserver::DefaultRenderEvent];
+				auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
 				for (auto it = observers.begin(); it != observers.end(); /**/){
 					auto observer = it->lock();
 					if (!observer){
@@ -736,6 +733,10 @@ public:
 
 		mConsoleRenderer->Render();
 		GetPlatformRenderer().Present();
+
+		auto endTime = gpTimer->GetTickCount();
+		auto gap = (endTime - startTime) / (Real)gpTimer->GetFrequency();
+		mFrameProfiler.UpdateFrameRate(gap);
 	}
 
 	//-------------------------------------------------------------------
@@ -1554,10 +1555,14 @@ public:
 	//-------------------------------------------------------------------
 	void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation){
 		GetPlatformRenderer().DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
+		mFrameProfiler.NumDrawIndexedCall++;
+		mFrameProfiler.NumIndexCount += indexCount;
 	}
 
 	void Draw(unsigned int vertexCount, unsigned int startVertexLocation){
 		GetPlatformRenderer().Draw(vertexCount, startVertexLocation);
+		mFrameProfiler.NumDrawCall++;
+		mFrameProfiler.NumVertexCount += vertexCount;
 	}
 
 	void DrawFullscreenQuad(ShaderPtr pixelShader, bool farside){
@@ -1812,7 +1817,7 @@ public:
 		if (!mDebugHud)
 			return;
 		RenderEventMarker devent("RenderDebugHud");
-		auto& observers = mObject->mObservers_[IRendererObserver::DefaultRenderEvent];
+		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
 		for (auto it = observers.begin(); it != observers.end(); /**/)
 		{
 			auto observer = it->lock();
@@ -2088,13 +2093,42 @@ public:
 		mDirectionalLight[idx] = info;
 	}
 
-	void InitFrameProfiler(Real dt){
-		mFrameProfiler.Clear();
-		mFrameProfiler.UpdateFrameRate(dt);
-	}
-
 	const RENDERER_FRAME_PROFILER& GetFrameProfiler() const{
 		return mFrameProfiler;
+	}
+
+	void DisplayFrameProfiler(){
+		wchar_t msg[255];
+		int x = 1000;
+		int y = 110;
+		int yStep = 20;
+
+		const RENDERER_FRAME_PROFILER& profiler = mFrameProfiler;
+
+		swprintf_s(msg, 255, L"Rendering Takes = %f", profiler.mLastDrawTakes);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
+		swprintf_s(msg, 255, L"FrameRate = %.0f", profiler.FrameRateDisplay);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
+		swprintf_s(msg, 255, L"Num draw calls = %d", profiler.NumDrawCall);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
+		swprintf_s(msg, 255, L"Num vertices = %d", profiler.NumVertexCount);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
+		swprintf_s(msg, 255, L"Num UpdateObjectConstantsBuffer = %u", profiler.NumUpdateObjectConst);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep * 2;
+
+		swprintf_s(msg, 255, L"Num PointLights = %d", mPointLightMan->GetNumPointLights());
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+		
 	}
 
 	inline FontPtr GetFont(Real fontHeight) const{
@@ -2537,11 +2571,13 @@ public:
 };
 
 static RendererWeakPtr sRenderer;
+static Renderer* sRendererRaw = 0;
 RendererPtr Renderer::Create(){
 	if (sRenderer.expired()){
 		auto renderer = RendererPtr(FB_NEW(Renderer), [](Renderer* obj){ FB_DELETE(obj); });
-		renderer->mImpl->mSelf = renderer;
+		renderer->mImpl->mSelfPtr = renderer;
 		sRenderer = renderer;
+		sRendererRaw = renderer.get();
 		return renderer;
 	}
 	return sRenderer.lock();
@@ -2560,7 +2596,7 @@ RendererPtr Renderer::Create(const char* renderEngineName){
 }
 
 Renderer& Renderer::GetInstance(){
-	return *sRenderer.lock();
+	return *sRendererRaw;
 }
 
 bool Renderer::HasInstance(){
@@ -2978,12 +3014,12 @@ void Renderer::SetDirectionalLightInfo(int idx, const DirectionalLightInfo& info
 	mImpl->SetDirectionalLightInfo(idx, info);
 }
 
-void Renderer::InitFrameProfiler(Real dt) {
-	mImpl->InitFrameProfiler(dt);
-}
-
 const RENDERER_FRAME_PROFILER& Renderer::GetFrameProfiler() const {
 	return mImpl->GetFrameProfiler();
+}
+
+void Renderer::DisplayFrameProfiler(){
+	return mImpl->DisplayFrameProfiler();
 }
 
 inline FontPtr Renderer::GetFont(Real fontHeight) const {

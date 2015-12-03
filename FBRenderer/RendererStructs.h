@@ -222,6 +222,7 @@ namespace fb
 			FrameRate = 30.0f;
 			FrameRateDisplay = 30.0f;
 			FrameRateDisplayUpdateTime = 0.0f;
+			mLastDrawTakes = 0.f;
 		}
 		void Clear()
 		{
@@ -235,6 +236,7 @@ namespace fb
 
 		void UpdateFrameRate(TIME_PRECISION dt)
 		{
+			mLastDrawTakes = dt;
 			FrameRateDisplayUpdateTime += dt;
 			dt = std::max((TIME_PRECISION)0.0000001f, dt);
 			FrameRate = (FrameRate + 1.0f / (Real)dt) / 2.0f;
@@ -255,6 +257,7 @@ namespace fb
 		Real FrameRate;
 		Real FrameRateDisplay;
 		TIME_PRECISION FrameRateDisplayUpdateTime;
+		Real mLastDrawTakes;
 
 		unsigned int NumUpdateObjectConst;
 	};
