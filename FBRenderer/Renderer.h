@@ -153,7 +153,7 @@ namespace fb{
 		SamplerStatePtr CreateSamplerState(const SAMPLER_DESC& desc);		
 		TextureAtlasPtr GetTextureAtlas(const char* path);		
 		TextureAtlasRegionPtr GetTextureAtlasRegion(const char* path, const char* region);
-		TexturePtr GetTemporalDepthBuffer(const Vec2I& size);
+		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);
 		PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
 			bool manualDeletion);
 

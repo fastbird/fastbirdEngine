@@ -144,7 +144,32 @@ public:
 	};
 	InputInfo mInputInfo;
 	
-	VectorMap<Vec2I, TexturePtr> mTempDepthBuffers;
+	struct TemporalDepthKey{
+		Vec2I mSize;
+		std::string mKey;
+
+		TemporalDepthKey(const Vec2I& size, const char* key)
+			: mSize(size)
+		{
+			if (key)
+				mKey = key;
+		}
+
+		bool operator ==(const TemporalDepthKey& other) const{
+			return mSize == other.mSize && mKey == other.mKey;
+		}
+
+		bool operator < (const TemporalDepthKey& other) const{
+			if (mSize < other.mSize)
+				return true;
+			else if (mSize == other.mSize){
+				if (mKey < other.mKey)
+					return true;
+			}
+			return false;
+		}
+	};
+	VectorMap<TemporalDepthKey, TexturePtr> mTempDepthBuffers;
 	TexturePtr mEnvironmentTexture;
 	TexturePtr mEnvironmentTextureOverride;
 	VectorMap<SystemTextures::Enum, std::vector< TextureBinding > > mSystemTextureBindings;
@@ -1166,13 +1191,14 @@ public:
 		return 0;
 	}
 
-	TexturePtr GetTemporalDepthBuffer(const Vec2I& size){
-		auto it = mTempDepthBuffers.Find(size);
+	TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key){
+		TemporalDepthKey depthkey(size, key);
+		auto it = mTempDepthBuffers.Find(depthkey);
 		if (it == mTempDepthBuffers.end())
 		{
 			auto depthBuffer = CreateTexture(0, size.x, size.y, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
-			mTempDepthBuffers.Insert(std::make_pair(size, depthBuffer));
+			mTempDepthBuffers.Insert(std::make_pair(depthkey, depthBuffer));
 			return depthBuffer;
 		}
 		return it->second;
@@ -2506,11 +2532,7 @@ public:
 		mInputInfo.mLButtonDown = injector->IsLButtonDown();
 		for (auto rt : mWindowRenderTargets){
 			rt.second->ConsumeInput(injector);
-		}
-		for (auto it = mRenderTargets.begin(); it != mRenderTargets.end(); /**/){
-			IteratingWeakContainer(mRenderTargets, it, rt);
-			rt->ConsumeInput(injector);
-		}
+		}		
 	}
 };
 
@@ -2659,8 +2681,8 @@ TextureAtlasRegionPtr Renderer::GetTextureAtlasRegion(const char* path, const ch
 	return mImpl->GetTextureAtlasRegion(path, region);
 }
 
-TexturePtr Renderer::GetTemporalDepthBuffer(const Vec2I& size) {
-	return mImpl->GetTemporalDepthBuffer(size);
+TexturePtr Renderer::GetTemporalDepthBuffer(const Vec2I& size, const char* key) {
+	return mImpl->GetTemporalDepthBuffer(size, key);
 }
 
 PointLightPtr Renderer::CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion) {

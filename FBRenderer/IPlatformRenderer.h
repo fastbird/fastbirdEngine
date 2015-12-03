@@ -66,6 +66,9 @@ namespace fb{
 		virtual bool InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) = 0;		
 		virtual void DeinitCanvas(HWindowId id, HWindow window) = 0;
+		/** Changes the resolution.
+		if the new outColorTexture and outDepthTexture is prepared, return true.
+		*/
 		virtual bool ChangeResolution(HWindowId id, HWindow window, const Vec2ITuple& resol,
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) = 0;
 		virtual bool ChangeFullscreenMode(HWindowId id, HWindow window, int mode) = 0;

@@ -258,7 +258,7 @@ namespace fb
 		// sometimes OnMouseHover function is called manually even the mouse
 		// is in out. - DropDown
 
-		mMouseIn = false;
+		mMouseIn = false;		
 		TriggerRedraw();
 	}
 

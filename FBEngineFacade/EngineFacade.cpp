@@ -155,7 +155,7 @@ public:
 		int eHeight = rect.bottom - rect.top;
 		WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
 			0, 0, GetModuleHandle(0), LoadIcon(0, IDI_APPLICATION),
-			LoadCursor(0, IDC_ARROW), HBRUSH(COLOR_WINDOW + 1),
+			NULL, HBRUSH(COLOR_WINDOW + 1),
 			0, wndClass, LoadIcon(0, IDI_APPLICATION) };
 
 		WNDCLASSEX classInfo;
@@ -671,6 +671,7 @@ void EngineFacade::SetFontTextureAtlas(const char* path){
 
 intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp){
 #if defined(_PLATFORM_WINDOWS_)
+	static HCURSOR sArrowCursor = LoadCursor(0, IDC_ARROW);
 	switch (msg)
 	{
 	case WM_PAINT:
@@ -699,7 +700,8 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 			{
 			case RIM_TYPEMOUSE:
 			{
-				InputManager::GetInstance().PushMouseEvent(window, *((MouseEvent*)&raw->data.mouse), gpTimer->GetTime());
+				MouseEvent* evt = (MouseEvent*)&raw->data.mouse;	
+				InputManager::GetInstance().PushMouseEvent(window, *(evt), gpTimer->GetTime());
 			}
 			return 0;
 			case RIM_TYPEKEYBOARD:
@@ -723,6 +725,7 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 
 	case WM_SETFOCUS:
 	{
+		SetCursor(sArrowCursor);
 		if (InputManager::HasInstance())
 		{
 			InputManager::GetInstance().OnSetFocus(window);

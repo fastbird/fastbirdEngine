@@ -208,7 +208,7 @@ public:
 			TexturePtr rts[] = { mDepthTarget };
 			size_t rtViewIndex[] = { 0 };
 
-			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height));
+			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height), "DepthTarget");
 			renderer.SetRenderTarget(rts, rtViewIndex, 1, depthBuffer, 0);
 			Viewport vp = { 0, 0, (float)width, (float)height, 0, 1 };
 			renderer.SetViewports(&vp, 1);

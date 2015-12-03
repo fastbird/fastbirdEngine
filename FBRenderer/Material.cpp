@@ -405,7 +405,8 @@ public:
 			tinyxml2::XMLElement* pTexElem = pTexturesElem->FirstChildElement("Texture");
 			while (pTexElem)
 			{
-				std::string filepath = pTexElem->GetText();
+				auto sz = pTexElem->GetText();
+				std::string filepath = sz ? sz : "";
 				int slot = 0;
 				BINDING_SHADER shader = BINDING_SHADER_PS;
 				SAMPLER_DESC samplerDesc;
