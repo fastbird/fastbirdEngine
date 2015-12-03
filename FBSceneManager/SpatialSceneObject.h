@@ -35,5 +35,9 @@ namespace fb{
 	protected:
 		SpatialSceneObject();		
 		~SpatialSceneObject();
+
+	public:
+		using SceneObject::DetachFromScene;
+		virtual bool DetachFromScene(bool includingRtt);
 	};
 }

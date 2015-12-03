@@ -33,6 +33,7 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(DustRenderer);
 	FB_DECLARE_SMART_PTR(BillboardQuad);
 	FB_DECLARE_SMART_PTR(SkySphere);
+	FB_DECLARE_SMART_PTR(SkyBox);
 	FB_DECLARE_SMART_PTR(MeshGroup);
 	FB_DECLARE_SMART_PTR(MeshObject);
 	FB_DECLARE_SMART_PTR(SceneObjectFactory);
@@ -65,6 +66,7 @@ namespace fb{
 		MeshGroupPtr CreateMeshGroup(const char* file, const MeshImportDesc& desc);
 
 		SkySpherePtr CreateSkySphere();
+		SkyBoxPtr CreateSkyBox(const char* materialPath);
 		BillboardQuadPtr CreateBillboardQuad();
 		DustRendererPtr CreateDustRenderer();
 		TrailObjectPtr CreateTrailObject();

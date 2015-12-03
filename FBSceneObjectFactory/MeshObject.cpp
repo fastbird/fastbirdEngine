@@ -313,6 +313,7 @@ public:
 				}
 			}
 			bool mainRt = renderer.IsMainRenderTarget();
+			
 			// HIGHLIGHT
 			if (mRenderHighlight && mainRt && !mForceAlphaBlending)
 			{
@@ -345,7 +346,7 @@ public:
 				}
 				if (rt->SetBigSilouetteBuffer())
 				{
-					for(auto& it: mMaterialGroups)
+					for (auto& it : mMaterialGroups)
 					{
 						if (!it.mVBPos)
 							continue;

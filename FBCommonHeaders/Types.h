@@ -68,6 +68,7 @@ namespace fb{
 	typedef std::tuple<Real, Real> Vec2Tuple;
 	typedef std::tuple<Real, Real, Real> Vec3Tuple;
 	typedef std::tuple<Real, Real, Real, Real> Vec4Tuple;
+	typedef std::vector<Vec3Tuple> Vec3Tuples;
 	typedef struct QUAT_TUPLE{
 		QUAT_TUPLE(){};
 		QUAT_TUPLE(Real w, Real x, Real y, Real z)

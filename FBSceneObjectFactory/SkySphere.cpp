@@ -266,7 +266,7 @@ public:
 			unsigned subResource = i * (maxLod + 1) + usingLod;
 			pTex->CopyToStaging(pStaging, i, 0, 0, 0, subResource, 0);
 		}
-		pStaging->SaveToFile("envSub.dds");
+		//pStaging->SaveToFile("envSub.dds");
 
 		// prefiltering
 		float lightCoef[3][9];
@@ -413,7 +413,7 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		TexturePtr pTexture = sRT->GetRenderTargetTexture();
 		SceneManager::GetInstance().CopyDirectionalLight(sRT->GetScene(), 0, renderer.GetMainRenderTarget()->GetScene(), 0);
-		sRT->GetScene()->AttachSkySphere(mSelfPtr.lock());
+		sRT->GetScene()->AttachSky(mSelfPtr.lock());
 		sRT->GetCamera()->SetPosition(origin);
 		sRT->GetCamera()->SetFOV(HALF_PI);
 		sRT->GetCamera()->SetAspectRatio(1.0f);
@@ -437,7 +437,7 @@ public:
 		GenerateRadianceCoef(pTexture);
 		renderer.SetEnvironmentTexture(pTexture);
 		renderer.UpdateRadConstantsBuffer(mIrradCoeff);
-		sRT->GetScene()->DetachSkySphere();
+		sRT->GetScene()->DetachSky();
 	}
 
 	void SetInterpolationData(unsigned index, const Vec4& data){
@@ -525,7 +525,11 @@ void SkySphere::DestroySharedEnvRT(){
 }
 
 //---------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(SkySphere);
+SkySpherePtr SkySphere::Create(){
+	SkySpherePtr p(new SkySphere, [](SkySphere* obj){ delete obj; });
+	p->mImpl->mSelfPtr = p;
+	return p;
+}
 SkySphere::SkySphere()
 	: mImpl(new Impl(this))
 {

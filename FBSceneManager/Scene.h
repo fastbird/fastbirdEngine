@@ -64,8 +64,8 @@ namespace fb{
 		void PreRenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut);
 		void RenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut);
 		const Color& GetFogColor() const;	
-		void AttachSkySphere(SkySpherePtr p);
-		void DetachSkySphere();
+		void AttachSky(SceneObjectPtr p);
+		void DetachSky();
 		bool AttachObjectFB(SceneObjectPtr object, SceneObject* rawPointer);
 		bool DetachObject(SceneObject* object);
 		bool AttachObjectFB(SpatialSceneObjectPtr object, SpatialSceneObject* rawPointer);
@@ -85,7 +85,7 @@ namespace fb{
 		const SPATIAL_OBJECTS_RAW* GetVisibleSpatialList(ICameraPtr cam);
 		void PrintSpatialObject();
 		
-		SkySpherePtr GetSkySphere();		
+		SceneObjectPtr GetSky();		
 		void ToggleSkyRendering();
 		void SetSkyRendering(bool render);
 		bool GetSkyRendering();		

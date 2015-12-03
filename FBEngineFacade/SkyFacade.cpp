@@ -29,17 +29,101 @@
 #include "SkyFacade.h"
 #include "FBSceneObjectFactory/SceneObjectFactory.h"
 #include "FBSceneObjectFactory/SkySphere.h"
+#include "FBSceneObjectFactory/SkyBox.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBSceneManager/Scene.h"
 using namespace fb;
 class SkyFacade::Impl{
 public:
+	SkyFacadeWeakPtr mSelfPtr;
 	SkySpherePtr mSkySphere;
+	SkyBoxPtr mSkyBox;
 
 	Impl(){
-		mSkySphere = SceneObjectFactory::GetInstance().CreateSkySphere();
+		
 	}
 
+	SkyFacadePtr CreateSkySphere(){
+		mSkySphere = SceneObjectFactory::GetInstance().CreateSkySphere();
+		mSkyBox = 0;
+		return mSelfPtr.lock();
+	}
+
+	SkyFacadePtr CreateSkyBox(const char* materialPath){
+		mSkyBox = SceneObjectFactory::GetInstance().CreateSkyBox(materialPath);
+		mSkySphere = 0;
+		return mSelfPtr.lock();
+	}
+
+	void AttachToScene(){
+		auto mainScene = EngineFacade::GetInstance().GetMainScene();
+		if (mainScene){
+			if (mSkySphere)
+				mainScene->AttachSky(mSkySphere);
+			else if (mSkyBox)
+				mainScene->AttachSky(mSkyBox);
+		}
+	}
+
+	void AttachToScene(IScenePtr scene){
+		if (scene){
+			if (mSkySphere)
+				scene->AttachSky(mSkySphere);
+			else if (mSkyBox)
+				scene->AttachSky(mSkyBox);
+		}
+	}
+
+	void DetachFromScene(){
+		if (mSkySphere){
+			auto scenes = mSkySphere->GetScenes();
+			for (auto scene : scenes){
+				scene->DetachSky();
+			}
+		}
+		else if (mSkyBox) {
+			auto scenes = mSkyBox->GetScenes();
+			for (auto scene : scenes){
+				scene->DetachSky();
+			}
+		}
+	}
+
+	MaterialPtr GetMaterial() const{
+		if (mSkySphere)
+			return mSkySphere->GetMaterial(0);
+		else if (mSkyBox)
+			return mSkyBox->GetMaterial();
+
+		return 0;
+	}
+
+	void AttachToBlend(){
+		auto sky = EngineFacade::GetInstance().GetMainScene()->GetSky();
+		auto skySpherer = std::dynamic_pointer_cast<SkySphere>(sky);
+		if (skySpherer && mSkySphere)
+			skySpherer->AttachBlendingSky(mSkySphere);
+	}
+
+	void SetAlpha(float alpha){
+		if (mSkySphere)
+			mSkySphere->SetAlpha(alpha);
+	}
+
+	void PrepareInterpolation(float time, SkyFacadePtr startFrom){
+		if (mSkySphere && startFrom->mImpl->mSkySphere)
+			mSkySphere->PrepareInterpolation(time, startFrom->mImpl->mSkySphere);
+	}
+
+	void AttachBlendingSky(SkyFacadePtr blending){
+		if (mSkySphere && blending->mImpl->mSkySphere)
+			mSkySphere->AttachBlendingSky(blending->mImpl->mSkySphere);
+	}
+
+	void SetInterpolationData(unsigned index, const Vec4& data){
+		if (mSkySphere)
+			mSkySphere->SetInterpolationData(index, data);
+	}
 
 };
 
@@ -48,6 +132,7 @@ std::vector<SkyFacadeWeakPtr> sSkySpheres;
 SkyFacadePtr SkyFacade::Create(){
 	SkyFacadePtr p(new SkyFacade, [](SkyFacade* obj){ delete obj; });
 	sSkySpheres.push_back(p);
+	p->mImpl->mSelfPtr = p;
 	return p;
 }
 
@@ -55,12 +140,14 @@ SkyFacadePtr SkyFacade::GetMain(){
 	auto scene = EngineFacade::GetInstance().GetMainScene();
 	if (!scene)
 		return 0;
-	auto mainSky = scene->GetSkySphere();
+	auto mainSky = scene->GetSky();
 	if (!mainSky)
 		return 0;
 	for (auto it = sSkySpheres.begin(); it != sSkySpheres.end(); /**/){
 		IteratingWeakContainer(sSkySpheres, it, sky);
 		if (sky->mImpl->mSkySphere == mainSky)
+			return sky;
+		else if (sky->mImpl->mSkyBox == mainSky)
 			return sky;
 	}
 	return 0;
@@ -76,27 +163,32 @@ SkyFacade::~SkyFacade(){
 
 }
 
+SkyFacadePtr SkyFacade::CreateSkySphere(){
+	return mImpl->CreateSkySphere();	
+}
+
+SkyFacadePtr SkyFacade::CreateSkyBox(const char* materialPath){
+	return mImpl->CreateSkyBox(materialPath);
+}
+
 void SkyFacade::SetMaterial(const char* path, RENDER_PASS pass){
 	mImpl->mSkySphere->SetMaterial(path, pass);
 }
 
 void SkyFacade::AttachToScene(){
-	EngineFacade::GetInstance().GetMainScene()->AttachSkySphere(mImpl->mSkySphere);
+	mImpl->AttachToScene();
 }
 
 void SkyFacade::AttachToScene(IScenePtr scene){
-	if (scene)
-		scene->AttachSkySphere(mImpl->mSkySphere);
+	mImpl->AttachToScene(scene);	
 }
 
 void SkyFacade::DetachFromScene(){
-	auto scenes = mImpl->mSkySphere->GetScenes();
-	for (auto scene : scenes){
-		scene->DetachSkySphere();
-	}
+	mImpl->DetachFromScene();	
 }
 
 MaterialPtr SkyFacade::GetMaterial() const{
+	return mImpl->GetMaterial();
 	return mImpl->mSkySphere->GetMaterial(0);
 }
 
@@ -105,21 +197,21 @@ void SkyFacade::UpdateEnvironmentMap(const Vec3& pos){
 }
 
 void SkyFacade::AttachToBlend(){
-	EngineFacade::GetInstance().GetMainScene()->GetSkySphere()->AttachBlendingSky(mImpl->mSkySphere);
+	mImpl->AttachToBlend();
 }
 
 void SkyFacade::SetAlpha(float alpha){
-	mImpl->mSkySphere->SetAlpha(alpha);
+	mImpl->SetAlpha(alpha);	
 }
 
 void SkyFacade::PrepareInterpolation(float time, SkyFacadePtr startFrom){
-	mImpl->mSkySphere->PrepareInterpolation(time, startFrom->mImpl->mSkySphere);
+	mImpl->PrepareInterpolation(time, startFrom);
 }
 
 void SkyFacade::AttachBlendingSky(SkyFacadePtr blending){
-	mImpl->mSkySphere->AttachBlendingSky(blending->mImpl->mSkySphere);
+	mImpl->AttachBlendingSky(blending);
 }
 
 void SkyFacade::SetInterpolationData(unsigned index, const Vec4& data){
-	mImpl->mSkySphere->SetInterpolationData(index, data);
+	mImpl->SetInterpolationData(index, data);
 }

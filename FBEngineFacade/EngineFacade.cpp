@@ -113,9 +113,13 @@ public:
 		}		
 		mEngineOptions = EngineOptions::Create();
 		mRenderer = Renderer::Create();
+		mSceneObjectFactory = SceneObjectFactory::Create();
+
+		mInputManager->RegisterInputConsumer(mRenderer, IInputConsumer::Priority77_CAMERA);
 	}
 
 	~Impl(){
+		SkySphere::DestroySharedEnvRT();
 		LuaUtils::CloseLuaState(mL);
 		FileSystem::StopLogging();
 		Logger::Release();
@@ -151,7 +155,7 @@ public:
 		int eHeight = rect.bottom - rect.top;
 		WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
 			0, 0, GetModuleHandle(0), LoadIcon(0, IDI_APPLICATION),
-			LoadCursor(0, IDC_ARROW), HBRUSH(COLOR_WINDOW + 1),
+			NULL, HBRUSH(COLOR_WINDOW + 1),
 			0, wndClass, LoadIcon(0, IDI_APPLICATION) };
 
 		WNDCLASSEX classInfo;
@@ -204,8 +208,7 @@ public:
 		}
 		else{			
 			mInputManager->AddHwndInterested(window);
-			if (id == MainWindowId){
-				mSceneObjectFactory = SceneObjectFactory::Create();
+			if (id == MainWindowId){				
 				auto rt = mRenderer->GetRenderTarget(id);
 				if (!rt){
 					Logger::Log(FB_ERROR_LOG_ARG, "Main RenderTarget is not initialized.");
@@ -218,6 +221,8 @@ public:
 					for (auto observer : rtObservers){
 						rt->AddObserver(IRendererObserver::DefaultRenderEvent, observer);
 					}
+
+					SkySphere::CreateSharedEnvRT();
 				}
 			}
 
@@ -226,6 +231,14 @@ public:
 	}
 
 	bool InitCanvas(HWindow hwnd){
+		// Window is not created by EngineFacade.
+		// The following function calls need to be performed.
+		if (mWindowIdByHandle.empty()){
+			Renderer::GetInstance().SetMainWindowStyle(GetWindowStyle(hwnd));
+			InputManager::GetInstance().SetMainWindowHandle(hwnd);
+			mFileMonitor = FileMonitor::Create();			
+		}
+
 		auto idIt = mWindowIdByHandle.find(hwnd);
 		HWindowId id;
 		if (idIt == mWindowIdByHandle.end()){
@@ -237,7 +250,7 @@ public:
 			id = idIt->second;
 		}
 		Vec2I size = GetWindowClientSize(hwnd);
-		return mRenderer->InitCanvas(id, hwnd, size.x, size.y);
+		return InitCanvas(id, size.x, size.y);		
 	}
 	
 
@@ -283,6 +296,9 @@ public:
 
 	void Render(){
 		mRenderer->Render();
+		
+		if (mEngineOptions->e_profile)
+			mRenderer->DisplayFrameProfiler();
 	}
 
 	void AddTempMesh(MeshFacadePtr mesh){
@@ -513,31 +529,35 @@ EngineOptionsPtr EngineFacade::GetEngineOptions() const{
 }
 
 bool EngineFacade::MainCameraExists() const{
-	return Renderer::GetInstance().GetMainCamera() != 0;
+	return mImpl->mMainCamera != 0;
 }
 
 CameraPtr EngineFacade::GetMainCamera() const{
-	return Renderer::GetInstance().GetMainCamera();
+	return mImpl->mMainCamera;
 }
 
 Real EngineFacade::GetMainCameraAspectRatio() const{
-	return Renderer::GetInstance().GetMainCamera()->GetAspectRatio();
+	return mImpl->mMainCamera->GetAspectRatio();
 }
 
 Real EngineFacade::GetMainCameraFov() const{
-	return Renderer::GetInstance().GetMainCamera()->GetFOV();
+	return mImpl->mMainCamera->GetFOV();
 }
 
 const Vec3& EngineFacade::GetMainCameraPos() const{
-	return Renderer::GetInstance().GetMainCamera()->GetPosition();
+	return mImpl->mMainCamera->GetPosition();
+}
+
+void EngineFacade::SetMainCameraPos(const Vec3& pos){
+	mImpl->mMainCamera->SetPosition(pos);
 }
 
 const Vec3& EngineFacade::GetMainCameraDirection() const{
-	return Renderer::GetInstance().GetMainCamera()->GetDirection();
+	return mImpl->mMainCamera->GetDirection();
 }
 
 const Mat44& EngineFacade::GetCameraMatrix(ICamera::MatrixType type) const{
-	return Renderer::GetInstance().GetMainCamera()->GetMatrix(type);
+	return mImpl->mMainCamera->GetMatrix(type);
 }
 
 void EngineFacade::SetMainCameraTarget(ISpatialObjectPtr spatialObject){
@@ -580,8 +600,9 @@ DirectionalLightPtr EngineFacade::GetMainSceneLight(DirectionalLightIndex::Enum 
 }
 
 
-void EngineFacade::DetachBlendingSky(IScenePtr scene){
-	auto sky = std::static_pointer_cast<Scene>(scene)->GetSkySphere();
+void EngineFacade::DetachBlendingSky(IScenePtr iscene){
+	auto scene = std::static_pointer_cast<Scene>(iscene);
+	auto sky = std::dynamic_pointer_cast<SkySphere>(scene->GetSky());
 	if (sky){
 		sky->DetachBlendingSky();
 	}
@@ -654,6 +675,7 @@ void EngineFacade::SetFontTextureAtlas(const char* path){
 
 intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp){
 #if defined(_PLATFORM_WINDOWS_)
+	static HCURSOR sArrowCursor = LoadCursor(0, IDC_ARROW);
 	switch (msg)
 	{
 	case WM_PAINT:
@@ -682,7 +704,8 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 			{
 			case RIM_TYPEMOUSE:
 			{
-				InputManager::GetInstance().PushMouseEvent(window, *((MouseEvent*)&raw->data.mouse), gpTimer->GetTime());
+				MouseEvent* evt = (MouseEvent*)&raw->data.mouse;	
+				InputManager::GetInstance().PushMouseEvent(window, *(evt), gpTimer->GetTime());
 			}
 			return 0;
 			case RIM_TYPEKEYBOARD:
@@ -706,6 +729,7 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 
 	case WM_SETFOCUS:
 	{
+		SetCursor(sArrowCursor);
 		if (InputManager::HasInstance())
 		{
 			InputManager::GetInstance().OnSetFocus(window);

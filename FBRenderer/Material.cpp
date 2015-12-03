@@ -40,6 +40,8 @@
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
 #include "TinyXmlLib/tinyxml2.h"
+#include "FBFileSystem/FileSystem.h"
+
 
 using namespace fb;
 extern BinaryData tempData;
@@ -403,7 +405,8 @@ public:
 			tinyxml2::XMLElement* pTexElem = pTexturesElem->FirstChildElement("Texture");
 			while (pTexElem)
 			{
-				const char* filepath = pTexElem->GetText();
+				auto sz = pTexElem->GetText();
+				std::string filepath = sz ? sz : "";
 				int slot = 0;
 				BINDING_SHADER shader = BINDING_SHADER_PS;
 				SAMPLER_DESC samplerDesc;
@@ -435,7 +438,22 @@ public:
 				}
 				else
 				{
-					SetTexture(filepath, shader, slot, samplerDesc);
+					if (!filepath.empty() && !FileSystem::Exists(filepath.c_str())){
+						auto textureFileName = FileSystem::GetFileName(filepath.c_str());
+						std::string materialParentPath = FileSystem::GetParentPath(mUniqueData->mName.c_str());
+						bool stripped = true;
+						while (stripped && filepath != textureFileName){
+							filepath = FileSystem::StripFirstDirectoryPath(filepath.c_str(), &stripped);
+							std::string alternativePath = materialParentPath + "/" + filepath;
+							if (FileSystem::Exists(alternativePath.c_str())){
+								filepath = alternativePath;
+								break;
+							}
+							
+						}
+
+					}
+					SetTexture(filepath.c_str(), shader, slot, samplerDesc);
 				}
 				pTexElem = pTexElem->NextSiblingElement("Texture");
 			}

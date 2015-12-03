@@ -110,6 +110,7 @@ namespace fb
 		void SetTarget(ISpatialObjectPtr pObj);
 		ISpatialObjectPtr GetTarget() const;
 		void SetCurrent(bool cur);
+		bool GetCurrent() const;
 		void SetCameraIndex(size_t idx);
 		void SetEnalbeInput(bool enable);
 		void SetInitialDistToTarget(Real dist);

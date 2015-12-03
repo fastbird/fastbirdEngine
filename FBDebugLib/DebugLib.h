@@ -29,4 +29,5 @@
 #include "Logger.h"
 namespace fb{
 	void FBDebugBreak();
+	void FBOutputDebugString(const char* msg);
 }

@@ -94,4 +94,8 @@ namespace fb{
 #else
 #endif
 	}
+
+	unsigned GetWindowStyle(HWindow handle){
+		return GetWindowLongPtr((HWND)handle, GWL_STYLE);
+	}
 }

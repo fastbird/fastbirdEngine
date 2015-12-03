@@ -45,6 +45,7 @@ public:
 	void OnCreated();
 	ComponentType::Enum GetType() const { return ComponentType::CheckBox; }
 	void GatherVisit(std::vector<UIObject*>& v);
+	//void OnMouseOut(IInputInjectorPtr injector, bool propergated = false);
 	
 	// own
 	void SetCheck(bool check);

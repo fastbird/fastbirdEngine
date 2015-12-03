@@ -27,45 +27,28 @@
 
 #pragma once
 #include "FBMathLib/Transformation.h"
+#include "CollisionShapeType.h"
 namespace fb
 {
-	namespace FBColShape
-	{
-		enum Enum
-		{
-			SPHERE,
-			CUBE,
-			MESH,
-
-			Num
-		};
-
-		static const char* strings[] =
-		{ "SPHERE", "CUBE", "MESH" };
-
-		static const char* ConvertToString(Enum e);
-		static Enum ConvertToEnum(const char* str);
-	}
-
-	typedef std::pair<FBColShape::Enum, Transformation> COL_SHAPE;
+	typedef std::pair<ColisionShapeType::Enum, Transformation> COL_SHAPE;
 
 	FB_DECLARE_SMART_PTR(MeshObject);
 	FB_DECLARE_SMART_PTR(FBCollisionShape);
 	class FB_DLL_SCENEOBJECTFACTORY FBCollisionShape
 	{
 		FB_DECLARE_PIMPL(FBCollisionShape);
-		FBCollisionShape(FBColShape::Enum e, const Transformation& t, MeshObjectPtr colMesh);
+		FBCollisionShape(ColisionShapeType::Enum e, const Transformation& t, MeshObjectPtr colMesh);
 		~FBCollisionShape();
 
 	public:
-		static FBCollisionShapePtr Create(FBColShape::Enum e, const Transformation& t, MeshObjectPtr colMesh);
+		static FBCollisionShapePtr Create(ColisionShapeType::Enum e, const Transformation& t, MeshObjectPtr colMesh);
 		FBCollisionShape(const FBCollisionShape& other);
 		FBCollisionShape& operator=(const FBCollisionShape& other);
 
 		void SetCollisionMesh(MeshObjectPtr colMesh);
 		MeshObjectPtr GetCollisionMesh() const;
 		BoundingVolumePtr GetBV() const;
-		FBColShape::Enum GetColShape() const;
+		ColisionShapeType::Enum GetColShape() const;
 		Vec3 GetOffset() const;
 		Quat GetRot() const;
 		Vec3 GetScale() const;

@@ -153,7 +153,7 @@ namespace fb{
 		SamplerStatePtr CreateSamplerState(const SAMPLER_DESC& desc);		
 		TextureAtlasPtr GetTextureAtlas(const char* path);		
 		TextureAtlasRegionPtr GetTextureAtlasRegion(const char* path, const char* region);
-		TexturePtr GetTemporalDepthBuffer(const Vec2I& size);
+		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);
 		PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
 			bool manualDeletion);
 
@@ -259,8 +259,8 @@ namespace fb{
 		const Vec2I& GetRenderTargetSize(HWindowId id = INVALID_HWND_ID) const;
 		const Vec2I& GetRenderTargetSize(HWindow hwnd = 0) const;
 		void SetDirectionalLightInfo(int idx, const DirectionalLightInfo& info);		
-		void InitFrameProfiler(Real dt);
 		const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
+		void DisplayFrameProfiler();
 		inline FontPtr GetFont(Real fontHeight) const;
 		const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 			DEFAULT_INPUTS::Enum e);

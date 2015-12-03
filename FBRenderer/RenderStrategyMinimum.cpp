@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include "ResourceProvider.h"
 #include "Camera.h"
 #include "FBMathLib/BoundingVolume.h"
+#include "FBTimer/Timer.h"
 #include "FBSceneManager/IScene.h"
 #include "FBSceneManager/ISpatialObject.h"
 #include "FBSceneManager/DirectionalLight.h"
@@ -130,12 +131,18 @@ public:
 
 	void Render(size_t face){
 		auto scene = mScene.lock();
-		if (!scene)
-			return;
 		auto renderTarget = mRenderTarget.lock();
-		auto& renderer = Renderer::GetInstance();
-		if (!scene || !renderTarget)
+		if (!renderTarget)
 			return;
+		if (!scene){
+			scene = renderTarget->GetScene();
+			mScene = scene;
+			if (!scene){
+				Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "RenderStrategy cannot find a scene.");
+				return;
+			}
+		}		
+		auto& renderer = Renderer::GetInstance();
 
 		RenderEventMarker marker("Rendering with minimum strategy.");
 		RenderParam renderParam;
@@ -208,7 +215,7 @@ public:
 			TexturePtr rts[] = { mDepthTarget };
 			size_t rtViewIndex[] = { 0 };
 
-			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height));
+			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height), "DepthTarget");
 			renderer.SetRenderTarget(rts, rtViewIndex, 1, depthBuffer, 0);
 			Viewport vp = { 0, 0, (float)width, (float)height, 0, 1 };
 			renderer.SetViewports(&vp, 1);

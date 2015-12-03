@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "Mouse.h"
+#include "FBSystemLib/System.h"
 #include "FBCommonHeaders/Helpers.h"
 
 namespace fb
@@ -226,7 +227,7 @@ public:
 				// drag
 				mDragStartX = mAbsX;
 				mDragStartY = mAbsY;
-				downHwnd = FBGetForegroundWindow();
+				downHwnd = ForegroundWindow();
 			}
 			mButtonsDown |= MOUSE_BUTTON_LEFT;
 			mButtonsPressed |= MOUSE_BUTTON_LEFT;
@@ -574,7 +575,7 @@ public:
 
 		if (lock)
 		{
-			if (!mInterestedWindows.empty() && FBGetForegroundWindow() == mInterestedWindows[0])
+			if (!mInterestedWindows.empty() && ForegroundWindow() == mInterestedWindows[0])
 			{
 				if (!mLockMouse)
 				{
@@ -663,7 +664,7 @@ public:
 
 	void OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow){
 		mRenderTargetSizes[associatedWindow] = Vec2ITuple(x, y);
-		if (FBGetForegroundWindow() == associatedWindow){
+		if (ForegroundWindow() == associatedWindow){
 			mNPosX = mAbsX / (Real)x;
 			mNPosY = mAbsY / (Real)y;
 		}
@@ -673,8 +674,7 @@ public:
 	{
 #ifdef _PLATFORM_WINDOWS_
 		auto rtSize = GetForegroundRenderTargetSize();		
-		Vec2ITuple windowSize = GetForgroundWindowSize();
-
+		Vec2ITuple windowSize = GetWindowClientSize(ForegroundWindow());		
 		POINT cursor;
 		GetCursorPos(&cursor);
 		physicalX = cursor.x;
@@ -744,14 +744,6 @@ public:
 		return mRenderTargetSizes[wnd];
 	}
 
-	HWindow FBGetForegroundWindow(){
-#if defined(_PLATFORM_WINDOWS_)
-		return (HWindow)GetForegroundWindow();
-#else
-		assert(0 && "Not implemented");
-#endif
-	}
-
 	HWindow FBWindowFromPoint(int x, int y){
 #if defined(_PLATFORM_WINDOWS_)
 		return (HWindow)WindowFromPoint(POINT{ x, y });
@@ -769,7 +761,7 @@ public:
 	}
 
 	bool IsMainWindowForeground(){
-		auto foreground = FBGetForegroundWindow();
+		auto foreground = ForegroundWindow();
 		if (!mInterestedWindows.empty() && mInterestedWindows[0] == foreground){
 			return true;
 		}

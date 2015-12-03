@@ -34,4 +34,5 @@ namespace fb{
 	HWindow WindowFromMousePosition();
 	void ChangeWindowSize(HWindow handle, Vec2ITuple resol);
 	Vec2ITuple GetWindowClientSize(HWindow handle);
+	unsigned GetWindowStyle(HWindow handle);
 }

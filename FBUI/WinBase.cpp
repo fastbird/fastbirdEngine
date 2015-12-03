@@ -45,6 +45,7 @@ HCURSOR WinBase::sCursorNWSE = 0;
 HCURSOR WinBase::sCursorNESW = 0;
 HCURSOR WinBase::sCursorWE = 0;
 HCURSOR WinBase::sCursorNS = 0;
+HCURSOR WinBase::sCursorArrow = 0;
 const float WinBase::NotDefined = 12345.6f;
 const char* WinBase::sShowAnim = "_ShowAnim";
 const char* WinBase::sHideAnim = "_HideAnim";
@@ -938,6 +939,7 @@ void WinBase::OnMouseOut(IInputInjectorPtr injector, bool propergated){
 		parent->OnMouseOut(injector);
 	}
 	TriggerRedraw();
+	SetCursor(WinBase::sCursorArrow);
 }
 void WinBase::OnMouseHover(IInputInjectorPtr injector, bool propergated){
 	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
@@ -1102,6 +1104,7 @@ void WinBase::InitMouseCursor()
 	sCursorNWSE = LoadCursor(0, IDC_SIZENWSE);
 	sCursorWE = LoadCursor(0, IDC_SIZEWE);
 	sCursorNS = LoadCursor(0, IDC_SIZENS);
+	sCursorArrow = LoadCursor(0, IDC_ARROW);
 }
 // static
 void WinBase::FinalizeMouseCursor()

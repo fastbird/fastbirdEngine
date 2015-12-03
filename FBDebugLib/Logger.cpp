@@ -26,6 +26,7 @@
 */
 
 #include "Logger.h"
+#include "DebugLib.h"
 #include "FBCommonHeaders/platform.h"
 #include "FBCommonHeaders/VectorMap.h"
 #if defined(_PLATFORM_WINDOWS_)
@@ -95,16 +96,12 @@ void Logger::Log(const char* str, ...){
 	vsprintf_s(buffer, str, args);
 	va_end(args);
 
-	//if (strstr(buffer, "(error)") || strstr(buffer, "(log)") || strstr(buffer, "(info)"))
 	std::cerr << buffer;
+	FBOutputDebugString(buffer);
 
 	if (sLogFile && sLogFile->is_open()){
 		*sLogFile << buffer;
 		sLogFile->flush();
-#if defined(_PLATFORM_WINDOWS_)
-		OutputDebugStringA(buffer);
-#else
-#endif
 	}
 	else{
 		// fallback
@@ -151,7 +148,9 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 			if (elapsed < PREVENT_IN)
 				return; // block the message
 			else{
-				sPreventedMessage.insert(currentMsg); // update the time.
+				// update the time.
+				sPreventedMessage.erase(itPrevented);
+				sPreventedMessage.insert(currentMsg);
 			}
 		}
 
@@ -167,17 +166,19 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 
 		// so far so good.
 		// delete  <= curFrame-2 data if exists
-		for (auto it = sMessages.begin(); it != sMessages.end(); ){
-			auto curIt = it;
-			++it;
-			if (curIt->first <= curFrame - 2){
-				sMessages.erase(curIt);
+		for (auto it = sMessages.begin(); it != sMessages.end(); ){			
+			if (it->first <= curFrame - 2){
+				it = sMessages.erase(it);
 			}
-			else{
+			else{				
 				break;
 			}
 		}
+		sMessages[curFrame].insert(buffer);
 	}
+	
+	std::cerr << buffer;
+	FBOutputDebugString(buffer);
 
 	if (sLogFile && sLogFile->is_open()){
 		*sLogFile << buffer;
@@ -212,10 +213,5 @@ void Logger::Output(const char* str, ...){
 	va_start(args, str);
 	vsprintf_s(buffer, str, args);
 	va_end(args);
-#if defined(_PLATFORM_WINDOWS_)
-	OutputDebugStringA(buffer);
-	std::cerr << buffer;
-#else
-	std::cerr << str;
-#endif
+	FBOutputDebugString(buffer);
 }

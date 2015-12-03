@@ -129,7 +129,7 @@ public:
 
 		pCam->SetDirection(Vec3(-radius, 0, 0).NormalizeCopy());
 		pDepthRT->Render();
-		pColorTexture->SaveToFile("test_x.bmp");
+		//pColorTexture->SaveToFile("test_x.bmp");
 		pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 		MapData data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
 		x_min.assign(numVoxelsSQ, 0);

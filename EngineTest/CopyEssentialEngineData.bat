@@ -1,0 +1,1 @@
+c:\windows\system32\xcopy "%FASTBIRD_ENGINE_DIR%\EssentialEngineData\*" ".\EssentialEngineData\" /D /E /H /Y /I

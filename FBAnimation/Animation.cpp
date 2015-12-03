@@ -51,7 +51,18 @@ public:
 	// Using Default Copy Constructor!
 
 	//---------------------------------------------------------------------------
-	Impl(){
+	Impl()
+		: mCurPlayingAction(0)
+		, mNextAction(0)
+		, mPrevPlayingTime(-0.1f)
+		, mPlayingTime(0)
+		, mCycled(false)
+		, mReverse(false)
+		, mNextReverse(false)
+		, mLastUpdatedFrame(0)
+		, mChanged(false)
+		
+	{
 	}
 
 	// default copy ctor is fine.

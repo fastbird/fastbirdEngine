@@ -96,6 +96,7 @@ public:
 	bool mUseShaderCache;
 	bool mGenerateShaderCache;
 	std::string mTakeScreenshot;
+	
 
 	//-------------------------------------------------------------------
 	Impl()
@@ -502,13 +503,16 @@ public:
 		if (swIt == mSwapChains.end())
 			return false;
 		Vec2I resol = newResol;
+		if (resol.x == 0 || resol.y == 0)
+			return false;
+
 		Vec2I originalResol(0, 0);
 		{
 			auto rtIt = mRenderTargetTextures.Find(id);
 			if (rtIt != mRenderTargetTextures.end()){
 				originalResol = rtIt->second.first->GetSize();
 				if (originalResol == resol)
-					return true;
+					return false;
 			}
 
 		}
@@ -2028,10 +2032,13 @@ public:
 					Error("Failed to recover original size of render target textures.");
 					return false;
 				}
+				else{
+					Logger::Log(FB_DEFAULT_LOG_ARG, "Swapchain is recovered to the original size.");
+				}
 				mRenderTargetTextures[hwndId] = { color, depth };
 				outColor = color;
 				outDepth = depth;
-				return false;
+				return true;
 			}
 			bool successful = CreateTargetTexturesFor(itSwapChain->second.get(), resol, color, depth);
 			if (!successful){

@@ -300,6 +300,7 @@ public:
 
 	bool SetSmallSilouetteBuffer(){
 		auto& renderer = Renderer::GetInstance();
+		RenderEventMarker mark("Rendering small silouette buffer");
 		auto rt = mRenderTarget.lock();
 		const auto& size = rt->GetSize();
 		Vec2I halfSize((int)(size.x * 0.5f), (int)(size.y * 0.5f));
@@ -308,7 +309,7 @@ public:
 			mSmallSilouetteBuffer = renderer.CreateTexture(0, halfSize.x, halfSize.y, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		}
-		auto halfDepthBuffer = renderer.GetTemporalDepthBuffer(halfSize);
+		auto halfDepthBuffer = renderer.GetTemporalDepthBuffer(halfSize, "SmallSilouette");
 		TexturePtr rts[] = { mSmallSilouetteBuffer };
 		unsigned index[] = { 0 };
 		renderer.SetRenderTarget(rts, index, 1, halfDepthBuffer, 0);
@@ -319,6 +320,7 @@ public:
 
 	bool SetBigSilouetteBuffer(){
 		auto& renderer = Renderer::GetInstance();
+		RenderEventMarker mark("Rendering big silouette buffer");
 		auto rt = mRenderTarget.lock();
 		const auto& size = rt->GetSize();
 		if (!mBigSilouetteBuffer)
@@ -326,7 +328,7 @@ public:
 			mBigSilouetteBuffer = renderer.CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 		}
-		auto depthBuffer = renderer.GetTemporalDepthBuffer(size);
+		auto depthBuffer = renderer.GetTemporalDepthBuffer(size, "BigSilouette");
 		TexturePtr rts[] = { mBigSilouetteBuffer };
 		unsigned index[] = { 0 };
 		renderer.SetRenderTarget(rts, index, 1, depthBuffer, 0);
@@ -348,7 +350,8 @@ public:
 			}
 			TexturePtr rts[] = { mSmallSilouetteBuffer };
 			unsigned index[] = { 0 };
-			renderer.SetRenderTarget(rts, index, 1, 0, 0);
+			auto halfDepthBuffer = renderer.GetTemporalDepthBuffer(halfSize, "SmallSilouette");
+			renderer.SetRenderTarget(rts, index, 1, halfDepthBuffer, 0);
 			Viewport vps = { 0, 0, (float)halfSize.x, (float)halfSize.y, 0.0f, 1.0f };
 			renderer.SetViewports(&vps, 1);
 			renderer.Clear(1, 1, 1, 1, 1, 0);
@@ -361,7 +364,8 @@ public:
 			}
 			TexturePtr rts[] = { mBigSilouetteBuffer };
 			unsigned index[] = { 0 };
-			renderer.SetRenderTarget(rts, index, 1, 0, 0);
+			auto depthBuffer = renderer.GetTemporalDepthBuffer(mSize, "BigSilouette");
+			renderer.SetRenderTarget(rts, index, 1, depthBuffer, 0);
 			Viewport vps = { 0, 0, (float)mSize.x, (float)mSize.y, 0.0f, 1.0f };
 			renderer.SetViewports(&vps, 1);
 			renderer.Clear(1, 1, 1, 1, 1, 0);
@@ -383,7 +387,7 @@ public:
 			TexturePtr rts[] = { mDepthTarget };
 			size_t rtViewIndex[] = { 0 };
 
-			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height));
+			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(width, height), "DepthTarget");
 			renderer.SetRenderTarget(rts, rtViewIndex, 1, depthBuffer, 0);
 			Viewport vp = { 0, 0, (float)width, (float)height, 0, 1 };
 			renderer.SetViewports(&vp, 1);
@@ -539,7 +543,7 @@ public:
 				mCloudVolumeDepth = renderer.CreateTexture(0, size.x / 2, size.y / 2, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
 					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 			}
-			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(size.x / 2, size.y / 2));
+			auto depthBuffer = renderer.GetTemporalDepthBuffer(Vec2I(size.x / 2, size.y / 2), "any");
 			assert(depthBuffer);
 			TexturePtr rts[] = { mCloudVolumeDepth };
 			size_t index[] = { 0 };
@@ -655,6 +659,7 @@ public:
 		auto rt = mRenderTarget.lock();
 		renderer.SetRenderTarget(rts, index, 1, rt->GetDepthStencilTexture(), 0);
 		renderer.SetViewports(&rt->GetViewport(), 1);
+		mGlowSet = false;
 	}
 
 	void Silouette()

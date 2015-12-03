@@ -137,6 +137,12 @@ public:
 		}
 	}
 
+	void Update(TIME_PRECISION dt){
+		for (auto& it : mMeshObjects){
+			it.first->Update(dt);
+		}
+	}
+
 	MaterialPtr GetMaterial(){
 		if (mMeshObjects.empty())
 			return 0;
@@ -300,7 +306,7 @@ public:
 		}
 	}
 
-	void AddCollisionShape(size_t idx, std::pair<FBColShape::Enum, Transformation>& data){
+	void AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data){
 		if (idx == -1){
 			if (!mCollisions){
 				mCollisions = new COLLISION_SHAPES;
@@ -351,7 +357,6 @@ public:
 							// for parents mesh, don't need to  multiply mLocalTransforms[i];
 							transform = mSelf->GetLocation() * mMeshObjects[i].second;
 					}
-
 					mMeshObjects[i].first->SetLocation(transform);
 					mChanges[i] = false;
 				}
@@ -520,6 +525,11 @@ void MeshGroup::PostRender(const RenderParam& param, RenderParamOut* paramOut) {
 	mImpl->PostRender(param, paramOut);
 }
 
+void MeshGroup::Update(TIME_PRECISION dt){
+	__super::Update(dt);
+	mImpl->Update(dt);
+}
+
 MaterialPtr MeshGroup::GetMaterial(){
 	return mImpl->GetMaterial();
 }
@@ -588,7 +598,7 @@ void MeshGroup::SetCollisionShapes(COLLISION_INFOS& colInfos) {
 	mImpl->SetCollisionShapes(colInfos);
 }
 
-void MeshGroup::AddCollisionShape(size_t idx, std::pair<FBColShape::Enum, Transformation>& data) {
+void MeshGroup::AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data) {
 	mImpl->AddCollisionShape(idx, data);
 }
 

@@ -41,6 +41,9 @@ namespace fb{
 		static SkyFacadePtr Create();
 		static SkyFacadePtr GetMain();
 
+		SkyFacadePtr CreateSkySphere();
+		SkyFacadePtr CreateSkyBox(const char* materialPath);
+
 		void SetMaterial(const char* path, RENDER_PASS pass);
 		void AttachToScene();
 		void AttachToScene(IScenePtr scene);

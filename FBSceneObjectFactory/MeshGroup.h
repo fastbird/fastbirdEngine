@@ -54,6 +54,7 @@ namespace fb
 		void Render(const RenderParam& param, RenderParamOut* paramOut);
 		void PostRender(const RenderParam& param, RenderParamOut* paramOut);		
 		
+		void Update(TIME_PRECISION dt);
 		//---------------------------------------------------------------------------
 		// Own functions
 		//---------------------------------------------------------------------------		
@@ -79,7 +80,7 @@ namespace fb
 		void AddAuxiliary(const AUXILIARY& aux);
 		void AddAuxiliary(size_t idx, const AUXILIARY& v);
 		void SetCollisionShapes(COLLISION_INFOS& colInfos);
-		void AddCollisionShape(size_t idx, std::pair<FBColShape::Enum, Transformation>& data);						
+		void AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data);						
 		// force == false
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut);
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut, bool force);

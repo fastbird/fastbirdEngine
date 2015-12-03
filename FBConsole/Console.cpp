@@ -132,6 +132,7 @@ public:
 			file.close();
 			mHistoryIndex = mHistory.size();
 		}
+		Init();
 	}
 
 	~Impl(){
@@ -335,6 +336,9 @@ public:
 
 	void ConsumeInput(IInputInjectorPtr injector)
 	{
+		if (injector->IsKeyPressed(VK_OEM_3)){
+			ToggleOpen();
+		}
 		if (!mOpen)
 			return;	
 		

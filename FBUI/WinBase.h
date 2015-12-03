@@ -117,6 +117,7 @@ namespace fb
 		static HCURSOR sCursorNESW;
 		static HCURSOR sCursorWE;
 		static HCURSOR sCursorNS;
+		static HCURSOR sCursorArrow;
 		
 		bool mMouseDragStartInHere;
 

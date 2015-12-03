@@ -581,7 +581,7 @@ public:
 		return true;
 	}
 
-	bool Update(float elapsedTime){
+	bool UpdateEmitter(float elapsedTime){
 		mCurLifeTime += elapsedTime;
 		if ((!IsInfinite() && mCurLifeTime > mLifeTime) || mStop)
 		{
@@ -1578,8 +1578,8 @@ bool ParticleEmitter::Load(const char* filepath, bool reload) {
 	return mImpl->Load(filepath, reload);
 }
 
-bool ParticleEmitter::Update(float elapsedTime) {
-	return mImpl->Update(elapsedTime);
+bool ParticleEmitter::UpdateEmitter(float elapsedTime) {
+	return mImpl->UpdateEmitter(elapsedTime);
 }
 
 unsigned ParticleEmitter::GetEmitterID() const {
@@ -1634,9 +1634,9 @@ float ParticleEmitter::GetAlpha() const {
 	return mImpl->GetAlpha();
 }
 
-void ParticleEmitter::UpdateEmit(float dt) {
-	mImpl->UpdateEmit(dt);
-}
+//void ParticleEmitter::UpdateEmit(float dt) {
+//	mImpl->UpdateEmit(dt);
+//}
 
 void ParticleEmitter::CopyDataToRenderer(float dt) {
 	mImpl->CopyDataToRenderer(dt);

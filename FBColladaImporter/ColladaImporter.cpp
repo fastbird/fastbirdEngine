@@ -33,6 +33,7 @@
 #include "FBFileSystem/FileSystem.h"
 #include "FBAnimation/AnimationData.h"
 #include <COLLADAFWIWriter.h>
+#include <libxml/parser.h>
 
 static const float PI = 3.1415926535897932384626433832795f;
 namespace fb{
@@ -46,7 +47,7 @@ public:
 	ColladaMeshObjects mCollisionMeshes;
 	collada::MeshGroupPtr mMeshGroup;
 	std::string mFilepath;	
-
+	
 	typedef std::vector<unsigned> INDICES;
 	typedef std::vector< INDICES > INDICES_PRIMITIVES;// indices per primitives			
 	typedef std::vector< std::string > MATERIALS_PRIMITIVES; // materials per primitives
@@ -76,7 +77,6 @@ public:
 		: mSelf(self)
 		, mMeshGroup(collada::MeshGroupPtr(new collada::MeshGroup))
 	{
-
 	}
 
 	bool ImportCollada(const char* filepath){
@@ -618,7 +618,7 @@ public:
 	}
 
 	collada::Vec4 ConvertData(const COLLADABU::Math::Quaternion& src){
-		return collada::Vec4((float)src.w, (float)src.x, (float)src.y, (float)src.z);
+		return collada::Vec4((float)src.x, (float)src.y, (float)src.z, (float)src.w);
 	}
 	collada::Vec3 ConvertData(const COLLADABU::Math::Vector3& src){
 		return collada::Vec3((float)src.x, (float)src.y, (float)src.z);
@@ -1047,6 +1047,9 @@ public:
 
 //---------------------------------------------------------------------------
 FB_IMPLEMENT_STATIC_CREATE(ColladaImporter);
+void ColladaImporter::CleanUP(){
+	xmlCleanupParser();
+}
 
 ColladaImporter::ColladaImporter()
 	: mImpl(new Impl(this))

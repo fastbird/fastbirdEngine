@@ -29,6 +29,8 @@
 namespace fb{
 	class BoundingVolume;
 	class Mat44;
+	class Transformation;
+	class Vec3;
 	class ICamera{
 	public:
 		enum MatrixType {

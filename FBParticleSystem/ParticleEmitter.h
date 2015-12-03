@@ -47,7 +47,7 @@ namespace fb
 		if reload is true, Particle Template will be kept the sharing state.
 		*/
 		bool Load(const char* filepath, bool reload);
-		bool Update(float elapsedTime);
+		bool UpdateEmitter(float elapsedTime);
 		unsigned GetEmitterID() const;		
 		void Active(bool a, bool pending = false);
 		void Stop();
@@ -61,7 +61,6 @@ namespace fb
 		void SetEmitterColor(const Color& c);
 		void SetAlpha(float alpha);
 		float GetAlpha() const ;
-		void UpdateEmit(float dt);
 		void CopyDataToRenderer(float dt);		
 		bool IsInfinite() const;
 		void SetBufferSize(unsigned size);

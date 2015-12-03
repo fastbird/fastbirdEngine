@@ -36,20 +36,20 @@ using namespace fb;
 
 class FBCollisionShape::Impl{
 public:
-	FBColShape::Enum mColShape;
+	ColisionShapeType::Enum mColShape;
 	BoundingVolumePtr mBV;
 	MeshObjectPtr mColMesh;
 	Transformation mTransformation;
 
 	//---------------------------------------------------------------------------
-	Impl(FBColShape::Enum e, const Transformation& t, MeshObjectPtr colMesh)
+	Impl(ColisionShapeType::Enum e, const Transformation& t, MeshObjectPtr colMesh)
 		: mColShape(e)
 		, mColMesh(colMesh)
 		, mTransformation(t)
 	{
 		switch (e)
 		{
-		case FBColShape::SPHERE:
+		case ColisionShapeType::SPHERE:
 		{
 			mBV = BoundingVolume::Create(BoundingVolume::BV_SPHERE);
 			auto scale = t.GetScale();
@@ -63,7 +63,7 @@ public:
 		}
 		break;
 
-		case FBColShape::CUBE:
+		case ColisionShapeType::CUBE:
 		{
 			mBV = BoundingVolume::Create(BoundingVolume::BV_AABB);
 			AABB aabb;
@@ -91,7 +91,7 @@ public:
 		return mBV; 
 	}
 
-	FBColShape::Enum GetColShape() const { 
+	ColisionShapeType::Enum GetColShape() const { 
 		return mColShape; 
 	}
 
@@ -144,11 +144,11 @@ public:
 };
 
 //---------------------------------------------------------------------------
-FBCollisionShapePtr FBCollisionShape::Create(FBColShape::Enum e, const Transformation& t, MeshObjectPtr colMesh){
+FBCollisionShapePtr FBCollisionShape::Create(ColisionShapeType::Enum e, const Transformation& t, MeshObjectPtr colMesh){
 	return FBCollisionShapePtr(new FBCollisionShape(e, t, colMesh), [](FBCollisionShape* obj){ delete obj; });
 }
 
-FBCollisionShape::FBCollisionShape(FBColShape::Enum e, const Transformation& t, MeshObjectPtr colMesh)
+FBCollisionShape::FBCollisionShape(ColisionShapeType::Enum e, const Transformation& t, MeshObjectPtr colMesh)
 	: mImpl(new Impl(e, t, colMesh))
 {
 }
@@ -179,7 +179,7 @@ BoundingVolumePtr FBCollisionShape::GetBV() const{
 	return mImpl->GetBV();
 }
 
-FBColShape::Enum FBCollisionShape::GetColShape() const{
+ColisionShapeType::Enum FBCollisionShape::GetColShape() const{
 	return mImpl->GetColShape();
 }
 
@@ -208,12 +208,12 @@ Vec3 FBCollisionShape::GetRandomPosInVolume(const Vec3* nearWorld, const Transfo
 }
 
 //---------------------------------------------------------------------------
-const char* FBColShape::ConvertToString(FBColShape::Enum e){
+const char* ColisionShapeType::ConvertToString(ColisionShapeType::Enum e){
 		assert(e >= SPHERE && e < Num);
 		return strings[e];
 }
 
-FBColShape::Enum FBColShape::ConvertToEnum(const char* str){
+ColisionShapeType::Enum ColisionShapeType::ConvertToEnum(const char* str){
 	for (int i = 0; i < Num; ++i)
 	{
 		if (_stricmp(strings[i], str) == 0)

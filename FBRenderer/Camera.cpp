@@ -752,6 +752,10 @@ void Camera::SetCurrent(bool cur) {
 	mImpl->mCurrentCamera = cur; 
 }
 
+bool Camera::GetCurrent() const{
+	return mImpl->mCurrentCamera;
+}
+
 void Camera::SetCameraIndex(size_t idx) {
 	mImpl->mCamIndex = idx; 
 }
