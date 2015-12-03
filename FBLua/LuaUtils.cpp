@@ -386,7 +386,11 @@ namespace fb
 
 	bool LuaUtils::LoadConfig(const char* filename){
 		// load the chunk and then change the value of its first upvalue
-		luaL_loadfile(sLuaState, filename); // func.
+		auto err = luaL_loadfile(sLuaState, filename); // func.
+		if (err){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot load lua file(%s)", filename).c_str());
+			return false;
+		}
 		lua_createtable(sLuaState, 0, 0); // func. {}
 		const char* upvaluName = lua_setupvalue(sLuaState, -2, 1); // func.
 		lua_pushvalue(sLuaState, -1); //func. func.

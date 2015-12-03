@@ -34,14 +34,17 @@
 #include "MeshLoadOptions.h"
 namespace fb{
 	struct ModelTriangle;
+	class Vec4;
+	class Color;
+	class Transformation;
 	typedef std::vector< std::pair<std::string, Transformation> > AUXILIARIES;
 	FB_DECLARE_SMART_PTR(SpatialObject);
 	FB_DECLARE_SMART_PTR(BoundingVolume);
 	FB_DECLARE_SMART_PTR(Material);
-	FB_DECLARE_SMART_PTR(MeshObject);
-	FB_DECLARE_SMART_PTR(MeshFacade);
+	FB_DECLARE_SMART_PTR(MeshObject);	
 	FB_DECLARE_SMART_PTR(Scene);
 	FB_DECLARE_SMART_PTR(IScene);
+	FB_DECLARE_SMART_PTR(MeshFacade);
 	class FB_DLL_ENGINEFACADE MeshFacade{
 		FB_DECLARE_PIMPL_NON_COPYABLE(MeshFacade);
 		MeshFacade();
@@ -114,7 +117,7 @@ namespace fb{
 		Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray);
 		bool HasCollisionShapes() const;		
 		CollisionShapeInfos GetCollisionShapeInfos() const;
-		FBColShape::Enum GetColShapeType() const;
+		ColisionShapeType::Enum GetColShapeType() const;
 		const Vec3& GetColShapeOffset(unsigned idx) const;
 		const Quat& GetColShapeRot(unsigned idx) const;
 		const Vec3& GetColShapeScale(unsigned idx) const;

@@ -38,6 +38,7 @@
 #include "FBAnimation/Animation.h"
 #include "FBTimer/Timer.h"
 #include "FBMathLib/GeomUtils.h"
+#include "FBFileSystem/FileSystem.h"
 #include "MeshObject.h"
 #include "MeshGroup.h"
 #include "SkySphere.h"
@@ -68,11 +69,9 @@ public:
 	Impl()
 		: mNoMesh(false)
 	{
-		gpTimer = Timer::GetMainTimer().get();
-		SkySphere::CreateSharedEnvRT();
+		gpTimer = Timer::GetMainTimer().get();		
 	}
 	~Impl(){
-		SkySphere::DestroySharedEnvRT();
 	}
 
 	void SetEnableMeshLoad(bool enable){
@@ -151,14 +150,22 @@ public:
 		for (auto& it : colInfos){
 			ret.push_back(CollisionInfo());
 			auto& d = ret.back();
-			d.mColShapeType = (FBColShape::Enum)it.mColShapeType;
+			d.mColShapeType = (ColisionShapeType::Enum)it.mColShapeType;
 			d.mTransform = ConvertCollada(it.mTransform);
-			d.mCollisionMesh = ConvertMeshData(it.mCollisionMesh, false, true);			
+			d.mCollisionMesh = ConvertMeshData(it.mCollisionMesh, "", false, true);			
 		}
 		return ret;
 	}
 
-	MeshObjectPtr ConvertMeshData(collada::MeshPtr meshData, bool buildTangent, bool keepDataInMesh){
+	MaterialPtr GetFallbackMaterial(const char* originalPath, const char* daePath){
+		auto materialFileName = FileSystem::GetFileName(originalPath);
+		auto path = FileSystem::GetParentPath(daePath);
+		path += "/";
+		auto ret = FileSystem::ConcatPath(path.c_str(), materialFileName.c_str());
+		return Renderer::GetInstance().CreateMaterial(ret.c_str());
+	}
+
+	MeshObjectPtr ConvertMeshData(collada::MeshPtr meshData, const char* daeFilepath, bool buildTangent, bool keepDataInMesh){
 		if (!meshData)
 			return 0;
 
@@ -182,7 +189,12 @@ public:
 			}
 			MaterialPtr material;
 			if (!group.second.mMaterialPath.empty()){
-				material = Renderer::GetInstance().CreateMaterial(group.second.mMaterialPath.c_str());
+				if (FileSystem::Exists(group.second.mMaterialPath.c_str())){
+					material = Renderer::GetInstance().CreateMaterial(group.second.mMaterialPath.c_str());
+				}
+				else{
+					material = GetFallbackMaterial(group.second.mMaterialPath.c_str(), daeFilepath);
+				}
 			}
 			else{
 				material = Renderer::GetInstance().GetResourceProvider()->GetMaterial(
@@ -251,7 +263,7 @@ public:
 		option.mUseMeshGroup = false;
 		pColladaImporter->ImportCollada(filepath.c_str(), option);
 		auto meshData = pColladaImporter->GetMeshObject();
-		auto meshObject = ConvertMeshData(meshData, desc.generateTangent, desc.keepMeshData);
+		auto meshObject = ConvertMeshData(meshData, daeFilePath, desc.generateTangent, desc.keepMeshData);
 		if (meshObject)
 		{
 			meshObject->SetName(filepath.c_str());
@@ -306,7 +318,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load fracture mehses(%s)", daeFilePath).c_str());
 		}
 		while (meshIt.HasMoreElement()){
-			auto meshObject = ConvertMeshData(meshIt.GetNext().second, desc.generateTangent, desc.keepMeshData);
+			auto meshObject = ConvertMeshData(meshIt.GetNext().second, daeFilePath, desc.generateTangent, desc.keepMeshData);
 			if (meshObject){
 				fractureObjects.push_back(meshObject);
 			}
@@ -331,10 +343,10 @@ public:
 		return 0;
 	}
 
-	MeshGroupPtr ConvertMeshGroupData(collada::MeshGroupPtr groupData, bool buildTangent, bool keepDataInMesh){
+	MeshGroupPtr ConvertMeshGroupData(collada::MeshGroupPtr groupData, const char* daeFilepath, bool buildTangent, bool keepDataInMesh){
 		MeshGroupPtr meshGroup = MeshGroup::Create();
 		for (auto& it : groupData->mMeshes){
-			auto mesh = ConvertMeshData(it.second.mMesh, buildTangent, keepDataInMesh);
+			auto mesh = ConvertMeshData(it.second.mMesh, daeFilepath, buildTangent, keepDataInMesh);
 			meshGroup->AddMesh(mesh, ConvertCollada(it.second.mTransformation), it.second.mParentMeshIdx);
 		}
 
@@ -380,7 +392,7 @@ public:
 		option.mUseMeshGroup = true;
 		pColladaImporter->ImportCollada(filepath.c_str(), option);
 		auto meshData = pColladaImporter->GetMeshGroup();
-		auto meshGroup = ConvertMeshGroupData(meshData, desc.generateTangent, desc.keepMeshData);
+		auto meshGroup = ConvertMeshGroupData(meshData, daeFilePath, desc.generateTangent, desc.keepMeshData);
 		if (meshGroup)
 		{
 			meshGroup->SetName(filepath.c_str());

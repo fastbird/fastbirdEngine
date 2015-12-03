@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "SpatialSceneObject.h"
+#include "Scene.h"
 using namespace fb;
 SpatialSceneObject::SpatialSceneObject(){
 
@@ -34,4 +35,22 @@ SpatialSceneObject::SpatialSceneObject(){
 
 SpatialSceneObject::~SpatialSceneObject(){
 
+}
+
+bool SpatialSceneObject::DetachFromScene(bool includingRtt){
+	auto allScenes = GetScenes();
+	std::vector<Scene*> scenes;
+	for (auto scene : allScenes){
+		if (!scene->IsRttScene() || includingRtt)
+		{
+			scenes.push_back(scene.get());
+		}
+	}
+
+	bool detached = false;
+	for (auto scene : scenes){
+		detached = scene->DetachObject(this) || detached;
+	}
+
+	return detached;
 }

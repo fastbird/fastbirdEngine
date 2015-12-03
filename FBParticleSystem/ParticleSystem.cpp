@@ -125,7 +125,7 @@ public:
 		Emitters::iterator it = mActiveParticles.begin();
 		for (; it != mActiveParticles.end();)
 		{
-			bool updated = (*it)->Update(elapsedTime);
+			bool updated = (*it)->UpdateEmitter(elapsedTime);
 			if (!updated)
 				it = mActiveParticles.erase(it);
 			else

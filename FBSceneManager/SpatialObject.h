@@ -72,8 +72,8 @@ namespace fb{
 		void SetLocation(const Transformation& t);
 		bool GetTransformChanged() const;
 		void ClearTransformChanged();
-		void SetAnimation(AnimationPtr anim);
-		void UpdateAnimation(TIME_PRECISION dt);
+		virtual void Update(TIME_PRECISION dt);
+		void SetAnimation(AnimationPtr anim);		
 		void PlayAction(const char* name, bool immediate, bool reverse);			
 		bool IsPlayingAction() const;
 		bool IsActionDone(const char* action) const;
@@ -82,5 +82,6 @@ namespace fb{
 	protected:
 		void SetBoundingVolume(const BoundingVolume& src);
 		void MergeBoundingVolume(const BoundingVolumePtr src);
+		void UpdateAnimation(TIME_PRECISION dt);
 	};
 }

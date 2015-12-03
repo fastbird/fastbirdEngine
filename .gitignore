@@ -5,7 +5,17 @@
 # Doxygen
 doc/
 
-EngineEssentialData/
+EngineTest/EssentialEngineData/
+EngineTest/Backup_Log/
+EngineTest/*.log
+
+EngineTest/data/*/textureSets/
+EngineTest/data/*/editor/
+EngineTest/data/*/paint/
+EngineTest/data/*/resources/
+EngineTest/data/*/*.toc
+
+# Shader caches
 *.gscache
 *.vscache
 *.pscache

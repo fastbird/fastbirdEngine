@@ -113,6 +113,12 @@ public:
 	void Update(TIME_PRECISION dt){
 		for (int i = 0; i < 2; i++)
 			mDirectionalLight[i]->Update(dt);
+
+		// tick to spatial objects
+		for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
+			IteratingWeakContainer(mSpatialObjects, it, spatialObj);
+			spatialObj->Update(dt);
+		}
 	}
 
 	void AddSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer){
@@ -370,21 +376,27 @@ public:
 	}
 
 	bool DetachObject(SceneObject* pObject){
-		bool deletedAny = false;
+		bool deleted = false;
 		for (auto it = mObjects.begin(); it != mObjects.end(); /**/){
-			if (it->lock().get() == pObject){
+			auto obj = it->lock();
+			if (!obj){
 				it = mObjects.erase(it);
-				deletedAny = true;
+				continue;
+			}
+			if (obj.get() == pObject){
+				it = mObjects.erase(it);
+				deleted = true;
+				break;
 			}
 			else{
 				++it;
 			}
 		}
-		
-		if (deletedAny) {
+
+		if (deleted) {
 			pObject->OnDetachedFromScene(mSelfPtr.lock());
 		}
-		return deletedAny;
+		return deleted;
 	}
 
 
@@ -398,21 +410,27 @@ public:
 	}
 
 	bool DetachSpatialObject(SpatialSceneObject* pSpatialObject){
-		bool deletedAny = false;
+		bool deleted = false;
 		for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
-			if (it->lock().get() == pSpatialObject){
+			auto obj = it->lock();
+			if (!obj){
 				it = mSpatialObjects.erase(it);
-				deletedAny = true;
+				continue;
+			}
+			if (obj.get() == pSpatialObject){
+				it = mSpatialObjects.erase(it);
+				deleted = true;
+				break;
 			}
 			else{
 				++it;
-			}
+			}			
 		}
 		
-		if (deletedAny) {
+		if (deleted) {
 			pSpatialObject->OnDetachedFromScene(mSelfPtr.lock());
 		}
-		return deletedAny;
+		return deleted;
 	}
 
 	void SetSkipSpatialObjects(bool skip){

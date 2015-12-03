@@ -163,6 +163,22 @@ std::string FileSystem::MakrEndingSlashIfNot(const char* directory){
 	return ret;
 }
 
+std::string FileSystem::StripFirstDirectoryPath(const char* strFilepath, bool* outStripped){
+	using namespace boost::filesystem;
+	if(outStripped){
+		*outStripped = false;
+	}
+	std::string ret = path(strFilepath).generic_string();
+	auto pos = ret.find_first_of('/');
+	if (pos != std::string::npos){
+		if (outStripped){
+			*outStripped = true;
+		}
+		ret.erase(ret.begin(), ret.begin() + pos + 1);
+	}
+	return ret;
+}
+
 void FileSystem::BackupFile(const char* filepath, unsigned numKeeping) {
 	BackupFile(filepath, numKeeping, "./");
 }

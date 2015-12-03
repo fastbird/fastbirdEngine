@@ -359,11 +359,11 @@ public:
 	void ConsumeInput(IInputInjectorPtr injector)
 	{
 		if (!injector->IsValid(InputDevice::Mouse))
-			return;			
-		return;
+			return;
+		auto current = mCamera->GetCurrent();
 		mCamera->SetCurrent(true);
 		mCamera->ConsumeInput(injector);
-		mCamera->SetCurrent(false);
+		mCamera->SetCurrent(current);
 	}
 
 	void SetColorTexture(TexturePtr pTexture)

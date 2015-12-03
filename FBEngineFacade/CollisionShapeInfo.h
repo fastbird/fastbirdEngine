@@ -26,10 +26,10 @@
 */
 
 #pragma once
-#include "FBSceneObjectFactory/FBCollisionShape.h"
+#include "FBSceneObjectFactory/CollisionShapeType.h"
 namespace fb{
 	struct CollisionShapeInfo{
-		FBColShape::Enum mType;
+		ColisionShapeType::Enum mType;
 		Vec3 mOffset;
 		Quat mRot;
 		Vec3 mScale;

@@ -96,6 +96,7 @@ public:
 	bool mUseShaderCache;
 	bool mGenerateShaderCache;
 	std::string mTakeScreenshot;
+	
 
 	//-------------------------------------------------------------------
 	Impl()

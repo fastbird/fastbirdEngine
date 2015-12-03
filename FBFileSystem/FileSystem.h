@@ -139,5 +139,10 @@ namespace fb{
 		/** Add '/' if it doesn't exists at the end of the \a directory.
 		*/
 		static std::string MakrEndingSlashIfNot(const char* directory);
+		/** Strips the first directory.
+		if input is 'data/object/file.jpg' then it will return 'object/file.jpg'.
+		if the first directory is stripped, \a outStripped will be true otherwise false.
+		*/
+		static std::string StripFirstDirectoryPath(const char* path, bool* outStripped);
 	};
 }

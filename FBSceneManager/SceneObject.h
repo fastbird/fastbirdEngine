@@ -64,9 +64,9 @@ namespace fb{
 
 		/// not including rtt
 		bool DetachFromScene();
-		bool DetachFromScene(bool includingRtt);
+		virtual bool DetachFromScene(bool includingRtt);
 
-		std::vector<ScenePtr> GetScenes();
+		std::vector<ScenePtr> GetScenes() const;
 
 		//-------------------------------------------------------------------
 		// Object Flags

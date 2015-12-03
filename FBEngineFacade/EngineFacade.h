@@ -36,6 +36,8 @@
 namespace fb{
 	class ProfilerSimple;
 	class LuaObject;
+	class Color;
+	class Ray3;
 	FB_DECLARE_SMART_PTR(ISpatialObject);
 	FB_DECLARE_SMART_PTR(MeshFacade);
 	FB_DECLARE_SMART_PTR(DirectionalLight);
@@ -141,6 +143,7 @@ namespace fb{
 		Real GetMainCameraAspectRatio() const;
 		Real GetMainCameraFov() const;
 		const Vec3& GetMainCameraPos() const;
+		void SetMainCameraPos(const Vec3& pos);
 		const Vec3& GetMainCameraDirection() const;
 		/// Get matrices of the main camera
 		const Mat44& GetCameraMatrix(ICamera::MatrixType type) const;

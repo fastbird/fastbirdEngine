@@ -792,7 +792,7 @@ public:
 		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type){
 		auto platformTexture = GetPlatformRenderer().CreateTexture(data, width, height, format, usage, buffer_cpu_access, texture_type);
 		if (!platformTexture){
-			Logger::Log(FB_ERROR_LOG_ARG, "Failed to create texture with data.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Failed to create a platform texture with data.");
 			return 0;
 		}
 		auto texture = Texture::Create();
@@ -1993,7 +1993,7 @@ public:
 	RenderTargetPtr GetMainRenderTarget() const{
 		auto it = mWindowRenderTargets.Find(mMainWindowId);
 		if (it == mWindowRenderTargets.end()){
-			Logger::Log(FB_ERROR_LOG_ARG, "No main window render target found.");
+			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "No main window render target found.");
 			return 0;
 		}
 		return it->second;
@@ -2504,6 +2504,13 @@ public:
 	void ConsumeInput(IInputInjectorPtr injector){
 		mInputInfo.mCurrentMousePos = injector->GetMousePos();
 		mInputInfo.mLButtonDown = injector->IsLButtonDown();
+		for (auto rt : mWindowRenderTargets){
+			rt.second->ConsumeInput(injector);
+		}
+		for (auto it = mRenderTargets.begin(); it != mRenderTargets.end(); /**/){
+			IteratingWeakContainer(mRenderTargets, it, rt);
+			rt->ConsumeInput(injector);
+		}
 	}
 };
 

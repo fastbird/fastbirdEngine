@@ -32,7 +32,7 @@ namespace fb
 	class IMeshObject;
 	struct CollisionInfo
 	{
-		FBColShape::Enum mColShapeType;
+		ColisionShapeType::Enum mColShapeType;
 		Transformation mTransform;
 		MeshObjectPtr mCollisionMesh;
 	};

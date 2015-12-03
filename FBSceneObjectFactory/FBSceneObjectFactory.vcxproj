@@ -72,6 +72,7 @@
   <ItemGroup>
     <ClInclude Include="BillboardQuad.h" />
     <ClInclude Include="CollisionInfo.h" />
+    <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="DustRenderer.h" />
     <ClInclude Include="FBCollisionShape.h" />
     <ClInclude Include="MeshAuxiliary.h" />
@@ -111,6 +112,9 @@
     </ProjectReference>
     <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
       <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FBFileSystem\FBFileSystem.vcxproj">
+      <Project>{970770a8-f3c4-43ad-b4a0-c076ec6fe610}</Project>
     </ProjectReference>
     <ProjectReference Include="..\FBMathLib\FBMathLib.vcxproj">
       <Project>{2df8e079-28e5-4e7d-9c6a-ff87c1329eb5}</Project>

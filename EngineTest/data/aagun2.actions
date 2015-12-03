@@ -1,0 +1,3 @@
+<Actions>
+	<Action name="Fire" start="0" end="20" loop="false"/>
+</Actions>

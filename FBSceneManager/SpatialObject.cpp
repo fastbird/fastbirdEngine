@@ -153,6 +153,9 @@ AnimationPtr SpatialObject::GetAnimation() const{
 void SpatialObject::SetLocation(const Transformation& t){
 	mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + t.GetTranslation());
 	mLocation = t;
+	if (mAnimatedLocation){
+		*mAnimatedLocation = mLocation * mAnim->GetResult();
+	}
 }
 
 bool SpatialObject::GetTransformChanged() const{
@@ -169,6 +172,10 @@ void SpatialObject::SetAnimation(AnimationPtr anim){
 		mAnimatedLocation = Transformation::Create();
 	}
 	mAnimatedLocation->MakeIdentity();
+}
+
+void SpatialObject::Update(TIME_PRECISION dt){
+	UpdateAnimation(dt);
 }
 
 void SpatialObject::UpdateAnimation(TIME_PRECISION dt){

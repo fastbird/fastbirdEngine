@@ -618,7 +618,7 @@ public:
 	}
 
 	collada::Vec4 ConvertData(const COLLADABU::Math::Quaternion& src){
-		return collada::Vec4((float)src.w, (float)src.x, (float)src.y, (float)src.z);
+		return collada::Vec4((float)src.x, (float)src.y, (float)src.z, (float)src.w);
 	}
 	collada::Vec3 ConvertData(const COLLADABU::Math::Vector3& src){
 		return collada::Vec3((float)src.x, (float)src.y, (float)src.z);

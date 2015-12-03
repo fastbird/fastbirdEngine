@@ -162,35 +162,25 @@ bool SceneObject::DetachFromScene(){
 }
 
 bool SceneObject::DetachFromScene(bool includingRtt){
-	unsigned limit = mScenes.size();
-	unsigned count = 0;
-	bool detached = false;
-	for (unsigned i = 0; i < mScenes.size() && count < limit;)
+	std::vector<Scene*> scenes;
+	for (auto it = mScenes.begin(); it != mScenes.end(); /**/)
 	{
-		auto scene = mScenes[i].lock();
-		if (scene){
-			if (includingRtt)
-			{
-				detached = scene->DetachObject(this) || detached;
-			}
-			else
-			{
-				if (!scene->IsRttScene())
-				{
-					detached = scene->DetachObject(this) || detached;
-				}
-				else
-				{
-					++i;
-				}
-			}
+		IteratingWeakContainer(mScenes, it, scene);
+		if (!scene->IsRttScene() || includingRtt)
+		{
+			scenes.push_back(scene.get());
 		}
-		++count;
 	}
+
+	bool detached = false;
+	for (auto scene : scenes){
+		detached = scene->DetachObject(this) || detached;
+	}
+
 	return detached;
 }
 
-std::vector<ScenePtr> SceneObject::GetScenes(){
+std::vector<ScenePtr> SceneObject::GetScenes()const {
 	std::vector<ScenePtr> scenes;
 	for (auto it = mScenes.begin(); it != mScenes.end(); /**/){
 		IteratingWeakContainer(mScenes, it, scene);
