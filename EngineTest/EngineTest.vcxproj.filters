@@ -30,10 +30,10 @@
     <ClInclude Include="EngineTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MeshGroupTest.h">
+    <ClInclude Include="SkyBoxTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SkyBoxTest.h">
+    <ClInclude Include="MeshTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,10 +44,10 @@
     <ClCompile Include="EngineTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MeshGroupTest.cpp">
+    <ClCompile Include="SkyBoxTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SkyBoxTest.cpp">
+    <ClCompile Include="MeshTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

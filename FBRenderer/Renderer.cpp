@@ -53,6 +53,7 @@
 #include "FBMathLib/MurmurHash.h"
 #include "FBConsole/Console.h"
 #include "EssentialEngineData/shaders/Constants.h"
+#include "EssentialEngineData/shaders/CommonDefines.h"
 #include "FBStringLib/StringConverter.h"
 #include "FBStringLib/StringLib.h"
 #include "FBStringMathLib/StringMathConverter.h"
@@ -80,8 +81,6 @@ using namespace fb;
 static const float defaultFontSize = 20.f;
 const HWindow Renderer::INVALID_HWND = (HWindow)-1;
 Timer* fb::gpTimer = 0;
-BinaryData tempData;
-unsigned tempSize;
 class Renderer::Impl{
 public:
 	typedef fb::Factory<IPlatformRenderer>::CreateCallback CreateCallback;
@@ -171,6 +170,7 @@ public:
 	VectorMap<TemporalDepthKey, TexturePtr> mTempDepthBuffers;
 	TexturePtr mEnvironmentTexture;
 	TexturePtr mEnvironmentTextureOverride;
+	bool mGenerateRadianceCoef;
 	VectorMap<SystemTextures::Enum, std::vector< TextureBinding > > mSystemTextureBindings;
 	FRAME_CONSTANTS			mFrameConstants;
 	CAMERA_CONSTANTS		mCameraConstants;
@@ -220,8 +220,9 @@ public:
 	VectorMap<std::string, UI3DObjPtr> mUI3DRenderObjs;	
 	std::vector<IVideoPlayerPtr> mVideoPlayers;
 	unsigned mMainWindowStyle;
-	bool mWindowSizeInternallyChanging;
-	
+	bool mWindowSizeInternallyChanging;	
+	Vec4f mIrradCoeff[9];
+
 	//-----------------------------------------------------------------------
 	Impl(Renderer* renderer)
 		: mSelf(renderer)
@@ -236,6 +237,7 @@ public:
 		, mConsoleRenderer(ConsoleRenderer::Create())
 		, mRendererOptions(RendererOptions::Create())		
 		, mMainWindowStyle(0)
+		, mGenerateRadianceCoef(false)
 	{
 		auto filepath = "_FBRenderer.log";
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
@@ -659,6 +661,9 @@ public:
 	}
 
 	void Render(){
+		if (mGenerateRadianceCoef && mEnvironmentTexture && mEnvironmentTexture->IsReady()){
+			GenerateRadianceCoef(mEnvironmentTexture);
+		}
 		auto mainRT = GetMainRenderTarget();
 		if (!mainRT)
 			return;
@@ -935,14 +940,7 @@ public:
 			shader->SetShaderDefines(sortedDefines);
 			shader->SetPath(filepath);
 			shader->SetBindingShaders(shaders);
-			sPlatformShaders[key] = platformShader;
-			if (strcmp(filepath, "EssentialEngineData/shaders/UI.hlsl") == 0 && defines.size() == 1){
-				if (!tempData && defines[0].name == "DIFFUSE_TEXTURE"){
-					void* data = platformShader->GetVSByteCode(tempSize);
-					tempData = BinaryData(new char[tempSize], [](char* obj){ delete[] obj; });
-					memcpy(tempData.get(), data, tempSize);
-				}
-			}
+			sPlatformShaders[key] = platformShader;			
 			return shader;
 		}
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create a shader(%s)", filepath).c_str());
@@ -1519,7 +1517,12 @@ public:
 
 	}
 	void UpdateRadConstantsBuffer(const void* pData){
-		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Radiance, pData, sizeof(IMMUTABLE_CONSTANTS));
+		IMMUTABLE_CONSTANTS constants;
+		memcpy(constants.gIrradConstsnts, pData, sizeof(Vec4f) * 9);
+		std::vector<Vec2> hammersley;
+		GenerateHammersley(ENV_SAMPLES, hammersley);
+		memcpy(constants.gHammersley, &hammersley[0], sizeof(Vec2f)* ENV_SAMPLES);
+		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Radiance, &constants, sizeof(IMMUTABLE_CONSTANTS));
 	}
 
 	void* MapMaterialParameterBuffer(){
@@ -2138,9 +2141,177 @@ public:
 		return mInputLayoutDescs[e];
 	}
 
+	Vec3 NormalFromCubePixelCoord(int face, int w, int h, float halfWidth)
+	{
+		Vec3 n;
+		switch (face)
+		{
+		case 0:
+			n.x = halfWidth;
+			n.y = halfWidth - w;
+			n.z = halfWidth - h;
+			break;
+		case 1:
+			n.x = -halfWidth;
+			n.y = w - halfWidth;
+			n.z = halfWidth - h;
+			break;
+		case 2: // up
+			n.x = w - halfWidth;
+			n.y = h - halfWidth;
+			n.z = halfWidth;
+			break;
+		case 3: // down
+			n.x = w - halfWidth;
+			n.y = halfWidth - h;
+			n.z = -halfWidth;
+			break;
+		case 4: // front
+			n.x = w - halfWidth;
+			n.y = halfWidth;
+			n.z = halfWidth - h;
+			break;
+		case 5: // back
+			n.x = halfWidth - w;
+			n.y = -halfWidth;
+			n.z = halfWidth - h;
+			break;
+		}
+		return n.NormalizeCopy();
+	}
+
+	void GenerateRadianceCoef(TexturePtr pTex)
+	{
+		mGenerateRadianceCoef = false;
+		auto ENV_SIZE = pTex->GetSize().x;
+		int maxLod = (int)log2((float)ENV_SIZE);
+
+		const float basisCoef[5] = { 0.282095f,
+			0.488603f,
+			1.092548f,
+			0.315392f,
+			0.546274f };
+
+		const int usingLod = 2; // if ENV_SIZE == 1024, we are using 256 size.
+		const int width = (int)(ENV_SIZE / pow(2, usingLod));
+		float halfWidth = width / 2.f;
+		auto& renderer = Renderer::GetInstance();
+		TexturePtr pStaging = renderer.CreateTexture(0, width, width, PIXEL_FORMAT_R8G8B8A8_UNORM,
+			BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_CUBE_MAP);
+		for (int i = 0; i < 6; i++)
+		{
+			unsigned subResource = i * (maxLod + 1) + usingLod;
+			pTex->CopyToStaging(pStaging, i, 0, 0, 0, subResource, 0);
+		}
+		//pStaging->SaveToFile("envSub.dds");
+
+		// prefiltering
+		float lightCoef[3][9];
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 9; j++)
+			{
+				lightCoef[i][j] = 0;
+			}
+		}
+
+		for (int i = 0; i < 6; i++)
+		{
+			unsigned subResource = i;
+			MapData data = pStaging->Map(subResource, MAP_TYPE_READ, MAP_FLAG_NONE);
+			if (data.pData)
+			{
+				DWORD* colors = (DWORD*)data.pData;
+				DWORD* row, *pixel;
+				for (int h = 0; h < width; h++)
+				{
+					row = colors + width * h;
+					for (int w = 0; w < width; w++)
+					{
+
+						Vec3 n = NormalFromCubePixelCoord(i, w, h, halfWidth);
+
+						pixel = row + w;
+						Color::RGBA* rgba256 = (Color::RGBA*)pixel;
+						Vec3 rgb(rgba256->r / 255.0f, rgba256->g / 255.0f, rgba256->b / 255.0f);
+						// 00
+						lightCoef[0][0] += rgb.x * basisCoef[0];
+						lightCoef[1][0] += rgb.y * basisCoef[0];
+						lightCoef[2][0] += rgb.z * basisCoef[0];
+
+						// 1-1
+						float yC = (basisCoef[1] * n.y);
+						lightCoef[0][1] += rgb.x * yC;
+						lightCoef[1][1] += rgb.y * yC;
+						lightCoef[2][1] += rgb.z * yC;
+
+						// 10
+						yC = (basisCoef[1] * n.z);
+						lightCoef[0][2] += rgb.x * yC;
+						lightCoef[1][2] += rgb.y * yC;
+						lightCoef[2][2] += rgb.z * yC;
+
+						// 11
+						yC = (basisCoef[1] * n.x);
+						lightCoef[0][3] += rgb.x * yC;
+						lightCoef[1][3] += rgb.y * yC;
+						lightCoef[2][3] += rgb.z * yC;
+
+						// 2-2
+						yC = (basisCoef[2] * n.x*n.y);
+						lightCoef[0][4] += rgb.x * yC;
+						lightCoef[1][4] += rgb.y * yC;
+						lightCoef[2][4] += rgb.z * yC;
+
+						// 2-1
+						yC = (basisCoef[2] * n.y*n.z);
+						lightCoef[0][5] += rgb.x * yC;
+						lightCoef[1][5] += rgb.y * yC;
+						lightCoef[2][5] += rgb.z * yC;
+
+						// 20
+						yC = (basisCoef[3] * (3.0f*n.z*n.z - 1.f));
+						lightCoef[0][6] += rgb.x * yC;
+						lightCoef[1][6] += rgb.y * yC;
+						lightCoef[2][6] += rgb.z * yC;
+
+						// 21
+						yC = (basisCoef[2] * (n.x*n.z));
+						lightCoef[0][7] += rgb.x * yC;
+						lightCoef[1][7] += rgb.y * yC;
+						lightCoef[2][7] += rgb.z * yC;
+
+						// 22
+						yC = (basisCoef[4] * (n.x*n.x - n.y*n.y));
+						lightCoef[0][8] += rgb.x * yC;
+						lightCoef[1][8] += rgb.y * yC;
+						lightCoef[2][8] += rgb.z * yC;
+					}
+				}
+			}
+			pStaging->Unmap(subResource);
+		}
+
+		float avg = 1.0f / (width*width * 6);
+		for (int i = 0; i < 9; i++)
+		{
+			lightCoef[0][i] *= avg;
+			lightCoef[1][i] *= avg;
+			lightCoef[2][i] *= avg;
+			mIrradCoeff[i] = Vec4f(lightCoef[0][i], lightCoef[1][i], lightCoef[2][i], 1);
+		}
+		UpdateRadConstantsBuffer(mIrradCoeff);
+	}
+
 	void SetEnvironmentTexture(TexturePtr pTexture){
 		mEnvironmentTexture = pTexture;
 		SetSystemTexture(SystemTextures::Environment, mEnvironmentTexture);
+		if (pTexture){
+			if (pTexture->IsReady())
+				GenerateRadianceCoef(pTexture);
+			else
+				mGenerateRadianceCoef = true;
+		}		
 	}
 
 	void SetEnvironmentTextureOverride(TexturePtr texture){

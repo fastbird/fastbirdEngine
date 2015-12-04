@@ -42,8 +42,8 @@ public:
 	unsigned mId;
 	std::string mPath;
 	ID3D11Texture2DPtr mTexture;
-	ID3D11ShaderResourceViewPtr mSRView;
-	ID3D11ShaderResourceView* mSRViewSync;
+	mutable ID3D11ShaderResourceViewPtr mSRView;
+	mutable ID3D11ShaderResourceView* mSRViewSync;
 	HRESULT mHr;
 	D3DX11_IMAGE_INFO mImageInfo;
 	D3DX11_IMAGE_LOAD_INFO mLoadInfo;	
@@ -74,6 +74,10 @@ public:
 	}
 
 	bool IsReady() const {
+		if (!mSRView && mSRViewSync) {
+			mSRView = ID3D11ShaderResourceViewPtr(mSRViewSync, IUnknownDeleter());
+			mSRViewSync = 0;
+		}
 		return mSRView != 0;
 	}
 

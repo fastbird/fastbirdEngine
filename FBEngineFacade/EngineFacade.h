@@ -166,6 +166,7 @@ namespace fb{
 		bool GetResolutionList(unsigned& outNum, Vec2I* list);
 		Vec2 ToNdcPos(HWindowId id, const Vec2I& screenPos) const;
 		void SetFontTextureAtlas(const char* path);
+		void SetEnvironmentMap(const char* path);
 
 		//---------------------------------------------------------------------------
 		// Scene Manipulations

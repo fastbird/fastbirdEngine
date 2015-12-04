@@ -88,7 +88,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EngineTest.h" />
-    <ClInclude Include="MeshGroupTest.h" />
+    <ClInclude Include="MeshTest.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SkyBoxTest.h" />
     <ClInclude Include="stdafx.h" />
@@ -96,7 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EngineTest.cpp" />
-    <ClCompile Include="MeshGroupTest.cpp" />
+    <ClCompile Include="MeshTest.cpp" />
     <ClCompile Include="SkyBoxTest.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

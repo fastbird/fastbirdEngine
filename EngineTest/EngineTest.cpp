@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "EngineTest.h"
-#include "MeshGroupTest.h"
+#include "MeshTest.h"
 #include "SkyBoxTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
@@ -15,12 +15,13 @@ HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 HWND gHWnd = 0;
-MeshGroupTestPtr gMeshGroupTest;
+MeshTestPtr gMeshTest;
 SkyBoxTestPtr gSkyBoxTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
 	auto dt = gpTimer->GetDeltaTime();
+	gEngine->UpdateFileMonitor();
 	gEngine->UpdateInput();
 	gEngine->Update(dt);
 	gEngine->Render();
@@ -41,17 +42,19 @@ void DeinitEngine(){
 }
 
 void StartTest(){
-	gMeshGroupTest = MeshGroupTest::Create();
+	gEngine->SetEnvironmentMap("data/environment.dds");
+	gMeshTest = MeshTest::Create();
 	gEngine->SetMainCameraPos(Vec3(0, -50, 0));
 	gEngine->EnableCameraInput(true);
-	gMeshGroupTest->SetCameraTarget();
+	gMeshTest->SetCameraTarget();
 
-	gSkyBoxTest = SkyBoxTest::Create();
+	//gSkyBoxTest = SkyBoxTest::Create();
+	
 	
 }
 
 void EndTest(){
-	gMeshGroupTest = 0;
+	gMeshTest = 0;
 	gSkyBoxTest = 0;
 }
 

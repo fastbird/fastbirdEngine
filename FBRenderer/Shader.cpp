@@ -38,7 +38,7 @@ static std::vector<ShaderWeakPtr> sAllShaders;
 
 namespace fb{
 	ShaderPtr GetShaderFromExistings(IPlatformShaderPtr platformTexture) {
-		for (auto it = sAllShaders.begin(); it != sAllShaders.end();){
+		for (auto it = sAllShaders.begin(); it != sAllShaders.end(); /**/){
 			IteratingWeakContainer(sAllShaders, it, shader);
 			if (shader->GetPlatformShader() == platformTexture){
 				return shader;
@@ -177,7 +177,7 @@ void Shader::ReloadShader(const char* filepath)
 	std::string path = filepath;
 	ToLowerCase(path);
 	auto& renderer = Renderer::GetInstance();
-	for (auto it = sAllShaders.begin(); it != sAllShaders.end(); ++it){
+	for (auto it = sAllShaders.begin(); it != sAllShaders.end(); /**/){
 		IteratingWeakContainer(sAllShaders, it, shader);
 		if (shader->mImpl->mPlatformShader){
 			if (strcmp(filepath, shader->GetPath()) == 0 || shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))

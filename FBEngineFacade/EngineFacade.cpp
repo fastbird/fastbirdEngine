@@ -683,6 +683,12 @@ void EngineFacade::SetFontTextureAtlas(const char* path){
 	Renderer::GetInstance().SetFontTextureAtlas(path);
 }
 
+void EngineFacade::SetEnvironmentMap(const char* path){
+	auto& renderer = Renderer::GetInstance();
+	auto texture = renderer.CreateTexture(path);
+	Renderer::GetInstance().SetEnvironmentTexture(texture);
+}
+
 intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp){
 #if defined(_PLATFORM_WINDOWS_)
 	static HCURSOR sArrowCursor = LoadCursor(0, IDC_ARROW);
