@@ -35,15 +35,9 @@ namespace fb{
 static std::vector<TextureWeakPtr> sAllTextures;
 TexturePtr GetTextureFromExistings(IPlatformTexturePtr platformShader) {
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end();){
-		auto texture = it->lock();
-		if (texture){
-			++it;
-			if (texture->GetPlatformTexture() == platformShader){
-				return texture;
-			}
-		}
-		else{
-			it = sAllTextures.erase(it);
+		IteratingWeakContainer(sAllTextures, it, texture);
+		if (texture->GetPlatformTexture() == platformShader){
+			return texture;
 		}
 	}
 	return 0;
@@ -186,6 +180,16 @@ TexturePtr Texture::Create(){
 	sAllTextures.push_back(p);
 	p->mImpl->mSelf = p;
 	return p;
+}
+
+void Texture::ReloadTexture(const char* file){
+	auto& renderer = Renderer::GetInstance();
+	for (auto it = sAllTextures.begin(); it != sAllTextures.end();){
+		IteratingWeakContainer(sAllTextures, it, texture);
+		if (texture->GetFilePath() == file){
+			renderer.ReloadTexture(texture, file);
+		}
+	}
 }
 
 Texture::Texture()

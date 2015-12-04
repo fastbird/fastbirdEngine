@@ -130,6 +130,11 @@ public:
 		return mNextWindowId++;
 	}
 
+	void PrepareFileMonitor(){
+		mFileMonitor = FileMonitor::Create();
+		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mRenderer);
+		mFileMonitor->StartMonitor(".");
+	}
 	HWindowId CreateEngineWindow(int x, int y, int width, int height, const char* wndClass, 
 		const char* title, unsigned style, unsigned exStyle, WNDPROC winProc)
 	{
@@ -173,7 +178,7 @@ public:
 			if (id == MainWindowId){
 				Renderer::GetInstance().SetMainWindowStyle(style);
 				InputManager::GetInstance().SetMainWindowHandle((HWindow)hWnd);
-				mFileMonitor = FileMonitor::Create();
+				PrepareFileMonitor();				
 			}
 
 			mWindowById[id] = (HWindow)hWnd;
@@ -236,7 +241,7 @@ public:
 		if (mWindowIdByHandle.empty()){
 			Renderer::GetInstance().SetMainWindowStyle(GetWindowStyle(hwnd));
 			InputManager::GetInstance().SetMainWindowHandle(hwnd);
-			mFileMonitor = FileMonitor::Create();			
+			PrepareFileMonitor();			
 		}
 
 		auto idIt = mWindowIdByHandle.find(hwnd);
@@ -291,7 +296,7 @@ public:
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
 		mParticleSystem->Update(dt);
-		mInputManager->EndFrame(gpTimer->GetTime());
+		mInputManager->EndFrame(gpTimer->GetTime());		
 	}
 
 	void Render(){
@@ -510,6 +515,11 @@ void EngineFacade::LockSceneOverriding(bool lock){
 
 void EngineFacade::SetDrawClouds(bool draw){
 	mImpl->SetDrawClouds(draw);
+}
+
+void EngineFacade::UpdateFileMonitor(){
+	if (mImpl->mFileMonitor)
+		mImpl->mFileMonitor->Check();
 }
 
 void EngineFacade::UpdateInput(){

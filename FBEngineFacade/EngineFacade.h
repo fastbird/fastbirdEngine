@@ -77,6 +77,7 @@ namespace fb{
 		/// for windows;
 		intptr_t WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp);
 		EngineOptionsPtr GetEngineOptions() const;
+		void UpdateFileMonitor();
 		void UpdateInput();
 		void Update(TIME_PRECISION dt);
 		void Render();

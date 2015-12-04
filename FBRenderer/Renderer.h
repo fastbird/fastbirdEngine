@@ -27,6 +27,7 @@
 
 #pragma once
 #include "FBCommonHeaders/Observable.h"
+#include "FBFileMonitor/IFileChangeObserver.h"
 #include "IRendererObserver.h"
 #include "RendererEnums.h"
 #include "RendererStructs.h"
@@ -69,7 +70,9 @@ namespace fb{
 	render states, lights and render targets.
 	\ingroup FBRenderer
 	*/
-	class FB_DLL_RENDERER Renderer : public Observable<IRendererObserver>, public ISceneObserver, public IInputConsumer{
+	class FB_DLL_RENDERER Renderer : public Observable<IRendererObserver>, 
+		public ISceneObserver, public IInputConsumer, public IFileChangeObserver
+	{
 		FB_DECLARE_PIMPL_NON_COPYABLE(Renderer);
 		Renderer();		
 
@@ -135,13 +138,14 @@ namespace fb{
 		TexturePtr CreateTexture(const char* file, bool async);		
 		TexturePtr CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
 			BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type);
+		void ReloadTexture(TexturePtr texture, const char* filepath);
 		VertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
 			unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		IndexBufferPtr CreateIndexBuffer(void* data, unsigned int numIndices,
 			INDEXBUFFER_FORMAT format);
 		ShaderPtr CreateShader(const char* filepath, int shaders);
-		ShaderPtr CreateShader(const char* filepath, int shaders, const SHADER_DEFINES& defines);
-		bool ReapplyShaderDefines(Shader* shader);
+		ShaderPtr CreateShader(const char* filepath, int shaders, const SHADER_DEFINES& defines);		
+		void ReloadShader(ShaderPtr shader, const char* filepath);
 		MaterialPtr CreateMaterial(const char* file);		
 		// use this if you are sure there is instance of the descs.
 		InputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs, ShaderPtr shader);
@@ -366,6 +370,11 @@ namespace fb{
 		// IInputConsumer
 		//-------------------------------------------------------------------
 		void ConsumeInput(IInputInjectorPtr injector); /// inject to main camera
+
+		//-------------------------------------------------------------------
+		// IFileChangeObserver
+		//-------------------------------------------------------------------
+		bool OnFileChanged(const char* file);
 	};
 
 }

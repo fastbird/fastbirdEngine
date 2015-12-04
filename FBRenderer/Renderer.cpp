@@ -828,6 +828,18 @@ public:
 		return texture;
 	}
 
+	void ReloadTexture(TexturePtr texture, const char* filepath){
+		IPlatformTexturePtr platformTexture = GetPlatformRenderer().CreateTexture(filepath, true);
+		if (!platformTexture){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Platform renderer failed to load a texture(%s)", filepath).c_str());
+			return;
+		}
+		std::string loweredFilepath(filepath);
+		ToLowerCase(loweredFilepath);
+		sPlatformTextures[loweredFilepath] = platformTexture;
+		texture->SetPlatformTexture(platformTexture);
+	}
+
 	VertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
 		unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) {
 		auto platformBuffer = GetPlatformRenderer().CreateVertexBuffer(data, stride, numVertices, usage, accessFlag);
@@ -937,32 +949,16 @@ public:
 		return 0;
 	}
 
-	bool ReapplyShaderDefines(Shader* shader){
-		if (!shader)
-			return false;
-		auto filepath = shader->GetPath();
-		std::string loweredPath = filepath;
-		if (loweredPath.empty()){
-			Logger::Log(FB_ERROR_LOG_ARG, "Path is empty.");
-			return false;
-		}
-		ToLowerCase(loweredPath);
-		int bindingShaders = shader->GetBindingShaders();
+	void ReloadShader(ShaderPtr shader, const char* filepath){
 		auto sortedDefines = shader->GetShaderDefines();
 		std::sort(sortedDefines.begin(), sortedDefines.end());
-		auto key = ShaderCreationInfo(loweredPath.c_str(), bindingShaders, sortedDefines);
-		auto platformShader = FindPlatformShader(key);
-		if (platformShader){
-			shader->SetPlatformShader(platformShader);
-			return true;
-		}
-		platformShader = GetPlatformRenderer().CreateShader(filepath, bindingShaders, sortedDefines);
-		if (platformShader){
-			shader->SetPlatformShader(platformShader);
-			return true;
-		}
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to reapply shader defines(%s)", filepath).c_str());
-		return false;
+		auto shaders = shader->GetBindingShaders();
+		auto platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines);
+		auto loweredPath = std::string(filepath);
+		ToLowerCase(loweredPath);
+		auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);
+		shader->SetPlatformShader(platformShader);
+		sPlatformShaders[key] = platformShader;
 	}
 
 	VectorMap<std::string, MaterialWeakPtr> sLoadedMaterials;
@@ -2533,6 +2529,36 @@ public:
 			rt.second->ConsumeInput(injector);
 		}		
 	}
+
+	//-------------------------------------------------------------------
+	// ISceneObserver
+	//-------------------------------------------------------------------
+	bool OnFileChanged(const char* file){
+		auto extension = std::string(FileSystem::GetExtension(file));
+		ToLowerCase(extension);
+		bool shader = extension == ".hlsl" || extension ==  ".h";
+		bool material = extension == ".material";
+		bool texture = extension == ".png" || extension == ".dds";
+		bool xml = extension == ".xml";
+
+		if (shader){
+			Shader::ReloadShader(file);
+			return true;
+		}
+		else if (texture){
+			Texture::ReloadTexture(file);
+			return true;
+		}
+		else if (xml){
+			Logger::Log(FB_DEFAULT_LOG_ARG, "(info) checking texture atlas.");
+			auto atlas = GetTextureAtlas(file);
+			if (atlas){
+				atlas->ReloadTextureAtlas();
+				return true;
+			}
+		}
+		return false;
+	}
 };
 
 static RendererWeakPtr sRenderer;
@@ -2625,6 +2651,10 @@ TexturePtr Renderer::CreateTexture(void* data, int width, int height, PIXEL_FORM
 	return mImpl->CreateTexture(data, width, height, format, usage, buffer_cpu_access, texture_type);
 }
 
+void Renderer::ReloadTexture(TexturePtr texture, const char* filepath){
+	return mImpl->ReloadTexture(texture, filepath);
+}
+
 VertexBufferPtr Renderer::CreateVertexBuffer(void* data, unsigned stride, unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) {
 	return mImpl->CreateVertexBuffer(data, stride, numVertices, usage, accessFlag);
 }
@@ -2641,8 +2671,8 @@ ShaderPtr Renderer::CreateShader(const char* filepath, int shaders, const SHADER
 	return mImpl->CreateShader(filepath, shaders, defines);
 }
 
-bool Renderer::ReapplyShaderDefines(Shader* shader) {
-	return mImpl->ReapplyShaderDefines(shader);
+void Renderer::ReloadShader(ShaderPtr shader, const char* filepath){
+	return mImpl->ReloadShader(shader, filepath);
 }
 
 MaterialPtr Renderer::CreateMaterial(const char* file) {
@@ -3285,4 +3315,6 @@ void Renderer::ConsumeInput(IInputInjectorPtr injector) {
 	mImpl->ConsumeInput(injector);
 }
 
- /// inject to main camera
+bool Renderer::OnFileChanged(const char* file){
+	return mImpl->OnFileChanged(file);
+}

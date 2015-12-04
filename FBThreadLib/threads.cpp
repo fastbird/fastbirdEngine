@@ -312,7 +312,7 @@ public:
 	}
 
 	bool IsJoinable(){
-		return mThreadHandle->IsValid();
+		return mThreadHandle && mThreadHandle->IsValid();
 	}
 };
 

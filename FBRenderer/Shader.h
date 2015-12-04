@@ -41,8 +41,7 @@ namespace fb
 
 	public:
 		static ShaderPtr Create();
-		static void ReloadShader(const char* name);
-		static void ReloadShader(const char* name, const SHADER_DEFINES& shaderDefines);
+		static void ReloadShader(const char* filepath);
 
 		~Shader();
 		 

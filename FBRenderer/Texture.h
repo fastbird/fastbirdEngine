@@ -64,6 +64,8 @@ namespace fb{
 		shared textures.
 		Manually Cloned texture will not be managed by Renderer.
 		*/
+		static void ReloadTexture(const char* file);
+
 		TexturePtr Clone() const;
 		~Texture();
 

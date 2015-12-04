@@ -44,6 +44,7 @@ namespace fb {
 		FileChangeMonitorThread()
 			: mExiting(false)			
 			, mHasChangedFiles(false)
+			, mMonitoringDirectory(INVALID_HANDLE_VALUE)
 		{
 			mExitFileChangeThread = CreateEvent(0, FALSE, FALSE, "FileChangeMonitorExitEvent");
 			mFileChangeBuffer.resize(FILE_CHANGE_BUFFER_SIZE);
@@ -242,11 +243,12 @@ public:
 					filepath = strs[0];
 				}
 				const char* extension = FileSystem::GetExtension(filepath.c_str());
-				bool shader = _stricmp(extension, "hlsl") == 0 || _stricmp(extension, "h") == 0;
+				/*bool shader = _stricmp(extension, "hlsl") == 0 || _stricmp(extension, "h") == 0;
 				bool material = _stricmp(extension, "material") == 0;
 				bool texture = _stricmp(extension, "png") == 0 || _stricmp(extension, "dds") == 0;
 				bool particle = _stricmp(extension, "particle") == 0;
-				bool xml = _stricmp(extension, "xml") == 0;
+				bool xml = _stricmp(extension, "xml") == 0;*/
+
 				bool hasExtension = strlen(extension) != 0;
 				bool sdfFile = _stricmp(extension, "sdf") == 0;
 				bool canOpen = true;
@@ -278,9 +280,9 @@ public:
 
 				if (canOpen)
 				{
-					int startEnum = shader || material || texture || particle || xml ?
-						IFileChangeObserver::FileChange_Engine : IFileChangeObserver::FileChange_Game;
-					for (int i = startEnum; i < 2; ++i){
+					/*int startEnum = shader || material || texture || particle || xml ?
+						IFileChangeObserver::FileChange_Engine : IFileChangeObserver::FileChange_Game;*/
+					for (int i = 0; i < 2; ++i){
 						auto& observers = mSelf->mObservers_[i]; //FileChange_Engine and FileChange_Game
 						for (auto oit = observers.begin(); oit != observers.end(); /**/){
 							auto observer = oit->lock();

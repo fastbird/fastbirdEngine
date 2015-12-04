@@ -39,15 +39,9 @@ static std::vector<ShaderWeakPtr> sAllShaders;
 namespace fb{
 	ShaderPtr GetShaderFromExistings(IPlatformShaderPtr platformTexture) {
 		for (auto it = sAllShaders.begin(); it != sAllShaders.end();){
-			auto shader = it->lock();
-			if (shader){
-				++it;
-				if (shader->GetPlatformShader() == platformTexture){
-					return shader;
-				}
-			}
-			else{
-				it = sAllShaders.erase(it);
+			IteratingWeakContainer(sAllShaders, it, shader);
+			if (shader->GetPlatformShader() == platformTexture){
+				return shader;
 			}
 		}
 		return 0;
@@ -156,10 +150,6 @@ public:
 		return mDefines; 
 	}
 
-	/*void ApplyShaderDefines(){
-		Renderer::GetInstance().ReapplyShaderDefines(mSelf);
-	}*/
-
 	void SetDebugName(const char* debugName){
 		if (mPlatformShader)
 			mPlatformShader->SetDebugName(debugName);
@@ -181,34 +171,21 @@ public:
 Shader::Impl* Shader::Impl:: sLastBindedFullSetShader = 0;
 
 //----------------------------------------------------------------------------
-void Shader::ReloadShader(const char* name)
+void Shader::ReloadShader(const char* filepath)
 {
-	ReloadShader(name, SHADER_DEFINES());
-}
-
-//----------------------------------------------------------------------------
-void Shader::ReloadShader(const char* filepath, const SHADER_DEFINES& shaderDefines)
-{
-	/*Profiler profile("Reloading Shaders");
+	Profiler profile("Reloading Shaders");
 	std::string path = filepath;
 	ToLowerCase(path);
 	auto& renderer = Renderer::GetInstance();
-	auto it = sAllShaders.begin(), itEnd = sAllShaders.end();
-	for (; it != itEnd; it++)
-	{
-		auto shader = it->lock();
-		if (shader && shader->mImpl->mPlatformShader){
-			if (strcmp(path.c_str(), shader->GetPath()) == 0 || shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
+	for (auto it = sAllShaders.begin(); it != sAllShaders.end(); ++it){
+		IteratingWeakContainer(sAllShaders, it, shader);
+		if (shader->mImpl->mPlatformShader){
+			if (strcmp(filepath, shader->GetPath()) == 0 || shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
 			{
-				if (!shaderDefines.empty() || shader->GetShaderDefines() == shaderDefines){
-					auto failed = renderer.ReloadShader(shader);
-					if (failed){
-						Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to reload a shader(%s)", path).c_str());
-					}
-				}
+				renderer.ReloadShader(shader, filepath);
 			}
 		}
-	}*/
+	}
 }
 
 ShaderPtr Shader::Create(){
