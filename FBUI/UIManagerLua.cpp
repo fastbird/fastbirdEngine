@@ -336,7 +336,7 @@ namespace fb
 
 	int SetVisibleLuaUI(lua_State* L)
 	{
-		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* uiname = LuaUtils::checkstring(L, 1);		
 		LuaUtils::checktype(L, 2, LUA_TBOOLEAN);
 		bool visible = LuaUtils::toboolean(L, 2);
 		UIManager::GetInstance().SetVisible(uiname, visible);

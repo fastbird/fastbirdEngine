@@ -514,9 +514,7 @@ public:
 			}
 			mWorld->removeRigidBody(mSelf);
 			mAddedToWorld = false;
-		}
-		else
-			Logger::Log(FB_ERROR_LOG_ARG, "No colprovier exists!");			
+		}		
 	}
 
 

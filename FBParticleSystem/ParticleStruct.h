@@ -104,7 +104,7 @@ namespace fb{
 			, mBlendMode(), mGlow(1.f), mPreMultiAlpha(false), mUVFlow(0, 0), mPosOffset(0, 0, 0)
 			, mPosInterpolation(false), mDeleteWhenFull(false), mDeleteWhenStop(false)
 			, mStartAfter(0), mUseRelativeVelocity(false), mAnimPendulum(false), mCameraPulling(0)
-			, mVelocityToCenter(false), mParticleEmitter(-1), mParticleRenderObject(0), mDepthFade(true)
+			, mVelocityToCenter(false), mParticleEmitter(-1), mDepthFade(true)
 
 			// point light
 			, mPLRangeMinMax(0, 0)
@@ -170,7 +170,5 @@ namespace fb{
 		bool mAnimPendulum;
 		bool mVelocityToCenter;
 		bool mDepthFade;
-
-		ParticleRenderObjectPtr mParticleRenderObject;
 	};
 }

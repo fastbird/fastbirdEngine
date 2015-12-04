@@ -71,6 +71,7 @@ public:
 	{
 		mMaterial = Renderer::GetInstance().CreateMaterial("EssentialEngineData/materials/particle.material");
 		mSelf->GetBoundingVolumeWorld()->SetAlwaysPass(true);
+		mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, true);
 	}
 
 	//---------------------------------------------------------------------------
@@ -228,8 +229,12 @@ public:
 };
 
 //---------------------------------------------------------------------------
-ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(ParticleRenderKey& key, bool& created)
+ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene, ParticleRenderKey& key, bool& created)
 {
+	if (!scene){
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return 0;
+	}
 	RENDER_OBJECTS::iterator it = sRenderObjects.Find(key);
 	if (it != sRenderObjects.end())
 	{
@@ -245,7 +250,6 @@ ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(ParticleRenderKey&
 	}
 	p->SetTexture(key.mTexturePath);
 
-	auto scene = SceneManager::GetInstance().GetMainScene();
 	if (scene){
 		scene->AttachObjectFB(p);
 	}

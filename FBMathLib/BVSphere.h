@@ -40,7 +40,7 @@ namespace fb
 		//--------------------------------------------------------------------
 		// BoundingVolume Interfaces
 		//--------------------------------------------------------------------
-		virtual int GetBVType() const {return BV_SPHERE;}
+		virtual BVType GetBVType() const { return BV_SPHERE; }
 		virtual void SetCenter (const Vec3& center) { mCenter = center; }
 		virtual void SetRadius (Real fRadius) { mRadius = fRadius; }
 		virtual const Vec3& GetCenter () const { return mCenter;}

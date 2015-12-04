@@ -33,11 +33,11 @@
 #include "ParticleRenderKey.h"
 #include "ParticleSystem.h"
 #include "FBCommonHeaders/CowPtr.h"
-#include "FBRenderer/PointLight.h"
 #include "FBRenderer/Material.h"
 #include "FBRenderer/Renderer.h"
 #include "FBSceneManager/SceneManager.h"
 #include "FBSceneManager/Scene.h"
+#include "FBSceneManager/PointLight.h"
 #include "FBRenderer/Camera.h"
 #include "FBSceneObjectFactory/MeshObject.h"
 #include "FBSceneObjectFactory/SceneObjectFactory.h"
@@ -48,12 +48,15 @@ class ParticleEmitter::Impl
 public:
 	ParticleEmitter* mSelf;
 	ParticleEmitterWeakPtr mSelfPtr;
+	ISceneWeakPtr mScene;
 	typedef std::vector<ParticleTemplate> PARTICLE_TEMPLATES;
 	CowPtr<PARTICLE_TEMPLATES> mTemplates; // currently support only one template per emitter.
 
 	// internal
 	typedef VectorMap<const ParticleTemplate*, float> NEXT_EMITS;
 	NEXT_EMITS mNextEmits;
+
+	VectorMap<const ParticleTemplate*, ParticleRenderObjectPtr> mParticleRenderObjects;
 
 	// pos interpolation
 	typedef VectorMap<const ParticleTemplate*, Vec3> LAST_EMIT_POS;
@@ -92,8 +95,9 @@ public:
 	VectorMap<std::string, std::string>  mShaderDefines;
 
 	//---------------------------------------------------------------------------
-	Impl(ParticleEmitter* self)
+	Impl(ParticleEmitter* self, IScenePtr scene)
 		: mSelf(self)
+		, mScene(scene)
 		, mLifeTime(2), mCurLifeTime(0)
 		, mEmitterID(0), mInActiveList(false)		
 		, mMaxSize(0.0f)
@@ -124,6 +128,7 @@ public:
 		, mEmitterColor(other.mEmitterColor), mLength(other.mLength)
 		, mRelativeVelocity(other.mRelativeVelocity), mRelativeVelocityDir(other.mRelativeVelocityDir)
 		, mFinalAlphaMod(other.mFinalAlphaMod), mVisible(other.mVisible)
+		, mParticleRenderObjects(other.mParticleRenderObjects)
 	{
 		for (const auto& it : *(mTemplates.const_get())){
 			PARTICLES_PTR particles(new PARTICLES, [](PARTICLES* obj){delete obj; });
@@ -267,10 +272,9 @@ public:
 			if (sz)
 				pt.mBlendMode = ParticleBlendMode::ConvertToEnum(sz);
 
-			float glow = 0.f;
 			sz = pPT->Attribute("glow");
 			if (sz)
-				glow = StringConverter::ParseReal(sz);
+				pt.mGlow = StringConverter::ParseReal(sz);
 
 			sz = pPT->Attribute("posOffset");
 			if (sz)
@@ -471,112 +475,10 @@ public:
 			if (sz)
 			{
 				pt.mDepthFade = StringConverter::ParseBool(sz);
-			}
-
-			if (!pt.mTexturePath.empty())
-			{
-				BLEND_DESC desc;
-				switch (pt.mBlendMode)
-				{
-				case ParticleBlendMode::Additive:
-				{
-					desc.RenderTarget[0].BlendEnable = true;
-					desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-					desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-					desc.RenderTarget[0].DestBlend = BLEND_ONE;
-				}
-				break;
-				case ParticleBlendMode::AlphaBlend:
-				{
-					// desc.AlphaToCoverageEnable = true;
-					desc.RenderTarget[0].BlendEnable = true;
-					desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-					desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
-					desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-
-				}
-				break;
-				case ParticleBlendMode::InvColorBlend:
-				{
-					desc.RenderTarget[0].BlendEnable = true;
-					desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-					desc.RenderTarget[0].SrcBlend = BLEND_INV_DEST_COLOR;
-					desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-				}
-				break;
-				case ParticleBlendMode::Replace:
-				{
-					// desc.AlphaToCoverageEnable = true;
-					desc.RenderTarget[0].BlendEnable = true;
-					desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
-					desc.RenderTarget[0].SrcBlend = BLEND_ONE;
-					desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
-				}
-				break;
-				default:
-					assert(0);
-				}
-				bool created = false;
-				ParticleRenderKey key(pt.mTexturePath.c_str(), desc, glow>0.f, pt.mDepthFade);
-				auto pro = ParticleRenderObject::GetRenderObject(key, created);
-				pt.mParticleRenderObject = pro;
-				assert(pro);
-				auto material = pro->GetMaterial();
-				assert(material);
-				bool defineChanged = false;
-				if (created)
-				{
-					switch (pt.mBlendMode)
-					{
-					case ParticleBlendMode::InvColorBlend:
-					{
-						defineChanged = material->AddShaderDefine("_INV_COLOR_BLEND", "1") || defineChanged;
-						break;
-					}
-					case ParticleBlendMode::Replace:
-					{
-						defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
-						break;
-					}
-					}
-
-					if (pt.mPreMultiAlpha)
-					{
-						defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
-					}
-
-					if (glow == 0.f)
-					{
-						defineChanged = material->AddShaderDefine("_NO_GLOW", "1") || defineChanged;
-						material->SetGlow(false);
-					}
-					else
-					{
-						defineChanged = material->RemoveShaderDefine("_NO_GLOW") || defineChanged;
-						material->SetGlow(true);
-					}
-
-					if (!pt.mDepthFade)
-					{
-						defineChanged = material->AddShaderDefine("_NO_DEPTH_FADE", "1") || defineChanged;
-					}
-					/*if (defineChanged)
-						pro->GetMaterial()->ApplyShaderDefines();*/
-					material->SetMaterialParameter(0, Vec4(glow, 0, 0, 0));
-				}
-			}
+			}		
 
 			pPT = pPT->NextSiblingElement();
 		}
-
-		/*
-		Prototype doens't need to have this.
-		FB_FOREACH(it, mPTemplates)
-		{
-		mParticlesPerTemplate.Insert(ParticlesPerTemplate::value_type(&(*it), FB_NEW(PARTICLES)));
-		mNextEmits.Insert(NEXT_EMITS::value_type(&(*it), 0.f));
-		}
-		*/
 
 		return true;
 	}
@@ -880,9 +782,10 @@ public:
 			mStop = false;
 			mStopImmediate = false;
 			mCurLifeTime = 0.f;
-			if (mTemplates)
+			auto templates = mTemplates.const_get();
+			if (templates)
 			{
-				for (const auto& it : *(mTemplates.const_get()))
+				for (const auto& it : *templates)
 				{
 					mNextEmits.Insert(NEXT_EMITS::value_type(&it, 1.f));
 					mNextEmits[&it] = (float)it.mInitialParticles;
@@ -933,7 +836,10 @@ public:
 					for (auto& p : particles)
 					{
 						if (p.mMeshObject){
-							p.mMeshObject->DetachFromScene();
+							auto scene = mScene.lock();
+							if (scene){
+								scene->AttachObjectFB(p.mMeshObject);
+							}							
 						}
 						if (p.mPointLight)
 							p.mPointLight->SetEnabled(true);
@@ -959,7 +865,10 @@ public:
 			{
 				if (p.mMeshObject){
 					p.mMeshObject->SetVisible(visible);
-					p.mMeshObject->DetachFromScene();
+					auto scene = mScene.lock();
+					if (scene){
+						scene->AttachObjectFB(p.mMeshObject);
+					}					
 				}
 				if (p.mPointLight)
 					p.mPointLight->SetEnabled(visible);
@@ -1068,7 +977,7 @@ public:
 			auto particles = (it.second);
 			const ParticleTemplate* pt = it.first;
 
-			ParticleRenderObjectPtr pro = pt->mParticleRenderObject;
+			ParticleRenderObjectPtr pro = mParticleRenderObjects[pt];
 
 			if (pro && pt->mAlign)
 			{
@@ -1327,6 +1236,112 @@ public:
 		}
 	}*/
 
+	void SetScene(IScenePtr scene){
+		mScene = scene;
+		LinkParticleRenderObject(scene);
+	}
+
+	void LinkParticleRenderObject(IScenePtr scene){
+		for (auto pt : *mTemplates.const_get()){
+			if (pt.mTexturePath.empty())
+				continue;
+			BLEND_DESC desc;
+			switch (pt.mBlendMode)
+			{
+			case ParticleBlendMode::Additive:
+			{
+				desc.RenderTarget[0].BlendEnable = true;
+				desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+				desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+				desc.RenderTarget[0].DestBlend = BLEND_ONE;
+			}
+			break;
+			case ParticleBlendMode::AlphaBlend:
+			{
+				// desc.AlphaToCoverageEnable = true;
+				desc.RenderTarget[0].BlendEnable = true;
+				desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+				desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
+				desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+
+			}
+			break;
+			case ParticleBlendMode::InvColorBlend:
+			{
+				desc.RenderTarget[0].BlendEnable = true;
+				desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+				desc.RenderTarget[0].SrcBlend = BLEND_INV_DEST_COLOR;
+				desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+			}
+			break;
+			case ParticleBlendMode::Replace:
+			{
+				// desc.AlphaToCoverageEnable = true;
+				desc.RenderTarget[0].BlendEnable = true;
+				desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+				desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+				desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
+			}
+			break;
+			default:
+				assert(0);
+			}
+
+			bool created = false;
+			ParticleRenderKey key(scene.get(), pt.mTexturePath.c_str(), desc, pt.mGlow > 0.f, pt.mDepthFade);
+			auto pro = ParticleRenderObject::GetRenderObject(scene, key, created);
+			mParticleRenderObjects[&pt] = pro;			
+			assert(pro);
+			auto material = pro->GetMaterial();
+			assert(material);
+			bool defineChanged = false;
+			if (created)
+			{
+				switch (pt.mBlendMode)
+				{
+				case ParticleBlendMode::InvColorBlend:
+				{
+					defineChanged = material->AddShaderDefine("_INV_COLOR_BLEND", "1") || defineChanged;
+					break;
+				}
+				case ParticleBlendMode::Replace:
+				{
+					defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
+					break;
+				}
+				}
+
+				if (pt.mPreMultiAlpha)
+				{
+					defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
+				}
+
+				if (pt.mGlow == 0.f)
+				{
+					defineChanged = material->AddShaderDefine("_NO_GLOW", "1") || defineChanged;
+					material->SetGlow(false);
+				}
+				else
+				{
+					defineChanged = material->RemoveShaderDefine("_NO_GLOW") || defineChanged;
+					material->SetGlow(true);
+				}
+
+				if (!pt.mDepthFade)
+				{
+					defineChanged = material->AddShaderDefine("_NO_DEPTH_FADE", "1") || defineChanged;
+				}
+				/*if (defineChanged)
+				pro->GetMaterial()->ApplyShaderDefines();*/
+				material->SetMaterialParameter(0, Vec4(pt.mGlow, 0, 0, 0));
+			}
+		}
+	}
+
+	IScenePtr GetScene(){
+		return mScene.lock();
+	}
+
 
 	Particle* Emit(unsigned templateIdx){
 		assert(templateIdx < mTemplates.const_get()->size());
@@ -1502,7 +1517,13 @@ public:
 				}
 			}
 			if (mVisible){
-				p.mMeshObject->DetachFromScene();
+				auto scene = mScene.lock();
+				if (scene){
+					scene->AttachObjectFB(p.mMeshObject);
+				}
+				else{
+					Logger::Log(FB_ERROR_LOG_ARG, "No scene.");
+				}
 			}
 			p.mMeshObject->SetPosition(p.mPosWorld);
 			p.mMeshObject->SetScale(Vec3(scale));
@@ -1513,11 +1534,16 @@ public:
 		{
 			if (!p.mParticleEmitter)
 			{
-				p.mParticleEmitter = ParticleSystem::GetInstance().GetParticleEmitter(pt.mParticleEmitter);					
+				auto scene = mScene.lock();
+				if (scene){
+					p.mParticleEmitter = ParticleSystem::GetInstance().GetParticleEmitter(scene, pt.mParticleEmitter);
+				}
 			}
-			p.mParticleEmitter->Active(true, true);
-			p.mParticleEmitter->SetPosition(p.mPosWorld);
-			p.mParticleEmitter->SetScale(Vec3(scale));
+			if (p.mParticleEmitter){
+				p.mParticleEmitter->Active(true, true);
+				p.mParticleEmitter->SetPosition(p.mPosWorld);
+				p.mParticleEmitter->SetScale(Vec3(scale));
+			}
 		}
 
 		if (pt.mPLRangeMinMax != Vec2::ZERO)
@@ -1526,8 +1552,11 @@ public:
 			{
 				Vec4 color(pt.mColor.GetVec4());
 				Vec3 color3(color.x, color.y, color.z);
-				p.mPointLight = Renderer::GetInstance().CreatePointLight(p.mPosWorld, pt.mPLRangeMinMax.y*scale, color3, pt.mIntensityMinMax.y,
-					p.mLifeTime, true);
+				auto scene = mScene.lock();
+				if (scene){
+					p.mPointLight = scene->CreatePointLight(p.mPosWorld, pt.mPLRangeMinMax.y*scale, color3, pt.mIntensityMinMax.y,
+						p.mLifeTime, true);
+				}
 			}
 		}
 		return &p;
@@ -1545,8 +1574,8 @@ public:
 };
 
 //---------------------------------------------------------------------------
-ParticleEmitterPtr ParticleEmitter::Create(){
-	ParticleEmitterPtr p(new ParticleEmitter(), [](ParticleEmitter* obj){ delete obj; });
+ParticleEmitterPtr ParticleEmitter::Create(IScenePtr scene){
+	ParticleEmitterPtr p(new ParticleEmitter(scene), [](ParticleEmitter* obj){ delete obj; });
 	p->mImpl->mSelfPtr = p;
 	return p;
 }
@@ -1557,8 +1586,8 @@ ParticleEmitterPtr ParticleEmitter::Create(const ParticleEmitter& other){
 	return p;
 }
 
-ParticleEmitter::ParticleEmitter()
-	:mImpl(new Impl(this))
+ParticleEmitter::ParticleEmitter(IScenePtr scene)
+	:mImpl(new Impl(this, scene))
 {
 }
 
@@ -1669,4 +1698,12 @@ void ParticleEmitter::AddShaderDefine(const char* def, const char* val) {
 //void ParticleEmitter::ApplyShaderDefine() {
 //	mImpl->ApplyShaderDefine();
 //}
+
+void ParticleEmitter::SetScene(IScenePtr scene){
+	return mImpl->SetScene(scene);
+}
+
+IScenePtr ParticleEmitter::GetScene(){
+	return mImpl->GetScene();
+}
 

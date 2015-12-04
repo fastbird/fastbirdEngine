@@ -27,10 +27,11 @@
 
 #include "stdafx.h"
 #include "PointLight.h"
-#include "Renderer.h"
+#include "Scene.h"
 using namespace fb;
 class PointLight::Impl{
 public:
+	SceneWeakPtr mScene;
 	Vec3 mPosition;
 	Vec3 mColor;
 	Vec3 mColorPowered; // multiplied by intensity;
@@ -41,8 +42,9 @@ public:
 	bool mManualDeletion;
 	bool mEnabled;
 
-	Impl(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
-		: mPosition(pos)
+	Impl(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
+		: mScene(scene)
+		, mPosition(pos)
 		, mRange(range)
 		, mColor(color)
 		, mColorPowered(color*intensity)
@@ -50,9 +52,8 @@ public:
 		, mLifeTime(lifeTime)
 		, mManualDeletion(manualDeletion)
 		, mAlpha(1.0f)
-		, mEnabled(true){
-		auto& renderer = Renderer::GetInstance();
-		renderer.RefreshPointLight();
+		, mEnabled(true)
+	{
 	}
 
 	const Vec3& GetPosition() const{
@@ -62,8 +63,8 @@ public:
 	void SetPosition(const Vec3& pos)
 	{
 		mPosition = pos;
-		auto& renderer = Renderer::GetInstance();
-		renderer.RefreshPointLight();
+		auto scene = mScene.lock();
+		scene->RefreshPointLight();
 	}
 
 	void SetRange(Real range)
@@ -128,8 +129,10 @@ public:
 		if (mEnabled == enable)
 			return;
 		mEnabled = enable;
-		auto& renderer = Renderer::GetInstance();
-		renderer.RefreshPointLight();
+		auto scene = mScene.lock();
+		if (scene){
+			scene->RefreshPointLight();
+		}
 	}
 
 	bool GetEnabled() const { 
@@ -141,12 +144,12 @@ public:
 	}
 };
 //---------------------------------------------------------------------------
-PointLightPtr PointLight::Create(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion){
-	return PointLightPtr(new PointLight(pos, range, color, intensity, lifeTime, manualDeletion), [](PointLight* obj){ delete obj; });
+PointLightPtr PointLight::Create(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion){
+	return PointLightPtr(new PointLight(scene, pos, range, color, intensity, lifeTime, manualDeletion), [](PointLight* obj){ delete obj; });
 }
 
-PointLight::PointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
-	:mImpl(new Impl(pos, range, color, intensity, lifeTime, manualDeletion))
+PointLight::PointLight(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
+	:mImpl(new Impl(scene, pos, range, color, intensity, lifeTime, manualDeletion))
 {
 }
 

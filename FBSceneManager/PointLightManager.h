@@ -31,6 +31,7 @@
 namespace fb
 {
 	struct POINT_LIGHT_CONSTANTS;
+	FB_DECLARE_SMART_PTR(Scene);
 	FB_DECLARE_SMART_PTR(PointLight);
 	FB_DECLARE_SMART_PTR(PointLightManager);
 	class PointLightManager
@@ -41,6 +42,7 @@ namespace fb
 	public:
 		static PointLightManagerPtr Create();
 
+		void SetScene(ScenePtr scene);
 		PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion);		
 		void Update(Real dt);
 		void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst);

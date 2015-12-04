@@ -29,6 +29,7 @@
 #include "FBCommonHeaders/Types.h"
 namespace fb
 {
+	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(ParticleEmitter);
 	FB_DECLARE_SMART_PTR(ParticleSystem);
 	class FB_DLL_PARTICLESYSTEM ParticleSystem
@@ -43,8 +44,8 @@ namespace fb
 
 		void Update(float elapsedTime);
 		void RenderProfile();
-		ParticleEmitterPtr GetParticleEmitter(const char* file);
-		ParticleEmitterPtr GetParticleEmitter(unsigned id);
+		ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file);
+		ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, unsigned id);
 		void ReloadParticle(const char* file);
 		void EditThisParticle(const char* path);
 		void ScaleEditingParticle(float scale);

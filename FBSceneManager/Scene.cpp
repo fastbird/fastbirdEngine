@@ -29,6 +29,7 @@
 #include "Scene.h"
 #include "DirectionalLight.h"
 #include "SpatialSceneObject.h"
+#include "PointLightManager.h"
 #include "FBRenderer/ICamera.h"
 #include "FBRenderer/RenderPass.h"
 #include "FBMathLib/Color.h"
@@ -75,6 +76,8 @@ public:
 	VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
 	bool mDrawClouds;
 	bool mRttScene;
+	bool mRefreshPointLight;
+	PointLightManagerPtr mPointLightMan;
 
 	Impl(Scene* self, const char* name)
 		: mSelf(self)
@@ -87,6 +90,8 @@ public:
 		, mFogColor(0, 0, 0)
 		, mWindDir(1, 0, 0)
 		, mWindVelocity(0.f)
+		, mRefreshPointLight(false)
+		, mPointLightMan(PointLightManager::Create())
 	{
 		mWindVector = mWindDir * mWindVelocity;
 
@@ -105,7 +110,10 @@ public:
 		mDirectionalLight[1]->SetDiffuse(Vec3(0.8f, 0.4f, 0.1f));
 		mDirectionalLight[1]->SetSpecular(Vec3(0, 0, 0));
 	}
+	void Init(){
+		mPointLightMan->SetScene(mSelfPtr.lock());
 
+	}
 	const char* GetName() const{
 		return mName.c_str();
 	}
@@ -113,6 +121,10 @@ public:
 	void Update(TIME_PRECISION dt){
 		for (int i = 0; i < 2; i++)
 			mDirectionalLight[i]->Update(dt);
+
+		mPointLightMan->Update(dt);
+		// good point to reset.
+		mRefreshPointLight = false;
 
 		// tick to spatial objects
 		for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
@@ -246,6 +258,7 @@ public:
 
 	void PreRender(const RenderParam& renderParam, RenderParamOut* renderParamOut){
 		mRenderPass = (RENDER_PASS)renderParam.mRenderPass;
+		renderParam.mScene = mSelf;
 		if (!mSkipSpatialObjects)
 		{
 			auto cam = renderParam.mCamera;
@@ -287,6 +300,7 @@ public:
 
 	void Render(const RenderParam& param, RenderParamOut* paramOut){
 		mRenderPass = (RENDER_PASS)param.mRenderPass;
+		param.mScene = mSelf;
 		auto lightCamera = param.mLightCamera;
 		auto cam = param.mCamera;
 		if (!mSkipSpatialObjects)
@@ -524,6 +538,7 @@ public:
 	}
 
 	void PreRenderCloudVolumes(const RenderParam& param, RenderParamOut* paramOut){
+		param.mScene = mSelf;
 		for (auto var : mCloudVolumes)
 		{
 			var->PreRender(param, paramOut);			
@@ -531,6 +546,7 @@ public:
 	}
 
 	void RenderCloudVolumes(const RenderParam& param, RenderParamOut* paramOut){
+		param.mScene = mSelf;
 		for (auto var : mCloudVolumes)
 		{
 			var->Render(param, paramOut);			
@@ -563,6 +579,27 @@ public:
 		assert(idx < 2);
 		return mDirectionalLight[idx];
 	}
+
+	PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
+		bool manualDeletion){
+		assert(mPointLightMan);
+		RefreshPointLight();
+		return mPointLightMan->CreatePointLight(pos, range, color, intensity, lifeTime, manualDeletion);
+	}
+
+	PointLightManagerPtr GetPointLightMan() const{
+		return mPointLightMan;
+	}
+
+	void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst){
+		mPointLightMan->GatherPointLightData(aabb, transform, plConst);
+	}
+	void RefreshPointLight(){
+		mRefreshPointLight = true;
+	}
+	bool NeedToRefreshPointLight() const{
+		return mRefreshPointLight;
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -573,6 +610,7 @@ ScenePtr Scene::Create(const char* name){
 	}
 	auto p =  ScenePtr(new Scene(name), [](Scene* obj){ delete obj; });
 	p->mImpl->mSelfPtr = p;
+	p->mImpl->Init();
 	return p;
 }
 
@@ -725,4 +763,24 @@ bool Scene::IsRttScene() const {
 
 DirectionalLightPtr Scene::GetDirectionalLight(unsigned idx) {
 	return mImpl->GetDirectionalLight(idx);
+}
+
+PointLightPtr Scene::CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion) {
+	return mImpl->CreatePointLight(pos, range, color, intensity, lifeTime, manualDeletion);
+}
+
+PointLightManagerPtr Scene::GetPointLightMan() const {
+	return mImpl->GetPointLightMan();
+}
+
+void Scene::GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) {
+	mImpl->GatherPointLightData(aabb, transform, plConst);
+}
+
+void Scene::RefreshPointLight() {
+	mImpl->RefreshPointLight();
+}
+
+bool Scene::NeedToRefreshPointLight() const {
+	return mImpl->NeedToRefreshPointLight();
 }

@@ -41,7 +41,6 @@
 #include "Shader.h"
 #include "Material.h"
 #include "TextureAtlas.h"
-#include "PointLightManager.h"
 #include "DebugHud.h"
 #include "GeometryRenderer.h"
 #include "RenderStates.h"
@@ -179,8 +178,6 @@ public:
 	SCENE_CONSTANTS			mSceneConstants;
 
 	DirectionalLightInfo	mDirectionalLight[2];
-	bool mRefreshPointLight;
-	PointLightManagerPtr mPointLightMan;
 	VectorMap<int, FontPtr> mFonts;
 	DebugHudPtr		mDebugHud;
 	GeometryRendererPtr mGeomRenderer;	
@@ -237,8 +234,7 @@ public:
 		, mLuminanceOnCpu(false)
 		, mWindowSizeInternallyChanging(false)
 		, mConsoleRenderer(ConsoleRenderer::Create())
-		, mRendererOptions(RendererOptions::Create())
-		, mPointLightMan(PointLightManager::Create())
+		, mRendererOptions(RendererOptions::Create())		
 		, mMainWindowStyle(0)
 	{
 		auto filepath = "_FBRenderer.log";
@@ -1204,13 +1200,6 @@ public:
 		}
 		return it->second;
 	}
-
-	PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
-		bool manualDeletion){
-		assert(mPointLightMan);
-		RefreshPointLight();
-		return mPointLightMan->CreatePointLight(pos, range, color, intensity, lifeTime, manualDeletion);
-	}
 	
 
 	//-------------------------------------------------------------------
@@ -1803,15 +1792,6 @@ public:
 	//-------------------------------------------------------------------
 	// Internal
 	//-------------------------------------------------------------------
-	void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst){
-		mPointLightMan->GatherPointLightData(aabb, transform, plConst);
-	}
-	void RefreshPointLight(){
-		mRefreshPointLight = true;
-	}
-	bool NeedToRefreshPointLight() const{
-		return mRefreshPointLight;
-	}
 
 	void RenderDebugHud(){
 		if (!mDebugHud)
@@ -2123,12 +2103,7 @@ public:
 
 		swprintf_s(msg, 255, L"Num UpdateObjectConstantsBuffer = %u", profiler.NumUpdateObjectConst);
 		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
-		y += yStep * 2;
-
-		swprintf_s(msg, 255, L"Num PointLights = %d", mPointLightMan->GetNumPointLights());
-		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
-		y += yStep;
-		
+		y += yStep * 2;		
 	}
 
 	inline FontPtr GetFont(Real fontHeight) const{
@@ -2212,10 +2187,6 @@ public:
 
 	void SetFadeAlpha(Real alpha){
 		mFadeAlpha = alpha;
-	}
-
-	PointLightManagerPtr GetPointLightMan() const{
-		return mPointLightMan;
 	}
 
 	void RegisterVideoPlayer(IVideoPlayerPtr player){
@@ -2376,12 +2347,6 @@ public:
 		for (auto font : mFonts){
 			font.second->SetTextureAtlas(textureAtlas);
 		}
-	}
-
-	void Update(TIME_PRECISION dt){
-		mPointLightMan->Update(dt);
-		// good point to reset.
-		mRefreshPointLight = false;
 	}
 
 	//-------------------------------------------------------------------
@@ -2721,10 +2686,6 @@ TexturePtr Renderer::GetTemporalDepthBuffer(const Vec2I& size, const char* key) 
 	return mImpl->GetTemporalDepthBuffer(size, key);
 }
 
-PointLightPtr Renderer::CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion) {
-	return mImpl->CreatePointLight(pos, range, color, intensity, lifeTime, manualDeletion);
-}
-
 //-------------------------------------------------------------------
 // Hot reloading
 //-------------------------------------------------------------------
@@ -3046,10 +3007,6 @@ void Renderer::SetFadeAlpha(Real alpha) {
 	mImpl->SetFadeAlpha(alpha);
 }
 
-PointLightManagerPtr Renderer::GetPointLightMan() const {
-	return mImpl->GetPointLightMan();
-}
-
 void Renderer::RegisterVideoPlayer(IVideoPlayerPtr player) {
 	mImpl->RegisterVideoPlayer(player);
 }
@@ -3087,10 +3044,6 @@ void Renderer::SetLockBlendState(bool lock){
 
 void Renderer::SetFontTextureAtlas(const char* path){
 	mImpl->SetFontTextureAtlas(path);
-}
-
-void Renderer::Update(TIME_PRECISION dt){
-	mImpl->Update(dt);
 }
 
 //-------------------------------------------------------------------
@@ -3306,18 +3259,6 @@ void Renderer::QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Colo
 //-------------------------------------------------------------------
 // Internal
 //-------------------------------------------------------------------
-void Renderer::GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) {
-	mImpl->GatherPointLightData(aabb, transform, plConst);
-}
-
-void Renderer::RefreshPointLight() {
-	mImpl->RefreshPointLight();
-}
-
-bool Renderer::NeedToRefreshPointLight() const {
-	return mImpl->NeedToRefreshPointLight();
-}
-
 void Renderer::RenderDebugHud() {
 	mImpl->RenderDebugHud();
 }
