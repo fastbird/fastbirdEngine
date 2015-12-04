@@ -28,6 +28,7 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 namespace fb{
+	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(ParticleEmitterFacade);
 	class FB_DLL_ENGINEFACADE ParticleEmitterFacade{
 		FB_DECLARE_PIMPL_NON_COPYABLE(ParticleEmitterFacade);
@@ -37,6 +38,7 @@ namespace fb{
 	public:
 		static ParticleEmitterFacadePtr Create();
 		bool Load(unsigned id);
+		bool Load(IScenePtr scene, unsigned id);
 		bool IsValid() const;
 
 		void SetTransformation(const Transformation& t);

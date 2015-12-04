@@ -34,6 +34,7 @@
 #include "FBAnimation/AnimationData.h"
 #include "FBDebugLib/Logger.h"
 #include "FBSceneManager/SceneManager.h"
+#include "FBSceneManager/IScene.h"
 #include "FBRenderer/Camera.h"
 #include "FBRenderer/Renderer.h"
 #include "FBRenderer/RendererOptions.h"
@@ -91,7 +92,6 @@ public:
 
 	typedef std::vector< FBCollisionShapePtr > COLLISION_SHAPES;
 	CowPtr<COLLISION_SHAPES> mCollisions;	
-	BoundingVolumePtr mAABB;
 	FRAME_PRECISION mLastPreRendered;
 
 	bool mUseDynamicVB[MeshVertexBufferType::Num];
@@ -112,7 +112,7 @@ public:
 		{
 			mUseDynamicVB[i] = false;
 		}
-		mAABB = BoundingVolume::Create(BoundingVolume::BV_AABB);
+		mSelf->UseAABBBoundingVolume();
 	}
 
 	Impl(MeshObject* self, const Impl& other)
@@ -127,7 +127,6 @@ public:
 		, mCollisions(other.mCollisions)
 		, mLastPreRendered(other.mLastPreRendered)
 		, mForceAlphaBlending(other.mForceAlphaBlending)
-		, mAABB(other.mAABB)
 
 	{
 		unsigned idx = 0;
@@ -150,6 +149,7 @@ public:
 	void PreRender(const RenderParam& renderParam, RenderParamOut* renderParamOut){		
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
+		
 		auto currentFrame = gpTimer->GetFrame();
 		if (mLastPreRendered == currentFrame)
 			return;
@@ -158,7 +158,8 @@ public:
 		auto& animatedLocation = mSelf->GetAnimatedLocation();
 		animatedLocation.GetHomogeneous(mObjectConstants.gWorld);
 		auto& renderer = Renderer::GetInstance();
-		renderer.GatherPointLightData(mSelf->GetAABB().get(), animatedLocation, &mPointLightConstants);
+		assert(renderParam.mScene);
+		renderParam.mScene->GatherPointLightData(mSelf->GetAABB().get(), animatedLocation, &mPointLightConstants);
 	}
 	
 	void Render(const RenderParam& renderParam, RenderParamOut* renderParamOut){
@@ -391,15 +392,22 @@ public:
 		return MeshObject::Create(*mSelf);
 	}
 
+	void CheckMaterialOptions(MaterialPtr mat){
+		if (mat && mat->IsTransparent())
+			mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, true);
+	}
+
 	void SetMaterial(const char* filepath, int pass){
 		auto& group = GetMaterialGroupFor(0);
 		auto& renderer = Renderer::GetInstance();
 		group.mMaterial = renderer.CreateMaterial(filepath);
+		CheckMaterialOptions(group.mMaterial);
 	}
 
 	void SetMaterial(MaterialPtr pMat, int pass){
 		auto& group = GetMaterialGroupFor(0);
 		group.mMaterial = pMat;
+		CheckMaterialOptions(group.mMaterial);
 	}
 
 	MaterialPtr GetMaterial(int pass) const{
@@ -611,7 +619,8 @@ public:
 
 	void EndModification(bool keepMeshData){
 		mModifying = false;
-		mAABB->StartComputeFromData();
+		auto bv = mSelf->GetBoundingVolume();
+		bv->StartComputeFromData();
 		for(auto& it: mMaterialGroups)
 		{
 			auto& renderer = Renderer::GetInstance();
@@ -621,7 +630,7 @@ public:
 					&it.mPositions[0], sizeof(Vec3f), it.mPositions.size(),
 					mUseDynamicVB[MeshVertexBufferType::Position] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
 					mUseDynamicVB[MeshVertexBufferType::Position] ? BUFFER_CPU_ACCESS_WRITE : BUFFER_CPU_ACCESS_NONE);
-				mAABB->AddComputeData(&it.mPositions[0], it.mPositions.size());
+				bv->AddComputeData(&it.mPositions[0], it.mPositions.size());
 			}
 			else
 			{
@@ -681,14 +690,11 @@ public:
 
 
 		}
-		mAABB->EndComputeFromData();		
-		auto boundingVolume = mSelf->GetBoundingVolume();
-		boundingVolume->SetCenter(mAABB->GetCenter());
-		boundingVolume->SetRadius(mAABB->GetRadius());
+		bv->EndComputeFromData();		
 		auto boundingVolumeWorld = mSelf->GetBoundingVolumeWorld();
-		boundingVolumeWorld->SetCenter(boundingVolume->GetCenter() + mSelf->GetPosition());
+		boundingVolumeWorld->SetCenter(bv->GetCenter() + mSelf->GetPosition());
 		const auto& s = mSelf->GetScale();
-		boundingVolumeWorld->SetRadius(boundingVolume->GetRadius() * std::max(std::max(s.x, s.y), s.z));;
+		boundingVolumeWorld->SetRadius(bv->GetRadius() * std::max(std::max(s.x, s.y), s.z));;
 
 		if (!keepMeshData)
 			ClearMeshData();
@@ -697,6 +703,9 @@ public:
 	void SetMaterialFor(int matGroupIdx, MaterialPtr material){
 		auto& group = GetMaterialGroupFor(matGroupIdx);
 		group.mMaterial = material;
+		if (material && matGroupIdx == 0){
+			CheckMaterialOptions(material);			
+		}
 	}
 
 	void SetTopology(PRIMITIVE_TOPOLOGY topology){
@@ -1013,7 +1022,7 @@ public:
 	}
 
 	BoundingVolumeConstPtr GetAABB() const { 
-		return mAABB; 
+		return mSelf->GetBoundingVolume(); 
 	}
 
 	void ClearVertexBuffers(){
@@ -1160,6 +1169,7 @@ MeshObjectPtr MeshObject::Create(const MeshObject& other){
 MeshObject::MeshObject()
 	: mImpl(new Impl(this))
 {
+	
 }
 
 MeshObject::MeshObject(const MeshObject& other)

@@ -120,8 +120,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		bool InitCanvas(HWindowId id, HWindow window, int width, int height);
 		void ReleaseCanvas(HWindowId id);
-		void Render();
-		void Update(TIME_PRECISION dt);
+		void Render();		
 
 		//-------------------------------------------------------------------
 		// Resource Creation
@@ -153,9 +152,7 @@ namespace fb{
 		SamplerStatePtr CreateSamplerState(const SAMPLER_DESC& desc);		
 		TextureAtlasPtr GetTextureAtlas(const char* path);		
 		TextureAtlasRegionPtr GetTextureAtlasRegion(const char* path, const char* region);
-		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);
-		PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
-			bool manualDeletion);
+		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);		
 
 		//-------------------------------------------------------------------
 		// Hot reloading
@@ -267,8 +264,7 @@ namespace fb{
 		void SetEnvironmentTexture(TexturePtr pTexture);
 		void SetEnvironmentTextureOverride(TexturePtr texture);		
 		void SetDebugRenderTarget(unsigned idx, const char* textureName);
-		void SetFadeAlpha(Real alpha);
-		PointLightManagerPtr GetPointLightMan() const;
+		void SetFadeAlpha(Real alpha);		
 		void RegisterVideoPlayer(IVideoPlayerPtr player);
 		void UnregisterVideoPlayer(IVideoPlayerPtr player);
 		bool GetSampleOffsets_Bloom(DWORD dwTexSize,
@@ -356,10 +352,7 @@ namespace fb{
 
 		//-------------------------------------------------------------------
 		// Internal
-		//-------------------------------------------------------------------
-		void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst);
-		void RefreshPointLight();
-		bool NeedToRefreshPointLight() const;
+		//-------------------------------------------------------------------		
 		void RenderDebugHud();
 
 		//-------------------------------------------------------------------

@@ -27,6 +27,8 @@
 
 #include "stdafx.h"
 #include "ParticleEmitterFacade.h"
+#include "EngineFacade.h"
+#include "FBSceneManager/Scene.h"
 #include "FBParticleSystem/ParticleEmitter.h"
 #include "FBParticleSystem/ParticleSystem.h"
 using namespace fb;
@@ -59,7 +61,16 @@ ParticleEmitterFacade::~ParticleEmitterFacade(){
 }
 
 bool ParticleEmitterFacade::Load(unsigned id){
-	mImpl->mParticleEmitter =  ParticleSystem::GetInstance().GetParticleEmitter(id);
+	auto mainScene = EngineFacade::GetInstance().GetMainScene();
+	return Load(mainScene, id);
+}
+
+bool ParticleEmitterFacade::Load(IScenePtr scene, unsigned id){
+	if (!scene){
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return false;
+	}
+	mImpl->mParticleEmitter = ParticleSystem::GetInstance().GetParticleEmitter(scene, id);
 	return mImpl->mParticleEmitter != 0;
 }
 

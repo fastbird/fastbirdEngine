@@ -64,6 +64,7 @@ namespace fb{
 		void SetScale(const Vec3& scale); // use uniform only.
 		void SetDirection(const Vec3& dir);
 		void SetDirectionAndRight(const Vec3& dir, const Vec3& right);
+		void UseAABBBoundingVolume();
 		BoundingVolumePtr GetBoundingVolume();
 		BoundingVolumePtr GetBoundingVolumeWorld();
 		const Transformation& GetLocation() const;

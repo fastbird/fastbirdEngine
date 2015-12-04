@@ -37,8 +37,6 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="NullPlatformRenderer.h" />
     <ClInclude Include="PixelFormats.h" />
-    <ClInclude Include="PointLight.h" />
-    <ClInclude Include="PointLightManager.h" />
     <ClInclude Include="PrimitiveTopology.h" />
     <ClInclude Include="RenderableObject.h" />
     <ClInclude Include="Renderer.h" />
@@ -80,8 +78,6 @@
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="NullPlatformRenderer.cpp" />
-    <ClCompile Include="PointLight.cpp" />
-    <ClCompile Include="PointLightManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererEnums.cpp" />
     <ClCompile Include="RendererOptions.cpp" />

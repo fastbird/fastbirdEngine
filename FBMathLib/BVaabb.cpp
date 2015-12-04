@@ -39,7 +39,18 @@ BVaabb::BVaabb()
 {
 }
 
+BVaabb& BVaabb::operator=(const BVaabb& other){
+	mAABB = other.mAABB;
+	mCenter = other.mCenter;
+	mRadius = other.mRadius;
+	mAlwaysPass = other.mAlwaysPass;
+	return *this;
+}
+
 BoundingVolume& BVaabb::operator=(const BoundingVolume& other){
+	if (GetBVType() == other.GetBVType()){
+		return operator=(*static_cast<const BVaabb*>(&other));
+	}
 	mAlwaysPass = other.GetAlwaysPass();
 	mAABB.Invalidate();
 	mAABB.Merge(other.GetCenter());

@@ -30,16 +30,17 @@
 #include "FBMathLib/Math.h"
 namespace fb
 {
+	FB_DECLARE_SMART_PTR(Scene);
 	FB_DECLARE_SMART_PTR(PointLight);
-	class FB_DLL_RENDERER PointLight
+	class FB_DLL_SCENEMANAGER PointLight
 	{
 		FB_DECLARE_PIMPL_NON_COPYABLE(PointLight);
 		friend class PointLightMan;
-		PointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion);
+		PointLight(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion);
 		~PointLight();
 
 	public:
-		static PointLightPtr Create(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion);		
+		static PointLightPtr Create(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion);		
 		
 		void SetPosition(const Vec3& pos);
 		const Vec3& GetPosition() const;

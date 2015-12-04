@@ -35,11 +35,21 @@ using namespace fb;
 class PointLightManager::Impl{
 public:
 	typedef std::vector< PointLightWeakPtr > PointLights;
+	SceneWeakPtr mScene;
 	PointLights mPointLights;
+
+	void SetScene(ScenePtr scene){
+		mScene = scene;
+	}
 
 	PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
 	{
-		auto newLight = PointLight::Create(pos, range, color, intensity, lifeTime, manualDeletion);
+		auto scene = mScene.lock();
+		if (!scene){
+			Logger::Log(FB_ERROR_LOG_ARG, "No scene");
+			return 0;
+		}
+		auto newLight = PointLight::Create(scene, pos, range, color, intensity, lifeTime, manualDeletion);
 		mPointLights.push_back(newLight);
 		return newLight;
 	}
@@ -84,9 +94,9 @@ public:
 		gathered.reserve(50);
 
 		unsigned i = 0;
-		for (auto& it : mPointLights)
-		{			
-			auto p = it.lock();
+		for (auto it = mPointLights.begin(); it != mPointLights.end(); /**/)
+		{		
+			IteratingWeakContainer(mPointLights, it, p);
 			if (!p->GetEnabled())
 				continue;
 			Ray3 ray(p->GetPosition(), transform.GetTranslation() - p->GetPosition());
@@ -134,6 +144,10 @@ FB_IMPLEMENT_STATIC_CREATE(PointLightManager);
 PointLightManager::PointLightManager()
 	:mImpl(new Impl)
 {
+}
+
+void PointLightManager::SetScene(ScenePtr scene){
+	mImpl->SetScene(scene);
 }
 
 PointLightPtr PointLightManager::CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion) {

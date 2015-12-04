@@ -33,6 +33,8 @@
 #include "FBRenderer/Renderer.h"
 #include "FBRenderer/RenderTarget.h"
 #include "FBRenderer/Camera.h"
+#include "FBSceneManager/SceneManager.h"
+#include "FBSceneManager/Scene.h"
 using namespace fb;
 namespace fb{
 	void ClearParticleRenderObjects();
@@ -169,32 +171,39 @@ public:
 		y += yStep;
 	}
 
-	ParticleEmitterPtr GetParticleEmitter(const char* file){
+	ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file){
 		PARTICLE_EMITTERS_BY_NAME::iterator found = mParticleEmittersByName.find(file);
 		if (found != mParticleEmittersByName.end())
 		{
-			return found->second->Clone();
+			auto p = found->second->Clone();
+			p->SetScene(scene);
+			return p;
 		}
 
-		ParticleEmitterPtr p = ParticleEmitter::Create();
+		ParticleEmitterPtr p = ParticleEmitter::Create(scene);
 		bool succ = p->Load(file, false);
 		if (succ)
 		{
 			mParticleEmitters[p->GetEmitterID()] = p;
 			mParticleEmittersByName[file] = p;
-			return p->Clone();
+			auto cloned =  p->Clone();
+			cloned->SetScene(scene);
+			return cloned;
 		}
 
 		return 0;
 	}
 
-	ParticleEmitterPtr GetParticleEmitter(unsigned id){		
+	ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, unsigned id){
 		PARTICLE_EMITTERS_BY_ID::iterator found = mParticleEmitters.find(id);
-		if (found != mParticleEmitters.end())
-			return found->second->Clone();
+		if (found != mParticleEmitters.end()){
+			auto p = found->second->Clone();
+			p->SetScene(scene);
+			return p;
+		}
 
 		std::string filepath = FindParticleNameWithID("data/particles", id);
-		return GetParticleEmitter(filepath.c_str());		
+		return GetParticleEmitter(scene, filepath.c_str());
 	}
 
 	void ReloadParticle(const char* file){
@@ -227,9 +236,10 @@ public:
 		}
 
 
+		auto mainScene = SceneManager::GetInstance().GetMainScene();
 		ParticleEmitterPtr pnew = 0;
 		if (strcmp(file, "0"))
-			pnew = GetParticleEmitter(fullpath.c_str());
+			pnew = GetParticleEmitter(mainScene, fullpath.c_str());
 
 		auto& renderer = Renderer::GetInstance();
 		if (pnew)
@@ -360,12 +370,12 @@ void ParticleSystem::RenderProfile() {
 	mImpl->RenderProfile();
 }
 
-ParticleEmitterPtr ParticleSystem::GetParticleEmitter(const char* file) {
-	return mImpl->GetParticleEmitter(file);
+ParticleEmitterPtr ParticleSystem::GetParticleEmitter(IScenePtr scene, const char* file) {
+	return mImpl->GetParticleEmitter(scene, file);
 }
 
-ParticleEmitterPtr ParticleSystem::GetParticleEmitter(unsigned id) {
-	return mImpl->GetParticleEmitter(id);
+ParticleEmitterPtr ParticleSystem::GetParticleEmitter(IScenePtr scene, unsigned id) {
+	return mImpl->GetParticleEmitter(scene, id);
 }
 
 void ParticleSystem::ReloadParticle(const char* file) {

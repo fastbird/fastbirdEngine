@@ -31,6 +31,7 @@
 namespace fb
 {
 	struct ParticleRenderKey;
+	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(Material);
 	FB_DECLARE_SMART_PTR(ParticleRenderObject);
 	class ParticleRenderObject : public SpatialSceneObject
@@ -41,7 +42,7 @@ namespace fb
 		
 	public:
 		static const int MAX_SHARED_VERTICES;
-		static ParticleRenderObjectPtr GetRenderObject(ParticleRenderKey& key, bool& created);
+		static ParticleRenderObjectPtr GetRenderObject(IScenePtr scene, ParticleRenderKey& key, bool& created);
 		static void ClearParticles();
 		static void EndUpdateParticles();
 		static void FinalizeRenderObjects();

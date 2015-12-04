@@ -61,7 +61,7 @@ namespace fb
 		void SetAlwaysPass(bool p);
 		bool GetAlwaysPass() const;
 
-		virtual int GetBVType() const = 0;
+		virtual BVType GetBVType() const = 0;
 		virtual void SetCenter (const Vec3& center) = 0;
 		virtual void SetRadius (Real fRadius) = 0;
 		virtual const Vec3& GetCenter () const = 0;

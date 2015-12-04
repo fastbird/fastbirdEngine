@@ -34,9 +34,10 @@ namespace fb
 	{
 	public:
 		BVaabb();
+		BVaabb& operator=(const BVaabb& other);
 		BoundingVolume& operator=(const BoundingVolume& other);
 		
-		virtual int GetBVType() const {return BV_AABB; }
+		virtual BVType GetBVType() const { return BV_AABB; }
 		virtual void SetCenter (const Vec3& center);
 		virtual void SetRadius (Real fRadius);
 		virtual const Vec3& GetCenter () const;

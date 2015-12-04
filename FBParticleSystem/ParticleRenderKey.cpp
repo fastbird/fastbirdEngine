@@ -35,8 +35,8 @@ namespace fb{
 		memset(padding, 0, 2);
 	}
 
-	ParticleRenderKey::ParticleRenderKey(const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade)
-		:mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
+	ParticleRenderKey::ParticleRenderKey(IScene* scene, const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade)
+		:mScene(scene), mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
 	{
 		strcpy_s(mTexturePath, texturePath);
 		memset(padding, 0, 2);

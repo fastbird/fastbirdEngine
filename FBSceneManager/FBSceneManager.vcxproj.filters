@@ -14,6 +14,8 @@
     <ClInclude Include="ISpatialObject.h" />
     <ClInclude Include="DirectionalLightIndex.h" />
     <ClInclude Include="SceneObjectType.h" />
+    <ClInclude Include="PointLight.h" />
+    <ClInclude Include="PointLightManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -23,5 +25,7 @@
     <ClCompile Include="SpatialObject.cpp" />
     <ClCompile Include="SpatialSceneObject.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="PointLight.cpp" />
+    <ClCompile Include="PointLightManager.cpp" />
   </ItemGroup>
 </Project>

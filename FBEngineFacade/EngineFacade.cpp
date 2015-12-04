@@ -287,10 +287,10 @@ public:
 		mInputManager->Update();
 	}
 
-	void Update(TIME_PRECISION dt){
-		mRenderer->Update(dt);
+	void Update(TIME_PRECISION dt){		
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
+		mParticleSystem->Update(dt);
 		mInputManager->EndFrame(gpTimer->GetTime());
 	}
 

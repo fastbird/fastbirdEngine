@@ -28,7 +28,9 @@
 #pragma once
 #include "FBRenderer/RendererStructs.h"
 namespace fb{
+	class IScene;
 	struct ParticleRenderKey{
+		IScene* mScene;
 		char mTexturePath[256];
 		BLEND_DESC mBDesc;
 		bool mGlow;
@@ -36,7 +38,7 @@ namespace fb{
 		char padding[2];
 
 		ParticleRenderKey();
-		ParticleRenderKey(const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade);
+		ParticleRenderKey(IScene* scene, const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade);
 		bool operator==(const ParticleRenderKey& other) const;
 		bool operator<(const ParticleRenderKey& other) const;
 	};

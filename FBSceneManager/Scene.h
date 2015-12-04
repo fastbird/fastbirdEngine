@@ -38,6 +38,8 @@ namespace fb{
 	class Vec3;
 	class Color;
 	class Ray3;
+	FB_DECLARE_SMART_PTR(PointLight);
+	FB_DECLARE_SMART_PTR(PointLightManager);
 	FB_DECLARE_SMART_PTR(ICamera);
 	FB_DECLARE_SMART_PTR(SkySphere);
 	FB_DECLARE_SMART_PTR(DirectionalLight);
@@ -70,6 +72,9 @@ namespace fb{
 		bool DetachObject(SceneObject* object);
 		bool AttachObjectFB(SpatialSceneObjectPtr object, SpatialSceneObject* rawPointer);
 		bool DetachObject(SpatialSceneObject* object);
+		PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
+			bool manualDeletion);
+		void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst);
 
 		//---------------------------------------------------------------------------
 		const char* GetName() const;
@@ -103,7 +108,10 @@ namespace fb{
 		void SetRttScene(bool set);
 		bool IsRttScene() const;
 
-		DirectionalLightPtr GetDirectionalLight(unsigned idx);
+		DirectionalLightPtr GetDirectionalLight(unsigned idx);		
+		PointLightManagerPtr GetPointLightMan() const;		
+		void RefreshPointLight();	
+		bool NeedToRefreshPointLight() const;
 	};
 }
 

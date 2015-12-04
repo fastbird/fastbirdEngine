@@ -86,9 +86,21 @@ namespace fb
 			return mDeltaTimeNotPausable < 0.4f ? mDeltaTimeNotPausable : 0.4f;
 		}
 
+		void SetDeltaTime(TIME_PRECISION deltaTime){
+			mDeltaTimeNotPausable = deltaTime;
+			if (!mPaused)
+				mDeltaTime = deltaTime;
+		}
+
 		TIME_PRECISION GetTime() const
 		{
 			return mTime;
+		}
+
+		void SetTime(TIME_PRECISION time){
+			mTimeNotPausable = time;
+			if (!mPaused)
+				mTime = time;
 		}
 
 		FRAME_PRECISION GetFrame() const{
@@ -163,9 +175,17 @@ namespace fb
 		return mImpl->GetDeltaTimeNotPausable();
 	}
 
+	void Timer::SetDeltaTime(TIME_PRECISION deltaTime){
+		mImpl->SetDeltaTime(deltaTime);
+	}
+
 	TIME_PRECISION Timer::GetTime() const
 	{
 		return mImpl->GetTime();
+	}
+
+	void Timer::SetTime(TIME_PRECISION time){
+		mImpl->SetTime(time);
 	}
 
 	FRAME_PRECISION Timer::GetFrame() const{

@@ -54,8 +54,6 @@
     <ClInclude Include="InputLayout.h" />
     <ClInclude Include="TextureBinding.h" />
     <ClInclude Include="SystemTextures.h" />
-    <ClInclude Include="PointLightManager.h" />
-    <ClInclude Include="PointLight.h" />
     <ClInclude Include="DebugHud.h" />
     <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="ShaderConstants.h" />
@@ -103,8 +101,6 @@
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TextureBinding.cpp" />
-    <ClCompile Include="PointLightManager.cpp" />
-    <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="DebugHud.cpp" />
     <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />

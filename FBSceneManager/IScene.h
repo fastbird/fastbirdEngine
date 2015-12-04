@@ -39,6 +39,10 @@ namespace fb{
 	struct RenderParam;
 	struct RenderParamOut;
 	class Color;
+	class BoundingVolume;
+	struct POINT_LIGHT_CONSTANTS;
+	class Transformation;
+	FB_DECLARE_SMART_PTR(PointLight);
 	FB_DECLARE_SMART_PTR(SpatialSceneObject);
 	FB_DECLARE_SMART_PTR(SceneObject);
 	FB_DECLARE_SMART_PTR(SkySphere);
@@ -61,6 +65,9 @@ namespace fb{
 		virtual bool DetachObject(SceneObject* object) = 0;
 		virtual bool AttachObjectFB(SpatialSceneObjectPtr object, SpatialSceneObject* rawPointer) = 0;
 		virtual bool DetachObject(SpatialSceneObject* object) = 0;
+		virtual PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
+			bool manualDeletion) = 0;
+		virtual void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) = 0;
 	};
 }
 #define AttachObjectFB(p) AttachObjectFB((p), (p).get())

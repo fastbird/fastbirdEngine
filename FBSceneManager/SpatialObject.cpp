@@ -52,6 +52,10 @@ SpatialObject::SpatialObject(const SpatialObject& other)
 		mAnimatedLocation = Transformation::Create();
 		*mAnimatedLocation = *other.mAnimatedLocation;
 	}
+	if (mBoundingVolume->GetBVType() !=  other.mBoundingVolume->GetBVType()){
+		mBoundingVolume = BoundingVolume::Create(other.mBoundingVolume->GetBVType());
+		mBoundingVolumeWorld = BoundingVolume::Create(other.mBoundingVolumeWorld->GetBVType());
+	}
 	*mBoundingVolume = *other.mBoundingVolume;
 	*mBoundingVolumeWorld = *other.mBoundingVolumeWorld;
 	mDistToCam = other.mDistToCam;
@@ -128,6 +132,21 @@ void SpatialObject::SetDirection(const Vec3& dir){
 void SpatialObject::SetDirectionAndRight(const Vec3& dir, const Vec3& right){
 	mLocation.SetDirectionAndRight(dir, right);
 	mTransformChanged = true;
+}
+
+void SpatialObject::UseAABBBoundingVolume(){
+	auto center = mBoundingVolume->GetCenter();
+	auto radius = mBoundingVolume->GetRadius();
+	auto alwaysPass = mBoundingVolume->GetAlwaysPass();
+	mBoundingVolume = BoundingVolume::Create(BoundingVolume::BV_AABB);
+	mBoundingVolumeWorld = BoundingVolume::Create(BoundingVolume::BV_AABB);
+	mBoundingVolume->SetCenter(center);
+	mBoundingVolume->SetRadius(radius);
+	mBoundingVolume->SetAlwaysPass(alwaysPass);
+	mBoundingVolumeWorld->SetCenter(center + mLocation.GetTranslation());
+	const auto& s = mLocation.GetScale();	
+	mBoundingVolumeWorld->SetRadius(radius * std::max(std::max(s.x, s.y), s.z));
+	mBoundingVolumeWorld->SetAlwaysPass(alwaysPass);
 }
 
 BoundingVolumePtr SpatialObject::GetBoundingVolume(){

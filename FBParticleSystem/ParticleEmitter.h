@@ -31,16 +31,17 @@
 #include "FBSceneManager/SpatialObject.h"
 namespace fb
 {
+	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(ParticleEmitter);
 	class FB_DLL_PARTICLESYSTEM ParticleEmitter : public SpatialObject
 	{
 		FB_DECLARE_PIMPL_CLONEABLE(ParticleEmitter);
-		ParticleEmitter();
+		ParticleEmitter(IScenePtr scene);
 		~ParticleEmitter();
 		static ParticleEmitterPtr Create(const ParticleEmitter& other);
 
 	public:
-		static ParticleEmitterPtr Create();
+		static ParticleEmitterPtr Create(IScenePtr scene);
 
 		ParticleEmitterPtr Clone();
 		/** Loads a particle emitter.
@@ -70,5 +71,8 @@ namespace fb
 		void RemoveShaderDefine(const char* def);
 		void AddShaderDefine(const char* def, const char* val);
 		//void ApplyShaderDefine();	
+
+		void SetScene(IScenePtr scene);
+		IScenePtr GetScene();
 	};
 }

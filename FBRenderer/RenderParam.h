@@ -28,15 +28,17 @@
 #pragma once
 namespace fb{
 	class ICamera;
+	class IScene;
 	struct RenderParam{
 		/// Vaild while rendering.
 		ICamera* mCamera;
 		ICamera* mLightCamera;
+		// will be set in the Scene
+		mutable IScene* mScene;
 		/// enum RENDER_PASS.
 		int mRenderPass;
 		int mReserved[3]; /// reserved.
-		bool mBoolReserved[4]; /// reserved.
-		
+		bool mBoolReserved[4]; /// reserved.		
 	};
 
 	/** For get a feedback from Renderables.
