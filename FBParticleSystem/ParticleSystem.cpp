@@ -59,6 +59,7 @@ public:
 	PARTICLE_EMITTERS_BY_NAME mParticleEmittersByName;
 
 	ParticleEmitterPtr mEditingParticle;
+	std::vector<std::string> mDirectories;
 
 	//---------------------------------------------------------------------------
 	Impl(ParticleSystem* self)
@@ -66,9 +67,26 @@ public:
 		, mParticleOptions(ParticleOptions::Create())
 		, mOverridingCamera(Camera::Create())
 	{
+		mDirectories.push_back("Data/particles");
 	}
 	~Impl(){
 		ClearParticleRenderObjects();
+	}
+
+	bool OnFileChanged(const char* file, const char* ext){
+		if (ext == ".particle"){
+			ReloadParticle(file);
+			return true;
+		}
+		return false;
+	}
+
+	void AddParticleSearchDirectory(const char* directory){
+		if (!ValidCStringLength(directory) || !FileSystem::Exists(directory)){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+		mDirectories.push_back(directory);
 	}
 
 	void Update(float elapsedTime){
@@ -172,7 +190,13 @@ public:
 	}
 
 	ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file){
-		PARTICLE_EMITTERS_BY_NAME::iterator found = mParticleEmittersByName.find(file);
+		if (!ValidCStringLength(file)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return 0;
+		}
+
+		auto fileKey = ToLowerCase(file);
+		PARTICLE_EMITTERS_BY_NAME::iterator found = mParticleEmittersByName.find(fileKey);
 		if (found != mParticleEmittersByName.end())
 		{
 			auto p = found->second->Clone();
@@ -185,7 +209,7 @@ public:
 		if (succ)
 		{
 			mParticleEmitters[p->GetEmitterID()] = p;
-			mParticleEmittersByName[file] = p;
+			mParticleEmittersByName[fileKey] = p;
 			auto cloned =  p->Clone();
 			cloned->SetScene(scene);
 			return cloned;
@@ -202,19 +226,20 @@ public:
 			return p;
 		}
 
-		std::string filepath = FindParticleNameWithID("data/particles", id);
+		std::string filepath = FindParticleNameWithID(id);
 		return GetParticleEmitter(scene, filepath.c_str());
 	}
 
 	void ReloadParticle(const char* file){
+		if (!ValidCStringLength(file))
+			return;
+		auto fileKey = ToLowerCase(file);		
 		for (auto& p : mParticleEmittersByName)
 		{
-			if (_stricmp(p.first.c_str(), file) == 0)
+			if (p.first == fileKey)
 			{
-				std::string lower = file;
-				ToLowerCase(lower);
 				bool reload = true;
-				p.second->Load(lower.c_str(), reload);				
+				p.second->Load(file, reload);
 			}
 		}
 	}
@@ -227,7 +252,7 @@ public:
 		std::string fullpath;
 		if (numeric)
 		{
-			fullpath = FindParticleNameWithID("data/particles", StringConverter::ParseInt(file));
+			fullpath = FindParticleNameWithID(StringConverter::ParseInt(file));
 		}
 		else
 		{
@@ -296,21 +321,18 @@ public:
 	}
 
 	
-	std::string FindParticleNameWithID(const char* particleFolder, unsigned id){
-		if (!ValidCStringLength(particleFolder)){
-			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
-			return std::string();
-		}
-
-		auto iterator = FileSystem::GetDirectoryIterator(particleFolder, false);
-		while (iterator->HasNext()){
-			std::string filename = FileSystem::GetFileName(iterator->GetNextFilePath());
-			auto sv = Split(filename, "_");
-			if (sv.size() >= 2)
-			{
-				unsigned fileid = StringConverter::ParseUnsignedInt(sv[0]);
-				if (fileid == id){					
-					return std::string(particleFolder) + "/" + filename;
+	std::string FindParticleNameWithID(unsigned id){
+		for (auto particleFolder : mDirectories){
+			auto iterator = FileSystem::GetDirectoryIterator(particleFolder.c_str(), false);
+			while (iterator->HasNext()){
+				std::string filename = FileSystem::GetFileName(iterator->GetNextFilePath());
+				auto sv = Split(filename, "_");
+				if (sv.size() >= 2)
+				{
+					unsigned fileid = StringConverter::ParseUnsignedInt(sv[0]);
+					if (fileid == id){
+						return std::string(particleFolder) + "/" + filename;
+					}
 				}
 			}
 		}
@@ -364,6 +386,14 @@ ParticleSystem::~ParticleSystem(){
 
 void ParticleSystem::Update(float elapsedTime) {
 	mImpl->Update(elapsedTime);
+}
+
+bool ParticleSystem::OnFileChanged(const char* file, const char* ext){
+	return mImpl->OnFileChanged(file, ext);
+}
+
+void ParticleSystem::AddParticleSearchDirectory(const char* directory){
+	mImpl->AddParticleSearchDirectory(directory);
 }
 
 void ParticleSystem::RenderProfile() {

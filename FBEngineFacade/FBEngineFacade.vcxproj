@@ -47,6 +47,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -62,6 +63,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -77,7 +79,7 @@
     <ClInclude Include="EngineOptions.h" />
     <ClInclude Include="MeshFacade.h" />
     <ClInclude Include="MeshLoadOptions.h" />
-    <ClInclude Include="ParticleEmitterFacade.h" />
+    <ClInclude Include="ParticleFacade.h" />
     <ClInclude Include="SkyFacade.h" />
     <ClInclude Include="TrailFacade.h" />
     <ClInclude Include="RenderTargetParamEx.h" />
@@ -91,7 +93,7 @@
     <ClCompile Include="EngineLua.cpp" />
     <ClCompile Include="EngineOptions.cpp" />
     <ClCompile Include="MeshFacade.cpp" />
-    <ClCompile Include="ParticleEmitterFacade.cpp" />
+    <ClCompile Include="ParticleFacade.cpp" />
     <ClCompile Include="SkyFacade.cpp" />
     <ClCompile Include="TrailFacade.cpp" />
     <ClCompile Include="stdafx.cpp">

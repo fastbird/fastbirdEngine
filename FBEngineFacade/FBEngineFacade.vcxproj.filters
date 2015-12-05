@@ -13,7 +13,7 @@
     <ClInclude Include="DustFacade.h" />
     <ClInclude Include="BillboardQuadFacade.h" />
     <ClInclude Include="MeshLoadOptions.h" />
-    <ClInclude Include="ParticleEmitterFacade.h" />
+    <ClInclude Include="ParticleFacade.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -25,7 +25,7 @@
     <ClCompile Include="TrailFacade.cpp" />
     <ClCompile Include="DustFacade.cpp" />
     <ClCompile Include="BillboardQuadFacade.cpp" />
-    <ClCompile Include="ParticleEmitterFacade.cpp" />
     <ClCompile Include="EngineLua.cpp" />
+    <ClCompile Include="ParticleFacade.cpp" />
   </ItemGroup>
 </Project>

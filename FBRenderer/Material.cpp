@@ -36,6 +36,7 @@
 #include "EssentialEngineData/shaders/Constants.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/CowPtr.h"
+#include "FBDebugLib/DebugLib.h"
 #include "FBMathLib/ColorRamp.h"
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
@@ -134,7 +135,7 @@ public:
 	CowPtr<ShaderData> mShaderData;
 	bool mShaderDefinesChanged;
 	bool mInputDescChanged;
-
+	//bool mMarkNoShaderDefineChanges;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -144,6 +145,7 @@ public:
 		, mShaderData(new ShaderData)
 		, mShaderDefinesChanged(false)
 		, mInputDescChanged(false)
+		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
 
@@ -154,6 +156,7 @@ public:
 		, mShaderData(other.mShaderData)
 		, mShaderDefinesChanged(other.mShaderDefinesChanged)
 		, mInputDescChanged(other.mInputDescChanged)
+		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
 
@@ -619,18 +622,15 @@ public:
 			return;
 		}
 
-		if (!pTexture)
+		auto& renderer = Renderer::GetInstance();
+		pTexture = renderer.CreateTexture(filepath, true);
+		if (pTexture)
 		{
-			auto& renderer = Renderer::GetInstance();
-			pTexture = renderer.CreateTexture(filepath, true);
-			if (pTexture)
-			{
-				pTexture->SetType(TEXTURE_TYPE_DEFAULT);
-				mMaterialData->mTextures.push_back(pTexture);
-				TextureBinding binding = { shader, slot };
-				mMaterialData->mTexturesByBinding[binding] = pTexture;
-				mMaterialData->mBindingsByTexture[pTexture] = binding;
-			}
+			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
+			mMaterialData->mTextures.push_back(pTexture);
+			TextureBinding binding = { shader, slot };
+			mMaterialData->mTexturesByBinding[binding] = pTexture;
+			mMaterialData->mBindingsByTexture[pTexture] = binding;
 		}
 	}
 
@@ -762,35 +762,32 @@ public:
 
 	bool AddShaderDefine(const char* name, const char* val)
 	{
+		/*if (mMarkNoShaderDefineChanges){
+			int a = 0;
+			a++;
+			FBDebugBreak();
+		}*/
 		if (name == 0 || val == 0)
 			return false;
 		// check
 		{
 			auto& shaderDefines = mShaderData.const_get()->mShaderDefines;
 			auto it = std::find_if(shaderDefines.cbegin(), shaderDefines.cend(), [&](const ShaderDefine& sd){
-				return sd.name == name && sd.value == val;
+				return sd.name == name;
 			});
-			if (it != shaderDefines.end())
-				return false; // already exists
-			
-		}
-		auto& shaderDefines = mShaderData->mShaderDefines;
-		for (auto& d : shaderDefines)
-		{
-			if (d.name == name)
-			{
-				if (d.value != val)
-				{
-					d.value = val;
+			if (it != shaderDefines.end()){
+				if (it->value == val){
+					return false; // already exists
+				}
+				else{
 					mShaderDefinesChanged = true;
 					return true;
 				}
-				else
-				{
-					return false;
-				}
+				
 			}
+			
 		}
+		auto& shaderDefines = mShaderData->mShaderDefines;
 		shaderDefines.push_back(ShaderDefine());
 		shaderDefines.back().name = name;
 		shaderDefines.back().value = val;
@@ -823,6 +820,11 @@ public:
 
 	void ApplyShaderDefines()
 	{
+		/*if (mMarkNoShaderDefineChanges){
+			int a = 0;
+			a++;
+			FBDebugBreak();
+		}*/
 		if (mShaderDefinesChanged){
 			mShaderDefinesChanged = false;
 			auto& renderer = Renderer::GetInstance();
@@ -844,6 +846,18 @@ public:
 
 	const SHADER_DEFINES& GetShaderDefines() const { 
 		return mShaderData->mShaderDefines; 
+	}
+
+	/*void MarkNoShaderDefineChanges(){
+		mMarkNoShaderDefineChanges = true;
+	}*/
+
+	void DebugPrintShaderDefines() const{
+		Logger::Log(FormatString("(info) DebugPrintShaderDefines for %s\n", mUniqueData->mName.c_str()).c_str());
+		for (auto& it : mShaderData.const_get()->mShaderDefines){
+			Logger::Log(FormatString("%s : %s\n", it.name.c_str(), it.value.c_str()).c_str());
+		}
+		Logger::Log("---- End ----\n");
 	}
 
 	//----------------------------------------------------------------------------
@@ -1335,6 +1349,14 @@ void Material::SetMaterialParameter(unsigned index, const Vec4& value) {
 
 const SHADER_DEFINES& Material::GetShaderDefines() const {
 	return mImpl->GetShaderDefines();
+}
+
+//void Material::MarkNoShaderDefineChanges(){
+//	mImpl->MarkNoShaderDefineChanges();
+//}
+
+void Material::DebugPrintShaderDefines() const{
+	mImpl->DebugPrintShaderDefines();
 }
 
 const Vec4f& Material::GetAmbientColor() const {

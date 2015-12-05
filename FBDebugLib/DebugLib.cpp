@@ -34,8 +34,16 @@
 #endif
 namespace fb{
 	void FBDebugBreak(){
-#if defined(_DEBUG) && defined(_PLATFORM_WINDOWS_)
-		DebugBreak();
+#if defined(_PLATFORM_WINDOWS_)
+		__try
+		{
+			DebugBreak();
+		}
+		__except (GetExceptionCode() == EXCEPTION_BREAKPOINT ?
+		EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
+		{
+
+		}
 #else
 #endif
 	}

@@ -229,19 +229,20 @@ public:
 };
 
 //---------------------------------------------------------------------------
-ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene, ParticleRenderKey& key, bool& created)
+ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene, const ParticleRenderKey& key, bool& created)
 {
 	if (!scene){
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		return 0;
 	}
+
 	RENDER_OBJECTS::iterator it = sRenderObjects.Find(key);
 	if (it != sRenderObjects.end())
 	{
 		created = false;
 		return it->second;
 	}
-	created = true;
+	created = true;	
 	ParticleRenderObjectPtr p(new ParticleRenderObject, [](ParticleRenderObject* obj){ delete obj; });
 	auto material = p->GetMaterial();
 	if_assert_pass(material)
@@ -302,7 +303,7 @@ ParticleRenderObject::ParticleRenderObject()
 }
 
 ParticleRenderObject::~ParticleRenderObject(){
-
+	Logger::Log(FB_ERROR_LOG_ARG, "ParticleRenderObject destructed.");
 }
 
 void ParticleRenderObject::PreRender(const RenderParam& param, RenderParamOut* paramOut) {

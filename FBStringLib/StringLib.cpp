@@ -208,7 +208,19 @@ namespace fb{
 			str.end(),
 			str.begin(),
 			tolower);
-	}	
+	}
+	
+	std::string ToLowerCase(const char* sz){
+		if (!sz)
+			return std::string();
+		std::string lowered(sz);
+		std::transform(
+			lowered.begin(),
+			lowered.end(),
+			lowered.begin(),
+			tolower);
+		return lowered;
+	}
 
 	void ToLowerCaseFirst(std::string& str){
 		std::transform(

@@ -1,0 +1,98 @@
+<!-- emitterLifeTime : 0 for infinite -->
+<!-- align(ParticleAlign::Enum) : Billboard, Direction -->
+<!-- emiitTo(ParticleEmitTo::Enum) : LocalSpace, WorldSpace -->
+<!-- range(ParticleRangeType::Enum) : Point, Sphere, Box, Cone, Hemisphere -->
+<!-- emitPerSec <-> emitCount : mutual exclusive -->
+<!-- rottations in degree -->
+<!-- until/after in percentage -->
+<!-- pivot in d3d uv space: 0.5, 0.5 is center -->
+<!-- blendMode: Additive, AlphaBlend, InvColorBlend, Replace-->
+<ParticleEmitter emitterLifeTime="0.5" emitterID="6">
+	
+	<ParticleTemplate texture="data/particles/smoke_alpha.png" emitPerSec="10" numInitialParticle="1"
+	
+		cross="false" blendMode="Replace" glow="0.0" emitTo="WorldSpace" range="Sphere" rangeRadius="0.5"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="0.3, 0.3" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="0.05, 0.1" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="0.0" scaleAccelUntil="0 percent" scaleDeaccel="0.0" scaleDeaccelAfter="100 percent"
+		
+		velocityMinMax="5,10" velocityDirectionMin="-1,-1,-1"	velocityDirectionMax="1,1,1"	
+		accel="10" accelUntil="30 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="-360, 360 deg" rotSpeedMin="-360 deg" rotSpeedMax="360 deg"		
+		rotAccel="180 deg" rotAccelUntil="30 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="0 percent" fadeOutAfter="80 percent"
+		
+		Intensity=".5, 0.5"		
+	/>
+	
+	<ParticleTemplate texture="data/particles/muzzle_flash3_front.png" emitPerSec="10.0" numInitialParticle="4"
+	
+		cross="false" blendMode="Additive" glow="2.0" emitTo="WorldSpace" range="Sphere" rangeRadius="0.3"
+		
+		uvAnimColRow="2, 2" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="0.3, 0.5" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="0.2, 0.3" sizeRatioMinMax="2.0, 2.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="0.1" scaleAccelUntil="10 percent" scaleDeaccel="0.1" scaleDeaccelAfter="90 percent"
+		
+		velocityMinMax="0,0.01" velocityDirectionMin="-1,-1,-1"	velocityDirectionMax="1,1,1"	
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="100 percent" 
+		
+		rotMinMax="-360, 360 deg" rotSpeedMin="-180 deg" rotSpeedMax="180 deg"		
+		rotAccel="80 deg" rotAccelUntil="30 percent" rotDeaccel="80 deg" rotDeaccelAfter="70 percent"		
+		
+		fadeInUntil="20 percent" fadeOutAfter="80 percent"
+		
+		Intensity=".5, 0.5"		
+	/>
+	
+	<ParticleTemplate texture="data/particles/explosion2.png" emitPerSec="5.0" numInitialParticle="3"
+	
+		cross="false" blendMode="Additive" preMultiAlpha="true"
+		glow="1.0" emitTo="WorldSpace" range="Sphere" rangeRadius="0.2"
+		
+		uvAnimColRow="4, 4" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="0.3, 0.5" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="0.3, 0.4" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="2.5" scaleAccelUntil="20 percent" scaleDeaccel="5.0" scaleDeaccelAfter="70 percent"
+		
+		velocityMinMax="-0.2,0.2" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1,1,1"		
+		accel="0.2" accelUntil="10 percent" deaccel="1" deaccelAfter="70 percent" 
+		
+		rotMinMax="-100, 100 deg" rotSpeedMin="0 deg" rotSpeedMax="0 deg"		
+		rotAccel="10 deg" rotAccelUntil="10 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="10 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.0"
+	/>
+	
+	<ParticleTemplate pointLightRangeMinMax="2, 4" emitPerSec="2" numInitialParticle="1"
+		color="0.95, 0.95, 0.8, 1.0" colorEnd="0.85, 0.85, 0.5, 1.0"
+		lifeTimeMinMax="0.2, 0.3" 
+		emitTo="localSpace" range="Point" rangeRadius="0.0"
+		
+		scaleVelMinMax="0.01, 0.05"
+		scaleAccel="1" scaleAccelUntil="10 percent" scaleDeaccel="10.0" scaleDeaccelAfter="90 percent"
+		
+		velocityMinMax="0,0" velocityDirectionMin="-1,-1,-1" velocityDirectionMax = "1, 1, 1"		
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent"
+		
+		fadeInUntil="0 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.6"		
+	/>
+	
+</ParticleEmitter>

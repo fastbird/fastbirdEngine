@@ -203,7 +203,7 @@ public:
 					inserted = true;
 				}
 
-				if (lightCam && !lightCam->IsCulled(obj->GetBoundingVolumeWorld().get()))
+				if (lightCam && !lightCam->IsCulled(obj->GetBoundingVolumeWorld().get()) && !obj->HasObjFlag(SceneObjectFlag::Transparent))
 				{
 					mVisibleObjectsLight[lightCam].push_back((obj.get()));
 					inserted = true;
@@ -459,6 +459,10 @@ public:
 		return mSpatialObjects.size();
 	}
 
+	unsigned GetNumObjects() const{
+		return mObjects.size();
+	}
+
 	const SPATIAL_OBJECTS_RAW* GetVisibleSpatialList(ICameraPtr cam){
 		return &mVisibleObjectsMain[cam.get()];
 	}
@@ -683,6 +687,10 @@ void Scene::SetSkipSpatialObjects(bool skip) {
 
 void Scene::ClearEverySpatialObject() {
 	mImpl->ClearEverySpatialObject();
+}
+
+unsigned Scene::GetNumObjects() const{
+	return mImpl->GetNumObjects();
 }
 
 unsigned Scene::GetNumSpatialObjects() const {

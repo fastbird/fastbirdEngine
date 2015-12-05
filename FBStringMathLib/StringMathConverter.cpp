@@ -249,14 +249,15 @@ Rect StringMathConverter::ParseRect(const std::string& str, const Rect& def){
 Color StringMathConverter::ParseColor(const std::string& str, const Color& def){
 	StringVector vec = Split(str);
 
-	if (vec.size() < 4)
-	{
-		return def;
-	}
-	else
+	if (vec.size() == 4)
 	{
 		return Color(StringConverter::ParseReal(vec[0]), StringConverter::ParseReal(vec[1]), StringConverter::ParseReal(vec[2]), StringConverter::ParseReal(vec[3]));
 	}
+	else if (vec.size() == 3){
+		return Color(StringConverter::ParseReal(vec[0]), StringConverter::ParseReal(vec[1]), StringConverter::ParseReal(vec[2]));
+	}
+
+	return def;
 }
 
 }

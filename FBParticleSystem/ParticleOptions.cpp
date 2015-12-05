@@ -27,15 +27,36 @@
 
 #include "stdafx.h"
 #include "ParticleOptions.h"
+#include "ParticleSystem.h"
 #include "FBConsole/Console.h"
 using namespace fb;
+
+static void EditParticle(StringVector& arg);
+static void ScaleEditingParticle(StringVector& arg);
 
 FB_IMPLEMENT_STATIC_CREATE(ParticleOptions)
 ParticleOptions::ParticleOptions(){
 	MoveEditParticle = 0;
 	FB_REGISTER_CVAR(MoveEditParticle, MoveEditParticle, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
+	FB_REGISTER_CC(EditParticle, EditParticle, "Start editing particle");
+	FB_REGISTER_CC(ScaleEditingParticle, ScaleEditingParticle, "Scale editing particle");
 }
 
 ParticleOptions::~ParticleOptions(){
 
+}
+
+void EditParticle(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+
+	ParticleSystem::GetInstance().EditThisParticle(arg[1].c_str());
+}
+
+void ScaleEditingParticle(StringVector& arg)
+{
+	if (arg.size() < 2)
+		return;
+	ParticleSystem::GetInstance().ScaleEditingParticle(StringConverter::ParseReal(arg[1]));
 }

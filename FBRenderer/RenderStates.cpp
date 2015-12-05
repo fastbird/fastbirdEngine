@@ -308,8 +308,9 @@ public:
 	void Bind(unsigned stencilRef) const{
 		if (mRasterizerState)
 			mRasterizerState->Bind();
-		if (mBlendState)
+		if (mBlendState){
 			mBlendState->Bind();
+		}
 		if (mDepthStencilState)
 			mDepthStencilState->Bind(stencilRef);
 	}

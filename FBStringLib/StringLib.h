@@ -57,7 +57,8 @@ namespace fb{
 	*/
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
 	
-	void ToLowerCase(std::string& str);	
+	void ToLowerCase(std::string& str);
+	std::string ToLowerCase(const char* sz);
 	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase(std::string& str);
 	void ToUpperCase(std::wstring& str);

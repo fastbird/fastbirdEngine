@@ -42,7 +42,7 @@ namespace fb
 		
 	public:
 		static const int MAX_SHARED_VERTICES;
-		static ParticleRenderObjectPtr GetRenderObject(IScenePtr scene, ParticleRenderKey& key, bool& created);
+		static ParticleRenderObjectPtr GetRenderObject(IScenePtr scene, const ParticleRenderKey& key, bool& created);
 		static void ClearParticles();
 		static void EndUpdateParticles();
 		static void FinalizeRenderObjects();

@@ -5,6 +5,7 @@
 #include "EngineTest.h"
 #include "MeshTest.h"
 #include "SkyBoxTest.h"
+#include "ParticleTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
 EngineFacadePtr gEngine;
@@ -17,6 +18,7 @@ TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 HWND gHWnd = 0;
 MeshTestPtr gMeshTest;
 SkyBoxTestPtr gSkyBoxTest;
+ParticleTestPtr gParticleTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -24,6 +26,8 @@ void UpdateFrame(){
 	gEngine->UpdateFileMonitor();
 	gEngine->UpdateInput();
 	gEngine->Update(dt);
+	if (gParticleTest)
+		gParticleTest->Update(dt);
 	gEngine->Render();
 }
 
@@ -43,17 +47,18 @@ void DeinitEngine(){
 
 void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
-	gMeshTest = MeshTest::Create();
-	gEngine->SetMainCameraPos(Vec3(0, -50, 0));
+	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
-	gMeshTest->SetCameraTarget();
-
+	//gMeshTest = MeshTest::Create();	
+	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
+	gParticleTest = ParticleTest::Create();
 	
 	
 }
 
 void EndTest(){
+	gParticleTest = 0;
 	gMeshTest = 0;
 	gSkyBoxTest = 0;
 }
@@ -153,8 +158,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
 
+   RECT rect = { 0, 0, 1600, 900 };
+
+   AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
    gHWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 1600, 900, NULL, NULL, hInstance, NULL);
+	   CW_USEDEFAULT, 0, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, NULL);
 
    if (!gHWnd)
    {

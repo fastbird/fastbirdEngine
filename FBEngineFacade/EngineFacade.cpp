@@ -301,9 +301,23 @@ public:
 
 	void Render(){
 		mRenderer->Render();
-		
-		if (mEngineOptions->e_profile)
+		if (mEngineOptions->e_profile){
 			mRenderer->DisplayFrameProfiler();
+			auto numSpatialObjects = mMainScene->GetNumSpatialObjects();
+			auto numObjects = mMainScene->GetNumObjects();
+			wchar_t msg[255];
+			int x = 1300;
+			int y = 110;
+			int yStep = 20;			
+			
+			swprintf_s(msg, 255, L"Num SpatialObjects = %d", numSpatialObjects);
+			mRenderer->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+			y += yStep;
+
+			swprintf_s(msg, 255, L"Num Objects = %d", numObjects);
+			mRenderer->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+			y += yStep;
+		}
 	}
 
 	void AddTempMesh(MeshFacadePtr mesh){

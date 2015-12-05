@@ -373,15 +373,15 @@ public:
 	}
 
 	// IFileChangeListeners
-	bool OnFileChanged(const char* file){
+	bool OnFileChanged(const char* file, const char* loweredExtension){
 		assert(file);
 		std::string lower(file);
 		ToLowerCase(lower);
 
-		auto extension = FileSystem::GetExtension(lower.c_str());
+		std::string extension(loweredExtension);
 		std::string uiname;
 		std::string filepath = lower;
-		if (strcmp(extension, "lua") == 0)
+		if (extension==".lua")
 		{
 			uiname = FindUINameWithLua(lower.c_str());
 			filepath = FindUIFilenameWithLua(lower.c_str());
@@ -404,7 +404,7 @@ public:
 			}
 
 		}
-		else if (strcmp(extension, "ui") == 0)
+		else if (extension==".ui")
 		{
 			uiname = FileSystem::GetName(lower.c_str());
 		}
@@ -424,7 +424,7 @@ public:
 				uiname = FileSystem::GetName(uiFilePath.c_str());
 				SetVisible(uiname.c_str(), true);
 			}
-			else if (strcmp(extension, "lua") == 0)
+			else if (extension==".lua")
 			{
 				if (strstr(file, "save\\save") == 0 &&
 					strstr(file, "configGame.lua") == 0 &&
@@ -486,6 +486,8 @@ public:
 	}
 
 	void RenderUI(HWindowId hwndId, HWindow hwnd){
+		if (!mUICommands->r_UI)
+			return;
 		auto uis = mRenderUIs.find(hwndId);
 		for (auto& ui : uis->second){
 			ui->PreRender();
@@ -2687,8 +2689,8 @@ void UIManager::Shutdown() {
 	mImpl->Shutdown();
 }
 
-bool UIManager::OnFileChanged(const char* file) {
-	return mImpl->OnFileChanged(file);
+bool UIManager::OnFileChanged(const char* file, const char* loweredExt) {
+	return mImpl->OnFileChanged(file, loweredExt);
 }
 
 void UIManager::BeforeUIRendering(HWindowId hwndId, HWindow hwnd) {

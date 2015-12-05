@@ -32,7 +32,6 @@
 #include "IUnknownDeleter.h"
 #include "FBRenderer/RendererEnums.h"
 using namespace fb;
-
 FB_IMPLEMENT_STATIC_CREATE(IndexBufferD3D11);
 
 IndexBufferD3D11::IndexBufferD3D11()

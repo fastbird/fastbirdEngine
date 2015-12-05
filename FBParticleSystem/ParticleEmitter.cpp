@@ -643,7 +643,6 @@ public:
 					Vec3 toSidePos = mSelf->GetDirection() * p.mSize.x;
 					/*mBoundingVolumeWorld->Merge(p.mPosWorld - pt->mPivot.x * toSidePos);
 					mBoundingVolumeWorld->Merge(p.mPosWorld + (1.0f - pt->mPivot.x) * toSidePos);*/
-
 					// update alpha
 					if (!p.IsInfinite())
 					{
@@ -1015,7 +1014,7 @@ public:
 					{
 						int iteration = pt->mCross ? 2 : 1;
 						Vec3 vdirBackup;
-						Vec3 udirBackup;
+						Vec3 udirBackup;						
 						for (int i = 0; i < iteration; i++)
 						{
 							Vec3 udir = p.mUDirection;
@@ -1242,7 +1241,7 @@ public:
 	}
 
 	void LinkParticleRenderObject(IScenePtr scene){
-		for (auto pt : *mTemplates.const_get()){
+		for (auto& pt : *mTemplates.const_get()){
 			if (pt.mTexturePath.empty())
 				continue;
 			BLEND_DESC desc;
@@ -1288,9 +1287,9 @@ public:
 			}
 
 			bool created = false;
-			ParticleRenderKey key(scene.get(), pt.mTexturePath.c_str(), desc, pt.mGlow > 0.f, pt.mDepthFade);
+			ParticleRenderKey key(scene.get(), pt.mTexturePath.c_str(), desc, pt.mGlow > 0.f, pt.mDepthFade);			
 			auto pro = ParticleRenderObject::GetRenderObject(scene, key, created);
-			mParticleRenderObjects[&pt] = pro;			
+			mParticleRenderObjects[&pt] = pro;
 			assert(pro);
 			auto material = pro->GetMaterial();
 			assert(material);
@@ -1666,10 +1665,6 @@ float ParticleEmitter::GetAlpha() const {
 //void ParticleEmitter::UpdateEmit(float dt) {
 //	mImpl->UpdateEmit(dt);
 //}
-
-void ParticleEmitter::CopyDataToRenderer(float dt) {
-	mImpl->CopyDataToRenderer(dt);
-}
 
 bool ParticleEmitter::IsInfinite() const {
 	return mImpl->IsInfinite();

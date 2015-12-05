@@ -114,7 +114,16 @@ namespace fb
 
 	struct RENDER_TARGET_BLEND_DESC
 	{
-		RENDER_TARGET_BLEND_DESC(){
+		RENDER_TARGET_BLEND_DESC()
+			: SrcBlend(BLEND_ONE)
+			, DestBlend(BLEND_ZERO)
+			, BlendOp(BLEND_OP_ADD)
+			, SrcBlendAlpha(BLEND_ONE)
+			, DestBlendAlpha(BLEND_ZERO)
+			, BlendOpAlpha(BLEND_OP_ADD)
+			, RenderTargetWriteMask(COLOR_WRITE_MASK_ALL)
+			, BlendEnable(false)			
+		{
 			memset(padding, 0, 2);
 		}
 		BLEND			SrcBlend;
@@ -234,12 +243,12 @@ namespace fb
 			NumUpdateObjectConst = 0;
 		}
 
-		void UpdateFrameRate(TIME_PRECISION dt)
+		void UpdateFrameRate(TIME_PRECISION rendererDt, TIME_PRECISION totalDt)
 		{
-			mLastDrawTakes = dt;
-			FrameRateDisplayUpdateTime += dt;
-			dt = std::max((TIME_PRECISION)0.0000001f, dt);
-			FrameRate = (FrameRate + 1.0f / (Real)dt) / 2.0f;
+			mLastDrawTakes = rendererDt;
+			FrameRateDisplayUpdateTime += totalDt;
+			totalDt = std::max((TIME_PRECISION)0.0000001f, totalDt);
+			FrameRate = (FrameRate + 1.0f / (Real)totalDt) / 2.0f;
 			if (FrameRateDisplayUpdateTime>0.5f)
 			{
 				FrameRateDisplayUpdateTime = 0.f;

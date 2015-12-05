@@ -384,6 +384,10 @@ namespace fb
 
 	}	
 
+	Real Vec3::GetMax() const{
+		return std::max(std::max(x, y), z);
+	}
+
 	//--------------------------------------------------------------------------
 	Vec3 operator* (Real l, const Vec3& r)
 	{

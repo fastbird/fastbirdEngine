@@ -101,6 +101,8 @@ namespace fb
 		Real Length() const;
 		Real LengthSQ() const;
 		Real AngleBetween(const Vec3& v) const;
+
+		Real GetMax() const;
 		
 	};
 

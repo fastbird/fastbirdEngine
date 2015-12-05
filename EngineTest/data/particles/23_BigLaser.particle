@@ -1,0 +1,65 @@
+<!-- emitterLifeTime : 0 for infinite -->
+<!-- align(ParticleAlign::Enum) : Billboard, Direction -->
+<!-- emiitTo(ParticleEmitTo::Enum) : LocalSpace, WorldSpace -->
+<!-- range(ParticleRangeType::Enum) : Point, Sphere, Box, Cone, Hemisphere -->
+<!-- emitPerSec <-> emitCount : mutual exclusive -->
+<!-- rottations in degree -->
+<!-- until/after in percentage -->
+<!-- pivot in d3d uv space: 0.5, 0.5 is center -->
+<!--  color -->
+
+<ParticleEmitter emitterLifeTime="5.0" emitterID="23">
+	
+	<ParticleTemplate texture="data/particles/laser2.png" emitPerSec="8" numInitialParticle="1"
+		
+		lifeTimeMinMax="0.5, 0.5" align="Direction" stretchMax="0.0" glow=".7"
+		
+		blendMode="AlphaBlend"
+		
+		emitTo="localSpace" range="Point" rangeRadius="0.0"
+		
+		sizeMinMax="5.0, 5.0" sizeRatioMinMax="1.0, 1.0" pivot="0.0, 0.5"
+		
+		scaleVelMinMax="0.0, 0.0" scaleVelRatio="1.0, 1.0"
+		
+		scaleAccel="0.0" scaleAccelUntil="10 percent" scaleDeaccel="0.0" scaleDeaccelAfter="90 percent"
+		
+		velocityMinMax="0,0"
+		
+		accel="0" accelUntil="0" deaccel="0" deaccelAfter="0" 
+		
+		rotMinMax="0, 0 deg" rotSpeedMin="0 deg" rotSpeedMax="0 deg"
+		
+		rotAccel="0 deg" rotAccelUntil="10 percent" rotDeaccel="0 deg" rotDeaccelAfter="90 percent"		
+		
+		fadeInUntil="10 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.0" color="1.0, 0.5, 0.5"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0" uvFlow="5, 0"
+	/>
+	
+	<ParticleTemplate texture="data/particles/smoke_smoothed2.png" emitPerSec="150" numInitialParticle="0"
+	
+		cross="false" blendMode="Additive" glow="1.0" emitTo="WorldSpace" range="Sphere" rangeRadius="0.1"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0" color="0.8, 0.2, 0" preMultiAlpha="true"
+		
+		lifeTimeMinMax="0.5, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="2.5, 4.8" sizeRatioMinMax="0.5, 1.5" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="0.0" scaleAccelUntil="0 percent" scaleDeaccel="0.0" scaleDeaccelAfter="100 percent"
+		
+		velocityMinMax="1.0,1.5" velocityDirectionMin="-0.2,1,-0.2"	velocityDirectionMax="0.2,1,0.2"	
+		accel="0" accelUntil="0 percent" deaccel="2" deaccelAfter="50 percent" 
+		
+		rotMinMax="-360, 360 deg" rotSpeedMin="0 deg" rotSpeedMax="0 deg"		
+		rotAccel="180 deg" rotAccelUntil="30 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="0 percent" fadeOutAfter="80 percent"
+		
+		Intensity="0.5, 0.8"		
+	/>
+	
+</ParticleEmitter>

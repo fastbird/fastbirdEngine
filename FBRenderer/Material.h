@@ -97,6 +97,10 @@ namespace fb{
 		bool RemoveShaderDefine(const char* def);
 		void SetMaterialParameter(unsigned index, const Vec4& value);
 		const SHADER_DEFINES& GetShaderDefines() const;
+		/// Debugging features
+		//void MarkNoShaderDefineChanges();
+		void DebugPrintShaderDefines() const;
+
 		const Vec4f& GetAmbientColor() const;
 		const Vec4f& GetDiffuseColor() const;
 		const Vec4f& GetSpecularColor() const;

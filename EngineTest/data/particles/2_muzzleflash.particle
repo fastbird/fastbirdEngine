@@ -1,0 +1,41 @@
+<!-- emitterLifeTime : 0 for infinite -->
+<!-- align(ParticleAlign::Enum) : Billboard, Direction -->
+<!-- emiitTo(ParticleEmitTo::Enum) : LocalSpace, WorldSpace -->
+<!-- range(ParticleRangeType::Enum) : Point, Sphere, Box, Cone, Hemisphere -->
+<!-- emitPerSec <-> emitCount : mutual exclusive -->
+<!-- rottations in degree -->
+<!-- until/after in percentage -->
+<!-- pivot in d3d uv space: 0.5, 0.5 is center -->
+<!-- blendMode-->
+<ParticleEmitter emitterLifeTime="0.5" emitterID="2">
+	
+	<ParticleTemplate texture="data/particles/muzzle_flash2.png" emitPerSec="0" numInitialParticle="1"
+	
+		cross="true" blendMode="AlphaBlend" glow="1.0"
+		
+		lifeTimeMinMax="0.1, 0.1" align="Direction" DefaultDirection="0, 1, 0"
+		
+		emitTo="localSpace" range="Point" rangeRadius="0.0"
+		
+		sizeMinMax="0.1, 0.2" sizeRatioMinMax="2.0, 2.0" pivot="0.0, 0.5"
+		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="2.00, 2.00"
+		
+		scaleAccel="0.0" scaleAccelUntil="0 percent" scaleDeaccel="0.0" scaleDeaccelAfter="100 percent"
+		
+		velocityMinMax="0,0" velocityDirectionMin ="0,0,0" velocityDirectionMax = "0, 0, 0"
+		
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="0, 0 deg" rotSpeedMin="0 deg" rotSpeedMax="0 deg"
+		
+		rotAccel="0 deg" rotAccelUntil="0 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="0 percent" fadeOutAfter="100 percent"
+		
+		Intensity="1.5, 2.0"
+		
+		uvAnimColRow="2, 2" uvAnimFramesPerSec="0"
+	/>
+	
+</ParticleEmitter>

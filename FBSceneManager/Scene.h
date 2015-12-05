@@ -84,6 +84,7 @@ namespace fb{
 
 		void SetSkipSpatialObjects(bool skip);
 		void ClearEverySpatialObject();
+		unsigned GetNumObjects() const;
 		unsigned GetNumSpatialObjects() const;
 		/** You do not own the returned pointers of this function
 		do not keep any pointer. */

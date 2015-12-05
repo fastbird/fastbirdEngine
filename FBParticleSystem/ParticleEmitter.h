@@ -62,7 +62,6 @@ namespace fb
 		void SetEmitterColor(const Color& c);
 		void SetAlpha(float alpha);
 		float GetAlpha() const ;
-		void CopyDataToRenderer(float dt);		
 		bool IsInfinite() const;
 		void SetBufferSize(unsigned size);
 		//void Sort();

@@ -74,7 +74,7 @@ namespace fb
 		virtual WinBasePtr CreateComponent(ComponentType::Enum type);
 		void Shutdown();
 		// IFileChangeListeners
-		bool OnFileChanged(const char* file);
+		bool OnFileChanged(const char* file, const char* loweredExt);
 
 		// IRendererObserver
 		void BeforeUIRendering(HWindowId hwndId, HWindow hwnd);

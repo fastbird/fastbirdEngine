@@ -374,7 +374,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// IFileChangeObserver
 		//-------------------------------------------------------------------
-		bool OnFileChanged(const char* file);
+		bool OnFileChanged(const char* file, const char* ext);
 	};
 
 }

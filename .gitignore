@@ -15,6 +15,13 @@ EngineTest/data/*/paint/
 EngineTest/data/*/resources/
 EngineTest/data/*/*.toc
 
+EngineTest/data/particles/*/textureSets/
+EngineTest/data/particles/*/editor/
+EngineTest/data/particles/*/paint/
+EngineTest/data/particles/*/resources/
+EngineTest/data/particles/*/*.toc
+
+
 # Shader caches
 *.gscache
 *.vscache

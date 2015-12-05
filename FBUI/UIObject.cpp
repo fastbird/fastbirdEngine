@@ -28,12 +28,14 @@
 #include "StdAfx.h"
 #include "UIObject.h"
 #include "ComponentType.h"
+#include "WinBase.h"
 
 #include "FBRenderer/VertexBuffer.h"
+#include "FBRenderer/Material.h"
 using namespace fb;
 class UIObject::Impl{
 public:	
-	WinBase* mOwnerUI;
+	UIObject* mSelf;
 	MaterialPtr mMaterial;
 	VertexBufferPtr mVertexBuffer;
 
@@ -72,8 +74,9 @@ public:
 	unsigned mLastPreRendered;
 
 	//---------------------------------------------------------------------------
-	Impl()
-		: mAlpha(1.f)
+	Impl(UIObject* self)
+		: mSelf(self)
+		, mAlpha(1.f)
 		, mNDCPos(0, 0)
 		, mNDCOffset(0, 0.0)
 		, mTextOffset(0, 22)
@@ -97,7 +100,7 @@ public:
 		, mNeedToUpdateTexcoordVB(false)
 	{
 		SetMaterial("EssentialEngineData/materials/UI.material");
-		mOwnerUI = 0;
+		
 		mTextColor = Color(0.8f, 0.8f, 0.8f);
 
 		mVertexBuffer = Renderer::GetInstance().CreateVertexBuffer(0,
@@ -244,10 +247,11 @@ public:
 	{
 		if (mDoNotDraw)
 			return;
-
-		RenderEventMarker mark(mDebugString.c_str());
 		if (!mMaterial || !mVertexBuffer || mOut)
 			return;
+
+		RenderEventMarker mark(mDebugString.c_str());
+		
 
 		auto& renderer = Renderer::GetInstance();
 
@@ -255,6 +259,7 @@ public:
 		{
 			renderer.SetScissorRects(&mScissorRect, 1);
 		}
+		
 		mMaterial->Bind(true);
 		if (!mNoDrawBackground)
 		{			
@@ -493,7 +498,8 @@ UIObjectPtr UIObject::Create(const Vec2I& renderTargetSize)
 
 //---------------------------------------------------------------------------
 UIObject::UIObject()
-	: mImpl(new Impl())
+	: mImpl(new Impl(this))
+	, mOwnerUI(0)
 {
 
 }

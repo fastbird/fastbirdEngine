@@ -29,14 +29,14 @@
 #include "FBCommonHeaders/Types.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
-	FB_DECLARE_SMART_PTR(ParticleEmitterFacade);
-	class FB_DLL_ENGINEFACADE ParticleEmitterFacade{
-		FB_DECLARE_PIMPL_NON_COPYABLE(ParticleEmitterFacade);
-		ParticleEmitterFacade();
-		~ParticleEmitterFacade();
+	FB_DECLARE_SMART_PTR(ParticleFacade);
+	class FB_DLL_ENGINEFACADE ParticleFacade{
+		FB_DECLARE_PIMPL_NON_COPYABLE(ParticleFacade);
+		ParticleFacade();
+		~ParticleFacade();
 
 	public:
-		static ParticleEmitterFacadePtr Create();
+		static ParticleFacadePtr Create();
 		bool Load(unsigned id);
 		bool Load(IScenePtr scene, unsigned id);
 		bool IsValid() const;

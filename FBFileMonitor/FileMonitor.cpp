@@ -291,7 +291,11 @@ public:
 								continue;
 							}
 							++oit;
-							observer->OnFileChanged(filepath.c_str());
+							std::string loweredStr(filepath);
+							ToLowerCase(loweredStr);
+							bool processed = observer->OnFileChanged(filepath.c_str(), loweredStr.c_str());
+							if (processed)
+								break;
 						}
 					}
 					/*if (shader)

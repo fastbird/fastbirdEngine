@@ -37,6 +37,7 @@ namespace fb
 			FileChange_Engine,			
 			FileChange_Game,
 		};
-		virtual bool OnFileChanged(const char* file) = 0;
+		/// extension contains "." ex).xml
+		virtual bool OnFileChanged(const char* filepath, const char* loweredExtension) = 0;
 	};
 }

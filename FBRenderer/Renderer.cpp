@@ -737,7 +737,7 @@ public:
 
 		auto endTime = gpTimer->GetTickCount();
 		auto gap = (endTime - startTime) / (Real)gpTimer->GetFrequency();
-		mFrameProfiler.UpdateFrameRate(gap);
+		mFrameProfiler.UpdateFrameRate(gap, gpTimer->GetDeltaTime());
 	}
 
 	//-------------------------------------------------------------------
@@ -979,7 +979,7 @@ public:
 			return 0;
 
 		sLoadedMaterials[loweredPath] = material;
-		return material;
+		return material->Clone();
 
 	}
 	
@@ -2704,9 +2704,8 @@ public:
 	//-------------------------------------------------------------------
 	// ISceneObserver
 	//-------------------------------------------------------------------
-	bool OnFileChanged(const char* file){
-		auto extension = std::string(FileSystem::GetExtension(file));
-		ToLowerCase(extension);
+	bool OnFileChanged(const char* file, const char* ext){
+		auto extension = std::string(ext);		
 		bool shader = extension == ".hlsl" || extension ==  ".h";
 		bool material = extension == ".material";
 		bool texture = extension == ".png" || extension == ".dds";
@@ -3486,6 +3485,6 @@ void Renderer::ConsumeInput(IInputInjectorPtr injector) {
 	mImpl->ConsumeInput(injector);
 }
 
-bool Renderer::OnFileChanged(const char* file){
-	return mImpl->OnFileChanged(file);
+bool Renderer::OnFileChanged(const char* file, const char* ext){
+	return mImpl->OnFileChanged(file, ext);
 }

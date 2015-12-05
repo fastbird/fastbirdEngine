@@ -27,12 +27,13 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
+#include "FBFileMonitor/IFileChangeObserver.h"
 namespace fb
 {
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(ParticleEmitter);
 	FB_DECLARE_SMART_PTR(ParticleSystem);
-	class FB_DLL_PARTICLESYSTEM ParticleSystem
+	class FB_DLL_PARTICLESYSTEM ParticleSystem : public IFileChangeObserver
 	{
 		FB_DECLARE_PIMPL_NON_COPYABLE(ParticleSystem);
 		ParticleSystem();
@@ -42,6 +43,12 @@ namespace fb
 		static ParticleSystemPtr Create();
 		static ParticleSystem& GetInstance();
 
+		//---------------------------------------------------------------------------
+		// IFileChangeObserver
+		//---------------------------------------------------------------------------
+		bool OnFileChanged(const char* file, const char* ext);
+
+		void AddParticleSearchDirectory(const char* directory);
 		void Update(float elapsedTime);
 		void RenderProfile();
 		ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file);
