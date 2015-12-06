@@ -81,6 +81,8 @@ namespace fb
 		void AddAuxiliary(size_t idx, const AUXILIARY& v);
 		void SetCollisionShapes(COLLISION_INFOS& colInfos);
 		void AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data);						
+		// SpatialObject
+		void SetLocation(const Transformation& t);
 		// force == false
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut);
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut, bool force);

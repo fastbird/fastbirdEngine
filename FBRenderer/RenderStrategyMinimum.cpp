@@ -28,7 +28,6 @@ THE SOFTWARE.
 #include "stdafx.h"
 #include "RenderStrategyMinimum.h"
 #include "RenderTarget.h"
-#include "Shader.h"
 #include "Renderer.h"
 #include "RendererOptions.h"
 #include "Texture.h"
@@ -50,7 +49,6 @@ public:
 	TexturePtr mDepthTarget;
 	CameraPtr mLightCamera;
 	TexturePtr mShadowMap;
-	ShaderPtr mCloudDepthWriteShader;
 	
 	
 	

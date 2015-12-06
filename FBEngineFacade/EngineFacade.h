@@ -73,6 +73,7 @@ namespace fb{
 		HWindowId CreateEngineWindow(int x, int y, int width, int height,
 			const char* wndClass, const char* title, unsigned style, unsigned exStyle,
 			WNDPROC winProc);
+		void DestroyEngineWindow(HWindowId windowId);
 		HWindowId GetMainWindowHandleId() const;
 		/// for windows;
 		intptr_t WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp);

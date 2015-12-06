@@ -50,6 +50,7 @@
     <ClInclude Include="RenderSteps.h" />
     <ClInclude Include="RenderStrategyDefault.h" />
     <ClInclude Include="RenderStrategyMinimum.h" />
+    <ClInclude Include="RenderStrategyNull.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="RenderTargetParam.h" />
     <ClInclude Include="ResourceProvider.h" />
@@ -85,6 +86,7 @@
     <ClCompile Include="RenderStates.cpp" />
     <ClCompile Include="RenderStrategyDefault.cpp" />
     <ClCompile Include="RenderStrategyMinimum.cpp" />
+    <ClCompile Include="RenderStrategyNull.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="ResourceProvider.cpp" />
     <ClCompile Include="Shader.cpp" />

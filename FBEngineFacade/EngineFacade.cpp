@@ -135,6 +135,7 @@ public:
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mRenderer);
 		mFileMonitor->StartMonitor(".");
 	}
+
 	HWindowId CreateEngineWindow(int x, int y, int width, int height, const char* wndClass, 
 		const char* title, unsigned style, unsigned exStyle, WNDPROC winProc)
 	{
@@ -187,6 +188,10 @@ public:
 			return id;
 		}
 		return INVALID_HWND_ID;
+	}
+
+	void DestroyEngineWindow(HWindowId windowId){
+
 	}
 
 	HWindowId GetMainWindowHandleId() const{
@@ -439,11 +444,13 @@ public:
 };
 
 //---------------------------------------------------------------------------
+EngineFacade* sFacadeRaw = 0;
 static EngineFacadeWeakPtr sFacade;
 EngineFacadePtr EngineFacade::Create(){
 	if (sFacade.expired()){
 		EngineFacadePtr p(new EngineFacade, [](EngineFacade* obj){ delete obj; });
 		sFacade = p;
+		sFacadeRaw = p.get();
 		return p;
 	}
 	return sFacade.lock();
@@ -453,7 +460,7 @@ EngineFacade& EngineFacade::GetInstance(){
 	if (sFacade.expired()){
 		Logger::Log(FB_ERROR_LOG_ARG, "EngineFacade is already deleted. Program will crash.");
 	}
-	return *sFacade.lock();
+	return *sFacadeRaw;
 }
 
 bool EngineFacade::HasInstance(){
@@ -473,6 +480,10 @@ HWindowId EngineFacade::CreateEngineWindow(int x, int y, int width, int height,
 	const char* wndClass, const char* title, unsigned style, unsigned exStyle,
 	WNDPROC winProc){
 	return mImpl->CreateEngineWindow(x, y, width, height, wndClass, title, style, exStyle, winProc);
+}
+
+void EngineFacade::DestroyEngineWindow(HWindowId windowId){
+	mImpl->DestroyEngineWindow(windowId);
 }
 
 HWindowId EngineFacade::GetMainWindowHandleId() const{

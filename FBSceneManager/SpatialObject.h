@@ -70,7 +70,7 @@ namespace fb{
 		const Transformation& GetLocation() const;
 		const Transformation& GetAnimatedLocation() const;
 		AnimationPtr GetAnimation() const;
-		void SetLocation(const Transformation& t);
+		virtual void SetLocation(const Transformation& t);
 		bool GetTransformChanged() const;
 		void ClearTransformChanged();
 		virtual void Update(TIME_PRECISION dt);

@@ -220,6 +220,15 @@ public:
 		return false;
 	}
 
+	bool IsAttachedToMain() const{
+		auto mainScene = EngineFacade::GetInstance().GetMainScene();
+		if (mMeshObject)
+			return mMeshObject->IsAttached(mainScene);
+		else if (mMeshGroup)
+			return mMeshGroup->IsAttached(mainScene);
+		return false;
+	}
+
 	bool IsAttached(IScenePtr scene) const{
 		if (mMeshObject)
 			return mMeshObject->IsAttached(std::static_pointer_cast<Scene>(scene));
@@ -820,6 +829,10 @@ bool MeshFacade::DetachFromScene(bool includingRtt){
 
 bool MeshFacade::IsAttached() const {
 	return mImpl->IsAttached();
+}
+
+bool MeshFacade::IsAttachedToMain() const{
+	return mImpl->IsAttachedToMain();
 }
 
 bool MeshFacade::IsAttached(IScenePtr scene) const{

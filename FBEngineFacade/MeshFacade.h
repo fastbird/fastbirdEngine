@@ -87,6 +87,7 @@ namespace fb{
 		bool DetachFromScene(bool includingRtt);
 		// attached any of scenes
 		bool IsAttached() const;
+		bool IsAttachedToMain() const;
 		bool IsAttached(IScenePtr scene) const;
 		void SetAlpha(float alpha);
 		void SetForceAlphaBlending(bool enable, float alpha, float forceGlow, bool disableDepth);
