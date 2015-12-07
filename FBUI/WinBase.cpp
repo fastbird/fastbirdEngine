@@ -1037,7 +1037,7 @@ void WinBase::OnMouseDrag(IInputInjectorPtr injector){
 		return;
 	}
 	long x, y;
-	injector->GetDeltaXY(x, y);
+	injector->GetDeltaXY(x, y);	
 	auto parent = mParent.lock();
 	if (x != 0 || y != 0)
 	{
@@ -1278,8 +1278,7 @@ void WinBase::SetUIAnimation(UIAnimationPtr anim)
 	auto itfind = mAnimations.Find(name);
 	if (itfind != mAnimations.end())
 	{
-		itfind->second = 0;
-		Log("(Info) Animation (%s) in Comp(%s) is replaced.", name, mName.c_str());
+		itfind->second = 0;		
 	}
 	mAnimations[name] = anim;
 	anim->SetTargetUI(mSelfPtr.lock());

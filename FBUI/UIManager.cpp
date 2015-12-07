@@ -27,6 +27,7 @@
 
 #include "StdAfx.h"
 #include "UIManager.h"
+#include "FBSystemLib/ModuleHandler.h"
 #include "IUIEditor.h"
 #include "Wnd.h"
 #include "TextField.h"
@@ -111,7 +112,7 @@ public:
 	float mDelayForTooltip;
 
 	UICommandsPtr mUICommands;
-	HMODULE mUIEditorModuleHandle;
+	ModuleHandle mUIEditorModuleHandle;
 	ComponentType::Enum mLocatingComp;
 	IUIEditor* mUIEditor;
 
@@ -173,7 +174,7 @@ public:
 		WinBase::FinalizeMouseCursor();
 		if (mUIEditorModuleHandle)
 		{
-			FreeLibrary(mUIEditorModuleHandle);
+			ModuleHandler::UnloadModule(mUIEditorModuleHandle);
 		}
 		mUICommands = 0;		
 		mAnimations.clear();
@@ -373,7 +374,7 @@ public:
 	}
 
 	// IFileChangeListeners
-	bool OnFileChanged(const char* file, const char* loweredExtension){
+	bool OnFileChanged(const char* watchDir, const char* file, const char* loweredExtension){
 		assert(file);
 		std::string lower(file);
 		ToLowerCase(lower);
@@ -1329,7 +1330,7 @@ public:
 
 			auto dragStartedUI = mMouseDragStartedUI.lock();
 			if (focusWnd && injector->IsLButtonDown() && !dragStartedUI){
-				dragStartedUI = focusWnd;
+				mMouseDragStartedUI = focusWnd;
 			}
 			if (injector->IsLButtonDown() && focusWnd){
 				focusWnd->OnMouseDown(injector);
@@ -1451,6 +1452,10 @@ public:
 		HWindowId hwndId = mTooltipUI->GetHwndId();
 		auto& renderer = Renderer::GetInstance();
 		auto hWnd = renderer.GetWindowHandle(hwndId);
+		if (hwndId == -1){
+			hwndId = GetForegroundWindowId();
+			mTooltipUI->SetHwndId(hwndId);
+		}
 		assert(hwndId != -1);
 		const auto& size = renderer.GetRenderTargetSize(hwndId);
 		Vec2 backPos = npos;
@@ -1890,10 +1895,10 @@ public:
 	UICommandsPtr GetUICommands() const {
 		return mUICommands; 
 	}
-	void SetUIEditorModuleHandle(HMODULE moduleHandle){ 
+	void SetUIEditorModuleHandle(ModuleHandle moduleHandle){
 		mUIEditorModuleHandle = moduleHandle; 
 	}
-	HMODULE GetUIEditorModuleHandle() const { 
+	ModuleHandle GetUIEditorModuleHandle() const {
 		return mUIEditorModuleHandle; 
 	}
 
@@ -2689,8 +2694,12 @@ void UIManager::Shutdown() {
 	mImpl->Shutdown();
 }
 
-bool UIManager::OnFileChanged(const char* file, const char* loweredExt) {
-	return mImpl->OnFileChanged(file, loweredExt);
+void UIManager::OnChangeDetected(){
+
+}
+
+bool UIManager::OnFileChanged(const char* watchDir, const char* file, const char* loweredExt) {
+	return mImpl->OnFileChanged(watchDir, file, loweredExt);
 }
 
 void UIManager::BeforeUIRendering(HWindowId hwndId, HWindow hwnd) {
@@ -2726,7 +2735,8 @@ void UIManager::GatherRenderList() {
 }
 
 bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWindowId hwndId, bool luaUI) {
-	return mImpl->ParseUI(filepath, windows, uiname, hwndId, luaUI);
+	auto unifiedString = FileSystem::UnifyFilepath(filepath);
+	return mImpl->ParseUI(unifiedString.c_str(), windows, uiname, hwndId, luaUI);
 }
 
 bool UIManager::SaveUI(const char* uiname, tinyxml2::XMLDocument& doc) {
@@ -2965,11 +2975,11 @@ UICommandsPtr UIManager::GetUICommands() const {
 	return mImpl->GetUICommands();
 }
 
-void UIManager::SetUIEditorModuleHandle(HMODULE moduleHandle) {
+void UIManager::SetUIEditorModuleHandle(ModuleHandle moduleHandle) {
 	mImpl->SetUIEditorModuleHandle(moduleHandle);
 }
 
-HMODULE UIManager::GetUIEditorModuleHandle() const {
+ModuleHandle UIManager::GetUIEditorModuleHandle() const {
 	return mImpl->GetUIEditorModuleHandle();
 }
 

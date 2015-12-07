@@ -27,6 +27,7 @@
 
 #pragma once
 #include "Align.h"
+#include "FBCommonHeaders/Helpers.h"
 namespace fb
 {
 	namespace UIProperty

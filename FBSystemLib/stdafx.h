@@ -34,5 +34,8 @@ Perform platform specific task like LoadModule. required(\b FBDebugLib)
 #if defined(_PLATFORM_WINDOWS_)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <commdlg.h>
+#include <Shlwapi.h>
+#pragma comment(lib, "Shlwapi.lib")
 #else
 #endif

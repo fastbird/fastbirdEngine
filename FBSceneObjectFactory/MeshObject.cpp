@@ -132,7 +132,7 @@ public:
 		unsigned idx = 0;
 		for (auto& it : other.mMaterialGroups){
 			auto& group = GetMaterialGroupFor(idx);
-			group.mMaterial = it.mMaterial;
+			group.mMaterial = it.mMaterial->Clone();
 			group.mVBPos = it.mVBPos;
 			group.mVBNormal = it.mVBNormal;
 			group.mVBUV = it.mVBUV;

@@ -321,10 +321,6 @@ public:
 		}
 	}	
 
-	void SetLocation(const Transformation& t){
-		mChanges[0] = true;
-	}
-
 	void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut, bool force){
 		FRAME_PRECISION f = gpTimer->GetFrame();
 		if (force || mLastUpdateFrame < f)
@@ -604,11 +600,6 @@ void MeshGroup::SetCollisionShapes(COLLISION_INFOS& colInfos) {
 
 void MeshGroup::AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data) {
 	mImpl->AddCollisionShape(idx, data);
-}
-
-void MeshGroup::SetLocation(const Transformation& t){
-	__super::SetLocation(t);
-	mImpl->SetLocation(t);
 }
 
 void MeshGroup::UpdateTransform(const RenderParam& param, RenderParamOut* paramOut) {

@@ -66,7 +66,8 @@ namespace fb{
 
 		/** Checks the TString is a valid number value. */
 		static bool IsNumber(const TString& val);
-		static TStringVector ParseStringVector(const TString& val);		
+		static TStringVector ParseStringVector(const TString& val, const std::string& delims = "\t\n, ",
+			unsigned int maxSplits = 0, bool preserveDelims = false);
 		
 	};
 }

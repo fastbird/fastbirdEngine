@@ -56,6 +56,8 @@ namespace fb{
 class EngineFacade::Impl{
 public:
 	static const int MainWindowId = 1;	
+	static HWindow MainWindowHandle;
+	EngineFacadeWeakPtr mSelfPtr;
 	std::map<HWindowId, HWindow> mWindowById;
 	std::map<HWindow, HWindowId> mWindowIdByHandle;
 	HWindowId mNextWindowId;
@@ -134,6 +136,7 @@ public:
 		mFileMonitor = FileMonitor::Create();
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mRenderer);
 		mFileMonitor->StartMonitor(".");
+		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mSelfPtr.lock());
 	}
 
 	HWindowId CreateEngineWindow(int x, int y, int width, int height, const char* wndClass, 
@@ -177,6 +180,7 @@ public:
 				eWidth, eHeight, 0, 0, GetModuleHandle(0), 0);
 			auto id = FindEmptyHwndId();
 			if (id == MainWindowId){
+				MainWindowHandle = (HWindow)hWnd;
 				Renderer::GetInstance().SetMainWindowStyle(style);
 				InputManager::GetInstance().SetMainWindowHandle((HWindow)hWnd);
 				PrepareFileMonitor();				
@@ -191,12 +195,33 @@ public:
 	}
 
 	void DestroyEngineWindow(HWindowId windowId){
-
+		mRenderer->DeinitCanvas(windowId);
+		auto it = mWindowById.find(windowId);
+		if (it != mWindowById.end()){
+			DestroyWindow((HWND)it->second);
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, "Window not found");
+		}
 	}
 
 	HWindowId GetMainWindowHandleId() const{
 		return MainWindowId;
 	}
+
+	HWindow GetMainWindowHandle() const{
+		return MainWindowHandle;
+	}
+
+	HWindow GetWindowHandleById(HWindowId hwndId) const{
+		auto it = mWindowById.find(hwndId);
+		if (it != mWindowById.end()){
+			return it->second;
+		}
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find the window handle by id(%u)", hwndId).c_str());
+		return INVALID_HWND;
+	}
+
 
 	bool InitRenderer(const char* pluginName){		
 		bool success = Renderer::GetInstance().PrepareRenderEngine(pluginName);		
@@ -218,24 +243,22 @@ public:
 		}
 		else{			
 			mInputManager->AddHwndInterested(window);
-			if (id == MainWindowId){				
-				auto rt = mRenderer->GetRenderTarget(id);
-				if (!rt){
-					Logger::Log(FB_ERROR_LOG_ARG, "Main RenderTarget is not initialized.");
+			auto rt = mRenderer->GetRenderTarget(id);
+			if (!rt){
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("RenderTarget(%u) is not initialized.", id).c_str());
+			}
+			else{
+				auto rtObservers = mInputManager->GetRenderTargetObservers();
+				for (auto observer : rtObservers){
+					rt->AddObserver(IRendererObserver::DefaultRenderEvent, observer);
 				}
-				else{
+				if (id == MainWindowId){
 					rt->RegisterScene(mMainScene);
 					mMainCamera = rt->GetCamera();
 					mMainCamera->SetMainCamera(true);
-					auto rtObservers = mInputManager->GetRenderTargetObservers();
-					for (auto observer : rtObservers){
-						rt->AddObserver(IRendererObserver::DefaultRenderEvent, observer);
-					}
-
 					SkySphere::CreateSharedEnvRT();
 				}
 			}
-
 			return true;
 		}
 	}
@@ -244,8 +267,9 @@ public:
 		// Window is not created by EngineFacade.
 		// The following function calls need to be performed.
 		if (mWindowIdByHandle.empty()){
+			MainWindowHandle = (HWindow)hwnd;
 			Renderer::GetInstance().SetMainWindowStyle(GetWindowStyle(hwnd));
-			InputManager::GetInstance().SetMainWindowHandle(hwnd);
+			InputManager::GetInstance().SetMainWindowHandle(hwnd);			
 			PrepareFileMonitor();			
 		}
 
@@ -442,6 +466,7 @@ public:
 		light->SetIntensity(intensity);
 	}
 };
+HWindow EngineFacade::Impl::MainWindowHandle = INVALID_HWND;
 
 //---------------------------------------------------------------------------
 EngineFacade* sFacadeRaw = 0;
@@ -451,6 +476,7 @@ EngineFacadePtr EngineFacade::Create(){
 		EngineFacadePtr p(new EngineFacade, [](EngineFacade* obj){ delete obj; });
 		sFacade = p;
 		sFacadeRaw = p.get();
+		p->mImpl->mSelfPtr = p;
 		return p;
 	}
 	return sFacade.lock();
@@ -488,6 +514,14 @@ void EngineFacade::DestroyEngineWindow(HWindowId windowId){
 
 HWindowId EngineFacade::GetMainWindowHandleId() const{
 	return mImpl->GetMainWindowHandleId();
+}
+
+HWindow EngineFacade::GetMainWindowHandle() const{
+	return mImpl->GetMainWindowHandle();
+}
+
+HWindow EngineFacade::GetWindowHandleById(HWindowId hwndId) const{
+	return mImpl->GetWindowHandleById(hwndId);
 }
 
 bool EngineFacade::InitRenderer(const char* pluginName) {
@@ -1013,6 +1047,14 @@ std::wstring EngineFacade::StripTextTags(const char* text){
 
 void EngineFacade::QueueProcessConsoleCommand(const char* command, bool history){
 	Console::GetInstance().QueueProcessCommand(command, history);
+}
+
+void EngineFacade::OnChangeDetected(){
+
+}
+
+bool EngineFacade::OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension){
+	return false;
 }
 
 void EngineFacade::StopAllParticles(){

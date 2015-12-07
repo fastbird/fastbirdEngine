@@ -59,6 +59,10 @@ namespace fb {
 
 		void SetWatchDir(std::string path){
 			mWatchDir = path;
+			if (mWatchDir.empty())
+				mWatchDir = "./";
+			else
+				mWatchDir = FileSystem::MakrEndingSlashIfNot(mWatchDir.c_str());
 		}
 
 		void Exit() {			
@@ -97,7 +101,8 @@ namespace fb {
 			}
 			assert(dwNumBytes >= offsetof(FILE_NOTIFY_INFORMATION, FileName) + sizeof(WCHAR));
 
-			ProcessFileChange();
+			if (!mExiting)
+				ProcessFileChange();
 			return !mExiting;
 		}
 
@@ -125,6 +130,10 @@ namespace fb {
 					LOCK_CRITICAL_SECTION lock(mChangedFilesGuard);
 					mChangedFiles.insert(unifiedPath);
 					mHasChangedFiles = true;
+
+					for (int i = 0; i < 2; ++i){
+						FileMonitor::GetInstance().OnChangeDetected();						
+					}
 				}
 				break;
 				}
@@ -171,9 +180,12 @@ namespace fb {
 		}
 
 		bool HasChangedFiles() const { return mHasChangedFiles; }
-		void GetChangedFiles(std::set<std::string>& files){
+		void GetChangedFiles(std::vector<std::pair<std::string, std::string> >& files){
 			LOCK_CRITICAL_SECTION lock(mChangedFilesGuard);
-			std::swap(files, mChangedFiles);
+			for (auto& str : mChangedFiles){
+				files.push_back(std::make_pair(mWatchDir, str));
+			}
+			mChangedFiles.clear();
 			mHasChangedFiles = false;
 		}
 	};
@@ -186,7 +198,7 @@ public:
 	FileChangeMonitorThread mFileMonitorThread[NumMaximumMonitor];
 	std::ofstream mErrorStream;
 	std::streambuf* mStdErrorStream;
-	std::set<std::string> mChangedFiles;
+	std::vector<std::pair<std::string, std::string> > mChangedFiles;
 	std::set<std::string> mIgnoreFileChanges;
 	INT64 mLastCheckedTime;
 
@@ -222,13 +234,19 @@ public:
 		thread.SetWatchDir(dirPath);
 		thread.CreateThread(1024, FormatString("FileMonitorThread%d", idx).c_str());
 	}
-
-	void Check(){
+	void OnChangeDetected(){
+		for (int i = 0; i < 2; ++i){
+			auto& observers = mSelf->mObservers_[i]; //FileChange_Engine and FileChange_Game
+			for (auto oit = observers.begin(); oit != observers.end(); /**/){
+				IteratingWeakContainer(observers, oit, observer);				
+				observer->OnChangeDetected();				
+			}
+		}
+	}
+	bool Check(){
 		for (auto& it : mFileMonitorThread){
-			if (it.HasChangedFiles()){
-				std::set<std::string> changedFiles;
-				it.GetChangedFiles(changedFiles);
-				mChangedFiles.insert(changedFiles.begin(), changedFiles.end());				
+			if (it.HasChangedFiles()){								
+				it.GetChangedFiles(mChangedFiles);				
 			}
 		}
 
@@ -236,7 +254,8 @@ public:
 		{
 			for (auto it = mChangedFiles.begin(); it != mChangedFiles.end();)
 			{
-				std::string filepath = it->c_str();
+				std::string filepath = it->second;
+				std::string filefullpath = it->first + it->second;
 				auto strs = Split(filepath, "~");
 				if (strs.size() >= 2)
 				{
@@ -260,23 +279,21 @@ public:
 				}
 				if (!hasExtension || sdfFile || throwAway)
 				{
-					auto nextit = it;
-					++nextit;
-					mChangedFiles.erase(it);
-					it = nextit;
+					it = mChangedFiles.erase(it);
 					continue;
 				}
 				FILE* file = 0;
-				errno_t err = fopen_s(&file, filepath.c_str(), "r");
+				errno_t err = fopen_s(&file, filefullpath.c_str(), "r");
 				if (!err && file)
 				{
 					fclose(file);
-					err = fopen_s(&file, filepath.c_str(), "a+");
-					if (err)
+					err = fopen_s(&file, filefullpath.c_str(), "a+");
+					if (err){
 						canOpen = false;
-					else if (file)
-						fclose(file);
+					}
 				}
+				if (file)
+					fclose(file);
 
 				if (canOpen)
 				{
@@ -291,9 +308,9 @@ public:
 								continue;
 							}
 							++oit;
-							std::string loweredStr(filepath);
+							std::string loweredStr(FileSystem::GetExtension(filepath.c_str()));
 							ToLowerCase(loweredStr);
-							bool processed = observer->OnFileChanged(filepath.c_str(), loweredStr.c_str());
+							bool processed = observer->OnFileChanged(it->first.c_str(), filepath.c_str(), loweredStr.c_str());
 							if (processed)
 								break;
 						}
@@ -309,10 +326,8 @@ public:
 					else if (xml && gFBEnv->pRenderer)
 						mRenderer->ReloadTextureAtlas(filepath.c_str());*/
 
-					auto nextit = it;
-					++nextit;
-					mChangedFiles.erase(it);
-					it = nextit;					
+					it = mChangedFiles.erase(it);
+					
 				}
 				else
 				{
@@ -320,6 +335,7 @@ public:
 				}
 			}
 		}
+		return !mChangedFiles.empty();
 	}
 
 	void IgnoreMonitoringOnFile(const char* filepath){
@@ -369,8 +385,8 @@ void FileMonitor::StartMonitor(const char* dirPath){
 	mImpl->StartMonitor(dirPath);
 }
 
-void FileMonitor::Check(){
-	mImpl->Check();
+bool FileMonitor::Check(){
+	return mImpl->Check();
 }
 
 void FileMonitor::IgnoreMonitoringOnFile(const char* filepath){
@@ -379,4 +395,8 @@ void FileMonitor::IgnoreMonitoringOnFile(const char* filepath){
 
 void FileMonitor::ResumeMonitoringOnFile(const char* filepath){
 	mImpl->ResumeMonitoringOnFile(filepath);
+}
+
+void FileMonitor::OnChangeDetected(){
+	mImpl->OnChangeDetected();
 }

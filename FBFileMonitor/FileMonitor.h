@@ -43,9 +43,14 @@ namespace fb{
 		bool HasInstance();
 
 		void StartMonitor(const char* dirPath);
-		void Check();
+		/// Make FileMonitor to notify all change list to the observers.
+		/// returns true, if any changes remained, false otherwise.
+		bool Check();
 
 		void IgnoreMonitoringOnFile(const char* filepath);
 		void ResumeMonitoringOnFile(const char* filepath);
+
+		/// Internal function
+		void OnChangeDetected();
 	};
 }

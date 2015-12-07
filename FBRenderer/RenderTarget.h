@@ -73,6 +73,8 @@ namespace fb
 
 		//-------------------------------------------------------------------
 		RenderTargetId GetId() const;
+		void SetAssociatedWindowId(HWindowId id);
+		HWindowId GetAssociatedWindowId() const;
 		bool CheckOptions(const RenderTargetParam& param);
 		
 		IRenderStrategyPtr SetRenderStrategy(IRenderStrategyPtr strategy);

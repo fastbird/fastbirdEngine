@@ -52,6 +52,7 @@ public:
 	/// For RTT(render to texture)
 	IScenePtr mSceneOwnerShip;
 	RenderTargetId mId;
+	HWindowId mAssociatedWindowId;
 
 	bool mEnabled;
 	bool mUsePool;
@@ -101,8 +102,8 @@ public:
 	//-------------------------------------------------------------------
 	void OnObserverAdded(IRenderTargetObserverPtr observer){
 		auto& renderer = Renderer::GetInstance();
-		HWindow hwnd = renderer.GetWindowHandle(mId);
-		if (hwnd){
+		HWindow hwnd = renderer.GetWindowHandle(mAssociatedWindowId);
+		if (hwnd!= INVALID_HWND){
 			observer->OnRenderTargetSizeChanged(mSize.x, mSize.y, hwnd);
 		}
 	}
@@ -260,7 +261,7 @@ public:
 
 	bool Render(size_t face)
 	{
-		if (!mEnabled || !mScene.lock())
+		if (!mEnabled)
 			return false;
 
 		if (mDrawOnEvent && !mDrawEventTriggered)
@@ -268,6 +269,7 @@ public:
 		mDrawEventTriggered = false;
 
 		mFace = face;
+
 		auto& renderer = Renderer::GetInstance();
 		RenderEventMarker mark("RenderTarget");
 		mStrategy->Render(face);
@@ -427,6 +429,13 @@ void RenderTarget::OnObserverAdded(IRenderTargetObserverPtr observer){
 //-------------------------------------------------------------------
 RenderTargetId RenderTarget::GetId() const{
 	return mImpl->mId;
+}
+
+void RenderTarget::SetAssociatedWindowId(HWindowId id){
+	mImpl->mAssociatedWindowId = id;
+}
+HWindowId RenderTarget::GetAssociatedWindowId() const{
+	return mImpl->mAssociatedWindowId;
 }
 
 bool RenderTarget::CheckOptions(const RenderTargetParam& param)

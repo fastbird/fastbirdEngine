@@ -30,6 +30,7 @@
 #include "UIManager.h"
 #include "FBConsole/ConsoleDataType.h"
 #include "FBConsole/Console.h"
+#include "FBSystemLib/ModuleHandler.h"
 using namespace fb;
 
 static void StartUIEditor(StringVector& arg);
@@ -66,52 +67,51 @@ bool UICommands::OnChangeCVar(CVarPtr pCVar)
 static bool uiEditorInitialized = false;
 void StartUIEditor(StringVector& arg)
 {
-	/*if (uiEditorInitialized)
+	if (uiEditorInitialized)
 	{
 		Log("Alreay started!");
 		return;
 	}
-	auto moduleHandle = gFBEnv->pUIManager->GetUIEditorModuleHandle();
+	auto moduleHandle = UIManager::GetInstance().GetUIEditorModuleHandle();
 	if (!moduleHandle)
 	{
-		moduleHandle = fb::LoadFBLibrary("FBUIEditor.dll");
-		gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
+		moduleHandle = ModuleHandler::LoadModule("FBUIEditor.dll");
+		UIManager::GetInstance().SetUIEditorModuleHandle(moduleHandle);
 	}
 	if (moduleHandle)
 	{		
-		StartProc startFunc;
-		startFunc = (StartProc)GetProcAddress(moduleHandle, "StartUIEditor");
+		typedef int(__cdecl *StartProc)();
+		auto startFunc = (StartProc)ModuleHandler::GetFunction(moduleHandle, "StartUIEditor");
 		if (startFunc)
 		{
-			gFBEnv->pUIManager->SetUIEditorModuleHandle(moduleHandle);
-			startFunc(gFBEnv);
+			startFunc();
 			uiEditorInitialized = true;
 			LuaLock L;
-			lua_pushboolean(L, 1);
-			lua_setglobal(L, "gThreatHold");
+			LuaUtils::pushboolean(L, 1);
+			LuaUtils::setglobal(L, "gThreatHold");
 		}
-	}*/
+	}
 }
 
-typedef void(__cdecl *FinalizeProc)();
 void KillUIEditor(StringVector& arg)
 {
-	//if (!uiEditorInitialized)
-	//	return;
+	if (!uiEditorInitialized)
+		return;
 
-	//auto moduleHandle = gFBEnv->pUIManager->GetUIEditorModuleHandle();
-	//if (moduleHandle)
-	//{
-	//	FinalizeProc finalizeFunc;
-	//	finalizeFunc = (FinalizeProc)GetProcAddress(moduleHandle, "KillUIEditor");
-	//	if (finalizeFunc)
-	//		finalizeFunc();
-	//	LuaLock L;
-	//	lua_pushboolean(L, 0);
-	//	lua_setglobal(L, "gThreatHold");
+	auto moduleHandle = UIManager::GetInstance().GetUIEditorModuleHandle();
+	if (moduleHandle)
+	{
+		typedef int(__cdecl *FinalizeProc)();
+		FinalizeProc finalizeFunc;
+		finalizeFunc = (FinalizeProc)ModuleHandler::GetFunction(moduleHandle, "KillUIEditor");
+		if (finalizeFunc)
+			finalizeFunc();
+		LuaLock L;
+		LuaUtils::pushboolean(L, 0);
+		LuaUtils::setglobal(L, "gThreatHold");
 
-	//	//FreeLibrary(gFBEnv->pUIManager->GetUIEditorModuleHandle());
-	//	//gFBEnv->pUIManager->SetUIEditorModuleHandle(0);
-	//}
-	//uiEditorInitialized = false;
+		//FreeLibrary(gFBEnv->pUIManager->GetUIEditorModuleHandle());
+		//gFBEnv->pUIManager->SetUIEditorModuleHandle(0);
+	}
+	uiEditorInitialized = false;
 }

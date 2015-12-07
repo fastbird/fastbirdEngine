@@ -78,7 +78,38 @@ int FileSystem::Rename(const char* path, const char* newpath){
 		Logger::Log(FB_ERROR_LOG_ARG, err.what());
 	}
 	
-	return NO_ERROR;
+	return FB_NO_ERROR;
+}
+
+int FileSystem::CopyFile(const char* src, const char* dest, bool overwrite, bool supressErrorMsg){
+	if (!Exists(src)){
+		return COPYFILE_NO_SOURCE;
+	}
+	if (!overwrite && Exists(dest)){
+		return COPYFILE_DEST_ALREADY_EXISTS;
+	}
+	if (overwrite){
+		try{
+			boost::filesystem::copy_file(src, dest, boost::filesystem::copy_option::overwrite_if_exists);
+		}
+		catch (boost::filesystem::filesystem_error& err){
+			if (!supressErrorMsg)
+				Logger::Log(FB_ERROR_LOG_ARG, err.what());
+			return COPYFILE_ERROR;
+		}
+	}
+	else{
+		try{
+			boost::filesystem::copy_file(src, dest);
+		}
+		catch (boost::filesystem::filesystem_error& err){
+			if (!supressErrorMsg)
+				Logger::Log(FB_ERROR_LOG_ARG, err.what());
+			return COPYFILE_ERROR;
+		}
+	}
+
+	return FB_NO_ERROR;
 }
 
 bool FileSystem::Remove(const char* path){	
@@ -140,6 +171,16 @@ std::string FileSystem::GetName(const char* path){
 std::string FileSystem::GetParentPath(const char* path){
 	boost::filesystem::path filepath(path);
 	return filepath.parent_path().generic_string();
+}
+
+std::string FileSystem::GetLastDirectory(const char* path){
+	auto parent = GetParentPath(path);
+	auto found = parent.find_last_of("/");
+	if (found != std::string::npos){
+		return parent.substr(found + 1);
+	}
+	return parent;
+
 }
 
 std::string FileSystem::ConcatPath(const char* path1, const char* path2){

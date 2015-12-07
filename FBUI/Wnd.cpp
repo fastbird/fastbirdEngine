@@ -262,7 +262,7 @@ void Wnd::RefreshFrame()
 					mPendingDelete.push_back(mScrollerV.lock());
 				mUseScrollerV = false;
 				wndContentUI->SetProperty(UIProperty::SCROLLERV, "true");
-			}
+			}			
 			TransferChildrenTo(wndContentUI);
 			wndContentUI->SetVisible(mVisibility.IsVisible());
 		}
@@ -373,10 +373,9 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 				titlebar->SetName("_@TitleBar");
 				titlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
 					std::bind(&Wnd::OnTitlebarDrag, this, std::placeholders::_1));
-				RefreshFrame();
-
 				// recover content ui
 				mWndContentUI = contentUI;
+				RefreshFrame();
 			}
 			auto titilebar = mTitlebar.lock();
 			auto text = TranslateText(val);

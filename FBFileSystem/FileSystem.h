@@ -38,6 +38,7 @@ Handling file operations. Implemented on the top of boost::filesystem
 #include <memory>
 #include <string>
 #undef CreateDirectory
+#undef CopyFile
 namespace fb{
 	class DirectoryIterator;
 	typedef std::shared_ptr<DirectoryIterator> DirectoryIteratorPtr;
@@ -60,6 +61,9 @@ namespace fb{
 			RENAME_DEST_EXISTS = 2,
 			FILE_NO_EXISTS = 3,
 			SECURITY_NOT_OK = 4,
+			COPYFILE_NO_SOURCE=5,
+			COPYFILE_DEST_ALREADY_EXISTS = 6,
+			COPYFILE_ERROR = 7,
 		};
 		//---------------------------------------------------------------------------
 		// File Operataions
@@ -74,6 +78,7 @@ namespace fb{
 		resolves to being renamed.
 		*/
 		static int Rename(const char* path, const char* newpath);
+		static int CopyFile(const char* src, const char* dest, bool overwrite, bool supressErrorMsg);
 		/** Remove a file.
 		@return 'false' if \b path did not exist in the first place, otherwise true.
 		*/
@@ -133,6 +138,7 @@ namespace fb{
 		ex) dir1/dir2/file.exe -> dir1/dir1
 		*/
 		static std::string GetParentPath(const char* path);
+		static std::string GetLastDirectory(const char* path);
 		static std::string ConcatPath(const char* path1, const char* path2);
 		static std::string UnifyFilepath(const char* path);
 		static std::string Absolute(const char* path);

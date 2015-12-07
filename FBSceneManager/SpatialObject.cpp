@@ -175,6 +175,7 @@ void SpatialObject::SetLocation(const Transformation& t){
 	if (mAnimatedLocation){
 		*mAnimatedLocation = mLocation * mAnim->GetResult();
 	}
+	mTransformChanged = true;
 }
 
 bool SpatialObject::GetTransformChanged() const{

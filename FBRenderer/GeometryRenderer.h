@@ -31,6 +31,7 @@
 #include "FBMathLib/Vec2I.h"
 #include "FBMathLib/Vec3.h"
 namespace fb{
+	class IScene;
 	struct RenderParamOut;
 	struct RenderParam;
 	FB_DECLARE_SMART_PTR(GeometryRenderer);
@@ -52,5 +53,7 @@ namespace fb{
 		void DrawSphere(const Vec3& pos, Real radius, const Color& color);
 		void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha);
 		void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha);
+
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
 	};
 }

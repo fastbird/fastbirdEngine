@@ -892,6 +892,7 @@ public:
 };
 
 //---------------------------------------------------------------------------
+Console* sConsoleRaw = 0;
 static ConsoleWeakPtr sConsole;
 ConsolePtr Console::Create(){
 	if (sConsole.expired()){
@@ -900,6 +901,7 @@ ConsolePtr Console::Create(){
 		console->mImpl->mSelf = sConsole;
 		auto& inputMgr = InputManager::GetInstance();
 		inputMgr.RegisterInputConsumer(console, IInputConsumer::Priority11_Console);
+		sConsoleRaw = console.get();
 		return console;
 	}
 
@@ -910,7 +912,7 @@ Console& Console::GetInstance(){
 	if (sConsole.expired()){
 		Logger::Log(FB_ERROR_LOG_ARG, "The Console is deleted. Program will crash...");
 	}
-	return *sConsole.lock();
+	return *sConsoleRaw;
 }
 
 bool Console::HasInstance(){

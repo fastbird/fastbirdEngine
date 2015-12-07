@@ -73,7 +73,7 @@ public:
 		ClearParticleRenderObjects();
 	}
 
-	bool OnFileChanged(const char* file, const char* ext){
+	bool OnFileChanged(const char* watchDir, const char* file, const char* ext){
 		if (ext == ".particle"){
 			ReloadParticle(file);
 			return true;
@@ -388,8 +388,12 @@ void ParticleSystem::Update(float elapsedTime) {
 	mImpl->Update(elapsedTime);
 }
 
-bool ParticleSystem::OnFileChanged(const char* file, const char* ext){
-	return mImpl->OnFileChanged(file, ext);
+bool ParticleSystem::OnFileChanged(const char* watchDir, const char* file, const char* ext){
+	return mImpl->OnFileChanged(watchDir, file, ext);
+}
+
+void ParticleSystem::OnChangeDetected(){
+
 }
 
 void ParticleSystem::AddParticleSearchDirectory(const char* directory){

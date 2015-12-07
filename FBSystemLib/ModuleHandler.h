@@ -26,12 +26,10 @@
 */
 
 #pragma once
-#include "FBCommonHeaders/String.h"
+#include "FBCommonHeaders/Types.h"
 namespace fb{
 	/** Load a module in run-time.
 	*/
-	typedef intptr_t ModuleHandle;
-	typedef intptr_t FunctionHandle;
 	class ModuleHandler{
 	public:		
 		static ModuleHandle LoadModule(const char* path);		

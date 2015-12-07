@@ -98,4 +98,41 @@ namespace fb{
 	unsigned GetWindowStyle(HWindow handle){
 		return GetWindowLongPtr((HWND)handle, GWL_STYLE);
 	}
+
+	std::string OpenFile(HWindow hwnd, char* filter){
+		char masterDir[512];
+		GetCurrentDirectory(512, masterDir);
+		static std::string sLastDir = masterDir;
+		char szFile[260];
+		OPENFILENAME ofn;
+		ZeroMemory(&ofn, sizeof(ofn));
+		ofn.lStructSize = sizeof(ofn);
+		ofn.hwndOwner = (HWND)hwnd;
+		ofn.lpstrFile = szFile;
+		// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
+		// use the contents of szFile to initialize itself.
+		ofn.lpstrFile[0] = '\0';
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = filter; // "All\0*.*\0Text\0*.TXT\0\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = NULL;
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = sLastDir.c_str();
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+		if (GetOpenFileName(&ofn)){
+			char newDirectory[512];
+			GetCurrentDirectory(512, newDirectory);
+			sLastDir = newDirectory;
+			SetCurrentDirectory(masterDir);
+			char relative[512];
+			PathRelativePathTo(relative, masterDir, FILE_ATTRIBUTE_DIRECTORY, szFile, FILE_ATTRIBUTE_NORMAL);
+			return std::string(relative);
+		}
+		char newDirectory[512];
+		GetCurrentDirectory(512, newDirectory);
+		sLastDir = newDirectory;
+		SetCurrentDirectory(masterDir);
+		return std::string();
+	}
 }

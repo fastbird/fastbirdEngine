@@ -26,6 +26,7 @@
 */
 
 #pragma once
+#include "FBCommonHeaders/Types.h"
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
@@ -100,6 +101,6 @@ namespace fb
 		virtual bool Wait(DWORD WaitTime = 0xffffffff) = 0;
 	};
 
-	SyncEventPtr CreateSyncEvent(bool ManualReset = FALSE, char* Name = NULL);
+	SyncEventPtr CreateSyncEvent(bool ManualReset = false, char* Name = 0);
 }
 

@@ -28,6 +28,7 @@
 #pragma once
 #include "FBCommonHeaders/platform.h"
 #include "FBCommonHeaders/Types.h"
+#include "FBFileMonitor/IFileChangeObserver.h"
 #include "FBSceneManager/DirectionalLightIndex.h"
 #include "FBSceneManager/ISceneObserver.h"
 #include "FBVideoPlayer/VideoPlayerType.h"
@@ -55,7 +56,7 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(EngineFacade);
 	FB_DECLARE_SMART_PTR(RenderTarget);
-	class FB_DLL_ENGINEFACADE EngineFacade{
+	class FB_DLL_ENGINEFACADE EngineFacade : public IFileChangeObserver{
 		FB_DECLARE_PIMPL_NON_COPYABLE(EngineFacade);
 		EngineFacade();
 		~EngineFacade();
@@ -75,6 +76,8 @@ namespace fb{
 			WNDPROC winProc);
 		void DestroyEngineWindow(HWindowId windowId);
 		HWindowId GetMainWindowHandleId() const;
+		HWindow GetMainWindowHandle() const;
+		HWindow GetWindowHandleById(HWindowId hwndId) const;
 		/// for windows;
 		intptr_t WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp);
 		EngineOptionsPtr GetEngineOptions() const;
@@ -100,6 +103,9 @@ namespace fb{
 		void GetFractureMeshObjects(const char* daeFilePath, std::vector<MeshFacadePtr>& objects);		
 		std::wstring StripTextTags(const char* text);		
 		void QueueProcessConsoleCommand(const char* command, bool history = true);
+		// IFileChangeObserver
+		void OnChangeDetected();
+		bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension);
 
 		//---------------------------------------------------------------------------
 		// Renderer Interfaces

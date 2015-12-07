@@ -88,8 +88,7 @@ public:
 		MATERIAL_CONSTANTS mMaterialConstants;
 		Parameters mMaterialParameters;
 		Textures mTextures;
-		TexturesByBinding mTexturesByBinding;
-		BindingsByTexture mBindingsByTexture;
+		TextureByBinding mTextureByBinding;
 		ColorRampsByTexture mColorRampMap;		
 	};
 
@@ -629,8 +628,7 @@ public:
 			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
 			mMaterialData->mTextures.push_back(pTexture);
 			TextureBinding binding = { shader, slot };
-			mMaterialData->mTexturesByBinding[binding] = pTexture;
-			mMaterialData->mBindingsByTexture[pTexture] = binding;
+			mMaterialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
@@ -649,16 +647,15 @@ public:
 			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
 			mMaterialData->mTextures.push_back(pTexture);
 			TextureBinding binding = { shader, slot };
-			mMaterialData->mTexturesByBinding[binding] = pTexture;
-			mMaterialData->mBindingsByTexture[pTexture] = binding;
+			mMaterialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
 	TexturePtr GetTexture(BINDING_SHADER shader, int slot) const
 	{
 		TextureBinding binding{ shader, slot };
-		auto it = mMaterialData->mTexturesByBinding.Find(binding);
-		if (it != mMaterialData->mTexturesByBinding.end()){
+		auto it = mMaterialData->mTextureByBinding.Find(binding);
+		if (it != mMaterialData->mTextureByBinding.end()){
 			return it->second;
 		}
 		return 0;
@@ -684,8 +681,7 @@ public:
 			TextureBinding binding{ shader, slot };			
 			pTexture->SetType(TEXTURE_TYPE_COLOR_RAMP);
 			mMaterialData->mTextures.push_back(pTexture);
-			mMaterialData->mTexturesByBinding[binding] = pTexture;
-			mMaterialData->mBindingsByTexture[pTexture] = binding;
+			mMaterialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
@@ -734,23 +730,21 @@ public:
 		DeleteValuesInVector(textures, pTexture);
 		mMaterialData->mColorRampMap.erase(pTexture);
 
-		auto& bindings = mMaterialData->mBindingsByTexture;
-		auto itBinding = bindings.Find(pTexture);
-		if (itBinding != bindings.end()){
-			auto binding = itBinding->second;
-			bindings.erase(itBinding);
-			auto& textures = mMaterialData->mTexturesByBinding;
-			auto itTexture = textures.Find(binding);
-			if (itTexture != textures.end()){
-				textures.erase(itTexture);
+		auto& textureByBinding = mMaterialData->mTextureByBinding;
+		for (auto it = textureByBinding.begin(); it != textureByBinding.end(); /**/){
+			if (it->second == pTexture){
+				it = textureByBinding.erase(it);
 			}
-		}				
+			else{
+				++it;
+			}
+		}		
 	}
 
 	void RemoveTexture(BINDING_SHADER shader, int slot)
 	{
-		auto it = mMaterialData->mTexturesByBinding.Find({ shader, slot });
-		if (it != mMaterialData->mTexturesByBinding.end()){
+		auto it = mMaterialData->mTextureByBinding.Find({ shader, slot });
+		if (it != mMaterialData->mTextureByBinding.end()){
 			RemoveTexture(it->second);
 			return;
 		}
@@ -932,12 +926,8 @@ public:
 		return mMaterialData->mTextures;
 	}
 
-	const TexturesByBinding& GetTexturesByBinding() const {
-		return mMaterialData->mTexturesByBinding;
-	}
-
-	const BindingsByTexture& GetBindingsByTexture() const {
-		return mMaterialData->mBindingsByTexture;
+	const TextureByBinding& GetTextureByBinding() const {
+		return mMaterialData->mTextureByBinding;
 	}
 
 	bool IsUsingMaterialParameter(unsigned index) const{
@@ -987,9 +977,9 @@ public:
 
 		BindMaterialParams();
 
-		auto& textures = materialData->mBindingsByTexture;
+		auto& textures = materialData->mTextureByBinding;
 		for (auto it : textures){
-			it.first->Bind(it.second.mShader, it.second.mSlot);
+			it.second->Bind(it.first.mShader, it.first.mSlot);
 		}		
 
 		
@@ -1102,8 +1092,7 @@ public:
 
 	void CopyTexturesFrom(MaterialConstPtr src) {
 		mMaterialData->mTextures = src->GetTextures();
-		mMaterialData->mBindingsByTexture = src->GetBindingsByTexture();
-		mMaterialData->mTexturesByBinding = src->GetTexturesByBinding();
+		mMaterialData->mTextureByBinding = src->GetTextureByBinding();
 	}
 
 	void CopyShaderDefinesFrom(const MaterialConstPtr src) {
@@ -1187,8 +1176,8 @@ public:
 			return false;
 		}
 		TextureBinding binding{ shader, slot };
-		auto it = mMaterialData->mTexturesByBinding.Find(binding);
-		if (it != mMaterialData->mTexturesByBinding.end()){
+		auto it = mMaterialData->mTextureByBinding.Find(binding);
+		if (it != mMaterialData->mTextureByBinding.end()){
 			outTextureInTheSlot = it->second;
 		}		
 		if (!outTextureInTheSlot)
@@ -1399,12 +1388,8 @@ const Material::Textures& Material::GetTextures() const {
 	return mImpl->GetTextures();
 }
 
-const Material::TexturesByBinding& Material::GetTexturesByBinding() const {
-	return mImpl->GetTexturesByBinding();
-}
-
-const Material::BindingsByTexture& Material::GetBindingsByTexture() const {
-	return mImpl->GetBindingsByTexture();
+const Material::TextureByBinding& Material::GetTextureByBinding() const {
+	return mImpl->GetTextureByBinding();
 }
 
 bool Material::IsUsingMaterialParameter(unsigned index) {
@@ -1521,5 +1506,9 @@ void Material::ClearDepthStencilState(const DEPTH_STENCIL_DESC& desc) {
 
 void Material::SetInputLayout(const INPUT_ELEMENT_DESCS& desc) {
 	mImpl->SetInputLayout(desc);
+}
+
+void* Material::GetParameterAddress(){
+	return &mImpl->mMaterialData->mMaterialParameters;
 }
 

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "RenderStrategyNull.h"
 #include "RenderTarget.h"
+#include "Renderer.h"
 using namespace fb;
 class RenderStrategyNull::Impl{
 public:
@@ -16,7 +17,7 @@ public:
 	{
 
 	}
-
+	
 	//-------------------------------------------------------------------
 	// IRenderStrategy
 	//-------------------------------------------------------------------
@@ -28,6 +29,15 @@ public:
 		mRenderTarget = renderTarget;
 		mSize = renderTarget->GetSize();
 		mId = renderTarget->GetId();
+	}
+
+	void Render(size_t face){
+		auto renderTarget = mRenderTarget.lock();
+		auto& renderer = Renderer::GetInstance();
+		if (!renderTarget)
+			return;
+		renderTarget->Bind(face);
+		renderer.Clear(0., 0., 0., 1., 1.f, 0);
 	}
 };
 
@@ -53,7 +63,7 @@ void RenderStrategyNull::UpdateLightCamera(){
 }
 
 void RenderStrategyNull::Render(size_t face){
-	
+	mImpl->Render(face);
 }
 
 bool RenderStrategyNull::IsHDR() const{

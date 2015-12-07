@@ -343,6 +343,7 @@ public:
 			auto rt = CreateRenderTarget(param);	
 			rt->SetColorTexture(CreateTexture(colorTexture));
 			rt->SetDepthTexture(CreateTexture(depthTexture));
+			rt->SetAssociatedWindowId(id);
 			
 			mWindowRenderTargets[id] = rt;
 
@@ -583,12 +584,21 @@ public:
 		}
 	}
 
-	void ReleaseCanvas(HWindowId id){
+	void DeinitCanvas(HWindowId id){
 		auto it = mWindowHandles.Find(id);
 		if (it == mWindowHandles.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find the window.");
 			return;
-		}
+		}	
+		HWindow hwnd = it->second;
+		GetPlatformRenderer().DeinitCanvas(id, it->second);
+		mWindowHandles.erase(it);
+		auto itId = mWindowIds.Find(hwnd);
+		assert(itId != mWindowIds.end());
+		mWindowIds.erase(itId);
+		auto itRt = mWindowRenderTargets.Find(id);
+		assert(itRt != mWindowRenderTargets.end());
+		mWindowRenderTargets.erase(itRt);
 	}
 
 	void Render3DUIsToTexture()
@@ -1812,7 +1822,7 @@ public:
 		RenderParam param;
 		param.mRenderPass = PASS_NORMAL;
 		param.mCamera = mCamera.get();
-		mDebugHud->Render(param, 0);
+		mDebugHud->Render(param, 0);		
 		//SetWireframe(backup);		
 		for (auto it = observers.begin(); it != observers.end(); /**/)
 		{
@@ -2704,7 +2714,7 @@ public:
 	//-------------------------------------------------------------------
 	// ISceneObserver
 	//-------------------------------------------------------------------
-	bool OnFileChanged(const char* file, const char* ext){
+	bool OnFileChanged(const char* watchDir, const char* file, const char* ext){
 		auto extension = std::string(ext);		
 		bool shader = extension == ".hlsl" || extension ==  ".h";
 		bool material = extension == ".material";
@@ -2790,8 +2800,8 @@ bool Renderer::InitCanvas(HWindowId id, HWindow window, int width, int height) {
 	return mImpl->InitCanvas(id, window, width, height);
 }
 
-void Renderer::ReleaseCanvas(HWindowId id) {
-	mImpl->ReleaseCanvas(id);
+void Renderer::DeinitCanvas(HWindowId id) {
+	mImpl->DeinitCanvas(id);
 }
 
 void Renderer::Render() {
@@ -3485,6 +3495,10 @@ void Renderer::ConsumeInput(IInputInjectorPtr injector) {
 	mImpl->ConsumeInput(injector);
 }
 
-bool Renderer::OnFileChanged(const char* file, const char* ext){
-	return mImpl->OnFileChanged(file, ext);
+void Renderer::OnChangeDetected(){
+
+}
+
+bool Renderer::OnFileChanged(const char* watchDir, const char* file, const char* ext){
+	return mImpl->OnFileChanged(watchDir, file, ext);
 }

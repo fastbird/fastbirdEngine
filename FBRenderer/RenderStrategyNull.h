@@ -5,7 +5,7 @@
 #include "FBCommonHeaders/Types.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(RenderStrategyNull);
-	class RenderStrategyNull : public IRenderStrategy{
+	class FB_DLL_RENDERER RenderStrategyNull : public IRenderStrategy{
 		FB_DECLARE_PIMPL_NON_COPYABLE(RenderStrategyNull);
 		RenderStrategyNull();
 		~RenderStrategyNull();

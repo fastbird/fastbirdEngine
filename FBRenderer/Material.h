@@ -61,7 +61,7 @@ namespace fb{
 		
 		typedef VectorMap<unsigned, Vec4f> Parameters;
 		typedef std::vector< TexturePtr > Textures;
-		typedef VectorMap<TextureBinding, TexturePtr> TexturesByBinding;
+		typedef VectorMap<TextureBinding, TexturePtr> TextureByBinding;
 		typedef VectorMap<TexturePtr, TextureBinding> BindingsByTexture;
 
 		static void ReloadMaterial(const char* name);
@@ -111,8 +111,7 @@ namespace fb{
 		const Parameters& GetMaterialParameters() const;
 		const MATERIAL_CONSTANTS& GetMaterialConstants() const;
 		const Textures& GetTextures() const;
-		const TexturesByBinding& GetTexturesByBinding() const;
-		const BindingsByTexture& GetBindingsByTexture() const;
+		const TextureByBinding& GetTextureByBinding() const;
 
 		bool IsUsingMaterialParameter(unsigned index);
 		bool IsRelatedShader(const char* shaderFile);
@@ -148,5 +147,7 @@ namespace fb{
 
 		/// internal only.
 		//void ApplyShaderDefines();
+
+		void* GetParameterAddress();
 	};
 }

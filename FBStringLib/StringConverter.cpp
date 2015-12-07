@@ -229,9 +229,10 @@ namespace fb{
 	}
 
 	//-----------------------------------------------------------------------
-	TStringVector StringConverter::ParseStringVector(const TString& val)
+	TStringVector StringConverter::ParseStringVector(const TString& val, const std::string& delims,
+		unsigned int maxSplits , bool preserveDelims)
 	{
-		return Split(val);
+		return Split(val, delims, maxSplits, preserveDelims);
 	}
 
 	//-----------------------------------------------------------------------

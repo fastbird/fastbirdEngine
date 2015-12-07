@@ -122,7 +122,7 @@ namespace fb{
 		// Canvas & System
 		//-------------------------------------------------------------------
 		bool InitCanvas(HWindowId id, HWindow window, int width, int height);
-		void ReleaseCanvas(HWindowId id);
+		void DeinitCanvas(HWindowId id);
 		void Render();		
 
 		//-------------------------------------------------------------------
@@ -374,7 +374,8 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// IFileChangeObserver
 		//-------------------------------------------------------------------
-		bool OnFileChanged(const char* file, const char* ext);
+		void OnChangeDetected();
+		bool OnFileChanged(const char* watchDir, const char* file, const char* ext);
 	};
 
 }

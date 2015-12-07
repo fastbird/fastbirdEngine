@@ -32,6 +32,7 @@
 #include "ComponentType.h"
 namespace fb
 {
+	FB_DECLARE_SMART_PTR(IInputInjector);
 	FB_DECLARE_SMART_PTR(UIAnimation);	
 	FB_DECLARE_SMART_PTR(ImageBox);
 	struct RegionTestParam;

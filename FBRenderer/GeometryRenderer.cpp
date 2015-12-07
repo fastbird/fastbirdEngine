@@ -39,8 +39,7 @@
 #include "ResourceProvider.h"
 #include "ResourceTypes.h"
 #include "Camera.h"
-#include "FBSceneManager/SceneManager.h"
-#include "FBSceneManager/Scene.h"
+#include "FBSceneManager/IScene.h"
 #include "EssentialEngineData/shaders/Constants.h"
 using namespace fb;
 
@@ -155,8 +154,7 @@ public:
 		ddesc.DepthEnable = true;
 		mDepthStencilState = renderer.CreateDepthStencilState(ddesc);
 		RASTERIZER_DESC desc;
-		mRasterizerState = renderer.CreateRasterizerState(desc);
-		auto& sceneMgr = SceneManager::GetInstance();
+		mRasterizerState = renderer.CreateRasterizerState(desc);		
 		mThickLines.reserve(1000);
 	}
 
@@ -244,13 +242,12 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	void OnBeforeRenderingTransparents(Scene* scene)
+	// not using this function
+	void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut)
 	{
 		auto& renderer = Renderer::GetInstance();
 		if (!renderer.GetRendererOptions()->r_debugDraw)
-			return;
-		if (scene->GetRenderPass() != RENDER_PASS::PASS_NORMAL)
-			return;
+			return;		
 		unsigned lineCount = mWorldLinesBeforeAlphaPass.size();
 		if (lineCount == 0)
 			return;
@@ -480,5 +477,9 @@ void GeometryRenderer::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Col
 
 void GeometryRenderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha) {
 	mImpl->DrawTriangle(a, b, c, color, alpha);
+}
+
+void GeometryRenderer::OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut){
+	mImpl->OnBeforeRenderingTransparents(scene, renderParam, renderParamOut);
 }
 

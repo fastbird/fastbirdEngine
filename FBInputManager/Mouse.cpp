@@ -158,7 +158,7 @@ public:
 		}
 		else{
 			mAbsXPrev = mAbsX;
-			mAbsYPrev = mAbsY;
+			mAbsYPrev = mAbsY;			
 		}
 		mValid = true;
 		mLButtonDoubleClicked = false;
@@ -580,7 +580,7 @@ public:
 				if (!mLockMouse)
 				{
 					mAbsXPrev = mAbsX;
-					mAbsYPrev = mAbsY;
+					mAbsYPrev = mAbsY;					
 				}
 				mLockMouse = true;
 				int displayCounter = ShowCursor(false);

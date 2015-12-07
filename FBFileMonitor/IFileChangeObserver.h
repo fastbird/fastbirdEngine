@@ -37,7 +37,13 @@ namespace fb
 			FileChange_Engine,			
 			FileChange_Game,
 		};
+		/// Called when any modificated file found.
+		/// Then you can call FileMonitor::Check() to make FileMonitor to noify through IFileChangeObserver::OnFileChanged() function.
+		/// If you call FileMonitor::Check() every frame, you don't need to call this function.
+		virtual void OnChangeDetected()=0;
 		/// extension contains "." ex).xml
-		virtual bool OnFileChanged(const char* filepath, const char* loweredExtension) = 0;
+		/// returns 'processed'
+		virtual bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension) = 0;
+		
 	};
 }

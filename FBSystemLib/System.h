@@ -35,4 +35,6 @@ namespace fb{
 	void ChangeWindowSize(HWindow handle, Vec2ITuple resol);
 	Vec2ITuple GetWindowClientSize(HWindow handle);
 	unsigned GetWindowStyle(HWindow handle);
+	/// Any modules use this function, needs to link Comdlg32.lib, shlwapi.lib for windows.
+	std::string OpenFile(HWindow handle, char* filter);
 }

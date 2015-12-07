@@ -46,7 +46,8 @@ namespace fb
 		//---------------------------------------------------------------------------
 		// IFileChangeObserver
 		//---------------------------------------------------------------------------
-		bool OnFileChanged(const char* file, const char* ext);
+		bool OnFileChanged(const char* watchDir, const char* file, const char* ext);
+		void OnChangeDetected();
 
 		void AddParticleSearchDirectory(const char* directory);
 		void Update(float elapsedTime);

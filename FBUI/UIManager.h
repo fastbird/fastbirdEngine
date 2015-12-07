@@ -39,6 +39,9 @@
 #include "FBRenderer/IRendererObserver.h"
 #include "FBInputManager/IInputConsumer.h"
 
+namespace tinyxml2{
+	class XMLDocument;
+}
 namespace fb
 {
 	void RegisterLuaFuncs(lua_State* mL);
@@ -74,7 +77,8 @@ namespace fb
 		virtual WinBasePtr CreateComponent(ComponentType::Enum type);
 		void Shutdown();
 		// IFileChangeListeners
-		bool OnFileChanged(const char* file, const char* loweredExt);
+		void OnChangeDetected();
+		bool OnFileChanged(const char* watchDir, const char* file, const char* loweredExt);
 
 		// IRendererObserver
 		void BeforeUIRendering(HWindowId hwndId, HWindow hwnd);
@@ -161,8 +165,8 @@ namespace fb
 		void PrepareTooltipUI();
 
 		UICommandsPtr GetUICommands() const;
-		void SetUIEditorModuleHandle(HMODULE moduleHandle);
-		HMODULE GetUIEditorModuleHandle() const;
+		void SetUIEditorModuleHandle(ModuleHandle moduleHandle);
+		ModuleHandle GetUIEditorModuleHandle() const;
 		
 		WinBasePtr WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param);
 		WinBasePtr WinBaseWithPointCheckAlways(const Vec2I& pt, const RegionTestParam& param);

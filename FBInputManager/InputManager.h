@@ -30,7 +30,6 @@
 #include "MouseEvent.h"
 #include "FBInputDevice.h"
 #include "IInputInjector.h" // convenient include
-#include "FBTimer/Timer.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(IRenderTargetObserver);
 	FB_DECLARE_SMART_PTR(IMouse);
