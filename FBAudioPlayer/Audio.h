@@ -30,7 +30,7 @@
 namespace fb{
 	
 	FB_DECLARE_SMART_PTR(Audio);
-	class FB_DLL_AUDIO Audio{
+	class FB_DLL_AUDIOPLAYER Audio{
 		FB_DECLARE_PIMPL_NON_COPYABLE(Audio);
 		Audio();
 

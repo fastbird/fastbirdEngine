@@ -35,6 +35,7 @@ class TaskScheduler
 {
 	FB_DECLARE_PIMPL_NON_COPYABLE(TaskScheduler);
 	TaskScheduler(int NumThreads);
+	~TaskScheduler();
 
 public:
 	/** Create TaskSchedular

@@ -146,6 +146,7 @@
     <ClInclude Include="RadioBox.h" />
     <ClInclude Include="RegionTestParam.h" />
     <ClInclude Include="Scroller.h" />
+    <ClInclude Include="UISounds.h" />
     <ClInclude Include="StaticText.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="Styles.h" />
@@ -166,6 +167,9 @@
     <ClInclude Include="Wnd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBAudioPlayer\FBAudioPlayer.vcxproj">
+      <Project>{35bd3327-2fa4-4a92-8790-87abb17e720b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBConsole\FBConsole.vcxproj">
       <Project>{ae082870-0e26-479c-9aab-c7d3c32a55ca}</Project>
     </ProjectReference>

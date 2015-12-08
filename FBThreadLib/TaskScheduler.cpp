@@ -39,13 +39,14 @@ using namespace fb;
 
 static const int MAX_NUM_QUEUE = 65536;
 SyncEventPtr gScheduleSliceEvent = 0;
+bool sFinalize = false;
 namespace fb
 {
 	TaskScheduler* gTaskScheduler = 0;
 
 	void Scheduler()
 	{
-		while (!gTaskScheduler->_IsFinalized())
+		while (!sFinalize && gTaskScheduler)
 		{
 			gTaskScheduler->_Schedule();
 			gScheduleSliceEvent->Wait(66);
@@ -73,7 +74,6 @@ public:
 	LockFreeQueue<WorkerThread*> mIdleThreadsQueue;
 
 	FB_CRITICAL_SECTION mQueueCS;
-	bool mFinalize;
 
 	// Used to maintain the number of scheduling slices requested
 	volatile long mSchedulingSlices;
@@ -82,7 +82,6 @@ public:
 	//---------------------------------------------------------------------------
 	Impl(TaskScheduler* self, int numThread)
 		: mSelf(self)
-		, mFinalize(false)		
 	{
 		gTaskScheduler = self;
 		mNumWorkerThreads = (numThread == 0) ? GetNumProcessors() : numThread;
@@ -90,7 +89,8 @@ public:
 	}
 
 	~Impl(){
-		mFinalize = true;
+		sFinalize = true;
+		gTaskScheduler = 0;
 		std::this_thread::sleep_for(std::chrono::microseconds(500));
 		for (int i = 0; i<mNumWorkerThreads; i++)
 		{
@@ -132,7 +132,7 @@ public:
 	// Public
 	//---------------------------------------------------------------------------
 	void AddTask(TaskPtr NewTask){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		assert(NewTask);
 		TaskPtr* Dependencies = NULL;
@@ -162,21 +162,21 @@ public:
 	// Called by WorkerThread or Task
 	//---------------------------------------------------------------------------
 	void AddIdleWorker(WorkerThread* w){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		LOCK_CRITICAL_SECTION lock(mQueueCS);
 		mIdleThreadsQueue.Enq(w);
 	}
 
 	void AddPendingTask(TaskPtr t){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		LOCK_CRITICAL_SECTION lock(mQueueCS);
 		mPendingTasksQueue.Enq(t);
 	}
 
 	void SchedulerSlice(){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		if (mSchedulerLock.Lock())
 		{
@@ -309,7 +309,7 @@ public:
 	}
 
 	TaskPtr GetNextReadyTask(WorkerThread* Thread){
-		if (mFinalize)
+		if (sFinalize)
 			return 0;
 		LOCK_CRITICAL_SECTION lock(mQueueCS);
 
@@ -326,7 +326,7 @@ public:
 	// Internal
 	//---------------------------------------------------------------------------
 	WorkerThread* GetNextIdleThread(TaskPtr t){
-		if (mFinalize)
+		if (sFinalize)
 			return 0;
 		LOCK_CRITICAL_SECTION lock(mQueueCS);
 
@@ -334,14 +334,14 @@ public:
 	}
 
 	void AddReadyTask(TaskPtr t){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		LOCK_CRITICAL_SECTION lock(mQueueCS);
 		mReadyTasksQueue.Enq(t);
 	}
 
 	void ScheduleTask(TaskPtr t){
-		if (mFinalize)
+		if (sFinalize)
 			return;
 		t->mScheduled = true;
 		WorkerThread* WorkerThread = GetNextIdleThread(t);
@@ -365,12 +365,16 @@ TaskScheduler::TaskScheduler(int NumThreads)
 	mImpl->Init();
 }
 
+TaskScheduler::~TaskScheduler(){
+
+}
+
 void TaskScheduler::AddTask(TaskPtr NewTask){
 	mImpl->AddTask(NewTask);
 }
 
 bool TaskScheduler::_IsFinalized() const{
-	return mImpl->mFinalize;
+	return sFinalize;
 }
 
 void TaskScheduler::_Schedule(){

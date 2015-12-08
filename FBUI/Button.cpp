@@ -189,6 +189,13 @@ namespace fb
 		TriggerRedraw();
 	}
 
+	void Button::OnMouseClicked(IInputInjectorPtr injector){
+		__super::OnMouseClicked(injector);
+		if (mNoButton)
+			return;
+		UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
+	}
+
 	void Button::OnMouseHover(void* arg)
 	{
 		if (mNoButton)
@@ -228,6 +235,9 @@ namespace fb
 	void Button::OnMouseIn(void* arg){
 		if (!mImages[ButtonImages::ImageHover].expired() || !mImages[ButtonImages::BackImageHover].expired())
 			UIManager::GetInstance().DirtyRenderList(GetHwndId());
+		if (mNoButton)
+			return;
+		UIManager::GetInstance().PlaySound(UISounds::ButtonIn);
 	}
 
 	void Button::OnMouseOut(void* arg)

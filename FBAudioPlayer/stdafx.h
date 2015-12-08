@@ -28,21 +28,24 @@
 #pragma comment(lib, "libogg.lib")
 #pragma comment(lib, "libvorbis.lib")
 #pragma comment(lib, "OpenAL32.lib")
+#pragma comment(lib, "ALURE32.lib")
 
 #include "FBCommonHeaders/platform.h"
 #if defined(_PLATFORM_WINDOWS_) 
-#define FB_DLL_AUDIO __declspec(dllexport)
+#define FB_DLL_AUDIOPLAYER __declspec(dllexport)
 #else
-#define FB_DLL_AUDIO
+#define FB_DLL_AUDIOPLAYER
 #endif
 
 #include "FBCommonHeaders/platform.h"
 
 #include <string>
+#include <chrono>
 
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/alext.h>
+#include <AL/alure.h>
 #include <assert.h>
 #include <vorbis/codec.h>
 

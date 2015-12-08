@@ -28,7 +28,7 @@
 #include "stdafx.h"
 #include "Audio.h"
 #include "AudioHelper.h"
-
+#include "FBCommonHeaders/Helpers.h"
 namespace fb{
 	LPALBUFFERSAMPLESSOFT alBufferSamplesSOFT = wrap_BufferSamples;
 	LPALISBUFFERFORMATSUPPORTEDSOFT alIsBufferFormatSupportedSOFT;
@@ -63,6 +63,9 @@ public:
 		: mError(false)
 		, mConvSize(4096)
 	{
+		for (int i = 0; i < NUM_BUFFERS; ++i){
+			mAudioBuffers[i] = 0;
+		}
 		static bool CheckAlFunc = true;
 		mStreamStateVorbis.body_data = 0;
 		mVorbisDspState.vi = 0;
@@ -169,7 +172,7 @@ public:
 					vorbis_block_init(&mVorbisDspState, &mVorbisBlock);
 					int i;
 					for (i = 0; i < NUM_BUFFERS; ++i){
-						auto samples = DecodeAudio();
+						auto samples = DecodeOggAudio();
 						if (samples == 0)
 							break;
 
@@ -211,7 +214,7 @@ public:
 		return &mStreamStateVorbis;
 	}
 
-	unsigned DecodeAudio(){
+	unsigned DecodeOggAudio(){
 		if (mError)
 			return 0;
 
@@ -267,8 +270,8 @@ public:
 	}
 
 	bool PlayAudio(const char* path){
-		if (!path || strlen(path) == 0) {
-			Error("Cannot find the file %s", path);
+		if (!ValidCStringLength(path)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");			
 			return false;
 		}
 
@@ -279,6 +282,11 @@ public:
 		}
 		if (!mFilepath.empty())
 			Clear();
+		mAudioBuffers[0] = alureCreateBufferFromFile(path);
+		if (!mAudioBuffers[0]){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot load audio(%s)", path).c_str());
+		}
+
 
 		return true;
 	}
@@ -300,7 +308,7 @@ public:
 
 		while (processed > 0 && !mError){
 			processed--;
-			unsigned samples = DecodeAudio();
+			unsigned samples = DecodeOggAudio();
 			if (samples > 0){
 				// to AL
 

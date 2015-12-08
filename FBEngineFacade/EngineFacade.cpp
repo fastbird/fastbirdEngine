@@ -49,6 +49,7 @@
 #include "FBFileMonitor/FileMonitor.h"
 #include "FBVideoPlayer/VideoPlayerOgg.h"
 #include "FBParticleSystem/ParticleSystem.h"
+#include "FBAudioPlayer/AudioManager.h"
 using namespace fb;
 namespace fb{
 	void InitEngineLua();
@@ -77,6 +78,7 @@ public:
 	ParticleSystemPtr mParticleSystem;	
 	EngineOptionsPtr mEngineOptions;
 	FileMonitorPtr mFileMonitor;
+	AudioManagerPtr mAudioManager;
 	bool mRayFromCursorCalced;
 
 	// EngineFacade
@@ -116,11 +118,14 @@ public:
 		mEngineOptions = EngineOptions::Create();
 		mRenderer = Renderer::Create();
 		mSceneObjectFactory = SceneObjectFactory::Create();
+		mAudioManager = AudioManager::Create();
+		mAudioManager->Init();
 
 		mInputManager->RegisterInputConsumer(mRenderer, IInputConsumer::Priority77_CAMERA);
 	}
 
 	~Impl(){
+		mAudioManager->Deinit();
 		SkySphere::DestroySharedEnvRT();
 		LuaUtils::CloseLuaState(mL);
 		FileSystem::StopLogging();
@@ -325,6 +330,7 @@ public:
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
 		mParticleSystem->Update(dt);
+		mAudioManager->Update(dt);
 		mInputManager->EndFrame(gpTimer->GetTime());		
 	}
 
@@ -464,6 +470,26 @@ public:
 		auto scene = std::static_pointer_cast<Scene>(iscene);
 		auto light = scene->GetDirectionalLight(idx);
 		light->SetIntensity(intensity);
+	}
+
+	AudioId PlayAudio(const char* filepath){
+		return mAudioManager->PlayAudio(filepath);
+	}
+
+	AudioId PlayAudio(const char* filepath, const Vec3& pos){
+		return mAudioManager->PlayAudio(filepath, pos.x, pos.y, pos.z);
+	}
+
+	AudioId PlayAudio(const char* filepath, const AudioProperty& prop){
+		return mAudioManager->PlayAudio(filepath, prop);
+	}
+
+	bool SetAudioPosition(AudioId id, const Vec3& pos){
+		return mAudioManager->SetPosition(id, pos.x, pos.y, pos.z);
+	}
+
+	void SetListenerPosition(const Vec3& pos){
+		return mAudioManager->SetListenerPosition(pos.x, pos.y, pos.z);
 	}
 };
 HWindow EngineFacade::Impl::MainWindowHandle = INVALID_HWND;
@@ -1063,4 +1089,24 @@ void EngineFacade::StopAllParticles(){
 
 void EngineFacade::AddTask(TaskPtr NewTask){
 	mImpl->mTaskSchedular->AddTask(NewTask);
+}
+
+AudioId EngineFacade::PlayAudio(const char* filepath){
+	return mImpl->PlayAudio(filepath);
+}
+
+AudioId EngineFacade::PlayAudio(const char* filepath, const Vec3& pos){
+	return mImpl->PlayAudio(filepath, pos);
+}
+
+AudioId EngineFacade::PlayAudio(const char* filepath, const AudioProperty& prop){
+	return mImpl->PlayAudio(filepath, prop);
+}
+
+bool EngineFacade::SetAudioPosition(AudioId id, const Vec3& pos){
+	return mImpl->SetAudioPosition(id, pos);
+}
+
+void EngineFacade::SetListenerPosition(const Vec3& pos){
+	return mImpl->SetListenerPosition(pos);
 }

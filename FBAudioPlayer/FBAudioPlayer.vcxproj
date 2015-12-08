@@ -44,14 +44,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;$(ALURE_DIR)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OPENAL_SOFT_DIR)\build\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ALURE_DIR)\binaries\$(Configuration);$(OPENAL_SOFT_DIR)\binaries\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -61,7 +61,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;$(ALURE_DIR)\include;</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -70,13 +70,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OPENAL_SOFT_DIR)\build\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ALURE_DIR)\binaries\$(Configuration);$(OPENAL_SOFT_DIR)\binaries\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioHelper.h" />
     <ClInclude Include="AudioManager.h" />
+    <ClInclude Include="AudioProperty.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

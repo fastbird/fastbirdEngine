@@ -103,6 +103,9 @@
     <ClCompile Include="Voxelizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBAudioPlayer\FBAudioPlayer.vcxproj">
+      <Project>{35bd3327-2fa4-4a92-8790-87abb17e720b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBConsole\FBConsole.vcxproj">
       <Project>{ae082870-0e26-479c-9aab-c7d3c32a55ca}</Project>
     </ProjectReference>

@@ -144,6 +144,7 @@ public:
 	void TakeOwnershipScene(IScenePtr scene){
 		mScene = scene;
 		mSceneOwnerShip = scene;
+		mStrategy->SetScene(scene);
 	}
 
 	void SetCamera(CameraPtr cam){

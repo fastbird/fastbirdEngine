@@ -87,6 +87,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioTest.h" />
     <ClInclude Include="EngineTest.h" />
     <ClInclude Include="MeshTest.h" />
     <ClInclude Include="ParticleTest.h" />
@@ -96,6 +97,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioTest.cpp" />
     <ClCompile Include="EngineTest.cpp" />
     <ClCompile Include="MeshTest.cpp" />
     <ClCompile Include="ParticleTest.cpp" />

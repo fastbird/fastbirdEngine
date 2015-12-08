@@ -60,7 +60,7 @@ static const Real starGlareInclination = HALF_PI;
 //	return IRenderStrategyPtr(FB_NEW(RenderStrategyDefault), [](RenderStrategyDefault* obj){FB_DELETE(obj); });
 //}
 FB_IMPLEMENT_STATIC_CREATE(RenderStrategyDefault);
-
+static Vec4 s_aaColor[starGlareMaxPasses][starGlareSamples];
 class RenderStrategyDefault::Impl{
 public:
 	static const int FB_MAX_SAMPLES = 16;
@@ -99,7 +99,17 @@ public:
 		, mRenderingFace(0)
 		, mStarGlareDef(0)
 	{
+		static bool s_aaColorCalced = false;
+		if (!s_aaColorCalced)
+		{
+			s_aaColorCalced = true;
+			CalcStarGlareConst(s_aaColor);
+		}
 
+		if (!mStarGlareDef){
+			mStarGlareDef = FB_NEW(StarDef);
+			mStarGlareDef->Initialize(STLT_VERTICAL);
+		}
 	}
 	~Impl(){
 		FB_DELETE(mStarGlareDef);
@@ -1098,9 +1108,6 @@ public:
 			}
 		}
 		StarDef::InitializeStatic();
-		assert(!mStarGlareDef);
-		mStarGlareDef = FB_NEW(StarDef);
-		mStarGlareDef->Initialize(STLT_VERTICAL);
 	}
 
 	//---------------------------------------------------------------------------
@@ -1127,14 +1134,7 @@ public:
 		auto rt = mRenderTarget.lock();
 		const Real fTanFoV = rt->GetCamera()->GetFOV();
 		const Color vWhite(1.0f, 1.0f, 1.0f, 1.0f);
-		static Vec4 s_aaColor[starGlareMaxPasses][starGlareSamples];
-		static bool s_aaColorCalced = false;
-		if (!s_aaColorCalced)
-		{
-			s_aaColorCalced = true;
-			CalcStarGlareConst(s_aaColor);
-
-		}
+		
 
 		Vec4f avSampleWeights[FB_MAX_SAMPLES];
 		Vec4f avSampleOffsets[FB_MAX_SAMPLES];

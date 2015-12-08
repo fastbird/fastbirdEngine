@@ -28,7 +28,11 @@
 #include "stdafx.h"
 #include "FileMonitor.h"
 using namespace fb;
+FileMonitor* sMonitorRaw = 0;
+FileMonitorWeakPtr sMonitor;
+
 namespace fb {
+	FB_CRITICAL_SECTION gFileMonitorMutex;
 	static const unsigned FILE_CHANGE_BUFFER_SIZE = 8000;
 	class FileChangeMonitorThread : public Thread{		
 		HANDLE mExitFileChangeThread;
@@ -39,14 +43,14 @@ namespace fb {
 		FB_CRITICAL_SECTION mChangedFilesGuard;
 		std::set<std::string> mChangedFiles;
 		bool mHasChangedFiles;
-		bool mExiting;
+		std::atomic<bool> mExiting;
 	public:
 		FileChangeMonitorThread()
 			: mExiting(false)			
 			, mHasChangedFiles(false)
 			, mMonitoringDirectory(INVALID_HANDLE_VALUE)
 		{
-			mExitFileChangeThread = CreateEvent(0, FALSE, FALSE, "FileChangeMonitorExitEvent");
+			mExitFileChangeThread = CreateEvent(0, FALSE, FALSE, 0);
 			mFileChangeBuffer.resize(FILE_CHANGE_BUFFER_SIZE);
 			memset(&mOverlapped, 0, sizeof(OVERLAPPED));
 			mOverlapped.hEvent = CreateEvent(0, TRUE, FALSE, 0);
@@ -65,7 +69,7 @@ namespace fb {
 				mWatchDir = FileSystem::MakrEndingSlashIfNot(mWatchDir.c_str());
 		}
 
-		void Exit() {			
+		void Exit() {						
 			CleanFileChangeMonitor();	
 			CloseHandle(mMonitoringDirectory);
 			ResetEvent(mMonitoringDirectory);
@@ -76,9 +80,10 @@ namespace fb {
 			mOverlapped.hEvent = CreateEvent(0, TRUE, FALSE, 0);
 		}
 
-		void Stop(){
+		void Stop(){			
 			mExiting = true;
-			SetEvent(mExitFileChangeThread);
+			ForceExit(false);
+			SetEvent(mExitFileChangeThread);			
 		}
 
 		bool Run() {
@@ -108,6 +113,7 @@ namespace fb {
 
 		void CleanFileChangeMonitor()
 		{
+			Logger::Log(FB_ERROR_LOG_ARG, "CleanFileChangeMonitor");
 			::CancelIo(mMonitoringDirectory);
 			::CloseHandle(mMonitoringDirectory);
 			mMonitoringDirectory = 0;
@@ -131,8 +137,11 @@ namespace fb {
 					mChangedFiles.insert(unifiedPath);
 					mHasChangedFiles = true;
 
-					for (int i = 0; i < 2; ++i){
-						FileMonitor::GetInstance().OnChangeDetected();						
+					if (sMonitorRaw){
+						LOCK_CRITICAL_SECTION fileMonitorLock(gFileMonitorMutex);
+						for (int i = 0; i < 2; ++i){
+							sMonitorRaw->OnChangeDetected();
+						}
 					}
 				}
 				break;
@@ -143,6 +152,8 @@ namespace fb {
 
 		bool MonitorFileChange()
 		{
+			if (mExiting)
+				return false;
 			//::CancelIo(mMonitoringDirectory);
 			//::CloseHandle(mMonitoringDirectory);
 			if (mMonitoringDirectory == INVALID_HANDLE_VALUE)
@@ -209,6 +220,9 @@ public:
 	}
 
 	~Impl(){
+		
+	}
+	void TerminatesAllThreads(){
 		for (auto& it : mFileMonitorThread){
 			it.Stop();
 			it.Join();
@@ -350,11 +364,12 @@ public:
 };
 
 //---------------------------------------------------------------------------
-FileMonitorWeakPtr sMonitor;
+
 FileMonitorPtr FileMonitor::Create(){
 	if (sMonitor.expired()){
 		FileMonitorPtr p(new FileMonitor, [](FileMonitor* obj){ delete obj; });
 		sMonitor = p;
+		sMonitorRaw = p.get();
 		return p;
 	}
 	return sMonitor.lock();
@@ -364,7 +379,7 @@ FileMonitor& FileMonitor::GetInstance(){
 	if (sMonitor.expired()){
 		Logger::Log(FB_ERROR_LOG_ARG, "FileMonitor is deleted. Program will crash...");
 	}
-	return *sMonitor.lock();
+	return *sMonitorRaw;
 }
 
 bool FileMonitor::HasInstance(){
@@ -378,7 +393,10 @@ FileMonitor::FileMonitor()
 
 }
 FileMonitor::~FileMonitor(){
-
+	mImpl->TerminatesAllThreads();
+	LOCK_CRITICAL_SECTION l(gFileMonitorMutex);
+	mImpl = 0;
+	sMonitorRaw = 0;
 }
 
 void FileMonitor::StartMonitor(const char* dirPath){

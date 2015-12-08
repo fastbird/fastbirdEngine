@@ -302,8 +302,7 @@ ParticleRenderObject::ParticleRenderObject()
 
 }
 
-ParticleRenderObject::~ParticleRenderObject(){
-	Logger::Log(FB_ERROR_LOG_ARG, "ParticleRenderObject destructed.");
+ParticleRenderObject::~ParticleRenderObject(){	
 }
 
 void ParticleRenderObject::PreRender(const RenderParam& param, RenderParamOut* paramOut) {

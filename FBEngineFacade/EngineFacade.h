@@ -32,6 +32,7 @@
 #include "FBSceneManager/DirectionalLightIndex.h"
 #include "FBSceneManager/ISceneObserver.h"
 #include "FBVideoPlayer/VideoPlayerType.h"
+#include "FBAudioPlayer/AudioProperty.h"
 #include "FBRenderer/ICamera.h"
 #include "RenderTargetParamEx.h"
 namespace fb{
@@ -201,5 +202,14 @@ namespace fb{
 		void DetachBlendingSky(IScenePtr scene);
 		void StopAllParticles();
 		void AddTask(TaskPtr NewTask);
+
+		//---------------------------------------------------------------------------
+		// Audio
+		//---------------------------------------------------------------------------
+		AudioId PlayAudio(const char* filepath);
+		AudioId PlayAudio(const char* filepath, const Vec3& pos);
+		AudioId PlayAudio(const char* filepath, const AudioProperty& prop);
+		bool SetAudioPosition(AudioId id, const Vec3& pos);
+		void SetListenerPosition(const Vec3& pos);
 	};
 }

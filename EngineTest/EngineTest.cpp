@@ -6,6 +6,7 @@
 #include "MeshTest.h"
 #include "SkyBoxTest.h"
 #include "ParticleTest.h"
+#include "AudioTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
 EngineFacadePtr gEngine;
@@ -19,6 +20,7 @@ HWND gHWnd = 0;
 MeshTestPtr gMeshTest;
 SkyBoxTestPtr gSkyBoxTest;
 ParticleTestPtr gParticleTest;
+AudioTestPtr gAudioTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -53,6 +55,7 @@ void StartTest(){
 	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	gParticleTest = ParticleTest::Create();
+	gAudioTest = AudioTest::Create();
 	
 	
 }
@@ -61,6 +64,7 @@ void EndTest(){
 	gParticleTest = 0;
 	gMeshTest = 0;
 	gSkyBoxTest = 0;
+	gAudioTest = 0;
 }
 
 // Forward declarations of functions included in this code module:

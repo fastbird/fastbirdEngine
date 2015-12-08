@@ -90,5 +90,6 @@
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="Styles.h" />
     <ClInclude Include="UIObject.h" />
+    <ClInclude Include="UISounds.h" />
   </ItemGroup>
 </Project>

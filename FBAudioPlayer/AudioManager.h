@@ -27,14 +27,36 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
+#include "AudioProperty.h"
+typedef unsigned int ALuint;
 namespace fb{
+	
+
 	FB_DECLARE_SMART_PTR(AudioManager);
-	class FB_DLL_AUDIO AudioManager{
+	class FB_DLL_AUDIOPLAYER AudioManager{
+		friend void eos_callback(void *userData, ALuint source);
 		FB_DECLARE_PIMPL_NON_COPYABLE(AudioManager);		
 		AudioManager();
+		~AudioManager();
+
+		
 	public:
 		static AudioManagerPtr Create();
+		static AudioManager& GetInstance();
 		bool Init();
 		void Deinit();
+
+		void Update(TIME_PRECISION dt);
+		AudioId PlayAudio(const char* path);
+		AudioId PlayAudio(const char* path, float x, float y, float z);
+		AudioId PlayAudio(const char* path, const AudioProperty& property);
+		bool SetPosition(AudioId id, float x, float y, float z);
+		/// if true, the audio position is relative to the listener.
+		/// Audio which has {0, 0, 0} position will be played always at the listner position if 
+		/// this flag is set.
+		/// default is false.
+		bool SetRelative(AudioId id, bool relative);
+		void SetListenerPosition(float x, float y, float z);
+		bool SetMaxDistance(AudioId id, float distance);
 	};
 }

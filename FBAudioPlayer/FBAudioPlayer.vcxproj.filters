@@ -5,6 +5,7 @@
     <ClInclude Include="AudioHelper.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Audio.h" />
+    <ClInclude Include="AudioProperty.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

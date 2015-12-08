@@ -35,6 +35,7 @@
 #include "UIProperty.h"
 #include "ComponentType.h"
 #include "Align.h"
+#include "UISounds.h"
 #include "FBFileMonitor/IFileChangeObserver.h"
 #include "FBRenderer/IRendererObserver.h"
 #include "FBInputManager/IInputConsumer.h"
@@ -76,6 +77,8 @@ namespace fb
 
 		virtual WinBasePtr CreateComponent(ComponentType::Enum type);
 		void Shutdown();
+		void SetSound(UISounds::Enum type, const char* path);
+		void PlaySound(UISounds::Enum type);
 		// IFileChangeListeners
 		void OnChangeDetected();
 		bool OnFileChanged(const char* watchDir, const char* file, const char* loweredExt);

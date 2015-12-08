@@ -61,6 +61,9 @@ namespace fb{
 	typedef unsigned int FRAME_PRECISION;
 	typedef float TIME_PRECISION;
 
+	typedef unsigned AudioId;
+	static const AudioId INVALID_AUDIO_ID = -1;
+
 	FB_DECLARE_HANDLE(HWindow);
 	static const HWindow INVALID_HWND = (HWindow)-1;
 	typedef std::lock_guard<std::mutex> MutexLock;

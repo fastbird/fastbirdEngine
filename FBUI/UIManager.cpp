@@ -57,6 +57,7 @@
 #include "UIObject.h"
 #include "FBRenderer/TextureAtlas.h"
 #include "FBRenderer/Texture.h"
+#include "FBAudioPlayer/AudioManager.h"
 using namespace fb;
 namespace fb{
 	static float gTooltipFontSize = 24;
@@ -141,6 +142,7 @@ public:
 	Vec2 mPrevTooltipNPos;
 
 	KeyboardCursorPtr mKeyboardCursor;
+	std::vector<std::string> mSounds;
 
 	//---------------------------------------------------------------------------
 	Impl(UIManager* self)
@@ -371,6 +373,27 @@ public:
 		mWindows.clear();
 		mLuaUIs.clear();
 		mCppUIs.clear();
+	}
+
+	void SetSound(UISounds::Enum type, const char* path){
+		if (!ValidCStringLength(path))
+			return;
+
+		while ((int)mSounds.size() <= type){
+			mSounds.push_back(std::string());
+		}
+
+		mSounds[type] = path;
+	}
+
+	void PlaySound(UISounds::Enum type){
+		if ((int)mSounds.size() <= type || mSounds[type].empty()){
+			Logger::Log(FB_ERROR_LOG_ARG, "No ui sound is set for (%d)", type);
+			return;
+		}
+		AudioProperty prop;
+		prop.mRelative = true;
+		AudioManager::GetInstance().PlayAudio(mSounds[type].c_str(), prop);	
 	}
 
 	// IFileChangeListeners
@@ -2654,10 +2677,12 @@ public:
 };
 
 UIManagerWeakPtr sUIManager;
+UIManager* sUIManagerRaw = 0;
 UIManagerPtr UIManager::Create(){
 	if (sUIManager.expired()){
 		UIManagerPtr p(new UIManager, [](UIManager* obj){ delete obj; });
 		sUIManager = p;
+		sUIManagerRaw = p.get();
 		p->mImpl->Initialize();
 		return p;
 	}
@@ -2672,7 +2697,7 @@ UIManager& UIManager::GetInstance(){
 	if (sUIManager.expired()){
 		Logger::Log(FB_ERROR_LOG_ARG, "UIManager is already deleted. Program will crash...");
 	}
-	return *sUIManager.lock();
+	return *sUIManagerRaw;
 }
 
 //---------------------------------------------------------------------------
@@ -2692,6 +2717,14 @@ WinBasePtr UIManager::CreateComponent(ComponentType::Enum type){
 
 void UIManager::Shutdown() {
 	mImpl->Shutdown();
+}
+
+void UIManager::SetSound(UISounds::Enum type, const char* path){
+	mImpl->SetSound(type, path);
+}
+
+void UIManager::PlaySound(UISounds::Enum type){
+	mImpl->PlaySound(type);
 }
 
 void UIManager::OnChangeDetected(){

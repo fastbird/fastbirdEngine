@@ -68,6 +68,7 @@ public:
 	void OnMouseHover(void* arg);
 	void OnMouseOut(void* arg);
 	void OnMouseDown(void* arg);
+	void OnMouseClicked(IInputInjectorPtr injector);
 	bool IsActivated() const { return mActivated; }
 	void AlignIconText();
 

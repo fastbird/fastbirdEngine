@@ -29,11 +29,11 @@
 #include "FBCommonHeaders/platform.h"
 #if defined(_PLATFORM_WINDOWS_) 
 #define FB_DLL_VIDEOPLAYER __declspec(dllexport)
-#define FB_DLL_AUDIO __declspec(dllimport)
+#define FB_DLL_AUDIOPLAYER __declspec(dllimport)
 #define FB_DLL_RENDERER __declspec(dllimport)
 #define FB_DLL_TIMER __declspec(dllimport)
 #else
-#define FB_DLL_AUDIO
+#define FB_DLL_AUDIOPLAYER
 #endif
 
 #include <assert.h>
