@@ -23,5 +23,5 @@ libraries are required to build.
 * libtheora - FBVideoPlayer.dll
 * bullet 2.82 - FBPhysics.dll
 
-[APIDesign.uml](https://github.com/fastbird/fastbirdEngine/blob/master/APIDesign.uml) file in the root directory is helpful to check the all of dependencies
+[APIDesign.uml](https://github.com/fastbird/fastbirdEngine/blob/master/APIDesign.uml)(StarUML file) in the root directory is helpful to check the all of dependencies
 in the engine.
