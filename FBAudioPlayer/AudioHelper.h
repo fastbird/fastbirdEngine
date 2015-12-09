@@ -54,4 +54,6 @@ namespace fb{
 		const ALvoid *data);
 
 	ALenum ChannelsToAL(int channels);
+
+	TIME_PRECISION GetDuration(unsigned bufferSize, unsigned frequency, unsigned channels, unsigned bitsPerSample);
 }

@@ -6,6 +6,7 @@ namespace fb{
 			, mReferenceDistance(10.f)
 			, mRolloffFactor(1.f)
 			, mRelative(false)
+			, mGain(1.f)
 		{
 		}
 		Vec3Tuple mPosition;
@@ -15,6 +16,7 @@ namespace fb{
 		/// higher value will decrease the volume for the audio
 		/// faster.
 		float mRolloffFactor;
+		float mGain;
 		bool mRelative;
 	};
 }

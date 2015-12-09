@@ -191,7 +191,7 @@ public:
 		}
 	}
 
-	void ToLocal(const Transformation& tolocal){
+	void ApplyTransform(const Transformation& tolocal){
 		for (auto& it : mPos)
 		{
 			it.second = tolocal.ApplyForward(it.second);
@@ -415,8 +415,8 @@ void AnimationData::PickRot(TIME_PRECISION time, bool cycled, const Quat** prev,
 	mImpl->PickRot(time, cycled, prev, next, interpol);
 }
 
-void AnimationData::ToLocal(const Transformation& tolocal){
-	mImpl->ToLocal(tolocal);
+void AnimationData::ApplyTransform(const Transformation& tolocal){
+	mImpl->ApplyTransform(tolocal);
 }
 
 bool AnimationData::ParseAction(const char* filename){

@@ -71,7 +71,8 @@ namespace fb{
 		const char* GetName() const;
 		void PickPos(TIME_PRECISION time, bool cycled, const Vec3** prev, const Vec3** next, TIME_PRECISION& interpol);
 		void PickRot(TIME_PRECISION time, bool cycled, const Quat** prev, const Quat** next, TIME_PRECISION& interpol);
-		void ToLocal(const Transformation& tolocal);
+		// used to transform animation data to local space.
+		void ApplyTransform(const Transformation& tolocal);
 		bool ParseAction(const char* filename);
 		const Action* GetAction(const char* name) const;
 

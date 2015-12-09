@@ -22,6 +22,6 @@
 #define FB_DLL_TIMER __declspec(dllimport)
 #define FB_DLL_SCENEMANAGER __declspec(dllimport)
 #define FB_DLL_ENGINEFACADE __declspec(dllimport)
-
+#define FB_DLL_AUDIOPLAYER __declspec(dllimport)
 #include "FBTimer/Timer.h"
 #include "FBMathLib/Math.h"

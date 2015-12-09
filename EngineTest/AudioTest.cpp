@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "AudioTest.h"
 #include "FBEngineFacade/EngineFacade.h"
+#include "FBAudioPlayer/AudioEx.h"
 using namespace fb;
 class AudioTest::Impl{
 public:
@@ -8,8 +9,9 @@ public:
 		//EngineFacade::GetInstance().PlayAudio("data/audio/button_mouse_click.wav");
 		EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
 		AudioProperty prop;
-		prop.mPosition = Vec3(100, 0, 0);
-		auto id = EngineFacade::GetInstance().PlayAudio("data/audio/button_mouse_click.wav", prop);		
+		auto audioex = AudioEx::Create(prop);
+		audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
+		audioex->Play(6.f);
 		
 	}
 };

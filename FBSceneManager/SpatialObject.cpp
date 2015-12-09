@@ -194,6 +194,13 @@ void SpatialObject::SetAnimation(AnimationPtr anim){
 	mAnimatedLocation->MakeIdentity();
 }
 
+AnimationDataPtr SpatialObject::GetAnimationData() const{
+	if (mAnim){
+		return mAnim->GetAnimationData();
+	}
+	return 0;
+}
+
 void SpatialObject::Update(TIME_PRECISION dt){
 	UpdateAnimation(dt);
 }

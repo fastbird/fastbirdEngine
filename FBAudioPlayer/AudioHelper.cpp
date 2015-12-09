@@ -281,6 +281,9 @@ namespace fb{
 		return AL_STEREO_SOFT;
 	}
 
+	TIME_PRECISION GetDuration(unsigned bufferSize, unsigned frequency, unsigned channels, unsigned bitsPerSample){
+		return (TIME_PRECISION)bufferSize / (TIME_PRECISION)(frequency * channels * (bitsPerSample / 8));
+	}
 }
 
 

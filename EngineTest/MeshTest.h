@@ -11,5 +11,6 @@ namespace fb{
 		static MeshTestPtr Create();
 
 		void SetCameraTarget();
+		void Update(TIME_PRECISION dt);
 	};
 }

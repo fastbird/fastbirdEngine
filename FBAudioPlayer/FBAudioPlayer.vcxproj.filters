@@ -6,11 +6,18 @@
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioProperty.h" />
+    <ClInclude Include="AudioEx.h" />
+    <ClInclude Include="IAudioManipulator.h" />
+    <ClInclude Include="AudioFadeOut.h" />
+    <ClInclude Include="AudioFadeIn.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="AudioHelper.cpp" />
     <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="AudioEx.cpp" />
+    <ClCompile Include="AudioFadeOut.cpp" />
+    <ClCompile Include="AudioFadeIn.cpp" />
   </ItemGroup>
 </Project>

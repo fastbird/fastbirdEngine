@@ -86,6 +86,7 @@ namespace fb{
 		void UpdateInput();
 		void Update(TIME_PRECISION dt);
 		void Render();
+		void EndInput();
 		IInputInjectorPtr GetInputInjector();
 		/** Register an input consumer.
 		You need unregister when the consumer is destroyed or does not

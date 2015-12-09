@@ -115,6 +115,9 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBAudioPlayer\FBAudioPlayer.vcxproj">
+      <Project>{35bd3327-2fa4-4a92-8790-87abb17e720b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBEngineFacade\FBEngineFacade.vcxproj">
       <Project>{a7c70afb-e23d-4d19-94e2-f70566155b26}</Project>
     </ProjectReference>

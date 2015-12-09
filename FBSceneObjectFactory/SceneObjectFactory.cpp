@@ -348,7 +348,14 @@ public:
 		MeshGroupPtr meshGroup = MeshGroup::Create();
 		for (auto& it : groupData->mMeshes){
 			auto mesh = ConvertMeshData(it.second.mMesh, daeFilepath, buildTangent, keepDataInMesh);
-			meshGroup->AddMesh(mesh, ConvertCollada(it.second.mTransformation), it.second.mParentMeshIdx);
+			auto transformation = ConvertCollada(it.second.mTransformation);
+			auto animData = mesh->GetAnimationData();
+			if (animData){
+				Transformation inversed;
+				transformation.Inverse(inversed);
+				animData->ApplyTransform(inversed);
+			}
+			meshGroup->AddMesh(mesh, transformation, it.second.mParentMeshIdx);
 		}
 
 		for (auto& it : groupData->mAuxiliaries){

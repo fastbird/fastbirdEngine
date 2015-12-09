@@ -31,6 +31,7 @@
 #include "FBCommonHeaders/Types.h"
 #include "FBMathLib/Transformation.h"
 namespace fb{	
+	FB_DECLARE_SMART_PTR(AnimationData);
 	FB_DECLARE_SMART_PTR(Animation);
 	FB_DECLARE_SMART_PTR(BoundingVolume);
 	FB_DECLARE_SMART_PTR(SpatialObject);	
@@ -74,7 +75,8 @@ namespace fb{
 		bool GetTransformChanged() const;
 		void ClearTransformChanged();
 		virtual void Update(TIME_PRECISION dt);
-		void SetAnimation(AnimationPtr anim);		
+		void SetAnimation(AnimationPtr anim);
+		AnimationDataPtr GetAnimationData() const;
 		void PlayAction(const char* name, bool immediate, bool reverse);			
 		bool IsPlayingAction() const;
 		bool IsActionDone(const char* action) const;

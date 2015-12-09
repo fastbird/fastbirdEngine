@@ -50,6 +50,7 @@ namespace fb{
 		const Transformation& GetResult() const;
 		bool Changed() const;
 		void SetAnimationData(AnimationDataPtr data);
+		AnimationDataPtr GetAnimationData() const;
 
 	};
 }

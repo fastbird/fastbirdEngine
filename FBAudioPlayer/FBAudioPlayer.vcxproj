@@ -75,15 +75,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Audio.h" />
+    <ClInclude Include="AudioEx.h" />
     <ClInclude Include="AudioHelper.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="AudioProperty.h" />
+    <ClInclude Include="AudioFadeIn.h" />
+    <ClInclude Include="AudioFadeOut.h" />
+    <ClInclude Include="IAudioManipulator.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="AudioEx.cpp" />
+    <ClCompile Include="AudioFadeIn.cpp" />
     <ClCompile Include="AudioHelper.cpp" />
     <ClCompile Include="AudioManager.cpp" />
+    <ClCompile Include="AudioFadeOut.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

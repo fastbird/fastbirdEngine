@@ -331,7 +331,10 @@ public:
 		mSceneObjectFactory->Update(dt);
 		mParticleSystem->Update(dt);
 		mAudioManager->Update(dt);
-		mInputManager->EndFrame(gpTimer->GetTime());		
+	}
+
+	void EndInput(){
+		mInputManager->EndFrame(gpTimer->GetTime());
 	}
 
 	void Render(){
@@ -617,6 +620,10 @@ void EngineFacade::Update(TIME_PRECISION dt) {
 
 void EngineFacade::Render() {
 	mImpl->Render();
+}
+
+void EngineFacade::EndInput(){
+	mImpl->EndInput();
 }
 
 EngineOptionsPtr EngineFacade::GetEngineOptions() const{

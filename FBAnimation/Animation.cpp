@@ -253,6 +253,10 @@ public:
 	void SetAnimationData(AnimationDataPtr data) { 
 		mAnimationData = data; 
 	}
+
+	AnimationDataPtr GetAnimationData() const{
+		return mAnimationData;
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -303,4 +307,8 @@ bool Animation::Changed() const{
 
 void Animation::SetAnimationData(AnimationDataPtr data){
 	mImpl->SetAnimationData(data);
+}
+
+AnimationDataPtr Animation::GetAnimationData() const{
+	return mImpl->GetAnimationData();
 }

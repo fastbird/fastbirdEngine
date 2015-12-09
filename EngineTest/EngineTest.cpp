@@ -28,9 +28,14 @@ void UpdateFrame(){
 	gEngine->UpdateFileMonitor();
 	gEngine->UpdateInput();
 	gEngine->Update(dt);
+
 	if (gParticleTest)
 		gParticleTest->Update(dt);
+	if (gMeshTest)
+		gMeshTest->Update(dt);
+
 	gEngine->Render();
+	gEngine->EndInput();
 }
 
 void InitEngine(){
@@ -51,8 +56,8 @@ void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
-	//gMeshTest = MeshTest::Create();	
-	//gMeshTest->SetCameraTarget();
+	gMeshTest = MeshTest::Create();	
+	gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	gParticleTest = ParticleTest::Create();
 	gAudioTest = AudioTest::Create();

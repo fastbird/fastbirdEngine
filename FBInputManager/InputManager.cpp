@@ -107,7 +107,7 @@ public:
 		DeleteValuesInVector(consumers, consumer);
 	}
 
-	void Update(InputManager* inputManager){
+	void Update(InputManager* inputManager){		
 		mValid = 0;
 		mValid = InputDevice::AllMask;		
 		for (auto& it : mConsumers){

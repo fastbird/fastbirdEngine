@@ -27,6 +27,10 @@
 
 #include "stdafx.h"
 #include "AudioManager.h"
+#include "AudioHelper.h"
+#include "AudioFadeOut.h"
+#include "AudioFadeIn.h"
+#include "AudioEx.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/Helpers.h"
 using namespace fb;
@@ -41,10 +45,13 @@ struct AudioBuffer{
 	INT64 mLastAccessed;
 	ALuint mBuffer;
 	unsigned mReferences;
+	TIME_PRECISION mLength;
+
 	AudioBuffer()
 		: mLastAccessed(0)
 		, mBuffer(0)
 		, mReferences(0)
+		, mLength(0)
 	{
 
 	}
@@ -53,6 +60,7 @@ struct AudioBuffer{
 	}
 };
 
+//---------------------------------------------------------------------------
 class AudioManager::Impl{
 public:
 	ALCdevice* mDevice;
@@ -62,6 +70,8 @@ public:
 	VectorMap<AudioId, ALuint> mAudioSources;
 	// Source, Buffer
 	VectorMap<ALuint, std::string> mBufferBySource;
+	std::vector<IAudioManipulatorPtr> mAudioManipulators;
+	std::vector<AudioExPtr> mAudioExs;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -71,7 +81,7 @@ public:
 	}
 
 	~Impl(){
-		
+		// use deinit()
 	}
 
 	bool Init(){
@@ -110,6 +120,7 @@ public:
 	}
 
 	void Deinit(){
+		mAudioExs.clear();
 		for (auto it : mAudioSources){
 			alDeleteSources(1, &it.second);
 		}
@@ -122,7 +133,27 @@ public:
 	}
 
 	void Update(TIME_PRECISION dt){
-		static TIME_PRECISION accumulator = 0;		
+		static TIME_PRECISION accumulator = 0;
+		for (auto it = mAudioManipulators.begin(); it != mAudioManipulators.end(); /**/){
+			bool finished = (*it)->Update(dt);
+			if (finished){
+				it = mAudioManipulators.erase(it);
+			}
+			else{
+				++it;
+			}
+		}
+		for (auto it = mAudioExs.begin(); it != mAudioExs.end(); /**/){
+			bool finished = (*it)->Update();
+			if (finished){
+				it = mAudioExs.erase(it);
+			}
+			else{
+				++it;
+			}
+		}
+
+
 		if (mAudioSources.empty())
 			return;
 		
@@ -171,35 +202,51 @@ public:
 		return std::make_pair(audioId, src);
 	}
 
-	AudioId PlayAudio(const char* path, ALuint* srcId = 0){
-		if (!ValidCStringLength(path)){
+	AudioBufferPtr GetAudioBuffer(std::string path, std::string loweredPath){
+		if (path.size() != loweredPath.size()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
-			return INVALID_AUDIO_ID;
+			return 0;
 		}
 		using namespace std::chrono;
-		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-
-		std::string pathKey(path);
-		ToLowerCase(pathKey);
+		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();		
 		std::pair<AudioId, ALuint> audioIdSrcId;
-		auto it = mAudioBuffers.Find(pathKey);
+		auto it = mAudioBuffers.Find(loweredPath);
 		if (it != mAudioBuffers.end()){
 			it->second->mLastAccessed = curTick;
-			audioIdSrcId = PlayAudioBuffer(it->second, pathKey);
+			return it->second;
 		}
 		else{
-			auto buffer = alureCreateBufferFromFile(path);
+			auto buffer = alureCreateBufferFromFile(path.c_str());
 			if (!buffer){
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio buffer for(%s)", path).c_str());
-				return INVALID_AUDIO_ID;
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio buffer for(%s)", path.c_str()).c_str());
+				return 0;
 			}
 			AudioBufferPtr audioBuffer(new AudioBuffer);
 			audioBuffer->mBuffer = buffer;
 			audioBuffer->mFilepath = path;
 			audioBuffer->mLastAccessed = curTick;
-			mAudioBuffers[pathKey] = audioBuffer;
-			audioIdSrcId = PlayAudioBuffer(audioBuffer, pathKey);
+			ALint bufferSize, frequency, channels, bit;
+			alGetBufferi(buffer, AL_SIZE, &bufferSize);
+			alGetBufferi(buffer, AL_FREQUENCY, &frequency);
+			alGetBufferi(buffer, AL_CHANNELS, &channels);
+			alGetBufferi(buffer, AL_BITS, &bit);
+			audioBuffer->mLength = GetDuration(bufferSize, frequency, channels, bit);
+			mAudioBuffers[loweredPath] = audioBuffer;
+			return audioBuffer;
 		}
+	}
+
+	AudioId PlayAudio(const char* path, ALuint* srcId = 0){
+		if (!ValidCStringLength(path)){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return INVALID_AUDIO_ID;
+		}
+		
+
+		std::string pathKey(path);
+		ToLowerCase(pathKey);
+		auto audioBuffer = GetAudioBuffer(path, pathKey);
+		auto audioIdSrcId = PlayAudioBuffer(audioBuffer, pathKey);
 		if (audioIdSrcId.first != INVALID_AUDIO_ID){
 			if (srcId){
 				*srcId = audioIdSrcId.second;
@@ -226,8 +273,95 @@ public:
 			alSourcei(src, AL_SOURCE_RELATIVE, property.mRelative? AL_TRUE : AL_FALSE);			
 			alSourcef(src, AL_REFERENCE_DISTANCE, property.mReferenceDistance);
 			alSourcef(src, AL_ROLLOFF_FACTOR, property.mRolloffFactor);
+			alSourcef(src, AL_GAIN, property.mGain);
 		}
 		return id;
+	}
+
+	AudioId PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION sec){
+		auto id = PlayAudio(path, prop);
+		if (id != INVALID_AUDIO_ID){
+			SetGain(id, 0.f);
+			auto length = GetAudioLength(id);
+			auto fadeIn = AudioFadeIn::Create(id, std::min(length, sec), prop.mGain);
+			mAudioManipulators.push_back(fadeIn);
+		}
+		return id;
+	}
+
+	bool StopAudio(AudioId id){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			alureStopSource(it->second, AL_TRUE);
+			return true;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Stop invalid audio(%u)", id).c_str());
+			return false;
+		}
+	}
+
+	bool StopWithFadeOut(AudioId id, TIME_PRECISION sec){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){			
+			auto leftTime = GetAudioLeftTime(id);
+			auto fadeOut = AudioFadeOut::Create(id, std::min(leftTime, sec));
+			mAudioManipulators.push_back(fadeOut);			
+			return true;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Stop invalid audio(%u)", id).c_str());
+			return false;
+		}
+	}
+
+	TIME_PRECISION GetAudioLeftTime(AudioId id){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){			
+			ALfloat offset;
+			alGetSourcef(it->second, AL_SEC_OFFSET, &offset);
+			ALint bufferSize, frequency, channels, bit;
+			ALint buffer;
+			alGetSourcei(it->second, AL_BUFFER, &buffer);
+			alGetBufferi(buffer, AL_SIZE, &bufferSize);
+			alGetBufferi(buffer, AL_FREQUENCY, &frequency);
+			alGetBufferi(buffer, AL_CHANNELS, &channels);
+			alGetBufferi(buffer, AL_BITS, &bit);
+			float duration = GetDuration(bufferSize, frequency, channels, bit);
+			return duration - offset;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Canno get a length for invalid audio(%u)", id).c_str());
+			return 0;
+		}
+	}
+
+	TIME_PRECISION GetAudioLength(const char* path){
+		std::string lowered(path);
+		ToLowerCase(lowered);
+		auto buffer = GetAudioBuffer(path, lowered);
+		if (!buffer){
+			return 0.f;
+		}
+		return buffer->mLength;
+	}
+
+	TIME_PRECISION GetAudioLength(AudioId id) {
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			ALint bufferSize, frequency, channels, bit;
+			ALint buffer;
+			alGetSourcei(it->second, AL_BUFFER, &buffer);
+			alGetBufferi(buffer, AL_SIZE, &bufferSize);
+			alGetBufferi(buffer, AL_FREQUENCY, &frequency);
+			alGetBufferi(buffer, AL_CHANNELS, &channels);
+			alGetBufferi(buffer, AL_BITS, &bit);
+			return GetDuration(bufferSize, frequency, channels, bit);			
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Canno get a length for invalid audio(%u)", id).c_str());
+			return 0;
+		}
 	}
 
 	bool SetPosition(AudioId id, float x, float y, float z){
@@ -237,7 +371,7 @@ public:
 			return true;
 		}
 		else{
-			Logger::Log(FB_ERROR_LOG_ARG, "Setting position for invalid audio(%u)", id);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting position for invalid audio(%u)", id).c_str());
 			return false;
 		}
 	}
@@ -249,25 +383,84 @@ public:
 			return true;
 		}
 		else{
-			Logger::Log(FB_ERROR_LOG_ARG, "Setting the relative flag for invalid audio(%u)", id);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting the relative flag for invalid audio(%u)", id).c_str());
 			return false;
 		}
 	}
 
-	bool SetMaxDistance(AudioId id, float distance){
+	bool SetReferenceDistance(AudioId id, float distance){
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
-			alSourcef(it->second, AL_MAX_DISTANCE, distance);
+			alSourcef(it->second, AL_REFERENCE_DISTANCE, distance);
 			return true;
 		}
 		else{
-			Logger::Log(FB_ERROR_LOG_ARG, "Setting max distance for invalid audio(%u)", id);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting max distance for invalid audio(%u)", id).c_str());
 			return false;
+		}
+	}
+
+	bool SetRolloffFactor(AudioId id, float factor){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			alSourcef(it->second, AL_ROLLOFF_FACTOR, factor);
+			return true;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting max distance for invalid audio(%u)", id).c_str());
+			return false;
+		}
+	}
+
+	bool SetOffsetInSec(AudioId id, float sec){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			alSourcef(it->second, AL_SEC_OFFSET, sec);
+			return true;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting offset for invalid audio(%u)", id).c_str());
+			return false;
+		}
+	}
+
+	bool SetGain(AudioId id, float gain){
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			alSourcef(it->second, AL_GAIN, gain);
+			return true;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting gain for invalid audio(%u)", id).c_str());
+			return false;
+		}
+	}
+
+	float GetGain(AudioId id) const{
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			ALfloat gain;
+			alGetSourcef(it->second, AL_GAIN, &gain);
+			return gain;			
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting gain for invalid audio(%u)", id).c_str());
+			return 0.f;
+		}
+	}
+
+	void RegisterAudioEx(AudioExPtr audioex){
+		if (!ValueExistsInVector(mAudioExs, audioex)){
+			mAudioExs.push_back(audioex);
 		}
 	}
 
 	void OnPlayFinished(void* userdata, ALuint source){
 		AudioId id = (AudioId)userdata;
+		for (auto& it : mAudioExs){
+			it->OnFinish(id);
+		}
+
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Audio(%u) is finished.", id).c_str());
@@ -354,6 +547,30 @@ AudioId AudioManager::PlayAudio(const char* path, const AudioProperty& property)
 	return mImpl->PlayAudio(path, property);
 }
 
+AudioId AudioManager::PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION sec){
+	return mImpl->PlayAudioWithFadeIn(path, prop, sec);
+}
+
+bool AudioManager::StopAudio(AudioId id){
+	return mImpl->StopAudio(id);
+}
+
+TIME_PRECISION AudioManager::GetAudioLength(const char* path) {
+	return mImpl->GetAudioLength(path);
+}
+
+TIME_PRECISION AudioManager::GetAudioLength(AudioId id) {
+	return mImpl->GetAudioLength(id);
+}
+
+bool AudioManager::StopWithFadeOut(AudioId id, TIME_PRECISION sec){
+	return mImpl->StopWithFadeOut(id, sec);
+}
+
+TIME_PRECISION AudioManager::GetAudioLeftTime(AudioId id){
+	return mImpl->GetAudioLeftTime(id);
+}
+
 bool AudioManager::SetPosition(AudioId id, float x, float y, float z){
 	return mImpl->SetPosition(id, x, y, z);
 }
@@ -366,6 +583,26 @@ void AudioManager::SetListenerPosition(float x, float y, float z){
 	alListener3f(AL_POSITION, x, y, z);
 }
 
-bool AudioManager::SetMaxDistance(AudioId id, float distance){
-	return mImpl->SetMaxDistance(id, distance);
+bool AudioManager::SetReferenceDistance(AudioId id, float distance){
+	return mImpl->SetReferenceDistance(id, distance);
+}
+
+bool AudioManager::SetRolloffFactor(AudioId id, float factor){
+	return mImpl->SetRolloffFactor(id, factor);
+}
+
+bool AudioManager::SetOffsetInSec(AudioId id, float sec){
+	return mImpl->SetOffsetInSec(id, sec);
+}
+
+bool AudioManager::SetGain(AudioId id, float gain){
+	return mImpl->SetGain(id, gain);
+}
+
+float AudioManager::GetGain(AudioId id) const{
+	return mImpl->GetGain(id);
+}
+
+void AudioManager::RegisterAudioEx(AudioExPtr audioex){
+	return mImpl->RegisterAudioEx(audioex);
 }

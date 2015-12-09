@@ -31,7 +31,7 @@
 typedef unsigned int ALuint;
 namespace fb{
 	
-
+	FB_DECLARE_SMART_PTR(AudioEx);
 	FB_DECLARE_SMART_PTR(AudioManager);
 	class FB_DLL_AUDIOPLAYER AudioManager{
 		friend void eos_callback(void *userData, ALuint source);
@@ -49,7 +49,19 @@ namespace fb{
 		void Update(TIME_PRECISION dt);
 		AudioId PlayAudio(const char* path);
 		AudioId PlayAudio(const char* path, float x, float y, float z);
-		AudioId PlayAudio(const char* path, const AudioProperty& property);
+		AudioId PlayAudio(const char* path, const AudioProperty& prop);
+		/** Start an audio smoothly.
+		if \a sec is longer than the audio length, \a sec will be replaced by the audio length.
+		*/
+		AudioId PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION sec);
+		bool StopAudio(AudioId id);
+		TIME_PRECISION GetAudioLength(const char* path);
+		TIME_PRECISION GetAudioLength(AudioId id);
+		/** Stop the audio smoothly.
+		if the remaining time of the audio is less than \a sec, the audio will stop earlier than requested time.
+		*/
+		bool StopWithFadeOut(AudioId id, TIME_PRECISION sec);
+		TIME_PRECISION GetAudioLeftTime(AudioId id);
 		bool SetPosition(AudioId id, float x, float y, float z);
 		/// if true, the audio position is relative to the listener.
 		/// Audio which has {0, 0, 0} position will be played always at the listner position if 
@@ -57,6 +69,12 @@ namespace fb{
 		/// default is false.
 		bool SetRelative(AudioId id, bool relative);
 		void SetListenerPosition(float x, float y, float z);
-		bool SetMaxDistance(AudioId id, float distance);
+		bool SetReferenceDistance(AudioId id, float distance);
+		bool SetRolloffFactor(AudioId id, float factor);
+		bool SetOffsetInSec(AudioId id, float sec);
+		bool SetGain(AudioId id, float gain);
+		float GetGain(AudioId id) const;
+
+		void RegisterAudioEx(AudioExPtr audioex);
 	};
 }
