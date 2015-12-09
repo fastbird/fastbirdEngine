@@ -1,6 +1,6 @@
 # fastbird engine
-fastbird engine is being developed by **[fastbird dev studio](http://jungwan.net)** creating a sci-fi
-game currently. fastbird engine is highly componentized engine that consists of
+'fastbird engine' is being developed by **[fastbird dev studio](http://jungwan.net)** creating a sci-fi
+game currently. It is highly componentized engine that consists of
 three layers - **Core**, **Engine** and **Facade/Dedicated** layer. Each layers
 has serveral libraries(.lib) and modules(.dll) that can be easily reused for
 other applications.
