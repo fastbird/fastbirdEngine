@@ -3,7 +3,8 @@
 game currently. It is highly componentized engine that consists of
 three layers - **Core**, **Engine** and **Facade/Dedicated** layer. Each layers
 has serveral libraries(.lib) and modules(.dll) that can be easily reused for
-other applications.
+other applications. [fastbird engine architecture.pdf](http://jungwan.net/publications/fastbird_engine_architecture_en.pdf) 
+explains the details on the engine.
 
 Currently the engine supports Windows. OS X support is planned.
 
