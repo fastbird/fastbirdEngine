@@ -48,6 +48,7 @@
 
 namespace fb
 {
+	class Color;
 	bool IsEqual(Real a, Real b, Real epsilon = 0.00001f);
 	bool IsNaN(Real f);	
 
@@ -107,6 +108,8 @@ namespace fb
 		lp = std::max((Real)0.0, lp);
 		return a * (1.0f-lp) + b * lp;
 	}
+
+	Color Lerp(const Color& a, const Color& b, Real lp);
 
 	Quat Slerp(Quat qa, Quat qb, Real t);
 	Real ACos(Real fValue);

@@ -148,6 +148,10 @@ bool Vec4::operator== (const Vec4& other) const
 	return (IsEqual(x, other.x) && IsEqual(y, other.y) && IsEqual(z, other.z) && IsEqual(w, other.w));
 }
 
+bool Vec4::operator!= (const Vec4& other) const{
+	return !operator==(other);
+}
+
 Vec4::operator Vec4Tuple() const{
 	return std::make_tuple(x, y, z, w);
 }

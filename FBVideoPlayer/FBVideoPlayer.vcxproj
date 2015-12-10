@@ -74,6 +74,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="IVideoPlayer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoPlayerDirectShow.h" />
     <ClInclude Include="VideoPlayerOgg.h" />

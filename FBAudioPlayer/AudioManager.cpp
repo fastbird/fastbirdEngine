@@ -463,7 +463,7 @@ public:
 
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
-			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Audio(%u) is finished.", id).c_str());
+			//Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Audio(%u) is finished.", id).c_str());
 			mAudioSources.erase(it);
 		}
 		else{

@@ -33,7 +33,6 @@
     <ClInclude Include="IPlatformShader.h" />
     <ClInclude Include="IPlatformTexture.h" />
     <ClInclude Include="IPlatformVertexBuffer.h" />
-    <ClInclude Include="IVideoPlayer.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="NullPlatformRenderer.h" />
     <ClInclude Include="PixelFormats.h" />

@@ -480,7 +480,7 @@ public:
 			Vec3 toCam = camPos - target->GetPosition();
 			const Real distToTarget = toCam.Normalize();
 			long dx, dy;
-			injector->GetHDDeltaXY(dx, dy);
+			injector->GetDeltaXY(dx, dy);
 
 			if (injector->IsLButtonDown())
 			{

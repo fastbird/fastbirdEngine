@@ -34,6 +34,7 @@
 #include "FBVideoPlayer/VideoPlayerType.h"
 #include "FBAudioPlayer/AudioProperty.h"
 #include "FBRenderer/ICamera.h"
+#include "FBRenderer/IRendererObserver.h"
 #include "RenderTargetParamEx.h"
 namespace fb{
 	class ProfilerSimple;
@@ -57,7 +58,7 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(EngineFacade);
 	FB_DECLARE_SMART_PTR(RenderTarget);
-	class FB_DLL_ENGINEFACADE EngineFacade : public IFileChangeObserver{
+	class FB_DLL_ENGINEFACADE EngineFacade : public IFileChangeObserver, public IRendererObserver{
 		FB_DECLARE_PIMPL_NON_COPYABLE(EngineFacade);
 		EngineFacade();
 		~EngineFacade();
@@ -108,6 +109,17 @@ namespace fb{
 		// IFileChangeObserver
 		void OnChangeDetected();
 		bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension);
+
+		
+		//---------------------------------------------------------------------------
+		// IRendererObserver interfaces
+		//---------------------------------------------------------------------------
+		void BeforeUIRendering(HWindowId hwndId, HWindow hwnd);
+		void RenderUI(HWindowId hwndId, HWindow hwnd);
+		void AfterUIRendered(HWindowId hwndId, HWindow hwnd);
+		void BeforeDebugHudRendering();
+		void AfterDebugHudRendered();
+		void OnResolutionChanged(HWindowId hwndId, HWindow hwnd);
 
 		//---------------------------------------------------------------------------
 		// Renderer Interfaces

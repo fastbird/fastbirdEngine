@@ -247,6 +247,14 @@ Rect StringMathConverter::ParseRect(const std::string& str, const Rect& def){
 }
 
 Color StringMathConverter::ParseColor(const std::string& str, const Color& def){
+	if (str.size() >= 2){
+		if (str[0] == '0' && str[1] == 'x')
+		{
+			unsigned c = StringConverter::ParseHexa(str);
+			return Color(Color::FixColorByteOrder(c));
+		}
+	}
+
 	StringVector vec = Split(str);
 
 	if (vec.size() == 4)

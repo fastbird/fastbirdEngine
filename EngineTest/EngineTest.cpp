@@ -7,6 +7,7 @@
 #include "SkyBoxTest.h"
 #include "ParticleTest.h"
 #include "AudioTest.h"
+#include "VideoTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
 EngineFacadePtr gEngine;
@@ -21,6 +22,7 @@ MeshTestPtr gMeshTest;
 SkyBoxTestPtr gSkyBoxTest;
 ParticleTestPtr gParticleTest;
 AudioTestPtr gAudioTest;
+VideoTestPtr gVideoTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -61,11 +63,11 @@ void StartTest(){
 	//gSkyBoxTest = SkyBoxTest::Create();
 	gParticleTest = ParticleTest::Create();
 	gAudioTest = AudioTest::Create();
-	
-	
+	gVideoTest = VideoTest::Create();	
 }
 
 void EndTest(){
+	gVideoTest = 0;
 	gParticleTest = 0;
 	gMeshTest = 0;
 	gSkyBoxTest = 0;

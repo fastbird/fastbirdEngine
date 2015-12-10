@@ -29,7 +29,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FBDevDllLibSync.cpp">
+    <ClCompile Include="FBDevFileSync.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

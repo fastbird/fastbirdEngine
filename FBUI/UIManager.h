@@ -87,8 +87,8 @@ namespace fb
 		void BeforeUIRendering(HWindowId hwndId, HWindow hwnd);
 		void RenderUI(HWindowId hwndId, HWindow hwnd);
 		void AfterUIRendered(HWindowId hwndId, HWindow hwnd);
-		void BeforeDebugHudRendering(HWindowId hwndId, HWindow hwnd);
-		void AfterDebugHudRendered(HWindowId hwndId, HWindow hwnd);
+		void BeforeDebugHudRendering();
+		void AfterDebugHudRendered();
 		void OnResolutionChanged(HWindowId hwndId, HWindow hwnd);
 
 		// IUIManager Interfaces

@@ -190,10 +190,9 @@ namespace fb
 	}
 
 	void Button::OnMouseClicked(IInputInjectorPtr injector){
+		if (!mNoButton)
+			UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
 		__super::OnMouseClicked(injector);
-		if (mNoButton)
-			return;
-		UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
 	}
 
 	void Button::OnMouseHover(void* arg)
@@ -233,11 +232,11 @@ namespace fb
 	}
 
 	void Button::OnMouseIn(void* arg){
+		if (!mNoButton)
+			UIManager::GetInstance().PlaySound(UISounds::ButtonIn);
 		if (!mImages[ButtonImages::ImageHover].expired() || !mImages[ButtonImages::BackImageHover].expired())
-			UIManager::GetInstance().DirtyRenderList(GetHwndId());
-		if (mNoButton)
-			return;
-		UIManager::GetInstance().PlaySound(UISounds::ButtonIn);
+			UIManager::GetInstance().DirtyRenderList(GetHwndId());	
+		
 	}
 
 	void Button::OnMouseOut(void* arg)
@@ -760,7 +759,7 @@ namespace fb
 					return false;
 				}
 			}
-			auto data = StringConverter::ToString(mBackColorOver);
+			auto data = StringMathConverter::ToString(mBackColorOver);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -772,7 +771,7 @@ namespace fb
 					return false;
 				}
 			}
-			auto data = StringConverter::ToString(mBackColorDown);
+			auto data = StringMathConverter::ToString(mBackColorDown);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -1057,7 +1056,7 @@ namespace fb
 					return false;
 				}
 			}
-			auto data = StringConverter::ToString(mEdgeColor);
+			auto data = StringMathConverter::ToString(mEdgeColor);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -1071,7 +1070,7 @@ namespace fb
 					return false;
 				}
 			}
-			auto data = StringConverter::ToString(mEdgeColorOver);
+			auto data = StringMathConverter::ToString(mEdgeColorOver);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -1085,7 +1084,7 @@ namespace fb
 					return false;
 				}
 			}
-			auto data = StringConverter::ToString(mImageColorOverlay);
+			auto data = StringMathConverter::ToString(mImageColorOverlay);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}

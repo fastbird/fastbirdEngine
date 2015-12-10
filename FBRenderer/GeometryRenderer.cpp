@@ -172,10 +172,10 @@ public:
 	{
 		Line line;
 		line.mStart = start;
-		line.mColor = color0;
+		line.mColor = color0.Get4Byte();
 
 		line.mEnd = end;
-		line.mColore = color1;
+		line.mColore = color1.Get4Byte();
 
 		mWorldLines.push_back(line);
 	}
@@ -185,10 +185,10 @@ public:
 	{
 		Line line;
 		line.mStart = start;
-		line.mColor = color0;
+		line.mColor = color0.Get4Byte();
 
 		line.mEnd = end;
-		line.mColore = color1;
+		line.mColore = color1.Get4Byte();
 
 		mWorldLinesBeforeAlphaPass.push_back(line);
 	}
@@ -199,8 +199,8 @@ public:
 		ThickLine line;
 		line.mStart = start;
 		line.mEnd = end;
-		line.mColor = color0;
-		line.mColore = color1;
+		line.mColor = color0.Get4Byte();
+		line.mColore = color1.Get4Byte();
 		line.mThickness = thickness;
 		if (texture && strlen(texture) != 0)
 		{

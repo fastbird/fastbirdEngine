@@ -109,11 +109,6 @@ void InputInjector::ClearBuffer(){
 // Mouse
 //-------------------------------------------------------------------
 // Positions
-void InputInjector::GetHDDeltaXY(long &x, long &y) const{
-	if (mImpl->mMouse)
-		mImpl->mMouse->GetHDDeltaXY(x, y);
-}
-
 void InputInjector::GetDeltaXY(long &x, long &y) const{
 	if (mImpl->mMouse)
 		mImpl->mMouse->GetDeltaXY(x, y);

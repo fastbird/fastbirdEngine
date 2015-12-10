@@ -455,14 +455,16 @@ public:
 
 
 	void SetTransform(const Transformation& t){
+		
 		Mat44 mat4;
 		t.GetHomogeneous(mat4);
 		auto aT = FBToBullet(mat4);
 		mSelf->setWorldTransform(aT);
+		mSelf->clearForces();
 		auto numConstraints = mSelf->getNumConstraintRefs();
 		for (int i = 0; i < numConstraints; ++i){
 			auto con = mSelf->getConstraintRef(i);
-			if (con->isEnabled() && con->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE){
+			if (con->isEnabled() && con->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE){				
 				btFixedConstraint* fixedCon = (btFixedConstraint*)con;
 				auto a = &con->getRigidBodyA();
 				auto b = &con->getRigidBodyB();
@@ -474,6 +476,7 @@ public:
 				}
 				auto bT = aT * trA * trB.inverse();
 				b->setWorldTransform(bT);
+				b->clearForces();
 				auto ms = b->getMotionState();
 				if (ms)
 					ms->setWorldTransform(bT);

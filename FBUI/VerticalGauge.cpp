@@ -220,7 +220,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufs
 			if (mGaugeColor == UIProperty::GetDefaultValueVec4(prop))
 				return false;
 		}
-		auto data = StringConverter::ToString(mGaugeColor);
+		auto data = StringMathConverter::ToString(mGaugeColor);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -232,7 +232,7 @@ bool VerticalGauge::GetProperty(UIProperty::Enum prop, char val[], unsigned bufs
 			if (mBlinkColor == Color(1, 0, 0, 1))
 				return false;
 		}
-		auto data = StringConverter::ToString(mBlinkColor);
+		auto data = StringMathConverter::ToString(mBlinkColor);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}

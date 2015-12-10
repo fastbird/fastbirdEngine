@@ -70,7 +70,7 @@ namespace fb
 		unsigned int Get4Byte() const;
 		// when you want to create hexa string
 		unsigned int Get4ByteReversed() const;
-		operator unsigned int() const;
+		//operator unsigned int() const;
 		const Vec4& GetVec4() const;
 		Color operator* (Real scalar) const;
 		Color operator*(const Color& other) const;
@@ -78,6 +78,7 @@ namespace fb
 		Color& operator*= (const Color& c);
 		Color operator+ (const Color& r) const;
 		bool operator== (const Color& other) const;
+		bool operator!= (const Color& other) const;
 		operator Vec4Tuple() const;
 		void SetColor(Real r, Real g, Real b, Real a = 1.f);
 		Real r() const;

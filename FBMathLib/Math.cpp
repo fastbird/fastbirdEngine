@@ -387,6 +387,12 @@ namespace fb
 		return Vec2I(GetNextMultipleOfFour(value.x), GetNextMultipleOfFour(value.y));
 	}
 
+	Color Lerp(const Color& a, const Color& b, Real lp) {
+		lp = std::min(lp, (Real)1.0);
+		lp = std::max((Real)0.0, lp);
+		return a * (1.0f - lp) + b * lp;
+	}
+
 	Quat Slerp(Quat qa, Quat qb, Real t)
 	{
 		Real cosHalfTheta = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z;

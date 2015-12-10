@@ -69,6 +69,13 @@ Color::Color(Real r, Real g, Real b)
 {
 }
 
+static unsigned int ParseHexa(const TString& val, unsigned int defaultValue = 0){
+	std::stringstream str(val);
+	unsigned int ret = defaultValue;
+	str >> std::hex >> ret;
+	return ret;
+}
+
 Color::Color(const char* str)
 {
 	if (str[0] == '0' && str[1] == 'x')
@@ -77,11 +84,11 @@ Color::Color(const char* str)
 		{
 			TString strColor = str;
 			strColor += "ff";
-			*this = Color(Color::FixColorByteOrder(StringConverter::ParseHexa(strColor.c_str())));
+			*this = Color(Color::FixColorByteOrder(ParseHexa(strColor.c_str())));
 		}
 		else
 		{
-			*this = Color(Color::FixColorByteOrder(StringConverter::ParseHexa(str)));
+			*this = Color(Color::FixColorByteOrder(ParseHexa(str)));
 		}
 	}
 	else
@@ -126,9 +133,9 @@ unsigned int Color::Get4ByteReversed() const
 	return *(unsigned int*)&color;
 }
 
-Color::operator unsigned int() const {
-	return Get4Byte(); 
-}
+//Color::operator unsigned int() const {
+//	return Get4Byte(); 
+//}
 
 const Vec4& Color::GetVec4() const {
 	return mValue; 
@@ -159,6 +166,10 @@ Color Color::operator+ (const Color& r) const {
 
 bool Color::operator== (const Color& other) const{
 	return mValue == other.mValue;
+}
+
+bool Color::operator!= (const Color& other) const{
+	return mValue != other.mValue;
 }
 
 Color::operator Vec4Tuple() const{

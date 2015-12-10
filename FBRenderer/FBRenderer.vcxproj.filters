@@ -57,7 +57,6 @@
     <ClInclude Include="DebugHud.h" />
     <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="ShaderConstants.h" />
-    <ClInclude Include="IVideoPlayer.h" />
     <ClInclude Include="ResourceTypes.h" />
     <ClInclude Include="ResourceProvider.h" />
     <ClInclude Include="NullPlatformRenderer.h" />

@@ -27,7 +27,7 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
-#include "FBRenderer/IVideoPlayer.h"
+#include "IVideoPlayer.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(VideoPlayerOgg);
 	class FB_DLL_VIDEOPLAYER VideoPlayerOgg : public IVideoPlayer{		

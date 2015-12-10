@@ -215,10 +215,10 @@ public:
 	{
 		Line line;
 		line.mStart = start;
-		line.mColor = color0;
+		line.mColor = color0.Get4Byte();
 
 		line.mEnd = end;
-		line.mColore = color1;
+		line.mColore = color1.Get4Byte();
 
 		mWorldLines.push_back(line);
 	}
@@ -237,10 +237,10 @@ public:
 	{
 		Line line;
 		line.mStart = start;
-		line.mColor = color0;
+		line.mColor = color0.Get4Byte();
 
 		line.mEnd = end;
-		line.mColore = color1;
+		line.mColore = color1.Get4Byte();
 
 		mWorldLinesBeforeAlphaPass.push_back(line);
 	}
@@ -250,10 +250,10 @@ public:
 	{
 		Line line;
 		line.mStart = Vec3((Real)start.x, (Real)start.y, 0.f);
-		line.mColor = color0;
+		line.mColor = color0.Get4Byte();
 
 		line.mEnd = Vec3((Real)end.x, (Real)end.y, 0.f);
-		line.mColore = color1;
+		line.mColore = color1.Get4Byte();
 
 		mScreenLines.push_back(line);
 	}

@@ -49,7 +49,6 @@ namespace fb{
 	struct POINT_LIGHT_CONSTANTS;	
 	typedef unsigned RenderTargetId;
 	FB_DECLARE_SMART_PTR(ResourceProvider);
-	FB_DECLARE_SMART_PTR(IVideoPlayer);
 	FB_DECLARE_SMART_PTR(Camera);
 	FB_DECLARE_SMART_PTR(PointLightManager);
 	FB_DECLARE_SMART_PTR(Font);
@@ -268,9 +267,7 @@ namespace fb{
 		void SetEnvironmentTexture(TexturePtr pTexture);
 		void SetEnvironmentTextureOverride(TexturePtr texture);		
 		void SetDebugRenderTarget(unsigned idx, const char* textureName);
-		void SetFadeAlpha(Real alpha);		
-		void RegisterVideoPlayer(IVideoPlayerPtr player);
-		void UnregisterVideoPlayer(IVideoPlayerPtr player);
+		void SetFadeAlpha(Real alpha);
 		bool GetSampleOffsets_Bloom(DWORD dwTexSize,
 			float afTexCoordOffset[15],
 			Vec4* avColorWeight,

@@ -21,7 +21,7 @@ EngineTest/data/particles/*/paint/
 EngineTest/data/particles/*/resources/
 EngineTest/data/particles/*/*.toc
 
-DllLibSync/
+FileSync/
 
 # Shader caches
 *.gscache

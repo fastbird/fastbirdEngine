@@ -38,8 +38,8 @@ namespace fb{
 		virtual void BeforeUIRendering(HWindowId hwndId, HWindow hwnd) = 0;
 		virtual void RenderUI(HWindowId hwndId, HWindow hwnd) = 0;
 		virtual void AfterUIRendered(HWindowId hwndId, HWindow hwnd) = 0;
-		virtual void BeforeDebugHudRendering(HWindowId hwndId, HWindow hwnd) = 0;
-		virtual void AfterDebugHudRendered(HWindowId hwndId, HWindow hwnd) = 0;
+		virtual void BeforeDebugHudRendering() = 0;
+		virtual void AfterDebugHudRendered() = 0;
 		virtual void OnResolutionChanged(HWindowId hwndId, HWindow hwnd) = 0;
 	};
 }

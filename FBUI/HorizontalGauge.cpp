@@ -277,7 +277,7 @@ namespace fb
 				if (mGaugeColor == UIProperty::GetDefaultValueVec4(prop))
 					return false;
 			}
-			auto data = StringConverter::ToString(mGaugeColor);
+			auto data = StringMathConverter::ToString(mGaugeColor);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -285,7 +285,7 @@ namespace fb
 		{
 			if (mGaugeColorEmptySet)
 			{
-				auto data = StringConverter::ToString(mGaugeColorEmpty);
+				auto data = StringMathConverter::ToString(mGaugeColorEmpty);
 				strcpy_s(val, bufsize, data.c_str());
 				return true;
 			}
@@ -299,7 +299,7 @@ namespace fb
 				if (mBlinkColor == UIProperty::GetDefaultValueVec4(prop))
 					return false;
 			}
-			auto data = StringConverter::ToString(mBlinkColor);
+			auto data = StringMathConverter::ToString(mBlinkColor);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
@@ -323,7 +323,7 @@ namespace fb
 				if (mGaugeBorderColor == UIProperty::GetDefaultValueVec4(prop))
 					return false;
 			}
-			auto data = StringConverter::ToString(mGaugeBorderColor);
+			auto data = StringMathConverter::ToString(mGaugeBorderColor);
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}

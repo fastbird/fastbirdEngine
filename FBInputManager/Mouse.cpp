@@ -50,6 +50,8 @@ public:
 	long mAbsXPrev;
 	long mAbsY;
 	long mAbsYPrev;
+	long mAbsDeltaX;
+	long mAbsDeltaY;
 
 	long mPhysicalX;
 	long mPhysicalY;
@@ -120,7 +122,7 @@ public:
 		, mRDragEnd(false)
 		, mNoClickOnce(false)
 		, mSensitivity(0.03f)
-		, mWheelSensitivity(0.005f){
+		, mWheelSensitivity(0.002f){
 
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -155,11 +157,15 @@ public:
 			// mLastEventWindow is ok?
 			// or need the current forground window.
 			SetCurrentMousePos(mAbsXPrev, mAbsYPrev);
+			mAbsX = mAbsXPrev;
+			mAbsY = mAbsYPrev;			
 		}
 		else{
 			mAbsXPrev = mAbsX;
 			mAbsYPrev = mAbsY;			
 		}
+		mAbsDeltaX = 0;
+		mAbsDeltaY = 0;
 		mValid = true;
 		mLButtonDoubleClicked = false;
 		if (gameTimeInSec - mLastWheelPush > 0.5f){
@@ -186,36 +192,41 @@ public:
 	//-------------------------------------------------------------------
 	// IMouse
 	//-------------------------------------------------------------------
-	void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec){
-		/*DebugOutput("usFlags = %x, usButtonFlags = %x, usButtonData = %x, ulRawButtons = %x, lLastX = %d, lLastY = %d, ulExtraInformation = %d",
-		mouseEvent.usFlags,
-		mouseEvent.usButtonFlags,
-		mouseEvent.usButtonData,
-		mouseEvent.ulRawButtons,
-		mouseEvent.lLastX,
-		mouseEvent.lLastY,
-		mouseEvent.ulExtraInformation);*/
 
-		if (!mLockMouse)
-		{
-			GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);
-			const auto& size = mRenderTargetSizes[handle];
-			mNPosX = (Real)mAbsX / (Real)std::get<0>(size);
-			mNPosY = (Real)mAbsY / (Real)std::get<1>(size);
-			if (!IsLButtonDown()){
-				auto hwnd = FBWindowFromPoint(mPhysicalX, mPhysicalY);
-				if (hwnd != handle)
-				{
-					if (ValueExistsInVector(mInterestedWindows, hwnd)){
-						FBSetForegroundWindow(hwnd);
+	void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec){
+		/*Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("usFlags = %x, usButtonFlags = %x, usButtonData = %x, ulRawButtons = %x, lLastX = %d, lLastY = %d, ulExtraInformation = %d",
+			mouseEvent.usFlags,
+			mouseEvent.usButtonFlags,
+			mouseEvent.usButtonData,
+			mouseEvent.ulRawButtons,
+			mouseEvent.lLastX,
+			mouseEvent.lLastY,
+			mouseEvent.ulExtraInformation).c_str());*/	
+
+		mLastX = mouseEvent.lLastX;
+		mLastY = mouseEvent.lLastY;
+		if (mLastX != 0 || mLastY != 0){
+			mAbsDeltaX += mLastX;
+			mAbsDeltaY += mLastY;
+			GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);			
+			if (!mLockMouse)
+			{
+				const auto& size = mRenderTargetSizes[handle];
+				mNPosX = (Real)mAbsX / (Real)std::get<0>(size);
+				mNPosY = (Real)mAbsY / (Real)std::get<1>(size);
+				if (!IsLButtonDown()){
+					auto hwnd = FBWindowFromPoint(mPhysicalX, mPhysicalY);
+					if (hwnd != handle)
+					{
+						if (ValueExistsInVector(mInterestedWindows, hwnd)){
+							FBSetForegroundWindow(hwnd);
+						}
 					}
 				}
 			}
 		}
 
-
-		mLastX = mouseEvent.lLastX;
-		mLastY = mouseEvent.lLastY;
+		
 
 		static HWindow downHwnd = 0;
 		mButtonsDownPrev = mButtonsDown;
@@ -401,18 +412,16 @@ public:
 		}
 	}
 
-	void GetHDDeltaXY(long &x, long &y) const{
-		x = mLastX;
-		y = mLastY;
-	}
-
 	void GetDeltaXY(long &x, long &y) const{
-		x = mAbsX - mAbsXPrev;
-		y = mAbsY - mAbsYPrev;
+		//x = mAbsX - mAbsXPrev;
+		//y = mAbsY - mAbsYPrev;
+		x = mAbsDeltaX;
+		y = mAbsDeltaY;
 	}
 
 	Vec2ITuple GetDeltaXY() const{
-		return Vec2ITuple(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
+		//return Vec2ITuple(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
+		return Vec2ITuple(mAbsDeltaX, mAbsDeltaY);
 	}
 
 	void GetPos(long &x, long &y) const{
@@ -642,14 +651,6 @@ public:
 		}
 	}
 
-	void SetCursorPosition(int x, int y){
-		SetCurrentMousePos(x, y);
-		mAbsX = x;
-		mAbsY = y;
-		mAbsXPrev = x;
-		mAbsYPrev = y;
-	}
-
 	void ClearRightDown(){
 		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
@@ -697,7 +698,7 @@ public:
 	{
 #ifdef _PLATFORM_WINDOWS_
 		auto rtSize = GetForegroundRenderTargetSize();
-		Vec2ITuple windowSize = GetForgroundWindowSize();
+		Vec2ITuple windowSize = GetForgroundWindowClientSize();
 		if (windowSize != rtSize){
 			Real xr = std::get<0>(windowSize) / (Real)std::get<0>(rtSize);
 			Real yr = std::get<1>(windowSize) / (Real)std::get<1>(rtSize);
@@ -728,20 +729,8 @@ public:
 		mRDragEnd = true;
 	}
 
-	Vec2ITuple GetForgroundWindowSize(){
-#if defined(_PLATFORM_WINDOWS_)
-		auto wnd = GetForegroundWindow();
-		RECT rect;
-		GetWindowRect(wnd, &rect);
-		return Vec2ITuple(rect.right - rect.left, rect.bottom - rect.top);
-#else
-		assert(0 && "Not implemented");
-#endif
-	}
-
 	Vec2ITuple GetForegroundRenderTargetSize(){
-		HWindow wnd = (HWindow)GetForegroundWindow();
-		return mRenderTargetSizes[wnd];
+		return mRenderTargetSizes[ForegroundWindow()];
 	}
 
 	HWindow FBWindowFromPoint(int x, int y){
@@ -795,12 +784,7 @@ void Mouse::Invalidate(bool buttonClicked){
 void Mouse::InvalidTemporary(bool invalidate){
 	mImpl->InvalidTemporary(invalidate);
 }
-
-//-------------------------------------------------------------------------
-void Mouse::GetHDDeltaXY(long &x, long &y) const{
-	mImpl->GetHDDeltaXY(x, y);		
-}
-
+//---------------------------------------------------------------------------
 void Mouse::GetDeltaXY(long &x, long &y) const	{
 	mImpl->GetDeltaXY(x, y);
 }

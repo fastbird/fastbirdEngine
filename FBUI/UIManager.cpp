@@ -519,18 +519,15 @@ public:
 		}
 	}
 
-	void BeforeDebugHudRendering(HWindowId hwndId, HWindow hwnd){
-		if (hwndId == 1 && mUIEditor)
+	void BeforeDebugHudRendering(){
+		if (mUIEditor)
 		{
 			mUIEditor->DrawFocusBoxes();
 		}
 	}
 
-	void AfterDebugHudRendered(HWindowId hwndId, HWindow hwnd){
-		/*if (hwndId == 1 && mUIEditor)
-		{
-		mUIEditor->DrawFocusBoxes();
-		}*/
+	void AfterDebugHudRendered(){
+		
 	}
 
 	void OnResolutionChanged(HWindowId hwndId, HWindow hwnd){
@@ -2747,12 +2744,12 @@ void UIManager::AfterUIRendered(HWindowId hwndId, HWindow hwnd){
 
 }
 
-void UIManager::BeforeDebugHudRendering(HWindowId hwndId, HWindow hwnd) {
-	mImpl->BeforeDebugHudRendering(hwndId, hwnd);
+void UIManager::BeforeDebugHudRendering() {
+	mImpl->BeforeDebugHudRendering();
 }
 
-void UIManager::AfterDebugHudRendered(HWindowId hwndId, HWindow hwnd) {
-	mImpl->AfterDebugHudRendered(hwndId, hwnd);
+void UIManager::AfterDebugHudRendered() {
+	mImpl->AfterDebugHudRendered();
 }
 
 void UIManager::OnResolutionChanged(HWindowId hwndId, HWindow hwnd) {

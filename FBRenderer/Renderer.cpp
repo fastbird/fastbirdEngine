@@ -44,7 +44,6 @@
 #include "DebugHud.h"
 #include "GeometryRenderer.h"
 #include "RenderStates.h"
-#include "IVideoPlayer.h"
 #include "ResourceProvider.h"
 #include "ResourceTypes.h"
 #include "Camera.h"
@@ -218,7 +217,6 @@ public:
 	UI_3DOBJECTS mUI3DObjects;
 	VectorMap<std::string, RenderTargetPtr> mUI3DObjectsRTs;
 	VectorMap<std::string, UI3DObjPtr> mUI3DRenderObjs;	
-	std::vector<IVideoPlayerPtr> mVideoPlayers;
 	unsigned mMainWindowStyle;
 	bool mWindowSizeInternallyChanging;	
 	Vec4f mIrradCoeff[9];
@@ -699,45 +697,37 @@ public:
 			if (rendered) {
 				auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
 				for (auto it = observers.begin(); it != observers.end(); /**/){
-					auto observer = it->lock();
-					if (!observer){
-						it = observers.erase(it);
-						continue;
-					}
-					++it;
+					IteratingWeakContainer(observers, it, observer);
 					observer->BeforeUIRendering(hwndId, GetWindowHandle(hwndId));
 				}
 
 				for (auto it = observers.begin(); it != observers.end(); /**/){
-					auto observer = it->lock();
-					if (!observer){
-						it = observers.erase(it);
-						continue;
-					}
-					++it;
+					IteratingWeakContainer(observers, it, observer);
 					observer->RenderUI(hwndId, GetWindowHandle(hwndId));
 				}
-
-				//RenderUI(hwndId);
-
+				
 				for (auto it = observers.begin(); it != observers.end(); /**/){
-					auto observer = it->lock();
-					if (!observer){
-						it = observers.erase(it);
-						continue;
-					}
-					++it;
+					IteratingWeakContainer(observers, it, observer);
 					observer->AfterUIRendered(hwndId, GetWindowHandle(hwndId));
 				}
 			}
 		}
 		mainRT->BindTargetOnly(false);
 
-		for (auto& it : mVideoPlayers){
-			it->Render();
+		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
+		for (auto it = observers.begin(); it != observers.end(); /**/){
+			IteratingWeakContainer(observers, it, observer);			
+			observer->BeforeDebugHudRendering();
+		}
+		
+		RenderDebugHud();
+
+		for (auto it = observers.begin(); it != observers.end(); /**/)
+		{
+			IteratingWeakContainer(observers, it, observer);
+			observer->AfterDebugHudRendered();
 		}
 
-		RenderDebugHud();
 		RenderDebugRenderTargets();
 
 		RenderFade();
@@ -1806,34 +1796,12 @@ public:
 		if (!mDebugHud)
 			return;
 		RenderEventMarker devent("RenderDebugHud");
-		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
-		for (auto it = observers.begin(); it != observers.end(); /**/)
-		{
-			auto observer = it->lock();
-			if (!observer){
-				it = observers.erase(it);
-				continue;
-			}
-			++it;
-			observer->BeforeDebugHudRendering( mMainWindowId, GetMainWindowHandle() );
-		}
-
 		RestoreRenderStates();
 		RenderParam param;
 		param.mRenderPass = PASS_NORMAL;
 		param.mCamera = mCamera.get();
 		mDebugHud->Render(param, 0);		
 		//SetWireframe(backup);		
-		for (auto it = observers.begin(); it != observers.end(); /**/)
-		{
-			auto observer = it->lock();
-			if (!observer){
-				it = observers.erase(it);
-				continue;
-			}
-			++it;
-			observer->AfterDebugHudRendered(mMainWindowId, GetMainWindowHandle());
-		}
 	}
 
 	//-------------------------------------------------------------------
@@ -2364,16 +2332,6 @@ public:
 
 	void SetFadeAlpha(Real alpha){
 		mFadeAlpha = alpha;
-	}
-
-	void RegisterVideoPlayer(IVideoPlayerPtr player){
-		if (!ValueExistsInVector(mVideoPlayers, player)){
-			mVideoPlayers.push_back(player);
-		}
-	}
-
-	void UnregisterVideoPlayer(IVideoPlayerPtr player){
-		DeleteValuesInVector(mVideoPlayers, player);
 	}
 
 	bool GetSampleOffsets_Bloom(DWORD dwTexSize,
@@ -3215,14 +3173,6 @@ void Renderer::SetDebugRenderTarget(unsigned idx, const char* textureName) {
 
 void Renderer::SetFadeAlpha(Real alpha) {
 	mImpl->SetFadeAlpha(alpha);
-}
-
-void Renderer::RegisterVideoPlayer(IVideoPlayerPtr player) {
-	mImpl->RegisterVideoPlayer(player);
-}
-
-void Renderer::UnregisterVideoPlayer(IVideoPlayerPtr player) {
-	mImpl->UnregisterVideoPlayer(player);
 }
 
 bool Renderer::GetSampleOffsets_Bloom(DWORD dwTexSize,

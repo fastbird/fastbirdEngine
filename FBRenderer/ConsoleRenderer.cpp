@@ -117,11 +117,11 @@ public:
 		auto prompt = console.GetPrompt();
 		pFont->PrepareRenderResources();
 		pFont->SetRenderStates();
-		pFont->Write((float)sPromptStart, (float)mInputPosition.y, 0.f, Color::White,
+		pFont->Write((float)sPromptStart, (float)mInputPosition.y, 0.f, Color::White.Get4Byte(),
 			(char*)prompt, -1, Font::FONT_ALIGN_LEFT);
 
 		// Draw Input String
-		pFont->Write((float)mInputPosition.x, (float)mInputPosition.y, 0.f, Color::White,
+		pFont->Write((float)mInputPosition.x, (float)mInputPosition.y, 0.f, Color::White.Get4Byte(),
 			(char*)inputString, -1, Font::FONT_ALIGN_LEFT);
 
 
@@ -135,7 +135,7 @@ public:
 		{
 			unsigned numLineFeed = std::count(it->begin(), it->end(), L'\n');
 			pFont->Write((float)mInputPosition.x, (float)bufferDrawPosY, 0.f,
-				Color::Gray, (char*)it->c_str(), -1, Font::FONT_ALIGN_LEFT);
+				Color::Gray.Get4Byte(), (char*)it->c_str(), -1, Font::FONT_ALIGN_LEFT);
 			bufferDrawPosY -= lineHeight + sLineGap;
 		}
 		pFont->SetBackToOrigHeight();

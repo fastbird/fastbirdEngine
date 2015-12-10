@@ -99,6 +99,7 @@ namespace fb
 		virtual unsigned CreateBTSphereShape(float radius) = 0;
 		virtual void DeleteBTShape(unsigned id) = 0;
 		virtual void DrawDebugInfo() = 0;
+		virtual void ResetConstraintsSolver() = 0;
 
 		//-------------------------------------------------------------------
 		// collision shape manager

@@ -432,7 +432,7 @@ void UIAnimation::Save(tinyxml2::XMLElement& elem)
 				auto keyelem = textColorElem->GetDocument()->NewElement("key");
 				textColorElem->InsertEndChild(keyelem);
 				keyelem->SetAttribute("time", it.first);
-				keyelem->SetAttribute("color", StringConverter::ToString(it.second).c_str());
+				keyelem->SetAttribute("color", StringMathConverter::ToString(it.second).c_str());
 			}
 		}
 
@@ -444,7 +444,7 @@ void UIAnimation::Save(tinyxml2::XMLElement& elem)
 				auto keyelem = backColorElem->GetDocument()->NewElement("key");
 				backColorElem->InsertEndChild(keyelem);
 				keyelem->SetAttribute("time", it.first);
-				keyelem->SetAttribute("color", StringConverter::ToString(it.second).c_str());
+				keyelem->SetAttribute("color", StringMathConverter::ToString(it.second).c_str());
 			}
 		}
 
@@ -568,7 +568,7 @@ void UIAnimation::SetActivated(bool activate)
 			targetUI->ClearAnimationResult();
 			if (!mKeyBackColor.empty())
 			{
-				auto backColor = StringConverter::ToString(mInitialBackColor);
+				auto backColor = StringMathConverter::ToString(mInitialBackColor);
 				targetUI->SetProperty(UIProperty::BACK_COLOR, backColor.c_str());
 			}
 		}

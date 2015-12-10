@@ -93,9 +93,6 @@
     <ProjectReference Include="..\FBThreadLib\FBThread.vcxproj">
       <Project>{e75ca1ab-a39c-4f51-9e89-625fc6cb6913}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\FBTimer\FBTimer.vcxproj">
-      <Project>{e828f5fb-d914-4891-8be0-737dd73f06ab}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

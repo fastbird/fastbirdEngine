@@ -85,6 +85,7 @@ public:
 	std::vector<MeshFacadePtr> mTempMeshes;
 	std::map<std::string, std::vector< MeshFacadePtr> > mFractureObjects;
 	LuaObject mInputOverride;
+	std::vector<IVideoPlayerPtr> mVideoPlayers;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -120,7 +121,7 @@ public:
 		mSceneObjectFactory = SceneObjectFactory::Create();
 		mAudioManager = AudioManager::Create();
 		mAudioManager->Init();
-
+		
 		mInputManager->RegisterInputConsumer(mRenderer, IInputConsumer::Priority77_CAMERA);
 	}
 
@@ -227,6 +228,17 @@ public:
 		return INVALID_HWND;
 	}
 
+	void BeforeDebugHudRendering(){
+		for (auto& videoPlayer : mVideoPlayers){
+			videoPlayer->Render();
+		}
+		for (auto it = mVideoPlayers.begin(); it != mVideoPlayers.end(); /**/){
+			if ((*it)->IsFinish())
+				it = mVideoPlayers.erase(it);
+			else
+				++it;
+		}
+	}
 
 	bool InitRenderer(const char* pluginName){		
 		bool success = Renderer::GetInstance().PrepareRenderEngine(pluginName);		
@@ -258,6 +270,7 @@ public:
 					rt->AddObserver(IRendererObserver::DefaultRenderEvent, observer);
 				}
 				if (id == MainWindowId){
+					mRenderer->AddObserver(IRendererObserver::DefaultRenderEvent, mSelfPtr.lock());
 					rt->RegisterScene(mMainScene);
 					mMainCamera = rt->GetCamera();
 					mMainCamera->SetMainCamera(true);
@@ -292,6 +305,22 @@ public:
 		return InitCanvas(id, size.x, size.y);		
 	}
 	
+	IVideoPlayerPtr CreateVideoPlayer(VideoPlayerType::Enum type){
+		IVideoPlayerPtr p;
+		switch (type){
+		case VideoPlayerType::OGG:
+			p = VideoPlayerOgg::Create();
+			break;
+		}
+		if (p){
+			mVideoPlayers.push_back(p);
+			return p;
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, "Not implemented type.");
+			return 0;
+		}
+	}
 
 	void OverrideMainScene(IScenePtr scene){
 		if (mLockSceneOverriding)
@@ -330,6 +359,11 @@ public:
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
 		mParticleSystem->Update(dt);
+		for (auto& videoPlayer : mVideoPlayers){
+			if (!videoPlayer->IsFinish()){
+				videoPlayer->Update(gpTimer->GetDeltaTime());
+			}
+		}
 		mAudioManager->Update(dt);
 	}
 
@@ -338,7 +372,7 @@ public:
 	}
 
 	void Render(){
-		mRenderer->Render();
+		mRenderer->Render();		
 		if (mEngineOptions->e_profile){
 			mRenderer->DisplayFrameProfiler();
 			auto numSpatialObjects = mMainScene->GetNumSpatialObjects();
@@ -551,6 +585,30 @@ HWindow EngineFacade::GetMainWindowHandle() const{
 
 HWindow EngineFacade::GetWindowHandleById(HWindowId hwndId) const{
 	return mImpl->GetWindowHandleById(hwndId);
+}
+
+void EngineFacade::BeforeUIRendering(HWindowId hwndId, HWindow hwnd){
+
+}
+
+void EngineFacade::RenderUI(HWindowId hwndId, HWindow hwnd){
+
+}
+
+void EngineFacade::AfterUIRendered(HWindowId hwndId, HWindow hwnd){
+
+}
+
+void EngineFacade::BeforeDebugHudRendering(){
+	mImpl->BeforeDebugHudRendering();
+}
+
+void EngineFacade::AfterDebugHudRendered(){
+
+}
+
+void EngineFacade::OnResolutionChanged(HWindowId hwndId, HWindow hwnd){
+
 }
 
 bool EngineFacade::InitRenderer(const char* pluginName) {
@@ -942,12 +1000,7 @@ const Vec2I& EngineFacade::GetMainRenderTargetSize() const{
 }
 
 IVideoPlayerPtr EngineFacade::CreateVideoPlayer(VideoPlayerType::Enum type){
-	switch (type){
-	case VideoPlayerType::OGG:
-		return VideoPlayerOgg::Create();
-	}
-	Logger::Log(FB_ERROR_LOG_ARG, "Not implemented type.");
-	return 0;
+	return mImpl->CreateVideoPlayer(type);	
 }
 
 void EngineFacade::QueueDrawTextForDuration(float secs, const Vec2I& pos, const char* text, const Color& color){

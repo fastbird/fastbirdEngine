@@ -5,6 +5,7 @@
     <ClInclude Include="VideoPlayerOgg.h" />
     <ClInclude Include="VideoPlayerType.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="IVideoPlayer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoPlayerOgg.cpp" />

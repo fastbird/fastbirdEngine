@@ -656,7 +656,7 @@ public:
 						// update color
 						if (pt->mColor != pt->mColorEnd)
 						{
-							p.mColor = Lerp(pt->mColor, pt->mColorEnd, normTime) * mEmitterColor;
+							p.mColor = (Lerp(pt->mColor, pt->mColorEnd, normTime) * mEmitterColor).Get4Byte();
 						}
 					}
 					else
@@ -1490,7 +1490,7 @@ public:
 		p.mRot = Random(pt.mRotMinMax.x, pt.mRotMinMax.y);
 		p.mRotSpeed = Random(pt.mRotSpeedMinMax.x, pt.mRotSpeedMinMax.y);
 		p.mIntensity = Random(pt.mIntensityMinMax.x, pt.mIntensityMinMax.y);
-		p.mColor = pt.mColor * mEmitterColor;
+		p.mColor = (pt.mColor * mEmitterColor).Get4Byte();
 
 		if (pt.IsLocalSpace())
 		{

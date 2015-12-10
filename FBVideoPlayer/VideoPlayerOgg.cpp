@@ -120,9 +120,7 @@ public:
 		ogg_sync_clear(&mSyncState);
 
 		mGranulePos = -1;
-		mVideoBufTime = 0;
-
-		Renderer::GetInstance().UnregisterVideoPlayer(mSelf.lock());
+		mVideoBufTime = 0;		
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -243,8 +241,6 @@ public:
 
 		if (mAudio)
 			mAudio->ProcessOggHeader();
-
-		Renderer::GetInstance().RegisterVideoPlayer(mSelf.lock());
 		return true;
 	}
 
@@ -408,7 +404,7 @@ public:
 	}
 
 	bool IsFinish(){
-		return mFinish;
+		return mFinish && mDurationAfterFinish <= 0.f;
 	}
 
 };

@@ -90,6 +90,7 @@ namespace fb
 		unsigned CreateBTSphereShape(float radius);
 		void DeleteBTShape(unsigned id);
 		void DrawDebugInfo();
+		void ResetConstraintsSolver();
 
 		//-------------------------------------------------------------------
 		// collision shape manager

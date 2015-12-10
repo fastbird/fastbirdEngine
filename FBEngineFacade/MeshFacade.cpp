@@ -300,7 +300,7 @@ public:
 				for (unsigned i = 0; i < aux.size(); i++){
 					if (aux[i].first == name){
 						outFound = true;
-						return mMeshObject->GetLocation() * aux[i].second;
+						return mMeshGroup->GetLocation() * aux[i].second;
 					}
 				}
 			}
@@ -314,7 +314,7 @@ public:
 				for (unsigned i = 0; i < aux.size(); i++){
 					if (aux[i].first == name){
 						outFound = true;
-						return mMeshObject->GetLocation() * aux[i].second;
+						return mMeshGroup->GetLocation() * aux[i].second;
 					}
 				}
 			}

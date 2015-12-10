@@ -32,7 +32,7 @@ FileMonitor* sMonitorRaw = 0;
 FileMonitorWeakPtr sMonitor;
 
 namespace fb {
-	FB_CRITICAL_SECTION gFileMonitorMutex;
+	//FB_CRITICAL_SECTION gFileMonitorMutex;
 	static const unsigned FILE_CHANGE_BUFFER_SIZE = 8000;
 	class FileChangeMonitorThread : public Thread{		
 		HANDLE mExitFileChangeThread;
@@ -138,7 +138,7 @@ namespace fb {
 					mHasChangedFiles = true;
 
 					if (sMonitorRaw){
-						LOCK_CRITICAL_SECTION fileMonitorLock(gFileMonitorMutex);
+						//LOCK_CRITICAL_SECTION fileMonitorLock(gFileMonitorMutex);
 						for (int i = 0; i < 2; ++i){
 							sMonitorRaw->OnChangeDetected();
 						}
@@ -258,14 +258,16 @@ public:
 		}
 	}
 	bool Check(){
+		using namespace std::chrono;
 		for (auto& it : mFileMonitorThread){
 			if (it.HasChangedFiles()){								
 				it.GetChangedFiles(mChangedFiles);				
 			}
 		}
-
-		if (gpTimer->GetTickCount() - mLastCheckedTime > 500)
+		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+		if (curTick - mLastCheckedTime > 500)
 		{
+			mLastCheckedTime = curTick;
 			for (auto it = mChangedFiles.begin(); it != mChangedFiles.end();)
 			{
 				std::string filepath = it->second;
@@ -394,7 +396,7 @@ FileMonitor::FileMonitor()
 }
 FileMonitor::~FileMonitor(){
 	mImpl->TerminatesAllThreads();
-	LOCK_CRITICAL_SECTION l(gFileMonitorMutex);
+	//LOCK_CRITICAL_SECTION l(gFileMonitorMutex);
 	mImpl = 0;
 	sMonitorRaw = 0;
 }

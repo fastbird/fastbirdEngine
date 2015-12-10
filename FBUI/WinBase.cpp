@@ -1945,7 +1945,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 			}
 		}
 
-		auto data = StringConverter::ToString(mTextColor);
+		auto data = StringMathConverter::ToString(mTextColor);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -1957,7 +1957,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 			}
 		}
 
-		auto data = StringConverter::ToString(mTextColorHover);
+		auto data = StringMathConverter::ToString(mTextColorHover);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -1969,7 +1969,7 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 			}
 		}
 
-		auto data = StringConverter::ToString(mTextColorDown);
+		auto data = StringMathConverter::ToString(mTextColorDown);
 		strcpy_s(val, bufsize, data.c_str());
 		return true;
 	}
@@ -2575,12 +2575,12 @@ void WinBase::ApplyAnim(UIAnimationPtr anim, Vec2& pos, Vec2& scale, bool& hasPo
 	}
 	if (anim->HasBackColorAnim())
 	{
-		SetProperty(UIProperty::BACK_COLOR, StringConverter::ToString(anim->GetCurrentBackColor()).c_str());
+		SetProperty(UIProperty::BACK_COLOR, StringMathConverter::ToString(anim->GetCurrentBackColor()).c_str());
 	}
 
 	if (anim->HasTextColorAnim())
 	{
-		SetProperty(UIProperty::TEXT_COLOR, StringConverter::ToString(anim->GetCurrentTextColor()).c_str());
+		SetProperty(UIProperty::TEXT_COLOR, StringMathConverter::ToString(anim->GetCurrentTextColor()).c_str());
 	}
 	if (anim->HasAlphaAnim())
 	{

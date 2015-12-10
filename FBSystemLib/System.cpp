@@ -95,6 +95,22 @@ namespace fb{
 #endif
 	}
 
+	Vec2ITuple GetForgroundWindowClientSize(){
+		auto wnd = GetForegroundWindow();
+		return GetWindowClientSize((HWindow)wnd);
+	}
+
+	Vec2ITuple GetForgroundWindowSize(){
+#if defined(_PLATFORM_WINDOWS_)
+		auto wnd = GetForegroundWindow();
+		RECT rect;
+		GetWindowRect(wnd, &rect);
+		return Vec2ITuple(rect.right - rect.left, rect.bottom - rect.top);
+#else
+		assert(0 && "Not implemented");
+#endif
+	}
+
 	unsigned GetWindowStyle(HWindow handle){
 		return GetWindowLongPtr((HWND)handle, GWL_STYLE);
 	}

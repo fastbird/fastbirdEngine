@@ -1054,6 +1054,10 @@ public:
 		}*/
 	}
 
+	void ResetConstraintsSolver(){
+		mDynamicsWorld->getConstraintSolver()->reset();
+	}
+
 
 	//-------------------------------------------------------------------
 	// collision shape manager
@@ -1363,6 +1367,10 @@ void Physics::DeleteBTShape(unsigned id) {
 
 void Physics::DrawDebugInfo() {
 	mImpl->DrawDebugInfo();
+}
+
+void Physics::ResetConstraintsSolver(){
+	mImpl->ResetConstraintsSolver();
 }
 
 BoxShapePtr Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {

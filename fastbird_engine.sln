@@ -75,7 +75,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Test", "_Test", "{E19922FF
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "EngineTest\EngineTest.vcxproj", "{915A8C63-23CD-44EC-810E-97EAE02235E1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDevDllLibSync", "FBDevDllLibSync\FBDevDllLibSync.vcxproj", "{431C6068-51EC-4FC1-BBC2-7AC66F50B706}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDevFileSync", "FBDevFileSync\FBDevFileSync.vcxproj", "{431C6068-51EC-4FC1-BBC2-7AC66F50B706}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

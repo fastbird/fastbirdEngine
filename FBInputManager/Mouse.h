@@ -60,8 +60,7 @@ namespace fb
 		//-------------------------------------------------------------------
 		virtual void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION);
 		
-		// Positions
-		virtual void GetHDDeltaXY(long &x, long &y) const;
+		// Positions		
 		virtual void GetDeltaXY(long &x, long &y) const;
 		virtual Vec2ITuple GetDeltaXY() const;
 		virtual void GetPos(long &x, long &y) const;
