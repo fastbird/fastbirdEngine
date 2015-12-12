@@ -5,7 +5,7 @@ three layers - **Core**, **Engine** and **Facade/Dedicated** layer. Each layer h
 
 Currently the engine supports Windows. OS X support is planned.
 
-## Modules External libraries
+## External libraries for modules
 Most modules of fastbird engine is self-contained and do not need external
 libraries but the following modules are exceptions and the specified external 
 libraries are required to build.
