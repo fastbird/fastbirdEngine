@@ -87,6 +87,7 @@ namespace fb
 
 		bool HasVScroll() { return !mScrollerV.expired(); }
 		const Vec2& GetScrollOffset() const;
+		void SetScrollOffset(const Vec2& offset);
 		void SetRender3D(bool render3D, const Vec2I& renderTargetSize);
 		void MatchHeight(bool checkName);
 

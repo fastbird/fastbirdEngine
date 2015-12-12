@@ -98,6 +98,7 @@ namespace fb
 		void SetClearDepthStencil(Real z, UINT8 stencil);
 		void SetColorTexture(TexturePtr pTexture);
 		void SetDepthTexture(TexturePtr pTexture);
+		void RemoveTextures();
 		void SetEnvTexture(TexturePtr texture);
 		void SetEnable(bool enable);
 		bool GetEnable() const;

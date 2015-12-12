@@ -64,6 +64,9 @@ public:
 		mImageInfo.Height = 0;
 		mImageInfo.Format = ConvertEnumD3D11(PIXEL_FORMAT_R8G8B8A8_UNORM);
 	}
+	~Impl(){
+
+	}
 
 	const Vec2ITuple GetSize() const {
 		return Vec2ITuple{ mImageInfo.Width, mImageInfo.Height };
@@ -252,6 +255,10 @@ FB_IMPLEMENT_STATIC_CREATE(TextureD3D11);
 TextureD3D11::TextureD3D11()
 	: mImpl(new Impl(this))
 {
+}
+
+TextureD3D11::~TextureD3D11(){
+
 }
 
 //--------------------------------------------------------------------

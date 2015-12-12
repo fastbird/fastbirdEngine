@@ -102,6 +102,10 @@ void RenderStrategyNull::OnRendererOptionChanged(RendererOptionsPtr options, con
 	
 }
 
+void RenderStrategyNull::OnRenderTargetSizeChanged(const Vec2I& size){
+
+}
+
 TexturePtr RenderStrategyNull::GetShadowMap(){
 	return 0;
 }

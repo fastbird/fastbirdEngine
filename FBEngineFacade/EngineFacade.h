@@ -70,6 +70,7 @@ namespace fb{
 
 		static const HWindowId INVALID_HWND_ID = (HWindowId)-1;
 		
+		void SetApplicationName(const char* applicationName);
 		//---------------------------------------------------------------------------
 		// Engine Facade
 		//---------------------------------------------------------------------------
@@ -158,7 +159,8 @@ namespace fb{
 		/**Rendered before the transparent object.*/
 		void QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha);
 
-		FontPtr GetFont(float fontHeight);
+		FontPtr GetFont(int fontSize);
+		FontPtr GetFontWithHeight(float fontHeight);
 		unsigned GetNumLoadingTexture() const;
 		RenderTargetPtr CreateRenderTarget(const RenderTargetParamEx& param);
 		CameraPtr GetMainCamera() const;

@@ -37,7 +37,11 @@ RendererOptionsPtr RendererOptions::Create(){
 	return RendererOptionsPtr(new RendererOptions, [](RendererOptions* obj){ delete obj; });
 }
 
+static void ReloadFonts(StringVector& arg);
+
 RendererOptions::RendererOptions(){	
+	FB_REGISTER_CC(ReloadFonts, "Reload fonts");
+
 	r_noObjectConstants =  Console::GetInstance().GetIntVariable("r_noObjectConstants", 0);
 	FB_REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
 
@@ -226,4 +230,8 @@ bool RendererOptions::OnChangeCVar(CVarPtr pCVar){
 	}
 
 	return false;
+}
+
+static void ReloadFonts(StringVector& arg){
+	Renderer::GetInstance().ReloadFonts();
 }

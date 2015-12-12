@@ -198,6 +198,12 @@ public:
 		mSelf->clearForces();
 	}
 
+	void Stop(){
+		mSelf->setAngularVelocity(btVector3(0, 0, 0));
+		mSelf->setLinearVelocity(btVector3(0, 0, 0));
+		mSelf->clearForces();
+	}
+
 	float GetSpeed() const{
 		return mSelf->getLinearVelocity().length();
 	}
@@ -453,18 +459,19 @@ public:
 		}
 	}
 
-
-	void SetTransform(const Transformation& t){
-		
-		Mat44 mat4;
-		t.GetHomogeneous(mat4);
-		auto aT = FBToBullet(mat4);
+	void SetTransform(const btTransform& aT, VectorMap<void*, int>& set){
+		if (set.Find(mSelf) != set.end())
+			return;
 		mSelf->setWorldTransform(aT);
 		mSelf->clearForces();
+		set[mSelf] = 1;
+		if (mGameFlag != 0)
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) Setting rigid body transform for %d", mGameFlag).c_str());
 		auto numConstraints = mSelf->getNumConstraintRefs();
 		for (int i = 0; i < numConstraints; ++i){
 			auto con = mSelf->getConstraintRef(i);
-			if (con->isEnabled() && con->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE){				
+			auto conType = con->getConstraintType();
+			if (conType == FIXED_CONSTRAINT_TYPE || conType == D6_SPRING_2_CONSTRAINT_TYPE){
 				btFixedConstraint* fixedCon = (btFixedConstraint*)con;
 				auto a = &con->getRigidBodyA();
 				auto b = &con->getRigidBodyB();
@@ -475,14 +482,19 @@ public:
 					std::swap(trA, trB);
 				}
 				auto bT = aT * trA * trB.inverse();
-				b->setWorldTransform(bT);
-				b->clearForces();
-				auto ms = b->getMotionState();
-				if (ms)
-					ms->setWorldTransform(bT);
+				auto rigidBodyImpl = (RigidBodyImpl*)b->getUserPointer();
+				rigidBodyImpl->mImpl->SetTransform(bT, set);				
 			}
 		}
 		mSelf->activate();
+	}
+
+	void SetTransform(const Transformation& t){		
+		Mat44 mat4;
+		t.GetHomogeneous(mat4);
+		auto aT = FBToBullet(mat4);
+		VectorMap<void*, int> mSet;
+		SetTransform(aT, mSet);
 	}
 
 	Vec3 GetPos() const{
@@ -583,13 +595,6 @@ public:
 		mDebug = debug;
 		mSelf->btSetDebug(debug);
 	}
-
-
-	void ClearAngularVelocity(){
-		mSelf->setAngularVelocity(btVector3(0, 0, 0));
-		mSelf->setLinearVelocity(btVector3(0, 0, 0));
-		mSelf->clearForces();
-	}
 };
 
 //---------------------------------------------------------------------------
@@ -640,6 +645,10 @@ Vec3 RigidBodyImpl::GetForce() {
 
 void RigidBodyImpl::ClearForces() {
 	mImpl->ClearForces();
+}
+
+void RigidBodyImpl::Stop() {
+	mImpl->Stop();
 }
 
 float RigidBodyImpl::GetSpeed() const {
@@ -816,9 +825,5 @@ unsigned RigidBodyImpl::GetGameFlag() const {
 
 void RigidBodyImpl::SetDebug(bool debug) {
 	mImpl->SetDebug(debug);
-}
-
-void RigidBodyImpl::ClearAngularVelocity() {
-	mImpl->ClearAngularVelocity();
 }
 

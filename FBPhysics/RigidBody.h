@@ -49,6 +49,7 @@ namespace fb
 		virtual void ApplyTorqueImpulse(const Vec3& torque) = 0;
 		virtual void ApplyTorque(const Vec3& torque) = 0;
 		virtual void ClearForces() = 0;
+		virtual void Stop() = 0;
 		virtual float GetSpeed() const = 0;
 		virtual Vec3 GetVelocity() const = 0;
 		virtual Vec3 GetAngularVelocity() const = 0;
@@ -108,7 +109,6 @@ namespace fb
 
 		virtual void SetGameFlag(unsigned flag) = 0;
 		virtual unsigned GetGameFlag() const = 0;
-		virtual void SetDebug(bool debug) = 0;
-		virtual void ClearAngularVelocity() = 0;
+		virtual void SetDebug(bool debug) = 0;		
 	};
 }

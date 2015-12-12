@@ -261,7 +261,9 @@ namespace fb{
 		void SetDirectionalLightInfo(int idx, const DirectionalLightInfo& info);		
 		const RENDERER_FRAME_PROFILER& GetFrameProfiler() const;
 		void DisplayFrameProfiler();
-		inline FontPtr GetFont(Real fontHeight) const;
+		void ReloadFonts();
+		FontPtr GetFont(int fontSize) const;
+		FontPtr GetFontWithHeight(Real height) const;
 		const INPUT_ELEMENT_DESCS& GetInputElementDesc(
 			DEFAULT_INPUTS::Enum e);
 		void SetEnvironmentTexture(TexturePtr pTexture);

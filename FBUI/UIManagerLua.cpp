@@ -112,6 +112,8 @@ namespace fb
 	int ChangeUISizeY(lua_State* L);
 	int ChangeUISize(lua_State* L);
 	int HasComponent(lua_State* L);
+	int GetScrollbarOffset(lua_State* L);
+	int SetScrollbarOffset(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -156,6 +158,8 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, SetScrollbarOffset);
+		LUA_SETCFUNCTION(mL, GetScrollbarOffset);
 		LUA_SETCFUNCTION(mL, HasComponent);
 		LUA_SETCFUNCTION(mL, ChangeUISizeX);
 		LUA_SETCFUNCTION(mL, ChangeUISizeY);
@@ -1803,5 +1807,28 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, compname);
 		LuaUtils::pushboolean(L, comp != 0);
 		return 1;
+	}
+
+	int GetScrollbarOffset(lua_State* L){
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto comp = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (comp){
+			auto offset = comp->GetScrollOffset();
+			LuaUtils::pushVec2(L, offset);
+			return 1;
+		}
+		return 0;
+	}
+
+	int SetScrollbarOffset(lua_State* L){
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto comp = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (comp){
+			Vec2 offset = LuaUtils::checkVec2(L, 3);
+			comp->SetScrollOffset(offset);
+		}
+		return 0;
 	}
 }

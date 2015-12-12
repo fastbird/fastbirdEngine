@@ -190,7 +190,7 @@ namespace fb
 	}
 
 	void Button::OnMouseClicked(IInputInjectorPtr injector){
-		if (!mNoButton)
+		if (!mNoButton && GetVisible())
 			UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
 		__super::OnMouseClicked(injector);
 	}
@@ -232,7 +232,7 @@ namespace fb
 	}
 
 	void Button::OnMouseIn(void* arg){
-		if (!mNoButton)
+		if (!mNoButton && GetVisible())
 			UIManager::GetInstance().PlaySound(UISounds::ButtonIn);
 		if (!mImages[ButtonImages::ImageHover].expired() || !mImages[ButtonImages::BackImageHover].expired())
 			UIManager::GetInstance().DirtyRenderList(GetHwndId());	

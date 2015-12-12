@@ -34,7 +34,8 @@ namespace fb
 	class TextureD3D11 : public IPlatformTexture
 	{
 		FB_DECLARE_PIMPL(TextureD3D11);
-		TextureD3D11();		
+		TextureD3D11();
+		~TextureD3D11();
 
 	public:
 		static TextureD3D11Ptr Create();

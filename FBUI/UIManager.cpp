@@ -60,8 +60,9 @@
 #include "FBAudioPlayer/AudioManager.h"
 using namespace fb;
 namespace fb{
-	static float gTooltipFontSize = 24;
+	static float gTooltipFontSize = 20;
 	static float gDelayForTooltip = 0.7f;
+	static const int TooltipTextYPosition = 4;
 	extern float gTextSizeMod;
 }
 class UIManager::Impl{
@@ -329,7 +330,7 @@ public:
 
 	void ShowTooltip(){
 		assert(!mTooltipText.empty());
-		FontPtr pFont = Renderer::GetInstance().GetFont(gTooltipFontSize);
+		FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(gTooltipFontSize);
 		int width = (int)pFont->GetTextWidth(
 			(const char*)mTooltipText.c_str(), mTooltipText.size() * 2);
 
@@ -344,7 +345,7 @@ public:
 		mTooltipUI->ChangeSizeX(textWidth + 16);
 		tooltipTextBox->ChangeSizeX(textWidth + 4);
 		int sizeY = tooltipTextBox->GetPropertyAsInt(UIProperty::SIZEY);
-		mTooltipUI->ChangeSizeY(sizeY);
+		mTooltipUI->ChangeSizeY(sizeY + TooltipTextYPosition*2);
 		mTooltipUI->SetVisible(true);
 		RefreshTooltipPos();
 	}
@@ -496,19 +497,6 @@ public:
 	}
 
 	// IRenderListener
-	void BeforeUIRendering(HWindowId hwndId, HWindow hwnd){
-		if (!mUICommands->r_UI)
-			return;
-
-		if (hwndId == 1)
-			mDragBox.Render();
-
-		auto& uis = mRenderUIs[hwndId];
-		for (auto& obj : uis){
-			obj->Render();
-		}
-	}
-
 	void RenderUI(HWindowId hwndId, HWindow hwnd){
 		if (!mUICommands->r_UI)
 			return;
@@ -517,6 +505,8 @@ public:
 			ui->PreRender();
 			ui->Render();
 		}
+		if (hwndId == 1)
+			mDragBox.Render();
 	}
 
 	void BeforeDebugHudRendering(){
@@ -647,7 +637,6 @@ public:
 				//std::map<std::string, std::vector<UIObject*>> render3DList;
 				it.second = false;
 				{
-					Profiler p("GatherRenderList");
 					auto& windows = mWindows[hwndId];					
 					bool hideAll = !mHideUIExcepts.empty();
 					WINDOWS::iterator it = windows.begin(), itEnd = windows.end();
@@ -1367,6 +1356,7 @@ public:
 					if (mUIEditor || !focusWnd || (!focusWnd->GetNoMouseEventAlone() && !focusWnd->GetNoFocusByClick()))
 						SetFocusUI(focusWnd);
 				}
+				keyboardFocus = mKeyboardFocus.lock();
 				bool editorFocused = !isMainForeground;
 				if (mUIEditor && (!injector->IsKeyDown(VK_MENU) && !editorFocused))
 				{
@@ -1890,7 +1880,7 @@ public:
 		auto children1 = tooltipChildren.SetSeqTable(1);
 		children1.SetField("name", "TooltipTextBox");
 		children1.SetField("type_", "TextBox");
-		children1.SetField("pos", Vec2I(6, 4));
+		children1.SetField("pos", Vec2I(6, TooltipTextYPosition));
 		children1.SetField("size", Vec2I(350, (int)gTooltipFontSize));
 		children1.SetField("TEXTBOX_MATCH_HEIGHT", "true");
 		children1.SetField("TEXT_VALIGN", "top");
@@ -2733,7 +2723,6 @@ bool UIManager::OnFileChanged(const char* watchDir, const char* file, const char
 }
 
 void UIManager::BeforeUIRendering(HWindowId hwndId, HWindow hwnd) {
-	mImpl->BeforeUIRendering(hwndId, hwnd);
 }
 
 void UIManager::RenderUI(HWindowId hwndId, HWindow hwnd){

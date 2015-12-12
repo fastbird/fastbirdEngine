@@ -1323,6 +1323,36 @@ public:
 			}
 		}
 	}
+
+	void OnRenderTargetSizeChanged(const Vec2I& size){
+		mSize = size;
+		mDepthTarget.reset();
+		mGlowTarget.reset();
+		for (int i = 0; i < 2; ++i)
+			mGlowTexture[i].reset();
+
+		mShadowMap.reset();
+		mCloudVolumeDepth.reset();
+
+		for (int i = 0; i < 2; ++i)
+			mGodRayTarget[i].reset(); // half resolution; could be shared.
+		mNoMSDepthStencil.reset();
+		mHDRTarget.reset();
+		mSmallSilouetteBuffer.reset();
+		mBigSilouetteBuffer.reset();
+
+		mBrightPassTexture.reset();
+		mStarSourceTex.reset();
+		mBloomSourceTex.reset();
+		for (int i = 0; i < FB_NUM_BLOOM_TEXTURES; ++i)
+			mBloomTexture[i].reset();
+		for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
+			mStarTextures[i].reset();
+
+		mLightCamera.reset();
+		mGaussianDistBlendGlow.reset();
+		mGaussianDistBloom.reset();
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -1385,6 +1415,10 @@ void RenderStrategyDefault::DepthTexture(bool bind){
 
 void RenderStrategyDefault::OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName){
 	mImpl->OnRendererOptionChanged(options, optionName);
+}
+
+void RenderStrategyDefault::OnRenderTargetSizeChanged(const Vec2I& size){
+	mImpl->OnRenderTargetSizeChanged(size);
 }
 
 TexturePtr RenderStrategyDefault::GetShadowMap(){

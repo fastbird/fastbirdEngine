@@ -1242,7 +1242,7 @@ Physics::Physics()
 }
 
 Physics::~Physics(){
-	Logger::Log(FB_ERROR_LOG_ARG, "Physics deleted.");
+	Logger::Log(FB_DEFAULT_LOG_ARG, "Physics deleted.");
 }
 
 void Physics::Initilaize() {

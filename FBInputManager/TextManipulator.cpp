@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "TextManipulator.h"
 #include "InputManager.h"
+
 #include "FBSystemLib/ClipboardData.h"
 #undef min
 #undef max
@@ -62,7 +63,7 @@ void TextManipulator::SetText(std::wstring* text)
 	}
 }
 
-void TextManipulator::ConsumeInput(IInputInjectorPtr injector)
+void TextManipulator::ConsumeInput(IInputInjectorPtr injector, bool mouseIn)
 {
 	if (!mText)
 		return;
@@ -212,6 +213,11 @@ void TextManipulator::ConsumeInput(IInputInjectorPtr injector)
 		{
 			mCursorPos++;
 		}
+		OnCursorPosChanged();
+	}
+	//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) checking double click");
+	if (mouseIn && injector->IsLButtonDoubleClicked()){
+		SelectAll();
 		OnCursorPosChanged();
 	}
 

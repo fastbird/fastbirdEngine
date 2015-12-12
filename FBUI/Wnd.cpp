@@ -692,7 +692,7 @@ bool Wnd::SetVisible(bool show)
 			if (mNoFocus && !mMoveToBottom){
 				UIManager::GetInstance().MoveToTop(mSelfPtr.lock());
 			}
-			else{
+			else if (!mNoFocus){
 				UIManager::GetInstance().SetFocusUI(mSelfPtr.lock());
 			}
 			if (mMoveToBottom){

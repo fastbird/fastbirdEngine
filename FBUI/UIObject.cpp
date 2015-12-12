@@ -284,7 +284,7 @@ public:
 
 		if (!mText.empty())
 		{
-			FontPtr pFont = renderer.GetFont(mTextSize * mScale.x);
+			FontPtr pFont = renderer.GetFontWithHeight(mTextSize * mScale.x);
 			if (pFont)
 			{
 				pFont->PrepareRenderResources();

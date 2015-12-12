@@ -8,6 +8,7 @@
 #include "ParticleTest.h"
 #include "AudioTest.h"
 #include "VideoTest.h"
+#include "TextTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 using namespace fb;
 EngineFacadePtr gEngine;
@@ -23,6 +24,7 @@ SkyBoxTestPtr gSkyBoxTest;
 ParticleTestPtr gParticleTest;
 AudioTestPtr gAudioTest;
 VideoTestPtr gVideoTest;
+TextTestPtr gTextTest;
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -35,6 +37,8 @@ void UpdateFrame(){
 		gParticleTest->Update(dt);
 	if (gMeshTest)
 		gMeshTest->Update(dt);
+	if (gTextTest)
+		gTextTest->Update();
 
 	gEngine->Render();
 	gEngine->EndInput();
@@ -58,15 +62,17 @@ void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
-	gMeshTest = MeshTest::Create();	
-	gMeshTest->SetCameraTarget();
+	//gMeshTest = MeshTest::Create();	
+	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
-	gParticleTest = ParticleTest::Create();
-	gAudioTest = AudioTest::Create();
-	gVideoTest = VideoTest::Create();	
+	//gParticleTest = ParticleTest::Create();
+	//gAudioTest = AudioTest::Create();
+	//gVideoTest = VideoTest::Create();	
+	gTextTest = TextTest::Create();
 }
 
 void EndTest(){
+	gTextTest = 0;
 	gVideoTest = 0;
 	gParticleTest = 0;
 	gMeshTest = 0;

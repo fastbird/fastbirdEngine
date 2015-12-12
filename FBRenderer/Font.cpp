@@ -70,7 +70,7 @@ public:
 
 protected:
 	void LoadPage(int id, const char *pageFile, const std::string& fontFile);
-	void SetFontInfo(int outlineThickness);
+	void SetFontInfo(int fontSize, int outlineThickness);
 	void SetCommonInfo(int fontHeight, int base, int scaleW, int scaleH, int pages, bool isPacked);
 	void AddChar(int id, int x, int y, int w, int h, int xoffset, int yoffset, int xadvance, int page, int chnl);
 	void AddKerningPair(int first, int second, int amount);
@@ -120,9 +120,11 @@ const unsigned int Font::MAX_BATCH = 4 * 2000;
 class Font::Impl{
 public:
 	bool mInitialized;
+	std::string mFilePath;
 	FontWeakPtr mSelf;
 	short mFontHeight; // total height of the font
-	short mScaledFontSize;
+	Real mScaledFontHeight;
+	short mFontSize;
 	short mBase;       // y of base line
 	short mScaleW;
 	short mScaleH;
@@ -146,7 +148,7 @@ public:
 	//---------------------------------------------------------------------------
 	Impl()
 		: mFontHeight(0)
-		, mScaledFontSize(0)
+		, mScaledFontHeight(0)
 		, mBase(0)
 		, mScaleW(0)
 		, mScaleH(0)
@@ -156,6 +158,7 @@ public:
 		, mEncoding(NONE)
 		, mColor(0xFFFFFFFF)
 		, mInitialized(false)
+		, mFontSize(0)
 	{}
 
 	~Impl(){
@@ -168,8 +171,11 @@ public:
 	}
 
 	int Init(const char *fontFile) {
+		if (!ValidCStringLength(fontFile))
+			return -1;
 		if (mInitialized)
 			return 0;
+		mFilePath = fontFile;
 		Profiler profiler("'Font Init'");
 		// Load the font
 		FILE *f = 0;
@@ -206,7 +212,7 @@ public:
 		assert(mVertexBuffer);
 
 		// init shader
-		mShader = renderer.CreateShader("EssentialEnginedata/shaders/font.hlsl", 
+		mShader = renderer.CreateShader("EssentialEngineData/shaders/font.hlsl", 
 			BINDING_SHADER_VS | BINDING_SHADER_PS, SHADER_DEFINES());
 		mInputLayout = renderer.GetInputLayout(
 			DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES, mShader);		
@@ -229,9 +235,17 @@ public:
 			(Real)mRenderTargetSize.y,
 			0.f, 1.0f);
 		mObjectConstants.gWorld.MakeIdentity();
-
-		SetBackToOrigHeight();
+		
 		return r;
+	}
+
+	int Reload(){
+		if (!mInitialized)
+			return -1;
+
+		mInitialized = false;
+		Init(mFilePath.c_str());
+		return 0;
 	}
 
 	//----------------------------------------------------------------------------
@@ -240,7 +254,7 @@ public:
 		mEncoding = encoding;
 	}
 
-	bool ApplyTag(const char* text, int start, int end, int& x, int& y)
+	bool ApplyTag(const char* text, int start, int end, Real& x, Real y, int* imgYSize = 0)
 	{
 		auto& renderer = Renderer::GetInstance();
 
@@ -259,18 +273,18 @@ public:
 					auto& regionSize = region->GetSize();
 					Real ratio = regionSize.x / (Real)regionSize.y;
 					Vec2I imgSize = regionSize;
-					int yoffset = 0;
-					if (imgSize.y < mScaledFontSize){
-						yoffset = Round((mScaledFontSize - imgSize.y) * .5f);
-					}
+					Real yoffset = (mScaledFontHeight - imgSize.y) * .5f;					
 					mTextureMaterial->SetDiffuseColor(Vec4(1, 1, 1, ((mColor & 0xff000000) >> 24) / 255.f));
-					renderer.DrawQuadWithTextureUV(Vec2I(x, y + yoffset), imgSize, region->mUVStart, region->mUVEnd,
+					renderer.DrawQuadWithTextureUV(Vec2I(Round(x), Round(y + yoffset)), imgSize, region->mUVStart, region->mUVEnd,
 						Color::White, mTextureAtlas->GetTexture(), mTextureMaterial);					
-					x += imgSize.x;
+					x += (Real)imgSize.x;
+					if (imgYSize){
+						*imgYSize = std::max(*imgYSize, imgSize.y);
+					}
 					return true;
 				}
 			}
-			x += 24;
+			x += 24.f;
 			return true;
 			break;
 		}
@@ -373,7 +387,7 @@ public:
 			if (buf)
 			{
 				int oneI = 0;
-				for (int i = 8; tagStart[i] != '$'; i += 2)
+				for (int i = 8; tagStart[i] != '$'&& tagStart[i+2] != ']'; i += 2)
 				{
 					buf[oneI++] = tagStart[i];
 				}
@@ -386,13 +400,17 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	void InternalWrite(int x, int y, Real z, const char *text, int count, int spacing=0)
+	void InternalWrite(Real fx, Real fy, Real fz, const char *text, int count, int spacing=0)
 	{
-		static FontVertex vertices[MAX_BATCH];
-
-		const int initialX = x;
+		static FontVertex vertices[MAX_BATCH];		
+		const Real initialX = fx;		
 		int page = -1;
-		y -= mScaledFontSize;
+		// this is moving up the text slight to the top.		
+		Real oy2 = mScale * (mFontHeight - mBase);
+		fy -= oy2;
+		Real newLineHeight = mScaledFontHeight;
+		int imgY = 0;
+		// fy is the basis of the glyphs.
 		unsigned int batchingVertices = 0;
 		for (int n = 0; n < count;)
 		{
@@ -402,7 +420,8 @@ public:
 			{
 				do
 				{
-					reapplyRender = ApplyTag(text, n, n + skiplen, x, y) || reapplyRender;
+					reapplyRender = ApplyTag(text, n, n + skiplen, fx, fy - mBase * mScale, &imgY) || reapplyRender;
+					newLineHeight = std::max(newLineHeight, (Real)imgY);
 					n += skiplen;
 					skiplen = SkipTags(&text[n]);
 				} while (skiplen > 0);
@@ -424,8 +443,8 @@ public:
 
 			if (charId == L'\n')
 			{
-				y += mScaledFontSize;
-				x = initialX;
+				fy += newLineHeight;
+				fx = (Real)initialX;
 				if (batchingVertices > 0)
 				{
 					Flush(page, vertices, batchingVertices);
@@ -445,11 +464,11 @@ public:
 			Real u2 = u + Real(ch->srcW) / (Real)mScaleW;
 			Real v2 = v + Real(ch->srcH) / (Real)mScaleH;
 
-			int a = Round(mScale * Real(ch->xAdv));
-			int w = Round(mScale * Real(ch->srcW));
-			int h = Round(mScale * Real(ch->srcH));
-			int ox = Round(mScale * Real(ch->xOff));
-			int oy = Round(mScale * Real(ch->yOff));
+			Real a = mScale * Real(ch->xAdv);
+			Real w = mScale * Real(ch->srcW);
+			Real h = mScale * Real(ch->srcH);
+			Real ox = mScale * Real(ch->xOff);
+			Real oy = mScale * Real(ch->yOff);
 
 			if (ch->page != page)
 			{
@@ -469,10 +488,13 @@ public:
 				mVertexLocation = 0;
 			}
 
-			int left = x + ox;
-			int top = y + oy;
-			int right = left + w;
-			int bottom = top + h;
+			Real left, top, right, bottom;
+			left = fx + ox;
+			right = left + w;
+			
+			top = fy - (mBase - ch->yOff)*mScale;			
+			bottom = top + h;
+			
 
 			//Vec4 pos = mOrthogonalMat * Vec4(left, top, z, 1.0f);
 			//vertices[mVertexLocation + batchingVertices++] = FontVertex(
@@ -488,27 +510,27 @@ public:
 			//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u2, v2), ch->chnl);
 
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)left, (Real)top, z), mColor, Vec2(u, v), ch->chnl);
+				Vec3(left, top, fz), mColor, Vec2(u, v), ch->chnl);
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)right, (Real)top, z), mColor, Vec2(u2, v), ch->chnl);
+				Vec3(right, top, fz), mColor, Vec2(u2, v), ch->chnl);
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)left, (Real)bottom, z), mColor, Vec2(u, v2), ch->chnl);
+				Vec3(left, bottom, fz), mColor, Vec2(u, v2), ch->chnl);
 
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)right, (Real)top, z), mColor, Vec2(u2, v), ch->chnl);
+				Vec3(right, top, fz), mColor, Vec2(u2, v), ch->chnl);
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)right, (Real)bottom, z), mColor, Vec2(u2, v2), ch->chnl);
+				Vec3(right, bottom, fz), mColor, Vec2(u2, v2), ch->chnl);
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
-				Vec3((Real)left, (Real)bottom, z), mColor, Vec2(u, v2), ch->chnl);
+				Vec3(left, bottom, fz), mColor, Vec2(u, v2), ch->chnl);
 
 
 
-			x += a;
+			fx += a;
 			if (charId == L' ')
-				x += spacing;
+				fx += spacing;
 
 			if (n < count)
-				x += AdjustForKerningPairs(charId, GetTextChar(text, n));
+				fx += AdjustForKerningPairs(charId, GetTextChar(text, n));
 		}
 		Flush(page, vertices, batchingVertices);
 		mVertexLocation += batchingVertices;
@@ -561,23 +583,31 @@ public:
 
 		renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
 
-		InternalWrite(Round(x), Round(y), z, text, count);
+		InternalWrite(x, y, z, text, count);
 	}
 
 	//----------------------------------------------------------------------------
-	void SetHeight(Real h)
-	{
-		mScale = (h) / Real(mFontHeight);
-		mScaledFontSize = short(Round(h));
+	void ScaleFontSizeTo(int desiredSize){
+		if (mFontSize == 0){
+			return;
+		}
+		mScale = desiredSize / (Real)mFontSize;
+		mScaledFontHeight = mFontHeight * mScale;
 	}
 
-	void SetBackToOrigHeight()
-	{
-		SetHeight(mFontHeight);
-		//mScale = 1.f;
+	void ScaleFontHeightTo(float desiredHeight){
+		if (mFontSize == 0){
+			return;
+		}
+		mScale = desiredHeight / (Real)mFontHeight;
+		mScaledFontHeight = desiredHeight;
 	}
 
 	//----------------------------------------------------------------------------
+	Real GetOriginalHeight() const{
+		return mFontHeight;
+	}
+
 	Real GetHeight() const
 	{
 		return mScale * mFontHeight;
@@ -840,7 +870,9 @@ public:
 		for (UINT n = 0; n < ch->kerningPairs.size(); n += 2)
 		{
 			if (ch->kerningPairs[n] == second)
+			{
 				return Round(ch->kerningPairs[n + 1] * mScale);
+			}
 		}
 
 		return 0;
@@ -954,11 +986,19 @@ int Font::Init(const char *fontFile) {
 	return mImpl->Init(fontFile);
 }
 
+void Font::Reload(){
+	mImpl->Reload();
+}
+
+const char* Font::GetFilePath() const{
+	return mImpl->mFilePath.c_str();
+}
+
 void Font::SetTextEncoding(EFontTextEncoding encoding) {
 	mImpl->SetTextEncoding(encoding);
 }
 
-bool Font::ApplyTag(const char* text, int start, int end, int& x, int& y) {
+bool Font::ApplyTag(const char* text, int start, int end, Real& x, Real y) {
 	return mImpl->ApplyTag(text, start, end, x, y);
 }
 
@@ -970,10 +1010,6 @@ TextTags::Enum Font::GetTagType(const char* tagStart, int length, char* buf) con
 	return mImpl->GetTagType(tagStart, length, buf);
 }
 
-void Font::InternalWrite(int x, int y, Real z, const char *text, int count, int spacing){
-	return mImpl->InternalWrite(x, y, z, text, count, spacing);
-}
-
 void Font::Flush(int page, const FontVertex* pVertices, unsigned int vertexCount){
 	return mImpl->Flush(page, pVertices, vertexCount);
 }
@@ -983,12 +1019,20 @@ void Font::Write(Real x, Real y, Real z, unsigned int color,
 	return mImpl->Write(x, y, z, color, text, count, mode);
 }
 
-void Font::SetHeight(Real h){
-	return mImpl->SetHeight(h);
+int Font::GetFontSize() const{
+	return mImpl->mFontSize;
 }
 
-void Font::SetBackToOrigHeight(){
-	mImpl->SetBackToOrigHeight();
+void Font::ScaleFontSizeTo(int desiredSize){
+	mImpl->ScaleFontSizeTo(desiredSize);
+}
+
+void Font::ScaleFontHeightTo(float desiredHeight){
+	mImpl->ScaleFontHeightTo(desiredHeight);
+}
+
+Real Font::GetOriginalHeight() const{
+	return mImpl->GetOriginalHeight();
 }
 
 Real Font::GetHeight() const{
@@ -1080,8 +1124,9 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 
 	// Find the directory
 	str = fontFile;
-	for (size_t n = 0; (n = str.find('/', n)) != std::string::npos;) str.replace(n, 1, "\\");
-	size_t i = str.rfind('\\');
+	for (size_t n = 0; (n = str.find('\\', n)) != std::string::npos;) 
+		str.replace(n, 1, "/");
+	size_t i = str.rfind('/');
 	if (i != std::string::npos)
 		str = str.substr(0, i + 1);
 	else
@@ -1095,15 +1140,19 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load font page '%s'", str.c_str()).c_str());
 }
 
-void FontLoader::SetFontInfo(int outlineThickness)
+void FontLoader::SetFontInfo(int fontSize, int outlineThickness)
 {
 	this->outlineThickness = outlineThickness;
+	if (fontSize < 0)
+		fontSize = -fontSize;
+	font->mImpl->mFontSize = fontSize;
 }
 
 void FontLoader::SetCommonInfo(int fontHeight, int base, int scaleW, int scaleH, int pages, bool isPacked)
 {
 	font->mImpl->mFontHeight = fontHeight;
-	font->mImpl->mScaledFontSize = font->mImpl->mFontHeight;
+	font->mImpl->mScaledFontHeight = (Real)font->mImpl->mFontHeight;
+	font->mImpl->mScale = 1.f;
 	font->mImpl->mBase = base;
 	font->mImpl->mScaleW = scaleW;
 	font->mImpl->mScaleH = scaleH;
@@ -1437,7 +1486,7 @@ void FontLoaderTextFormat::InterpretCommon(const std::string &str, int start)
 void FontLoaderTextFormat::InterpretInfo(const std::string &str, int start)
 {
 	int outlineThickness = 0;
-
+	int fontSize = 0;
 	// Read all attributes
 	int pos, pos2 = start;
 	while (true)
@@ -1458,14 +1507,16 @@ void FontLoaderTextFormat::InterpretInfo(const std::string &str, int start)
 
 		std::string value = str.substr(pos, pos2 - pos);
 
-		if (token == "outline")
-			outlineThickness = (short)strtol(value.c_str(), 0, 10);
+		if (token == "size")
+			fontSize = (short)strtol(value.c_str(), 0, 10);
+		else if (token == "outline")
+			outlineThickness = (short)strtol(value.c_str(), 0, 10);		
 
 		if (pos == str.size())
 			break;
 	}
 
-	SetFontInfo(outlineThickness);
+	SetFontInfo(fontSize, outlineThickness);
 }
 
 void FontLoaderTextFormat::InterpretPage(const std::string str, int start,
@@ -1597,7 +1648,7 @@ void FontLoaderBinaryFormat::ReadInfoBlock(int size)
 
 	// We're only interested in the outline thickness
 	infoBlock *blk = (infoBlock*)buffer;
-	SetFontInfo(blk->outline);
+	SetFontInfo(blk->fontSize,  blk->outline);
 
 	FB_ARRAY_DELETE(buffer);
 }

@@ -89,6 +89,7 @@ public:
 		, mFace(0)
 		, mId(NextRenderTargetId++)
 		, mCamera(Camera::Create())
+		, mAssociatedWindowId(INVALID_HWND_ID)
 	{
 		mStrategy = RenderStrategyDefault::Create();
 	}
@@ -376,6 +377,7 @@ public:
 	void SetColorTexture(TexturePtr pTexture)
 	{
 		mRenderTargetTexture = pTexture;
+		auto oldSize = mSize;
 		mSize = pTexture->GetSize();
 		auto& renderer = Renderer::GetInstance();
 		mSizeCropped = Vec2I(CropSize8(mSize.x), CropSize8(mSize.y));
@@ -393,13 +395,32 @@ public:
 			mRenderPipeline->SetStep(RenderSteps::HDR, false);
 		}*/
 
+		auto self = mSelfPtr.lock();
 		if (mStrategy){
-			mStrategy->SetRenderTarget(mSelfPtr.lock());
+			mStrategy->SetRenderTarget(self);
+			if (oldSize != mSize){
+				mStrategy->OnRenderTargetSizeChanged(mSize);
+			}
 		}
+
+		auto window = Renderer::GetInstance().GetWindowHandle(mAssociatedWindowId);
+		if (window != INVALID_HWND){
+			auto& observers = self->mObservers_[IRenderTargetObserver::DefaultEvent];
+			for (auto it = observers.begin(); it != observers.end(); /**/){
+				IteratingWeakContainer(observers, it, observer);
+				observer->OnRenderTargetSizeChanged(mSize.x, mSize.y, window);
+			}
+		}
+
 	}
 
 	void SetDepthTexture(TexturePtr texture){
 		mDepthStencilTexture = texture;
+	}
+
+	void RemoveTextures(){
+		mRenderTargetTexture = 0;
+		mDepthStencilTexture = 0;
 	}
 };
 
@@ -579,6 +600,10 @@ void RenderTarget::SetColorTexture(TexturePtr pTexture)
 
 void RenderTarget::SetDepthTexture(TexturePtr pTexture){
 	mImpl->SetDepthTexture(pTexture);
+}
+
+void RenderTarget::RemoveTextures(){
+	mImpl->RemoveTextures();
 }
 
 CameraPtr RenderTarget::GetLightCamera() const {

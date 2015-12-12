@@ -2005,6 +2005,8 @@ public:
 
 	bool ResizeSwapChain(HWindowId hwndId, const Vec2I& resol, TextureD3D11Ptr& outColor, TextureD3D11Ptr& outDepth){
 		mImmediateContext->OMSetRenderTargets(0, 0, 0);
+		mCurrentRTViews.clear();
+		mCurrentDSView = 0;
 		Vec2I originalSize;
 		// release render target textures
 		auto it = mRenderTargetTextures.Find(hwndId);
@@ -2024,6 +2026,8 @@ public:
 		auto itSwapChain = mSwapChains.Find(hwndId);
 		TextureD3D11Ptr color, depth;
 		if (itSwapChain != mSwapChains.end()) {
+			BOOL fullscreen;
+			itSwapChain->second->GetFullscreenState(&fullscreen, 0);
 			auto hr = itSwapChain->second->ResizeBuffers(1, resol.x, resol.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 			if (!SUCCEEDED(hr)){
 				Error("Resizing swapchain to %dx%d is failed(0x%x", resol.x, resol.y, hr);	

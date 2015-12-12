@@ -177,7 +177,7 @@ public:
 		}
 		it->second.insert(it->second.begin(), TextData(pos, text, color, size, secs));
 		auto& renderer = Renderer::GetInstance();
-		auto font = renderer.GetFont(size);
+		auto font = renderer.GetFont((int)size);
 		if (font){
 			it->second.begin()->mWidth = font->GetTextWidth((const char*)text);
 		}
@@ -369,17 +369,17 @@ public:
 		}
 		mQuads.clear();
 
-		auto pFont = renderer.GetFont(20.f);
-		Real curFontHeight = 20.f;
+		auto pFont = renderer.GetFont(20);
+		Real curFontSize = 20.f;
 
 		pFont->PrepareRenderResources();
 		pFont->SetRenderStates(false, false);
 		while (!mTexts.empty())
 		{
 			const TextData& textData = mTexts.front();
-			if (curFontHeight != textData.mSize){
-				pFont = renderer.GetFont(textData.mSize);
-				curFontHeight = textData.mSize;
+			if (curFontSize != textData.mSize){
+				pFont = renderer.GetFont((int)textData.mSize);
+				curFontSize = textData.mSize;
 			}
 			pFont->Write((Real)textData.mPos.x, (Real)textData.mPos.y, 0.5f, textData.mColor.Get4Byte(),
 				(const char*)textData.mText.c_str(), -1, Font::FONT_ALIGN_LEFT);
@@ -425,9 +425,9 @@ public:
 							}
 							break;
 						}
-						if (it->mSize != curFontHeight){
-							pFont->SetHeight(it->mSize);
-							curFontHeight = it->mSize;
+						if (it->mSize != curFontSize){
+							pFont = renderer.GetFontWithHeight(it->mSize);
+							curFontSize = it->mSize;							
 						}
 						Color color = it->mColor;
 						Real proportion = 1.0f - (it->mSecs / it->mDuration);
@@ -442,8 +442,7 @@ public:
 						it++;
 					}
 				}
-			}
-			pFont->SetBackToOrigHeight();
+			}			
 		}
 
 		//if (mSphereMesh)

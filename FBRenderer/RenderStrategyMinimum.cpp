@@ -260,6 +260,13 @@ public:
 		}
 	}
 
+	void OnRenderTargetSizeChanged(const Vec2I& size){
+		mSize = size;
+		mDepthTarget.reset();
+		mLightCamera.reset();
+		mShadowMap.reset();
+	}
+
 	void ShadowTarget(bool bind)
 	{
 		auto& renderer = Renderer::GetInstance();
@@ -388,6 +395,10 @@ void RenderStrategyMinimum::DepthTexture(bool bind){
 
 void RenderStrategyMinimum::OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName){
 	mImpl->OnRendererOptionChanged(options, optionName);
+}
+
+void RenderStrategyMinimum::OnRenderTargetSizeChanged(const Vec2I& size){
+	mImpl->OnRenderTargetSizeChanged(size);
 }
 
 TexturePtr RenderStrategyMinimum::GetShadowMap(){

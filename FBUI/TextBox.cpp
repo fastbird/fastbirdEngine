@@ -113,12 +113,11 @@ namespace fb
 	void TextBox::CalcTextWidth()
 	{
 		// analyze the text length
-		FontPtr pFont = Renderer::GetInstance().GetFont(mTextSize);
+		FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);
 		unsigned width = mSize.x;		
 		float textWidth;
 		mMultiLineText = pFont->InsertLineFeed((const char*)mTextw.c_str(), mTextw.size() * 2, width, &textWidth, &mNumTextLines);
-		mTextWidth = (unsigned)Round(textWidth);
-		pFont->SetBackToOrigHeight();
+		mTextWidth = (unsigned)Round(textWidth);		
 		mUIObject->SetText(mMultiLineText.c_str());
 	}
 
@@ -228,10 +227,10 @@ namespace fb
 
 	unsigned TextBox::GetTextBoxHeight() const
 	{
-		FontPtr pFont = Renderer::GetInstance().GetFont(mTextSize);		
-		float height = pFont->GetHeight();
-		pFont->SetBackToOrigHeight();
-		return Round(height * mNumTextLines) + 16;
+		/*FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);
+		float height = pFont->GetHeight();*/
+
+		return Round(mTextSize * mNumTextLines);
 	}
 
 	void TextBox::SetHwndId(HWindowId hwndId)

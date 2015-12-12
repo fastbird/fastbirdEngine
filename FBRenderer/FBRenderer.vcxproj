@@ -28,7 +28,6 @@
     <ClInclude Include="IPlatformRenderer.h" />
     <ClInclude Include="IRendererObserver.h" />
     <ClInclude Include="IRenderStrategy.h" />
-    <ClInclude Include="IRenderTargetListener.h" />
     <ClInclude Include="IRenderTargetObserver.h" />
     <ClInclude Include="IPlatformShader.h" />
     <ClInclude Include="IPlatformTexture.h" />

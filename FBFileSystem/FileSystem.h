@@ -113,6 +113,7 @@ namespace fb{
 		//---------------------------------------------------------------------------
 		// System Folders
 		//---------------------------------------------------------------------------
+		static void SetApplicationName(const char* name);
 		static std::string GetAppDataFolder();
 		static std::string GetCurrentDir();
 

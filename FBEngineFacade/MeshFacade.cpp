@@ -33,6 +33,7 @@
 #include "FBSceneObjectFactory/SceneObjectFactory.h"
 #include "FBSceneManager/Scene.h"
 #include "FBRenderer/Material.h"
+#include "FBRenderer/Camera.h"
 using namespace fb;
 class MeshFacade::Impl{
 public:
@@ -1035,4 +1036,13 @@ Vec3* MeshFacade::GetPositionVertices(int matGroupIdx, size_t& outNumPositions){
 		return mImpl->mMeshObject->GetPositions(matGroupIdx, outNumPositions);
 
 	return 0;
+}
+
+void MeshFacade::OnMainCameraTargeted(){
+	if (mImpl->mMeshObject){
+		EngineFacade::GetInstance().GetMainCamera()->SetTarget(mImpl->mMeshObject);
+	}
+	else if (mImpl->mMeshGroup){
+		EngineFacade::GetInstance().GetMainCamera()->SetTarget(mImpl->mMeshGroup);
+	}
 }

@@ -35,7 +35,7 @@ using namespace fb;
 
 static bool gLogginStarted = false;
 static boost::filesystem::path gWorkingPath;
-
+std::string gApplicationName;
 void FileSystem::StartLoggingIfNot(){
 	if (gLogginStarted)
 		return;
@@ -333,13 +333,20 @@ bool FileSystem::CreateDirectory(const char* filepath){
 //---------------------------------------------------------------------------
 // System Folders
 //---------------------------------------------------------------------------
+void FileSystem::SetApplicationName(const char* name){
+	gApplicationName = name;
+}
+
 std::string FileSystem::GetAppDataFolder(){
 #if defined(_PLATFORM_WINDOWS_)
-	PWSTR* path=0;
-	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, 0, path))){
-		auto ret = std::string(WideToAnsi(*path));
+	PWSTR path=0;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, 0, &path))){
+		auto ret = std::string(WideToAnsi(path));
+		if (!gApplicationName.empty())
+			ret += "\\" + gApplicationName;
 		CoTaskMemFree(path);
-		return ret;
+		boost::filesystem::path p(ret);
+		return p.generic_string();		
 	}	
 #else
 	assert(0 && "Not implemented");

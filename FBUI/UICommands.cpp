@@ -43,8 +43,8 @@ UICommandsPtr UICommands::Create(){
 
 UICommands::UICommands()
 {
-	FB_REGISTER_CC(StartUIEditor, StartUIEditor, "Start ui editor");
-	FB_REGISTER_CC(KillUIEditor, KillUIEditor, "Kill ui editor");
+	FB_REGISTER_CC(StartUIEditor, "Start ui editor");
+	FB_REGISTER_CC(KillUIEditor, "Kill ui editor");
 
 	r_UI = Console::GetInstance().GetIntVariable("r_UI", 1);
 	FB_REGISTER_CVAR(r_UI, r_UI, CVAR_CATEGORY_CLIENT, "Render uis.");

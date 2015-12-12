@@ -57,6 +57,7 @@ TextField::TextField()
 	mUIObject->SetMaterial("EssentialEngineData/materials/UITextField.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
+	mUIObject->SetTextSize(mTextSize);
 	mUIObject->SetTextColor(mTextColor);
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&TextField::OnClicked, this, std::placeholders::_1));
@@ -145,32 +146,11 @@ bool TextField::OnInputFromHandler(IInputInjectorPtr injector)
 			}
 		}
 		else{
-			UIManager::GetInstance().GetTextManipulator()->ConsumeInput(injector);
+			UIManager::GetInstance().GetTextManipulator()->ConsumeInput(injector, mouseIn);
 		}
 	}
 	
 	return mouseIn;
-}
-
-void TextField::SetText(const wchar_t* szText)
-{
-	mTextw = szText;
-	if (mUIObject)
-	{
-		if (!mPasswd)
-		{
-			mUIObject->SetText(szText);
-		}
-		else
-		{
-			std::wstring asterisks(mTextw.size(), L'*');
-			mUIObject->SetText(asterisks.c_str());
-		}
-	}
-	CalcTextWidth();
-
-	AlignText();
-	TriggerRedraw();
 }
 
 void TextField::OnFocusGain()
@@ -252,11 +232,11 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 			std::swap(start, end);
 		}
 		if (end - start > 0){
-			auto font = Renderer::GetInstance().GetFont(mTextSize);
+			auto font = Renderer::GetInstance().GetFontWithHeight(mTextSize);
 			if (font){
 				float width = font->GetTextWidth(
 					((const char*)mTextw.c_str()) + (start * 2),
-					(end - start + 1) * 2);
+					(end - start) * 2);
 				float leftGap = font->GetTextWidth(
 					(const char*)mTextw.c_str(), start * 2);				
 				KeyboardCursor::GetInstance().SetSize(Vec2I((int)width, (int)mTextSize));
@@ -267,7 +247,7 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 			}
 		}
 		else{
-			auto font = Renderer::GetInstance().GetFont(mTextSize);			
+			auto font = Renderer::GetInstance().GetFontWithHeight(mTextSize);
 			float aWidth = font->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
 			Vec2I cursorSize(Round(aWidth), 2);			
 			KeyboardCursor::GetInstance().SetSize(Vec2I((int)1, (int)mTextSize));
@@ -278,7 +258,7 @@ void TextField::OnCursorPosChanged(TextManipulator* mani)
 	}
 	else
 	{
-		auto font = Renderer::GetInstance().GetFont(mTextSize);		
+		auto font = Renderer::GetInstance().GetFontWithHeight(mTextSize);
 		float aWidth = font->GetTextWidth((const char*)AnsiToWide("A", 1), 2);
 		Vec2I cursorSize(Round(aWidth), 2);
 		KeyboardCursor::GetInstance().SetSize(cursorSize);
@@ -468,7 +448,7 @@ void TextField::OnClicked(void* arg){
 	cursorPos.x -= mTextGap.x;
 	cursorPos.x += mCursorOffset;
 
-	auto font = Renderer::GetInstance().GetFont(mTextSize);
+	auto font = Renderer::GetInstance().GetFontWithHeight(mTextSize);
 	if (font)
 	{		
 		float length = 0.f;

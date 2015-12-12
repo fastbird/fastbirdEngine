@@ -27,8 +27,12 @@
 
 #pragma once
 namespace fb{
+	class RenderTarget;
 	class IRenderTargetObserver{
 	public:
-		virtual void OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow){}
+		enum{
+			DefaultEvent
+		};
+		virtual void OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow){}		
 	};
 }

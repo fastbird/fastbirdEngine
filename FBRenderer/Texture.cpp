@@ -186,7 +186,7 @@ void Texture::ReloadTexture(const char* file){
 	auto& renderer = Renderer::GetInstance();
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end(); /**/){
 		IteratingWeakContainer(sAllTextures, it, texture);
-		if (texture->GetFilePath() == file){
+		if (strcmp(texture->GetFilePath(), file)==0){
 			renderer.ReloadTexture(texture, file);
 		}
 	}

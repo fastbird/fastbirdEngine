@@ -146,5 +146,6 @@ namespace fb{
 		void SetRadius(Real r);
 		Real GetRadius() const;
 		Vec3* GetPositionVertices(int matGroupIdx, size_t& outNumPositions);
+		void OnMainCameraTargeted();
 	};
 }

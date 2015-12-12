@@ -186,7 +186,7 @@ public:
 		ALuint src;
 		alGenSources(1, &src);
 		if (alGetError() != AL_NO_ERROR){
-			Logger::Log(FB_ERROR_LOG_ARG, "Cannot create audio source for (%s).", buffer->mFilepath.c_str());
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio source for (%s).", buffer->mFilepath.c_str()).c_str());
 			return std::make_pair(INVALID_AUDIO_ID, 0);
 		}
 		alSourcei(src, AL_BUFFER, buffer->mBuffer);
@@ -464,6 +464,7 @@ public:
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
 			//Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Audio(%u) is finished.", id).c_str());
+			alDeleteSources(1, &it->second);
 			mAudioSources.erase(it);
 		}
 		else{

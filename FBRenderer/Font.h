@@ -66,6 +66,8 @@ namespace fb{
 
 		static FontPtr Create();				
 		int Init(const char *fontFile);
+		void Reload();
+		const char* GetFilePath() const;
 		void SetTextEncoding(EFontTextEncoding encoding);
 
 		void PreRender(){}
@@ -74,10 +76,15 @@ namespace fb{
 		void Write(Real x, Real y, Real z, unsigned int color,
 			const char *text, int count, FONT_ALIGN mode);
 
-		void SetHeight(Real h);
+		int GetFontSize() const;
+		void ScaleFontSizeTo(int desiredSize);
+		void ScaleFontHeightTo(float desiredHeight);
+
+		/// not scaled height
+		Real GetOriginalHeight() const;
+		/// scaled height
 		Real GetHeight() const;
-		Real GetBaseHeight() const;
-		void SetBackToOrigHeight();
+		Real GetBaseHeight() const;		
 		Real GetTextWidth(const char *text, int count = -1, Real *minY = 0, Real *maxY = 0);
 		std::wstring InsertLineFeed(const char *text, int count, unsigned wrapAt, Real* outWidth, unsigned* outLines);
 		void PrepareRenderResources();
@@ -96,9 +103,9 @@ namespace fb{
 
 		static const unsigned int MAX_BATCH;
 
-		bool ApplyTag(const char* text, int start, int end, int& x, int& y);
-		TextTags::Enum GetTagType(const char* tagStart, int length, char* buf = 0) const;
-		void InternalWrite(int x, int y, Real z, const char *text, int count, int spacing = 0);
+		/// X will be modified.
+		bool ApplyTag(const char* text, int start, int end, Real& x, Real y);
+		TextTags::Enum GetTagType(const char* tagStart, int length, char* buf = 0) const;		
 		void Flush(int page, const FontVertex* pVertices, unsigned int vertexCount);
 
 		int AdjustForKerningPairs(int first, int second);

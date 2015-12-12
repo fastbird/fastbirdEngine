@@ -881,7 +881,10 @@ void Container::MatchHeight(bool checkName)
 	}
 
 	int sizeY = contentWNEnd - GetFinalPos().y;
-	ChangeSizeY(sizeY);
+	// todo: remove this hard coded number.
+	// it relative the gap between descriptions and buttons in the docking ui
+	// or the Item/Object tooltip.
+	ChangeSizeY(sizeY+10);
 }
 
 bool Container::SetProperty(UIProperty::Enum prop, const char* val)
@@ -1024,8 +1027,17 @@ void Container::RemoveAllEvents(bool includeChildren)
 const Vec2& Container::GetScrollOffset() const
 {
 	auto scrollerV = mScrollerV.lock();
-	assert(scrollerV);
+	if (!scrollerV)
+		return Vec2::ZERO;
+
 	return scrollerV->GetOffset();
+}
+
+void Container::SetScrollOffset(const Vec2& offset){
+	auto scrollerV = mScrollerV.lock();
+	if (scrollerV){
+		scrollerV->SetOffset(offset);
+	}
 }
 
 void Container::SetRender3D(bool render3D, const Vec2I& renderTargetSize)

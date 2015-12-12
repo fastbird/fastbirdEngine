@@ -167,6 +167,8 @@ public:
 		mAbsDeltaX = 0;
 		mAbsDeltaY = 0;
 		mValid = true;
+		//if (mLButtonDoubleClicked)
+			//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double click cleared");
 		mLButtonDoubleClicked = false;
 		if (gameTimeInSec - mLastWheelPush > 0.5f){
 			while (!mWheel.empty()){
@@ -331,6 +333,7 @@ public:
 				bool doubleClickMouseNotMoved = abs((std::get<0>(mLastClickPos)- mAbsX)) < 6 && abs((std::get<1>(mLastClickPos)- mAbsY)) < 6;
 				if (doubleClickElapsedTime < mDoubleClickSpeed && doubleClickMouseNotMoved)
 				{
+					//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double clicked");
 					mLButtonDoubleClicked = true;
 				}
 

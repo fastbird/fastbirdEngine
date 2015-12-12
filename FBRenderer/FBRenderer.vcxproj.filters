@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="IRenderTargetListener.h" />
     <ClInclude Include="RenderStates.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Texture.h" />

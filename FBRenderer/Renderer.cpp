@@ -194,6 +194,7 @@ public:
 	VectorMap< std::pair<DWORD, DWORD>, std::pair<std::vector<Vec4f>, std::vector<Vec4f> > > mGauss5x5;	
 	InputLayoutPtr mPositionInputLayout;
 	ConsoleRendererPtr mConsoleRenderer;
+	TextureAtlasPtr mFontTextureAtlas;
 
 	struct DebugRenderTarget
 	{
@@ -533,13 +534,7 @@ public:
 			while (it.GetNext(data)){
 				auto fontPath = data.GetString();
 				if (!fontPath.empty()){
-					FontPtr font = Font::Create();
-					auto err = font->Init(fontPath.c_str());
-					if (!err){
-						font->SetTextEncoding(Font::UTF16);
-						int height = Round(font->GetHeight());						
-						mFonts[height] = font;
-					}
+					LoadFont(fontPath.c_str());					
 				}
 			}
 		}
@@ -551,12 +546,7 @@ public:
 			{
 				fontPath = "EssentialEngineData/fonts/font22.fnt";
 			}
-			auto err = font->Init(fontPath.c_str());
-			if (!err){
-				font->SetTextEncoding(Font::UTF16);
-				int height = Round(font->GetHeight());
-				mFonts[height] = font;
-			}
+			LoadFont(fontPath.c_str());			
 		}
 
 		mDebugHud = DebugHud::Create();
@@ -597,6 +587,30 @@ public:
 		auto itRt = mWindowRenderTargets.Find(id);
 		assert(itRt != mWindowRenderTargets.end());
 		mWindowRenderTargets.erase(itRt);
+	}
+
+	void LoadFont(const char* path){
+		FontPtr font = Font::Create();
+		auto err = font->Init(path);
+		if (!err){
+			// delete the font that has the same name;
+			for (auto it = mFonts.begin(); it != mFonts.end(); /**/){
+				if (strcmp(it->second->GetFilePath(), path) == 0){
+					it = mFonts.erase(it);
+				}
+				else{
+					++it;
+				}
+			}
+
+			font->SetTextEncoding(Font::UTF16);
+			int height = font->GetFontSize();
+			if (!height){
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Loaded font(%s) has 0 size.", path).c_str());
+			}
+			mFonts[height] = font;
+			font->SetTextureAtlas(mFontTextureAtlas);
+		}
 	}
 
 	void Render3DUIsToTexture()
@@ -811,7 +825,7 @@ public:
 		}
 		sPlatformTextures[loweredFilepath] = platformTexture;
 		auto texture = CreateTexture(platformTexture);
-		texture->SetFilePath(loweredFilepath.c_str());
+		texture->SetFilePath(file);
 		return texture;
 	}
 
@@ -1868,13 +1882,24 @@ public:
 			mRendererOptions->r_resolution = resol;
 
 		auto handleId = GetWindowHandleId(window);
+		auto rt = GetRenderTarget(handleId);
+		rt->RemoveTextures();
+		mCurrentRTTextures.clear();
+		mCurrentDSTexture = 0;
+		mCurrentDSViewIndex = 0;
 		IPlatformTexturePtr color, depth;
 		bool success = GetPlatformRenderer().ChangeResolution(handleId, window, 
 			resol, color, depth);
-		if (success){
-			auto rt = GetRenderTarget(handleId);
+		if (success){			
 			rt->SetColorTexture(CreateTexture(color));
-			rt->SetDepthTexture(CreateTexture(depth));
+			rt->SetDepthTexture(CreateTexture(depth));			
+		}
+
+
+		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
+		for (auto it = observers.begin(); it != observers.end(); /**/){
+			IteratingWeakContainer(observers, it, observer);
+			observer->OnResolutionChanged(handleId, window);
 		}
 	}
 
@@ -1903,33 +1928,28 @@ public:
 
 	std::string GetScreenhotFolder(){
 		auto appData = FileSystem::GetAppDataFolder();
-		const char* screenShotFolder = "./ScreenShot/";
+		const char* screenShotFolder = "/ScreenShot/";
 		auto screenShotFolderFull = FileSystem::ConcatPath(appData.c_str(), screenShotFolder);
 		return screenShotFolderFull;
 	}
 	std::string GetNextScreenshotFile(){
 		auto screenShotFolder = GetScreenhotFolder();
 		if (!FileSystem::Exists(screenShotFolder.c_str())){
-			bool created = FileSystem::CreateDirectory(screenShotFolder.c_str());
-			if (!created){
+			FileSystem::CreateDirectory(screenShotFolder.c_str());
+			if (!FileSystem::Exists(screenShotFolder.c_str())){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create folder %s", screenShotFolder.c_str()).c_str());
 				return "";
 			}
 		}
 		auto it = FileSystem::GetDirectoryIterator(screenShotFolder.c_str(), false);
-		
-		while (it->HasNext()){
-			const char* filename = it->GetNextFilePath();
-		}
-	
-
 		unsigned n = 0;		
 		while (it->HasNext())
 		{
-			const char* filename = it->GetNextFilePath();
-			std::regex match("screenshot_([0-9]+)\\.bmp");
-			std::smatch result;			
-			if (std::regex_match(std::string(filename), result, match)){
+			const char* szfilename = it->GetNextFilePath();
+			std::regex match(".*screenshot_([0-9]+)\\.bmp");
+			std::smatch result;
+			std::string filename(szfilename);
+			if (std::regex_match(filename, result, match)){
 				if (result.size() == 2){
 					std::ssub_match subMatch = result[1];
 					std::string matchNumber = subMatch.str();
@@ -1940,7 +1960,7 @@ public:
 				}
 			}			
 		}
-		return FormatString("Screenshot/screenshot_%d.bmp", n);
+		return FormatString("%sscreenshot_%d.bmp", screenShotFolder.c_str(), n);
 	}
 
 	//-------------------------------------------------------------------
@@ -2083,34 +2103,73 @@ public:
 		y += yStep * 2;		
 	}
 
-	inline FontPtr GetFont(Real fontHeight) const{
+	void ReloadFonts(){
+		auto fonts = mFonts;
+		mFonts.clear();
+		for (auto& it : fonts){
+			it.second->Reload();
+			mFonts[it.second->GetFontSize()] = it.second;
+		}
+	}
+
+	inline FontPtr GetFont(int fontSize) const{
 		if (mFonts.empty()){
 			return 0;
 		}
 
 		if (mFonts.size() == 1){
 			auto it = mFonts.begin();
-			it->second->SetHeight(fontHeight);
+			it->second->ScaleFontSizeTo(fontSize);
 			return it->second;
 		}
 
-		int requestedHeight = Round(fontHeight);
-		int bestMatchHeight = mFonts.begin()->first;
-		int curGap = std::abs(requestedHeight - bestMatchHeight);
+		int bestMatchSize = mFonts.begin()->first;
+		int curGap = std::abs(fontSize - bestMatchSize);
 		FontPtr bestFont = mFonts.begin()->second;
 		for (auto it : mFonts){
-			auto newGap = std::abs(requestedHeight - it.first);
+			auto newGap = std::abs(fontSize - it.first);
 			if (newGap < curGap){
-				bestMatchHeight = it.first;
+				bestMatchSize = it.first;
 				curGap = newGap;
 				bestFont = it.second;
 			}
 		}
 		if (!bestFont){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Font not found with size %f", fontHeight).c_str());			
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Font not found with size %d", fontSize).c_str());
 		}
 		else{
-			bestFont->SetHeight(fontHeight);
+			bestFont->ScaleFontSizeTo(fontSize);
+		}
+		return bestFont;
+	}
+
+	FontPtr GetFontWithHeight(Real height) const{
+		if (mFonts.empty()){
+			return 0;
+		}
+
+		if (mFonts.size() == 1){
+			auto it = mFonts.begin();
+			it->second->ScaleFontHeightTo(height);
+			return it->second;
+		}
+
+		auto bestMatchHeight = mFonts.begin()->second->GetOriginalHeight();
+		auto curGap = std::abs(height - bestMatchHeight);
+		FontPtr bestFont = mFonts.begin()->second;
+		for (auto it : mFonts){
+			auto newGap = std::abs(height - it.second->GetOriginalHeight());
+			if (newGap < curGap){
+				bestMatchHeight = it.second->GetOriginalHeight();
+				curGap = newGap;
+				bestFont = it.second;
+			}
+		}
+		if (!bestFont){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Font not found with height %f", height).c_str());
+		}
+		else{
+			bestFont->ScaleFontHeightTo(height);
 		}
 		return bestFont;
 	}
@@ -2479,6 +2538,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("No texture atlas(%s)", path).c_str());
 			return;
 		}
+		mFontTextureAtlas = textureAtlas;
 		for (auto font : mFonts){
 			font.second->SetTextureAtlas(textureAtlas);
 		}
@@ -2678,6 +2738,7 @@ public:
 		bool material = extension == ".material";
 		bool texture = extension == ".png" || extension == ".dds";
 		bool xml = extension == ".xml";
+		bool font = extension == ".fnt";
 
 		if (shader){
 			Shader::ReloadShader(file);
@@ -2694,6 +2755,10 @@ public:
 				atlas->ReloadTextureAtlas();
 				return true;
 			}
+		}
+		else if (font){
+			LoadFont(file);
+			return true;
 		}
 		return false;
 	}
@@ -3151,8 +3216,16 @@ void Renderer::DisplayFrameProfiler(){
 	return mImpl->DisplayFrameProfiler();
 }
 
-inline FontPtr Renderer::GetFont(Real fontHeight) const {
-	return mImpl->GetFont(fontHeight);
+void Renderer::ReloadFonts(){
+	mImpl->ReloadFonts();
+}
+
+inline FontPtr Renderer::GetFont(int fontSize) const {
+	return mImpl->GetFont(fontSize);
+}
+
+FontPtr Renderer::GetFontWithHeight(Real height) const{
+	return mImpl->GetFontWithHeight(height);
 }
 
 const INPUT_ELEMENT_DESCS& Renderer::GetInputElementDesc(DEFAULT_INPUTS::Enum e) {

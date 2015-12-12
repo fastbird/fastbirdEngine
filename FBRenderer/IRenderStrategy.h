@@ -53,6 +53,7 @@ namespace fb{
 		virtual void GlowRenderTarget(bool bind) = 0;
 		virtual void DepthTexture(bool bind) = 0;
 		virtual void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName) = 0;
+		virtual void OnRenderTargetSizeChanged(const Vec2I& size) = 0;
 
 		// debugging feature
 		virtual TexturePtr GetShadowMap() = 0;

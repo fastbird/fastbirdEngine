@@ -58,6 +58,8 @@ namespace fb
 		void ApplyTorque(const Vec3& torque);
 		Vec3 GetForce();
 		void ClearForces();
+		/// clear forces and velocity;
+		void Stop();
 		float GetSpeed() const;
 		Vec3 GetVelocity() const;
 		Vec3 GetAngularVelocity() const;
@@ -117,7 +119,5 @@ namespace fb
 		unsigned GetGameFlag() const;
 
 		void SetDebug(bool debug);
-
-		void ClearAngularVelocity();
 	};
 }

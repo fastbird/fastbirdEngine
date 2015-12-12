@@ -32,9 +32,9 @@
 	if (Console::HasInstance())\
 		Console::GetInstance().RegisterVariable(CVarPtr(new CVar(#name, def, name, category, desc)));
 
-#define FB_REGISTER_CC(name, func, desc) \
+#define FB_REGISTER_CC(func, desc) \
 	if (Console::HasInstance())\
-		Console::GetInstance().RegisterCommand(ConsoleCommandPtr(new ConsoleCommand(#name, func, desc)));
+		Console::GetInstance().RegisterCommand(ConsoleCommandPtr(new ConsoleCommand(#func, func, desc)));
 
 namespace fb{
 	class Vec2I;

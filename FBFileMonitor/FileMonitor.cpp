@@ -194,7 +194,9 @@ namespace fb {
 		void GetChangedFiles(std::vector<std::pair<std::string, std::string> >& files){
 			LOCK_CRITICAL_SECTION lock(mChangedFilesGuard);
 			for (auto& str : mChangedFiles){
-				files.push_back(std::make_pair(mWatchDir, str));
+				auto v = std::make_pair(mWatchDir, str);
+				if (!ValueExistsInVector(files, v))
+					files.push_back(v);
 			}
 			mChangedFiles.clear();
 			mHasChangedFiles = false;
@@ -258,16 +260,17 @@ public:
 		}
 	}
 	bool Check(){
-		using namespace std::chrono;
-		for (auto& it : mFileMonitorThread){
-			if (it.HasChangedFiles()){								
-				it.GetChangedFiles(mChangedFiles);				
-			}
-		}
+		using namespace std::chrono;		
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 		if (curTick - mLastCheckedTime > 500)
 		{
 			mLastCheckedTime = curTick;
+			for (auto& it : mFileMonitorThread){
+				if (it.HasChangedFiles()){
+					it.GetChangedFiles(mChangedFiles);
+				}
+			}
+			
 			for (auto it = mChangedFiles.begin(); it != mChangedFiles.end();)
 			{
 				std::string filepath = it->second;
@@ -313,6 +316,7 @@ public:
 
 				if (canOpen)
 				{
+					Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) file change detected: %s", filepath.c_str()).c_str());
 					/*int startEnum = shader || material || texture || particle || xml ?
 						IFileChangeObserver::FileChange_Engine : IFileChangeObserver::FileChange_Game;*/
 					for (int i = 0; i < 2; ++i){

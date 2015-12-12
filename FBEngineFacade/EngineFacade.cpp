@@ -188,7 +188,7 @@ public:
 			if (id == MainWindowId){
 				MainWindowHandle = (HWindow)hWnd;
 				Renderer::GetInstance().SetMainWindowStyle(style);
-				InputManager::GetInstance().SetMainWindowHandle((HWindow)hWnd);
+				mInputManager->SetMainWindowHandle((HWindow)hWnd);
 				PrepareFileMonitor();				
 			}
 
@@ -267,7 +267,7 @@ public:
 			else{
 				auto rtObservers = mInputManager->GetRenderTargetObservers();
 				for (auto observer : rtObservers){
-					rt->AddObserver(IRendererObserver::DefaultRenderEvent, observer);
+					rt->AddObserver(IRenderTargetObserver::DefaultEvent, observer);
 				}
 				if (id == MainWindowId){
 					mRenderer->AddObserver(IRendererObserver::DefaultRenderEvent, mSelfPtr.lock());
@@ -287,7 +287,7 @@ public:
 		if (mWindowIdByHandle.empty()){
 			MainWindowHandle = (HWindow)hwnd;
 			Renderer::GetInstance().SetMainWindowStyle(GetWindowStyle(hwnd));
-			InputManager::GetInstance().SetMainWindowHandle(hwnd);			
+			mInputManager->SetMainWindowHandle(hwnd);			
 			PrepareFileMonitor();			
 		}
 
@@ -356,6 +356,7 @@ public:
 	}
 
 	void Update(TIME_PRECISION dt){		
+		mConsole->Update();
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
 		mParticleSystem->Update(dt);
@@ -565,6 +566,10 @@ EngineFacade::~EngineFacade(){
 
 }
 
+void EngineFacade::SetApplicationName(const char* applicationName){
+	FileSystem::SetApplicationName(applicationName);
+}
+
 HWindowId EngineFacade::CreateEngineWindow(int x, int y, int width, int height,
 	const char* wndClass, const char* title, unsigned style, unsigned exStyle,
 	WNDPROC winProc){
@@ -733,7 +738,7 @@ const Ray3& EngineFacade::GetWorldRayFromCursor(){
 }
 
 IInputInjectorPtr EngineFacade::GetInputInjector(){
-	return InputManager::GetInstance().GetInputInjector();
+	return mImpl->mInputManager->GetInputInjector();
 }
 
 void EngineFacade::AddDirectionalLightCoordinates(DirectionalLightIndex::Enum idx, Real phi, Real theta){
@@ -871,12 +876,12 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 			case RIM_TYPEMOUSE:
 			{
 				MouseEvent* evt = (MouseEvent*)&raw->data.mouse;	
-				InputManager::GetInstance().PushMouseEvent(window, *(evt), gpTimer->GetTime());
+				mImpl->mInputManager->PushMouseEvent(window, *(evt), gpTimer->GetTime());
 			}
 			return 0;
 			case RIM_TYPEKEYBOARD:
 			{
-				InputManager::GetInstance().PushKeyEvent(window, *((KeyboardEvent*)&raw->data.keyboard));
+				mImpl->mInputManager->PushKeyEvent(window, *((KeyboardEvent*)&raw->data.keyboard));
 			}
 			return 0;
 			}
@@ -888,17 +893,24 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 	{
 		if (InputManager::HasInstance())
 		{
-			InputManager::GetInstance().PushChar(window, wp, gpTimer->GetTime());
+			mImpl->mInputManager->PushChar(window, wp, gpTimer->GetTime());
 		}
 	}
 	return 0; // processed
+
+	case WM_KEYUP:
+	{
+		if (wp == VK_SNAPSHOT)
+			mImpl->mRenderer->TakeScreenshot();
+	}
+	return 0;
 
 	case WM_SETFOCUS:
 	{
 		SetCursor(sArrowCursor);
 		if (InputManager::HasInstance())
 		{
-			InputManager::GetInstance().OnSetFocus(window);
+			mImpl->mInputManager->OnSetFocus(window);
 		}		
 	}
 	return 0;
@@ -906,7 +918,7 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 	case WM_KILLFOCUS:
 	{
 		if (InputManager::HasInstance()){
-			InputManager::GetInstance().OnKillFocus();
+			mImpl->mInputManager->OnKillFocus();
 		}		
 	}
 	return 0;
@@ -980,7 +992,7 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 }
 
 void EngineFacade::RegisterInputConsumer(IInputConsumerPtr consumer, int priority){
-	InputManager::GetInstance().RegisterInputConsumer(consumer, priority);
+	mImpl->mInputManager->RegisterInputConsumer(consumer, priority);
 }
 
 void EngineFacade::AddRendererObserver(int rendererObserverType, IRendererObserverPtr observer){
@@ -1004,7 +1016,7 @@ IVideoPlayerPtr EngineFacade::CreateVideoPlayer(VideoPlayerType::Enum type){
 }
 
 void EngineFacade::QueueDrawTextForDuration(float secs, const Vec2I& pos, const char* text, const Color& color){
-	QueueDrawTextForDuration(secs, pos, text, color, 20.f);
+	QueueDrawTextForDuration(secs, pos, text, color, 18.f);
 }
 
 void EngineFacade::QueueDrawTextForDuration(float secs, const Vec2I& pos, const char* text, const Color& color, float size){
@@ -1071,9 +1083,16 @@ void EngineFacade::QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c
 	Renderer::GetInstance().QueueDrawTriangle(a, b, c, color, alpha);
 }
 
-FontPtr EngineFacade::GetFont(float fontHeight){
+FontPtr EngineFacade::GetFont(int fontSize){
 	if (Renderer::HasInstance())
-		return Renderer::GetInstance().GetFont(fontHeight);
+		return Renderer::GetInstance().GetFont(fontSize);
+	Logger::Log(FB_ERROR_LOG_ARG, "Renderer is deleted.");
+	return 0;
+}
+
+FontPtr EngineFacade::GetFontWithHeight(float fontHeight){
+	if (Renderer::HasInstance())
+		return Renderer::GetInstance().GetFontWithHeight(fontHeight);
 	Logger::Log(FB_ERROR_LOG_ARG, "Renderer is deleted.");
 	return 0;
 }
@@ -1121,7 +1140,7 @@ void EngineFacade::GetFractureMeshObjects(const char* daeFilePath, std::vector<M
 }
 
 std::wstring EngineFacade::StripTextTags(const char* text){
-	auto font = GetFont(22.f);
+	auto font = GetFont(20);
 	if (font){
 		return font->StripTags(fb::AnsiToWide(text));		
 	}

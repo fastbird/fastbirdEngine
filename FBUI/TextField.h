@@ -47,8 +47,7 @@ public:
 	// IWinBase
 	ComponentType::Enum GetType() const { return ComponentType::TextField; }
 	void GatherVisit(std::vector<UIObject*>& v);
-	bool OnInputFromHandler(IInputInjectorPtr injector);
-	void SetText(const wchar_t* szText);
+	bool OnInputFromHandler(IInputInjectorPtr injector);	
 
 	void OnFocusLost();
 	void OnFocusGain();

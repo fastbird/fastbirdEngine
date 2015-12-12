@@ -38,8 +38,8 @@ FB_IMPLEMENT_STATIC_CREATE(ParticleOptions)
 ParticleOptions::ParticleOptions(){
 	MoveEditParticle = 0;
 	FB_REGISTER_CVAR(MoveEditParticle, MoveEditParticle, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
-	FB_REGISTER_CC(EditParticle, EditParticle, "Start editing particle");
-	FB_REGISTER_CC(ScaleEditingParticle, ScaleEditingParticle, "Scale editing particle");
+	FB_REGISTER_CC(EditParticle, "Start editing particle");
+	FB_REGISTER_CC(ScaleEditingParticle, "Scale editing particle");
 }
 
 ParticleOptions::~ParticleOptions(){

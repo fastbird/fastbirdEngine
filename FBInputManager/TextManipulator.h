@@ -26,14 +26,15 @@
 */
 
 #pragma once
-#include "IInputConsumer.h"
 #include "ITextManipulatorObserver.h"
+
 #include "FBCommonHeaders/Observable.h"
 namespace fb{
 	class IKeyboard;
 	class IMouse;	
+	FB_DECLARE_SMART_PTR(IInputInjector);
 	FB_DECLARE_SMART_PTR(TextManipulator);
-	class FB_DLL_INPUTMANAGER TextManipulator : public IInputConsumer, public Observable<ITextManipulatorObserver>
+	class FB_DLL_INPUTMANAGER TextManipulator : public Observable<ITextManipulatorObserver>
 	{
 		int mCursorPos;
 		int mHighlightStart;
@@ -53,9 +54,8 @@ namespace fb{
 
 	public:
 		
-		static TextManipulatorPtr Create();
-		// Input Consumer
-		virtual void ConsumeInput(IInputInjectorPtr injector);	
+		static TextManipulatorPtr Create();		
+		void ConsumeInput(IInputInjectorPtr injector, bool mouseIn);	
 
 		virtual void SetText(std::wstring* text);				
 		virtual int GetCursorPos() const;

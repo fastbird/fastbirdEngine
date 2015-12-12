@@ -386,7 +386,7 @@ namespace fb
 			case BACK_COLOR:
 				return Vec4(0.05f, 0.1f, 0.15f, 0.8f);
 			case TEXT_COLOR:
-				return Vec4(0.8f, 0.8f, 0.8f, 1.0f);
+				return Vec4(0.9f, 0.9f, 0.9f, 1.0f);
 			case TEXT_COLOR_HOVER:
 				return Vec4(1.f, 1.0f, 1.f, 1.f);
 			case TEXT_COLOR_DOWN:
@@ -434,7 +434,7 @@ namespace fb
 		{
 			switch (prop){
 			case TEXT_SIZE:
-				return 22.f;
+				return 16.f;
 			case FPS:
 				return 0.f;
 			case GAUGE_MAX:

@@ -1086,6 +1086,16 @@ public:
 					it.mForceAlphaMaterial->SetDepthStencilState(ds);
 
 					it.mForceAlphaMaterial->SetTransparent(true);
+					mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, true);
+				}
+			}
+		}
+		else{
+			for (auto& it : mMaterialGroups)
+			{
+				if (it.mMaterial)
+				{
+					mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, it.mMaterial->IsTransparent());
 				}
 			}
 		}

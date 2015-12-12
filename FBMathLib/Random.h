@@ -30,12 +30,12 @@
 
 namespace fb
 {
-	//-------------------------------------------------------------------------
-	// max is included
 	inline Real Random()
 	{
 		return (Real)std::rand() / (Real)RAND_MAX;
 	}
+
+	/// max is included
 	template<class T>
 	inline  T Random(T min, T max)
 	{

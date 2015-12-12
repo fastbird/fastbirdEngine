@@ -32,7 +32,7 @@
 #include "FBConsole/Console.h"
 using namespace fb;
 
-static const float sFontSize = 22.f;
+static const int sFontSize = 20;
 static const int sLineGap = 2;
 static const int sCursorWidth = 10;
 static const int sPromptStart = 2;
@@ -48,7 +48,7 @@ public:
 		, mHeight()
 		, mLines(15)
 	{
-		mHeight = Round((sFontSize + sLineGap) * mLines);
+		mHeight = (sFontSize + sLineGap) * mLines;
 		mInputPosition = Vec2I(20, mHeight - sLineGap);
 		if (Console::HasInstance()){
 			Console::GetInstance().RegisterConsoleRenderer(mSelf);
@@ -74,7 +74,6 @@ public:
 		
 		auto& renderer = Renderer::GetInstance();
 		FontPtr pFont = renderer.GetFont(sFontSize);
-		pFont->SetHeight((float)sFontSize);
 		const int lineHeight = (int)pFont->GetHeight();
 
 		// Draw Background
@@ -137,8 +136,7 @@ public:
 			pFont->Write((float)mInputPosition.x, (float)bufferDrawPosY, 0.f,
 				Color::Gray.Get4Byte(), (char*)it->c_str(), -1, Font::FONT_ALIGN_LEFT);
 			bufferDrawPosY -= lineHeight + sLineGap;
-		}
-		pFont->SetBackToOrigHeight();
+		}		
 	}
 };
 

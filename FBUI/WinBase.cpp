@@ -61,14 +61,14 @@ WinBase::WinBase()
 , mAlignV(ALIGNV::TOP)
 , mMouseIn(false)
 , mMouseInPrev(false)
-, mTextColor(0.8f, 0.8f, 0.8f, 1.0f)
+, mTextColor(UIProperty::GetDefaultValueVec4(UIProperty::TEXT_COLOR))
 , mTextColorHover(1.f, 1.0f, 1.f, 1.f)
 , mTextColorDown(1.0f, 1.0f, 1.0f, 1.f)
 , mTextAlignH(ALIGNH::LEFT)
 , mTextAlignV(ALIGNV::MIDDLE)
 , mMatchSize(false)
 , mSize(123, 321)
-, mTextSize(22.f + gTextSizeMod)
+, mTextSize(16 + gTextSizeMod)
 , mFixedTextSize(true)
 , mWNScrollingOffset(0, 0)
 , mMouseDragStartInHere(false)
@@ -296,7 +296,7 @@ void WinBase::OnSizeChanged()
 	}
 
 	if (!mFixedTextSize && mTextSize != mScaledSize.y) {
-		mTextSize = (float)mScaledSize.y + gTextSizeMod;
+		mTextSize = (float)mScaledSize.y + gTextSizeMod;		
 		CalcTextWidth();
 		AlignText();
 		if (mUIObject)
@@ -989,7 +989,10 @@ void WinBase::OnMouseClicked(IInputInjectorPtr injector){
 			type == ComponentType::DropDown ||
 			type == ComponentType::CheckBox;
 
-		injector->InvalidateClickTime();
+		if (invaliClickTime)
+			injector->InvalidateClickTime();
+		else
+			injector->Invalidate(InputDevice::Mouse);
 		TriggerRedraw();
 	}
 
@@ -1174,9 +1177,8 @@ void WinBase::CalcTextWidth()
 		return;
 	}
 
-	FontPtr pFont = Renderer::GetInstance().GetFont(mTextSize);	
-	mTextWidth = (int)pFont->GetTextWidth(
-		(const char*)mTextw.c_str(), mTextw.size() * 2);	
+	FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);	
+	mTextWidth = (int)pFont->GetTextWidth((const char*)mTextw.c_str(), mTextw.size() * 2);	
 
 	if (mMatchSize && mTextWidth != 0)// && !mLockTextSizeChange)
 	{
@@ -1428,8 +1430,8 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT_SIZE:
 	{
 								  if (mUIObject)
-								  {
-									  mTextSize = StringConverter::ParseReal(val, 22.0f) + gTextSizeMod;
+								  {									  
+									  mTextSize = StringConverter::ParseReal(val, 22.0f) + gTextSizeMod;									  
 									  CalcTextWidth();
 									  AlignText();
 									  mUIObject->SetTextSize(mTextSize);
@@ -1534,8 +1536,11 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT:
 	{
 							 assert(val);
-							 if (mTextBeforeTranslated == val)
+							 if (mTextBeforeTranslated == val){
+								 if (mUIObject)
+									 mUIObject->SetTextSize(mTextSize);
 								 return true;
+							 }
 							 mTextBeforeTranslated = val;
 							 std::string translated = TranslateText(val);							 
 
