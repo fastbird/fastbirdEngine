@@ -85,6 +85,7 @@
     <ClCompile Include="HexagonalContextMenu.cpp" />
     <ClCompile Include="HorizontalGauge.cpp" />
     <ClCompile Include="ImageBox.cpp" />
+    <ClCompile Include="ImageDisplay.cpp" />
     <ClCompile Include="KeyboardCursor.cpp" />
     <ClCompile Include="KeyValueDataSet.cpp" />
     <ClCompile Include="ListBox.cpp" />
@@ -131,6 +132,7 @@
     <ClInclude Include="HexagonalContextMenu.h" />
     <ClInclude Include="HorizontalGauge.h" />
     <ClInclude Include="ImageBox.h" />
+    <ClInclude Include="ImageDisplay.h" />
     <ClInclude Include="IUIEditor.h" />
     <ClInclude Include="KeyboardCursor.h" />
     <ClInclude Include="KeyValueDataSet.h" />

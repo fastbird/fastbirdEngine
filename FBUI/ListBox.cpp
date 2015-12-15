@@ -1535,7 +1535,7 @@ void ListBox::FillItem(unsigned index){
 			{
 				item->RemoveAllChildren();
 				imageBox = std::static_pointer_cast<ImageBox>(item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox));
-				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
@@ -1556,7 +1556,7 @@ void ListBox::FillItem(unsigned index){
 			{
 				item->RemoveAllChildren();
 				imageBox = std::static_pointer_cast<ImageBox>(item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox));
-				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
@@ -1577,7 +1577,7 @@ void ListBox::FillItem(unsigned index){
 			{
 				item->RemoveAllChildren();
 				imageBox = std::static_pointer_cast<ImageBox>(item->AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::ImageBox));
-				imageBox->DrawAsFixedSizeAtCenter();
+				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,

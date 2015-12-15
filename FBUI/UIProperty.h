@@ -77,7 +77,7 @@ namespace fb
 			TEXTURE_FILE,
 			KEEP_UI_RATIO,
 			UI_RATIO,
-			KEEP_IMAGE_RATIO,
+			IMAGE_DISPLAY,
 			REGION,
 			REGIONS,
 			FPS,
@@ -138,7 +138,6 @@ namespace fb
 			HIDE_ANIMATION,
 			ENABLED,
 			IMAGE_COLOR_OVERLAY,
-			IMAGE_FIXED_SIZE, // match to image size if not set it will matched to ui size
 			IMAGE_ROTATE,
 			IMAGE_LINEAR_SAMPLER,
 			ALPHA_REGION,
@@ -230,7 +229,7 @@ namespace fb
 			"TEXTURE_FILE",
 			"KEEP_UI_RATIO",
 			"UI_RATIO",
-			"KEEP_IMAGE_RATIO",
+			"IMAGE_DISPLAY",
 			"REGION",
 			"REGIONS",
 			"FPS",
@@ -290,8 +289,7 @@ namespace fb
 			"SHOW_ANIMATION",
 			"HIDE_ANIMATION",
 			"ENABLED",
-			"IMAGE_COLOR_OVERLAY",
-			"IMAGE_FIXED_SIZE",
+			"IMAGE_COLOR_OVERLAY",			
 			"IMAGE_ROTATE",
 			"IMAGE_LINEAR_SAMPLER",
 			"ALPHA_REGION",
@@ -492,11 +490,7 @@ namespace fb
 			case SCROLLERH:
 				return false;
 			case MATCH_HEIGHT:
-				return false;
-			case KEEP_IMAGE_RATIO:
-				return true;
-			case IMAGE_FIXED_SIZE:
-				return false;
+				return false;			
 			case IMAGE_ROTATE:
 				return false;
 			case IMAGE_LINEAR_SAMPLER:
@@ -587,6 +581,8 @@ namespace fb
 				return 1;
 			case DROPDOWN_MAX_HEIGHT:
 				return 200;
+			case IMAGE_DISPLAY:
+				return 0;
 			}
 			assert(0);
 			return 0;

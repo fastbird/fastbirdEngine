@@ -121,8 +121,8 @@ public:
 		, mRDragStarted(false)
 		, mRDragEnd(false)
 		, mNoClickOnce(false)
-		, mSensitivity(0.03f)
-		, mWheelSensitivity(0.002f){
+		, mSensitivity(0.002f)
+		, mWheelSensitivity(0.003f){
 
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;

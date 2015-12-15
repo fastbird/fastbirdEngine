@@ -90,10 +90,9 @@ namespace fb
 		case UIProperty::REGIONS:
 		case UIProperty::FPS:
 		case UIProperty::TEXTURE_FILE:
-		case UIProperty::KEEP_IMAGE_RATIO:
+		case UIProperty::IMAGE_DISPLAY:
 		case UIProperty::FRAME_IMAGE:
-		case UIProperty::IMAGE_COLOR_OVERLAY:
-		case UIProperty::IMAGE_FIXED_SIZE:
+		case UIProperty::IMAGE_COLOR_OVERLAY:		
 			return mImageBox.lock()->SetProperty(prop, val);	
 		case UIProperty::NAMED_PORTRAIT_IMAGE_SIZE:
 			return mImageBox.lock()->SetProperty(UIProperty::SIZE, val);
@@ -115,10 +114,9 @@ namespace fb
 		case UIProperty::REGIONS:
 		case UIProperty::FPS:
 		case UIProperty::TEXTURE_FILE:
-		case UIProperty::KEEP_IMAGE_RATIO:
+		case UIProperty::IMAGE_DISPLAY:
 		case UIProperty::FRAME_IMAGE:
-		case UIProperty::IMAGE_COLOR_OVERLAY:
-		case UIProperty::IMAGE_FIXED_SIZE:
+		case UIProperty::IMAGE_COLOR_OVERLAY:		
 			return mImageBox.lock()->GetProperty(prop, val, bufsize, notDefaultOnly);
 		case UIProperty::NAMED_PORTRAIT_IMAGE_SIZE:
 			return mImageBox.lock()->GetProperty(UIProperty::SIZE, val, bufsize, notDefaultOnly);

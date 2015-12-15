@@ -39,6 +39,7 @@
     <ClCompile Include="StaticText.cpp" />
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="UIObject.cpp" />
+    <ClCompile Include="ImageDisplay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TabWindow.h" />
@@ -91,5 +92,6 @@
     <ClInclude Include="Styles.h" />
     <ClInclude Include="UIObject.h" />
     <ClInclude Include="UISounds.h" />
+    <ClInclude Include="ImageDisplay.h" />
   </ItemGroup>
 </Project>

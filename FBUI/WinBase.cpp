@@ -1535,24 +1535,24 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TEXT:
 	{
-							 assert(val);
-							 if (mTextBeforeTranslated == val){
-								 if (mUIObject)
-									 mUIObject->SetTextSize(mTextSize);
-								 return true;
-							 }
-							 mTextBeforeTranslated = val;
-							 std::string translated = TranslateText(val);							 
+		assert(val);
+		if (mTextBeforeTranslated == val){
+			if (mUIObject)
+				mUIObject->SetTextSize(mTextSize);
+			return true;
+		}
+		mTextBeforeTranslated = val;
+		std::string translated = TranslateText(val);							 
 
-							 if (translated.empty())
-							 {
-								 SetText(AnsiToWide(val));
-							 }
-							 else
-							 {
-								 SetText(AnsiToWide(translated.c_str()));
-							 }
-							 return true;
+		if (translated.empty())
+		{
+			SetText(AnsiToWide(val));
+		}
+		else
+		{
+			SetText(AnsiToWide(translated.c_str()));
+		}
+		return true;
 	}
 
 	case UIProperty::KEEP_UI_RATIO:
@@ -2327,8 +2327,7 @@ void WinBase::RecreateBorders(){
 		T->SetHwndId(GetHwndId());
 		mBorders.push_back(T);
 		T->SetRender3D(mRender3D, GetRenderTargetSize());
-		T->SetManualParent(mSelfPtr.lock());
-		T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		T->SetManualParent(mSelfPtr.lock());		
 		const auto& sizeT = T->SetTextureAtlasRegion(uixmlPath, um.GetBorderRegion("t"));
 		T->ChangeSizeY(sizeT.y);
 
@@ -2336,8 +2335,7 @@ void WinBase::RecreateBorders(){
 		L->SetHwndId(GetHwndId());
 		mBorders.push_back(L);
 		L->SetRender3D(mRender3D, GetRenderTargetSize());
-		L->SetManualParent(mSelfPtr.lock());
-		L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		L->SetManualParent(mSelfPtr.lock());		
 		const auto& sizeL = L->SetTextureAtlasRegion(uixmlPath, um.GetBorderRegion("l"));
 		L->ChangeSizeX(sizeL.x);
 
@@ -2346,8 +2344,7 @@ void WinBase::RecreateBorders(){
 		R->SetHwndId(GetHwndId());
 		mBorders.push_back(R);
 		R->SetRender3D(mRender3D, GetRenderTargetSize());
-		R->SetManualParent(mSelfPtr.lock());
-		R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		R->SetManualParent(mSelfPtr.lock());		
 		R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 		const auto& sizeR = R->SetTextureAtlasRegion(uixmlPath, um.GetBorderRegion("r"));
 		R->ChangeSizeX(sizeR.x);
@@ -2356,8 +2353,7 @@ void WinBase::RecreateBorders(){
 		B->SetHwndId(GetHwndId());
 		mBorders.push_back(B);
 		B->SetRender3D(mRender3D, GetRenderTargetSize());
-		B->SetManualParent(mSelfPtr.lock());
-		B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+		B->SetManualParent(mSelfPtr.lock());		
 		B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 		const auto& sizeB = B->SetTextureAtlasRegion(uixmlPath, um.GetBorderRegion("b"));
 		B->ChangeSizeY(sizeB.y);

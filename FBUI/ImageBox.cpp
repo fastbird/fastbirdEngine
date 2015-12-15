@@ -45,17 +45,17 @@ ImageBoxPtr ImageBox::Create(){
 ImageBox::ImageBox()
 	: mTextureAtlas(0)
 	, mAtlasRegion(0)
-	, mUseHighlight(false)
-	, mKeepImageRatio(true)
+	, mUseHighlight(false)	
 	, mFrameImage(0)
 	, mAnimation(false)
 	, mSecPerFrame(0)
 	, mPlayingTime(0)
-	, mCurFrame(0), mImageFixedSize(false)
+	, mCurFrame(0)
 	, mTexture(0), mColorOveraySet(false)
 	, mRenderTarget(0)
 	, mImageRot(false)
 	, mLinearSampler(false)
+	, mImageDisplay(ImageDisplay::FreeScaleImageMatchAll)
 {
 	mUIObject = UIObject::Create(GetRenderTargetSize());
 	mUIObject->SetMaterial("EssentialEngineData/materials/UIImageBox.material");
@@ -77,28 +77,118 @@ void ImageBox::OnResolutionChanged(HWindowId hwndId){
 	OnAnySizeChanged();
 }
 
-void ImageBox::CalcUV(const Vec2I& textureSize)
+// texcoords inout
+void ConvertAtlasUV(Vec2 texcoords[4], Vec2 const defaultUV[4]){
+	float offsetX = defaultUV[0].x;
+	float offsetY = defaultUV[1].y;
+	float sizeX = defaultUV[2].x - defaultUV[0].x;
+	float sizeY = defaultUV[0].y - defaultUV[1].y;	
+	texcoords[0].x = offsetX + sizeX * texcoords[0].x;
+	texcoords[1].x = texcoords[0].x;
+	texcoords[2].x = offsetX + sizeX * texcoords[2].x;
+	texcoords[3].x = texcoords[2].x;
+
+	texcoords[1].y = offsetY + sizeY * texcoords[1].y;
+	texcoords[3].y = texcoords[1].y;
+	texcoords[0].y = offsetY + sizeY * texcoords[0].y;
+	texcoords[2].y = texcoords[0].y;
+	
+}
+void ImageBox::KeepImageRatioMatchWidth(float imgRatio, float uiRatio, bool textureAtlas, Vec2 const defaultUV[4])
 {
-	if (mImageFixedSize)
-	{
-		DrawAsFixedSize();
-		Vec2 texcoords[4] = {
-			Vec2(0.f, 1.f),
-			Vec2(0.f, 0.f),
-			Vec2(1.f, 1.f),
-			Vec2(1.f, 0.f)
-		};
-		mUIObject->SetTexCoord(texcoords, 4);
+	float halfv = (imgRatio / uiRatio)* .5f;
+	Vec2 texcoords[4] = {
+		Vec2(0.f, 0.5f + halfv),
+		Vec2(0.f, 0.5f - halfv),
+		Vec2(1.f, 0.5f + halfv),
+		Vec2(1.f, 0.5f - halfv)
+	};
+	
+	if (textureAtlas){
+		ConvertAtlasUV(texcoords, defaultUV);
+	}
+	mUIObject->SetTexCoord(texcoords, 4);
+}
+
+void ImageBox::KeepImageRatioMatchHeight(float imgRatio, float uiRatio, bool textureAtlas, Vec2 const defaultUV[4]){
+	float halfu = (uiRatio / imgRatio) * .5f;
+	Vec2 texcoords[4] = {
+		Vec2(0.5f - halfu, 1.f),
+		Vec2(0.5f - halfu, 0.f),
+		Vec2(0.5f + halfu, 1.f),
+		Vec2(0.5f + halfu, 0.f)
+	};
+	if (textureAtlas){
+		ConvertAtlasUV(texcoords, defaultUV);
+	}
+	mUIObject->SetTexCoord(texcoords, 4);
+}
+
+void ImageBox::CalcUV()
+{
+	Vec2I textureSize(0, 0);
+	
+	Vec2 defaultUV[4] = { 
+		Vec2(0.f, 1.f),
+		Vec2(0.f, 0.f),
+		Vec2(1.f, 1.f),
+		Vec2(1.f, 0.f) };
+	bool textureAtlas = false;
+	textureSize = GetTextureSize(&textureAtlas, defaultUV);
+	if (textureSize == Vec2I::ZERO){
 		return;
 	}
-
-	float width = (float)textureSize.x;
-	float height = (float)textureSize.y;
-	float imgRatio = width / height;
-	const Rect& uiRect = mUIObject->GetRegion();
-	float uiRatio = (uiRect.right - uiRect.left) /
-		(float)(uiRect.bottom - uiRect.top);
-	if (uiRatio == imgRatio || !mKeepImageRatio)
+	if (textureAtlas){
+		textureSize.x = Round(textureSize.x * (defaultUV[2].x - defaultUV[0].x));
+		textureSize.y = Round(textureSize.y * (defaultUV[0].y - defaultUV[1].y));
+	}
+	switch (mImageDisplay){
+	case ImageDisplay::KeepImageRatioMatchWidth:{
+		float imgRatio = textureSize.x / (float)textureSize.y;
+		float uiRatio = mSize.x / (float)mSize.y;		
+		KeepImageRatioMatchWidth(imgRatio, uiRatio, textureAtlas, defaultUV);
+		break;
+	}										
+	case ImageDisplay::KeepImageRatioMatchHeight:{
+		float imgRatio = textureSize.x / (float)textureSize.y;
+		float uiRatio = mSize.x / (float)mSize.y;
+		KeepImageRatioMatchHeight(imgRatio, uiRatio, textureAtlas, defaultUV);
+		break;
+	}
+	case ImageDisplay::FreeScaleUIMatchAll:{
+		if (mSize != textureSize)
+			ChangeSize(textureSize);
+		Vec2 texcoords[4] = {
+			Vec2(0.f, 1.f),
+			Vec2(0.f, 0.f),
+			Vec2(1.f, 1.f),
+			Vec2(1.f, 0.f)
+		};
+		if (textureAtlas)
+			ConvertAtlasUV(texcoords, defaultUV);
+		mUIObject->SetTexCoord(texcoords, 4);		
+		break;
+	}
+	case ImageDisplay::KeepUIRatioMatchWidth:{
+		float uiRatio = mSize.x / (float)mSize.y;
+		Vec2I newSize(textureSize.x, Round(textureSize.x / uiRatio));
+		if (mSize != newSize){
+			ChangeSize(newSize);
+		}
+		KeepImageRatioMatchWidth(textureSize.x / (float)textureSize.y, newSize.x / (float)newSize.y, textureAtlas, defaultUV);
+		break;
+	}
+	case ImageDisplay::KeepUIRatioMatchHeight:{
+		float uiRatio = mSize.x / (float)mSize.y;
+		Vec2I newSize(Round(textureSize.y * uiRatio),  textureSize.y);
+		if (mSize != newSize){
+			ChangeSize(newSize);
+		}
+		KeepImageRatioMatchHeight(textureSize.x / (float)textureSize.y, newSize.x / (float)newSize.y, textureAtlas, defaultUV);
+		break;
+	}
+	case ImageDisplay::FreeScaleImageMatchAll:
+	default:
 	{
 		Vec2 texcoords[4] = {
 			Vec2(0.f, 1.f),
@@ -106,18 +196,13 @@ void ImageBox::CalcUV(const Vec2I& textureSize)
 			Vec2(1.f, 1.f),
 			Vec2(1.f, 0.f)
 		};
+		if (textureAtlas){
+			ConvertAtlasUV(texcoords, defaultUV);
+		}
 		mUIObject->SetTexCoord(texcoords, 4);
+		return;
+		break;
 	}
-	else
-	{
-		float halfu = (uiRatio / imgRatio) * .5f;
-		Vec2 texcoords[4] = {
-			Vec2(0.5f - halfu, 1.f),
-			Vec2(0.5f - halfu, 0.f),
-			Vec2(0.5f + halfu, 1.f),
-			Vec2(0.5f + halfu, 0.f)
-		};
-		mUIObject->SetTexCoord(texcoords, 4);
 	}
 }
 
@@ -133,9 +218,7 @@ void ImageBox::OnStartUpdate(float elapsedTime)
 		mCurFrame++;
 		if (mCurFrame >= mAtlasRegions.size())
 			mCurFrame = 0;
-		Vec2 texcoords[4];
-		mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
-		mUIObject->SetTexCoord(texcoords, 4);
+		CalcUV();		
 		mPlayingTime -= mSecPerFrame;
 	}
 }
@@ -180,8 +263,42 @@ void ImageBox::SetTexture(TexturePtr pTexture)
 	sd.AddressV = TEXTURE_ADDRESS_BORDER;
 	sd.AddressW = TEXTURE_ADDRESS_BORDER;
 	mUIObject->GetMaterial()->SetTexture(pTexture, BINDING_SHADER_PS, 0, sd);
-	if (pTexture)
-		CalcUV(pTexture->GetSize());
+	if (pTexture){
+		mTextureAtlas = 0;
+		mAtlasRegion = 0;
+		mAtlasRegions.clear();
+		CalcUV();
+	}
+}
+
+const Vec2I& ImageBox::GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const{
+	if (mAtlasRegion){
+		if (outIsAtlas)
+			*outIsAtlas = true;
+		if (quadUV){
+			mAtlasRegion->GetQuadUV(quadUV);
+		}
+		return mTextureAtlas->GetTexture()->GetSize();
+	}
+	else if (!mAtlasRegions.empty()){
+		if (outIsAtlas)
+			*outIsAtlas = true;
+		if (quadUV){
+			mAtlasRegions[mCurFrame]->GetQuadUV(quadUV);
+		}
+		return mTextureAtlas->GetTexture()->GetSize();
+	}
+	else if (mRenderTarget){
+		return mRenderTargetSize;
+	}
+	else{
+		if (outIsAtlas)
+			outIsAtlas = false;
+		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
+		if (texture)
+			return texture->GetSize();
+		return Vec2I::ZERO;		
+	}
 }
 
 void ImageBox::SetRenderTargetTexture(RenderTargetPtr rt){
@@ -194,9 +311,10 @@ const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* regi
 	mTextureAtlas = Renderer::GetInstance().GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
-		if (mImageFixedSize)
+		if (mImageDisplay == ImageDisplay::FreeScaleUIMatchAll)
 		{
-			DrawAsFixedSize();
+			MatchUISizeToImage();
+			// Now texture atals will not use mImageDisplay to display.
 		}
 		SAMPLER_DESC sdesc;
 		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
@@ -213,13 +331,11 @@ const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* regi
 		}
 		// need to set to material. matarial will hold its reference counter
 		mTexture = mTextureAtlas->GetTexture();
-		mUIObject->GetMaterial()->SetTexture(mTexture, BINDING_SHADER_PS, 0, sdesc);
-		Vec2 texcoords[4];
-		mAtlasRegion->GetQuadUV(texcoords);
-		mUIObject->SetTexCoord(texcoords, 4);
+		mUIObject->GetMaterial()->SetTexture(mTexture, BINDING_SHADER_PS, 0, sdesc);		
 		DWORD colors[4] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
 		mUIObject->SetColors(colors, 4);
 		mAtlasRegions.clear();
+		CalcUV();
 		return mAtlasRegion->GetSize();		
 	}
 	return Vec2I::ZERO;
@@ -230,11 +346,7 @@ void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::
 	mTextureAtlas = Renderer::GetInstance().GetTextureAtlas(atlas);
 	if (mTextureAtlas)
 	{
-		mTexture = mTextureAtlas->GetTexture();
-		if (mImageFixedSize)
-		{
-			DrawAsFixedSize();
-		}
+		mTexture = mTextureAtlas->GetTexture();		
 		for (const auto& region : data)
 		{
 			mAtlasRegions.push_back(mTextureAtlas->GetRegion(region.c_str()));
@@ -245,11 +357,10 @@ void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::
 
 		if (!mAtlasRegions.empty())
 		{
-			Vec2 texcoords[4];
-			mAtlasRegions[0]->GetQuadUV(texcoords);
-			mUIObject->SetTexCoord(texcoords, 4);
+			mAtlasRegion = 0;
 			DWORD colors[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
-			mUIObject->SetColors(colors, 4);
+			mUIObject->SetColors(colors, 4);			
+			CalcUV();
 		}
 	}
 }
@@ -259,9 +370,7 @@ void ImageBox::ChangeRegion(TextureAtlasRegionPtr region)
 	mAtlasRegion = region;
 	if (mAtlasRegion)
 	{
-		Vec2 texcoords[4];
-		mAtlasRegion->GetQuadUV(texcoords);
-		mUIObject->SetTexCoord(texcoords, 4);
+		CalcUV();
 	}	
 }
 
@@ -275,9 +384,7 @@ void ImageBox::ChangeRegion(const char* region)
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
 		if (mAtlasRegion)
 		{
-			Vec2 texcoords[4];
-			mAtlasRegion->GetQuadUV(texcoords);
-			mUIObject->SetTexCoord(texcoords, 4);
+			CalcUV();
 		}
 	}
 
@@ -306,37 +413,7 @@ void ImageBox::OnParentSizeChanged(){
 }
 
 void ImageBox::OnAnySizeChanged(){
-	if (!mAtlasRegion && mAtlasRegions.empty())
-	{
-		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
-		if (texture)
-			CalcUV(texture->GetSize());
-	}
-	else{
-		if (mAtlasRegion)
-		{
-			const auto& imagesize = mAtlasRegion->GetSize();
-			/*if (imagesize.x > mSize.x * 2 || imagesize.y > mSize.y * 2){
-				Vec2 start((float)mAtlasRegion->mStart.x, (float)mAtlasRegion->mStart.y);
-				auto xsize = imagesize.x > mSize.x * 2 ? mSize.x : imagesize.x;
-				auto ysize = imagesize.y > mSize.y * 2 ? mSize.y : imagesize.y;
-				Vec2 end(start.x + xsize, start.y + ysize);
-				auto uvEnd = end / mTextureAtlas->mTexture->GetSize();
-				Vec2 texcoords[4];
-				texcoords[0] = Vec2(mAtlasRegion->mUVStart.x, uvEnd.y);
-				texcoords[1] = mAtlasRegion->mUVStart;
-				texcoords[2] = uvEnd;
-				texcoords[3] = Vec2(uvEnd.x, mAtlasRegion->mUVStart.y);
-				mUIObject->SetTexCoord(texcoords, 4);
-			}
-			else{*/
-				Vec2 texcoords[4];
-				mAtlasRegion->GetQuadUV(texcoords);
-				mUIObject->SetTexCoord(texcoords, 4);
-			//}
-
-		}
-	}
+	CalcUV();
 }
 
 void ImageBox::Highlight(bool enable)
@@ -352,6 +429,11 @@ void ImageBox::Highlight(bool enable)
 	{
 		mUIObject->GetMaterial()->SetEmissiveColor(0, 0, 0, 0);
 	}
+}
+
+void ImageBox::SetImageDisplay(ImageDisplay::Enum display){
+	mImageDisplay = display;
+	CalcUV();	
 }
 
 bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
@@ -409,13 +491,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 				str = StripBoth(str.c_str());
 			}
 			SetTextureAtlasRegions(mTextureAtlasFile.c_str(), data);
-		}
-		if (!mAtlasRegions.empty())
-		{
-			Vec2 texcoords[4];
-			mAtlasRegions[mCurFrame]->GetQuadUV(texcoords);
-			mUIObject->SetTexCoord(texcoords, 4);
-		}
+		}		
 								
 		return true;
 
@@ -435,11 +511,12 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 									 return true;
 	}
 
-	case UIProperty::KEEP_IMAGE_RATIO:
+	case UIProperty::IMAGE_DISPLAY:
 	{
-										 SetKeepImageRatio(StringConverter::ParseBool(val, true));
-										 return true;
+		SetImageDisplay(ImageDisplay::ConvertToEnum(val));
+		return true;
 	}
+
 	case UIProperty::FRAME_IMAGE:
 	{
 		mStrFrameImage = val;
@@ -462,24 +539,12 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::IMAGE_COLOR_OVERLAY:
 	{
 		mColorOveraySet = true;
-											Color color = Color(val);
-											if (mUIObject)
-											{
-												mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
-											}
-											return true;
-
-	}
-
-	case UIProperty::IMAGE_FIXED_SIZE:
-	{
-										 mImageFixedSize = StringConverter::ParseBool(val);										 
-										 if (mTexture || mAtlasRegion)
-										 {
-											 DrawAsFixedSize();
-										 }
-										 
-										 return true;
+		Color color = Color(val);
+		if (mUIObject)
+		{
+			mUIObject->GetMaterial()->SetDiffuseColor(color.GetVec4());
+		}
+		return true;
 
 	}
 
@@ -563,17 +628,19 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 		return true;
 	}
 
-	case UIProperty::KEEP_IMAGE_RATIO:
+	case UIProperty::IMAGE_DISPLAY:
 	{
 		if (notDefaultOnly)
 		{
-			if (mKeepImageRatio == UIProperty::GetDefaultValueBool(prop))
+			if (mImageDisplay == UIProperty::GetDefaultValueInt(prop))
 				return false;
 		}
-		auto data = StringConverter::ToString(mKeepImageRatio);
-		strcpy_s(val, bufsize, data.c_str());
+		auto data = ImageDisplay::ConvertToString(mImageDisplay);
+		strcpy_s(val, bufsize, data);
+		return true;
 		return true;
 	}
+	
 	case UIProperty::FRAME_IMAGE:
 	{
 		if (notDefaultOnly)
@@ -599,19 +666,6 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 		return true;
 	}
 
-	case UIProperty::IMAGE_FIXED_SIZE:
-	{
-		if (notDefaultOnly)
-		{
-			if (mImageFixedSize == UIProperty::GetDefaultValueBool(prop))
-				return false;
-		}
-
-		auto data = StringConverter::ToString(mImageFixedSize);
-		strcpy_s(val, bufsize, data.c_str());
-		return true;
-
-	}
 	case UIProperty::IMAGE_ROTATE:
 	{
 		if (notDefaultOnly)
@@ -644,17 +698,6 @@ void ImageBox::SetVisibleInternal(bool visible){
 	__super::SetVisibleInternal(visible);
 	if (mRenderTarget){
 		mRenderTarget->SetEnable(visible);
-	}
-}
-
-void ImageBox::SetKeepImageRatio(bool keep)
-{
-	mKeepImageRatio = keep;
-	if (!mAtlasRegion)
-	{
-		auto texture = mUIObject->GetMaterial()->GetTexture(BINDING_SHADER_PS, 0);
-		if (texture)
-			CalcUV(texture->GetSize());
 	}
 }
 
@@ -707,7 +750,7 @@ void ImageBox::SetCenterUVMatParam()
 	}
 }
 
-void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
+void ImageBox::MatchUISizeToImageCenteredAt(const Vec2I& wpos)
 {
 	Vec2I isize(0, 0);
 	if (mAtlasRegion)
@@ -724,24 +767,26 @@ void ImageBox::DrawAsFixedSizeCenteredAt(const Vec2I& wpos)
 	}
 	else
 	{
-		Log("ImageBox %s : DrawAsFixedSizeCenteredAt, you didn't set the texture", mName.c_str());
+		Log("ImageBox %s : MatchUISizeToImageCenteredAt, you didn't set the texture", mName.c_str());
 		return;
 	}
 	ChangeSize(isize);
 	ChangeWPos(wpos);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
+	SetImageDisplay(ImageDisplay::FreeScaleImageMatchAll);
 	
 }
 
-void ImageBox::DrawAsFixedSizeAtCenter()
+void ImageBox::MatchUISizeToImageAtCenter()
 {
-	DrawAsFixedSize();
+	MatchUISizeToImage();
 	ChangeNPos(Vec2(0.5f, 0.5f));
 	SetUseAbsPos(false);
 	SetAlign(ALIGNH::CENTER, ALIGNV::MIDDLE);
+	SetImageDisplay(ImageDisplay::FreeScaleImageMatchAll);
 }
 
-void ImageBox::DrawAsFixedSize()
+void ImageBox::MatchUISizeToImage()
 {
 	Vec2I isize(0, 0);
 	if (mAtlasRegion)
@@ -761,6 +806,7 @@ void ImageBox::DrawAsFixedSize()
 		return;
 	}
 	ChangeSize(isize);
+	SetImageDisplay(ImageDisplay::FreeScaleImageMatchAll);
 }
 
 void ImageBox::SetDesaturate(bool desat)

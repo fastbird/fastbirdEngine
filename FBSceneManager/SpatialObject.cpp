@@ -171,6 +171,7 @@ AnimationPtr SpatialObject::GetAnimation() const{
 
 void SpatialObject::SetLocation(const Transformation& t){
 	mBoundingVolumeWorld->SetCenter(mBoundingVolume->GetCenter() + t.GetTranslation());
+	mBoundingVolumeWorld->SetRadius(mBoundingVolume->GetRadius() * t.GetScale().GetMax());
 	mLocation = t;
 	if (mAnimatedLocation){
 		*mAnimatedLocation = mLocation * mAnim->GetResult();

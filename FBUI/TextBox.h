@@ -65,7 +65,7 @@ namespace fb
 		// strong pointer
 		ImageBoxPtr mImage;
 		std::string mStrBackImage;
-		std::string mStrKeepRatio;
+		std::string mStrImageDisplay;
 		std::wstring mMultiLineText;
 	};
 

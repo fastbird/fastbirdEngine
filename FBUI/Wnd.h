@@ -78,7 +78,7 @@ private:
 	ButtonWeakPtr mCloseBtn;
 	std::string mTitlebarString;
 	std::string mStrBackground;
-	std::string mStrKeepRatio;
+	std::string mStrImageDisplay;
 	std::vector<ImageBoxPtr> mFrames;
 	bool mUseFrame;
 	ImageBoxWeakPtr mBackgroundImage;

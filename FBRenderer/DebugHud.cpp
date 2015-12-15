@@ -177,7 +177,7 @@ public:
 		}
 		it->second.insert(it->second.begin(), TextData(pos, text, color, size, secs));
 		auto& renderer = Renderer::GetInstance();
-		auto font = renderer.GetFont((int)size);
+		auto font = renderer.GetFontWithHeight(size);
 		if (font){
 			it->second.begin()->mWidth = font->GetTextWidth((const char*)text);
 		}

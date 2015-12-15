@@ -281,6 +281,7 @@ public:
 					if (imgYSize){
 						*imgYSize = std::max(*imgYSize, imgSize.y);
 					}
+					PrepareRenderResources();
 					return true;
 				}
 			}
@@ -427,14 +428,13 @@ public:
 				} while (skiplen > 0);
 			}
 
-			if (n >= count)
+			if (n >= count){
 				break;
+			}
 
 			if (reapplyRender)
 			{
 				PrepareRenderResources();
-				if (page != -1)
-					mPages[page]->Bind(BINDING_SHADER_PS, 0);
 				auto& renderer = Renderer::GetInstance();
 				renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
 			}
@@ -477,8 +477,7 @@ public:
 
 				mVertexLocation += batchingVertices;
 				batchingVertices = 0;
-				page = ch->page;
-				mPages[page]->Bind(BINDING_SHADER_PS, 0);
+				page = ch->page;				
 			}
 
 			if (mVertexLocation + batchingVertices + 4 >= MAX_BATCH)
@@ -543,7 +542,7 @@ public:
 			return;
 
 		auto& renderer = Renderer::GetInstance();
-
+		mPages[page]->Bind(BINDING_SHADER_PS, 0);
 		MapData data = mVertexBuffer->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
 		FontVertex* pDest = (FontVertex*)data.pData;
 		memcpy(pDest + mVertexLocation, pVertices + mVertexLocation,

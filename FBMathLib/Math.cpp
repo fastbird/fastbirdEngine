@@ -827,4 +827,42 @@ namespace fb
 	{
 		return size - size % 8;
 	}
+
+	Real ShortestYaw(Real from, Real to){
+		while (to > TWO_PI)
+		{
+			to -= TWO_PI;
+		}
+		while (to < 0)
+		{
+			to += TWO_PI;
+		}
+
+		while (from > TWO_PI)
+		{
+			from -= TWO_PI;
+		}
+		while (from < 0)
+		{
+			from += TWO_PI;
+		}
+
+		// forward check
+		float forwardLength;
+		float backwardLength;
+		bool swaped = false;
+		if (from > to){
+			std::swap(from, to);
+			swaped = true;
+		}
+		forwardLength = to - from;
+		backwardLength = -((from + TWO_PI) - to);
+
+		if (!swaped){
+			return from + std::min(forwardLength, backwardLength);
+		}
+		else{
+			return to - std::min(forwardLength, backwardLength);
+		}
+	}
 }

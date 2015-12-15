@@ -311,8 +311,8 @@ namespace fb
 			assert(image);
 			SetDefaultImageAtlasPathIfNotSet();
 			image->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-			image->DrawAsFixedSizeAtCenter();
-			//mImages[ButtonImages::Image]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			image->MatchUISizeToImageAtCenter();
+			//mImages[ButtonImages::Image]->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			if (mIconText)
 			{
 				OnSizeChanged();
@@ -338,7 +338,7 @@ namespace fb
 			assert(image);
 			image->SetProperty(UIProperty::TEXTUREATLAS, mImageAtlas.c_str());
 			image->SetProperty(prop, val);
-			image->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			image->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			if (mIconText)
 			{
 				OnSizeChanged();
@@ -356,7 +356,7 @@ namespace fb
 			}
 			auto image = mImages[ButtonImages::Image].lock();
 			image->SetTexture(val);
-			//mImages[ButtonImages::Image]->DrawAsFixedSizeAtCenter();
+			//mImages[ButtonImages::Image]->MatchUISizeToImageAtCenter();
 			if (mIconText)
 			{
 				OnSizeChanged();
@@ -392,7 +392,8 @@ namespace fb
 			{
 				auto imageHover = mImages[ButtonImages::ImageHover].lock();
 				imageHover->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-				imageHover->DrawAsFixedSizeAtCenter();
+				
+				imageHover->MatchUISizeToImageAtCenter();				
 			}
 
 			return true;
@@ -407,7 +408,7 @@ namespace fb
 			SetDefaultImageAtlasPathIfNotSet();
 			auto backImage = mImages[ButtonImages::BackImage].lock();
 			backImage->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-			//mImages[ButtonImages::BackImage]->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			//mImages[ButtonImages::BackImage]->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			return true;
 		}
 		case UIProperty::BACKGROUND_IMAGE_DISABLED:
@@ -420,7 +421,7 @@ namespace fb
 			SetDefaultImageAtlasPathIfNotSet();
 			auto backImageDisabled = mImages[ButtonImages::BackImageDisabled].lock();
 			backImageDisabled->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-			backImageDisabled->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			backImageDisabled->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));			
 			return true;
 		}
 
@@ -435,7 +436,7 @@ namespace fb
 			SetDefaultImageAtlasPathIfNotSet();
 			auto backImageHover = mImages[ButtonImages::BackImageHover].lock();
 			backImageHover->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
-			backImageHover->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			backImageHover->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			return true;
 		}
 
@@ -448,7 +449,7 @@ namespace fb
 			}
 			auto backImage = mImages[ButtonImages::BackImage].lock();
 			backImage->SetTexture(val);
-			backImage->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			backImage->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			return true;
 		}
 
@@ -462,7 +463,7 @@ namespace fb
 
 			auto backImageHover = mImages[ButtonImages::BackImageHover].lock();
 			backImageHover->SetTexture(val);
-			backImageHover->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			backImageHover->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			return true;
 		}
 
@@ -536,7 +537,7 @@ namespace fb
 				activeImage->SetVisible(false);
 				activeImage->SetCenterUVMatParam();
 			}
-			activeImage->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			activeImage->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 
 			return true;
 		}
@@ -564,7 +565,7 @@ namespace fb
 				deactiveImage->SetVisible(false);
 				deactiveImage->SetCenterUVMatParam();
 			}
-			deactiveImage->DrawAsFixedSizeCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
+			deactiveImage->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			return true;
 		}
 
@@ -1241,7 +1242,7 @@ namespace fb
 		auto image = mImages[type].lock();
 		image->SetTexture(pTexture);
 		if (drawFixedSize){
-			image->DrawAsFixedSizeAtCenter();
+			image->MatchUISizeToImageAtCenter();
 		}
 	}
 

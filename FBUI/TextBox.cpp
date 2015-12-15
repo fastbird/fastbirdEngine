@@ -143,9 +143,9 @@ namespace fb
 			return true;
 		}
 
-		case UIProperty::KEEP_IMAGE_RATIO:
+		case UIProperty::IMAGE_DISPLAY:
 		{
-			mStrKeepRatio = val;
+			mStrImageDisplay = val;
 			if (!mImage)
 			{
 				mImage = ImageBox::Create();
@@ -156,8 +156,7 @@ namespace fb
 				mImage->ChangeSize(GetFinalSize());
 			}
 			UIManager::GetInstance().DirtyRenderList(GetHwndId());
-			mImage->SetKeepImageRatio(StringConverter::ParseBool(val, true));
-											 
+			mImage->SetProperty(UIProperty::IMAGE_DISPLAY, val);
 			return true;
 		}
 
@@ -194,15 +193,16 @@ namespace fb
 			return true;
 		}
 
-		case UIProperty::KEEP_IMAGE_RATIO:
+		case UIProperty::IMAGE_DISPLAY:
 		{
 			if (notDefaultOnly)
 			{
-				if (mStrKeepRatio.empty())
+				if (mStrImageDisplay.empty() || 
+					ImageDisplay::ConvertToEnum(mStrImageDisplay.c_str()) == UIProperty::GetDefaultValueInt(prop))
 					return false;
 			}
 
-			strcpy_s(val, bufsize, mStrKeepRatio.c_str());
+			strcpy_s(val, bufsize, mStrImageDisplay.c_str());
 		}
 
 		case UIProperty::TEXTBOX_MATCH_HEIGHT:

@@ -112,8 +112,7 @@ void Wnd::RefreshFrame()
 			T->SetHwndId(GetHwndId());
 			T->SetRender3D(mRender3D, GetRenderTargetSize());
 			T->SetManualParent(mSelfPtr.lock());
-			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			T->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+			T->SetProperty(UIProperty::SPECIAL_ORDER, "1");			
 			T->SetVisible(true);
 			const auto& sizeT = T->SetTextureAtlasRegion(uixmlPath, UIManager::GetInstance().GetWndBorderRegion("t"));
 			T->ChangeSize(sizeT);
@@ -123,8 +122,7 @@ void Wnd::RefreshFrame()
 			L->SetHwndId(GetHwndId());
 			L->SetRender3D(mRender3D, GetRenderTargetSize());
 			L->SetManualParent(mSelfPtr.lock());
-			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			L->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+			L->SetProperty(UIProperty::SPECIAL_ORDER, "1");			
 			L->SetVisible(true);
 			const auto& sizeL = L->SetTextureAtlasRegion(uixmlPath,
 				UIManager::GetInstance().GetWndBorderRegion("l"));
@@ -136,8 +134,7 @@ void Wnd::RefreshFrame()
 			R->SetRender3D(mRender3D, GetRenderTargetSize());
 			R->SetAlign(ALIGNH::RIGHT, ALIGNV::TOP);
 			R->SetManualParent(mSelfPtr.lock());
-			R->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			R->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+			R->SetProperty(UIProperty::SPECIAL_ORDER, "1");			
 			R->SetVisible(true);
 			const auto& sizeR = R->SetTextureAtlasRegion(uixmlPath,
 				UIManager::GetInstance().GetWndBorderRegion("r"));
@@ -149,8 +146,7 @@ void Wnd::RefreshFrame()
 			B->SetRender3D(mRender3D, GetRenderTargetSize());
 			B->SetAlign(ALIGNH::LEFT, ALIGNV::BOTTOM);
 			B->SetManualParent(mSelfPtr.lock());
-			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");
-			B->SetProperty(UIProperty::KEEP_IMAGE_RATIO, "false");
+			B->SetProperty(UIProperty::SPECIAL_ORDER, "1");			
 			B->SetVisible(true);
 			const auto& sizeB = B->SetTextureAtlasRegion(uixmlPath,
 				UIManager::GetInstance().GetWndBorderRegion("b"));
@@ -368,7 +364,7 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 				titlebar->SetProperty(UIProperty::TEXT_ALIGN, "center");
 				titlebar->SetProperty(UIProperty::TEXT_VALIGN, "middle");
 				titlebar->SetProperty(UIProperty::NO_BACKGROUND, "true");
-				titlebar->SetProperty(UIProperty::TEXT_SIZE, "24");
+				titlebar->SetProperty(UIProperty::TEXT_SIZE, "20");
 				titlebar->SetProperty(UIProperty::SPECIAL_ORDER, "3");
 				titlebar->SetName("_@TitleBar");
 				titlebar->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
@@ -450,14 +446,14 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 
-	case UIProperty::KEEP_IMAGE_RATIO:
+	case UIProperty::IMAGE_DISPLAY:
 	{
-		mStrKeepRatio = val;
+		mStrImageDisplay = val;
 		if (mBackgroundImage.expired())
 		{
 			mBackgroundImage = CreateBackgroundImage();
 		}
-		mBackgroundImage.lock()->SetKeepImageRatio(StringConverter::ParseBool(val, true));
+		mBackgroundImage.lock()->SetProperty(prop, val);
 		return true;
 	}
 
@@ -567,14 +563,14 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 		return true;
 	}
 
-	case UIProperty::KEEP_IMAGE_RATIO:
+	case UIProperty::IMAGE_DISPLAY:
 	{
 		if (notDefaultOnly)
 		{
-			if (mStrKeepRatio.empty())
+			if (mStrImageDisplay.empty() || ImageDisplay::ConvertToEnum(mStrImageDisplay.c_str()) == UIProperty::GetDefaultValueInt(prop))
 				return false;
 		}
-		strcpy_s(val, bufsize, mStrKeepRatio.c_str());
+		strcpy_s(val, bufsize, mStrImageDisplay.c_str());
 		return true;
 	}
 
