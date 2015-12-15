@@ -41,6 +41,7 @@
 #include "FBRenderer/Camera.h"
 #include "FBSceneObjectFactory/MeshObject.h"
 #include "FBSceneObjectFactory/SceneObjectFactory.h"
+#include "FBAudioPlayer/AudioManager.h"
 
 using namespace fb;
 class ParticleEmitter::Impl
@@ -93,6 +94,19 @@ public:
 	bool mVisible;
 
 	VectorMap<std::string, std::string>  mShaderDefines;
+	struct SoundData{
+		std::string mPath;
+		bool mUpdateToLine;
+
+		SoundData()
+			:mUpdateToLine(false)
+		{
+
+		}
+	};
+	SoundData mSoundData;
+	AudioId mAudioId;
+	FunctionId mSoundCallback;
 
 	//---------------------------------------------------------------------------
 	Impl(ParticleEmitter* self, IScenePtr scene)
@@ -111,6 +125,8 @@ public:
 		, mRelativeVelocityDir(Vec3::ZERO)
 		, mFinalAlphaMod(1.0f)
 		, mVisible(true)
+		, mAudioId(INVALID_AUDIO_ID)
+		, mSoundCallback(INVALID_FUNCTION_ID)
 	{
 	}
 
@@ -129,6 +145,9 @@ public:
 		, mRelativeVelocity(other.mRelativeVelocity), mRelativeVelocityDir(other.mRelativeVelocityDir)
 		, mFinalAlphaMod(other.mFinalAlphaMod), mVisible(other.mVisible)
 		, mParticleRenderObjects(other.mParticleRenderObjects)
+		, mAudioId(INVALID_AUDIO_ID)
+		, mSoundData(other.mSoundData)
+		, mSoundCallback(INVALID_FUNCTION_ID)
 	{
 		for (const auto& it : *(mTemplates.const_get())){
 			PARTICLES_PTR particles(new PARTICLES, [](PARTICLES* obj){delete obj; });
@@ -141,6 +160,11 @@ public:
 		}
 	}
 
+	~Impl(){
+		if (mSoundCallback != INVALID_FUNCTION_ID){
+			AudioManager::GetInstance().UnregisterEndCallbackFunc(mSoundCallback);
+		}
+	}
 	ParticleEmitterPtr Clone(){
 		return ParticleEmitter::Create(*mSelf);
 	}
@@ -174,6 +198,17 @@ public:
 		const char* sz = pPE->Attribute("emitterLifeTime");
 		if (sz)
 			mLifeTime = StringConverter::ParseReal(sz);
+
+		sz = pPE->Attribute("playSound");
+		if (sz){
+			mSoundData.mPath = sz;
+		}
+
+		sz = pPE->Attribute("soundAlignToLine");
+		if (sz){
+			mSoundData.mUpdateToLine = StringConverter::ParseBool(sz);
+		}
+
 		sz = pPE->Attribute("emitterID");
 		if (sz)
 			mEmitterID = StringConverter::ParseUnsignedInt(sz);
@@ -483,8 +518,23 @@ public:
 		return true;
 	}
 
-	bool UpdateEmitter(float elapsedTime){
+	void UpdateSound(const Vec3& mainCamPosition){
+		if (mAudioId != INVALID_AUDIO_ID){
+			if (mSoundData.mUpdateToLine){
+				const auto& pos = mSelf->GetPosition();
+				auto soundPos = ProjectPointOnToLine(pos, mSelf->GetDirection(), mainCamPosition);
+				AudioManager::GetInstance().SetPosition(mAudioId, soundPos.x, soundPos.y, soundPos.z);
+			}
+			else{
+				const auto& pos = mSelf->GetPosition();
+				AudioManager::GetInstance().SetPosition(mAudioId, pos.x, pos.y, pos.z);
+			}
+		}
+	}
+
+	bool UpdateEmitter(float elapsedTime, const Vec3& mainCamPosition){
 		mCurLifeTime += elapsedTime;
+		UpdateSound(mainCamPosition);
 		if ((!IsInfinite() && mCurLifeTime > mLifeTime) || mStop)
 		{
 			mStop = true;
@@ -767,6 +817,10 @@ public:
 		return mEmitterID;
 	}
 
+	void OnSoundFinish(AudioId id){
+		mAudioId = INVALID_AUDIO_ID;
+	}
+
 	void Active(bool a, bool pending = false){
 		if (a && (!mInActiveList || mStop))
 		{
@@ -781,6 +835,13 @@ public:
 			mStop = false;
 			mStopImmediate = false;
 			mCurLifeTime = 0.f;
+			if (!mSoundData.mPath.empty()){
+				AudioProperty prop;
+				prop.mPosition = mSelf->GetPosition();
+				auto& am = AudioManager::GetInstance();
+				mAudioId = am.PlayAudio(mSoundData.mPath.c_str(), prop);
+				mSoundCallback = am.RegisterEndCallback(mAudioId, std::bind(&Impl::OnSoundFinish, this, std::placeholders::_1));
+			}
 			auto templates = mTemplates.const_get();
 			if (templates)
 			{
@@ -1606,8 +1667,8 @@ bool ParticleEmitter::Load(const char* filepath, bool reload) {
 	return mImpl->Load(filepath, reload);
 }
 
-bool ParticleEmitter::UpdateEmitter(float elapsedTime) {
-	return mImpl->UpdateEmitter(elapsedTime);
+bool ParticleEmitter::UpdateEmitter(float elapsedTime, const Vec3& mainCamPosition) {
+	return mImpl->UpdateEmitter(elapsedTime, mainCamPosition);
 }
 
 unsigned ParticleEmitter::GetEmitterID() const {

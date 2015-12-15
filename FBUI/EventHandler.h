@@ -33,14 +33,14 @@ namespace fb
 	class FB_DLL_UI EventHandler
 	{
 	public:
-		typedef size_t FunctionID;
+		typedef size_t FunctionId;
 		typedef std::function< void(void*) > EVENT_FUNCTION;
 		static size_t UNIQUE_ID;
 		static unsigned sLastEventProcess;
 		EventHandler();
 		virtual ~EventHandler();
-		FunctionID RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION);
-		void UnregisterEventFunc(UIEvents::Enum e, FunctionID slot);
+		FunctionId RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION);
+		void UnregisterEventFunc(UIEvents::Enum e, FunctionId slot);
 		bool RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncName);
 		void UnregisterEventLuaFunc(UIEvents::Enum e);
 		void UnregisterAllEventFunc();
@@ -57,8 +57,8 @@ namespace fb
 		
 
 	protected:
-		typedef std::map<FunctionID, EVENT_FUNCTION> FUNC_MAP;
-		typedef std::map<UIEvents::Enum, std::set<FunctionID> > EVENT_FUNC_MAP;
+		typedef std::map<FunctionId, EVENT_FUNCTION> FUNC_MAP;
+		typedef std::map<UIEvents::Enum, std::set<FunctionId> > EVENT_FUNC_MAP;
 		FUNC_MAP mFuncMap;
 		EVENT_FUNC_MAP mEventFuncMap;
 

@@ -359,7 +359,7 @@ public:
 		mConsole->Update();
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
-		mParticleSystem->Update(dt);
+		mParticleSystem->Update(dt, mMainCamera->GetPosition());
 		for (auto& videoPlayer : mVideoPlayers){
 			if (!videoPlayer->IsFinish()){
 				videoPlayer->Update(gpTimer->GetDeltaTime());

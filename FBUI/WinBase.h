@@ -175,7 +175,7 @@ namespace fb
 		bool mHand;
 		bool mNoFocusByClick;
 		bool mReceiveEventFromParent;
-		FunctionID mHandFuncId;
+		FunctionId mHandFuncId;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 

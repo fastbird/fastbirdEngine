@@ -48,7 +48,7 @@ namespace fb
 		if reload is true, Particle Template will be kept the sharing state.
 		*/
 		bool Load(const char* filepath, bool reload);
-		bool UpdateEmitter(float elapsedTime);
+		bool UpdateEmitter(float elapsedTime, const Vec3& mainCamPosition);
 		unsigned GetEmitterID() const;		
 		void Active(bool a, bool pending = false);
 		void Stop();

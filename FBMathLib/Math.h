@@ -127,6 +127,8 @@ namespace fb
         const Vec2& uv1, const Vec2& uv2, const Vec2& uv3);
 
 	Vec3 ProjectTo(const Plane3& plane, const Ray3& ray0, const Ray3& ray1);
+	// lineDir should be normalized one.
+	Vec3 ProjectPointOnToLine(const Vec3& lineStartP, const Vec3& lineDir, const Vec3& point);
 
 	int GetMipLevels(Real v);
 	Real Sign(Real s);

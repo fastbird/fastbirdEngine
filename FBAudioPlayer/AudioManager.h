@@ -39,8 +39,8 @@ namespace fb{
 		AudioManager();
 		~AudioManager();
 
-		
 	public:
+		typedef std::function< void(AudioId) > CallbackFunction;
 		static AudioManagerPtr Create();
 		static AudioManager& GetInstance();
 		bool Init();
@@ -57,6 +57,8 @@ namespace fb{
 		bool StopAudio(AudioId id);
 		TIME_PRECISION GetAudioLength(const char* path);
 		TIME_PRECISION GetAudioLength(AudioId id);
+		FunctionId RegisterEndCallback(AudioId id, CallbackFunction callback);
+		void UnregisterEndCallback(AudioId id);
 		/** Stop the audio smoothly.
 		if the remaining time of the audio is less than \a sec, the audio will stop earlier than requested time.
 		*/
@@ -76,5 +78,7 @@ namespace fb{
 		float GetGain(AudioId id) const;
 
 		void RegisterAudioEx(AudioExPtr audioex);
+		void UnregisterEndCallbackForAudio(AudioId id);
+		void UnregisterEndCallbackFunc(FunctionId funcId);
 	};
 }

@@ -61,6 +61,9 @@ namespace fb{
 	typedef unsigned int FRAME_PRECISION;
 	typedef float TIME_PRECISION;
 
+	typedef size_t FunctionId;
+	static const FunctionId INVALID_FUNCTION_ID = -1;
+
 	typedef unsigned AudioId;
 	static const AudioId INVALID_AUDIO_ID = -1;
 

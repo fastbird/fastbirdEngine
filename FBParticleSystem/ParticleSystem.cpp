@@ -89,7 +89,7 @@ public:
 		mDirectories.push_back(directory);
 	}
 
-	void Update(float elapsedTime){
+	void Update(float elapsedTime, const Vec3& mainCamPos){
 		ParticleRenderObject::ClearParticles();
 		auto& renderer = Renderer::GetInstance();
 		for (auto p : mPendingDeletes)
@@ -145,7 +145,7 @@ public:
 		Emitters::iterator it = mActiveParticles.begin();
 		for (; it != mActiveParticles.end();)
 		{
-			bool updated = (*it)->UpdateEmitter(elapsedTime);
+			bool updated = (*it)->UpdateEmitter(elapsedTime, mainCamPos);
 			if (!updated)
 				it = mActiveParticles.erase(it);
 			else
@@ -384,8 +384,8 @@ ParticleSystem::~ParticleSystem(){
 
 }
 
-void ParticleSystem::Update(float elapsedTime) {
-	mImpl->Update(elapsedTime);
+void ParticleSystem::Update(float elapsedTime, const Vec3& mainCamPos) {
+	mImpl->Update(elapsedTime, mainCamPos);
 }
 
 bool ParticleSystem::OnFileChanged(const char* watchDir, const char* file, const char* ext){

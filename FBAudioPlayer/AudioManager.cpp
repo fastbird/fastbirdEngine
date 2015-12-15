@@ -59,7 +59,7 @@ struct AudioBuffer{
 		alDeleteBuffers(1, &mBuffer);
 	}
 };
-
+FunctionId NextCallbackId = 1;
 //---------------------------------------------------------------------------
 class AudioManager::Impl{
 public:
@@ -72,6 +72,11 @@ public:
 	VectorMap<ALuint, std::string> mBufferBySource;
 	std::vector<IAudioManipulatorPtr> mAudioManipulators;
 	std::vector<AudioExPtr> mAudioExs;
+
+	typedef VectorMap<FunctionId, CallbackFunction> CallbackMap;
+	typedef VectorMap<AudioId, std::vector<FunctionId> > CallbackIdMap;
+	CallbackMap mEndCallbacks;
+	CallbackIdMap mEndCallbackIds;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -364,6 +369,52 @@ public:
 		}
 	}
 
+	FunctionId RegisterEndCallback(AudioId id, std::function< void(AudioId) > callback){
+		mEndCallbacks[NextCallbackId] = callback;
+		if (!ValueExistsInVector(mEndCallbackIds[id], NextCallbackId))
+			mEndCallbackIds[id].push_back(NextCallbackId);
+
+		return NextCallbackId++;
+	}
+
+	void UnregisterEndCallbackForAudio(AudioId id){
+		auto idIt = mEndCallbackIds.Find(id);
+		if (idIt != mEndCallbackIds.end()){
+			for (auto& funcId : idIt->second){
+				auto funcIt = mEndCallbacks.Find(funcId);
+				if (funcIt != mEndCallbacks.end()){
+					mEndCallbacks.erase(funcIt);
+				}
+			}
+			mEndCallbackIds.erase(idIt);
+		}		
+	}
+
+	void UnregisterEndCallbackFunc(FunctionId functionId){
+		// functionId, function
+		auto funcIt = mEndCallbacks.Find(functionId);
+		if (funcIt != mEndCallbacks.end()){
+			mEndCallbacks.erase(funcIt);
+		}
+		// audioId, functionIds
+		for (auto it = mEndCallbackIds.begin(); it != mEndCallbackIds.end(); /**/){
+			for (auto funcIt = it->second.begin(); funcIt != it->second.end(); /**/){
+				if (*funcIt == functionId){
+					funcIt = it->second.erase(funcIt);
+				}
+				else{
+					++funcIt;
+				}
+			}
+			if (it->second.empty()){
+				it = mEndCallbackIds.erase(it);
+			}
+			else{
+				++it;
+			}
+		}
+	}
+
 	bool SetPosition(AudioId id, float x, float y, float z){
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
@@ -459,6 +510,20 @@ public:
 		AudioId id = (AudioId)userdata;
 		for (auto& it : mAudioExs){
 			it->OnFinish(id);
+		}
+
+		// AudioId, FunctionIds
+		auto callbackIt = mEndCallbackIds.Find(id);
+		if (callbackIt != mEndCallbackIds.end()){
+			for (auto funcId : callbackIt->second){
+				// functionId, Function
+				auto funcIt = mEndCallbacks.Find(funcId);
+				if (funcIt != mEndCallbacks.end()){
+					funcIt->second(id);
+					mEndCallbacks.erase(funcIt);
+				}
+			}
+			mEndCallbackIds.erase(callbackIt);
 		}
 
 		auto it = mAudioSources.Find(id);
@@ -564,6 +629,10 @@ TIME_PRECISION AudioManager::GetAudioLength(AudioId id) {
 	return mImpl->GetAudioLength(id);
 }
 
+FunctionId AudioManager::RegisterEndCallback(AudioId id, std::function< void(AudioId) > callback){
+	return mImpl->RegisterEndCallback(id, callback);
+}
+
 bool AudioManager::StopWithFadeOut(AudioId id, TIME_PRECISION sec){
 	return mImpl->StopWithFadeOut(id, sec);
 }
@@ -606,4 +675,12 @@ float AudioManager::GetGain(AudioId id) const{
 
 void AudioManager::RegisterAudioEx(AudioExPtr audioex){
 	return mImpl->RegisterAudioEx(audioex);
+}
+
+void AudioManager::UnregisterEndCallbackForAudio(AudioId id){
+	mImpl->UnregisterEndCallbackForAudio(id);
+}
+
+void AudioManager::UnregisterEndCallbackFunc(FunctionId funcId){
+	mImpl->UnregisterEndCallbackFunc(funcId);
 }

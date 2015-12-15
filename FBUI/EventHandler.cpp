@@ -43,7 +43,7 @@ EventHandler::~EventHandler()
 {
 }
 
-EventHandler::FunctionID EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
+EventHandler::FunctionId EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
 {
 	mFuncMap[UNIQUE_ID] = func;
 	mEventFuncMap[e].insert(UNIQUE_ID);
@@ -51,7 +51,7 @@ EventHandler::FunctionID EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT
 	return UNIQUE_ID++;	
 }
 
-void EventHandler::UnregisterEventFunc(UIEvents::Enum e, FunctionID id)
+void EventHandler::UnregisterEventFunc(UIEvents::Enum e, FunctionId id)
 {
 	mEventFuncMap[e].erase(id);
 	mFuncMap.erase(mFuncMap.find(id));

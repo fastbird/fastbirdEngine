@@ -570,6 +570,11 @@ namespace fb
 		return Vec3(0, 0, 0);
 	}
 
+	Vec3 ProjectPointOnToLine(const Vec3& lineStartP, const Vec3& lineDir, const Vec3& point){
+		float t = lineDir.Dot(point - lineStartP);
+		return lineStartP + lineDir * t;
+	}
+
 	int GetMipLevels(Real v)
 	{
 		return (int)((log(v) / LOG2) + 0.5f) + 1;
@@ -838,15 +843,6 @@ namespace fb
 			to += TWO_PI;
 		}
 
-		while (from > TWO_PI)
-		{
-			from -= TWO_PI;
-		}
-		while (from < 0)
-		{
-			from += TWO_PI;
-		}
-
 		// forward check
 		float forwardLength;
 		float backwardLength;
@@ -856,13 +852,19 @@ namespace fb
 			swaped = true;
 		}
 		forwardLength = to - from;
-		backwardLength = -((from + TWO_PI) - to);
+		backwardLength = ((from + TWO_PI) - to);
 
 		if (!swaped){
-			return from + std::min(forwardLength, backwardLength);
+			if (forwardLength <= backwardLength)
+				return from + forwardLength;
+			else
+				return from - backwardLength;
 		}
 		else{
-			return to - std::min(forwardLength, backwardLength);
+			if (forwardLength <= backwardLength)
+				return from - forwardLength;
+			else
+				return from + backwardLength;
 		}
 	}
 }

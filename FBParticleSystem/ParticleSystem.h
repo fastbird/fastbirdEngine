@@ -50,7 +50,7 @@ namespace fb
 		void OnChangeDetected();
 
 		void AddParticleSearchDirectory(const char* directory);
-		void Update(float elapsedTime);
+		void Update(float elapsedTime, const Vec3& mainCamPos);
 		void RenderProfile();
 		ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file);
 		ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, unsigned id);
