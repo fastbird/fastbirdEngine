@@ -42,7 +42,6 @@
 #include "Material.h"
 #include "TextureAtlas.h"
 #include "DebugHud.h"
-#include "GeometryRenderer.h"
 #include "RenderStates.h"
 #include "ResourceProvider.h"
 #include "ResourceTypes.h"
@@ -178,8 +177,7 @@ public:
 
 	DirectionalLightInfo	mDirectionalLight[2];
 	VectorMap<int, FontPtr> mFonts;
-	DebugHudPtr		mDebugHud;
-	GeometryRendererPtr mGeomRenderer;	
+	DebugHudPtr		mDebugHud;	
 	RendererOptionsPtr mRendererOptions;
 	bool mForcedWireframe;
 	RENDERER_FRAME_PROFILER mFrameProfiler;
@@ -550,7 +548,6 @@ public:
 		}
 
 		mDebugHud = DebugHud::Create();
-		mGeomRenderer = GeometryRenderer::Create();	
 
 		for (int i = 0; i <  ResourceTypes::SamplerStates::Num; ++i)
 		{
@@ -566,9 +563,6 @@ public:
 		}
 		if (mDebugHud){
 			mDebugHud->SetRenderTargetSize(rtSize);
-		}
-		if (mGeomRenderer){
-			mGeomRenderer->SetRenderTargetSize(rtSize);
 		}
 	}
 
@@ -1770,27 +1764,6 @@ public:
 		}
 	}
 
-	void QueueDrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, Real thickness,
-		const char* texture, bool textureFlow){
-		if (mGeomRenderer)
-			mGeomRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
-	}
-
-	void QueueDrawSphere(const Vec3& pos, Real radius, const Color& color){
-		if (mGeomRenderer)
-			mGeomRenderer->DrawSphere(pos, radius, color);
-	}
-
-	void QueueDrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha){
-		if (mGeomRenderer)
-			mGeomRenderer->DrawBox(boxMin, boxMax, color, alpha);
-	}
-
-	void QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha){
-		if (mGeomRenderer)
-			mGeomRenderer->DrawTriangle(a, b, c, color, alpha);
-	}
-
 	void QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color){
 		int left = pos.x - 1;
 		int top = pos.y - 1;
@@ -2711,10 +2684,6 @@ public:
 			mDebugHud->OnBeforeRenderingTransparents(scene, renderParam, renderParamOut);
 		}
 
-		if (mGeomRenderer){
-			mGeomRenderer->Render(renderParam, renderParamOut);
-		}
-
 		BindDepthTexture(true);
 	}
 	
@@ -3467,22 +3436,6 @@ void Renderer::QueueDrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end, 
 
 void Renderer::QueueDrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color) {
 	mImpl->QueueDrawQuad(pos, size, color);
-}
-
-void Renderer::QueueDrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, Real thickness, const char* texture, bool textureFlow) {
-	mImpl->QueueDrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
-}
-
-void Renderer::QueueDrawSphere(const Vec3& pos, Real radius, const Color& color) {
-	mImpl->QueueDrawSphere(pos, radius, color);
-}
-
-void Renderer::QueueDrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha) {
-	mImpl->QueueDrawBox(boxMin, boxMax, color, alpha);
-}
-
-void Renderer::QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha) {
-	mImpl->QueueDrawTriangle(a, b, c, color, alpha);
 }
 
 void Renderer::QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) {

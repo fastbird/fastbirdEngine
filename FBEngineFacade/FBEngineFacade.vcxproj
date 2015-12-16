@@ -46,7 +46,7 @@
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CPP;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -62,7 +62,7 @@
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CPP;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
@@ -72,11 +72,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AudioExFacade.h" />
     <ClInclude Include="BillboardQuadFacade.h" />
     <ClInclude Include="CollisionShapeInfo.h" />
     <ClInclude Include="DustFacade.h" />
     <ClInclude Include="EngineFacade.h" />
     <ClInclude Include="EngineOptions.h" />
+    <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="MeshFacade.h" />
     <ClInclude Include="MeshLoadOptions.h" />
     <ClInclude Include="ParticleFacade.h" />
@@ -87,11 +89,13 @@
     <ClInclude Include="Voxelizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioExFacade.cpp" />
     <ClCompile Include="BillboardQuadFacade.cpp" />
     <ClCompile Include="DustFacade.cpp" />
     <ClCompile Include="EngineFacade.cpp" />
     <ClCompile Include="EngineLua.cpp" />
     <ClCompile Include="EngineOptions.cpp" />
+    <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="MeshFacade.cpp" />
     <ClCompile Include="ParticleFacade.cpp" />
     <ClCompile Include="SkyFacade.cpp" />

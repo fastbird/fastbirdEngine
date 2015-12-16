@@ -41,6 +41,7 @@ namespace fb{
 	class LuaObject;
 	class Color;
 	class Ray3;
+	FB_DECLARE_SMART_PTR(AudioExFacade);
 	FB_DECLARE_SMART_PTR(ISpatialObject);
 	FB_DECLARE_SMART_PTR(MeshFacade);
 	FB_DECLARE_SMART_PTR(DirectionalLight);
@@ -58,7 +59,7 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(EngineFacade);
 	FB_DECLARE_SMART_PTR(RenderTarget);
-	class FB_DLL_ENGINEFACADE EngineFacade : public IFileChangeObserver, public IRendererObserver{
+	class FB_DLL_ENGINEFACADE EngineFacade : public IFileChangeObserver, public IRendererObserver, public ISceneObserver{
 		FB_DECLARE_PIMPL_NON_COPYABLE(EngineFacade);
 		EngineFacade();
 		~EngineFacade();
@@ -121,6 +122,13 @@ namespace fb{
 		void BeforeDebugHudRendering();
 		void AfterDebugHudRendered();
 		void OnResolutionChanged(HWindowId hwndId, HWindow hwnd);
+
+		//---------------------------------------------------------------------------
+		// IScene Observer
+		//---------------------------------------------------------------------------
+		void OnAfterMakeVisibleSet(IScene* scene);
+		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
 
 		//---------------------------------------------------------------------------
 		// Renderer Interfaces
@@ -224,6 +232,7 @@ namespace fb{
 		AudioId PlayAudio(const char* filepath);
 		AudioId PlayAudio(const char* filepath, const Vec3& pos);
 		AudioId PlayAudio(const char* filepath, const AudioProperty& prop);
+		void StopAudio(AudioId id);
 		bool SetAudioPosition(AudioId id, const Vec3& pos);
 		void SetListenerPosition(const Vec3& pos);
 	};

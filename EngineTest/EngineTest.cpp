@@ -66,6 +66,8 @@ void UpdateFrame(){
 		gMeshTest->Update(dt);
 	if (gTextTest)
 		gTextTest->Update();
+	if (gAudioTest)
+		gAudioTest->Update(dt);
 
 	gEngine->Render();
 	gEngine->EndInput();
@@ -93,9 +95,9 @@ void StartTest(){
 	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	//gParticleTest = ParticleTest::Create();
-	//gAudioTest = AudioTest::Create();
+	gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
-	gTextTest = TextTest::Create();
+	//gTextTest = TextTest::Create();
 }
 
 void EndTest(){

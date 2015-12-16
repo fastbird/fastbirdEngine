@@ -675,6 +675,22 @@ LuaObject LuaObject::GetTableAt(int index) const
 	return LuaObject();
 }
 
+const char* LuaObject::GetStringAt(int index) const{
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	PushToStack();
+	lua_rawgeti(mL, -1, index);
+	if (lua_isstring(mL, -1))
+	{
+		auto str = lua_tostring(mL, -1);
+		lua_pop(mL, 2);
+		return str;
+	}
+	else{
+		Logger::Log(FB_ERROR_LOG_ARG, "No element found.");
+	}
+	return "";
+}
+
 std::string LuaObject::GetString() const{
 	return GetString(std::string());
 }

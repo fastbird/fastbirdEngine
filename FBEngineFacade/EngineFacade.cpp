@@ -30,6 +30,7 @@
 #include "EngineOptions.h"
 #include "Voxelizer.h"
 #include "MeshFacade.h"
+#include "GeometryRenderer.h"
 #include "FBTimer/Profiler.h"
 #include "FBFileSystem/FileSystem.h"
 #include "FBSystemLib/System.h"
@@ -79,6 +80,7 @@ public:
 	EngineOptionsPtr mEngineOptions;
 	FileMonitorPtr mFileMonitor;
 	AudioManagerPtr mAudioManager;
+	GeometryRendererPtr mGeometryRenderer;
 	bool mRayFromCursorCalced;
 
 	// EngineFacade
@@ -115,10 +117,10 @@ public:
 			if (!mMainScene){
 				Logger::Log(FB_ERROR_LOG_ARG, "Cannot create the main scene.");
 			}
-		}		
+		}
 		mEngineOptions = EngineOptions::Create();
-		mRenderer = Renderer::Create();
-		mSceneObjectFactory = SceneObjectFactory::Create();
+		mRenderer = Renderer::Create();		
+		mSceneObjectFactory = SceneObjectFactory::Create();		
 		mAudioManager = AudioManager::Create();
 		mAudioManager->Init();
 		
@@ -133,6 +135,11 @@ public:
 		Logger::Release();
 	}
 
+	void Init(){
+		if (mMainScene){
+			mMainScene->AddObserver(ISceneObserver::Timing, mSelfPtr.lock());
+		}
+	}
 	HWindowId FindEmptyHwndId()
 	{
 		return mNextWindowId++;
@@ -270,10 +277,12 @@ public:
 					rt->AddObserver(IRenderTargetObserver::DefaultEvent, observer);
 				}
 				if (id == MainWindowId){
-					mRenderer->AddObserver(IRendererObserver::DefaultRenderEvent, mSelfPtr.lock());
+					mGeometryRenderer = GeometryRenderer::Create();
+					mRenderer->AddObserver(IRendererObserver::DefaultRenderEvent, mSelfPtr.lock());					
 					rt->RegisterScene(mMainScene);
 					mMainCamera = rt->GetCamera();
 					mMainCamera->SetMainCamera(true);
+					
 					SkySphere::CreateSharedEnvRT();
 				}
 			}
@@ -522,6 +531,10 @@ public:
 		return mAudioManager->PlayAudio(filepath, prop);
 	}
 
+	void StopAudio(AudioId id){
+		mAudioManager->StopAudio(id);
+	}
+
 	bool SetAudioPosition(AudioId id, const Vec3& pos){
 		return mAudioManager->SetPosition(id, pos.x, pos.y, pos.z);
 	}
@@ -541,6 +554,7 @@ EngineFacadePtr EngineFacade::Create(){
 		sFacade = p;
 		sFacadeRaw = p.get();
 		p->mImpl->mSelfPtr = p;
+		p->mImpl->Init();
 		return p;
 	}
 	return sFacade.lock();
@@ -613,7 +627,20 @@ void EngineFacade::AfterDebugHudRendered(){
 }
 
 void EngineFacade::OnResolutionChanged(HWindowId hwndId, HWindow hwnd){
+	auto size = Renderer::GetInstance().GetRenderTargetSize(hwnd);
+	mImpl->mGeometryRenderer->SetRenderTargetSize(size);
+}
 
+void EngineFacade::OnAfterMakeVisibleSet(IScene* scene){
+
+}
+
+void EngineFacade::OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut){
+
+}
+
+void EngineFacade::OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut){
+	mImpl->mGeometryRenderer->Render(renderParam, renderParamOut);
 }
 
 bool EngineFacade::InitRenderer(const char* pluginName) {
@@ -1068,19 +1095,19 @@ void EngineFacade::QueueDrawLine(const Vec3& start, const Vec3& end,
 
 void EngineFacade::QueueDrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, Real thickness,
 	const char* texture, bool textureFlow) {
-	Renderer::GetInstance().QueueDrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
+	mImpl->mGeometryRenderer->DrawTexturedThickLine(start, end, color0, color1, thickness, texture, textureFlow);
 }
 
 void EngineFacade::QueueDrawSphere(const Vec3& pos, Real radius, const Color& color){
-	Renderer::GetInstance().QueueDrawSphere(pos, radius, color);
+	mImpl->mGeometryRenderer->DrawSphere(pos, radius, color);
 }
 
 void EngineFacade::QueueDrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha){
-	Renderer::GetInstance().QueueDrawBox(boxMin, boxMax, color, alpha);
+	mImpl->mGeometryRenderer->DrawBox(boxMin, boxMax, color, alpha);
 }
 
 void EngineFacade::QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha){
-	Renderer::GetInstance().QueueDrawTriangle(a, b, c, color, alpha);
+	mImpl->mGeometryRenderer->DrawTriangle(a, b, c, color, alpha);
 }
 
 FontPtr EngineFacade::GetFont(int fontSize){
@@ -1180,6 +1207,10 @@ AudioId EngineFacade::PlayAudio(const char* filepath, const Vec3& pos){
 
 AudioId EngineFacade::PlayAudio(const char* filepath, const AudioProperty& prop){
 	return mImpl->PlayAudio(filepath, prop);
+}
+
+void EngineFacade::StopAudio(AudioId id){
+	mImpl->StopAudio(id);
 }
 
 bool EngineFacade::SetAudioPosition(AudioId id, const Vec3& pos){

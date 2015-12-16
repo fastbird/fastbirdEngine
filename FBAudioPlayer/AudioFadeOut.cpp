@@ -78,3 +78,7 @@ AudioFadeOut::~AudioFadeOut(){
 bool AudioFadeOut::Update(TIME_PRECISION dt){
 	return mImpl->Update(dt);
 }
+
+AudioId AudioFadeOut::GetAudioId() const{
+	return mImpl->mId;
+}

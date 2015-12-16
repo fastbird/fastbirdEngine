@@ -342,15 +342,6 @@ namespace fb{
 		void QueueDrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 			const Color& color0, const Color& color1);
 		void QueueDrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
-		/**Rendered before the transparent object.*/
-		void QueueDrawTexturedThickLine(const Vec3& start, const Vec3& end, const Color& color0, const Color& color1, Real thickness,
-			const char* texture, bool textureFlow);
-		/**Rendered before the transparent object.*/
-		void QueueDrawSphere(const Vec3& pos, Real radius, const Color& color);
-		/**Rendered before the transparent object.*/
-		void QueueDrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha);
-		/**Rendered before the transparent object.*/
-		void QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha);		
 		void QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
 
 		//-------------------------------------------------------------------

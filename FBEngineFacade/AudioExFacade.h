@@ -28,14 +28,21 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 namespace fb{
-	FB_DECLARE_SMART_PTR(AudioTest);
-	class AudioTest{
-		FB_DECLARE_PIMPL_NON_COPYABLE(AudioTest);
-		AudioTest();
-		~AudioTest();
+	struct AudioProperty;
+	FB_DECLARE_SMART_PTR(AudioExFacade);
+	class FB_DLL_ENGINEFACADE AudioExFacade{
+		FB_DECLARE_PIMPL_NON_COPYABLE(AudioExFacade);
+		AudioExFacade(const AudioProperty& prop);
+		~AudioExFacade();
 
 	public:
-		static AudioTestPtr Create();
-		void Update(float dt);
+		static AudioExFacadePtr Create(const AudioProperty& prop);
+
+		void SetAudio(const char* startPath, const char* loopPath, const char* endPath);
+		void Play(const char* filepath, float forSec);
+		void Play(const char* startPath, const char* loopPath, const char* endPath, float forSec);
+		void Play(float forSec);
+		void Stop();
+		void Stop(float fadeOutTime, bool playEnd);
 	};
 }

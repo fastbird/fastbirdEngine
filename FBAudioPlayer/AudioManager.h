@@ -78,6 +78,7 @@ namespace fb{
 		float GetGain(AudioId id) const;
 
 		void RegisterAudioEx(AudioExPtr audioex);
+
 		void UnregisterEndCallbackForAudio(AudioId id);
 		void UnregisterEndCallbackFunc(FunctionId funcId);
 	};

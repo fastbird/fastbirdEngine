@@ -27,18 +27,19 @@
 
 #include "stdafx.h"
 #include "GeometryRenderer.h"
-#include "Texture.h"
-#include "Shader.h"
-#include "InputLayout.h"
-#include "Material.h"
-#include "VertexBuffer.h"
-#include "RenderStates.h"
-#include "Renderer.h"
-#include "RenderParam.h"
-#include "RendererOptions.h"
-#include "ResourceProvider.h"
-#include "ResourceTypes.h"
-#include "Camera.h"
+#include "MeshFacade.h"
+#include "FBRenderer/Texture.h"
+#include "FBRenderer/Shader.h"
+#include "FBRenderer/InputLayout.h"
+#include "FBRenderer/Material.h"
+#include "FBRenderer/VertexBuffer.h"
+#include "FBRenderer/RenderStates.h"
+#include "FBRenderer/Renderer.h"
+#include "FBRenderer/RenderParam.h"
+#include "FBRenderer/RendererOptions.h"
+#include "FBRenderer/ResourceProvider.h"
+#include "FBRenderer/ResourceTypes.h"
+#include "FBRenderer/Camera.h"
 #include "FBSceneManager/IScene.h"
 #include "EssentialEngineData/shaders/Constants.h"
 using namespace fb;
@@ -136,6 +137,9 @@ public:
 	DepthStencilStatePtr mDepthStencilState;
 	RasterizerStatePtr mRasterizerState;
 
+	MeshFacadePtr mSphereMesh;
+	MeshFacadePtr mBoxMesh;
+
 	//---------------------------------------------------------------------------
 	Impl(){
 		mObjectConstants.gWorld.MakeIdentity();
@@ -156,6 +160,9 @@ public:
 		RASTERIZER_DESC desc;
 		mRasterizerState = renderer.CreateRasterizerState(desc);		
 		mThickLines.reserve(1000);
+
+		mSphereMesh = MeshFacade::Create()->LoadMeshObject("EssentialEngineData/objects/Sphere.dae");
+		mBoxMesh = MeshFacade::Create()->LoadMeshObject("EssentialEngineData/objects/DebugBox.dae");
 	}
 
 	//----------------------------------------------------------------------------
@@ -423,6 +430,27 @@ public:
 			mThickLineMaterial->Unbind();
 		}
 
+		if (mSphereMesh)
+		{
+			RenderEventMarker mark("DebugHud::Render - Spheres()");
+			renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			for (auto& sphere : mSpheres)
+			{
+				Transformation t;
+				t.SetScale(Vec3(sphere.mRadius, sphere.mRadius, sphere.mRadius));
+				t.SetTranslation(sphere.mPos);
+				t.GetHomogeneous(mObjectConstants.gWorld);
+				// only world are available. other matrix will be calculated in the shader
+				mObjectConstants.gWorldView = renderer.GetCamera()->GetMatrix(ICamera::View) * mObjectConstants.gWorld;
+				mObjectConstants.gWorldViewProj = renderer.GetCamera()->GetMatrix(ICamera::Proj) * mObjectConstants.gWorldView;
+				renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
+				mSphereMesh->GetMaterial()->SetMaterialParameter(0, sphere.mColor.GetVec4());
+				mSphereMesh->GetMaterial()->Bind(true);
+				mSphereMesh->RenderSimple();
+			}
+		}
+		mSpheres.clear();
+
 		if (mTriMaterial)
 		{
 			for (auto& tri : mTriangles)
@@ -482,4 +510,3 @@ void GeometryRenderer::DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c,
 void GeometryRenderer::OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut){
 	mImpl->OnBeforeRenderingTransparents(scene, renderParam, renderParamOut);
 }
-

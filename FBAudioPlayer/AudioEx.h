@@ -43,6 +43,7 @@ namespace fb{
 		void SetReferenceDistance(float referenceDistance);
 		void SetRolloffFactor(float rolloffFactor);
 		void Play(TIME_PRECISION forSec);
+		void ExtendTime(TIME_PRECISION forSec);
 		void Stop(float fadeOutTime, bool playEnd);
 		bool IsPlaying() const;
 		// return true when finished.

@@ -54,7 +54,6 @@
     <ClInclude Include="TextureBinding.h" />
     <ClInclude Include="SystemTextures.h" />
     <ClInclude Include="DebugHud.h" />
-    <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="ShaderConstants.h" />
     <ClInclude Include="ResourceTypes.h" />
     <ClInclude Include="ResourceProvider.h" />
@@ -101,7 +100,6 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TextureBinding.cpp" />
     <ClCompile Include="DebugHud.cpp" />
-    <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="ResourceProvider.cpp" />
     <ClCompile Include="NullPlatformRenderer.cpp" />

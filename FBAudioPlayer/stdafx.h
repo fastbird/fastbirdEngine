@@ -41,6 +41,7 @@
 
 #include <string>
 #include <chrono>
+#include <stack>
 
 #include <AL/al.h>
 #include <AL/alc.h>

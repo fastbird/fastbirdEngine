@@ -54,6 +54,6 @@ namespace fb{
 		void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha);
 		void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha);
 
-		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);		
 	};
 }

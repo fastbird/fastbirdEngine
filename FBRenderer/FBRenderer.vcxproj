@@ -16,7 +16,6 @@
     <ClInclude Include="DebugHud.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="GaussianDistribution.h" />
-    <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="ICamera.h" />
     <ClInclude Include="ICameraObserver.h" />
     <ClInclude Include="InputLayout.h" />
@@ -71,7 +70,6 @@
     <ClCompile Include="DebugHud.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="GaussianDistribution.cpp" />
-    <ClCompile Include="GeometryRenderer.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="InputElementDesc.cpp" />
     <ClCompile Include="InputLayout.cpp" />

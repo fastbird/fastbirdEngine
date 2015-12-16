@@ -159,6 +159,7 @@ namespace fb
 		double GetNumberAt(int index) const;
 		unsigned GetUnsignedAt(int index) const;
 		LuaObject GetTableAt(int index) const;
+		const char* GetStringAt(int index) const;
 		std::string GetString() const;
 		std::string GetString(std::string& def) const;
 		float GetFloat() const;

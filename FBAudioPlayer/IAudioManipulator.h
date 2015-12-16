@@ -33,5 +33,6 @@ namespace fb{
 	public:
 		/// returns true when finished.
 		virtual bool Update(TIME_PRECISION dt) = 0;
+		virtual AudioId GetAudioId() const = 0;
 	};
 }

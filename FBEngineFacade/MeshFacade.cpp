@@ -1046,3 +1046,9 @@ void MeshFacade::OnMainCameraTargeted(){
 		EngineFacade::GetInstance().GetMainCamera()->SetTarget(mImpl->mMeshGroup);
 	}
 }
+
+void MeshFacade::RenderSimple(){
+	if (mImpl->mMeshObject){
+		mImpl->mMeshObject->RenderSimple();
+	}
+}

@@ -42,5 +42,6 @@ namespace fb{
 		//---------------------------------------------------------------------------
 		/// returns true when faded in completely.
 		bool Update(TIME_PRECISION dt);
+		AudioId GetAudioId() const;
 	};
 }

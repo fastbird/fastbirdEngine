@@ -32,14 +32,25 @@
 using namespace fb;
 class AudioTest::Impl{
 public:
+	AudioId mAudio;
 	Impl(){
-		//EngineFacade::GetInstance().PlayAudio("data/audio/button_mouse_click.wav");
-		EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
-		AudioProperty prop;
-		auto audioex = AudioEx::Create(prop);
-		audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
-		audioex->Play(6.f);
+		mAudio = EngineFacade::GetInstance().PlayAudio("data/audio/big_laser_fire_loop.wav");
+
+		//EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
+		//AudioProperty prop;
+		//auto audioex = AudioEx::Create(prop);
+		//audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
+		//audioex->Play(6.f);
 		
+	}
+
+	void Update(float dt){
+		static float time = 0;
+		time += dt;
+		if (time > 0.5f && mAudio != INVALID_AUDIO_ID){
+			EngineFacade::GetInstance().StopAudio(mAudio);
+			mAudio = INVALID_AUDIO_ID;
+		}
 	}
 };
 
@@ -52,4 +63,8 @@ AudioTest::AudioTest()
 
 AudioTest::~AudioTest(){
 
+}
+
+void AudioTest::Update(float dt){
+	mImpl->Update(dt);
 }

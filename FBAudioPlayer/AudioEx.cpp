@@ -50,6 +50,8 @@ public:
 	TIME_PRECISION mRequestedTime;
 	TIME_PRECISION mLoopStartedTime;
 
+	TIME_PRECISION mReservedRequestTime;
+
 	AudioProperty mProperty;
 
 	Impl(const AudioProperty& prop)
@@ -60,6 +62,7 @@ public:
 		, mCurAudioId(INVALID_AUDIO_ID)
 		, mProperty(prop)
 		, mLoopStartedTime(0)
+		, mReservedRequestTime(0)
 	{
 		for (int i = 0; i < AudioType::Num; ++i){
 			mDurations[i] = 0.f;
@@ -113,26 +116,43 @@ public:
 	}
 
 	void Play(TIME_PRECISION forSec){
-		mRequestedTime = forSec;
-		if (mDurations[AudioType::Loop] == 0.f && forSec > mDurations[AudioType::Start] + mDurations[AudioType::End]){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("No loop sound is specified. Audio will finish quicker than"
-				" you requested. start: %s, end: %s", 
-				mAudioBuffers[AudioType::Start].c_str(), mAudioBuffers[AudioType::End].c_str()).c_str());
+		if (mCurPlaying == AudioType::Num){			
+			mRequestedTime = forSec;
+			if (mDurations[AudioType::Loop] == 0.f && forSec > mDurations[AudioType::Start] + mDurations[AudioType::End]){
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("No loop sound is specified. Audio will finish quicker than"
+					" you requested. start: %s, end: %s",
+					mAudioBuffers[AudioType::Start].c_str(), mAudioBuffers[AudioType::End].c_str()).c_str());
+			}
+			mStartTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+			mPlayingTime = 0;
+			auto& am = AudioManager::GetInstance();
+			if (!mAudioBuffers[AudioType::Start].empty()){
+				mCurPlaying = AudioType::Start;
+				mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::Start].c_str(), mProperty);
+			}
+			else if (!mAudioBuffers[AudioType::Loop].empty()){
+				mCurPlaying = AudioType::Loop;
+				mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, mDurations[AudioType::Loop] * 0.1f);
+			}
+			else if (!mAudioBuffers[AudioType::End].empty()){
+				mCurPlaying = AudioType::End;
+				mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::End].c_str(), mProperty);
+			}
 		}
-		mStartTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-		mPlayingTime = 0;
-		auto& am = AudioManager::GetInstance();
-		if (!mAudioBuffers[AudioType::Start].empty()){
-			mCurPlaying = AudioType::Start;
-			mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::Start].c_str(), mProperty);
+		else{
+			mReservedRequestTime = forSec;
 		}
-		else if (!mAudioBuffers[AudioType::Loop].empty()){
-			mCurPlaying = AudioType::Loop;			
-			mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, mDurations[AudioType::Loop] * 0.1f);
+	}
+
+	void ExtendTime(TIME_PRECISION forSec){
+		if (mCurPlaying != AudioType::Num){
+			mRequestedTime += forSec;
 		}
-		else if (!mAudioBuffers[AudioType::End].empty()){
-			mCurPlaying = AudioType::End;
-			mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::End].c_str(), mProperty);
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot extend time for AudioEx(%s, %s, %s)", 
+				mAudioBuffers[AudioType::Start].c_str(),
+				mAudioBuffers[AudioType::Loop].c_str(),
+				mAudioBuffers[AudioType::End].c_str()).c_str());
 		}
 	}
 
@@ -208,6 +228,12 @@ public:
 				}
 			}
 		}
+		if (mCurPlaying == AudioType::Num && mReservedRequestTime > 0){
+			Play(mReservedRequestTime);
+			mReservedRequestTime = 0;
+			return false;
+		}
+
 		return mCurAudioId == INVALID_AUDIO_ID; // finished.
 	}
 
@@ -257,6 +283,10 @@ void AudioEx::SetRolloffFactor(float rolloffFactor) {
 void AudioEx::Play(TIME_PRECISION forSec) {
 	mImpl->Play(forSec);
 	AudioManager::GetInstance().RegisterAudioEx(mImpl->mSelfPtr.lock());
+}
+
+void AudioEx::ExtendTime(TIME_PRECISION forSec){
+	mImpl->ExtendTime(forSec);
 }
 
 void AudioEx::Stop(float fadeOutTime, bool playEnd) {

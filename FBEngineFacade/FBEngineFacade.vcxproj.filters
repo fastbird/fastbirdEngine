@@ -14,6 +14,8 @@
     <ClInclude Include="BillboardQuadFacade.h" />
     <ClInclude Include="MeshLoadOptions.h" />
     <ClInclude Include="ParticleFacade.h" />
+    <ClInclude Include="AudioExFacade.h" />
+    <ClInclude Include="GeometryRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -27,5 +29,7 @@
     <ClCompile Include="BillboardQuadFacade.cpp" />
     <ClCompile Include="EngineLua.cpp" />
     <ClCompile Include="ParticleFacade.cpp" />
+    <ClCompile Include="AudioExFacade.cpp" />
+    <ClCompile Include="GeometryRenderer.cpp" />
   </ItemGroup>
 </Project>
