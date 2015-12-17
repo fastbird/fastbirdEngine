@@ -27,6 +27,7 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
+#include "AudioManipulatorType.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(IAudioManipulator);
 	class IAudioManipulator{
@@ -34,5 +35,8 @@ namespace fb{
 		/// returns true when finished.
 		virtual bool Update(TIME_PRECISION dt) = 0;
 		virtual AudioId GetAudioId() const = 0;
+		virtual AudioManipulatorType::Enum GetManipulatorType() const = 0;
+		virtual void OnGainModified(float gain) = 0;
+		virtual void SetDuration(float duration) = 0;
 	};
 }

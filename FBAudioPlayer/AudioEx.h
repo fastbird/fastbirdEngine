@@ -41,8 +41,11 @@ namespace fb{
 		void SetPosition(float x, float y, float z);
 		void SetRelative(bool relative);
 		void SetReferenceDistance(float referenceDistance);
+		void SetGain(float gain);
+		void SetGainSmooth(float gain, float inSec);
 		void SetRolloffFactor(float rolloffFactor);
 		void Play(TIME_PRECISION forSec);
+		void SetRequestTime(float requestTime);
 		void ExtendTime(TIME_PRECISION forSec);
 		void Stop(float fadeOutTime, bool playEnd);
 		bool IsPlaying() const;

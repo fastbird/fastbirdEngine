@@ -42,7 +42,14 @@ namespace fb{
 		void Play(const char* filepath, float forSec);
 		void Play(const char* startPath, const char* loopPath, const char* endPath, float forSec);
 		void Play(float forSec);
+		/// Set play duration but do not play now.
+		void SetRequestTime(float requestTime);
 		void Stop();
 		void Stop(float fadeOutTime, bool playEnd);
+
+		void SetPosition(const Vec3& pos);
+		void SetGain(float gain);
+		void SetGainSmooth(float gain, float inSec);
+		void SetReferenceDistance(float dist);
 	};
 }

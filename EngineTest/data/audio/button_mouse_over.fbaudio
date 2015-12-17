@@ -1,0 +1,5 @@
+<FBAudio file="Data/audio/button_mouse_over.wav"
+	gain="1.0"
+	relative = "true"
+	rollOffFactor="1.0"
+	referenceDistance="10.0"/>

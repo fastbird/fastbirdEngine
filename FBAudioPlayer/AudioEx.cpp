@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "AudioEx.h"
 #include "AudioManager.h"
+#include "AudioManipulatorType.h"
 #include "FBCommonHeaders/Helpers.h"
 using namespace fb;
 using namespace std::chrono;
@@ -108,6 +109,39 @@ public:
 		}
 	}
 
+	void SetGain(float gain){
+		gain = std::max(0.f, gain);
+		float prevGain = mProperty.mGain;
+		mProperty.mGain= gain;
+		if (mCurAudioId != INVALID_AUDIO_ID){
+			AudioManager::GetInstance().SetGain(mCurAudioId, gain, true);
+		}
+		if (gain == 0.f){
+			if (mCurAudioId != INVALID_AUDIO_ID){
+				Stop(0.5f, false);
+			}
+		}
+		else if (!IsPlaying() && mRequestedTime > 0.f){
+			Play(mRequestedTime);
+		}
+	}
+
+	void SetGainSmooth(float gain, float inSec){
+		gain = std::max(0.f, gain);
+		if (gain > 0.f && !IsPlaying()){
+			mProperty.mGain = gain;
+			Play(mRequestedTime);
+		}
+		else if (mCurAudioId != INVALID_AUDIO_ID){
+			bool success = AudioManager::GetInstance().SetGainSmooth(mCurAudioId, gain, inSec);
+			if (!success){
+				auto reged = AudioManager::GetInstance().IsRegisteredAudioEx(mSelfPtr.lock());
+				Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) audio ex is registered? : %d", reged ? 1 : 0).c_str());
+			}
+			mProperty.mGain = gain;
+		}
+	}
+
 	void SetRolloffFactor(float rolloffFactor){
 		mProperty.mRolloffFactor = rolloffFactor;
 		if (mCurAudioId != INVALID_AUDIO_ID){
@@ -116,7 +150,16 @@ public:
 	}
 
 	void Play(TIME_PRECISION forSec){
-		if (mCurPlaying == AudioType::Num){			
+		Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioex play");
+		auto& am = AudioManager::GetInstance();
+		am.RegisterAudioEx(mSelfPtr.lock());
+		if (!IsPlaying()){
+			if (mCurAudioId != INVALID_AUDIO_ID){
+				am.StopWithFadeOut(mCurAudioId, 0.5f);
+				mCurAudioId = INVALID_AUDIO_ID;
+			}
+			
+			Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioex playnew");
 			mRequestedTime = forSec;
 			if (mDurations[AudioType::Loop] == 0.f && forSec > mDurations[AudioType::Start] + mDurations[AudioType::End]){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("No loop sound is specified. Audio will finish quicker than"
@@ -125,7 +168,7 @@ public:
 			}
 			mStartTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 			mPlayingTime = 0;
-			auto& am = AudioManager::GetInstance();
+			
 			if (!mAudioBuffers[AudioType::Start].empty()){
 				mCurPlaying = AudioType::Start;
 				mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::Start].c_str(), mProperty);
@@ -133,6 +176,7 @@ public:
 			else if (!mAudioBuffers[AudioType::Loop].empty()){
 				mCurPlaying = AudioType::Loop;
 				mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, mDurations[AudioType::Loop] * 0.1f);
+				mLoopStartedTime = 0;
 			}
 			else if (!mAudioBuffers[AudioType::End].empty()){
 				mCurPlaying = AudioType::End;
@@ -140,8 +184,15 @@ public:
 			}
 		}
 		else{
+			Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioex already");
 			mReservedRequestTime = forSec;
+			// delete FadeOut manipulator
+			am.SetGainSmooth(mCurAudioId, 1.0f, 0.5f);
 		}
+	}
+
+	void SetRequestTime(float requestTime){
+		mRequestedTime = requestTime;
 	}
 
 	void ExtendTime(TIME_PRECISION forSec){
@@ -157,8 +208,9 @@ public:
 	}
 
 	void Stop(float fadeOutTime, bool playEnd){
+		Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioex stopped");
 		auto& am = AudioManager::GetInstance();
-		if (mCurAudioId){
+		if (mCurAudioId){			
 			am.StopWithFadeOut(mCurAudioId, fadeOutTime);
 			mCurAudioId = INVALID_AUDIO_ID;
 		}
@@ -169,7 +221,7 @@ public:
 	}
 
 	bool IsPlaying() const{
-		return mCurAudioId != INVALID_AUDIO_ID;
+		return mCurAudioId != INVALID_AUDIO_ID && mCurPlaying != AudioType::Num;
 	}
 
 	bool Update(){
@@ -184,20 +236,24 @@ public:
 				if (!mAudioBuffers[AudioType::End].empty()){
 					mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::End].c_str(), mProperty);
 					mCurPlaying = AudioType::End;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType End");
 				}
 				else{
 					mCurPlaying = AudioType::Num;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType Num");
 				}
 			}
 			// start finished case
 			else if (mDurations[AudioType::Start] - mPlayingTime <= 0.05f){
 				if (!mAudioBuffers[AudioType::Loop].empty()){
 					mCurPlaying = AudioType::Loop;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType Loop");
 					mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::Loop].c_str(), mProperty);
 					mLoopStartedTime = mPlayingTime;
 				}
 				else if (!mAudioBuffers[AudioType::End].empty()){
 					mCurPlaying = AudioType::End;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType End");
 					mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::End].c_str(), mProperty);
 				}
 			}
@@ -209,17 +265,27 @@ public:
 				if (!mAudioBuffers[AudioType::End].empty()){
 					mCurAudioId = am.PlayAudio(mAudioBuffers[AudioType::End].c_str(), mProperty);
 					mCurPlaying = AudioType::End;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType End");
 				}
 				else{
 					mCurPlaying = AudioType::Num;
+					Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioType Num");
 				}
 			}
 			else{
 				auto played = mPlayingTime - mLoopStartedTime;				
 				if (played / mDurations[AudioType::Loop] > 0.9f){
 					auto left = mDurations[AudioType::Loop] - played;					
+					left = std::max(0.f, left);
 					am.StopWithFadeOut(mCurAudioId, left);
-					mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, left*.6f);
+					mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, left);
+					if (mCurAudioId == INVALID_AUDIO_ID){
+						Logger::Log(FB_ERROR_LOG_ARG, "(info) Failed to play loop sound.");
+					}
+					if (mProperty.mGain < 0.5f){
+						am.DeleteManipulator(mCurAudioId, AudioManipulatorType::SmoothGain);
+						am.SetGain(mCurAudioId, mProperty.mGain, false);
+					}
 					mLoopStartedTime = mPlayingTime;					
 				}
 				if (mDurations[AudioType::End] == 0.f && leftTime <= 0.1f){
@@ -234,12 +300,12 @@ public:
 			return false;
 		}
 
-		return mCurAudioId == INVALID_AUDIO_ID; // finished.
+		return mCurAudioId == INVALID_AUDIO_ID && mCurPlaying==AudioType::Num; // finished.
 	}
 
 	// internal
 	void OnFinish(AudioId id){
-		if (mCurAudioId == id){
+		if (mCurAudioId == id){			
 			mCurAudioId = INVALID_AUDIO_ID;			
 		}
 	}
@@ -276,13 +342,24 @@ void AudioEx::SetReferenceDistance(float referenceDistance) {
 	mImpl->SetReferenceDistance(referenceDistance);
 }
 
+void AudioEx::SetGain(float gain){
+	mImpl->SetGain(gain);
+}
+
+void AudioEx::SetGainSmooth(float gain, float inSec){
+	mImpl->SetGainSmooth(gain, inSec);
+}
+
 void AudioEx::SetRolloffFactor(float rolloffFactor) {
 	mImpl->SetRolloffFactor(rolloffFactor);
 }
 
 void AudioEx::Play(TIME_PRECISION forSec) {
 	mImpl->Play(forSec);
-	AudioManager::GetInstance().RegisterAudioEx(mImpl->mSelfPtr.lock());
+}
+
+void AudioEx::SetRequestTime(float requestTime){
+	mImpl->SetRequestTime(requestTime);
 }
 
 void AudioEx::ExtendTime(TIME_PRECISION forSec){

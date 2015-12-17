@@ -34,7 +34,7 @@ class AudioTest::Impl{
 public:
 	AudioId mAudio;
 	Impl(){
-		mAudio = EngineFacade::GetInstance().PlayAudio("data/audio/big_laser_fire_loop.wav");
+		mAudio = EngineFacade::GetInstance().PlayAudio("data/cannon_frigate1_fire.fbaudio");
 
 		//EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
 		//AudioProperty prop;

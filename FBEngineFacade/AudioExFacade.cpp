@@ -50,12 +50,32 @@ public:
 		mAudio->Play(forSec);
 	}
 
+	void SetRequestTime(float requestTime){
+		mAudio->SetRequestTime(requestTime);
+	}
+
 	void Stop(){
 		mAudio->Stop(0.5f, true);
 	}
 
 	void Stop(float fadeOutTime, bool playEnd){
 		mAudio->Stop(fadeOutTime, playEnd);
+	}
+
+	void SetPosition(const Vec3& pos){
+		mAudio->SetPosition(pos.x, pos.y, pos.z);
+	}
+
+	void SetGain(float gain){
+		mAudio->SetGain(gain);
+	}
+
+	void SetGainSmooth(float gain, float inSec){
+		mAudio->SetGainSmooth(gain, inSec);
+	}
+
+	void SetReferenceDistance(float dist){
+		mAudio->SetReferenceDistance(dist);
 	}
 };
 
@@ -89,10 +109,30 @@ void AudioExFacade::Play(float forSec){
 	mImpl->Play(forSec);
 }
 
+void AudioExFacade::SetRequestTime(float requestTime){
+	mImpl->SetRequestTime(requestTime);
+}
+
 void AudioExFacade::Stop(){
 	mImpl->Stop();
 }
 
 void AudioExFacade::Stop(float fadeOutTime, bool playEnd){
 	mImpl->Stop(fadeOutTime, playEnd);
+}
+
+void AudioExFacade::SetPosition(const Vec3& pos){
+	mImpl->SetPosition(pos);
+}
+
+void AudioExFacade::SetGain(float gain){
+	mImpl->SetGain(gain);
+}
+
+void AudioExFacade::SetGainSmooth(float gain, float inSec){
+	mImpl->SetGainSmooth(gain, inSec);
+}
+
+void AudioExFacade::SetReferenceDistance(float dist){
+	mImpl->SetReferenceDistance(dist);
 }

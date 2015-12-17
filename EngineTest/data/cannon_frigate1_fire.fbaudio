@@ -1,0 +1,5 @@
+<FBAudio file="Data/audio/cannon_frigate1_fire.wav"
+	gain="1.0"
+	relative = "false"
+	rollOffFactor="1.0"
+	referenceDistance="10.0"/>

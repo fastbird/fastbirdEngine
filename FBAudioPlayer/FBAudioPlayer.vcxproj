@@ -57,7 +57,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -79,18 +79,18 @@
     <ClInclude Include="AudioHelper.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="AudioProperty.h" />
-    <ClInclude Include="AudioFadeIn.h" />
-    <ClInclude Include="AudioFadeOut.h" />
+    <ClInclude Include="AudioSourceStatus.h" />
     <ClInclude Include="IAudioManipulator.h" />
+    <ClInclude Include="AudioManipulatorType.h" />
+    <ClInclude Include="SmoothGain.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioEx.cpp" />
-    <ClCompile Include="AudioFadeIn.cpp" />
     <ClCompile Include="AudioHelper.cpp" />
     <ClCompile Include="AudioManager.cpp" />
-    <ClCompile Include="AudioFadeOut.cpp" />
+    <ClCompile Include="SmoothGain.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -100,8 +100,14 @@
     <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
       <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\FBFileSystem\FBFileSystem.vcxproj">
+      <Project>{970770a8-f3c4-43ad-b4a0-c076ec6fe610}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBStringLib\FBStringLib.vcxproj">
       <Project>{97920097-3e86-410d-8d98-a2ecad02a35f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\TinyXmlLib\TinyXmlLib.vcxproj">
+      <Project>{23117a44-391e-4542-968f-c99c1bac52c0}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

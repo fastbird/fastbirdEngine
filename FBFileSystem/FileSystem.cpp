@@ -129,6 +129,13 @@ std::string FileSystem::ReplaceExtension(const char* path, const char* ext){
 	return boostPath.generic_string();
 }
 
+std::string FileSystem::ReplaceFilename(const char* path, const char* newFilename){
+	boost::filesystem::path boostPath(path);
+	boostPath = boostPath.remove_filename();
+	boostPath.append(newFilename);
+	return boostPath.generic_string();
+}
+
 const char* FileSystem::GetExtension(const char* path){
 	size_t len = strlen(path);
 	while (--len)

@@ -28,6 +28,7 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 #include "AudioProperty.h"
+#include "AudioManipulatorType.h"
 typedef unsigned int ALuint;
 namespace fb{
 	
@@ -53,7 +54,7 @@ namespace fb{
 		/** Start an audio smoothly.
 		if \a sec is longer than the audio length, \a sec will be replaced by the audio length.
 		*/
-		AudioId PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION sec);
+		AudioId PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION inSec);
 		bool StopAudio(AudioId id);
 		TIME_PRECISION GetAudioLength(const char* path);
 		TIME_PRECISION GetAudioLength(AudioId id);
@@ -74,12 +75,18 @@ namespace fb{
 		bool SetReferenceDistance(AudioId id, float distance);
 		bool SetRolloffFactor(AudioId id, float factor);
 		bool SetOffsetInSec(AudioId id, float sec);
-		bool SetGain(AudioId id, float gain);
+		/// \a checkManipulator when true, if fade-in or fade-out manipulator found, this function
+		/// will set the gain value to the manipulator.
+		bool SetGain(AudioId id, float gain, bool checkManipulator);
+		bool SetGainSmooth(AudioId id, float gain, float inSec);
 		float GetGain(AudioId id) const;
 
 		void RegisterAudioEx(AudioExPtr audioex);
+		bool IsRegisteredAudioEx(AudioExPtr audioex);
 
 		void UnregisterEndCallbackForAudio(AudioId id);
 		void UnregisterEndCallbackFunc(FunctionId funcId);
+
+		void DeleteManipulator(AudioId id, AudioManipulatorType::Enum type);
 	};
 }

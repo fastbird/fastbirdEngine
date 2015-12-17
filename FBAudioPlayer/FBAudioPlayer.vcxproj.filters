@@ -8,8 +8,9 @@
     <ClInclude Include="AudioProperty.h" />
     <ClInclude Include="AudioEx.h" />
     <ClInclude Include="IAudioManipulator.h" />
-    <ClInclude Include="AudioFadeOut.h" />
-    <ClInclude Include="AudioFadeIn.h" />
+    <ClInclude Include="AudioManipulatorType.h" />
+    <ClInclude Include="SmoothGain.h" />
+    <ClInclude Include="AudioSourceStatus.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -17,7 +18,6 @@
     <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioEx.cpp" />
-    <ClCompile Include="AudioFadeOut.cpp" />
-    <ClCompile Include="AudioFadeIn.cpp" />
+    <ClCompile Include="SmoothGain.cpp" />
   </ItemGroup>
 </Project>
