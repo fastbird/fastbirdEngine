@@ -32,12 +32,13 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(AudioExFacade);
 	class FB_DLL_ENGINEFACADE AudioExFacade{
 		FB_DECLARE_PIMPL_NON_COPYABLE(AudioExFacade);
-		AudioExFacade(const AudioProperty& prop);
+		AudioExFacade();
 		~AudioExFacade();
 
 	public:
-		static AudioExFacadePtr Create(const AudioProperty& prop);
+		static AudioExFacadePtr Create();
 
+		void SetAudioExFile(const char* fbaudioEx);
 		void SetAudio(const char* startPath, const char* loopPath, const char* endPath);
 		void Play(const char* filepath, float forSec);
 		void Play(const char* startPath, const char* loopPath, const char* endPath, float forSec);

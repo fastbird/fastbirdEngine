@@ -138,6 +138,8 @@ std::string FileSystem::ReplaceFilename(const char* path, const char* newFilenam
 
 const char* FileSystem::GetExtension(const char* path){
 	size_t len = strlen(path);
+	if (len == 0)
+		return "";
 	while (--len)
 	{
 		if (path[len] == '.')

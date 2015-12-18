@@ -258,12 +258,14 @@ public:
 	CallbackIdMap mEndCallbackIds;
 	Vec3Tuple mListenerPos;	
 	int mNumPlaying;
+	int mNumGeneratedSources;
 
 	//---------------------------------------------------------------------------
 	Impl()
 		: mDevice(0)
 		, mContext(0)
 		, mNumPlaying(0)
+		, mNumGeneratedSources(0)
 	{
 		mListenerPos = std::make_tuple(0.f, 0.f, 0.f);
 	}
@@ -309,6 +311,7 @@ public:
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio source idx(%d).", i).c_str());
 			}
 			else{
+				++mNumGeneratedSources;
 				mALSources.push(src);
 			}
 		}
@@ -324,7 +327,7 @@ public:
 			if (it->second->GetALAudioSource() != -1)
 				StopAudio(it->second->GetAudioId());
 		}		
-		assert(mALSources.size() == MaximumAudioSources);
+		assert(mALSources.size() == mNumGeneratedSources);
 		while (!mALSources.empty()){
 			auto src = mALSources.top();
 			mALSources.pop();
@@ -526,10 +529,13 @@ public:
 			alsource = mALSources.top();
 			mALSources.pop();
 		}
-		else{
+		else{			
 			alGenSources(1, &alsource);
 			if (alGetError() != AL_NO_ERROR){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio source. Current playing: %d", mNumPlaying).c_str());
+			}
+			else{
+				++mNumGeneratedSources;
 			}
 		}
 		if (alsource != -1){
@@ -588,58 +594,72 @@ public:
 		}
 	}
 
-	AudioId PlayFBAudio(const char* path){
+	struct FBAudio{
+		std::string mFilepath;
+		AudioProperty mProperty;
+	};
+
+	FBAudio ParseFBAudio(const char* path){
+		FBAudio ret;
 		tinyxml2::XMLDocument doc;
 		auto err = doc.LoadFile(path);
 		if (err){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot load fbaudio(%s)", path).c_str());
-			return INVALID_AUDIO_ID;
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot parse fbaudio(%s)", path).c_str());
+			return ret;
 		}
 
 		auto root = doc.RootElement();
 		if (!root){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid format(%s)", path);
-			return INVALID_AUDIO_ID;
+			return ret;
 		}
 
 		auto filepath = root->Attribute("file");
 		if (!filepath){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("'file' attribute is not found in (%s)", path).c_str());
-			return INVALID_AUDIO_ID;
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("'file' attribute is not found in (%s)", path).c_str());			
 		}
-		std::string audioPath = filepath;
-		if (!FileSystem::Exists(audioPath.c_str())){
-			std::string xmlpath = path;
-			auto onlyFilename = FileSystem::GetFileName(audioPath.c_str());
-			audioPath = FileSystem::ReplaceFilename(xmlpath.c_str(), onlyFilename.c_str());
-			if (!FileSystem::Exists(audioPath.c_str())){
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find a audio file(%s or %s)", filepath, audioPath.c_str()).c_str());
-				return INVALID_AUDIO_ID;
-			}
+		else{
+			ret.mFilepath = filepath;
 		}
 
-		AudioProperty prop;
+		if (!FileSystem::Exists(ret.mFilepath.c_str())){
+			std::string xmlpath = path;
+			auto onlyFilename = FileSystem::GetFileName(ret.mFilepath.c_str());
+			ret.mFilepath = FileSystem::ReplaceFilename(xmlpath.c_str(), onlyFilename.c_str());
+			if (!FileSystem::Exists(ret.mFilepath.c_str())){
+				ret.mFilepath.clear();
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"Cannot find a audio file(%s or %s)", filepath, ret.mFilepath.c_str()).c_str());
+			}			
+		}
+
 		auto sz = root->Attribute("gain");
 		if (sz){
-			prop.mGain = StringConverter::ParseReal(sz, prop.mGain);
+			ret.mProperty.mGain = StringConverter::ParseReal(sz, ret.mProperty.mGain);
 		}
 
 		sz = root->Attribute("relative");
 		if (sz){
-			prop.mRelative = StringConverter::ParseBool(sz, prop.mRelative);
+			ret.mProperty.mRelative = StringConverter::ParseBool(sz, ret.mProperty.mRelative);
 		}
 
 		sz = root->Attribute("rollOffFactor");
 		if (sz){
-			prop.mRolloffFactor = StringConverter::ParseReal(sz, prop.mRolloffFactor);
+			ret.mProperty.mRolloffFactor = StringConverter::ParseReal(sz, ret.mProperty.mRolloffFactor);
 		}
 
 		sz = root->Attribute("referenceDistance");
 		if (sz){
-			prop.mReferenceDistance = StringConverter::ParseReal(sz, prop.mReferenceDistance);
+			ret.mProperty.mReferenceDistance = StringConverter::ParseReal(sz, ret.mProperty.mReferenceDistance);
 		}
-		
-		return PlayAudio(audioPath.c_str(), prop);
+		return ret;
+	}
+
+	AudioId PlayFBAudio(const char* path){
+		auto parsedAudio = ParseFBAudio(path);
+		if (parsedAudio.mFilepath.empty())
+			return INVALID_AUDIO_ID;
+		return PlayAudio(parsedAudio.mFilepath.c_str(), parsedAudio.mProperty);
 
 	}
 
@@ -650,6 +670,7 @@ public:
 		}
 
 		if (_stricmp(FileSystem::GetExtension(path),".fbaudio") == 0){
+			Logger::Log(FB_ERROR_LOG_ARG, ".fbaudio is played by this function. This is not intended. Use PlayFBAudio()");
 			return PlayFBAudio(path);
 		}
 		else{
@@ -671,93 +692,35 @@ public:
 	}
 
 	AudioId PlayAudio(const char* path, float x, float y, float z){
-		AudioSourcePtr src;
-		auto id = PlayAudio(path, &src, true);
-		src->SetPosition(x, y, z);
-		if (mNumPlaying > MaximumAudioSources){
-			DropAudio();
+		AudioId audioId;
+		if (_stricmp(FileSystem::GetExtension(path), ".fbaudio") == 0){
+			audioId = PlayFBAudio(path);
+			auto srcIt = mAudioSources.Find(audioId);
+			if (srcIt != mAudioSources.end()){
+				srcIt->second->SetPosition(x, y, z);
+			}
 		}
-		return id;
+		else{
+			AudioSourcePtr src;
+			audioId = PlayAudio(path, &src, true);
+			if (src){
+				src->SetProperty(AudioProperty());
+				src->ApplyProp();
+				src->SetPosition(x, y, z);
+			}
+		}
+
+		return audioId;
 	}
 
-	//ALuint FindSlotFromFadeOutSources(float distPerRefdist){
-	//	if (mAudioSourcesDirty){
-	//		SortAudio();
-	//		mAudioSourcesDirty = false;
-	//	}
-
-	//	if (!mALSources.empty()){
-	//		auto alsource = mALSources.top();
-	//		mALSources.pop();
-	//		return alsource;
-	//	}
-	//	else{
-	//		assert(!mAudioSourcesSorted.empty());
-	//		auto it = mAudioSourcesSorted.end() - 1;
-	//		if (it->first > distPerRefdist){
-	//			auto droppedAudioId = it->second;
-	//			auto droppedIt = mAudioSources.Find(droppedAudioId);
-	//			if (droppedIt != mAudioSources.end()){
-	//				mDroppedAudioSources[droppedAudioId] = droppedIt->second;					
-	//				auto fadeOut = SmoothGain::Create(droppedAudioId, 3.0f,
-	//					droppedIt->second->GetGain(), 0.f);
-	//				mAudioManipulators[droppedAudioId].push_back(fadeOut);
-	//				mAudioSources.erase(droppedIt);
-	//				mAudioSourcesDirty = true;
-	//				if (!mFadeOutSources.empty()){
-	//					auto src = mFadeOutSources.top();
-	//					// will not pop here.
-	//					// pop after alurePlay is succeeded.
-	//					//mFadeOutSources.pop();
-	//					return src;
-	//				}
-	//			}
-	//			else{
-	//				Logger::Log(FB_ERROR_LOG_ARG, "Cannot find the dropped sound source from the original vector.");
-	//			}				
-	//		}
-	//		return -1;
-	//	}
-	//}
-	//
-	//void DropOtherIfPossible(AudioSourcePtr& src){
-	//	if (src->GetALAudioSource() != -1){
-	//		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
-	//		return;
-	//	}
-
-	//	
-	//	// lower value will be played.
-	//	float value =
-	//		(src->GetRelative() ? GetLengthSQ(src->GetPosition())
-	//							: GetDistanceSQ(mListenerPos, src->GetPosition()))
-	//		/ src->GetReferenceDistance();
-	//		// source is from mFadeOutSources
-	//	auto newsource = FindSlotFromFadeOutSources(value);
-	//	if (newsource != -1){
-	//		alSourcei(newsource, AL_BUFFER, src->GetAudioBuffer()->mBuffer);
-	//		if (alurePlaySource(newsource, eos_callback, (void*)src->GetAudioId()) == AL_FALSE){
-	//			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot play AudioSource(%u, %s) with the fadeout slot",
-	//				src->GetAudioId(), src->GetAudioBuffer()->mFilepath.c_str()).c_str());
-	//			src->SetPlaying(false);
-	//		}
-	//		else{
-	//			src->SetALAudioSource(newsource);
-	//			src->SetPlaying(true);
-	//			mAudioSources[src->GetAudioId()] = src;
-	//			auto resIt = mReservedAudioSources.Find(src->GetAudioId());
-	//			if (resIt != mReservedAudioSources.end()){
-	//				mReservedAudioSources.erase(resIt);
-	//			}
-	//			mFadeOutSources.pop();
-	//			mAudioSourcesDirty = true;
-	//		}
-	//	}
-	//}
-
 	AudioId PlayAudio(const char* path, const AudioProperty& property){
+		if (_stricmp(FileSystem::GetExtension(path), ".fbaudio") == 0){
+			Logger::Log(FB_ERROR_LOG_ARG, ".fbaudio is not intended to play by this function. Use PlayFBAudio()");
+		}
 		AudioSourcePtr src;
 		auto id = PlayAudio(path, &src, true);
+		if (!src)
+			return id;
 		src->SetProperty(property);
 		src->ApplyProp();			
 		if (mNumPlaying > MaximumAudioSources){
@@ -940,7 +903,7 @@ public:
 			return true;
 		}
 		else{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting position for invalid audio(%u)", id).c_str());
+			//Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting position for invalid audio(%u)", id).c_str());
 			return false;
 		}
 	}
@@ -1062,6 +1025,10 @@ public:
 		}
 	}
 
+	float GetGainFromFBAudio(const char* fbaudioPath){
+		return ParseFBAudio(fbaudioPath).mProperty.mGain;
+	}
+
 	void RegisterAudioEx(AudioExPtr audioex){
 		if (!ValueExistsInVector(mAudioExs, audioex)){
 			mAudioExs.push_back(audioex);
@@ -1160,8 +1127,13 @@ void AudioManager::Update(TIME_PRECISION dt){
 }
 
 AudioId AudioManager::PlayAudio(const char* path){
-	AudioSourcePtr dummy;
-	return mImpl->PlayAudio(path, &dummy, false);
+	if (_stricmp(FileSystem::GetExtension(path), ".fbaudio") == 0){
+		return mImpl->PlayFBAudio(path);
+	}
+	else{
+		AudioSourcePtr dummy;
+		return mImpl->PlayAudio(path, &dummy, false);
+	}
 }
 
 AudioId AudioManager::PlayAudio(const char* path, float x, float y, float z){
@@ -1235,6 +1207,10 @@ bool AudioManager::SetGainSmooth(AudioId id, float gain, float inSec){
 
 float AudioManager::GetGain(AudioId id) const{
 	return mImpl->GetGain(id);
+}
+
+float AudioManager::GetGainFromFBAudio(const char* fbaudioPath){
+	return mImpl->GetGainFromFBAudio(fbaudioPath);
 }
 
 void AudioManager::RegisterAudioEx(AudioExPtr audioex){

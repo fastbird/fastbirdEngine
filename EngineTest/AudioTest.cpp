@@ -34,7 +34,7 @@ class AudioTest::Impl{
 public:
 	AudioId mAudio;
 	Impl(){
-		mAudio = EngineFacade::GetInstance().PlayAudio("data/cannon_frigate1_fire.fbaudio");
+		mAudio = EngineFacade::GetInstance().PlayAudio("data/audio/big_laser_fire_loop.ogg");
 
 		//EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
 		//AudioProperty prop;
@@ -45,12 +45,12 @@ public:
 	}
 
 	void Update(float dt){
-		static float time = 0;
+		/*static float time = 0;
 		time += dt;
 		if (time > 0.5f && mAudio != INVALID_AUDIO_ID){
 			EngineFacade::GetInstance().StopAudio(mAudio);
 			mAudio = INVALID_AUDIO_ID;
-		}
+		}*/
 	}
 };
 

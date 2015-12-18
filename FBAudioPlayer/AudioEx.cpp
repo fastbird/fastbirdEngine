@@ -42,34 +42,130 @@ public:
 	};
 	AudioExWeakPtr mSelfPtr;
 	std::string mAudioBuffers[AudioType::Num];
+	float mInitialGain;
 	float mDurations[AudioType::Num];
 	AudioType mCurPlaying;
 	AudioId mCurAudioId;
 	
 	INT64 mStartTick;
 	TIME_PRECISION mPlayingTime;
-	TIME_PRECISION mRequestedTime;
+	TIME_PRECISION mInitialRequestedTime;
+	TIME_PRECISION mRequestedTime;	
 	TIME_PRECISION mLoopStartedTime;
 
 	TIME_PRECISION mReservedRequestTime;
 
 	AudioProperty mProperty;
 
-	Impl(const AudioProperty& prop)
+	Impl()
 		: mStartTick(0)
 		, mPlayingTime(0)
+		, mInitialRequestedTime(0)
 		, mRequestedTime(0)
 		, mCurPlaying(AudioType::Num)
-		, mCurAudioId(INVALID_AUDIO_ID)
-		, mProperty(prop)
+		, mCurAudioId(INVALID_AUDIO_ID)		
 		, mLoopStartedTime(0)
 		, mReservedRequestTime(0)
+		, mInitialGain(1.f)
 	{
 		for (int i = 0; i < AudioType::Num; ++i){
 			mDurations[i] = 0.f;
 		}
 	}
+
+	std::string VerifyTheFilepath(const char* audioEx, const char* filepath){
+		if (strlen(filepath) == 0)
+			return std::string();
+
+		std::string audioPath = filepath;
+		if (!FileSystem::Exists(audioPath.c_str())){
+			std::string xmlpath = audioEx;
+			auto onlyFilename = FileSystem::GetFileName(audioPath.c_str());
+			audioPath = FileSystem::ReplaceFilename(xmlpath.c_str(), onlyFilename.c_str());
+			if (!FileSystem::Exists(audioPath.c_str())){
+				audioPath.clear();
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"Cannot find a audio file(%s or %s)", filepath, audioPath.c_str()).c_str());
+			}
+		}
+		return audioPath;
+	}
 	
+	void SetAudioExFile(const char* audioEx){
+		if (!ValidCStringLength(audioEx)){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+
+		tinyxml2::XMLDocument doc;
+		auto err = doc.LoadFile(audioEx);
+		if (err){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot parse fbaudioex(%s)", audioEx).c_str());
+			return;
+		}
+
+		auto root = doc.RootElement();
+		if (!root){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid format(%s)", audioEx);
+			return;
+		}
+		auto& am = AudioManager::GetInstance();
+		bool anyfileFound = false;
+		auto filepath = root->Attribute("start");
+		if (filepath){
+			mAudioBuffers[AudioType::Start] = VerifyTheFilepath(audioEx, filepath);			
+			if (!mAudioBuffers[AudioType::Start].empty()){
+				mDurations[AudioType::Start] = am.GetAudioLength(mAudioBuffers[AudioType::Start].c_str());
+				anyfileFound = true;
+			}
+		}
+		filepath = root->Attribute("loop");
+		if (filepath){
+			mAudioBuffers[AudioType::Loop] = VerifyTheFilepath(audioEx, filepath);
+			if (!mAudioBuffers[AudioType::Loop].empty()){
+				mDurations[AudioType::Loop] = am.GetAudioLength(mAudioBuffers[AudioType::Loop].c_str());
+				anyfileFound = true;
+			}
+		}
+		filepath = root->Attribute("end");
+		if (filepath){
+			mAudioBuffers[AudioType::End] = VerifyTheFilepath(audioEx, filepath);
+			if (!mAudioBuffers[AudioType::End].empty()){
+				mDurations[AudioType::End] = am.GetAudioLength(mAudioBuffers[AudioType::End].c_str());
+				anyfileFound = true;
+			}
+		}		
+		if (!anyfileFound){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("FBAudioEx file(%s) doesn't have any audio file info.", audioEx).c_str());
+		}
+
+		auto sz = root->Attribute("playTime");
+		if (sz){
+			mRequestedTime = StringConverter::ParseReal(sz, mRequestedTime);
+			mInitialRequestedTime = mRequestedTime;
+		}
+
+		sz = root->Attribute("gain");
+		if (sz){
+			mProperty.mGain = StringConverter::ParseReal(sz, mProperty.mGain);
+			mInitialGain = mProperty.mGain;
+		}
+
+		sz = root->Attribute("relative");
+		if (sz){
+			mProperty.mRelative = StringConverter::ParseBool(sz, mProperty.mRelative);
+		}
+
+		sz = root->Attribute("rollOffFactor");
+		if (sz){
+			mProperty.mRolloffFactor = StringConverter::ParseReal(sz, mProperty.mRolloffFactor);
+		}
+
+		sz = root->Attribute("referenceDistance");
+		if (sz){
+			mProperty.mReferenceDistance = StringConverter::ParseReal(sz, mProperty.mReferenceDistance);
+		}
+	}
 
 	void SetStartLoopEnd(const char* start, const char* loop, const char* end){
 		if (!start || !loop || !end){
@@ -81,12 +177,25 @@ public:
 		mAudioBuffers[AudioType::Loop] = loop;
 		mAudioBuffers[AudioType::End] = end;
 		auto& am = AudioManager::GetInstance();
-		if (!mAudioBuffers[AudioType::Start].empty())
+		if (!mAudioBuffers[AudioType::Start].empty()){
 			mDurations[AudioType::Start] = am.GetAudioLength(start);
-		if (!mAudioBuffers[AudioType::Loop].empty())
+			if (_stricmp(FileSystem::GetExtension(start), ".fbaudio") == 0){
+				mInitialGain = am.GetGainFromFBAudio(start);
+			}
+		}		
+		if (!mAudioBuffers[AudioType::Loop].empty()){
 			mDurations[AudioType::Loop] = am.GetAudioLength(loop);
+			if (_stricmp(FileSystem::GetExtension(loop), ".fbaudio") == 0){
+				mInitialGain = am.GetGainFromFBAudio(loop);
+			}
+		}		
 		if (!mAudioBuffers[AudioType::End].empty())
+		{
 			mDurations[AudioType::End] = am.GetAudioLength(end);
+			if (_stricmp(FileSystem::GetExtension(end), ".fbaudio") == 0){
+				mInitialGain = am.GetGainFromFBAudio(end);
+			}
+		}		
 	}
 
 	void SetPosition(float x, float y, float z){
@@ -110,7 +219,10 @@ public:
 	}
 
 	void SetGain(float gain){
+		if (mCurPlaying == AudioType::Num)
+			return;
 		gain = std::max(0.f, gain);
+		gain *= mInitialGain;
 		float prevGain = mProperty.mGain;
 		mProperty.mGain= gain;
 		if (mCurAudioId != INVALID_AUDIO_ID){
@@ -127,7 +239,10 @@ public:
 	}
 
 	void SetGainSmooth(float gain, float inSec){
+		if (mCurPlaying == AudioType::Num)
+			return;
 		gain = std::max(0.f, gain);
+		gain *= mInitialGain;
 		if (gain > 0.f && !IsPlaying()){
 			mProperty.mGain = gain;
 			Play(mRequestedTime);
@@ -160,7 +275,10 @@ public:
 			}
 			
 			Logger::Log(FB_DEFAULT_LOG_ARG, "(info) audioex playnew");
-			mRequestedTime = forSec;
+			if (forSec > 0)
+				mRequestedTime = forSec;
+			else
+				mRequestedTime = mInitialRequestedTime;
 			if (mDurations[AudioType::Loop] == 0.f && forSec > mDurations[AudioType::Start] + mDurations[AudioType::End]){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("No loop sound is specified. Audio will finish quicker than"
 					" you requested. start: %s, end: %s",
@@ -277,7 +395,8 @@ public:
 				if (played / mDurations[AudioType::Loop] > 0.9f){
 					auto left = mDurations[AudioType::Loop] - played;					
 					left = std::max(0.f, left);
-					am.StopWithFadeOut(mCurAudioId, left);
+					if (mCurAudioId != INVALID_AUDIO_ID)
+						am.StopWithFadeOut(mCurAudioId, left);
 					mCurAudioId = am.PlayAudioWithFadeIn(mAudioBuffers[AudioType::Loop].c_str(), mProperty, left);
 					if (mCurAudioId == INVALID_AUDIO_ID){
 						Logger::Log(FB_ERROR_LOG_ARG, "(info) Failed to play loop sound.");
@@ -311,20 +430,24 @@ public:
 	}
 };
 //---------------------------------------------------------------------------
-AudioExPtr AudioEx::Create(const AudioProperty& prop){
-	AudioExPtr p(new AudioEx(prop), [](AudioEx* obj){delete obj; });
+AudioExPtr AudioEx::Create(){
+	AudioExPtr p(new AudioEx(), [](AudioEx* obj){delete obj; });
 	p->mImpl->mSelfPtr = p;
 	return p;
 }
 
-AudioEx::AudioEx(const AudioProperty& prop)
-	: mImpl(new Impl(prop))
+AudioEx::AudioEx()
+	: mImpl(new Impl())
 {
 
 }
 
 AudioEx::~AudioEx(){
 
+}
+
+void AudioEx::SetAudioExFile(const char* audioEx){
+	mImpl->SetAudioExFile(audioEx);
 }
 void AudioEx::SetStartLoopEnd(const char* start, const char* loop, const char* end) {
 	mImpl->SetStartLoopEnd(start, loop, end);

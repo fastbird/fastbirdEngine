@@ -33,8 +33,12 @@ class AudioExFacade::Impl{
 public:
 	AudioExPtr mAudio;
 
-	Impl(const AudioProperty& prop){
-		mAudio = AudioEx::Create(prop);
+	Impl(){
+		mAudio = AudioEx::Create();
+	}
+
+	void SetAudioExFile(const char* fbaudioEx){
+		mAudio->SetAudioExFile(fbaudioEx);
 	}
 
 	void SetAudio(const char* startPath, const char* loopPath, const char* endPath){
@@ -80,17 +84,21 @@ public:
 };
 
 //---------------------------------------------------------------------------
-AudioExFacadePtr AudioExFacade::Create(const AudioProperty& prop){
-	return AudioExFacadePtr(new AudioExFacade(prop), [](AudioExFacade* obj){delete obj; });		
+AudioExFacadePtr AudioExFacade::Create(){
+	return AudioExFacadePtr(new AudioExFacade(), [](AudioExFacade* obj){delete obj; });		
 }
 
-AudioExFacade::AudioExFacade(const AudioProperty& prop)
-	: mImpl(new Impl(prop)){
+AudioExFacade::AudioExFacade()
+	: mImpl(new Impl()){
 
 }
 
 AudioExFacade::~AudioExFacade(){
 
+}
+
+void AudioExFacade::SetAudioExFile(const char* fbaudioEx){
+	mImpl->SetAudioExFile(fbaudioEx);
 }
 
 void AudioExFacade::SetAudio(const char* startPath, const char* loopPath, const char* endPath){

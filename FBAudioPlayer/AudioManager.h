@@ -80,6 +80,7 @@ namespace fb{
 		bool SetGain(AudioId id, float gain, bool checkManipulator);
 		bool SetGainSmooth(AudioId id, float gain, float inSec);
 		float GetGain(AudioId id) const;
+		float GetGainFromFBAudio(const char* fbaudioPath);
 
 		void RegisterAudioEx(AudioExPtr audioex);
 		bool IsRegisteredAudioEx(AudioExPtr audioex);

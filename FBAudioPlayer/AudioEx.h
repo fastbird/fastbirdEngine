@@ -32,11 +32,12 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(AudioEx);
 	class FB_DLL_AUDIOPLAYER AudioEx{
 		FB_DECLARE_PIMPL_NON_COPYABLE(AudioEx);
-		AudioEx(const AudioProperty& prop);
+		AudioEx();
 		~AudioEx();
 
 	public:
-		static AudioExPtr Create(const AudioProperty& prop);
+		static AudioExPtr Create();
+		void SetAudioExFile(const char* audioEx);
 		void SetStartLoopEnd(const char* start, const char* loop, const char* end);	
 		void SetPosition(float x, float y, float z);
 		void SetRelative(bool relative);
