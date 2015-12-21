@@ -48,6 +48,12 @@ public:
 	}
 
 	bool Update(TIME_PRECISION dt){
+		if (mTargetGain == mInitialGain || mTargetGain == mCurGain){
+			mCurGain = mTargetGain;
+			AudioManager::GetInstance().SetGain(mId, mCurGain, false);
+			return true;
+		}
+
 		if (mTargetGain > mInitialGain){
 			mCurGain += mGainPerSec * dt;
 			bool finished = false;

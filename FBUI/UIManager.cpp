@@ -143,7 +143,7 @@ public:
 	Vec2 mPrevTooltipNPos;
 
 	KeyboardCursorPtr mKeyboardCursor;
-	std::vector<std::string> mSounds;
+	std::vector<std::string> mSounds;	
 
 	//---------------------------------------------------------------------------
 	Impl(UIManager* self)
@@ -164,6 +164,7 @@ public:
 		auto filepath = "_FBUI.log";
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
 		Logger::Init(filepath);
+		mSounds.assign(UISounds::Num, std::string());
 	}
 
 	~Impl(){
@@ -507,6 +508,7 @@ public:
 		}
 		if (hwndId == 1)
 			mDragBox.Render();
+		Renderer::GetInstance().ClearFontScissor();
 	}
 
 	void BeforeDebugHudRendering(){
@@ -1522,16 +1524,16 @@ public:
 				std::bind(&Impl::OnPopupNo, this, std::placeholders::_1));
 		}
 
-		mPopupCallback = func;
-		mPopup->SetVisible(true);
+mPopupCallback = func;
+mPopup->SetVisible(true);
 	}
 
 	int GetPopUpResult() const{
 		return mPopupResult;
 	}
 
-	lua_State* GetLuaState() const { 
-		return mL; 
+	lua_State* GetLuaState() const {
+		return mL;
 	}
 
 	WinBasePtr FindComp(const char* uiname, const char* compName) const{
@@ -1587,11 +1589,11 @@ public:
 	}
 
 	void SetEnablePosSizeEvent(bool enable) {
-		mPosSizeEventEnabled = enable; 
+		mPosSizeEventEnabled = enable;
 	}
 
-	bool GetEnablePosSizeEvent() const { 
-		return mPosSizeEventEnabled; 
+	bool GetEnablePosSizeEvent() const {
+		return mPosSizeEventEnabled;
 	}
 
 	void SetVisible(const char* uiname, bool visible){
@@ -1615,9 +1617,48 @@ public:
 			return;
 		}
 
+		bool affected = false;
 		for (auto it : *windows){
-			it->SetVisible(visible);
+			affected = it->SetVisible(visible) || affected;
 		}
+
+/*
+		if (affected){
+			if (visible){
+				char buffer[512];
+				std::string openSound = mSounds[UISounds::WindowOpen];
+				if ((*windows->begin())->GetProperty(UIProperty::OPEN_SOUND, buffer, 512, false)){
+					bool play = true;
+					if (strlen(buffer))
+						openSound = buffer;
+					else if (!mProcessingButtonClick)
+						play = false;
+					if (_stricmp(buffer, "None") == 0)
+						openSound.clear();
+
+					if (play && !openSound.empty()){
+						AudioManager::GetInstance().PlayAudio(openSound.c_str());
+					}
+				}
+			}
+			else{
+				char buffer[512];
+				std::string closeSound = mSounds[UISounds::WindowClose];
+				if ((*windows->begin())->GetProperty(UIProperty::CLOSE_SOUND, buffer, 512, false)){
+					bool play = true;
+					if (strlen(buffer))
+						closeSound = buffer;
+					else if (!mProcessingButtonClick)
+						play = false;
+					if (_stricmp(buffer, "None") == 0)
+						closeSound.clear();
+
+					if (play && !closeSound.empty()){
+						AudioManager::GetInstance().PlayAudio(closeSound.c_str());
+					}
+				}				
+			}
+		}*/
 	}
 
 	void LockFocus(bool lock){
@@ -2251,7 +2292,6 @@ public:
 			mAlwaysMouseOverCheckComps.erase(it);
 		}
 	}
-
 
 	//-------------------------------------------------------------------
 	// For UI Editing

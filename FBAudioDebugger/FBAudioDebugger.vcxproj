@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{35BD3327-2FA4-4A92-8790-87ABB17E720B}</ProjectGuid>
-    <RootNamespace>FBAudioPlayer</RootNamespace>
+    <ProjectGuid>{F9F07D33-7C6F-435F-8D08-B0530B3EE594}</ProjectGuid>
+    <RootNamespace>FBAudioDebugger</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -44,14 +44,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;$(ALURE_DIR)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ALURE_DIR)\binaries\$(Configuration);$(OPENAL_SOFT_DIR)\binaries\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -61,59 +58,41 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..;$(VORBIS_DIR)\include;$(OGG_DIR)\include;$(OPENAL_SOFT_DIR)\include;$(ALURE_DIR)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ALURE_DIR)\binaries\$(Configuration);$(OPENAL_SOFT_DIR)\binaries\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Audio.h" />
-    <ClInclude Include="AudioBuffer.h" />
-    <ClInclude Include="AudioEx.h" />
-    <ClInclude Include="AudioHelper.h" />
-    <ClInclude Include="AudioManager.h" />
-    <ClInclude Include="AudioProperty.h" />
-    <ClInclude Include="AudioSource.h" />
-    <ClInclude Include="AudioSourceStatus.h" />
-    <ClInclude Include="IAudioManipulator.h" />
-    <ClInclude Include="AudioManipulatorType.h" />
-    <ClInclude Include="MusicPlayer.h" />
-    <ClInclude Include="SmoothGain.h" />
+    <ClInclude Include="AudioDebugger.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Audio.cpp" />
-    <ClCompile Include="AudioBuffer.cpp" />
-    <ClCompile Include="AudioEx.cpp" />
-    <ClCompile Include="AudioHelper.cpp" />
-    <ClCompile Include="AudioManager.cpp" />
-    <ClCompile Include="AudioSource.cpp" />
-    <ClCompile Include="MusicPlayer.cpp" />
-    <ClCompile Include="SmoothGain.cpp" />
+    <ClCompile Include="AudioDebugger.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBAudioPlayer\FBAudioPlayer.vcxproj">
+      <Project>{35bd3327-2fa4-4a92-8790-87abb17e720b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
       <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\FBFileSystem\FBFileSystem.vcxproj">
-      <Project>{970770a8-f3c4-43ad-b4a0-c076ec6fe610}</Project>
+    <ProjectReference Include="..\FBMathLib\FBMathLib.vcxproj">
+      <Project>{2df8e079-28e5-4e7d-9c6a-ff87c1329eb5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FBRenderer\FBRenderer.vcxproj">
+      <Project>{fd658a50-2d36-4bb4-8eda-635bf71b4cdb}</Project>
     </ProjectReference>
     <ProjectReference Include="..\FBStringLib\FBStringLib.vcxproj">
       <Project>{97920097-3e86-410d-8d98-a2ecad02a35f}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\TinyXmlLib\TinyXmlLib.vcxproj">
-      <Project>{23117a44-391e-4542-968f-c99c1bac52c0}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

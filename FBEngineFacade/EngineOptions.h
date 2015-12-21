@@ -39,6 +39,7 @@ namespace fb{
 		float WheelSens;
 		float MouseSens;
 		int e_profile;
-		int e_NoMeshLoad;	
+		int e_NoMeshLoad;
+		int AudioDebug;
 	};
 }

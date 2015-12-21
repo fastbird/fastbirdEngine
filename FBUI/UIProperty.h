@@ -183,6 +183,9 @@ namespace fb
 			SEND_EVENT_TO_CHILDREN,
 			RECEIVE_EVENT_FROM_PARENT,
 
+			OPEN_SOUND,
+			CLOSE_SOUND,
+
 			COUNT
 		};
 
@@ -335,6 +338,9 @@ namespace fb
 
 			"SEND_EVENT_TO_CHILDREN",
 			"RECEIVE_EVENT_FROM_PARENT",
+
+			"OPEN_SOUND",
+			"CLOSE_SOUND",
 
 			"COUNT"
 		};

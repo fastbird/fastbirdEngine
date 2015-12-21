@@ -306,13 +306,23 @@ public:
 	}
 
 	void Bind(unsigned stencilRef) const{
-		if (mRasterizerState)
-			mRasterizerState->Bind();
-		if (mBlendState){
-			mBlendState->Bind();
+		mRasterizerState->Bind();
+		mBlendState->Bind();	
+		mDepthStencilState->Bind(stencilRef);
+	}
+
+	void DebugPrint() const{
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RasterizerStates : 0x%x", mRasterizerState.get()).c_str());
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) BlendStates : 0x%x", mBlendState.get()).c_str());
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) DepthStencilStates : 0x%x", mDepthStencilState.get()).c_str());
+
+		if (mRDesc){
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RDesc scissor: %d", mRDesc->ScissorEnable ? 1 : 0).c_str());
 		}
-		if (mDepthStencilState)
-			mDepthStencilState->Bind(stencilRef);
+		else{
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RDesc null").c_str());
+		}
+
 	}
 };
 
@@ -367,6 +377,10 @@ void RenderStates::Bind() const{
 
 void RenderStates::Bind(unsigned stencilRef) const{
 	mImpl->Bind(stencilRef);
+}
+
+void RenderStates::DebugPrint() const{
+	mImpl->DebugPrint();
 }
 
 }

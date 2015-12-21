@@ -34,13 +34,13 @@ class AudioTest::Impl{
 public:
 	AudioId mAudio;
 	Impl(){
-		mAudio = EngineFacade::GetInstance().PlayAudio("data/audio/big_laser_fire_loop.ogg");
+		//mAudio = EngineFacade::GetInstance().PlayAudio("data/audio/big_laser_fire_loop.ogg", Vec3(0, 10, 0));
 
-		//EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
-		//AudioProperty prop;
-		//auto audioex = AudioEx::Create(prop);
-		//audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
-		//audioex->Play(6.f);
+		EngineFacade::GetInstance().SetListenerPosition(Vec3(0, 0, 0));
+		AudioProperty prop;
+		auto audioex = AudioEx::Create();
+		audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
+		audioex->Play(20.f);
 		
 	}
 

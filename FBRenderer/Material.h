@@ -100,6 +100,7 @@ namespace fb{
 		/// Debugging features
 		//void MarkNoShaderDefineChanges();
 		void DebugPrintShaderDefines() const;
+		void DebugPrintRenderStates(const char* prefix) const;
 
 		const Vec4f& GetAmbientColor() const;
 		const Vec4f& GetDiffuseColor() const;

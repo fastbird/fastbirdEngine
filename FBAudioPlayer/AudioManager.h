@@ -29,9 +29,10 @@
 #include "FBCommonHeaders/Types.h"
 #include "AudioProperty.h"
 #include "AudioManipulatorType.h"
+#include "FBCommonHeaders/VectorMap.h"
 typedef unsigned int ALuint;
 namespace fb{
-	
+	FB_DECLARE_SMART_PTR_STRUCT(AudioSource);
 	FB_DECLARE_SMART_PTR(AudioEx);
 	FB_DECLARE_SMART_PTR(AudioManager);
 	class FB_DLL_AUDIOPLAYER AudioManager{
@@ -48,9 +49,18 @@ namespace fb{
 		void Deinit();
 
 		void Update(TIME_PRECISION dt);
+		
+		// fb audio
+		AudioId PlayFBAudio(const char* fbAudioPath);
+		AudioId PlayFBAudio(const char* fbAudioPath, const Vec3Tuple& pos);
+
+		// no position.
 		AudioId PlayAudio(const char* path);
-		AudioId PlayAudio(const char* path, float x, float y, float z);
+		// position or no position
 		AudioId PlayAudio(const char* path, const AudioProperty& prop);
+		// position
+		AudioId PlayAudio(const char* path, const Vec3Tuple& pos);		
+		
 		/** Start an audio smoothly.
 		if \a sec is longer than the audio length, \a sec will be replaced by the audio length.
 		*/
@@ -82,6 +92,9 @@ namespace fb{
 		float GetGain(AudioId id) const;
 		float GetGainFromFBAudio(const char* fbaudioPath);
 
+		void SetLoop(AudioId id, bool loop);
+		bool GetLoop(AudioId id) const;
+
 		void RegisterAudioEx(AudioExPtr audioex);
 		bool IsRegisteredAudioEx(AudioExPtr audioex);
 
@@ -89,5 +102,12 @@ namespace fb{
 		void UnregisterEndCallbackFunc(FunctionId funcId);
 
 		void DeleteManipulator(AudioId id, AudioManipulatorType::Enum type);
+
+		typedef VectorMap<AudioId, AudioSourcePtr> AudioSources;
+		/// only for FBAudioDebuffer
+		const AudioSources& GetAudioList() const;
+
+		unsigned GetNumGenerated() const;
+		bool IsValidSource(AudioId id) const;
 	};
 }

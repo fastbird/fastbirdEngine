@@ -121,5 +121,6 @@ namespace fb{
 		void CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc);
 		void Bind() const;
 		void Bind(unsigned stencilRef) const;
+		void DebugPrint() const;
 	};
 }

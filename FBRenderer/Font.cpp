@@ -219,7 +219,7 @@ public:
 
 		mInitialized = r == 0;
 		auto provider = renderer.GetResourceProvider();
-		mTextureMaterial = provider->GetMaterial(ResourceTypes::Materials::QuadTextured);
+		mTextureMaterial = provider->GetMaterial(ResourceTypes::Materials::QuadTextured)->Clone();
 
 		BLEND_DESC desc;
 		desc.RenderTarget[0].BlendEnable = true;
@@ -227,7 +227,7 @@ public:
 		desc.RenderTarget[0].SrcBlend = BLEND_SRC_ALPHA;
 		desc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
 		desc.RenderTarget[0].RenderTargetWriteMask = COLOR_WRITE_MASK_RED | COLOR_WRITE_MASK_GREEN | COLOR_WRITE_MASK_BLUE;
-		mTextureMaterial->SetBlendState(desc);
+		mTextureMaterial->SetBlendState(desc);		
 		
 		mRenderTargetSize = renderer.GetMainRenderTargetSize();
 		mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
@@ -787,7 +787,8 @@ public:
 			return;
 		auto& renderer = Renderer::GetInstance();
 		renderer.GetResourceProvider()->BindBlendState(ResourceTypes::BlendStates::AlphaBlend);
-		mShader->Bind();
+		//renderer.GetResourceProvider()->BindRasterizerState(ResourceTypes::RasterizerStates::Default);
+		mShader->Bind();		
 		mInputLayout->Bind();
 	}
 

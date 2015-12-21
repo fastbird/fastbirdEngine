@@ -497,6 +497,18 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 
+	case UIProperty::OPEN_SOUND:
+	{
+		mOpenSound = val;
+		return true;
+	}
+
+	case UIProperty::CLOSE_SOUND:
+	{
+		mCloseSound = val;
+		return true;
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -638,6 +650,26 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 				return false;
 		}
 		strcpy_s(val, bufsize, StringConverter::ToString(mMoveToBottom).c_str());
+		return true;
+	}
+
+	case UIProperty::OPEN_SOUND:
+	{
+		if (notDefaultOnly){
+			if (mOpenSound == UIProperty::GetDefaultValueString(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, mOpenSound.c_str());
+		return true;
+	}
+
+	case UIProperty::CLOSE_SOUND:
+	{
+		if (notDefaultOnly){
+			if (mCloseSound == UIProperty::GetDefaultValueString(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, mCloseSound.c_str());
 		return true;
 	}
 

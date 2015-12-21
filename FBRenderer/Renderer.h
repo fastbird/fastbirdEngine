@@ -280,6 +280,7 @@ namespace fb{
 		void SetLockDepthStencilState(bool lock);
 		void SetLockBlendState(bool lock);
 		void SetFontTextureAtlas(const char* path);
+		void ClearFontScissor();
 		
 
 		//-------------------------------------------------------------------

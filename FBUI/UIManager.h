@@ -189,7 +189,7 @@ namespace fb
 		TexturePtr GetBorderAlphaInfoTexture(const Vec2I& size, bool& callmeLater);
 
 		void AddAlwaysMouseOverCheck(WinBasePtr comp);
-		void RemoveAlwaysMouseOverCheck(WinBasePtr comp);
+		void RemoveAlwaysMouseOverCheck(WinBasePtr comp);		
 
 		//-------------------------------------------------------------------
 		// For UI Editing

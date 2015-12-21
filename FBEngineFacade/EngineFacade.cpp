@@ -51,6 +51,8 @@
 #include "FBVideoPlayer/VideoPlayerOgg.h"
 #include "FBParticleSystem/ParticleSystem.h"
 #include "FBAudioPlayer/AudioManager.h"
+#include "FBAudioPlayer/MusicPlayer.h"
+#include "FBAudioDebugger/AudioDebugger.h"
 using namespace fb;
 namespace fb{
 	void InitEngineLua();
@@ -80,6 +82,7 @@ public:
 	EngineOptionsPtr mEngineOptions;
 	FileMonitorPtr mFileMonitor;
 	AudioManagerPtr mAudioManager;
+	MusicPlayerPtr mMusicPlayer;
 	GeometryRendererPtr mGeometryRenderer;
 	bool mRayFromCursorCalced;
 
@@ -88,7 +91,7 @@ public:
 	std::map<std::string, std::vector< MeshFacadePtr> > mFractureObjects;
 	LuaObject mInputOverride;
 	std::vector<IVideoPlayerPtr> mVideoPlayers;
-
+	AudioDebuggerPtr mAudioDebugger;
 	//---------------------------------------------------------------------------
 	Impl()
 		: mL(0)
@@ -123,8 +126,10 @@ public:
 		mSceneObjectFactory = SceneObjectFactory::Create();		
 		mAudioManager = AudioManager::Create();
 		mAudioManager->Init();
+		mMusicPlayer = MusicPlayer::Create();		
 		
 		mInputManager->RegisterInputConsumer(mRenderer, IInputConsumer::Priority77_CAMERA);
+		mAudioDebugger = AudioDebugger::Create();
 	}
 
 	~Impl(){
@@ -245,6 +250,9 @@ public:
 			else
 				++it;
 		}
+
+		if (mEngineOptions->AudioDebug)
+			mAudioDebugger->Render();
 	}
 
 	bool InitRenderer(const char* pluginName){		
@@ -374,6 +382,7 @@ public:
 				videoPlayer->Update(gpTimer->GetDeltaTime());
 			}
 		}
+		mMusicPlayer->Update(dt);
 		mAudioManager->Update(dt);
 	}
 
@@ -524,7 +533,7 @@ public:
 	}
 
 	AudioId PlayAudio(const char* filepath, const Vec3& pos){
-		return mAudioManager->PlayAudio(filepath, pos.x, pos.y, pos.z);
+		return mAudioManager->PlayAudio(filepath, pos);
 	}
 
 	AudioId PlayAudio(const char* filepath, const AudioProperty& prop){
@@ -541,6 +550,22 @@ public:
 
 	void SetListenerPosition(const Vec3& pos){
 		return mAudioManager->SetListenerPosition(pos.x, pos.y, pos.z);
+	}
+
+	void PlayMusic(const char* path, float fadeOutOld){
+		mMusicPlayer->PlayMusic(path, fadeOutOld);
+	}
+
+	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
+		mMusicPlayer->ChangeMusic(path, fadeOutOld, startNewAfter);
+	}
+
+	void StopMusic(float fadeOut){
+		mMusicPlayer->StopMusic(fadeOut);
+	}
+
+	bool IsMusicPlaying() const{
+		return mMusicPlayer->IsPlaying();
 	}
 };
 HWindow EngineFacade::Impl::MainWindowHandle = INVALID_HWND;
@@ -607,7 +632,6 @@ HWindow EngineFacade::GetWindowHandleById(HWindowId hwndId) const{
 }
 
 void EngineFacade::BeforeUIRendering(HWindowId hwndId, HWindow hwnd){
-
 }
 
 void EngineFacade::RenderUI(HWindowId hwndId, HWindow hwnd){
@@ -1219,4 +1243,20 @@ bool EngineFacade::SetAudioPosition(AudioId id, const Vec3& pos){
 
 void EngineFacade::SetListenerPosition(const Vec3& pos){
 	return mImpl->SetListenerPosition(pos);
+}
+
+void EngineFacade::PlayMusic(const char* path, float fadeOutOld){
+	mImpl->PlayMusic(path, fadeOutOld);
+}
+
+void EngineFacade::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
+	mImpl->ChangeMusic(path, fadeOutOld, startNewAfter);
+}
+
+void EngineFacade::StopMusic(float fadeOut){
+	mImpl->StopMusic(fadeOut);
+}
+
+bool EngineFacade::IsMusicPlaying() const{
+	return mImpl->IsMusicPlaying();
 }

@@ -235,5 +235,10 @@ namespace fb{
 		void StopAudio(AudioId id);
 		bool SetAudioPosition(AudioId id, const Vec3& pos);
 		void SetListenerPosition(const Vec3& pos);
+
+		void PlayMusic(const char* path, float fadeOutOld);
+		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
+		void StopMusic(float fadeOut);
+		bool IsMusicPlaying() const;
 	};
 }

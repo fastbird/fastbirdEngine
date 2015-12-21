@@ -838,7 +838,7 @@ public:
 			if (!mSoundData.mPath.empty()){
 				const auto& pos = mSelf->GetPosition();
 				auto& am = AudioManager::GetInstance();
-				mAudioId = am.PlayAudio(mSoundData.mPath.c_str(), pos.x, pos.y, pos.z);
+				mAudioId = am.PlayAudio(mSoundData.mPath.c_str(), pos);
 				mSoundCallback = am.RegisterEndCallback(mAudioId, std::bind(&Impl::OnSoundFinish, this, std::placeholders::_1));
 			}
 			auto templates = mTemplates.const_get();

@@ -79,10 +79,12 @@ private:
 	std::string mTitlebarString;
 	std::string mStrBackground;
 	std::string mStrImageDisplay;
+	std::string mOpenSound;
+	std::string mCloseSound;
 	std::vector<ImageBoxPtr> mFrames;
 	bool mUseFrame;
 	ImageBoxWeakPtr mBackgroundImage;
-	std::string mMsgTranslationUnit;
+	std::string mMsgTranslationUnit;	
 	bool mAlwaysOnTop;
 	bool mCloseByEsc;
 	bool mSyncWindowPos;

@@ -189,10 +189,10 @@ namespace fb
 		TriggerRedraw();
 	}
 
-	void Button::OnMouseClicked(IInputInjectorPtr injector){
+	void Button::OnMouseClicked(IInputInjectorPtr injector){		
 		if (!mNoButton && GetVisible())
 			UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
-		__super::OnMouseClicked(injector);
+		__super::OnMouseClicked(injector);		
 	}
 
 	void Button::OnMouseHover(void* arg)

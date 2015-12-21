@@ -2517,6 +2517,12 @@ public:
 		}
 	}
 
+	void ClearFontScissor(){
+		for (auto& it : mFonts){
+			it.second->SetRenderStates();
+		}
+	}
+
 	//-------------------------------------------------------------------
 	// Queries
 	//-------------------------------------------------------------------
@@ -3246,6 +3252,10 @@ void Renderer::SetLockBlendState(bool lock){
 
 void Renderer::SetFontTextureAtlas(const char* path){
 	mImpl->SetFontTextureAtlas(path);
+}
+
+void Renderer::ClearFontScissor(){
+	mImpl->ClearFontScissor();
 }
 
 //-------------------------------------------------------------------

@@ -38,11 +38,10 @@
 #define FB_DLL_AUDIOPLAYER
 #endif
 
-#include "FBCommonHeaders/platform.h"
-
 #include <string>
 #include <chrono>
 #include <stack>
+#include <map>
 
 #include <AL/al.h>
 #include <AL/alc.h>

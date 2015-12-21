@@ -433,7 +433,7 @@ public:
 						Real proportion = 1.0f - (it->mSecs / it->mDuration);
 						color.a() = 1.0f - (proportion*proportion);
 						renderer.DrawQuad(Vec2I(drawPos.x - 4, drawPos.y - (int)it->mSize - 2), Vec2I((int)it->mWidth + 8, (int)it->mSize + 4), Color(0, 0, 0, color.a()*0.7f));
-						pFont->PrepareRenderResources();
+						pFont->PrepareRenderResources();						
 						pFont->Write((Real)drawPos.x, (Real)drawPos.y, 0.5f, color.Get4Byte(),
 							(const char*)it->mText.c_str(), -1, Font::FONT_ALIGN_LEFT);
 						accHeight += pFont->GetHeight() + 4.f;

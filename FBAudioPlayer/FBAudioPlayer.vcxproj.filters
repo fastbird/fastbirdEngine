@@ -11,6 +11,9 @@
     <ClInclude Include="AudioManipulatorType.h" />
     <ClInclude Include="SmoothGain.h" />
     <ClInclude Include="AudioSourceStatus.h" />
+    <ClInclude Include="AudioSource.h" />
+    <ClInclude Include="AudioBuffer.h" />
+    <ClInclude Include="MusicPlayer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -19,5 +22,8 @@
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioEx.cpp" />
     <ClCompile Include="SmoothGain.cpp" />
+    <ClCompile Include="AudioSource.cpp" />
+    <ClCompile Include="AudioBuffer.cpp" />
+    <ClCompile Include="MusicPlayer.cpp" />
   </ItemGroup>
 </Project>

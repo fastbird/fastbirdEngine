@@ -48,6 +48,9 @@ EngineOptions::EngineOptions(){
 
 	e_NoMeshLoad = Console::GetInstance().GetIntVariable("e_NoMeshLoad", 0);
 	FB_REGISTER_CVAR(e_NoMeshLoad, e_NoMeshLoad, CVAR_CATEGORY_CLIENT, "Skip mesh loading");
+
+	AudioDebug = Console::GetInstance().GetIntVariable("AudioDebug", 0);
+	FB_REGISTER_CVAR(AudioDebug, AudioDebug, CVAR_CATEGORY_CLIENT, "Audio debug");
 }
 
 EngineOptions::~EngineOptions(){

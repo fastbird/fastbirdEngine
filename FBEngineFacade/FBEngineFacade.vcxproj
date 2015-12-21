@@ -107,6 +107,9 @@
     <ClCompile Include="Voxelizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBAudioDebugger\FBAudioDebugger.vcxproj">
+      <Project>{f9f07d33-7c6f-435f-8d08-b0530b3ee594}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBAudioPlayer\FBAudioPlayer.vcxproj">
       <Project>{35bd3327-2fa4-4a92-8790-87abb17e720b}</Project>
     </ProjectReference>

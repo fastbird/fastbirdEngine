@@ -65,7 +65,7 @@ public:
 	};
 	typedef std::map<TexturePtr, ColorRamp> ColorRampsByTexture;
 
-	std::mutex mMutex;
+	std::mutex mMutex;	
 
 	//---------------------------------------------------------------------------
 	// Data - Copy On Write.
@@ -134,6 +134,7 @@ public:
 	CowPtr<ShaderData> mShaderData;
 	bool mShaderDefinesChanged;
 	bool mInputDescChanged;
+	bool mCloned;
 	//bool mMarkNoShaderDefineChanges;
 
 	//---------------------------------------------------------------------------
@@ -144,6 +145,7 @@ public:
 		, mShaderData(new ShaderData)
 		, mShaderDefinesChanged(false)
 		, mInputDescChanged(false)
+		, mCloned(false)
 		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
@@ -155,6 +157,7 @@ public:
 		, mShaderData(other.mShaderData)
 		, mShaderDefinesChanged(other.mShaderDefinesChanged)
 		, mInputDescChanged(other.mInputDescChanged)
+		, mCloned(true)
 		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
@@ -854,6 +857,14 @@ public:
 		Logger::Log("---- End ----\n");
 	}
 
+	void DebugPrintRenderStates(const char* prefix, const Material* self) const{
+		if (!prefix)
+			return;
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) [%s] address(0x%x) name(%s), cloned(%d)", 
+			prefix, self, mUniqueData->mName.c_str(), mCloned ? 1 : 0).c_str());
+		mRenderStatesData->mRenderStates->DebugPrint();
+	}
+
 	//----------------------------------------------------------------------------
 	const Vec4f& GetAmbientColor() const
 	{
@@ -1346,6 +1357,10 @@ const SHADER_DEFINES& Material::GetShaderDefines() const {
 
 void Material::DebugPrintShaderDefines() const{
 	mImpl->DebugPrintShaderDefines();
+}
+
+void Material::DebugPrintRenderStates(const char* prefix) const{
+	mImpl->DebugPrintRenderStates(prefix, this);
 }
 
 const Vec4f& Material::GetAmbientColor() const {

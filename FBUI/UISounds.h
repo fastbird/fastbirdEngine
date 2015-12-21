@@ -31,6 +31,10 @@ namespace fb{
 		enum Enum{
 			ButtonIn,
 			ButtonClick,
+			WindowOpen,
+			WindowClose,
+
+			Num,
 		};
 	}
 }

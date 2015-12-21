@@ -34,6 +34,7 @@ namespace fb{
 			, mRolloffFactor(1.f)
 			, mRelative(false)
 			, mGain(1.f)
+			, mLoop(false)
 		{
 		}
 		Vec3Tuple mPosition;
@@ -45,5 +46,6 @@ namespace fb{
 		float mRolloffFactor;
 		float mGain;
 		bool mRelative;
+		bool mLoop;
 	};
 }
