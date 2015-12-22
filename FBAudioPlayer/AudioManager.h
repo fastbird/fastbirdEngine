@@ -29,6 +29,7 @@
 #include "FBCommonHeaders/Types.h"
 #include "AudioProperty.h"
 #include "AudioManipulatorType.h"
+#include "AudioSourceStatus.h"
 #include "FBCommonHeaders/VectorMap.h"
 typedef unsigned int ALuint;
 namespace fb{
@@ -81,7 +82,7 @@ namespace fb{
 		/// this flag is set.
 		/// default is false.
 		bool SetRelative(AudioId id, bool relative);
-		void SetListenerPosition(float x, float y, float z);
+		void SetListenerPosition(const Vec3Tuple& pos);
 		bool SetReferenceDistance(AudioId id, float distance);
 		bool SetRolloffFactor(AudioId id, float factor);
 		bool SetOffsetInSec(AudioId id, float sec);
@@ -92,7 +93,7 @@ namespace fb{
 		float GetGain(AudioId id) const;
 		float GetGainFromFBAudio(const char* fbaudioPath);
 
-		void SetLoop(AudioId id, bool loop);
+		bool SetLoop(AudioId id, bool loop);
 		bool GetLoop(AudioId id) const;
 
 		void RegisterAudioEx(AudioExPtr audioex);
@@ -105,9 +106,19 @@ namespace fb{
 
 		typedef VectorMap<AudioId, AudioSourcePtr> AudioSources;
 		/// only for FBAudioDebuffer
-		const AudioSources& GetAudioList() const;
+		struct AudioDebugData{
+			float mDistPerRef;
+			float mGain;
+			Vec3Tuple mPosition;
+			AudioSourceStatus::Enum mStatus;
+			std::string mFilePath;
+		};
+		void GetAudioList(std::vector<AudioDebugData>& list) const;
 
 		unsigned GetNumGenerated() const;
 		bool IsValidSource(AudioId id) const;
+
+		/// Internal only.
+		bool AudioThreadFunc();
 	};
 }

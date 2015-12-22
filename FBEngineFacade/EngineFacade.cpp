@@ -549,7 +549,7 @@ public:
 	}
 
 	void SetListenerPosition(const Vec3& pos){
-		return mAudioManager->SetListenerPosition(pos.x, pos.y, pos.z);
+		return mAudioManager->SetListenerPosition(pos);
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld){

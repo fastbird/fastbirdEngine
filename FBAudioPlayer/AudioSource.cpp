@@ -18,9 +18,9 @@ public:
 	float mDistPerRef;
 
 	//---------------------------------------------------------------------------
-	Impl()
-		: mALSource(-1)
-		, mAudioId(INVALID_AUDIO_ID)
+	Impl(AudioId audioId)
+		: mAudioId(audioId)
+		, mALSource(-1)		
 		, mPlayingTime(0)
 		, mStatus(AudioSourceStatus::Waiting)
 		, mDistPerRef(FLT_MAX)
@@ -32,10 +32,7 @@ public:
 		if (mAudioBuffer)
 			mAudioBuffer->mReferences--;
 	}
-
-	void SetAudioId(AudioId id){
-		mAudioId = id;
-	}
+	
 	const AudioId& GetAudioId() const{
 		return mAudioId;
 	}
@@ -186,19 +183,17 @@ public:
 	}
 };
 //---------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(AudioSource);
-AudioSource::AudioSource()
-	: mImpl(new Impl)
+AudioSourcePtr AudioSource::Create(AudioId audioId){
+	return AudioSourcePtr(new AudioSource(audioId), [](AudioSource* obj){delete obj; });
+}
+AudioSource::AudioSource(AudioId audioId)
+	: mImpl(new Impl(audioId))
 {
 
 }
 
 AudioSource::~AudioSource(){
 
-}
-
-void AudioSource::SetAudioId(AudioId id) {
-	mImpl->SetAudioId(id);
 }
 
 const AudioId& AudioSource::GetAudioId() const {

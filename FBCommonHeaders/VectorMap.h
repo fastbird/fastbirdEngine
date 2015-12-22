@@ -230,6 +230,11 @@ namespace fb
 			return mVector.empty();
 		}
 
+		//--------------------------------------------------------------------
+		void swap(VectorMap<_Kty, _Ty>& other){
+			mVector.swap(other.mVector);
+		}
+
 
 	private:
 

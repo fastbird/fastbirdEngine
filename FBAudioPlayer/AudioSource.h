@@ -6,14 +6,14 @@ namespace fb{
 	FB_DECLARE_SMART_PTR_STRUCT(AudioBuffer);
 	FB_DECLARE_SMART_PTR_STRUCT(AudioSource);
 	struct FB_DLL_AUDIOPLAYER AudioSource{
+	private:
 		FB_DECLARE_PIMPL_NON_COPYABLE(AudioSource);
-		AudioSource();
+		AudioSource(AudioId audioId);
 		~AudioSource();
 
 	public:
-		static AudioSourcePtr Create();
+		static AudioSourcePtr Create(AudioId audioId);
 
-		void SetAudioId(AudioId id);
 		const AudioId& GetAudioId() const;
 		void SetAudioBuffer(AudioBufferPtr buffer);
 		AudioBufferPtr GetAudioBuffer() const;

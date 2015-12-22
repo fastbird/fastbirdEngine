@@ -40,7 +40,7 @@ public:
 		AudioProperty prop;
 		auto audioex = AudioEx::Create();
 		audioex->SetStartLoopEnd("", "data/audio/big_laser_fire_loop.wav", "");
-		audioex->Play(20.f);
+		audioex->Play(60.f);
 		
 	}
 

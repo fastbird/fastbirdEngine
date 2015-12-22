@@ -337,6 +337,7 @@ public:
 		return mCurAudioId != INVALID_AUDIO_ID && mCurPlaying != AudioType::Num;
 	}
 
+	// audio thread
 	bool Update(){
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 		mPlayingTime = (curTick - mStartTick) / (TIME_PRECISION)std::milli::den;

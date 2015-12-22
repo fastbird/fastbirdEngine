@@ -42,6 +42,7 @@
 #include <chrono>
 #include <stack>
 #include <map>
+#include <unordered_set>
 
 #include <AL/al.h>
 #include <AL/alc.h>
@@ -54,6 +55,7 @@
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
 #include "FBFileSystem/FileSystem.h"
+#include "FBThreadLib/threads.h"
 #include "TinyXmlLib/tinyxml2.h"
 
 namespace fb{
