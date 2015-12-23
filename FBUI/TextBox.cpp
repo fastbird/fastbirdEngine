@@ -226,11 +226,10 @@ namespace fb
 
 
 	unsigned TextBox::GetTextBoxHeight() const
-	{
-		/*FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);
-		float height = pFont->GetHeight();*/
-
-		return Round(mTextSize * mNumTextLines);
+	{	
+		FontPtr pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);
+		float height = pFont->LineHeightForText(mTextw.c_str());
+		return Round(height * mNumTextLines);
 	}
 
 	void TextBox::SetHwndId(HWindowId hwndId)

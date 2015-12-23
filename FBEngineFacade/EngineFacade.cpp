@@ -556,6 +556,10 @@ public:
 		mMusicPlayer->PlayMusic(path, fadeOutOld);
 	}
 
+	void PlayMusic(const char* path, float fadeOutOld, bool loop){
+		mMusicPlayer->PlayMusic(path, fadeOutOld, loop);
+	}
+
 	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
 		mMusicPlayer->ChangeMusic(path, fadeOutOld, startNewAfter);
 	}
@@ -1247,6 +1251,10 @@ void EngineFacade::SetListenerPosition(const Vec3& pos){
 
 void EngineFacade::PlayMusic(const char* path, float fadeOutOld){
 	mImpl->PlayMusic(path, fadeOutOld);
+}
+
+void EngineFacade::PlayMusic(const char* path, float fadeOutOld, bool loop){
+	mImpl->PlayMusic(path, fadeOutOld, loop);
 }
 
 void EngineFacade::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){

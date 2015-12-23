@@ -10,7 +10,9 @@ namespace fb{
 	public:
 		static MusicPlayerPtr Create();
 		MusicPlayer& GetInstance() const;
+		/// Play looping
 		void PlayMusic(const char* path, float fadeOutOld);
+		void PlayMusic(const char* path, float fadeOutOld, bool loop);
 		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
 		void StopMusic(float fadeOut);
 		void Update(float dt);

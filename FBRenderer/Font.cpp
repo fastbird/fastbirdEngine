@@ -409,7 +409,8 @@ public:
 		// this is moving up the text slight to the top.		
 		Real oy2 = mScale * (mFontHeight - mBase);
 		fy -= oy2;
-		Real newLineHeight = mScaledFontHeight;
+		Real newLineHeight = LineHeightForText((const wchar_t*)text);
+			//mScaledFontHeight;
 		int imgY = 0;
 		// fy is the basis of the glyphs.
 		unsigned int batchingVertices = 0;
@@ -965,6 +966,38 @@ public:
 	void SetTextureAtlas(TextureAtlasPtr atlas){
 		mTextureAtlas = atlas;
 	}
+
+	Real GetImageHeight(const wchar_t* text){
+		auto start = text + 5;
+		auto end = wcsstr(text, L"$]");
+		wchar_t wcsImg[255] = {0};
+		wcsncpy_s(wcsImg, start, end - start);
+		auto imgRegion = WideToAnsi(wcsImg);
+		if (mTextureAtlas)
+		{
+			auto region = mTextureAtlas->GetRegion(imgRegion);
+			if (region)
+			{
+				auto& regionSize = region->GetSize();
+				Real ratio = regionSize.x / (Real)regionSize.y;
+				return (Real)regionSize.y;
+			}
+		}
+		return mScaledFontHeight;
+	}
+
+	Real LineHeightForText(const wchar_t* text){		
+		Real height = mScaledFontHeight;
+		auto imgStart = wcsstr(text, L"[$img");
+		if (imgStart == 0)
+			return height;
+
+		while (imgStart){
+			height = std::max(height, GetImageHeight(imgStart));
+			imgStart = wcsstr(imgStart + 1, L"[$img");
+		}
+		return height;
+	}
 };
 
 //----------------------------------------------------------------------------
@@ -1098,6 +1131,10 @@ std::wstring Font::StripTags(const wchar_t* text){
 
 void Font::SetTextureAtlas(TextureAtlasPtr atlas){
 	mImpl->SetTextureAtlas(atlas);
+}
+
+Real Font::LineHeightForText(const wchar_t* text){
+	return mImpl->LineHeightForText(text);
 }
 
 //=============================================================================

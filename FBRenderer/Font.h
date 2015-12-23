@@ -97,6 +97,7 @@ namespace fb{
 		void RestoreRenderTargetSize();
 		std::wstring StripTags(const wchar_t* text);
 		void SetTextureAtlas(TextureAtlasPtr atlas);
+		Real LineHeightForText(const wchar_t* text);
 
 	protected:
 		friend class FontLoader;

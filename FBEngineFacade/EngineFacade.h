@@ -236,7 +236,9 @@ namespace fb{
 		bool SetAudioPosition(AudioId id, const Vec3& pos);
 		void SetListenerPosition(const Vec3& pos);
 
+		/// looping music
 		void PlayMusic(const char* path, float fadeOutOld);
+		void PlayMusic(const char* path, float fadeOutOld, bool loop);
 		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
 		void StopMusic(float fadeOut);
 		bool IsMusicPlaying() const;

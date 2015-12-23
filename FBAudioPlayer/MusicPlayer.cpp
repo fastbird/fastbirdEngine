@@ -23,9 +23,10 @@ public:
 
 		auto& am = AudioManager::GetInstance();
 		if (mCurrentAudioId != INVALID_AUDIO_ID){
+			am.SetLoop(mCurrentAudioId, false);
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
 		}
-		if (_stricmp(path, ".fbaudio") == 0){
+		if (strstr(path, ".fbaudio")){
 			mCurrentAudioId = am.PlayFBAudio(path);
 		}
 		else{
@@ -33,6 +34,12 @@ public:
 		}
 		
 		mCurrentAudioPath = path;
+		AudioManager::GetInstance().SetLoop(mCurrentAudioId, true);
+	}
+
+	void PlayMusic(const char* path, float fadeOutOld, bool loop){
+		PlayMusic(path, fadeOutOld);
+		AudioManager::GetInstance().SetLoop(mCurrentAudioId, loop);
 	}
 
 	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
@@ -45,7 +52,7 @@ public:
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
 		}
 		if (startNewAfter == 0.f){
-			if (_stricmp(path, ".fbaudio") == 0){
+			if (strstr(path, ".fbaudio")){
 				mCurrentAudioId = am.PlayAudio(path);
 			}
 			else{
@@ -76,7 +83,7 @@ public:
 			mStartNewAfter -= dt;
 			if (mStartNewAfter <= 0.f){
 				auto& am = AudioManager::GetInstance();
-				if (_stricmp(mCurrentAudioPath.c_str(), ".fbaudio") == 0){
+				if (strstr(mCurrentAudioPath.c_str(), ".fbaudio")){
 					mCurrentAudioId = am.PlayFBAudio(mCurrentAudioPath.c_str());
 				}
 				else{
@@ -122,6 +129,10 @@ MusicPlayer::~MusicPlayer(){
 
 void MusicPlayer::PlayMusic(const char* path, float fadeOutOld){
 	mImpl->PlayMusic(path, fadeOutOld);
+}
+
+void MusicPlayer::PlayMusic(const char* path, float fadeOutOld, bool loop){
+	mImpl->PlayMusic(path, fadeOutOld, loop);
 }
 
 void MusicPlayer::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){

@@ -765,9 +765,17 @@ public:
 		{
 			LOCK_CRITICAL_SECTION l(mAudioMutex);
 			sources = mAudioSources;
-			for (auto& it : mSettingDataQueue){
-				if (it.mPropertyType == AL_POSITION){
-					positionData.push_back(it);
+			for (auto& settingData : mSettingDataQueue){
+				if (settingData.mPropertyType == AL_POSITION){
+					auto itFound = std::find_if(positionData.begin(), positionData.end(), [&](const SettingData& a){
+						return a.mAudioId == settingData.mAudioId && a.mPropertyType == settingData.mPropertyType;
+					});
+					if (itFound != positionData.end()){
+						itFound->mVec3 = settingData.mVec3;
+					}
+					else{
+						positionData.push_back(settingData);
+					}
 				}
 			}
 		}
@@ -805,16 +813,17 @@ public:
 		if (!sAudioManagerRaw)
 			return false;
 
-		PlayDataVector playQueue;
+		PlayDataVector playQueue;		
 		SettingDataVector setttingDataQueue;
+		setttingDataQueue.reserve(100);
 		AudioManipulators manipulators;		
 		StopQueue stopQueue;		
 		std::vector<AudioExPtr> audioExQueue;
 		{
 			LOCK_CRITICAL_SECTION l(mAudioMutex);
-			playQueue.swap(mAudioPlayQueue);
+			playQueue.swap(mAudioPlayQueue);			
 			mListenerPos = mListenerPosMainThread;
-			setttingDataQueue.swap(mSettingDataQueue);
+			setttingDataQueue.swap(mSettingDataQueue);			
 			manipulators.swap(mAudioManipulatorsQueue);
 			stopQueue.swap(mStopQueue);
 			audioExQueue.swap(mAudioExsQueue);
@@ -889,8 +898,7 @@ public:
 				}
 			}
 			else{
-				Logger::Log(FB_ERROR_LOG_ARG, 
-					FormatString("Setting property(%d) for invalid audio(%u)", it.mPropertyType, it.mAudioId).c_str());
+				//Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting property(%d) for invalid audio(%u)", it.mPropertyType, it.mAudioId).c_str());
 			}
 		}
 
@@ -1037,7 +1045,14 @@ public:
 			return true;
 		}
 		else{
-			if (mInvalidatedAudioIds.find(id) == mInvalidatedAudioIds.end()){				
+			if (mInvalidatedAudioIds.find(id) == mInvalidatedAudioIds.end()){
+				for (auto& itHas : mSettingDataQueue){
+					if (itHas.mAudioId == id && itHas.mPropertyType == AL_POSITION){
+						itHas.mVec3 = { x, y, z };
+						return true;
+					}
+				}
+
 				mSettingDataQueue.push_back(SettingData());
 				auto& data = mSettingDataQueue.back();
 				data.mAudioId = id;
@@ -1046,7 +1061,7 @@ public:
 				return true;
 			}
 			else{
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting position for invalid audio(%u)", id).c_str());
+				//Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting position for invalid audio(%u)", id).c_str());
 				return false;
 			}
 		}
@@ -1367,6 +1382,7 @@ public:
 		}
 
 		// AudioId, FunctionIds
+		LOCK_CRITICAL_SECTION l(mAudioMutex);
 		auto callbackIt = mEndCallbackIds.Find(id);
 		if (callbackIt != mEndCallbackIds.end()){
 			for (auto funcId : callbackIt->second){
@@ -1440,7 +1456,7 @@ AudioManager::AudioManager()
 AudioManager::~AudioManager()
 {
 	sAudioManagerRaw = 0;
-	
+	mImpl = 0;	
 }
 
 bool AudioManager::Init(){
@@ -1588,7 +1604,7 @@ bool AudioManager::AudioThreadFunc(){
 	static auto tick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 	auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 	auto dt = (curTick - tick) / (TIME_PRECISION)std::milli::den;
-	if (dt > 0.03f){
+	if (dt > 0.03f && sAudioManagerRaw){
 		tick = curTick;
 		return mImpl->AudioThreadFunc(dt);
 	}
