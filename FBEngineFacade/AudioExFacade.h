@@ -52,5 +52,6 @@ namespace fb{
 		void SetGain(float gain);
 		void SetGainSmooth(float gain, float inSec);
 		void SetReferenceDistance(float dist);
+		bool IsPlaying() const;
 	};
 }

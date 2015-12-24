@@ -81,6 +81,10 @@ public:
 	void SetReferenceDistance(float dist){
 		mAudio->SetReferenceDistance(dist);
 	}
+
+	bool IsPlaying() const{
+		return mAudio->IsPlaying();
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -143,4 +147,8 @@ void AudioExFacade::SetGainSmooth(float gain, float inSec){
 
 void AudioExFacade::SetReferenceDistance(float dist){
 	mImpl->SetReferenceDistance(dist);
+}
+
+bool AudioExFacade::IsPlaying() const{
+	return mImpl->IsPlaying();
 }

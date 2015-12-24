@@ -79,7 +79,7 @@ public:
 		// Draw Background
 		const auto& size = renderer.GetMainRenderTargetSize();
 		renderer.DrawQuad(Vec2I(0, 0), Vec2I(size.x, mHeight),
-			Color::DarkGray);
+			Color(0.15f, 0.15f, 0.15f, 0.5f));
 
 		auto consoleInputPos = console.GetCursorPos();
 		auto inputString = console.GetInputString();

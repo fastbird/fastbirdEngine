@@ -33,6 +33,7 @@
 #include "Scroller.h"
 #include "UIObject.h"
 #include "FBRenderer/TextureAtlas.h"
+#include "FBAudioPlayer/AudioManager.h"
 
 namespace fb
 {
@@ -735,6 +736,10 @@ bool Wnd::SetVisible(bool show)
 		auto titlebar = mTitlebar.lock();
 		if (titlebar)
 			titlebar->SetVisible(show);
+
+		if (show && changed && !mOpenSound.empty()){
+			AudioManager::GetInstance().PlayAudio(mOpenSound.c_str());
+		}
 	}
 	return changed;
 }
@@ -843,4 +848,3 @@ const char* Wnd::GetMsgTranslationUnit() const
 }
 
 }
-

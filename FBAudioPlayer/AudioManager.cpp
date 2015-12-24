@@ -140,11 +140,11 @@ public:
 	}
 
 	~Impl(){
-		// use deinit()
-		sAudioManagerRaw = 0;
+		// use deinit()		
+	}
+	void JoinThread(){
 		mAudioThread.Join();
 	}
-
 	bool IsAudioThread(){
 		return std::this_thread::get_id() == mAudioThread.mThreadDesc->mThreadID;
 	}
@@ -1456,6 +1456,7 @@ AudioManager::AudioManager()
 AudioManager::~AudioManager()
 {
 	sAudioManagerRaw = 0;
+	mImpl->JoinThread();
 	mImpl = 0;	
 }
 

@@ -1462,13 +1462,13 @@ public:
 			return;
 		mPrevTooltipNPos = npos;
 		HWindowId hwndId = mTooltipUI->GetHwndId();
-		auto& renderer = Renderer::GetInstance();
-		auto hWnd = renderer.GetWindowHandle(hwndId);
 		if (hwndId == -1){
-			hwndId = GetForegroundWindowId();
+			hwndId = GetForegroundWindowId();			
 			mTooltipUI->SetHwndId(hwndId);
 		}
-		assert(hwndId != -1);
+		if (hwndId == -1)
+			return;		
+		auto& renderer = Renderer::GetInstance();		
 		const auto& size = renderer.GetRenderTargetSize(hwndId);
 		Vec2 backPos = npos;
 		if (backPos.y > 0.9f)
