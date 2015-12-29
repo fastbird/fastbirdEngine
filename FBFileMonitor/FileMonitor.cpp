@@ -83,7 +83,7 @@ namespace fb {
 		void Stop(){			
 			mExiting = true;
 			ForceExit(false);
-			SetEvent(mExitFileChangeThread);			
+			SetEvent(mExitFileChangeThread);			 
 		}
 
 		bool Run() {
@@ -137,11 +137,8 @@ namespace fb {
 					mChangedFiles.insert(unifiedPath);
 					mHasChangedFiles = true;
 
-					if (sMonitorRaw){
-						//LOCK_CRITICAL_SECTION fileMonitorLock(gFileMonitorMutex);
-						for (int i = 0; i < 2; ++i){
-							sMonitorRaw->OnChangeDetected();
-						}
+					if (sMonitorRaw){						
+						sMonitorRaw->OnChangeDetected();
 					}
 				}
 				break;
@@ -255,20 +252,24 @@ public:
 			auto& observers = mSelf->mObservers_[i]; //FileChange_Engine and FileChange_Game
 			for (auto oit = observers.begin(); oit != observers.end(); /**/){
 				IteratingWeakContainer(observers, oit, observer);				
-				observer->OnChangeDetected();				
+				observer->OnChangeDetected();
 			}
 		}
 	}
 	bool Check(){
 		using namespace std::chrono;		
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+		bool recheck = true;
 		if (curTick - mLastCheckedTime > 500)
 		{
+			recheck = false;
 			mLastCheckedTime = curTick;
 			for (auto& it : mFileMonitorThread){
 				if (it.HasChangedFiles()){
-					it.GetChangedFiles(mChangedFiles);
-				}
+					std::vector<std::pair<std::string, std::string> > files;
+					it.GetChangedFiles(files);					
+					mChangedFiles.insert(mChangedFiles.end(), files.begin(), files.end());
+				}				
 			}
 			
 			for (auto it = mChangedFiles.begin(); it != mChangedFiles.end();)
@@ -316,7 +317,6 @@ public:
 
 				if (canOpen)
 				{
-					Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) file change detected: %s", filepath.c_str()).c_str());
 					/*int startEnum = shader || material || texture || particle || xml ?
 						IFileChangeObserver::FileChange_Engine : IFileChangeObserver::FileChange_Game;*/
 					for (int i = 0; i < 2; ++i){
@@ -335,27 +335,18 @@ public:
 								break;
 						}
 					}
-					/*if (shader)
-						IShader::ReloadShader(filepath.c_str());
-					else if (material)
-						IMaterial::ReloadMaterial(filepath.c_str());
-					else if (texture)
-						ITexture::ReloadTexture(filepath.c_str());
-					else if (particle)
-						ParticleManager::GetParticleManager().ReloadParticle(filepath.c_str());
-					else if (xml && gFBEnv->pRenderer)
-						mRenderer->ReloadTextureAtlas(filepath.c_str());*/
 
 					it = mChangedFiles.erase(it);
 					
 				}
 				else
 				{
+					recheck = true;
 					++it;
 				}
 			}
 		}
-		return !mChangedFiles.empty();
+		return !mChangedFiles.empty() || recheck;
 	}
 
 	void IgnoreMonitoringOnFile(const char* filepath){

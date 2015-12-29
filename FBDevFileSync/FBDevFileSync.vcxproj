@@ -93,6 +93,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
+      <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBFileMonitor\FBFileMonitor.vcxproj">
       <Project>{288dc950-fe81-430a-ba47-933cb0875e8e}</Project>
     </ProjectReference>

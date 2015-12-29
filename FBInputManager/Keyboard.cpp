@@ -58,7 +58,7 @@ public:
 	void EndFrame(TIME_PRECISION gameTimeInSecond){
 		mValid = true;
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
-		memset(mKeyUp, 0, sizeof(mKeyUp));
+		memset(mKeyUp, 0, sizeof(mKeyUp));		
 		if (!mCurrentChar.empty()){
 			if (gameTimeInSecond - mLastPushKeyTime > 2.0f)
 			{
@@ -81,8 +81,10 @@ public:
 
 	//--------------------------------------------------------------------------
 	void PushEvent(HWindow hWnd, const KeyboardEvent& keyboardEvent){
-		/*DebugOutput("MakeCode = %d, Flags = %x, VKey = %d, Message = %d, ExtraInformation = %d",
-		keyboardEvent.MakeCode, keyboardEvent.Flags, keyboardEvent.VKey, keyboardEvent.Message, keyboardEvent.ExtraInformation);*/
+		//Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+			//"MakeCode = %d, Flags = %x, VKey = %d, Message = %d, ExtraInformation = %d",
+			//keyboardEvent.MakeCode, keyboardEvent.Flags, keyboardEvent.VKey, keyboardEvent.Message, keyboardEvent.ExtraInformation).c_str());
+		
 
 		if (keyboardEvent.Flags & 1) // key up
 		{
@@ -110,7 +112,7 @@ public:
 			{
 				if (key[i] == 0)
 					continue;
-
+				
 				mKeyPressed[key[i]] = true;
 				mKeyDown[key[i]] = true;
 			}

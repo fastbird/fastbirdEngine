@@ -599,9 +599,8 @@ namespace fb
 			switch (prop)
 			{
 			case LISTBOX_HIGHLIGHT_COLOR:
-				return "0.1, 0.3, 0.3, 0.7";
-			}
-			assert(0);
+				return "0.1, 0.3, 0.3, 0.7";			
+			}			
 			return "";
 		}
 	}

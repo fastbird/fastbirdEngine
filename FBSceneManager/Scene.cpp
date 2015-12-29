@@ -542,6 +542,8 @@ public:
 	}
 
 	void PreRenderCloudVolumes(const RenderParam& param, RenderParamOut* paramOut){
+		if (!mDrawClouds)
+			return;
 		param.mScene = mSelf;
 		for (auto var : mCloudVolumes)
 		{
@@ -550,6 +552,8 @@ public:
 	}
 
 	void RenderCloudVolumes(const RenderParam& param, RenderParamOut* paramOut){
+		if (!mDrawClouds)
+			return;
 		param.mScene = mSelf;
 		for (auto var : mCloudVolumes)
 		{

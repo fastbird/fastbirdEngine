@@ -283,13 +283,7 @@ public:
 		for (int i = 0; i < ShaderConstants::Num; ++i){
 			SAFE_RELEASE(mShaderConstants[i]);
 		}
-		mCurrentRTViews.clear();
-		mCurrentDSView = 0;
-		mCheckTextures.clear();
-		mSwapChains.clear();
-		mImmediateContext = 0;
-		mDevice = 0;
-		mDXGIFactory = 0;
+		mThreadPump->PurgeAllItems();
 	}
 
 	// Device features

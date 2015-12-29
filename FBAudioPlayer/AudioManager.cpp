@@ -202,6 +202,8 @@ public:
 			auto it = mAudioSources.end() - 1;
 			if (it->second->GetALAudioSource() != -1)
 				StopAudio(it->second->GetAudioId());
+			else
+				mAudioSources.erase(it);
 		}		
 		assert(mALSources.size() == mNumGeneratedSources);
 		while (!mALSources.empty()){

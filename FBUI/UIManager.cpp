@@ -65,6 +65,7 @@ namespace fb{
 	static const int TooltipTextYPosition = 4;
 	extern float gTextSizeMod;
 }
+
 class UIManager::Impl{
 public:
 	UIManager* mSelf;
@@ -452,9 +453,11 @@ public:
 			}
 			else if (extension==".lua")
 			{
-				if (strstr(file, "save\\save") == 0 &&
-					strstr(file, "configGame.lua") == 0 &&
-					strstr(file, "configEngine.lua") == 0){
+				std::string lowered(file);
+				ToLowerCase(lowered);
+				if (lowered.find("save/save") == std::string::npos &&
+					lowered.find("configgame.lua") == std::string::npos &&
+					lowered.find("configengine.lua") == std::string::npos){
 					int error = LuaUtils::DoFile(file);
 					if (error)
 					{
