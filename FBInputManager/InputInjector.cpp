@@ -105,6 +105,11 @@ void InputInjector::ClearBuffer(){
 		mImpl->mKeyboard->ClearBuffer();
 }
 
+void InputInjector::ClearKeydown(){
+	if (mImpl->mKeyboard)
+		mImpl->mKeyboard->ClearKeydown();
+}
+
 //-------------------------------------------------------------------
 // Mouse
 //-------------------------------------------------------------------

@@ -57,6 +57,7 @@ namespace fb{
 		unsigned GetChar();
 		void PopChar();
 		void ClearBuffer();
+		void ClearKeydown();
 
 		//-------------------------------------------------------------------
 		// Mouse

@@ -53,6 +53,7 @@ namespace fb
 		virtual unsigned GetChar() = 0;
 		virtual void PopChar() = 0;
 		virtual void ClearBuffer() = 0;
+		virtual void ClearKeydown() = 0;
 
 		virtual void OnKillFocus() = 0;		
 	};

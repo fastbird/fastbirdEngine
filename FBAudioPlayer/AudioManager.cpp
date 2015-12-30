@@ -139,8 +139,19 @@ public:
 		mListenerPosMainThread = mListenerPos;
 	}
 
-	~Impl(){
-		// use deinit()		
+	~Impl(){		
+		assert(mALSources.size() == mNumGeneratedSources);
+		while (!mALSources.empty()){
+			auto src = mALSources.top();
+			mALSources.pop();
+			alDeleteSources(1, &src);
+		}
+		mAudioBuffers.clear();
+
+		alcMakeContextCurrent(NULL);
+		alcDestroyContext(mContext);
+		alcCloseDevice(mDevice);
+		mDevice = 0;
 	}
 	void JoinThread(){
 		mAudioThread.Join();
@@ -198,25 +209,10 @@ public:
 	void Deinit(){
 		mAudioExs.clear();
 
-		while (!mAudioSources.empty()){
-			auto it = mAudioSources.end() - 1;
+		for (auto it = mAudioSources.begin(); it != mAudioSources.end(); ++it){
 			if (it->second->GetALAudioSource() != -1)
 				StopAudio(it->second->GetAudioId());
-			else
-				mAudioSources.erase(it);
-		}		
-		assert(mALSources.size() == mNumGeneratedSources);
-		while (!mALSources.empty()){
-			auto src = mALSources.top();
-			mALSources.pop();
-			alDeleteSources(1, &src);
 		}
-		mAudioBuffers.clear();	
-
-		alcMakeContextCurrent(NULL);
-		alcDestroyContext(mContext);
-		alcCloseDevice(mDevice);
-		mDevice = 0;
 	}
 	
 	Real GetDistanceSQ(const Vec3Tuple& a, const Vec3Tuple& b){
@@ -594,7 +590,7 @@ public:
 			return false;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		LOCK_CRITICAL_SECTION l(mAudioMutex);		
 		mStopQueue.push_back(StopData{ id, -1.0f });
 		return true;
 	}
@@ -605,7 +601,7 @@ public:
 			return false;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		LOCK_CRITICAL_SECTION l(mAudioMutex);		
 		mStopQueue.push_back(StopData{ id, sec });
 		return true;		
 	}
@@ -940,7 +936,7 @@ public:
 				}
 			}
 			else{
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Stop invalid audio(%u)", it.mAudioId).c_str());
+				//Logger::Log(FB_ERROR_LOG_ARG, FormatString("Stop invalid audio(%u)", it.mAudioId).c_str());
 			}
 		}
 

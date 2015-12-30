@@ -146,6 +146,10 @@ public:
 		ClearWithSwap(mCurrentChar);
 	}
 
+	void ClearKeydown(){
+		memset(mKeyDown, 0, sizeof(mKeyDown));
+	}
+
 	void OnKillFocus(){
 		memset(mKeyDown, 0, sizeof(mKeyDown));
 		memset(mKeyPressed, 0, sizeof(mKeyPressed));
@@ -262,6 +266,10 @@ public:
 	void Keyboard::ClearBuffer()
 	{
 		mImpl->ClearBuffer();
+	}
+
+	void Keyboard::ClearKeydown(){
+		mImpl->ClearKeydown();
 	}
 
 	void Keyboard::OnKillFocus()

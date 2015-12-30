@@ -366,7 +366,7 @@ TaskScheduler::TaskScheduler(int NumThreads)
 }
 
 TaskScheduler::~TaskScheduler(){
-
+	Logger::Log(FB_DEFAULT_LOG_ARG, "TaskScheduler Deleted");
 }
 
 void TaskScheduler::AddTask(TaskPtr NewTask){

@@ -394,6 +394,7 @@ FileMonitor::~FileMonitor(){
 	//LOCK_CRITICAL_SECTION l(gFileMonitorMutex);
 	mImpl = 0;
 	sMonitorRaw = 0;
+	Logger::Log(FB_DEFAULT_LOG_ARG, "FileMonitor Deleted");
 }
 
 void FileMonitor::StartMonitor(const char* dirPath){

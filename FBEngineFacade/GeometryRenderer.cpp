@@ -472,7 +472,7 @@ GeometryRenderer::GeometryRenderer()
 }
 
 GeometryRenderer::~GeometryRenderer(){
-
+	Logger::Log(FB_DEFAULT_LOG_ARG, "Geometry Renderer Deleted");
 }
 
 void GeometryRenderer::SetRenderTargetSize(const Vec2I& size) {
