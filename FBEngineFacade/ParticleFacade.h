@@ -60,6 +60,7 @@ namespace fb{
 		void AddShaderDefine(const char* def, const char* val);
 		//void ApplyShaderDefine();
 		void SetRelativeVelocity(const Vec3& dir, float speed);
+		void SetTeamColor(const Color& color);
 
 	};
 }

@@ -31,6 +31,7 @@
 #include "Voxelizer.h"
 #include "MeshFacade.h"
 #include "GeometryRenderer.h"
+#include "AudioOptions.h"
 #include "FBTimer/Profiler.h"
 #include "FBFileSystem/FileSystem.h"
 #include "FBSystemLib/System.h"
@@ -77,8 +78,7 @@ public:
 	CameraPtr mMainCamera;
 	ScenePtr mTemporalOverridingScene;
 	bool mLockSceneOverriding;
-	SceneObjectFactoryPtr mSceneObjectFactory;
-	ParticleSystemPtr mParticleSystem;	
+	SceneObjectFactoryPtr mSceneObjectFactory;	
 	EngineOptionsPtr mEngineOptions;
 	FileMonitorPtr mFileMonitor;
 	AudioManagerPtr mAudioManager;
@@ -92,6 +92,8 @@ public:
 	LuaObject mInputOverride;
 	std::vector<IVideoPlayerPtr> mVideoPlayers;
 	AudioDebuggerPtr mAudioDebugger;
+	AudioOptionsPtr mAudioOptions;
+	ParticleSystemPtr mParticleSystem;
 	//---------------------------------------------------------------------------
 	Impl()
 		: mL(0)
@@ -144,6 +146,8 @@ public:
 		if (mMainScene){
 			mMainScene->AddObserver(ISceneObserver::Timing, mSelfPtr.lock());
 		}
+		mAudioOptions = AudioOptions::Create();
+		Console::GetInstance().AddObserver(ICVarObserver::Default, mAudioOptions);
 	}
 	HWindowId FindEmptyHwndId()
 	{
@@ -570,6 +574,19 @@ public:
 
 	bool IsMusicPlaying() const{
 		return mMusicPlayer->IsPlaying();
+	}
+
+	void SetMasterGain(float gain){
+		mAudioManager->SetMasterGain(gain);
+	}
+
+	void SetMusicGain(float gain){
+		mMusicPlayer->SetGain(gain);
+	}
+
+	void SetEnabled(bool enabled){
+		mAudioManager->SetEnabled(enabled);
+		mMusicPlayer->SetEnabled(enabled);
 	}
 };
 HWindow EngineFacade::Impl::MainWindowHandle = INVALID_HWND;
@@ -1267,4 +1284,16 @@ void EngineFacade::StopMusic(float fadeOut){
 
 bool EngineFacade::IsMusicPlaying() const{
 	return mImpl->IsMusicPlaying();
+}
+
+void EngineFacade::SetMasterGain(float gain){
+	mImpl->SetMasterGain(gain);
+}
+
+void EngineFacade::SetMusicGain(float gain){
+	mImpl->SetMusicGain(gain);
+}
+
+void EngineFacade::SetEnabled(bool enabled){
+	mImpl->SetEnabled(enabled);
 }

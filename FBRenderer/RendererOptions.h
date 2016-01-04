@@ -40,8 +40,8 @@ namespace fb{
 
 		// ICVarObserver
 		bool OnChangeCVar(CVarPtr pCVar);
-
 		static RendererOptionsPtr Create();
+
 		int r_noObjectConstants;
 		int r_noMesh;
 		int r_noSky;

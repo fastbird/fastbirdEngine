@@ -191,6 +191,8 @@ namespace fb
 		void AddAlwaysMouseOverCheck(WinBasePtr comp);
 		void RemoveAlwaysMouseOverCheck(WinBasePtr comp);		
 
+		bool GetRenderUIOption() const;
+
 		//-------------------------------------------------------------------
 		// For UI Editing
 		//-------------------------------------------------------------------	

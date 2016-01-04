@@ -190,3 +190,9 @@ void ParticleFacade::SetRelativeVelocity(const Vec3& dir, float speed){
 		return mImpl->mParticleEmitter->SetRelativeVelocity(dir, speed);
 	}
 }
+
+void ParticleFacade::SetTeamColor(const Color& color){
+	if (mImpl->mParticleEmitter){
+		mImpl->mParticleEmitter->SetTeamColor(color);
+	}
+}

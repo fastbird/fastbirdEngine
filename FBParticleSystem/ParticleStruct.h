@@ -105,6 +105,7 @@ namespace fb{
 			, mPosInterpolation(false), mDeleteWhenFull(false), mDeleteWhenStop(false)
 			, mStartAfter(0), mUseRelativeVelocity(false), mAnimPendulum(false), mCameraPulling(0)
 			, mVelocityToCenter(false), mParticleEmitter(-1), mDepthFade(true)
+			, mNeedTeamColor(false)
 
 			// point light
 			, mPLRangeMinMax(0, 0)
@@ -170,5 +171,6 @@ namespace fb{
 		bool mAnimPendulum;
 		bool mVelocityToCenter;
 		bool mDepthFade;
+		bool mNeedTeamColor;
 	};
 }

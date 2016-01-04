@@ -73,5 +73,6 @@ namespace fb
 
 		void SetScene(IScenePtr scene);
 		IScenePtr GetScene();
+		void SetTeamColor(const Color& color);
 	};
 }

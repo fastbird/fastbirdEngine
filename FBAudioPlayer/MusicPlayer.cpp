@@ -8,11 +8,15 @@ public:
 	AudioId mCurrentAudioId;	
 	std::string mCurrentAudioPath;
 	float mStartNewAfter;
+	float mMaxGain;
+	float mGain;
 
 	//---------------------------------------------------------------------------
 	Impl()
 		: mCurrentAudioId(INVALID_AUDIO_ID)		
 		, mStartNewAfter(0)
+		, mMaxGain(1)
+		, mGain(1)
 	{
 
 	}
@@ -28,13 +32,16 @@ public:
 		}
 		if (strstr(path, ".fbaudio")){
 			mCurrentAudioId = am.PlayFBAudio(path);
+			mGain = am.GetGainFromFBAudio(path);
 		}
 		else{
 			mCurrentAudioId = am.PlayAudio(path);
+			mGain = 1.0f;
 		}
 		
 		mCurrentAudioPath = path;
 		AudioManager::GetInstance().SetLoop(mCurrentAudioId, true);
+		AudioManager::GetInstance().SetGain(mCurrentAudioId, mGain * mMaxGain, true);
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld, bool loop){
@@ -52,12 +59,7 @@ public:
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
 		}
 		if (startNewAfter == 0.f){
-			if (strstr(path, ".fbaudio")){
-				mCurrentAudioId = am.PlayAudio(path);
-			}
-			else{
-				mCurrentAudioId = am.PlayFBAudio(path);
-			}
+			PlayMusic(path, fadeOutOld);			
 		}
 		else{
 			mStartNewAfter = startNewAfter;
@@ -82,19 +84,32 @@ public:
 		if (mStartNewAfter > 0.f){
 			mStartNewAfter -= dt;
 			if (mStartNewAfter <= 0.f){
-				auto& am = AudioManager::GetInstance();
-				if (strstr(mCurrentAudioPath.c_str(), ".fbaudio")){
-					mCurrentAudioId = am.PlayFBAudio(mCurrentAudioPath.c_str());
-				}
-				else{
-					mCurrentAudioId = am.PlayAudio(mCurrentAudioPath.c_str());
-				}
+				PlayMusic(mCurrentAudioPath.c_str(), 0.f);				
 			}
 		}
 	}
 
 	bool IsPlaying(){
 		return AudioManager::GetInstance().IsValidSource(mCurrentAudioId);
+	}
+
+	void SetGain(float gain){
+		mMaxGain = gain;
+		if (mCurrentAudioId != INVALID_AUDIO_ID){				
+			AudioManager::GetInstance().SetMaxGain(mCurrentAudioId, mMaxGain);
+			AudioManager::GetInstance().SetGain(mCurrentAudioId, 
+				mGain * mMaxGain, true);
+		}
+	}
+
+	float GetGain() const{
+		return mMaxGain;
+	}
+
+	void SetEnabled(bool enabled){
+		if (enabled){
+			PlayMusic(mCurrentAudioPath.c_str(), 0.f);
+		}
 	}
 };
 
@@ -149,4 +164,15 @@ void MusicPlayer::Update(float dt){
 
 bool MusicPlayer::IsPlaying(){
 	return mImpl->IsPlaying();
+}
+
+void MusicPlayer::SetGain(float gain){
+	mImpl->SetGain(gain);
+}
+float MusicPlayer::GetGain() const{
+	return mImpl->GetGain();
+}
+
+void MusicPlayer::SetEnabled(bool enabled){
+	mImpl->SetEnabled(enabled);
 }

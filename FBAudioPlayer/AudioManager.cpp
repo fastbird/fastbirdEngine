@@ -96,7 +96,9 @@ public:
 	Vec3Tuple mListenerPosMainThread;
 	int mNumPlaying;
 	int mNumGeneratedSources;
+	float mMasterGain;
 	bool mSorted;
+	bool mEnabled;
 
 	struct PlayData{
 		AudioSourcePtr mSource;
@@ -134,12 +136,16 @@ public:
 		, mNumPlaying(0)
 		, mNumGeneratedSources(0)
 		, mSorted(false)
+		, mMasterGain(1.0f)
+		, mEnabled(true)
 	{
 		mListenerPos = std::make_tuple(0.f, 0.f, 0.f);
 		mListenerPosMainThread = mListenerPos;
 	}
 
-	~Impl(){		
+	~Impl(){
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) num alsources = %d, num generatedSources = %d", 
+			mALSources.size(), mNumGeneratedSources).c_str());
 		assert(mALSources.size() == mNumGeneratedSources);
 		while (!mALSources.empty()){
 			auto src = mALSources.top();
@@ -147,7 +153,7 @@ public:
 			alDeleteSources(1, &src);
 		}
 		mAudioBuffers.clear();
-
+		
 		alcMakeContextCurrent(NULL);
 		alcDestroyContext(mContext);
 		alcCloseDevice(mDevice);
@@ -208,10 +214,15 @@ public:
 
 	void Deinit(){
 		mAudioExs.clear();
-
-		for (auto it = mAudioSources.begin(); it != mAudioSources.end(); ++it){
-			if (it->second->GetALAudioSource() != -1)
-				StopAudio(it->second->GetAudioId());
+		std::vector<AudioId> audioIds;
+		audioIds.reserve(mAudioSources.size());
+		for (auto& it : mAudioSources){
+			audioIds.push_back(it.first);
+		}
+		for (auto audioId : audioIds){
+			if (audioId != -1){
+				StopAudio(audioId);
+			}
 		}
 	}
 	
@@ -258,7 +269,12 @@ public:
 		assert(src != -1);
 		alSourcei(src, AL_BUFFER, audioSource->GetAudioBuffer()->mBuffer);
 		CheckALError();
-		if (alurePlaySource(src, eos_callback, (void*)audioSource->GetAudioId()) == AL_FALSE){
+		
+		bool error = false;
+		if (mEnabled){
+			error = alurePlaySource(src, eos_callback, (void*)audioSource->GetAudioId()) == AL_FALSE;
+		}
+		if (error){
 			CheckALError();
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot play AudioSource(%u, %s)",
 				audioSource->GetAudioId(), audioSource->GetAudioBuffer()->mFilepath.c_str()).c_str());
@@ -273,12 +289,13 @@ public:
 			audioSource->ApplyProp();
 			audioSource->ApplyRemainedTime();
 			auto audioId = audioSource->GetAudioId();
-			auto fadeIn = SmoothGain::Create(audioId, 
-				1.0f / std::min(fadeInTime, audioSource->GetLeftTime()*.2f), 0.f, 
+			auto fadeIn = SmoothGain::Create(audioId,
+				1.0f / std::min(fadeInTime, audioSource->GetLeftTime()*.2f), 0.f,
 				audioSource->GetGain());
 			mAudioManipulators[audioId].push_back(fadeIn);
 			return true;
 		}
+		
 	}
 
 	// AudioThread
@@ -357,7 +374,11 @@ public:
 		if (alsource != -1){
 			alSourcei(alsource, AL_BUFFER, buffer->mBuffer);
 			CheckALError();
-			if (alurePlaySource(alsource, eos_callback, (void*)audioId) == AL_FALSE){
+			bool error = false;
+			if (mEnabled){
+				error = alurePlaySource(alsource, eos_callback, (void*)audioId) == AL_FALSE;
+			}
+			if (error){
 				CheckALError();
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot play AudioSource(%u, %s)", 
 					audioId, buffer->mFilepath.c_str()).c_str());
@@ -893,6 +914,18 @@ public:
 					itSource->second->SetLoop(it.mInt!=0);
 					break;
 				}
+
+				case AL_MAX_GAIN:
+				{
+					itSource->second->SetMaxGain(it.mVec3.x);
+					break;
+				}
+
+				default:
+				{
+					Logger::Log(FB_ERROR_LOG_ARG, "Property is not processed.");
+					assert(0);
+				}
 				}
 			}
 			else{
@@ -1245,7 +1278,7 @@ public:
 					}
 				}
 				if (!foundManipulator){
-					auto curGain = itSource->second->GetGain();
+					auto curGain = itSource->second->GetGain();					
 					auto smoothGain = SmoothGain::Create(id,
 						std::abs(curGain - gain) / inSec, curGain, gain);
 					mAudioManipulators[id].push_back(smoothGain);
@@ -1357,6 +1390,41 @@ public:
 		}
 	}
 
+	bool SetMaxGain(AudioId id, float maxGain){
+		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		auto it = mAudioPlayQueue.Find(id);
+		if (it != mAudioPlayQueue.end()){
+			it->second.mSource->SetMaxGain(maxGain);
+			return true;
+		}
+		else{
+			if (mInvalidatedAudioIds.find(id) == mInvalidatedAudioIds.end()){
+				mSettingDataQueue.push_back(SettingData());
+				auto& data = mSettingDataQueue.back();
+				data.mAudioId = id;
+				data.mPropertyType = AL_MAX_GAIN;
+				data.mVec3.x = maxGain;
+				return true;
+			}
+			else{
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Setting loop for invalid audio(%u)", id).c_str());
+				return false;
+			}
+		}
+	}
+
+	float GetMaxGain(AudioId id){
+		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		auto it = mAudioSources.Find(id);
+		if (it != mAudioSources.end()){
+			return it->second->GetMaxGain();
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Getting gain for invalid audio(%u)", id).c_str());
+			return 0.f;
+		}
+	}
+
 	void RegisterAudioEx(AudioExPtr audioex){
 		LOCK_CRITICAL_SECTION l(mAudioMutex);
 		if (!ValueExistsInVector(mAudioExsQueue, audioex)){
@@ -1415,6 +1483,30 @@ public:
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Audio(%u) is not found.", id).c_str());
 		}		
 	}
+
+	void SetMasterGain(float gain){
+		AudioSource::sMasterGain = gain;		
+	}
+
+	float GetMasterGain() const{
+		return AudioSource::sMasterGain;
+	}
+
+	void SetEnabled(bool enabled){
+		mEnabled = enabled;
+		if (!mEnabled){
+			std::vector<AudioId> audioIds;
+			audioIds.reserve(mAudioSources.size());
+			for (auto& it : mAudioSources){
+				audioIds.push_back(it.first);
+			}
+			for (auto audioId : audioIds){
+				if (audioId != -1){
+					StopAudio(audioId);
+				}
+			}
+		}
+	}
 };
 LPALGETSOURCEDVSOFT AudioManager::Impl::alGetSourcedvSOFT = 0;
 
@@ -1454,7 +1546,8 @@ AudioManager::AudioManager()
 AudioManager::~AudioManager()
 {
 	sAudioManagerRaw = 0;
-	mImpl->JoinThread();
+	mImpl->Deinit();
+	mImpl->JoinThread();	
 	mImpl = 0;	
 }
 
@@ -1566,6 +1659,14 @@ bool AudioManager::GetLoop(AudioId id) const{
 	return mImpl->GetLoop(id);
 }
 
+bool AudioManager::SetMaxGain(AudioId id, float maxGain){
+	return mImpl->SetMaxGain(id, maxGain);
+}
+
+float AudioManager::GetMaxGain(AudioId id){
+	return mImpl->GetMaxGain(id);
+}
+
 void AudioManager::RegisterAudioEx(AudioExPtr audioex){
 	return mImpl->RegisterAudioEx(audioex);
 }
@@ -1610,4 +1711,16 @@ bool AudioManager::AudioThreadFunc(){
 	else{
 		return sAudioManagerRaw != 0;
 	}
+}
+
+void AudioManager::SetMasterGain(float gain){
+	mImpl->SetMasterGain(gain);
+}
+
+float AudioManager::GetMasterGain() const{
+	return mImpl->GetMasterGain();
+}
+
+void AudioManager::SetEnabled(bool enabled){
+	mImpl->SetEnabled(enabled);
 }

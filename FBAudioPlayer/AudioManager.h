@@ -95,6 +95,8 @@ namespace fb{
 
 		bool SetLoop(AudioId id, bool loop);
 		bool GetLoop(AudioId id) const;
+		bool SetMaxGain(AudioId id, float maxGain);
+		float GetMaxGain(AudioId id);
 
 		void RegisterAudioEx(AudioExPtr audioex);
 		bool IsRegisteredAudioEx(AudioExPtr audioex);
@@ -120,5 +122,10 @@ namespace fb{
 
 		/// Internal only.
 		bool AudioThreadFunc();
+
+		void SetMasterGain(float gain);
+		float GetMasterGain() const;
+
+		void SetEnabled(bool enabled);		
 	};
 }

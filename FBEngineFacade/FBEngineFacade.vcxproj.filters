@@ -16,6 +16,7 @@
     <ClInclude Include="ParticleFacade.h" />
     <ClInclude Include="AudioExFacade.h" />
     <ClInclude Include="GeometryRenderer.h" />
+    <ClInclude Include="AudioOptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -31,5 +32,6 @@
     <ClCompile Include="ParticleFacade.cpp" />
     <ClCompile Include="AudioExFacade.cpp" />
     <ClCompile Include="GeometryRenderer.cpp" />
+    <ClCompile Include="AudioOptions.cpp" />
   </ItemGroup>
 </Project>

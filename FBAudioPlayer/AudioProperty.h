@@ -34,6 +34,7 @@ namespace fb{
 			, mRolloffFactor(1.f)
 			, mRelative(false)
 			, mGain(1.f)
+			, mMaxGain(1.0f)
 			, mLoop(false)
 		{
 		}
@@ -45,6 +46,7 @@ namespace fb{
 		/// faster.
 		float mRolloffFactor;
 		float mGain;
+		float mMaxGain;
 		bool mRelative;
 		bool mLoop;
 	};

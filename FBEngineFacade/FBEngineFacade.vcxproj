@@ -73,6 +73,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AudioExFacade.h" />
+    <ClInclude Include="AudioOptions.h" />
     <ClInclude Include="BillboardQuadFacade.h" />
     <ClInclude Include="CollisionShapeInfo.h" />
     <ClInclude Include="DustFacade.h" />
@@ -90,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AudioExFacade.cpp" />
+    <ClCompile Include="AudioOptions.cpp" />
     <ClCompile Include="BillboardQuadFacade.cpp" />
     <ClCompile Include="DustFacade.cpp" />
     <ClCompile Include="EngineFacade.cpp" />

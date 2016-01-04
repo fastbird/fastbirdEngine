@@ -2296,6 +2296,10 @@ mPopup->SetVisible(true);
 		}
 	}
 
+	bool GetRenderUIOption() const{
+		return mUICommands->r_UI ? true : false;
+	}
+
 	//-------------------------------------------------------------------
 	// For UI Editing
 	//-------------------------------------------------------------------	
@@ -3095,6 +3099,10 @@ void UIManager::AddAlwaysMouseOverCheck(WinBasePtr comp) {
 
 void UIManager::RemoveAlwaysMouseOverCheck(WinBasePtr comp) {
 	mImpl->RemoveAlwaysMouseOverCheck(comp);
+}
+
+bool UIManager::GetRenderUIOption() const{
+	return mImpl->GetRenderUIOption();
 }
 
 void UIManager::SetUIEditor(IUIEditor* editor) {

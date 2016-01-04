@@ -5,6 +5,7 @@
 using namespace fb;
 namespace fb{
 	void CheckALError();
+	float AudioSource::sMasterGain = 1.f;	
 }
 
 class AudioSource::Impl{
@@ -74,8 +75,9 @@ public:
 			alSourcei(mALSource, AL_SOURCE_RELATIVE, mProperty.mRelative ? AL_TRUE : AL_FALSE);
 			alSourcef(mALSource, AL_REFERENCE_DISTANCE, mProperty.mReferenceDistance);
 			alSourcef(mALSource, AL_ROLLOFF_FACTOR, mProperty.mRolloffFactor);
-			alSourcef(mALSource, AL_GAIN, mProperty.mGain);
+			alSourcef(mALSource, AL_GAIN, mProperty.mGain * sMasterGain);
 			alSourcei(mALSource, AL_LOOPING, mProperty.mLoop ? AL_TRUE : AL_FALSE);
+			alSourcef(mALSource, AL_MAX_GAIN, mProperty.mMaxGain);
 			CheckALError();
 		}
 	}
@@ -153,7 +155,7 @@ public:
 	void SetGain(float gain){
 		mProperty.mGain = gain;
 		if (mALSource != -1){
-			alSourcef(mALSource, AL_GAIN, gain);
+			alSourcef(mALSource, AL_GAIN, gain * sMasterGain);
 			CheckALError();
 		}
 	}
@@ -178,6 +180,14 @@ public:
 		mProperty.mLoop = loop;
 		if (mALSource != -1){
 			alSourcei(mALSource, AL_LOOPING, loop ? AL_TRUE : AL_FALSE);
+			CheckALError();
+		}
+	}
+
+	void SetMaxGain(float maxGain){
+		mProperty.mMaxGain = maxGain;
+		if (mALSource != -1){
+			alSourcef(mALSource, AL_MAX_GAIN, maxGain);
 			CheckALError();
 		}
 	}
@@ -306,4 +316,12 @@ void AudioSource::SetLoop(bool loop){
 
 bool AudioSource::GetLoop() const{
 	return mImpl->mProperty.mLoop;
+}
+
+void AudioSource::SetMaxGain(float maxGain){
+	mImpl->SetMaxGain(maxGain);
+}
+
+float AudioSource::GetMaxGain() const{
+	return mImpl->mProperty.mMaxGain;
 }

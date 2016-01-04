@@ -17,5 +17,10 @@ namespace fb{
 		void StopMusic(float fadeOut);
 		void Update(float dt);
 		bool IsPlaying();
+
+		void SetGain(float gain);
+		float GetGain() const;
+
+		void SetEnabled(bool enabled);
 	};
 }

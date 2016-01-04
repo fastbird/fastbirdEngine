@@ -103,10 +103,6 @@ void Logger::Log(const char* str, ...){
 		*sLogFile << buffer;
 		sLogFile->flush();
 	}
-	else{
-		// fallback
-		Output(buffer);
-	}
 }
 
 struct PreventedMessage{
@@ -183,11 +179,7 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 	if (sLogFile && sLogFile->is_open()){
 		*sLogFile << buffer;
 		sLogFile->flush();
-	}
-	else{
-		// fallback
-		Output(buffer);
-	}
+	}	
 }
 
 void Logger::Log(std::ofstream& file, const char* str){

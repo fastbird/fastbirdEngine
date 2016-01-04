@@ -242,5 +242,10 @@ namespace fb{
 		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
 		void StopMusic(float fadeOut);
 		bool IsMusicPlaying() const;
+
+		void SetMasterGain(float gain);
+		void SetMusicGain(float gain);
+
+		void SetEnabled(bool enabled);
 	};
 }

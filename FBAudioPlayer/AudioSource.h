@@ -13,6 +13,7 @@ namespace fb{
 
 	public:
 		static AudioSourcePtr Create(AudioId audioId);
+		static float sMasterGain;		
 
 		const AudioId& GetAudioId() const;
 		void SetAudioBuffer(AudioBufferPtr buffer);
@@ -42,5 +43,7 @@ namespace fb{
 		float GetDistPerRef() const;
 		void SetLoop(bool loop);
 		bool GetLoop() const;
+		void SetMaxGain(float maxGain);
+		float GetMaxGain() const;
 	};
 }

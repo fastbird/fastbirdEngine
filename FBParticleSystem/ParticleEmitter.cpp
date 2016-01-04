@@ -86,6 +86,7 @@ public:
 	bool mMoveToCam;
 	bool mManualEmitter;
 	Color mEmitterColor;
+	Color mTeamColor;
 	float mLength;
 	Vec3 mRelativeVelocityDir;
 	float mRelativeVelocity;
@@ -468,6 +469,10 @@ public:
 			if (sz)
 				pt.mColor = StringMathConverter::ParseColor(sz);
 			pt.mColorEnd = pt.mColor;
+
+			sz = pPT->Attribute("needTeamColor");
+			if (sz)
+				pt.mNeedTeamColor = StringConverter::ParseBool(sz);
 
 			sz = pPT->Attribute("colorEnd");
 			if (sz)
@@ -1401,6 +1406,10 @@ public:
 		return mScene.lock();
 	}
 
+	void SetTeamColor(const Color& color){
+		mTeamColor = color;
+	}
+
 
 	Particle* Emit(unsigned templateIdx){
 		assert(templateIdx < mTemplates.const_get()->size());
@@ -1550,7 +1559,13 @@ public:
 		p.mRot = Random(pt.mRotMinMax.x, pt.mRotMinMax.y);
 		p.mRotSpeed = Random(pt.mRotSpeedMinMax.x, pt.mRotSpeedMinMax.y);
 		p.mIntensity = Random(pt.mIntensityMinMax.x, pt.mIntensityMinMax.y);
-		p.mColor = (pt.mColor * mEmitterColor).Get4Byte();
+		if (pt.mNeedTeamColor){
+			p.mColor = (pt.mColor * mEmitterColor * mTeamColor).Get4Byte();
+		}
+		else{
+			p.mColor = (pt.mColor * mEmitterColor).Get4Byte();
+		}
+		
 
 		if (pt.IsLocalSpace())
 		{
@@ -1762,3 +1777,6 @@ IScenePtr ParticleEmitter::GetScene(){
 	return mImpl->GetScene();
 }
 
+void ParticleEmitter::SetTeamColor(const Color& color){
+	mImpl->SetTeamColor(color);
+}
