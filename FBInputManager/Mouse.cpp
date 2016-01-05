@@ -335,6 +335,7 @@ public:
 				{
 					//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double clicked");
 					mLButtonDoubleClicked = true;
+					mButtonsClicked |= MOUSE_BUTTON_LEFT;
 				}
 
 				//if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
@@ -461,7 +462,7 @@ public:
 	}
 
 	bool IsLButtonClicked() const{
-		return (mButtonsClicked & MOUSE_BUTTON_LEFT) != 0 && !mLButtonDoubleClicked;
+		return (mButtonsClicked & MOUSE_BUTTON_LEFT) != 0;
 	}
 
 	bool IsLButtonDoubleClicked() const{

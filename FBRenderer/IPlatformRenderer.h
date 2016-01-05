@@ -88,7 +88,7 @@ namespace fb{
 		virtual IPlatformIndexBufferPtr CreateIndexBuffer(void* data, unsigned int numIndices,
 			INDEXBUFFER_FORMAT format) = 0;
 		virtual IPlatformShaderPtr CreateShader(const char* path, int shaders,
-			const SHADER_DEFINES& defines) = 0;
+			const SHADER_DEFINES& defines, bool ignoreCache) = 0;
 		virtual IPlatformInputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			void* shaderByteCode, unsigned size) = 0;
 		virtual IPlatformBlendStatePtr CreateBlendState(const BLEND_DESC& desc) = 0;

@@ -67,42 +67,42 @@ public:
 	}
 
 	void Bind(){
-		if (mPlatformShader && sLastBindedFullSetShader != this){
+		if (mPlatformShader && !mPlatformShader->GetCompileFailed() && sLastBindedFullSetShader != this){
 			mPlatformShader->Bind();
 			sLastBindedFullSetShader = this;
 		}
 	}
 
 	void BindVS(){
-		if (mPlatformShader){
+		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
 			sLastBindedFullSetShader = 0;
 			mPlatformShader->BindVS();
 		}
 	}
 
 	void BindGS(){
-		if (mPlatformShader){
+		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
 			sLastBindedFullSetShader = 0;
 			mPlatformShader->BindGS();
 		}
 	}
 
 	void BindPS(){
-		if (mPlatformShader){
+		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
 			sLastBindedFullSetShader = 0;
 			mPlatformShader->BindPS();
 		}
 	}
 
 	void BindDS(){
-		if (mPlatformShader){
+		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
 			sLastBindedFullSetShader = 0;
 			mPlatformShader->BindDS();
 		}
 	}
 
 	void BindHS(){
-		if (mPlatformShader){
+		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
 			sLastBindedFullSetShader = 0;
 			mPlatformShader->BindHS();
 		}
@@ -182,7 +182,7 @@ void Shader::ReloadShader(const char* filepath)
 		if (shader->mImpl->mPlatformShader){
 			if (strcmp(filepath, shader->GetPath()) == 0 || shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
 			{
-				renderer.ReloadShader(shader, filepath);
+				renderer.ReloadShader(shader, shader->GetPath());
 			}
 		}
 	}

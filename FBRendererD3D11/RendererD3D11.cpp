@@ -928,7 +928,7 @@ public:
 			fopen_s(&file, filepath.c_str(), "rb");
 			if (file == 0)
 			{
-				const char* paths[] = { "EssentialEnginedata/shaders/"
+				const char* paths[] = { "EssentialEngineData/shaders/"
 				};
 				for (int i = 0; i < ARRAYCOUNT(paths); i++)
 				{
@@ -1009,7 +1009,7 @@ public:
 	}
 
 	IPlatformShaderPtr CreateShader(const char* path, int shaders,
-		const SHADER_DEFINES& defines) {		
+		const SHADER_DEFINES& defines, bool ignoreCache) {
 		std::string filepath(path);
 		ToLowerCase(filepath);
 
@@ -1063,7 +1063,7 @@ public:
 			bool usingCache = false;
 			std::streamoff length = 0;
 			// use cache
-			if (mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), vs_cachekey.c_str()) == -1)
+			if (!ignoreCache && mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), vs_cachekey.c_str()) == -1)
 			{
 				usingCache = true;
 				dataHolder = FileSystem::ReadBinaryFile(vs_cachekey.c_str(), length);
@@ -1131,7 +1131,7 @@ public:
 			bool usingCache = false;
 			std::streamoff length = 0;
 			// use cache
-			if (mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), gs_cachekey.c_str()) == -1)
+			if (!ignoreCache && mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), gs_cachekey.c_str()) == -1)
 			{
 				usingCache = true;
 				dataHolder = FileSystem::ReadBinaryFile(gs_cachekey.c_str(), length);
@@ -1187,7 +1187,7 @@ public:
 			bool usingCache = false;
 			std::streamoff length = 0;
 			// use cache
-			if (mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), ps_cachekey.c_str()) == -1)
+			if (!ignoreCache && mUseShaderCache && FileSystem::CompareFileModifiedTime(filepath.c_str(), ps_cachekey.c_str()) == -1)
 			{
 				usingCache = true;
 				dataHolder = FileSystem::ReadBinaryFile(ps_cachekey.c_str(), length);
@@ -2140,8 +2140,8 @@ IPlatformIndexBufferPtr RendererD3D11::CreateIndexBuffer(void* data, unsigned in
 	return mImpl->CreateIndexBuffer(data, numIndices, format);
 }
 
-IPlatformShaderPtr RendererD3D11::CreateShader(const char* path, int shaders,	const SHADER_DEFINES& defines) {
-	return mImpl->CreateShader(path, shaders, defines);
+IPlatformShaderPtr RendererD3D11::CreateShader(const char* path, int shaders, const SHADER_DEFINES& defines, bool ignoreCache) {
+	return mImpl->CreateShader(path, shaders, defines, ignoreCache);
 }
 
 IPlatformInputLayoutPtr RendererD3D11::CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,	void* shaderByteCode, unsigned size) {

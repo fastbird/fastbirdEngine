@@ -117,10 +117,10 @@ namespace fb{
 		bool IsUsingMaterialParameter(unsigned index);
 		bool IsRelatedShader(const char* shaderFile);
 		/// inputLayout: true, stencilRef: 0
-		void Bind();
+		bool Bind();
 		/// stencilRef: 0
-		void Bind(bool inputLayout); 
-		void Bind(bool inputLayout, unsigned stencilRef);
+		bool Bind(bool inputLayout);
+		bool Bind(bool inputLayout, unsigned stencilRef);
 		void Unbind();
 		MaterialPtr GetSubPassMaterial(RENDER_PASS p) const;
 		bool BindSubPass(RENDER_PASS p, bool includeInputLayout);

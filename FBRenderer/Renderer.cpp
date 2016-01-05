@@ -941,7 +941,7 @@ public:
 			}
 		}
 		if (!platformShader)
-			platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines);
+			platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines, false);
 		if (platformShader){
 			auto shader = Shader::Create();
 			shader->SetPlatformShader(platformShader);
@@ -959,12 +959,14 @@ public:
 		auto sortedDefines = shader->GetShaderDefines();
 		std::sort(sortedDefines.begin(), sortedDefines.end());
 		auto shaders = shader->GetBindingShaders();
-		auto platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines);
-		auto loweredPath = std::string(filepath);
-		ToLowerCase(loweredPath);
-		auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);
-		shader->SetPlatformShader(platformShader);
-		sPlatformShaders[key] = platformShader;
+		auto platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines, true);
+		if (!platformShader->GetCompileFailed()){
+			auto loweredPath = std::string(filepath);
+			ToLowerCase(loweredPath);
+			auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);
+			shader->SetPlatformShader(platformShader);
+			sPlatformShaders[key] = platformShader;
+		}
 	}
 
 	VectorMap<std::string, MaterialWeakPtr> sLoadedMaterials;

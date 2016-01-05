@@ -961,7 +961,7 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	void Bind(bool inputLayout, unsigned stencilRef)
+	bool Bind(bool inputLayout, unsigned stencilRef)
 	{
 		auto shaderData = mShaderData.const_get();
 		if (!shaderData->mShader || mShaderDefinesChanged || mInputDescChanged ||
@@ -976,6 +976,9 @@ public:
 		auto& renderer = Renderer::GetInstance();				
 		if (shaderData->mShader)
 		{
+			if (shaderData->mShader->GetCompileFailed())
+				return false;
+
 			shaderData->mShader->Bind();
 		}
 
@@ -1000,6 +1003,7 @@ public:
 			if (rt->IsGlowSupported())
 				rt->GlowRenderTarget(true);
 		}
+		return true;
 	}
 
 	void Unbind()
@@ -1415,16 +1419,16 @@ bool Material::IsRelatedShader(const char* shaderFile) {
 	return mImpl->IsRelatedShader(shaderFile);
 }
 
-void Material::Bind(){
-	mImpl->Bind(true, 0);
+bool Material::Bind(){
+	return mImpl->Bind(true, 0);
 }
 
-void Material::Bind(bool inputLayout){
-	mImpl->Bind(inputLayout, 0);
+bool Material::Bind(bool inputLayout){
+	return mImpl->Bind(inputLayout, 0);
 }
 
-void Material::Bind(bool inputLayout, unsigned stencilRef) {
-	mImpl->Bind(inputLayout, stencilRef);
+bool Material::Bind(bool inputLayout, unsigned stencilRef) {
+	return mImpl->Bind(inputLayout, stencilRef);
 }
 
 void Material::Unbind() {

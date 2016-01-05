@@ -86,7 +86,7 @@ IPlatformIndexBufferPtr NullPlatformRenderer::CreateIndexBuffer(void* data, unsi
 	return 0;
 }
 
-IPlatformShaderPtr NullPlatformRenderer::CreateShader(const char* path, int shaders,const SHADER_DEFINES& defines) {
+IPlatformShaderPtr NullPlatformRenderer::CreateShader(const char* path, int shaders, const SHADER_DEFINES& defines, bool ignoreCache) {
 	return 0;
 }
 

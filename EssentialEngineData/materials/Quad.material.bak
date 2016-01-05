@@ -1,6 +1,6 @@
 <Material>
 	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
-	<ShaderFile>EssentialEngineData/shaders/quad.hlsl</ShaderFile>
+	<ShaderFile>EssentialEngineData/shaders/Quad.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>0.15, 0.15, 0.15, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
