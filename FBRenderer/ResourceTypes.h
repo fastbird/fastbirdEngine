@@ -33,8 +33,9 @@ namespace fb{
 			enum Enum{				
 				Noise,
 				GGXGenTarget,				
+				GGX,
 				ToneMap,
-				LuminanceMap,				
+				LuminanceMap,
 				Last = LuminanceMap,
 			};
 		}
@@ -45,7 +46,7 @@ namespace fb{
 				FullscreenQuadFarVS,
 				CopyPS,
 				CopyPSMS,
-				ShadowMapVSPS,
+				ShadowMapShader,
 				DepthWriteVSPS,
 				DepthOnlyVSPS,
 				CloudDepthWriteVSPS,
@@ -93,7 +94,8 @@ namespace fb{
 				Default,
 				CullFrontFace,
 				OneBiased,
-				WireFrame,			
+				WireFrame,		
+				ShadowMapRS,
 
 				Last = WireFrame,
 			};

@@ -63,6 +63,7 @@ namespace fb
 		Vec3& operator+= (const Vec3& r);
 		Vec3 operator- () const;
 		Vec3 operator- (const Vec3& r) const;
+		Vec3 operator- (Real f) const;
 		Vec3& operator-= (const Vec3& r);
 		Vec3& operator-= (const Real f);
 		Vec3 operator* (Real scalar) const;

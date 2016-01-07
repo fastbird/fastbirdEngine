@@ -78,6 +78,8 @@ public:
 	bool mRttScene;
 	bool mRefreshPointLight;
 	PointLightManagerPtr mPointLightMan;
+	unsigned mSceneAABBLastFrame;
+	AABB mSceneAABB;
 
 	Impl(Scene* self, const char* name)
 		: mSelf(self)
@@ -92,6 +94,7 @@ public:
 		, mWindVelocity(0.f)
 		, mRefreshPointLight(false)
 		, mPointLightMan(PointLightManager::Create())
+		, mSceneAABBLastFrame(-1)
 	{
 		mWindVector = mWindDir * mWindVelocity;
 
@@ -158,9 +161,9 @@ public:
 			return;
 
 		auto mainCam = renderParam.mCamera;
-		auto lightCam = renderParam.mLightCamera;
+		//auto lightCam = renderParam.mLightCamera;
 		mVisibleObjectsMain[mainCam].clear();
-		mVisibleObjectsLight[lightCam].clear();
+		//mVisibleObjectsLight[lightCam].clear();
 		mVisibleTransparentObjects[mainCam].clear();
 		mPreRenderList[mainCam].clear();
 
@@ -169,10 +172,10 @@ public:
 			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "Invalid main camera");
 			return;
 		}
-		if (!lightCam){
+		/*if (!lightCam){
 			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "Invalid light camera");
 			return;
-		}
+		}*/
 
 		{
 			MutexLock lock(mSpatialObjectsMutex);			
@@ -203,11 +206,11 @@ public:
 					inserted = true;
 				}
 
-				if (lightCam && !lightCam->IsCulled(obj->GetBoundingVolumeWorld().get()) && !obj->HasObjFlag(SceneObjectFlag::Transparent))
+				/*if (lightCam && !lightCam->IsCulled(obj->GetBoundingVolumeWorld().get()) && !obj->HasObjFlag(SceneObjectFlag::Transparent))
 				{
 					mVisibleObjectsLight[lightCam].push_back((obj.get()));
 					inserted = true;
-				}
+				}*/
 				if (inserted)
 					mPreRenderList[mainCam].push_back((obj.get()));
 			}
@@ -229,12 +232,12 @@ public:
 		}
 		);
 
-		std::sort(mVisibleObjectsLight[lightCam].begin(), mVisibleObjectsLight[lightCam].end(),
+		/*std::sort(mVisibleObjectsLight[lightCam].begin(), mVisibleObjectsLight[lightCam].end(),
 			[](SpatialObject* a, SpatialObject* b) -> bool
 		{
 			return a->GetDistToCam() < b->GetDistToCam();
 		}
-		);
+		);*/
 
 		std::sort(mVisibleTransparentObjects[mainCam].begin(), mVisibleTransparentObjects[mainCam].end(),
 			[](SpatialObject* a, SpatialObject* b) -> bool
@@ -301,13 +304,13 @@ public:
 	void Render(const RenderParam& param, RenderParamOut* paramOut){
 		mRenderPass = (RENDER_PASS)param.mRenderPass;
 		param.mScene = mSelf;
-		auto lightCamera = param.mLightCamera;
+		//auto lightCamera = param.mLightCamera;
 		auto cam = param.mCamera;
 		if (!mSkipSpatialObjects)
 		{
 			if (param.mRenderPass == PASS_SHADOW)
 			{
-				for (auto& obj : mVisibleObjectsLight[lightCamera])
+				for (auto& obj : mVisibleObjectsMain[cam])
 				{
 					obj->Render(param, paramOut);
 				}
@@ -608,6 +611,20 @@ public:
 	bool NeedToRefreshPointLight() const{
 		return mRefreshPointLight;
 	}
+
+	const AABB& GetSceneAABB(){
+		Vec3 minp, maxp;
+		if (mSceneAABBLastFrame != gpTimer->GetFrame()){
+			mSceneAABB.Invalidate();
+			for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
+				IteratingWeakContainer(mSpatialObjects, it, spatialObj);
+				mSceneAABB.Merge(spatialObj->GetPosition() + spatialObj->GetRadius());
+				mSceneAABB.Merge(spatialObj->GetPosition() - spatialObj->GetRadius());
+			}
+			mSceneAABBLastFrame = gpTimer->GetFrame();
+		}
+		return mSceneAABB;
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -795,4 +812,8 @@ void Scene::RefreshPointLight() {
 
 bool Scene::NeedToRefreshPointLight() const {
 	return mImpl->NeedToRefreshPointLight();
+}
+
+const AABB& Scene::GetSceneAABB(){
+	return mImpl->GetSceneAABB();
 }

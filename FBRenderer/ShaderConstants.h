@@ -40,6 +40,7 @@ namespace fb{
 			Camera,
 			RenderTarget,
 			Scene,
+			Shadow,
 
 			Num,
 		};

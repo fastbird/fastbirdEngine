@@ -40,6 +40,7 @@
 #include "ResourceProvider.h"
 #include "ResourceTypes.h"
 #include "Camera.h"
+#include "CascadedShadowsManager.h"
 #include "FBSceneManager/IScene.h"
 #include "FBSceneManager/DirectionalLight.h"
 #include "FBStringLib/StringLib.h"
@@ -72,8 +73,8 @@ public:
 	TexturePtr mGlowTarget;
 	TexturePtr mGlowTexture[2];
 	bool mGlowSet;
-	CameraPtr mLightCamera;
-	TexturePtr mShadowMap;
+	//CameraPtr mLightCamera;
+	//TexturePtr mShadowMap;
 	TexturePtr mCloudVolumeDepth;
 	ShaderPtr mCloudDepthWriteShader;
 	TexturePtr mGodRayTarget[2]; // half resolution; could be shared.
@@ -92,6 +93,7 @@ public:
 	TexturePtr mStarTextures[FB_NUM_STAR_TEXTURES];
 	size_t mRenderingFace;
 	StarDef* mStarGlareDef;
+	CascadedShadowsManagerPtr mShadowManager;
 
 	//-------------------------------------------------------------------
 	Impl()
@@ -125,60 +127,21 @@ public:
 	void SetRenderTarget(RenderTargetPtr renderTarget){
 		mRenderTarget = renderTarget;
 		mSize = renderTarget->GetSize();
-		mId = renderTarget->GetId();
+		mId = renderTarget->GetId();		
+		mShadowManager = CascadedShadowsManager::Create(mId, mSize);
+		mShadowManager->CreateShadowMap();
+		mShadowManager->CreateViewports();		
 	}
 
 	void UpdateLightCamera()
-	{
+	{		
 		auto& renderer = Renderer::GetInstance();
-		if (!mLightCamera)
-		{
-			mLightCamera = Camera::Create();
-			mLightCamera->SetOrthogonal(true);
-			auto cmd = renderer.GetRendererOptions();
-			float width = std::min(cmd->r_ShadowCamWidth, mSize.x * (cmd->r_ShadowCamWidth / 1600.f));
-			float height = std::min(cmd->r_ShadowCamHeight, mSize.y * (cmd->r_ShadowCamHeight / 900.f));
-			width = std::max(16.f, width);
-			height = std::max(16.f, height);
-			Vec2 lightCamSize(width, height);
-
-			Vec2 shadowMapSize(std::min((Real)cmd->r_ShadowMapWidth, (Real)(mSize.x / 1600.0f * cmd->r_ShadowMapWidth)),
-				std::min((Real)cmd->r_ShadowMapHeight, (Real)(mSize.y / 900.0f * cmd->r_ShadowMapHeight))
-				);
-			shadowMapSize.x = (Real)CropSize8((int)shadowMapSize.x);
-			shadowMapSize.y = (Real)CropSize8((int)shadowMapSize.y);
-			shadowMapSize.x = std::max(16.0f, shadowMapSize.x);
-			shadowMapSize.y = std::max(16.0f, shadowMapSize.y);
-
-			Vec2 vWorldUnitsPerTexel;
-			vWorldUnitsPerTexel = Vec2(lightCamSize.x, lightCamSize.y);
-			vWorldUnitsPerTexel *= Vec2(1.0f / shadowMapSize.x, 1.0f / shadowMapSize.y);
-			lightCamSize.x = std::floor(lightCamSize.x / vWorldUnitsPerTexel.x);
-			lightCamSize.x *= vWorldUnitsPerTexel.x;
-			lightCamSize.y = std::floor(lightCamSize.y / vWorldUnitsPerTexel.y);
-			lightCamSize.y *= vWorldUnitsPerTexel.y;
-
-			mLightCamera->SetWidth(lightCamSize.x);
-			mLightCamera->SetHeight(lightCamSize.y);
-			mLightCamera->SetNearFar(cmd->r_ShadowNear, cmd->r_ShadowFar);
-		}
-
-		auto cam = renderer.GetCamera();
-		auto target = cam->GetTarget();
-		float shadowCamDist = renderer.GetRendererOptions()->r_ShadowCamDist;
 		auto scene = mScene.lock();
-		if (scene){
+		auto camera = renderer.GetCamera();
+		if (scene && camera){
 			auto lightDir = scene->GetMainLightDirection();
-			if (target && target->GetBoundingVolumeWorld() && target->GetBoundingVolumeWorld()->GetRadius() < shadowCamDist)
-			{
-				mLightCamera->SetPosition(target->GetPosition() + cam->GetDirection() * 10.0f + lightDir *shadowCamDist);
-			}
-			else
-			{
-				mLightCamera->SetPosition(cam->GetPosition() + cam->GetDirection() * 10.0f + lightDir * shadowCamDist);
-			}
-			mLightCamera->SetDirection(-lightDir);
-		}
+			mShadowManager->UpdateFrame(camera, lightDir, scene->GetSceneAABB());
+		}		
 	}
 
 	void Render(size_t face){
@@ -189,6 +152,9 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		if (!scene || !renderTarget)
 			return;
+
+		auto provider = renderer.GetResourceProvider();
+		renderer.SetSystemTexture(SystemTextures::GGXPrecalc, provider->GetTexture(ResourceTypes::Textures::GGX));
 
 		RenderEventMarker marker("Rendering with default strategy.");
 		RenderParam renderParam;
@@ -203,22 +169,17 @@ public:
 		RenderParam param;
 		memset(&param, 0, sizeof(RenderParam));
 		param.mCamera = renderer.GetCamera().get();
-		param.mLightCamera = mLightCamera.get();
+		//param.mLightCamera = mLightCamera.get();
 		scene->PreRender(param, 0);
 		mGlowSet = false;
 		GlowTarget(true);
 		renderer.Clear(0., 0., 0., 1.);
 		GlowTarget(false);
 		{
-			RenderEventMarker marker("Shadow Pass");
-			memset(&renderParam, 0, sizeof(RenderParam));
-			memset(&renderParamOut, 0, sizeof(RenderParamOut));
-			renderParam.mRenderPass = PASS_SHADOW;
+			RenderEventMarker marker("Shadow Pass");						
 			ShadowMap(false);
-			ShadowTarget(true);
-			renderParam.mCamera = renderer.GetCamera().get();
-			renderParam.mLightCamera = mLightCamera.get();
-			scene->Render(renderParam, 0);
+			ShadowTarget(true);			
+			mShadowManager->RenderShadows(mScene.lock());
 			ShadowTarget(false);
 		}
 		{
@@ -228,7 +189,7 @@ public:
 			renderParam.mRenderPass = PASS_DEPTH;
 			DepthTarget(true, true);
 			renderParam.mCamera = renderer.GetCamera().get();
-			renderParam.mLightCamera = mLightCamera.get();
+			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, 0);
 			DepthTarget(false, false);
 			DepthTexture(true);
@@ -238,12 +199,11 @@ public:
 			memset(&renderParam, 0, sizeof(RenderParam));
 			memset(&renderParamOut, 0, sizeof(RenderParamOut));
 			renderParam.mRenderPass = PASS_DEPTH;
-			CloudVolumeTarget(true);
-			auto provider = renderer.GetResourceProvider();
+			CloudVolumeTarget(true);			
 			renderer.SetLockDepthStencilState(true);
 			provider->BindBlendState(ResourceTypes::BlendStates::BlueMask);
 			renderParam.mCamera = renderer.GetCamera().get();
-			renderParam.mLightCamera = mLightCamera.get();
+			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, 0);
 			renderer.SetLockDepthStencilState(false);
 			DepthWriteShaderCloud();
@@ -267,7 +227,7 @@ public:
 			GodRayTarget(true);
 			renderParam.mRenderPass = PASS_GODRAY_OCC_PRE;
 			renderParam.mCamera = renderer.GetCamera().get();
-			renderParam.mLightCamera = mLightCamera.get();
+			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, 0);
 			GodRay();
 		}
@@ -282,7 +242,7 @@ public:
 			CloudVolumeTexture(true);
 			ShadowMap(true);
 			renderParam.mCamera = renderer.GetCamera().get();
-			renderParam.mLightCamera = mLightCamera.get();
+			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, &renderParamOut);
 			if (renderParamOut.mSilouetteRendered)
 				Silouette();
@@ -479,51 +439,16 @@ public:
 			mGlowSet = false;
 			rt->BindTargetOnly(true);
 		}
-
 	}
 
 	void ShadowTarget(bool bind)
 	{
 		auto& renderer = Renderer::GetInstance();
 		auto rt = mRenderTarget.lock();
-		if (bind){
-
-			auto cmd = renderer.GetRendererOptions();
-			if (!mShadowMap)
-			{
-				const auto& size = mSize;
-				int width = (int)std::min(cmd->r_ShadowMapWidth, (int)(size.x / 1600 * cmd->r_ShadowMapWidth));
-				int height = (int)std::min(cmd->r_ShadowMapHeight, (int)(size.y / 900 * cmd->r_ShadowMapHeight));
-				width = CropSize8(width);
-				height = CropSize8(height);
-
-				width = std::max(16, width);
-				height = std::max(16, height);
-
-				mShadowMap = renderer.CreateTexture(0,
-					width, height,
-					PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
-					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
-				assert(mShadowMap);
-				mShadowMap->SetDebugName(FormatString("rt%u_%u_%u_ShadowMap", rt->GetId(), width, height).c_str());
-			}
-
-			TexturePtr rts[] = { 0 };
-			size_t index[] = { 0 };
-			renderer.SetRenderTarget(rts, index, 1, mShadowMap, 0);
-			auto provider = renderer.GetResourceProvider();
-			provider->BindShader(ResourceTypes::Shaders::ShadowMapVSPS);
-			const auto& size = mShadowMap->GetSize();
-			Viewport vp = { 0, 0,
-				(float)size.x,
-				(float)size.y,
-				0, 1 };
-			renderer.SetViewports(&vp, 1);
-			renderer.SetCamera(mLightCamera);
-			renderer.Clear(0, 0, 0, 0, 1.0f, 0);
+		if (bind){			
+			// empty
 		}
-		else{
-			assert(mShadowMap);
+		else{			
 			rt->BindTargetOnly(false);
 			renderer.SetCamera(rt->GetCamera());
 		}
@@ -532,8 +457,8 @@ public:
 	void ShadowMap(bool bind)
 	{
 		auto& renderer = Renderer::GetInstance();
-		if (bind && mShadowMap)
-			renderer.SetSystemTexture(SystemTextures::ShadowMap, mShadowMap);
+		if (bind)
+			renderer.SetSystemTexture(SystemTextures::ShadowMap, mShadowManager->GetShadowMap());
 		else
 			renderer.SetSystemTexture(SystemTextures::ShadowMap, 0);
 	}
@@ -1293,34 +1218,19 @@ public:
 	}
 
 	TexturePtr GetShadowMap() const{
-		return mShadowMap;
+		return mShadowManager->GetShadowMap();
 	}
 
 	void DeleteShadowMap()
 	{
-		mShadowMap = 0;
+		mShadowManager->DeleteShadowMap();
 	}
 
 	void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName){
-		if (strcmp(optionName, "r_shadowmapwidth") == 0 ||
-			strcmp(optionName, "r_shadowmapheight") == 0)
+		if (strcmp(optionName, "r_shadowmapsize") == 0)
 		{
-			mShadowMap.reset();
-		}
-		else if ((strcmp(optionName, "r_shadowcamwidth") == 0 ||
-			strcmp(optionName, "r_shadowcamheight") == 0))
-		{
-			if (mLightCamera){
-				mLightCamera->SetWidth(options->r_ShadowCamWidth);
-				mLightCamera->SetHeight(options->r_ShadowCamHeight);
-			}
-		}
-		else if ((strcmp(optionName, "r_shadownear") == 0 ||
-			strcmp(optionName, "r_shadowfar") == 0))
-		{
-			if (mLightCamera){
-				mLightCamera->SetNearFar(options->r_ShadowNear, options->r_ShadowFar);
-			}
+			mShadowManager->CreateShadowMap();
+			mShadowManager->CreateViewports();
 		}
 	}
 
@@ -1331,7 +1241,7 @@ public:
 		for (int i = 0; i < 2; ++i)
 			mGlowTexture[i].reset();
 
-		mShadowMap.reset();
+		//mShadowMap.reset();
 		mCloudVolumeDepth.reset();
 
 		for (int i = 0; i < 2; ++i)
@@ -1349,7 +1259,7 @@ public:
 		for (int i = 0; i < FB_NUM_STAR_TEXTURES; ++i)
 			mStarTextures[i].reset();
 
-		mLightCamera.reset();
+		//mLightCamera.reset();
 		mGaussianDistBlendGlow.reset();
 		mGaussianDistBloom.reset();
 	}
@@ -1388,8 +1298,7 @@ bool RenderStrategyDefault::IsGlowSupported(){
 }
 
 CameraPtr RenderStrategyDefault::GetLightCamera() const{
-
-	return mImpl->mLightCamera;
+	return mImpl->mShadowManager->GetLightCamera();
 }
 
 bool RenderStrategyDefault::SetHDRTarget(){
@@ -1422,5 +1331,5 @@ void RenderStrategyDefault::OnRenderTargetSizeChanged(const Vec2I& size){
 }
 
 TexturePtr RenderStrategyDefault::GetShadowMap(){
-	return mImpl->mShadowMap;
+	return mImpl->GetShadowMap();
 }

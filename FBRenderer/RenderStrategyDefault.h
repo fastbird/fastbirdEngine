@@ -56,7 +56,7 @@ namespace fb{
 		void GlowRenderTarget(bool bind);
 		void DepthTexture(bool bind);
 		void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName);
-		void OnRenderTargetSizeChanged(const Vec2I& size);
+		void OnRenderTargetSizeChanged(const Vec2I& size);		
 
 		TexturePtr GetShadowMap();
 	};

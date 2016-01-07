@@ -71,6 +71,7 @@
     <ClInclude Include="RenderableObject.h" />
     <ClInclude Include="PrimitiveTopology.h" />
     <ClInclude Include="RenderStrategyNull.h" />
+    <ClInclude Include="CascadedShadowsManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
@@ -109,6 +110,7 @@
     <ClCompile Include="RendererOptions.cpp" />
     <ClCompile Include="ConsoleRenderer.cpp" />
     <ClCompile Include="RenderStrategyNull.cpp" />
+    <ClCompile Include="CascadedShadowsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Enum&amp;Structures">

@@ -76,6 +76,17 @@ public:
 			}
 			return ret;
 		}	
+		case ResourceTypes::Textures::GGX:
+		{
+			auto texture = renderer.CreateTexture("EssentialEngineData/textures/ggx.dds");
+			if (!texture){
+				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create ggx texture.");
+			}
+			else{
+				ret.push_back(texture);
+			}
+			return ret;
+		}
 		case ResourceTypes::Textures::ToneMap:
 		{
 			int nSampleLen = 1;
@@ -170,7 +181,7 @@ public:
 			shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			return renderer.CreateShader("EssentialEnginedata/shaders/copyps.hlsl", BINDING_SHADER_PS, shaderDefines);
 		}
-		case ResourceTypes::Shaders::ShadowMapVSPS:
+		case ResourceTypes::Shaders::ShadowMapShader:
 		{
 			return renderer.CreateShader("EssentialEnginedata/shaders/shadowdepth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
 		}
@@ -362,6 +373,12 @@ public:
 			desc.DepthClipEnable = true;
 			desc.ScissorEnable = false;
 			desc.MultisampleEnable = false;
+			desc.AntialiasedLineEnable = false;
+			return renderer.CreateRasterizerState(desc);
+		}
+		case ResourceTypes::RasterizerStates::ShadowMapRS:
+		{
+			desc.CullMode = CULL_MODE_NONE;
 			desc.AntialiasedLineEnable = false;
 			return renderer.CreateRasterizerState(desc);
 		}
@@ -576,13 +593,14 @@ public:
 		}
 		case ResourceTypes::SamplerStates::Shadow:
 		{
-			desc.Filter = TEXTURE_FILTER_COMPARISON_ANISOTROPIC;
+			desc.Filter = TEXTURE_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;			
 			desc.AddressU = TEXTURE_ADDRESS_BORDER;
 			desc.AddressV = TEXTURE_ADDRESS_BORDER;
-			desc.AddressW = TEXTURE_ADDRESS_BORDER;
-			for (int i = 0; i < 4; i++)
-				desc.BorderColor[i] = 1.0f;
-			desc.ComparisonFunc = COMPARISON_LESS_EQUAL;
+			desc.AddressW = TEXTURE_ADDRESS_BORDER;			
+			desc.MaxAnisotropy = 0.f;
+			desc.MinLOD = 0.f;
+			desc.MaxLOD = 0.f;
+			desc.ComparisonFunc = COMPARISON_LESS;				
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::PointWrap:

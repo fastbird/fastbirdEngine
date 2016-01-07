@@ -35,6 +35,7 @@
 
 namespace fb
 {
+	class Frustum;
 	FB_DECLARE_SMART_PTR(IInputInjector);
 	FB_DECLARE_SMART_PTR(IMouse);
 	FB_DECLARE_SMART_PTR(IKeyboard);
@@ -115,6 +116,7 @@ namespace fb
 		void SetEnalbeInput(bool enable);
 		void SetInitialDistToTarget(Real dist);
 		void ProcessInputData();
+		const Frustum& GetFrustum();
 
 		//-------------------------------------------------------------------
 		// InputConsumer From Renderer

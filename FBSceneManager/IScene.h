@@ -42,6 +42,7 @@ namespace fb{
 	class BoundingVolume;
 	struct POINT_LIGHT_CONSTANTS;
 	class Transformation;
+	class AABB;
 	FB_DECLARE_SMART_PTR(PointLight);
 	FB_DECLARE_SMART_PTR(SpatialSceneObject);
 	FB_DECLARE_SMART_PTR(SceneObject);
@@ -68,6 +69,7 @@ namespace fb{
 		virtual PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
 			bool manualDeletion) = 0;
 		virtual void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) = 0;
+		virtual const AABB& GetSceneAABB() = 0;
 	};
 }
 #define AttachObjectFB(p) AttachObjectFB((p), (p).get())

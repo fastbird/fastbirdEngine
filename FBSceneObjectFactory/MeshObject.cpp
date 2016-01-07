@@ -210,7 +210,7 @@ public:
 				if (!it.mMaterial->BindSubPass(RENDER_PASS::PASS_SHADOW, true))
 				{
 					renderer.SetPositionInputLayout();
-					provider->BindShader(ResourceTypes::Shaders::ShadowMapVSPS);					
+					provider->BindShader(ResourceTypes::Shaders::ShadowMapShader);					
 				}
 				RenderMaterialGroup(&it, true);
 			}

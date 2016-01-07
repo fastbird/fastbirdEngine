@@ -25,37 +25,35 @@
  -----------------------------------------------------------------------------
 */
 
-#pragma once
-namespace fb{
-	class BoundingVolume;
-	class Mat44;
-	class Transformation;
-	class Vec3;
-	class ICamera{
-	public:
-		enum MatrixType {
-			View,
-			InverseView,
-			InverseViewProj,
-			Proj, // Projection
-			ProjBeforeSwap,
-			InverseProj,
-			ViewProj,
-			NumMatrices,
-		};
-		virtual const Mat44& GetMatrix(MatrixType type) = 0;		
-		virtual const Transformation& GetTransformation() const = 0;
-		virtual bool IsCulled(BoundingVolume* pBV) const = 0;
-		virtual const Vec3& GetPosition() const = 0;
-		/*
-		virtual Vec2I WorldToScreen(const Vec3& pos) = 0;
-		
-		virtual void GetNearFar(Real& nearPlane, Real& farPlane) const = 0;
-		virtual Real GetFOV() const = 0;
-		virtual void SetWidth(Real width) = 0;
-		virtual void SetHeight(Real height) = 0;
-		virtual Real GetWidth() const = 0;
-		virtual Real GetHeight() const = 0;
-		virtual void SetCurrent(bool cur) = 0;*/
-	};
+#include "Constants.h"
+
+struct a2v
+{
+	float3 pos		: POSITION;
+};
+
+//----------------------------------------------------------------------------
+struct v2p
+{
+	float4 pos		: SV_Position;
+};
+
+//----------------------------------------------------------------------------
+v2p shadowdepth_VertexShader( in a2v IN )
+{
+    v2p OUT;
+
+	float3 worldPos = mul(gWorld, float4(IN.pos, 1));
+	OUT.pos = mul(gLightViewProj, float4(worldPos, 1));
+	if (OUT.pos.z <=0) {
+		OUT.pos.z = 0;
+	}
+	return OUT;
+};
+
+//----------------------------------------------------------------------------
+float4 shadowdepth_PixelShader( in v2p IN ) : SV_Target
+{
+	return float4(0.0, 0.0, 0.0, 0.0);
 }
+

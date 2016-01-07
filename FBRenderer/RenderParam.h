@@ -32,7 +32,7 @@ namespace fb{
 	struct RenderParam{
 		/// Vaild while rendering.
 		ICamera* mCamera;
-		ICamera* mLightCamera;
+		//ICamera* mLightCamera;
 		// will be set in the Scene
 		mutable IScene* mScene;
 		/// enum RENDER_PASS.

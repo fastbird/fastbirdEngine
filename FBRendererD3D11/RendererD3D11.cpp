@@ -225,6 +225,7 @@ public:
 			sizeof(CAMERA_CONSTANTS),
 			sizeof(RENDERTARGET_CONSTANTS),
 			sizeof(SCENE_CONSTANTS),
+			sizeof(SHADOW_CONSTANTS),
 		};
 		D3D11_BUFFER_DESC Desc;
 		Desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -1454,9 +1455,9 @@ public:
 	}
 
 	void BindConstants(){
-		mImmediateContext->VSSetConstantBuffers(0, 11, mShaderConstants);
-		mImmediateContext->GSSetConstantBuffers(0, 11, mShaderConstants);
-		mImmediateContext->PSSetConstantBuffers(0, 11, mShaderConstants);
+		mImmediateContext->VSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
+		mImmediateContext->GSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
+		mImmediateContext->PSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
 	}
 
 	// Data

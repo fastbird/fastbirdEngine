@@ -216,6 +216,7 @@ namespace fb{
 		void UpdateSceneConstantsBuffer();
 		void UpdateRareConstantsBuffer();
 		void UpdateRadConstantsBuffer(const void* pData);
+		void UpdateShadowConstantsBuffer(const void* pData);
 		void* MapMaterialParameterBuffer();
 		void UnmapMaterialParameterBuffer();
 		void* MapBigBuffer();

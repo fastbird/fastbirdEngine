@@ -113,6 +113,7 @@ namespace fb{
 		PointLightManagerPtr GetPointLightMan() const;		
 		void RefreshPointLight();	
 		bool NeedToRefreshPointLight() const;
+		const AABB& GetSceneAABB();
 	};
 }
 

@@ -51,9 +51,10 @@ v2p shadowdepth_VertexShader( in a2v IN )
 	return OUT;
 };
 
+// Null pixelshader
 //----------------------------------------------------------------------------
-float4 shadowdepth_PixelShader( in v2p IN ) : SV_Target
-{
-	return float4(0.0, 0.0, 0.0, 0.0);
-}
+// float4 shadowdepth_PixelShader( in v2p IN ) : SV_Target
+// {
+	// return float4(0.0, 0.0, 0.0, 0.0);
+// }
 

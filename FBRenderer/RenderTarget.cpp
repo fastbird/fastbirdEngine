@@ -643,4 +643,5 @@ void RenderTarget::OnRendererOptionChanged(RendererOptionsPtr options, const cha
 TexturePtr RenderTarget::GetShadowMap() const{
 	return mImpl->GetShadowMap();
 }
+
 }

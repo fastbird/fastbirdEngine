@@ -126,6 +126,10 @@ namespace fb
 		return Vec3(x - r.x, y - r.y, z - r.z);
 	}
 
+	Vec3 Vec3::operator- (Real f) const{
+		return Vec3(x - f, y - f, z - f);
+	}
+
 	Vec3& Vec3::operator-= (const Vec3& r)
 	{
 		x -= r.x;

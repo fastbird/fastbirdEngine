@@ -165,24 +165,249 @@ float ProbabilityGGX(float ndh, float vdh, float Roughness)
 {
 	return NormalDistrib(ndh, Roughness) * ndh / (4.0*vdh);
 }
+#define _CASCADE_COUNT_FLAG 3
+
+//--------------------------------------------------------------------------------------
+// Calculate amount to blend between two cascades and the band where blending will occure.
+//--------------------------------------------------------------------------------------
+void CalculateBlendAmountForInterval ( in int iCurrentCascadeIndex, 
+                                       in out float fPixelDepth, 
+                                       in out float fCurrentPixelsBlendBandLocation,
+                                       out float fBlendBetweenCascadesAmount
+                                       ) 
+{
+
+    // We need to calculate the band of the current shadow map where it will
+	// fade into the next cascade. We can then early out of the expensive PCF 
+	// for loop.
+    float fBlendInterval = gCascadeFrustumsEyeSpaceDepthsFloat[iCurrentCascadeIndex];
+    //if( iNextCascadeIndex > 1 ) 
+    int fBlendIntervalbelowIndex = min(0, iCurrentCascadeIndex-1);
+    fPixelDepth -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    fBlendInterval -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    
+    // The current pixel's blend band location will be used to determine when 
+	// we need to blend and by how much.
+    fCurrentPixelsBlendBandLocation = fPixelDepth / fBlendInterval;
+    fCurrentPixelsBlendBandLocation = 1.0f - fCurrentPixelsBlendBandLocation;
+    // The fBlendBetweenCascadesAmount is our location in the blend band.
+    fBlendBetweenCascadesAmount = fCurrentPixelsBlendBandLocation / gCascadeBlendArea;
+}
+
+void ComputeCoordinatesTransform( in int iCascadeIndex,                                      
+                                   in out float4 vShadowTexCoord, 
+                                   in out float4 vShadowTexCoordViewSpace ) 
+{
+    // Now that we know the correct map, we can transform the world space 
+	// position of the current fragment                	
+    vShadowTexCoord = vShadowTexCoordViewSpace * gCascadeScale[iCascadeIndex];
+    vShadowTexCoord += gCascadeOffset[iCascadeIndex];
+          
+    vShadowTexCoord.x *= gShadowPartitionSize;  // precomputed 1.0f / cascadeLevels
+    vShadowTexCoord.x += (gShadowPartitionSize * (float)iCascadeIndex ); 
+} 
+
+//--------------------------------------------------------------------------------------
+// Use PCF to sample the depth map and return a percent lit value.
+//--------------------------------------------------------------------------------------
+void CalculatePCFPercentLit ( in float4 vShadowTexCoord, 
+                              in float fRightTexelDepthDelta, 
+                              in float fUpTexelDepthDelta,                               
+                              out float fPercentLit
+                              ) 
+{
+    fPercentLit = 0.0f;
+    // This loop could be unrolled, and texture immediate offsets could be used 
+	// if the kernel size were fixed. This would be performance improvment.
+    for( int x = -2; x < 3; ++x ) 
+    {
+        for( int y = -2; y < 3; ++y ) 
+        {
+            float depthcompare = vShadowTexCoord.z;
+            // A very simple solution to the depth bias problems of PCF is to 
+			// use an offset.
+            // Unfortunately, too much offset can lead to Peter-panning 
+			// (shadows near the base of object disappear )
+            // Too little offset can lead to shadow acne 
+			// ( objects that should not be in shadow are partially self shadowed ).
+            depthcompare -= 0.002f;
+            //if ( USE_DERIVATIVES_FOR_DEPTH_OFFSET_FLAG ) 
+            //{
+                // Add in derivative computed depth scale based on the x and y pixel.
+              //  depthcompare += fRightTexelDepthDelta * ( (float) x ) + fUpTexelDepthDelta * ( (float) y );
+            //}
+            // Compare the transformed pixel depth to the depth read from the map.
+            fPercentLit += gShadowMap.SampleCmpLevelZero( gShadowSampler, 
+                float2( 
+                    vShadowTexCoord.x + ( ( (float) x ) * m_fNativeTexelSizeInX ) , 
+                    vShadowTexCoord.y + ( ( (float) y ) * m_fTexelSize ) 
+                    ), 
+                depthcompare );
+        }
+    }
+    fPercentLit /= (float)25.f;
+}
 
 
-float GetShadow(float4 lightPos)
+//--------------------------------------------------------------------------------------
+// This function calculates the screen space depth for shadow space texels
+//--------------------------------------------------------------------------------------
+void CalculateRightAndUpTexelDepthDeltas ( in float3 vShadowTexDDX,
+                                           in float3 vShadowTexDDY,
+                                           out float fUpTextDepthWeight,
+                                           out float fRightTextDepthWeight
+ ) {
+        
+    // We use the derivatives in X and Y to create a transformation matrix.  
+	// Because these derivives give us the transformation from screen space 
+	// to shadow space, we need the inverse matrix to take us from shadow space 
+    // to screen space.  This new matrix will allow us to map shadow map texels 
+	// to screen space.  This will allow us to find the screen space depth of 
+	// a corresponding depth pixel.
+	// This is not a perfect solution as it assumes the underlying geometry of 
+	// the scene is a plane.  A more accureate way of finding the actual depth 
+	// would be to do a deferred rendering approach and actually sample the depth.
+    
+    // Using an offset, or using variance shadow maps is a better approach to reducing these artifacts in most cases.
+    
+    float2x2 matScreentoShadow = float2x2( vShadowTexDDX.xy, vShadowTexDDY.xy );
+    float fDeterminant = determinant ( matScreentoShadow );
+    
+    float fInvDeterminant = 1.0f / fDeterminant;
+    
+    float2x2 matShadowToScreen = float2x2 (
+        matScreentoShadow._22 * fInvDeterminant, matScreentoShadow._12 * -fInvDeterminant, 
+        matScreentoShadow._21 * -fInvDeterminant, matScreentoShadow._11 * fInvDeterminant );
+
+    float2 vRightShadowTexelLocation = float2( gShadowTexelSize, 0.0f );
+    float2 vUpShadowTexelLocation = float2( 0.0f, gShadowTexelSize );  
+    
+    // Transform the right pixel by the shadow space to screen space matrix.
+    float2 vRightTexelDepthRatio = mul( vRightShadowTexelLocation,  matShadowToScreen );
+    float2 vUpTexelDepthRatio = mul( vUpShadowTexelLocation,  matShadowToScreen );
+
+    // We can now caculate how much depth changes when you move up or right in 
+	// the shadow map.
+    // We use the ratio of change in x and y times the dervivite in X and Y of 
+	// the screen space depth to calculate this change.
+    fUpTextDepthWeight = vUpTexelDepthRatio.x * vShadowTexDDX.z 
+							+ vUpTexelDepthRatio.y * vShadowTexDDY.z;
+    fRightTextDepthWeight = vRightTexelDepthRatio.x * vShadowTexDDX.z 
+							+ vRightTexelDepthRatio.y * vShadowTexDDY.z;
+        
+}
+
+static const float4 vCascadeColorsMultiplier[8] = 
+{
+    float4 ( 1.5f, 0.0f, 0.0f, 1.0f ),
+    float4 ( 0.0f, 1.5f, 0.0f, 1.0f ),
+    float4 ( 0.0f, 0.0f, 5.5f, 1.0f ),
+    float4 ( 1.5f, 0.0f, 5.5f, 1.0f ),
+    float4 ( 1.5f, 1.5f, 0.0f, 1.0f ),
+    float4 ( 1.0f, 1.0f, 1.0f, 1.0f ),
+    float4 ( 0.0f, 1.0f, 5.5f, 1.0f ),
+    float4 ( 0.5f, 3.5f, 0.75f, 1.0f )
+};
+
+float GetShadow(float4 vShadowMapTextureCoordViewSpace, float fCurrentPixelDepth)
 {	
-	float2 uv = lightPos.xy * float2(0.5, -0.5) + 0.5;	
-	float c = 0.0;
-	//if (lightPos.z>=0.1f){
-		//float3 camDir = {gCamTransform[0][1], gCamTransform[1][1], gCamTransform[2][1]};		
-		//return saturate(saturate(dot(gDirectionalLightDir_Intensity[0].xyz, camDir)) + 0.5);
-	//}
-	for (int y=-2; y<=2; ++y)
+	// swap y, z
+	vShadowMapTextureCoordViewSpace = vShadowMapTextureCoordViewSpace.xzyw;
+	int iCurrentCascadeIndex = 0;
+	if ( _CASCADE_COUNT_FLAG > 1 ) 
 	{
-		for (int x = -2; x<=2; ++x)
-		{
-			c += gShadowMap.SampleCmp(gShadowSampler, uv.xy, lightPos.z-0.002, float2(x, y));
-		}
-	}	
-	return min(0.5 + c * 0.02f, 1.0f);
+		float4 vCurrentPixelDepth = fCurrentPixelDepth;
+		float4 fComparison = ( vCurrentPixelDepth > 
+			float4(gCascadeFrustumsEyeSpaceDepthsFloat[0],
+					gCascadeFrustumsEyeSpaceDepthsFloat[1],
+					gCascadeFrustumsEyeSpaceDepthsFloat[2],
+					gCascadeFrustumsEyeSpaceDepthsFloat[3]));
+					
+		float4 fComparison2 = ( vCurrentPixelDepth > 
+			float4(gCascadeFrustumsEyeSpaceDepthsFloat[4],
+					gCascadeFrustumsEyeSpaceDepthsFloat[5],
+					gCascadeFrustumsEyeSpaceDepthsFloat[6],
+					gCascadeFrustumsEyeSpaceDepthsFloat[7]));
+		float fIndex = dot( 
+						float4( _CASCADE_COUNT_FLAG > 0,
+								_CASCADE_COUNT_FLAG > 1, 
+								_CASCADE_COUNT_FLAG > 2, 
+								_CASCADE_COUNT_FLAG > 3)
+						, fComparison )
+					 + dot( 
+						float4(
+								_CASCADE_COUNT_FLAG > 4,
+								_CASCADE_COUNT_FLAG > 5,
+								_CASCADE_COUNT_FLAG > 6,
+								_CASCADE_COUNT_FLAG > 7)
+						, fComparison2 ) ;
+								
+		fIndex = min( fIndex, _CASCADE_COUNT_FLAG - 1 );
+		iCurrentCascadeIndex = (int)fIndex;
+	}
+	
+	// Repeat text coord calculations for the next cascade. 
+    // The next cascade index is used for blurring between maps.
+	int iNextCascadeIndex = min ( _CASCADE_COUNT_FLAG - 1, iCurrentCascadeIndex + 1 ); 
+	float fBlendBetweenCascadesAmount = 1.0f;
+    float fCurrentPixelsBlendBandLocation = 1.0f;
+	if( _CASCADE_COUNT_FLAG > 1  ) 
+	{
+		CalculateBlendAmountForInterval ( iCurrentCascadeIndex, fCurrentPixelDepth, 
+			fCurrentPixelsBlendBandLocation, fBlendBetweenCascadesAmount );
+	}   
+	
+	// float3 vShadowMapTextureCoordDDX;
+    // float3 vShadowMapTextureCoordDDY;
+    // // The derivatives are used to find the slope of the current plane.
+    // // The derivative calculation has to be inside of the loop in order to 
+	// // prevent divergent flow control artifacts.
+    // vShadowMapTextureCoordDDX = ddx( vShadowMapTextureCoordViewSpace );
+    // vShadowMapTextureCoordDDY = ddy( vShadowMapTextureCoordViewSpace );    
+    // vShadowMapTextureCoordDDX *= gCascadeScale[iCurrentCascadeIndex];
+    // vShadowMapTextureCoordDDY *= gCascadeScale[iCurrentCascadeIndex];    
+	
+	float4 vShadowMapTextureCoord = 0.0f;	
+	ComputeCoordinatesTransform( iCurrentCascadeIndex,                                   
+                                 vShadowMapTextureCoord, 
+                                 vShadowMapTextureCoordViewSpace );
+	
+	float4 vVisualizeCascadeColor = vCascadeColorsMultiplier[iCurrentCascadeIndex];
+	
+	float fUpTextDepthWeight=0;
+	float fRightTextDepthWeight=0;
+	//CalculateRightAndUpTexelDepthDeltas ( vShadowMapTextureCoordDDX, vShadowMapTextureCoordDDY,
+      //                                        fUpTextDepthWeight, fRightTextDepthWeight );
+	
+	//int iBlurRowSize = m_iPCFBlurForLoopEnd - m_iPCFBlurForLoopStart;	
+    //iBlurRowSize *= iBlurRowSize;
+	//float fBlurRowSize = (float)iBlurRowSize;    
+	float fPercentLit = 0.0f;
+	CalculatePCFPercentLit ( vShadowMapTextureCoord, fRightTextDepthWeight, 
+                            fUpTextDepthWeight, fPercentLit );
+							
+	if (_CASCADE_COUNT_FLAG > 1){
+		const float cascadeBlendArea = 0.05f;
+		if( fCurrentPixelsBlendBandLocation < cascadeBlendArea) 
+        {  // the current pixel is within the blend band.
+    
+            // Repeat text coord calculations for the next cascade. 
+            // The next cascade index is used for blurring between maps.    
+			float4 vShadowMapTextureCoord_blend = 0.0f;			
+            ComputeCoordinatesTransform( iNextCascadeIndex,
+                                             vShadowMapTextureCoord_blend, 
+										     vShadowMapTextureCoordViewSpace );        
+			
+			float fUpTextDepthWeight_blend=0;
+			float fRightTextDepthWeight_blend=0;
+			CalculatePCFPercentLit( vShadowMapTextureCoord_blend, fRightTextDepthWeight_blend, 
+									fUpTextDepthWeight_blend, fPercentLit_blend );
+			fPercentLit = lerp( fPercentLit_blend, fPercentLit, fBlendBetweenCascadesAmount ); 
+			// Blend the two calculated shadows by the blend amount.
+               
+        } 
+	}
+	return lerp(0.5f, 1.0f, fPercentLit);
 }
 
 float3 GetIrrad(float4 vNormal)

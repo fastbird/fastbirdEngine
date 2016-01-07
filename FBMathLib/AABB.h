@@ -47,6 +47,8 @@ namespace fb
 		void SetMin(const Vec3& min);
 		void SetMax(const Vec3& max);
 		Vec3 GetCenter() const;
+		// (max - min) * .5
+		Vec3 GetExtents() const;
 		void Translate(const Vec3& pos);
 		bool Contain(const Vec3&pos) const;
 	};

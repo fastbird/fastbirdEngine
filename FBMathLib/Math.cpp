@@ -478,7 +478,7 @@ namespace fb
 	// d3d left handed
 	Mat44 MakeProjectionMatrix(Real fov, Real aspectRatio, Real n, Real f)
 	{
-		const Real cot = 1.0f / tan(fov / 2.f);
+		const Real cot = 1.0f / tan(fov * .5f);
 		const Real DofA = cot / aspectRatio;
 		Real A = f / (f - n);
 		Real B = -n*f / (f - n);
@@ -489,6 +489,12 @@ namespace fb
 			0, 0, A, B,
 			0, 0, 1, 0
 			);
+
+		/*return Mat44(
+			DofA, 0, 0, 0,
+			0, 0, cot, 0,
+			0, A, 0, B,
+			0, 1, 0, 0);*/ // y, z swaped
 	}
 
 	//------------------------------------------------------------------------

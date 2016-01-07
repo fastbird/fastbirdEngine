@@ -131,9 +131,18 @@ cbuffer CAMERA_CONSTANTS
 	float4x4 gCamTransform;
 	float4x4 gProj;
 	float4x4 gInvProj;
+	
 	float2 gNearFar;
 	float gTangentTheta;
-	float camera_constants_dummy;	
+	float gCascadeBlendArea;
+	
+	float gCascadeFrustumsEyeSpaceDepthsFloat[8];	
+	float gShadowPartitionSize;
+	float gShadowTexelSize;
+	float2 gCameraConstansDummy;
+	
+	float4 gCascadeOffset[8];
+	float4 gCascadeScale[8];
 };
 
 cbuffer RENDERTARGET_CONSTANTS
@@ -142,8 +151,8 @@ cbuffer RENDERTARGET_CONSTANTS
 	#endif
 {	
 	float2 gScreenSize;
-	float gScreenRatio;	
-	float rendertarget_dummy;	
+	float gScreenRatio;
+	float rendertarget_dummy;
 };
 
 cbuffer SCENE_CONSTANTS
@@ -156,22 +165,6 @@ cbuffer SCENE_CONSTANTS
 	float4 gDirectionalLightDiffuse[2]; // per render target(actually per scene
 	float4 gDirectionalLightSpecular[2]; // per render target(actually per scene	
 	float4 gFogColor;
-};
-
-cbuffer SHADOW_CONSTANTS
-	#ifndef CPP
-		: register(b11)
-	#endif
-{	
-	float gCascadeFrustumsEyeSpaceDepthsFloat[8];		
-	
-	float gCascadeBlendArea; // boundary	
-	float gShadowPartitionSize;
-	float gShadowTexelSize;
-	float shadow_dummy;	//boundary
-	
-	float4 gCascadeOffset[8];
-	float4 gCascadeScale[8];
 };
 	
 #ifdef CPP

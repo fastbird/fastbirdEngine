@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "Camera.h"
 #include "FBMathLib/BoundingVolume.h"
+#include "FBMathLib/Frustum.h"
 #include "FBInputManager/IInputInjector.h"
 #include "FBInputManager/KeyCodes.h"
 #include "FBSceneManager/ISpatialObject.h"
@@ -96,6 +97,7 @@ public:
 	bool mProcessInput;
 	Vec3 mPrevTargetPos;
 	std::mutex mMutex;
+	Frustum mFrustum;
 
 	Impl(Camera* self) 
 		: mSelf(self)
@@ -154,6 +156,8 @@ public:
 
 	void SetPosition(const Vec3& pos)
 	{
+		if (mTransformation.GetTranslation() == pos)
+			return;
 		mTransformation.SetTranslation(pos);
 		mViewPropertyChanged = true;
 	}
@@ -183,6 +187,9 @@ public:
 
 	void SetDirection(const Vec3& dir)
 	{
+		if (mTransformation.GetForward() == dir)
+			return;
+
 		mTransformation.SetDirection(dir);
 		mViewPropertyChanged = true;
 	}
@@ -301,6 +308,8 @@ public:
 			const Vec3& pos = mTransformation.GetTranslation();
 			mMatrices[View] = fb::MakeViewMatrix(pos, right, forward, up);			
 			mTransformation.GetHomogeneous(mMatrices[InverseView]);
+			mFrustum.mOrigin = mTransformation.GetTranslation();
+			mFrustum.mOrientation = mTransformation.GetRotation();
 		}
 
 		bool projChanged = mProjPropertyChanged;
@@ -310,11 +319,13 @@ public:
 			mProjPropertyChanged = false;
 			if (!mOrthogonal)
 			{
-				mMatrices[Proj] = MakeProjectionMatrix(mFov, mAspectRatio, mNear, mFar);
+				mMatrices[ProjBeforeSwap] = mMatrices[Proj] = 
+					MakeProjectionMatrix(mFov, mAspectRatio, mNear, mFar);
 			}
 			else
 			{
-				mMatrices[Proj] = MakeOrthogonalMatrix(-mWidth*.5f, mHeight*.5f, mWidth*.5f, -mHeight*.5f, mNear, mFar);
+				mMatrices[ProjBeforeSwap] = mMatrices[Proj] = 
+					MakeOrthogonalMatrix(-mWidth*.5f, mHeight*.5f, mWidth*.5f, -mHeight*.5f, mNear, mFar);
 			}
 			if (mYZSwap)
 			{
@@ -325,7 +336,8 @@ public:
 					0, 0, 0, 1);
 				mMatrices[Proj] = mMatrices[Proj] * swapMat;
 			}
-			mMatrices[InverseProj] = mMatrices[Proj].Inverse();			
+			mMatrices[InverseProj] = mMatrices[Proj].Inverse();	
+			mFrustum.SetData(mNear, mFar, mFov, mAspectRatio);
 		}
 
 		if (projChanged || viewChanged)
@@ -519,6 +531,11 @@ public:
 		}
 	}
 
+	const Frustum& GetFrustum(){
+		Update();		
+		return mFrustum;
+	}
+
 	void SetEnalbeInput(bool enable)
 	{
 		mProcessInput = enable;
@@ -664,6 +681,7 @@ const Mat44& Camera::GetMatrix(MatrixType type){
 		mImpl->Update();
 	return mImpl->GetMatrix(type);
 }
+
 //----------------------------------------------------------------------------
 bool Camera::IsCulled(BoundingVolume* pBV) const{
 	return mImpl->IsCulled(pBV);
@@ -762,4 +780,8 @@ void Camera::SetCameraIndex(size_t idx) {
 
 void Camera::ConsumeInput(IInputInjectorPtr injector){
 	mImpl->ConsumeInput(injector);
+}
+
+const Frustum& Camera::GetFrustum(){
+	return mImpl->GetFrustum();
 }

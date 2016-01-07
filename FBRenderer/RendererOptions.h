@@ -61,8 +61,10 @@ namespace fb{
 		int r_Glow;
 		int r_ReportDeviceObjectLeak;
 		int r_Shadow;
-		int r_ShadowMapWidth;
-		int r_ShadowMapHeight;
+		int r_ShadowCascadeLevels;
+		float r_ShadowCascadeBlendArea;
+		int r_ShadowMapPCFBlurSize;
+		int r_ShadowMapSize;
 		float r_ShadowCamWidth;
 		float r_ShadowCamHeight;
 		float r_ShadowNear;

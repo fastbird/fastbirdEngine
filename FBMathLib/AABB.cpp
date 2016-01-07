@@ -70,6 +70,10 @@ void AABB::SetMax(const Vec3& max) { mMax = max; }
 
 Vec3 AABB::GetCenter() const { return (mMin + mMax) * .5f; }
 
+Vec3 AABB::GetExtents() const{
+	return (mMax - mMin) * .5f;
+}
+
 void AABB::Translate(const Vec3& pos)
 {
 	mMin += pos;

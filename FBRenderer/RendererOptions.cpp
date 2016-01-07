@@ -99,15 +99,30 @@ RendererOptions::RendererOptions(){
 	r_Shadow = Console::GetInstance().GetIntVariable("r_Shadow", 1);
 	FB_REGISTER_CVAR(r_Shadow, r_Shadow, CVAR_CATEGORY_CLIENT, "enable shadow");
 
-	r_ShadowMapWidth = Console::GetInstance().GetIntVariable(
-		"r_ShadowMapWidth", 4096);
-	FB_REGISTER_CVAR(r_ShadowMapWidth, r_ShadowMapWidth, CVAR_CATEGORY_CLIENT,
+	r_ShadowCascadeLevels = Console::GetInstance().GetIntVariable(
+		"r_ShadowCascadeLevels", 3);
+	FB_REGISTER_CVAR(r_ShadowCascadeLevels, r_ShadowCascadeLevels, 
+		CVAR_CATEGORY_CLIENT, "Shadow cascaded levels");
+
+	r_ShadowCascadeBlendArea = Console::GetInstance().GetRealVariable(
+		"r_ShadowCascadeBlendArea", 0.05f);
+	FB_REGISTER_CVAR(r_ShadowCascadeBlendArea, r_ShadowCascadeBlendArea,
+		CVAR_CATEGORY_CLIENT, "Shadow cascaded blend aread");
+
+	r_ShadowMapPCFBlurSize = Console::GetInstance().GetIntVariable(
+		"r_ShadowMapPCFBlurSize", 3);
+	FB_REGISTER_CVAR(r_ShadowMapPCFBlurSize, r_ShadowMapPCFBlurSize,
+		CVAR_CATEGORY_CLIENT, "PCF Blur");
+
+	r_ShadowMapSize = Console::GetInstance().GetIntVariable(
+		"r_ShadowMapSize", 1024);
+	FB_REGISTER_CVAR(r_ShadowMapSize, r_ShadowMapSize, CVAR_CATEGORY_CLIENT,
 		"ShadowMap width");
 
-	r_ShadowMapHeight = Console::GetInstance().GetIntVariable(
-		"r_ShadowMapHeight", 4096);
+	/*r_ShadowMapHeight = Console::GetInstance().GetIntVariable(
+		"r_ShadowMapHeight", 1024);
 	FB_REGISTER_CVAR(r_ShadowMapHeight, r_ShadowMapHeight, CVAR_CATEGORY_CLIENT,
-		"ShadowMap height");
+		"ShadowMap height");*/
 
 	r_ShadowCamWidth = Console::GetInstance().GetRealVariable(
 		"r_ShadowCamWidth", 150.f);
@@ -120,12 +135,12 @@ RendererOptions::RendererOptions(){
 		"ShadowMap height");
 
 	r_ShadowNear = Console::GetInstance().GetRealVariable(
-		"r_ShadowNear", 0.0f);
+		"r_ShadowNear", 0.1f);
 	FB_REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT,
 		"Shadow camera near.");
 
 	r_ShadowFar = Console::GetInstance().GetRealVariable(
-		"r_ShadowFar", 200.0f);
+		"r_ShadowFar", 1000.0f);
 	FB_REGISTER_CVAR(r_ShadowFar, r_ShadowFar, CVAR_CATEGORY_CLIENT,
 		"Shadow camera far");
 
@@ -200,7 +215,7 @@ bool RendererOptions::OnChangeCVar(CVarPtr pCVar){
 	{
 		Renderer::GetInstance().UpdateRareConstantsBuffer();
 	}
-	else if (strcmp(pCVar->mName.c_str(), "r_shadowmapwidth") == 0 ||
+	else if (strcmp(pCVar->mName.c_str(), "r_shadowmapsize") == 0 ||
 		strcmp(pCVar->mName.c_str(), "r_shadowmapheight") == 0 ||
 		strcmp(pCVar->mName.c_str(), "r_shadowcamwidth") == 0 ||
 		strcmp(pCVar->mName.c_str(), "r_shadowcamheight") == 0 ||

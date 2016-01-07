@@ -1374,7 +1374,7 @@ public:
 	void SetPositionInputLayout(){
 		if (!mPositionInputLayout)
 		{
-			auto shader = mResourceProvider->GetShader(ResourceTypes::Shaders::ShadowMapVSPS);
+			auto shader = mResourceProvider->GetShader(ResourceTypes::Shaders::ShadowMapShader);
 			if (!shader){
 				//fall-back
 				shader = mResourceProvider->GetShader(ResourceTypes::Shaders::DepthWriteVSPS);
@@ -1483,15 +1483,15 @@ public:
 		mCamera->GetNearFar(ne, fa);
 		mCameraConstants.gNearFar.x = (float)ne;
 		mCameraConstants.gNearFar.y = (float)fa;
-		mCameraConstants.gTangentTheta = (float)tan(mCamera->GetFOV() / 2.0);
+		mCameraConstants.gTangentTheta = (float)tan(mCamera->GetFOV() / 2.0);		
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Camera, &mCameraConstants, sizeof(CAMERA_CONSTANTS));
 	}
 
 	void UpdateRenderTargetConstantsBuffer(){
 		mRenderTargetConstants.gScreenSize.x = (float)mCurrentRTSize.x;
 		mRenderTargetConstants.gScreenSize.y = (float)mCurrentRTSize.y;
-		mRenderTargetConstants.gScreenRatio = mCurrentRTSize.x / (float)mCurrentRTSize.y;
-		mRenderTargetConstants.rendertarget_dummy = 0.f;
+		mRenderTargetConstants.gScreenRatio = mCurrentRTSize.x / (float)mCurrentRTSize.y;				
+
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::RenderTarget, &mRenderTargetConstants, sizeof(RENDERTARGET_CONSTANTS));
 	}
 
@@ -1506,7 +1506,7 @@ public:
 		}
 		auto pLightCam = mCurrentRenderTarget->GetLightCamera();
 		if (pLightCam)
-			mSceneConstants.gLightViewProj = pLightCam->GetMatrix(ICamera::ViewProj);
+			mSceneConstants.gLightView = pLightCam->GetMatrix(ICamera::View);
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -1532,7 +1532,13 @@ public:
 		std::vector<Vec2> hammersley;
 		GenerateHammersley(ENV_SAMPLES, hammersley);
 		memcpy(constants.gHammersley, &hammersley[0], sizeof(Vec2f)* ENV_SAMPLES);
-		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Radiance, &constants, sizeof(IMMUTABLE_CONSTANTS));
+		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Radiance, 
+			&constants, sizeof(IMMUTABLE_CONSTANTS));
+	}
+
+	void UpdateShadowConstantsBuffer(const void* pData){
+		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Shadow,
+			pData, sizeof(SHADOW_CONSTANTS));
 	}
 
 	void* MapMaterialParameterBuffer(){
@@ -3048,6 +3054,10 @@ void Renderer::UpdateRareConstantsBuffer() {
 
 void Renderer::UpdateRadConstantsBuffer(const void* pData) {
 	mImpl->UpdateRadConstantsBuffer(pData);
+}
+
+void Renderer::UpdateShadowConstantsBuffer(const void* pData){
+	mImpl->UpdateShadowConstantsBuffer(pData);
 }
 
 void* Renderer::MapMaterialParameterBuffer() {

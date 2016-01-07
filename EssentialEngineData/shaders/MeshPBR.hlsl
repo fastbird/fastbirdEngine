@@ -66,8 +66,8 @@ struct v2p
 	float3 Tangent : TEXCOORD1;
 	float3 Binormal : TEXCOORD2;
 	float2 UV		: TEXCOORD3;
-	float3 WorldPos : TEXCOORD4;
-	float4 LightPos : TEXCOORD5;
+	float4 WorldPos : TEXCOORD4; // worldPos x, y, z + current pixel depth w
+	float4 TexShadow : TEXCOORD5;	
 };
 
 v2p meshpbr_VertexShader( in a2v INPUT )
@@ -80,8 +80,9 @@ v2p meshpbr_VertexShader( in a2v INPUT )
 	OUTPUT.Tangent = normalize(mul((float3x3)gWorld, INPUT.Tangent));
 	OUTPUT.Binormal= normalize(cross(OUTPUT.Tangent, OUTPUT.Normal));
 	float3 worldPos = mul(gWorld, INPUT.Position).xyz;
-	OUTPUT.WorldPos = worldPos;
-	OUTPUT.LightPos = mul(gLightViewProj, float4(worldPos, 1.0));
+	OUTPUT.WorldPos.xyz = worldPos;
+	OUTPUT.WorldPos.w = mul(gWorldView, Input.Position).y;
+	OUTPUT.TexShadow = mul(gLightView, float4(worldPos, 1.0));
 
 	return OUTPUT;
 }
@@ -129,7 +130,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float3 lightColor2 = gDirectionalLightDiffuse[1].xyz * gDirectionalLightDir_Intensity[1].w;
 	float3 toLightDir = gDirectionalLightDir_Intensity[0].xyz;
 	float3 camPos = {gCamTransform[0][3], gCamTransform[1][3], gCamTransform[2][3]};
-	float3 toViewDir = normalize(camPos - INPUT.WorldPos);	
+	float3 toViewDir = normalize(camPos - INPUT.WorldPos.xyz);	
 
 	const float3 dielectricColor = float3(0.04, 0.04, 0.04);
 	const float minRoughness = 1e-4;
@@ -144,7 +145,8 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float3 h = normalize(toViewDir + toLightDir);
 	float ndh = max( dot(normal, h), 1e-8);
 	float vdh = max( dot(toViewDir, h), 1e-8);
-	float invShadow = GetShadow(INPUT.LightPos);
+	//INPUT.WorldPos.w == current pixel depth
+	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));
 	shadedColor +=  ndl2 * lightColor2 * max(float3(0.2f, 0.2f, 0.2f), diffColor);
 	float3 irrad = GetIrrad(float4(normal, 1.0f));
@@ -157,7 +159,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	envContrib = CalcEnvContrib(normal, INPUT.Tangent, INPUT.Binormal, roughness, toViewDir, diffColor, specColor);
 #endif
 
-	float3 pointLightResult = CalcPointLights(INPUT.WorldPos, normal) * baseColor;
+	float3 pointLightResult = CalcPointLights(INPUT.WorldPos.xyz, normal) * baseColor;
 	float2 screenUV = GetScreenUV(INPUT.Position.xy);
 	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib + pointLightResult, normalize(INPUT.WorldPos));
 #if Glow
