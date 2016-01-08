@@ -163,12 +163,13 @@ cbuffer SHADOW_CONSTANTS
 		: register(b11)
 	#endif
 {	
-	float gCascadeFrustumsEyeSpaceDepthsFloat[8];		
+	// will be accessed like 'float gCascadeFrustumsEyeSpaceDepthsFloat[8]
+	float4 gCascadeFrustumsEyeSpaceDepthsFloat[2];
 	
 	float gCascadeBlendArea; // boundary	
 	float gShadowPartitionSize;
 	float gShadowTexelSize;
-	float shadow_dummy;	//boundary
+	float gShadowTexelSizeX;	//boundary
 	
 	float4 gCascadeOffset[8];
 	float4 gCascadeScale[8];

@@ -180,11 +180,12 @@ void CalculateBlendAmountForInterval ( in int iCurrentCascadeIndex,
     // We need to calculate the band of the current shadow map where it will
 	// fade into the next cascade. We can then early out of the expensive PCF 
 	// for loop.
-    float fBlendInterval = gCascadeFrustumsEyeSpaceDepthsFloat[iCurrentCascadeIndex];
+	static float cascadeFrustumsEyeSpaceDepthsFloat[8] = (float[8])gCascadeFrustumsEyeSpaceDepthsFloat;
+    float fBlendInterval = cascadeFrustumsEyeSpaceDepthsFloat[iCurrentCascadeIndex];
     //if( iNextCascadeIndex > 1 ) 
     int fBlendIntervalbelowIndex = min(0, iCurrentCascadeIndex-1);
-    fPixelDepth -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
-    fBlendInterval -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    fPixelDepth -= cascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    fBlendInterval -= cascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
     
     // The current pixel's blend band location will be used to determine when 
 	// we need to blend and by how much.
@@ -239,8 +240,8 @@ void CalculatePCFPercentLit ( in float4 vShadowTexCoord,
             // Compare the transformed pixel depth to the depth read from the map.
             fPercentLit += gShadowMap.SampleCmpLevelZero( gShadowSampler, 
                 float2( 
-                    vShadowTexCoord.x + ( ( (float) x ) * m_fNativeTexelSizeInX ) , 
-                    vShadowTexCoord.y + ( ( (float) y ) * m_fTexelSize ) 
+                    vShadowTexCoord.x + ( ( (float) x ) * gShadowTexelSizeX ) , 
+                    vShadowTexCoord.y + ( ( (float) y ) * gShadowTexelSize ) 
                     ), 
                 depthcompare );
         }
@@ -314,20 +315,21 @@ float GetShadow(float4 vShadowMapTextureCoordViewSpace, float fCurrentPixelDepth
 	// swap y, z
 	vShadowMapTextureCoordViewSpace = vShadowMapTextureCoordViewSpace.xzyw;
 	int iCurrentCascadeIndex = 0;
+	static float cascadeFrustumsEyeSpaceDepthsFloat[8] = (float[8])gCascadeFrustumsEyeSpaceDepthsFloat;
 	if ( _CASCADE_COUNT_FLAG > 1 ) 
 	{
 		float4 vCurrentPixelDepth = fCurrentPixelDepth;
 		float4 fComparison = ( vCurrentPixelDepth > 
-			float4(gCascadeFrustumsEyeSpaceDepthsFloat[0],
-					gCascadeFrustumsEyeSpaceDepthsFloat[1],
-					gCascadeFrustumsEyeSpaceDepthsFloat[2],
-					gCascadeFrustumsEyeSpaceDepthsFloat[3]));
+			float4(cascadeFrustumsEyeSpaceDepthsFloat[0],
+					cascadeFrustumsEyeSpaceDepthsFloat[1],
+					cascadeFrustumsEyeSpaceDepthsFloat[2],
+					cascadeFrustumsEyeSpaceDepthsFloat[3]));
 					
 		float4 fComparison2 = ( vCurrentPixelDepth > 
-			float4(gCascadeFrustumsEyeSpaceDepthsFloat[4],
-					gCascadeFrustumsEyeSpaceDepthsFloat[5],
-					gCascadeFrustumsEyeSpaceDepthsFloat[6],
-					gCascadeFrustumsEyeSpaceDepthsFloat[7]));
+			float4(cascadeFrustumsEyeSpaceDepthsFloat[4],
+					cascadeFrustumsEyeSpaceDepthsFloat[5],
+					cascadeFrustumsEyeSpaceDepthsFloat[6],
+					cascadeFrustumsEyeSpaceDepthsFloat[7]));
 		float fIndex = dot( 
 						float4( _CASCADE_COUNT_FLAG > 0,
 								_CASCADE_COUNT_FLAG > 1, 
@@ -397,7 +399,7 @@ float GetShadow(float4 vShadowMapTextureCoordViewSpace, float fCurrentPixelDepth
             ComputeCoordinatesTransform( iNextCascadeIndex,
                                              vShadowMapTextureCoord_blend, 
 										     vShadowMapTextureCoordViewSpace );        
-			
+			float fPercentLit_blend = 0.0f;
 			float fUpTextDepthWeight_blend=0;
 			float fRightTextDepthWeight_blend=0;
 			CalculatePCFPercentLit( vShadowMapTextureCoord_blend, fRightTextDepthWeight_blend, 

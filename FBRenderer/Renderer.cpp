@@ -1537,6 +1537,7 @@ public:
 	}
 
 	void UpdateShadowConstantsBuffer(const void* pData){
+		unsigned size = sizeof(SHADOW_CONSTANTS);
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Shadow,
 			pData, sizeof(SHADOW_CONSTANTS));
 	}

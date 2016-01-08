@@ -148,5 +148,6 @@ namespace fb{
 		Vec3* GetPositionVertices(int matGroupIdx, size_t& outNumPositions);
 		void OnMainCameraTargeted();
 		void RenderSimple();
+		void SetDebug(bool debug);
 	};
 }

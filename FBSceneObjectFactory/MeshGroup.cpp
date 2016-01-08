@@ -116,12 +116,14 @@ public:
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 
-		auto radius = mSelf->GetRadius();
-		auto distToCam = mSelf->GetDistToCam();
-		if (distToCam > 100 && radius < 5.0f)
-			return;
-		if (distToCam > 150 && radius < 10.0f)
+		if (param.mRenderPass == PASS_NORMAL){
+			auto radius = mSelf->GetRadius();
+			auto distToCam = mSelf->GetDistToCam(param.mCamera);
+			if (distToCam > 100 && radius < 5.0f)
 				return;
+			if (distToCam > 150 && radius < 10.0f)
+				return;
+		}
 
 		for (auto& it : mMeshObjects){
 			it.first->Render(param, paramOut);

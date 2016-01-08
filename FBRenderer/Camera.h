@@ -95,11 +95,12 @@ namespace fb
 		// near/far view-plane
 		void SetNearFar(Real nearPlane, Real farPlane);
 		void GetNearFar(Real& nearPlane, Real& farPlane) const;
-		// width and height of the view volume at the near view-plane
+		// width and height of the view volume at the near view-plane		
 		void SetWidth(Real width);
 		void SetHeight(Real height);
 		Real GetWidth() const;
 		Real GetHeight() const;
+		void SetOrthogonalData(float left, float top, float right, float bottom);
 		void SetName(const char* name);
 		const char* GetName() const;
 		void Update();

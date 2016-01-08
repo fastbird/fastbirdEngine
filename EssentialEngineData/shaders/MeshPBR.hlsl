@@ -81,7 +81,7 @@ v2p meshpbr_VertexShader( in a2v INPUT )
 	OUTPUT.Binormal= normalize(cross(OUTPUT.Tangent, OUTPUT.Normal));
 	float3 worldPos = mul(gWorld, INPUT.Position).xyz;
 	OUTPUT.WorldPos.xyz = worldPos;
-	OUTPUT.WorldPos.w = mul(gWorldView, Input.Position).y;
+	OUTPUT.WorldPos.w = mul(gWorldView, INPUT.Position).y;
 	OUTPUT.TexShadow = mul(gLightView, float4(worldPos, 1.0));
 
 	return OUTPUT;
@@ -165,6 +165,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 #if Glow
 	PS_OUT psout;
 	psout.color0 = float4(foggedColor * invShadow + baseColor * emissive + gAmbientColor.rgb, gDiffuseColor.a);
+	//psout.color0 = float4(1, 1, 1, 1);
 	psout.color1 = psout.color0 * emissive;
 	return psout;
 #else

@@ -169,7 +169,6 @@ public:
 		RenderParam param;
 		memset(&param, 0, sizeof(RenderParam));
 		param.mCamera = renderer.GetCamera().get();
-		//param.mLightCamera = mLightCamera.get();
 		scene->PreRender(param, 0);
 		mGlowSet = false;
 		GlowTarget(true);

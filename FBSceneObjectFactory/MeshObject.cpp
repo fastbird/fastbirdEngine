@@ -174,16 +174,18 @@ public:
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 
-		auto radius = mSelf->GetRadius();
-		auto distToCam = mSelf->GetDistToCam();
-		if (distToCam > 70 && radius < 0.5f)
-			return;
+		if (renderParam.mRenderPass == PASS_NORMAL){
+			auto radius = mSelf->GetRadius();
+			auto distToCam = mSelf->GetDistToCam(renderParam.mCamera);
+			if (distToCam > 70 && radius < 0.5f)
+				return;
 
-		if (distToCam > 100 && radius < 2.0f)
-			return;
+			if (distToCam > 100 && radius < 2.0f)
+				return;
 
-		if (distToCam > 250 && radius < 5.0f)
-			return;
+			if (distToCam > 250 && radius < 5.0f)
+				return;
+		}
 
 		RenderEventMarker marker("MeshObject");
 
@@ -1408,4 +1410,3 @@ void MeshObject::SetForceAlphaBlending(bool enable, Real alpha, Real forceGlow, 
 void MeshObject::SetAmbientColor(const Color& color) {
 	mImpl->SetAmbientColor(color);
 }
-

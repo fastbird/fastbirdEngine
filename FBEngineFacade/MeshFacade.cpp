@@ -1052,3 +1052,12 @@ void MeshFacade::RenderSimple(){
 		mImpl->mMeshObject->RenderSimple();
 	}
 }
+
+void MeshFacade::SetDebug(bool debug){
+	if (mImpl->mMeshObject){
+		mImpl->mMeshObject->mDebug = debug;			
+	}
+	else if (mImpl->mMeshGroup){
+		mImpl->mMeshGroup->mDebug = debug;
+	}
+}

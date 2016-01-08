@@ -47,7 +47,7 @@ namespace fb{
 		MeshObject();
 		~MeshObject();
 
-	public:
+	public:		
 
 		/** Creates new instance.
 		Usullay when you want to load a .dae file, you use SceneManager::CreateMesh(filepath) function instead
@@ -118,7 +118,6 @@ namespace fb{
 		void ClearVertexBuffers();
 		void SetAlpha(Real alpha);
 		void SetForceAlphaBlending(bool enable, Real alpha, Real forceGlow = 0.f, bool disableDepth = false);
-		void SetAmbientColor(const Color& color);		
-
+		void SetAmbientColor(const Color& color);
 	};
 }

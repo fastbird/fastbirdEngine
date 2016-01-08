@@ -229,9 +229,10 @@ public:
 		if (mCamera)
 			mCamera->ProcessInputData();
 		
-		renderer.SetCurrentScene(scene);
-		mStrategy->SetScene(scene);
+		//mStrategy->SetScene(scene);
 		mStrategy->UpdateLightCamera();
+		renderer.SetCurrentScene(scene);
+		
 
 		if (mEnvTexture)
 			renderer.SetEnvironmentTextureOverride(mEnvTexture);

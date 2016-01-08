@@ -194,6 +194,10 @@ public:
 				++it;
 
 				bool inserted = false;
+				if (obj->mDebug){
+					int a = 0;
+					a++;
+				}
 				if (!mainCam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
 					if (obj->HasObjFlag(SceneObjectFlag::Transparent))
 					{
@@ -222,13 +226,13 @@ public:
 			assert(obj);
 			const Vec3& objPos = obj->GetPosition();
 			float dist = (camPos - objPos).Length();
-			obj->SetDistToCam(dist);
+			obj->SetDistToCam(mainCam, dist);
 		}
 
 		std::sort(mVisibleObjectsMain[mainCam].begin(), mVisibleObjectsMain[mainCam].end(),
-			[](SpatialObject* a, SpatialObject* b) -> bool
+			[&mainCam](SpatialObject* a, SpatialObject* b) -> bool
 		{
-			return a->GetDistToCam() < b->GetDistToCam();
+			return a->GetDistToCam(mainCam) < b->GetDistToCam(mainCam);
 		}
 		);
 
@@ -240,9 +244,9 @@ public:
 		);*/
 
 		std::sort(mVisibleTransparentObjects[mainCam].begin(), mVisibleTransparentObjects[mainCam].end(),
-			[](SpatialObject* a, SpatialObject* b) -> bool
+			[&mainCam](SpatialObject* a, SpatialObject* b) -> bool
 		{
-			return a->GetDistToCam() > b->GetDistToCam();
+			return a->GetDistToCam(mainCam) > b->GetDistToCam(mainCam);
 		}
 		);
 
@@ -618,8 +622,10 @@ public:
 			mSceneAABB.Invalidate();
 			for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
 				IteratingWeakContainer(mSpatialObjects, it, spatialObj);
-				mSceneAABB.Merge(spatialObj->GetPosition() + spatialObj->GetRadius());
-				mSceneAABB.Merge(spatialObj->GetPosition() - spatialObj->GetRadius());
+				const auto& pos = spatialObj->GetPosition();
+				auto radius = spatialObj->GetRadius();
+				mSceneAABB.Merge(pos+radius);
+				mSceneAABB.Merge(pos-radius);
 			}
 			mSceneAABBLastFrame = gpTimer->GetFrame();
 		}

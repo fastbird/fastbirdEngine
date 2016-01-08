@@ -238,7 +238,7 @@ public:
 			hr = mDevice->CreateBuffer(&Desc, NULL, &buffer);
 			if (FAILED(hr))
 			{
-				Error(FB_ERROR_LOG_ARG, "Failed to create constant buffer(FrameConstants)!");
+				Error(FB_ERROR_LOG_ARG, "Failed to create constant buffer!");
 			}
 			else{
 				mShaderConstants[i] = buffer;

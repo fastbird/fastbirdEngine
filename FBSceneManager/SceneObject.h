@@ -85,6 +85,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// Debugging features
 		//-------------------------------------------------------------------
+		bool mDebug;
 		void SetGameType(int type);
 		int GetGameType() const;
 		void SetGameId(unsigned id);

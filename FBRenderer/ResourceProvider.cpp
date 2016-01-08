@@ -183,7 +183,7 @@ public:
 		}
 		case ResourceTypes::Shaders::ShadowMapShader:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/shadowdepth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEnginedata/shaders/shadowdepth.hlsl", BINDING_SHADER_VS);
 		}
 		case ResourceTypes::Shaders::DepthWriteVSPS:
 		{

@@ -31,4 +31,7 @@ namespace fb{
 	struct Rect{
 		long  left, top, right, bottom;
 	};
+	struct Rectf{
+		float left, top, right, bottom;
+	};
 }

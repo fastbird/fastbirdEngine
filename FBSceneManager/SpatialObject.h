@@ -29,8 +29,10 @@
 #include "ISpatialObject.h"
 #include "FBMathLib/BoundingVolume.h"// convinient include
 #include "FBCommonHeaders/Types.h"
+#include "FBCommonHeaders/VectorMap.h"
 #include "FBMathLib/Transformation.h"
 namespace fb{	
+	class ICamera;
 	FB_DECLARE_SMART_PTR(AnimationData);
 	FB_DECLARE_SMART_PTR(Animation);
 	FB_DECLARE_SMART_PTR(BoundingVolume);
@@ -40,7 +42,7 @@ namespace fb{
 		TransformationPtr mAnimatedLocation;
 		BoundingVolumePtr mBoundingVolume;
 		BoundingVolumePtr mBoundingVolumeWorld;
-		Real mDistToCam;
+		VectorMap<ICamera*, Real> mDistToCam;
 		AnimationPtr mAnim;
 		Vec3 mPreviousPosition;
 		bool mTransformChanged;
@@ -53,8 +55,8 @@ namespace fb{
 	public:		
 		void SetRadius(Real r);
 		Real GetRadius() const;
-		void SetDistToCam(Real dist);
-		Real GetDistToCam() const;
+		void SetDistToCam(ICamera* cam, Real dist);
+		Real GetDistToCam(ICamera* cam) const;
 		const Vec3& GetPosition() const;
 		const Vec3& GetPreviousPosition() const;
 		const Vec3& GetScale() const;

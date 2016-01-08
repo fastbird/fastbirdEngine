@@ -78,12 +78,16 @@ Real SpatialObject::GetRadius() const{
 	return mBoundingVolumeWorld->GetRadius();
 }
 
-void SpatialObject::SetDistToCam(Real dist){
-	mDistToCam = dist;
+void SpatialObject::SetDistToCam(ICamera* cam, Real dist){
+	mDistToCam[cam] = dist;
 }
 
-Real SpatialObject::GetDistToCam() const{
-	return mDistToCam;
+Real SpatialObject::GetDistToCam(ICamera* cam) const{
+	auto it = mDistToCam.Find(cam);
+	if (it != mDistToCam.end()){
+		return it->second;
+	}
+	return FLT_MAX;
 }
 
 const Vec3& SpatialObject::GetPosition() const{

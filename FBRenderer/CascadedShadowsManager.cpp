@@ -20,8 +20,7 @@ public:
 	Mat44 mShadowProj[MAX_CASCADES];
 	float mCascadePartitionsFrustum[MAX_CASCADES]; // End position
 	struct OrthogonalData{
-		float mWidth;
-		float mHeight;
+		float mL, mR, mT, mB;		
 		float mNear;
 		float mFar;
 	};
@@ -79,6 +78,306 @@ public:
 	}
 
 	//--------------------------------------------------------------------------------------
+	// Used to compute an intersection of the orthographic projection and the Scene AABB
+	//--------------------------------------------------------------------------------------
+	struct Triangle
+	{
+		Vec3 pt[3];
+		bool culled;
+	};
+
+	//--------------------------------------------------------------------------------------
+	// Computing an accurate near and flar plane will decrease surface acne and 
+	// Peter-panning.
+	// Surface acne is the term for erroneous self shadowing.  Peter-panning is 
+	// the effect where shadows disappear near the base of an object.
+	// As offsets are generally used with PCF filtering due self shadowing issues,
+	// computing the correct near and far planes becomes even more important.
+	// This concept is not complicated, but the intersection code is.
+	//--------------------------------------------------------------------------------------
+	void ComputeNearAndFar(float& fNearPlane,
+		float& fFarPlane,
+		Vec3 vLightCameraOrthographicMin,
+		Vec3 vLightCameraOrthographicMax,
+		Vec3* pvPointsInCameraView)
+	{
+
+		// Initialize the near and far planes
+		fNearPlane = vLightCameraOrthographicMin.y;
+		fFarPlane = vLightCameraOrthographicMax.y;
+
+		Triangle triangleList[16];
+		INT iTriangleCnt = 1;
+
+		triangleList[0].pt[0] = pvPointsInCameraView[0];
+		triangleList[0].pt[1] = pvPointsInCameraView[1];
+		triangleList[0].pt[2] = pvPointsInCameraView[2];
+		triangleList[0].culled = false;
+
+		// These are the indices used to tesselate an AABB into a list of triangles.
+		static const INT iAABBTriIndexes[] =
+		{
+			0, 1, 2, 1, 2, 3,
+			4, 5, 6, 5, 6, 7,
+			0, 2, 4, 2, 4, 6,
+			1, 3, 5, 3, 5, 7,
+			0, 1, 4, 1, 4, 5,
+			2, 3, 6, 3, 6, 7
+		};
+
+		int iPointPassesCollision[3];
+
+		// At a high level: 
+		// 1. Iterate over all 12 triangles of the AABB.  
+		// 2. Clip the triangles against each plane. Create new triangles as needed.
+		// 3. Find the min and max z values as the near and far plane.
+
+		//This is easier because the triangles are in camera spacing making the collisions tests simple comparisions.
+
+		float fLightCameraOrthographicMinX = vLightCameraOrthographicMin.x;
+		float fLightCameraOrthographicMaxX = vLightCameraOrthographicMax.x;
+		float fLightCameraOrthographicMinZ = vLightCameraOrthographicMin.z;
+		float fLightCameraOrthographicMaxZ = vLightCameraOrthographicMax.z;
+
+		for (int AABBTriIter = 0; AABBTriIter < 12; ++AABBTriIter)
+		{
+
+			triangleList[0].pt[0] = pvPointsInCameraView[iAABBTriIndexes[AABBTriIter * 3 + 0]];
+			triangleList[0].pt[1] = pvPointsInCameraView[iAABBTriIndexes[AABBTriIter * 3 + 1]];
+			triangleList[0].pt[2] = pvPointsInCameraView[iAABBTriIndexes[AABBTriIter * 3 + 2]];
+			iTriangleCnt = 1;
+			triangleList[0].culled = false;
+
+			// Clip each invidual triangle against the 4 frustums.  When ever a 
+			// triangle is clipped into new triangles, add them to the list.
+			for (int frustumPlaneIter = 0; frustumPlaneIter < 4; ++frustumPlaneIter)
+			{
+
+				float fEdge;
+				int iComponent;
+
+				if (frustumPlaneIter == 0)
+				{
+					fEdge = fLightCameraOrthographicMinX; // todo make float temp
+					iComponent = 0;
+				}
+				else if (frustumPlaneIter == 1)
+				{
+					fEdge = fLightCameraOrthographicMaxX;
+					iComponent = 0;
+				}
+				else if (frustumPlaneIter == 2)
+				{
+					fEdge = fLightCameraOrthographicMinZ;
+					iComponent = 2;
+				}
+				else
+				{
+					fEdge = fLightCameraOrthographicMaxZ;
+					iComponent = 2;
+				}
+
+				for (int triIter = 0; triIter < iTriangleCnt; ++triIter)
+				{
+					// We don't delete triangles, so we skip those that have been culled.
+					if (!triangleList[triIter].culled)
+					{
+						int iInsideVertCount = 0;
+						Vec3 tempOrder;
+						// Test against the correct frustum plane.
+						// This could be written more compactly, but it would be harder to understand.
+						if (frustumPlaneIter == 0)
+						{
+							for (INT triPtIter = 0; triPtIter < 3; ++triPtIter)
+							{
+								if (triangleList[triIter].pt[triPtIter].x >
+									vLightCameraOrthographicMin.x)
+								{
+									iPointPassesCollision[triPtIter] = 1;
+								}
+								else
+								{
+									iPointPassesCollision[triPtIter] = 0;
+								}
+								iInsideVertCount += iPointPassesCollision[triPtIter];
+							}
+						}
+						else if (frustumPlaneIter == 1)
+						{
+							for (INT triPtIter = 0; triPtIter < 3; ++triPtIter)
+							{
+								if (triangleList[triIter].pt[triPtIter].x <
+									vLightCameraOrthographicMax.x)
+								{
+									iPointPassesCollision[triPtIter] = 1;
+								}
+								else
+								{
+									iPointPassesCollision[triPtIter] = 0;
+								}
+								iInsideVertCount += iPointPassesCollision[triPtIter];
+							}
+						}
+						else if (frustumPlaneIter == 2)
+						{
+							for (INT triPtIter = 0; triPtIter < 3; ++triPtIter)
+							{
+								if (triangleList[triIter].pt[triPtIter].z >
+									vLightCameraOrthographicMin.z)
+								{
+									iPointPassesCollision[triPtIter] = 1;
+								}
+								else
+								{
+									iPointPassesCollision[triPtIter] = 0;
+								}
+								iInsideVertCount += iPointPassesCollision[triPtIter];
+							}
+						}
+						else
+						{
+							for (INT triPtIter = 0; triPtIter < 3; ++triPtIter)
+							{
+								if (triangleList[triIter].pt[triPtIter].z <
+									vLightCameraOrthographicMax.z)
+								{
+									iPointPassesCollision[triPtIter] = 1;
+								}
+								else
+								{
+									iPointPassesCollision[triPtIter] = 0;
+								}
+								iInsideVertCount += iPointPassesCollision[triPtIter];
+							}
+						}
+
+						// Move the points that pass the frustum test to the begining of the array.
+						if (iPointPassesCollision[1] && !iPointPassesCollision[0])
+						{
+							tempOrder = triangleList[triIter].pt[0];
+							triangleList[triIter].pt[0] = triangleList[triIter].pt[1];
+							triangleList[triIter].pt[1] = tempOrder;
+							iPointPassesCollision[0] = 1;
+							iPointPassesCollision[1] = 0;
+						}
+						if (iPointPassesCollision[2] && !iPointPassesCollision[1])
+						{
+							tempOrder = triangleList[triIter].pt[1];
+							triangleList[triIter].pt[1] = triangleList[triIter].pt[2];
+							triangleList[triIter].pt[2] = tempOrder;
+							iPointPassesCollision[1] = 1;
+							iPointPassesCollision[2] = 0;
+						}
+						if (iPointPassesCollision[1] && !iPointPassesCollision[0])
+						{
+							tempOrder = triangleList[triIter].pt[0];
+							triangleList[triIter].pt[0] = triangleList[triIter].pt[1];
+							triangleList[triIter].pt[1] = tempOrder;
+							iPointPassesCollision[0] = 1;
+							iPointPassesCollision[1] = 0;
+						}
+
+						if (iInsideVertCount == 0)
+						{ // All points failed. We're done,  
+							triangleList[triIter].culled = true;
+						}
+						else if (iInsideVertCount == 1)
+						{// One point passed. Clip the triangle against the Frustum plane
+							triangleList[triIter].culled = false;
+
+							// 
+							Vec3 vVert0ToVert1 = triangleList[triIter].pt[1] - triangleList[triIter].pt[0];
+							Vec3 vVert0ToVert2 = triangleList[triIter].pt[2] - triangleList[triIter].pt[0];
+
+							// Find the collision ratio.
+							FLOAT fHitPointTimeRatio = fEdge - triangleList[triIter].pt[0][iComponent];
+							// Calculate the distance along the vector as ratio of the hit ratio to the component.
+							FLOAT fDistanceAlongVector01 = fHitPointTimeRatio / vVert0ToVert1[iComponent];
+							FLOAT fDistanceAlongVector02 = fHitPointTimeRatio / vVert0ToVert2[iComponent];
+							// Add the point plus a percentage of the vector.
+							vVert0ToVert1 *= fDistanceAlongVector01;
+							vVert0ToVert1 += triangleList[triIter].pt[0];
+							vVert0ToVert2 *= fDistanceAlongVector02;
+							vVert0ToVert2 += triangleList[triIter].pt[0];
+
+							triangleList[triIter].pt[1] = vVert0ToVert2;
+							triangleList[triIter].pt[2] = vVert0ToVert1;
+
+						}
+						else if (iInsideVertCount == 2)
+						{ // 2 in  // tesselate into 2 triangles
+
+
+							// Copy the triangle\(if it exists) after the current triangle out of
+							// the way so we can override it with the new triangle we're inserting.
+							triangleList[iTriangleCnt] = triangleList[triIter + 1];
+
+							triangleList[triIter].culled = false;
+							triangleList[triIter + 1].culled = false;
+
+							// Get the vector from the outside point into the 2 inside points.
+							Vec3 vVert2ToVert0 = triangleList[triIter].pt[0] - triangleList[triIter].pt[2];
+							Vec3 vVert2ToVert1 = triangleList[triIter].pt[1] - triangleList[triIter].pt[2];
+
+							// Get the hit point ratio.
+							FLOAT fHitPointTime_2_0 = fEdge - triangleList[triIter].pt[2][iComponent];
+							FLOAT fDistanceAlongVector_2_0 = fHitPointTime_2_0 / vVert2ToVert0[iComponent];
+							// Calcaulte the new vert by adding the percentage of the vector plus point 2.
+							vVert2ToVert0 *= fDistanceAlongVector_2_0;
+							vVert2ToVert0 += triangleList[triIter].pt[2];
+
+							// Add a new triangle.
+							triangleList[triIter + 1].pt[0] = triangleList[triIter].pt[0];
+							triangleList[triIter + 1].pt[1] = triangleList[triIter].pt[1];
+							triangleList[triIter + 1].pt[2] = vVert2ToVert0;
+
+							//Get the hit point ratio.
+							FLOAT fHitPointTime_2_1 = fEdge - triangleList[triIter].pt[2][iComponent];
+							FLOAT fDistanceAlongVector_2_1 = fHitPointTime_2_1 / vVert2ToVert1[iComponent];
+							vVert2ToVert1 *= fDistanceAlongVector_2_1;
+							vVert2ToVert1 += triangleList[triIter].pt[2];
+							triangleList[triIter].pt[0] = triangleList[triIter + 1].pt[1];
+							triangleList[triIter].pt[1] = triangleList[triIter + 1].pt[2];
+							triangleList[triIter].pt[2] = vVert2ToVert1;
+							// Cncrement triangle count and skip the triangle we just inserted.
+							++iTriangleCnt;
+							++triIter;
+
+
+						}
+						else
+						{ // all in
+							triangleList[triIter].culled = false;
+
+						}
+					}// end if !culled loop            
+				}
+			}
+			for (INT index = 0; index < iTriangleCnt; ++index)
+			{
+				if (!triangleList[index].culled)
+				{
+					// Set the near and far plan and the min and max z values respectivly.
+					for (int vertind = 0; vertind < 3; ++vertind)
+					{
+						float fTriangleCoordY = triangleList[index].pt[vertind].y;
+						if (fNearPlane > fTriangleCoordY)
+						{
+							fNearPlane = fTriangleCoordY;
+						}
+						if (fFarPlane < fTriangleCoordY)
+						{
+							fFarPlane = fTriangleCoordY;
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+
+	//--------------------------------------------------------------------------------------
 	// This function takes the camera's projection matrix and returns the 8
 	// points that make up a view frustum.
 	// The frustum is scaled to fit within the Begin and End interval paramaters.
@@ -115,14 +414,14 @@ public:
 		//This map enables us to use a for loop and do vector math.
 		static const Vec3 vExtentsMap[] =
 		{
-			{ 1.0f, 1.0f, -1.0f },
-			{ -1.0f, 1.0f, -1.0f },
+			{ 1.0f, -1.0f, 1.0f },
+			{ -1.0f, -1.0f, 1.0f },
 			{ 1.0f, -1.0f, -1.0f },
 			{ -1.0f, -1.0f, -1.0f },
 			{ 1.0f, 1.0f, 1.0f },
 			{ -1.0f, 1.0f, 1.0f },
-			{ 1.0f, -1.0f, 1.0f },
-			{ -1.0f, -1.0f, 1.0f }
+			{ 1.0f, 1.0f, -1.0f },
+			{ -1.0f, 1.0f, -1.0f }
 		};
 
 		auto extents = sceneAABB.GetExtents();
@@ -214,7 +513,7 @@ public:
 			Vec3 vScaleDuetoBlureAMT(fScaleDuetoBlureAMT, 0.f, fScaleDuetoBlureAMT);
 
 			float fNormalizeByBufferSize = (1.0f / (float)options->r_ShadowMapSize);
-			Vec3 vNormalizeByBufferSize(fNormalizeByBufferSize, 0.f, fNormalizeByBufferSize);
+			Vec3 vNormalizeByBufferSize(fNormalizeByBufferSize, 1.f, fNormalizeByBufferSize);
 
 			// We calculate the offsets as a percentage of the bound.
 			Vec3 vBoarderOffset = vLightCameraOrthographicMax - vLightCameraOrthographicMin;
@@ -238,43 +537,44 @@ public:
 			// We snape the camera to 1 pixel increments so that moving the camera 
 			// does not cause the shadows to jitter. This is a matter of integer 
 			// dividing by the world space size of a texel
+			vWorldUnitsPerTexel.y = vLightCameraOrthographicMin.y;
 			vLightCameraOrthographicMin /= vWorldUnitsPerTexel;
 			vLightCameraOrthographicMin = Floor(vLightCameraOrthographicMin);
 			vLightCameraOrthographicMin *= vWorldUnitsPerTexel;
 
+			vWorldUnitsPerTexel.y = vLightCameraOrthographicMax.y;
 			vLightCameraOrthographicMax /= vWorldUnitsPerTexel;
 			vLightCameraOrthographicMax = Floor(vLightCameraOrthographicMax);
 			vLightCameraOrthographicMax *= vWorldUnitsPerTexel;
 
-			//These are the unconfigured near and far plane values.  They are purposly
-			// awful to show how important calculating accurate near and far planes is.
 			FLOAT fNearPlane = 0.0f;
 			FLOAT fFarPlane = 10000.0f;
+			ComputeNearAndFar(fNearPlane, fFarPlane, vLightCameraOrthographicMin,
+				vLightCameraOrthographicMax, sceneAABBPointsLightSpace);
+			//Vec3 vLightSpaceSceneAABBminValue(FLT_MAX, FLT_MAX, FLT_MAX); // world space scene aabb 
+			//Vec3 vLightSpaceSceneAABBmaxValue(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+			//// We calculate the min and max vectors of the scene in light space. 
+			//// The min and max "Z" values of the  light space AABB can be used for 
+			//// the near and far plane. This is easier than intersecting the scene with
+			//// the AABBand in some cases provides similar results.
+			//for (int index = 0; index< 8; ++index)
+			//{
+			//	vLightSpaceSceneAABBminValue = Min(
+			//		sceneAABBPointsLightSpace[index], vLightSpaceSceneAABBminValue);
+			//	vLightSpaceSceneAABBmaxValue = Max(
+			//		sceneAABBPointsLightSpace[index], vLightSpaceSceneAABBmaxValue);
+			//}
 
-			Vec3 vLightSpaceSceneAABBminValue(FLT_MAX, FLT_MAX, FLT_MAX); // world space scene aabb 
-			Vec3 vLightSpaceSceneAABBmaxValue(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-			// We calculate the min and max vectors of the scene in light space. 
-			// The min and max "Z" values of the  light space AABB can be used for 
-			// the near and far plane. This is easier than intersecting the scene with
-			// the AABBand in some cases provides similar results.
-			for (int index = 0; index< 8; ++index)
-			{
-				vLightSpaceSceneAABBminValue = Min(
-					sceneAABBPointsLightSpace[index], vLightSpaceSceneAABBminValue);
-				vLightSpaceSceneAABBmaxValue = Max(
-					sceneAABBPointsLightSpace[index], vLightSpaceSceneAABBmaxValue);
-			}
-
-			// The min and max z values are the near and far planes.
-			// y,z is swapped. We need to use y value.
-			fNearPlane = vLightSpaceSceneAABBminValue.y;
-			fFarPlane = vLightSpaceSceneAABBmaxValue.y;
+			//// The min and max z values are the near and far planes.
+			//// y,z is swapped. We need to use y value.
+			//fNearPlane = vLightSpaceSceneAABBminValue.y;
+			//fFarPlane = vLightSpaceSceneAABBmaxValue.y;
 			
 			// Craete the orthographic projection for this cascade.
-			mOrthogonalData[iCascadeIndex].mWidth = 
-				vLightCameraOrthographicMax.x - vLightCameraOrthographicMin.x;
-			mOrthogonalData[iCascadeIndex].mHeight = 
-				vLightCameraOrthographicMax.z - vLightCameraOrthographicMin.z;
+			mOrthogonalData[iCascadeIndex].mL = vLightCameraOrthographicMin.x;
+			mOrthogonalData[iCascadeIndex].mR = vLightCameraOrthographicMax.x;
+			mOrthogonalData[iCascadeIndex].mT = vLightCameraOrthographicMax.z;
+			mOrthogonalData[iCascadeIndex].mB = vLightCameraOrthographicMin.z;
 			mOrthogonalData[iCascadeIndex].mNear = fNearPlane;
 			mOrthogonalData[iCascadeIndex].mFar = fFarPlane;			
 
@@ -315,8 +615,8 @@ public:
 			// cascades in one large texture.
 			renderer.SetViewports(&mViewports[currentCascade], 1);
 			auto& orthogonalData = mOrthogonalData[currentCascade];
-			mLightCamera->SetWidth(orthogonalData.mWidth);
-			mLightCamera->SetHeight(orthogonalData.mHeight);
+			mLightCamera->SetOrthogonalData(orthogonalData.mL, orthogonalData.mT,
+				orthogonalData.mR, orthogonalData.mB);			
 			mLightCamera->SetNearFar(orthogonalData.mNear, orthogonalData.mFar);
 			mShadowProj[currentCascade] = mLightCamera->GetMatrix(ICamera::ProjBeforeSwap);
 			renderer.SetCamera(mLightCamera);			
@@ -334,6 +634,7 @@ public:
 		rc.gCascadeBlendArea = options->r_ShadowCascadeBlendArea;
 		rc.gShadowPartitionSize = 1.0f / options->r_ShadowCascadeLevels;
 		rc.gShadowTexelSize = 1.0f / options->r_ShadowMapSize;
+		rc.gShadowTexelSizeX = rc.gShadowTexelSize / options->r_ShadowCascadeLevels;
 		Mat44 textureScaleTranslMat(
 			0.5f, 0, 0, .5,
 			0, -0.5, 0, .5,
@@ -341,7 +642,8 @@ public:
 			0, 0, 0, 1);
 
 		for (int i = 0; i < options->r_ShadowCascadeLevels; ++i){
-			rc.gCascadeFrustumsEyeSpaceDepthsFloat[i] = mCascadePartitionsFrustum[i];
+			float* dest = &rc.gCascadeFrustumsEyeSpaceDepthsFloat[0].x;
+			*(dest+i)  = mCascadePartitionsFrustum[i];
 			auto shadowTextureMat = textureScaleTranslMat * mShadowProj[i];
 			rc.gCascadeScale[i].x = shadowTextureMat[0][0];
 			rc.gCascadeScale[i].y = shadowTextureMat[1][1];

@@ -112,8 +112,7 @@ public:
 		pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
 		auto pCam = pDepthRT->GetCamera();
 		pCam->SetOrthogonal(true);
-		pCam->SetWidth(radius*2.0f);
-		pCam->SetHeight(radius*2.0f);
+		pCam->SetOrthogonalData(-radius, -radius, radius, radius);
 		pCam->SetNearFar(-radius, radius);
 		pCam->SetPosition(Vec3(0, 0, 0));
 		auto scene = pDepthRT->GetScene();

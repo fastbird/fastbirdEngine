@@ -36,6 +36,7 @@ SceneObject::SceneObject()
 	, mGameType(-1)
 	, mGameId(-1)
 	, mGamePtr(0)
+	, mDebug(false)
 {
 }
 

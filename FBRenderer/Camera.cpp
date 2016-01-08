@@ -86,8 +86,7 @@ public:
 	Real mAspectRatio;
 	Real mNear;
 	Real mFar;
-	Real mWidth;
-	Real mHeight;
+	Rectf mOrthogonalData;
 	std::string mName;
 	Plane3 mPlanes[6];
 	ISpatialObjectWeakPtr mTarget;
@@ -111,7 +110,7 @@ public:
 		, mProcessInput(false)
 		, mPrevTargetPos(0, 0, 0){
 		// proj properties
-		SetFOV(Radian(70));
+		SetFOV(Radian(45));
 		mNear = 0.5f;
 		mFar = 1500.0f;
 	}
@@ -132,8 +131,7 @@ public:
 		mAspectRatio = other.mAspectRatio;
 		mNear = other.mNear;
 		mFar = other.mFar;
-		mWidth = other.mWidth;
-		mHeight = other.mHeight;
+		mOrthogonalData = other.mOrthogonalData;
 		mName = other.mName;
 		for (int i = 0; i < 6; ++i){
 			mPlanes[i] = other.mPlanes[i];
@@ -237,6 +235,14 @@ public:
 		f = mFar;
 	}
 
+	Real GetWidth() const{
+		return (float)(mOrthogonalData.right - mOrthogonalData.left);
+	}
+
+	Real GetHeight() const{
+		return (float)(mOrthogonalData.top - mOrthogonalData.bottom);
+	}
+
 	//----------------------------------------------------------------------------
 	void ProcessInputData()
 	{
@@ -315,7 +321,7 @@ public:
 		bool projChanged = mProjPropertyChanged;
 		if (mProjPropertyChanged)
 		{
-			mAspectRatio = mWidth / (Real)mHeight;
+			mAspectRatio = GetWidth() / (Real)GetHeight();
 			mProjPropertyChanged = false;
 			if (!mOrthogonal)
 			{
@@ -325,7 +331,9 @@ public:
 			else
 			{
 				mMatrices[ProjBeforeSwap] = mMatrices[Proj] = 
-					MakeOrthogonalMatrix(-mWidth*.5f, mHeight*.5f, mWidth*.5f, -mHeight*.5f, mNear, mFar);
+					MakeOrthogonalMatrix((Real)mOrthogonalData.left, (Real)mOrthogonalData.top,
+					(Real)mOrthogonalData.right, (Real)mOrthogonalData.bottom,
+					mNear, mFar);
 			}
 			if (mYZSwap)
 			{
@@ -438,8 +446,8 @@ public:
 	{
 		Update();
 
-		Real fx = 2.0f * x / mWidth - 1.0f;
-		Real fy = 1.0f - 2.0f * y / mHeight;
+		Real fx = 2.0f * x / GetWidth() - 1.0f;
+		Real fy = 1.0f - 2.0f * y / GetHeight();
 		Vec3 screenPos((Real)fx, (Real)fy, -1.0f);
 		Vec3 screenMidPos((Real)fx, (Real)fy, 0.0f);
 		Vec3 origin = mMatrices[InverseViewProj]* screenPos;
@@ -456,8 +464,8 @@ public:
 		auto projPos = mMatrices[ViewProj] * Vec4(worldPos, 1);
 		Real x = projPos.x / projPos.w;
 		Real y = projPos.y / projPos.w;
-		int ix = Round((x * .5f + .5f) * mWidth);
-		int iy = Round((-y*.5f + .5f) * mHeight);
+		int ix = Round((x * .5f + .5f) * GetWidth());
+		int iy = Round((-y*.5f + .5f) * GetHeight());
 		return Vec2I(ix, iy);
 	}
 
@@ -558,11 +566,23 @@ public:
 	}
 
 	void SetWidth(Real width) {
-		mWidth = width; mProjPropertyChanged = true;
+		mOrthogonalData.left = -width * .5f;
+		mOrthogonalData.right = width * .5f;
+		mProjPropertyChanged = true;
 	}
 
 	void SetHeight(Real height) {		
-		mHeight = height; mProjPropertyChanged = true;
+		mOrthogonalData.top = height*.5f;
+		mOrthogonalData.bottom = -height*.5f;
+		mProjPropertyChanged = true;
+	}
+
+	void SetOrthogonalData(float left, float top, float right, float bottom){
+		mOrthogonalData.left = left;
+		mOrthogonalData.top = top;
+		mOrthogonalData.right = right;
+		mOrthogonalData.bottom = bottom;
+		mProjPropertyChanged = true;
 	}
 };
 
@@ -735,11 +755,15 @@ void Camera::SetHeight(Real height) {
 }
 
 Real Camera::GetWidth() const { 
-	return mImpl->mWidth; 
+	return mImpl->GetWidth();
 }
 
 Real Camera::GetHeight() const {
-	return mImpl->mHeight; 
+	return mImpl->GetHeight();
+}
+
+void Camera::SetOrthogonalData(float left, float top, float right, float bottom){
+	mImpl->SetOrthogonalData(left, top, right, bottom);
 }
 
 void Camera::SetName(const char* name) { 

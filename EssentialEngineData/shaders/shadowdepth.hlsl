@@ -42,12 +42,10 @@ struct v2p
 v2p shadowdepth_VertexShader( in a2v IN )
 {
     v2p OUT;
-
-	float3 worldPos = mul(gWorld, float4(IN.pos, 1));
-	OUT.pos = mul(gLightViewProj, float4(worldPos, 1));
-	if (OUT.pos.z <=0) {
-		OUT.pos.z = 0;
-	}
+	OUT.pos = mul(gWorldViewProj, float4(IN.pos, 1));
+	//if (OUT.pos.z <=0) {
+		//OUT.pos.z = 0;
+	//}
 	return OUT;
 };
 

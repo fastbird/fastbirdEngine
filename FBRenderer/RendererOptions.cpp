@@ -135,7 +135,7 @@ RendererOptions::RendererOptions(){
 		"ShadowMap height");
 
 	r_ShadowNear = Console::GetInstance().GetRealVariable(
-		"r_ShadowNear", 0.1f);
+		"r_ShadowNear", 0.0f);
 	FB_REGISTER_CVAR(r_ShadowNear, r_ShadowNear, CVAR_CATEGORY_CLIENT,
 		"Shadow camera near.");
 
