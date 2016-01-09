@@ -97,6 +97,7 @@ public:
 	Vec3 mPrevTargetPos;
 	std::mutex mMutex;
 	Frustum mFrustum;
+	CameraPtr mOverridingCamera;
 
 	Impl(Camera* self) 
 		: mSelf(self)
@@ -142,18 +143,27 @@ public:
 		mCurrentCamera = other.mCurrentCamera;
 		mProcessInput = other.mProcessInput;
 		mPrevTargetPos = other.mPrevTargetPos;		
+		mFrustum = other.mFrustum;
 		return *this;
 	}
 
 	//----------------------------------------------------------------------------
 	void SetOrthogonal(bool ortho)
 	{		
+		if (mOverridingCamera){
+			mOverridingCamera->SetOrthogonal(ortho);
+			return;
+		}
 		mOrthogonal = ortho;
 		mProjPropertyChanged = true;
 	}
 
 	void SetPosition(const Vec3& pos)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetPosition(pos);
+			return;
+		}
 		if (mTransformation.GetTranslation() == pos)
 			return;
 		mTransformation.SetTranslation(pos);
@@ -162,29 +172,49 @@ public:
 
 	const Vec3& GetPosition() const
 	{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetPosition();
+		}
 		return mTransformation.GetTranslation();
 	}
 
 	void SetRotation(const Quat& rot)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetRotation(rot);
+			return;
+		}
 		mTransformation.SetRotation(rot);
 		mViewPropertyChanged = true;
 	}
 
 	const Quat& GetRotation() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetRotation();
+		}
 		return mTransformation.GetRotation();
 	}
 
 	Vec3 GetRight() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetRight();
+		}
 		return mTransformation.GetRight();
 	}
 
 	Vec3 GetUp() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetUp();
+		}
 		return mTransformation.GetUp();
 	}
 
 	void SetDirection(const Vec3& dir)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetDirection(dir);
+			return;
+		}
 		if (mTransformation.GetForward() == dir)
 			return;
 
@@ -194,12 +224,20 @@ public:
 
 	void SetDirectionAndRight(const Vec3& dir, const Vec3& right)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetDirrectionAndRight(dir, right);
+			return;
+		}
 		mTransformation.SetDirectionAndRight(dir, right);
 		mViewPropertyChanged = true;
 	}
 
 	void SetTransformation(const Vec3& pos, const Quat& rot)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetTransformation(pos, rot);
+			return;
+		}
 		mTransformation.SetTranslation(pos);
 		mTransformation.SetRotation(rot);
 		mViewPropertyChanged = true;
@@ -207,22 +245,36 @@ public:
 
 	void SetTransformation(const Transformation& t)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetTransformation(t);
+			return;
+		}
 		mTransformation = t;
 		mViewPropertyChanged = true;
 	}
 
 	const Transformation& GetTransformation() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetTransformation();
+		}
 		return mTransformation;
 	}
 
 	const Vec3 GetDirection() const
 	{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetDirection();
+		}
 		return mTransformation.GetMatrix().Column(1);
 	}
 
 	//----------------------------------------------------------------------------
 	void SetNearFar(Real n, Real f)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetNearFar(n, f);
+			return;
+		}
 		mNear = n;
 		mFar = f;
 		mProjPropertyChanged = true;
@@ -231,21 +283,35 @@ public:
 	//----------------------------------------------------------------------------
 	void GetNearFar(Real& n, Real& f) const
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->GetNearFar(n, f);
+			return;
+		}
 		n = mNear;
 		f = mFar;
 	}
 
 	Real GetWidth() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetWidth();
+		}
 		return (float)(mOrthogonalData.right - mOrthogonalData.left);
 	}
 
 	Real GetHeight() const{
+		if (mOverridingCamera){
+			return mOverridingCamera->GetHeight();
+		}
 		return (float)(mOrthogonalData.top - mOrthogonalData.bottom);
 	}
 
 	//----------------------------------------------------------------------------
 	void ProcessInputData()
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->ProcessInputData();
+			return;
+		}
 		auto target = mTarget.lock();
 		if (!mProcessInput || !mCurrentCamera || !target)
 			return;
@@ -300,6 +366,9 @@ public:
 	//----------------------------------------------------------------------------
 	void Update()
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->Update();
+		}
 		// world coordinates (Blender style)
 		// x: right
 		// y: forward
@@ -386,6 +455,9 @@ public:
 	//----------------------------------------------------------------------------
 	void UpdateFrustum()
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->UpdateFrustum();
+		}
 		const auto& viewProjMat = mMatrices[ViewProj];
 		mPlanes[FRUSTUM_PLANE_LEFT].mNormal.x = viewProjMat[3][0] + viewProjMat[0][0];
 		mPlanes[FRUSTUM_PLANE_LEFT].mNormal.y = viewProjMat[3][1] + viewProjMat[0][1];
@@ -426,6 +498,12 @@ public:
 	}
 
 	const Mat44& GetMatrix(MatrixType type){
+		if (mOverridingCamera){
+			return mOverridingCamera->GetMatrix(type);
+		}
+
+		if (mViewPropertyChanged || mProjPropertyChanged)
+			Update();
 		return mMatrices[type];
 	}
 	
@@ -470,6 +548,9 @@ public:
 	}
 
 	void SetYZSwap(bool enable){		
+		if (mOverridingCamera){
+			return mOverridingCamera->SetYZSwap(enable);
+		}
 		mYZSwap = enable; mProjPropertyChanged = true;
 	}
 
@@ -490,6 +571,12 @@ public:
 	//---------------------------------------------------------------------------
 	void ConsumeInput(IInputInjectorPtr injector)
 	{
+		if (mOverridingCamera)
+		{
+			mOverridingCamera->ConsumeInput(injector);
+			return;
+		}
+
 		if (!mCurrentCamera)
 			return;
 		auto target = mTarget.lock();
@@ -544,40 +631,72 @@ public:
 		return mFrustum;
 	}
 
+	void SetOverridingCamera(CameraPtr cam){
+		mOverridingCamera = cam;
+	}
+
 	void SetEnalbeInput(bool enable)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetEnalbeInput(enable);
+			return;
+		}
 		mProcessInput = enable;
 	}
 
 	void SetInitialDistToTarget(Real dist)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetInitialDistToTarget(dist);
+			return;
+		}
 		mInternalParams.dist = dist;
 	}
 
 	void SetFOV(Real fov)
 	{
+		if (mOverridingCamera){
+			mOverridingCamera->SetFOV(fov);
+			return;
+		}
 		mFov = fov;
 		mTanHalfFOV = tan(mFov*.5f);
 		mProjPropertyChanged = true;
 	}
 
 	void SetAspectRatio(Real ar) {		
+		if (mOverridingCamera){
+			mOverridingCamera->SetAspectRatio(ar);
+			return;
+		}
 		mAspectRatio = ar; mProjPropertyChanged = true;
 	}
 
 	void SetWidth(Real width) {
+		if (mOverridingCamera){
+			mOverridingCamera->SetWidth(width);
+			return;
+		}
 		mOrthogonalData.left = -width * .5f;
 		mOrthogonalData.right = width * .5f;
 		mProjPropertyChanged = true;
 	}
 
 	void SetHeight(Real height) {		
+		if (mOverridingCamera){
+			mOverridingCamera->SetHeight(height);
+			return;
+		}
 		mOrthogonalData.top = height*.5f;
 		mOrthogonalData.bottom = -height*.5f;
 		mProjPropertyChanged = true;
 	}
 
 	void SetOrthogonalData(float left, float top, float right, float bottom){
+		if (mOverridingCamera){
+			mOverridingCamera->SetOrthogonalData(left, top, right, bottom);
+			return;
+		}
 		mOrthogonalData.left = left;
 		mOrthogonalData.top = top;
 		mOrthogonalData.right = right;
@@ -697,8 +816,6 @@ void Camera::UpdateFrustum(){
 
 //----------------------------------------------------------------------------
 const Mat44& Camera::GetMatrix(MatrixType type){
-	if (mImpl->mViewPropertyChanged || mImpl->mProjPropertyChanged)
-		mImpl->Update();
 	return mImpl->GetMatrix(type);
 }
 
@@ -808,4 +925,12 @@ void Camera::ConsumeInput(IInputInjectorPtr injector){
 
 const Frustum& Camera::GetFrustum(){
 	return mImpl->GetFrustum();
+}
+
+void Camera::SetOverridingCamera(CameraPtr cam){
+	mImpl->SetOverridingCamera(cam);
+}
+
+CameraPtr Camera::GetOverridingCamera() const{
+	return mImpl->mOverridingCamera;
 }

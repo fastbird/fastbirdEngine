@@ -119,6 +119,9 @@ namespace fb
 		void ProcessInputData();
 		const Frustum& GetFrustum();
 
+		void SetOverridingCamera(CameraPtr cam);
+		CameraPtr GetOverridingCamera() const;
+
 		//-------------------------------------------------------------------
 		// InputConsumer From Renderer
 		//-------------------------------------------------------------------

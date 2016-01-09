@@ -88,3 +88,15 @@ bool AABB::Contain(const Vec3&pos) const
 
 	return true;
 }
+
+void AABB::GetPoints(Vec3 points[8]) const{
+	points[0] = Vec3(mMax.x, mMin.y, mMax.z);
+	points[1] = Vec3(mMin.x, mMin.y, mMax.z);
+	points[2] = Vec3(mMax.x, mMin.y, mMin.z);
+	points[3] = Vec3(mMin.x, mMin.y, mMin.z);
+
+	points[4] = Vec3(mMax.x, mMax.y, mMax.z);
+	points[5] = Vec3(mMin.x, mMax.y, mMax.z);
+	points[6] = Vec3(mMax.x, mMax.y, mMin.z);
+	points[7] = Vec3(mMin.x, mMax.y, mMin.z);
+}

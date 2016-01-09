@@ -74,6 +74,7 @@ public:
 	Vec3 mWindVector;
 	Color mFogColor;
 	VectorMap<ICamera*, unsigned> mLastPreRenderFramePerCam;
+	VectorMap<ICamera*, unsigned> mLastMakeVisibleSetPerCam;
 	bool mDrawClouds;
 	bool mRttScene;
 	bool mRefreshPointLight;
@@ -155,19 +156,24 @@ public:
 		data.mSpecular = Vec4(light->GetSpecular(), 1.f);
 	}
 
-	void MakeVisibleSet(const RenderParam& renderParam, RenderParamOut* renderParamOut)
+	void MakeVisibleSet(ICamera* cam, bool force)
 	{
 		if (mSkipSpatialObjects)
 			return;
 
-		auto mainCam = renderParam.mCamera;
+		if (!force){
+			auto it = mLastMakeVisibleSetPerCam.Find(cam);
+			if (it != mLastMakeVisibleSetPerCam.end() && it->second == gpTimer->GetFrame())
+				return;
+		}
+		mLastMakeVisibleSetPerCam[cam] = gpTimer->GetFrame();
 		//auto lightCam = renderParam.mLightCamera;
-		mVisibleObjectsMain[mainCam].clear();
+		mVisibleObjectsMain[cam].clear();
 		//mVisibleObjectsLight[lightCam].clear();
-		mVisibleTransparentObjects[mainCam].clear();
-		mPreRenderList[mainCam].clear();
+		mVisibleTransparentObjects[cam].clear();
+		mPreRenderList[cam].clear();
 
-		if (!mainCam)
+		if (!cam)
 		{
 			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "Invalid main camera");
 			return;
@@ -198,14 +204,14 @@ public:
 					int a = 0;
 					a++;
 				}
-				if (!mainCam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
+				if (!cam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
 					if (obj->HasObjFlag(SceneObjectFlag::Transparent))
 					{
-						mVisibleTransparentObjects[mainCam].push_back(obj.get());
+						mVisibleTransparentObjects[cam].push_back(obj.get());
 					}
 					else
 					{
-						mVisibleObjectsMain[mainCam].push_back(obj.get());
+						mVisibleObjectsMain[cam].push_back(obj.get());
 					}
 					inserted = true;
 				}
@@ -216,23 +222,23 @@ public:
 					inserted = true;
 				}*/
 				if (inserted)
-					mPreRenderList[mainCam].push_back((obj.get()));
+					mPreRenderList[cam].push_back((obj.get()));
 			}
 		}
 
-		const fb::Vec3& camPos = mainCam->GetPosition();
-		for (const auto obj : mPreRenderList[mainCam])
+		const fb::Vec3& camPos = cam->GetPosition();
+		for (const auto obj : mPreRenderList[cam])
 		{
 			assert(obj);
 			const Vec3& objPos = obj->GetPosition();
 			float dist = (camPos - objPos).Length();
-			obj->SetDistToCam(mainCam, dist);
+			obj->SetDistToCam(cam, dist);
 		}
 
-		std::sort(mVisibleObjectsMain[mainCam].begin(), mVisibleObjectsMain[mainCam].end(),
-			[&mainCam](SpatialObject* a, SpatialObject* b) -> bool
+		std::sort(mVisibleObjectsMain[cam].begin(), mVisibleObjectsMain[cam].end(),
+			[&cam](SpatialObject* a, SpatialObject* b) -> bool
 		{
-			return a->GetDistToCam(mainCam) < b->GetDistToCam(mainCam);
+			return a->GetDistToCam(cam) < b->GetDistToCam(cam);
 		}
 		);
 
@@ -243,10 +249,10 @@ public:
 		}
 		);*/
 
-		std::sort(mVisibleTransparentObjects[mainCam].begin(), mVisibleTransparentObjects[mainCam].end(),
-			[&mainCam](SpatialObject* a, SpatialObject* b) -> bool
+		std::sort(mVisibleTransparentObjects[cam].begin(), mVisibleTransparentObjects[cam].end(),
+			[&cam](SpatialObject* a, SpatialObject* b) -> bool
 		{
-			return a->GetDistToCam(mainCam) > b->GetDistToCam(mainCam);
+			return a->GetDistToCam(cam) > b->GetDistToCam(cam);
 		}
 		);
 
@@ -275,8 +281,6 @@ public:
 			if (it != mLastPreRenderFramePerCam.end() && it->second == gpTimer->GetFrame())
 				return;
 			mLastPreRenderFramePerCam[cam] = gpTimer->GetFrame();
-
-			MakeVisibleSet(renderParam, renderParamOut);
 
 			auto objIt = mPreRenderList[cam].begin(), objItEnd = mPreRenderList[cam].end();
 			for (; objIt != objItEnd; objIt++)
@@ -822,4 +826,12 @@ bool Scene::NeedToRefreshPointLight() const {
 
 const AABB& Scene::GetSceneAABB(){
 	return mImpl->GetSceneAABB();
+}
+
+void Scene::MakeVisibleSet(ICamera* cam, bool force){
+	mImpl->MakeVisibleSet(cam, force);
+}
+
+void Scene::MakeVisibleSet(ICamera* cam){
+	mImpl->MakeVisibleSet(cam, false);
 }

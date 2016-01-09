@@ -113,6 +113,7 @@ public:
 		RenderParam param;
 		memset(&param, 0, sizeof(RenderParam));
 		param.mCamera = renderer.GetCamera().get();		
+		scene->MakeVisibleSet(param.mCamera);
 		scene->PreRender(param, 0);
 
 		{
@@ -246,6 +247,10 @@ RenderStrategyMinimum::RenderStrategyMinimum()
 
 }
 RenderStrategyMinimum::~RenderStrategyMinimum(){
+}
+
+void RenderStrategyMinimum::SetMain(bool main){
+
 }
 
 void RenderStrategyMinimum::SetScene(IScenePtr scene){

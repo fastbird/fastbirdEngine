@@ -114,6 +114,9 @@ namespace fb{
 		void RefreshPointLight();	
 		bool NeedToRefreshPointLight() const;
 		const AABB& GetSceneAABB();
+
+		void MakeVisibleSet(ICamera* cam, bool force);
+		void MakeVisibleSet(ICamera* cam);
 	};
 }
 

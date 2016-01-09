@@ -55,6 +55,8 @@ namespace fb{
 		virtual void GetDirectionalLightInfo(DirectionalLightIndex::Enum idx, DirectionalLightInfo& data) = 0;
 		virtual const Vec3& GetMainLightDirection() = 0;
 		virtual void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir) = 0;
+		virtual void MakeVisibleSet(ICamera* cam, bool force) = 0;
+		virtual void MakeVisibleSet(ICamera* cam) = 0;
 		virtual void PreRender(const RenderParam& prarm, RenderParamOut* paramOut) = 0;
 		virtual void Render(const RenderParam& prarm, RenderParamOut* paramOut) = 0;
 		virtual void PreRenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut) = 0;
@@ -69,7 +71,7 @@ namespace fb{
 		virtual PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime,
 			bool manualDeletion) = 0;
 		virtual void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst) = 0;
-		virtual const AABB& GetSceneAABB() = 0;
+		virtual const AABB& GetSceneAABB() = 0;		
 	};
 }
 #define AttachObjectFB(p) AttachObjectFB((p), (p).get())

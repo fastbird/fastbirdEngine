@@ -41,6 +41,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// IRenderStrategy
 		//-------------------------------------------------------------------
+		void SetMain(bool main);
 		void SetScene(IScenePtr scene);
 		void SetRenderTarget(RenderTargetPtr renderTarget);
 		void UpdateLightCamera();

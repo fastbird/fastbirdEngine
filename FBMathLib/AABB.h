@@ -51,5 +51,10 @@ namespace fb
 		Vec3 GetExtents() const;
 		void Translate(const Vec3& pos);
 		bool Contain(const Vec3&pos) const;
+		// near 4
+		//  right top, left top, right bottom, left bottom
+		// far 4
+		//  right top, left top, right bottom, left bottom
+		void GetPoints(Vec3 points[8]) const;
 	};
 }

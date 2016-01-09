@@ -73,6 +73,7 @@ public:
 	TexturePtr mEnvTexture;
 	bool mDrawOnEvent;
 	bool mDrawEventTriggered;
+	bool mMain;
 
 	Impl()
 		: mClearColor(0, 0, 0, 1)
@@ -90,6 +91,7 @@ public:
 		, mId(NextRenderTargetId++)
 		, mCamera(Camera::Create())
 		, mAssociatedWindowId(INVALID_HWND_ID)
+		, mMain(false)
 	{
 		mStrategy = RenderStrategyDefault::Create();
 	}
@@ -112,6 +114,15 @@ public:
 	}
 
 	//-------------------------------------------------------------------
+	void SetMain(bool main){
+		mMain = main;
+		if (!mStrategy){
+			Logger::Log(FB_ERROR_LOG_ARG, "Render strategy is not yet created.");
+		}
+		else{
+			mStrategy->SetMain(main);
+		}
+	}
 
 	bool CheckOptions(const RenderTargetParam& param)
 	{
@@ -450,6 +461,10 @@ void RenderTarget::OnObserverAdded(IRenderTargetObserverPtr observer){
 }
 
 //-------------------------------------------------------------------
+void RenderTarget::SetMain(bool main){
+	mImpl->SetMain(main);
+}
+
 RenderTargetId RenderTarget::GetId() const{
 	return mImpl->mId;
 }

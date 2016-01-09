@@ -251,6 +251,7 @@ namespace fb{
 		void SetForcedWireFrame(bool enable);
 		bool GetForcedWireFrame() const;
 		RenderTargetPtr GetMainRenderTarget() const;
+		unsigned GetMainRenderTargetId() const;
 		IScenePtr GetMainScene() const; // move to SceneManager
 		const Vec2I& GetMainRenderTargetSize() const;
 		void SetCurrentRenderTarget(RenderTargetPtr renderTarget);
@@ -296,6 +297,7 @@ namespace fb{
 		void SetCamera(CameraPtr pCamera);
 		CameraPtr GetCamera() const; // this is for current carmera.
 		CameraPtr GetMainCamera() const;
+		void SetActiveOverrideCamera(bool active);
 		HWindow GetMainWindowHandle() const;
 		HWindowId GetMainWindowHandleId();		
 		HWindow GetWindowHandle(HWindowId windowId);
@@ -345,7 +347,7 @@ namespace fb{
 			const Color& color0, const Color& color1);
 		void QueueDrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
 		void QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
-
+		void QueueDrawAABB(const AABB& aabb, const Transformation& transform, const Color& color);
 		//-------------------------------------------------------------------
 		// Internal
 		//-------------------------------------------------------------------		

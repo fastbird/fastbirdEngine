@@ -77,6 +77,10 @@ RenderStrategyNull::RenderStrategyNull()
 RenderStrategyNull::~RenderStrategyNull(){
 }
 
+void RenderStrategyNull::SetMain(bool main){
+
+}
+
 void RenderStrategyNull::SetScene(IScenePtr scene){
 	mImpl->SetScene(scene);
 }

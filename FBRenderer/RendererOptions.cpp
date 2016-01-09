@@ -31,6 +31,7 @@
 #include "FBConsole/Console.h"
 #include "ResourceProvider.h"
 #include "RenderTarget.h"
+#include "FBStringLib/StringConverter.h"
 using namespace fb;
 
 RendererOptionsPtr RendererOptions::Create(){
@@ -38,9 +39,11 @@ RendererOptionsPtr RendererOptions::Create(){
 }
 
 static void ReloadFonts(StringVector& arg);
+static void DebugShadowCam(StringVector& arg);
 
 RendererOptions::RendererOptions(){	
 	FB_REGISTER_CC(ReloadFonts, "Reload fonts");
+	FB_REGISTER_CC(DebugShadowCam, "DebugShadowCam");
 
 	r_noObjectConstants =  Console::GetInstance().GetIntVariable("r_noObjectConstants", 0);
 	FB_REGISTER_CVAR(r_noObjectConstants, r_noObjectConstants, CVAR_CATEGORY_CLIENT, "do not update object constans buffer");
@@ -249,4 +252,14 @@ bool RendererOptions::OnChangeCVar(CVarPtr pCVar){
 
 static void ReloadFonts(StringVector& arg){
 	Renderer::GetInstance().ReloadFonts();
+}
+
+static void DebugShadowCam(StringVector& arg){
+	if (arg.size() > 1){
+		auto enable = StringConverter::ParseBool(arg[1]);
+		Renderer::GetInstance().SetActiveOverrideCamera(enable);
+	}
+	else{
+		Renderer::GetInstance().SetActiveOverrideCamera(true);
+	}
 }

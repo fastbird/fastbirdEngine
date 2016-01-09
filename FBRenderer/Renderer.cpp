@@ -129,6 +129,7 @@ public:
 	ISceneWeakPtr mCurrentScene;
 	CameraPtr mCamera;
 	CameraPtr mCameraBackup;
+	CameraPtr mOverridingCamera;
 	struct InputInfo{
 		Vec2I mCurrentMousePos;
 		bool mLButtonDown;
@@ -349,6 +350,7 @@ public:
 			mRenderTargetConstants.rendertarget_dummy = 0;
 			GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::RenderTarget, &mRenderTargetConstants, sizeof(RENDERTARGET_CONSTANTS));
 			if (mainCanvas){
+				rt->SetMain(true);
 				OnMainCavasCreated();				
 			}
 			return true;
@@ -1784,6 +1786,34 @@ public:
 		QueueDrawLine(Vec2I(left, bottom), Vec2I(right, bottom), color, color);
 	}
 
+	void QueueDrawAABB(const AABB& aabb, const Transformation& transform, 
+		const Color& color){
+		Vec3 points[8];
+		aabb.GetPoints(points);
+		for (int i = 0; i < 8; ++i){
+			points[i] = transform.ApplyForward(points[i]);
+		}
+		QueueDraw3DQuad(points[0], points[1], points[2], points[3], color);
+		QueueDraw3DQuad(points[4], points[0], points[6], points[2], color);
+		QueueDraw3DQuad(points[5], points[4], points[7], points[6], color);
+		QueueDraw3DQuad(points[1], points[5], points[3], points[7], color);
+		QueueDraw3DQuad(points[4], points[5], points[0], points[1], color);
+		QueueDraw3DQuad(points[4], points[5], points[0], points[1], color);
+		QueueDraw3DQuad(points[2], points[3], points[6], points[7], color);
+	}
+
+	// p0 - p1
+	// p0 - p2
+	// p3 - p1
+	// p3 - p2
+	void QueueDraw3DQuad(const Vec3& p0, const Vec3& p1, const Vec3& p2,
+		const Vec3& p3, const Color& color){
+		QueueDrawLine(p0, p1, color, color);
+		QueueDrawLine(p0, p2, color, color);
+		QueueDrawLine(p3, p1, color, color);
+		QueueDrawLine(p3, p2, color, color);
+	}
+
 	//-------------------------------------------------------------------
 	// Internal
 	//-------------------------------------------------------------------
@@ -1987,6 +2017,15 @@ public:
 			return 0;
 		}
 		return it->second;
+	}
+
+	unsigned GetMainRenderTargetId() const{
+		auto it = mWindowRenderTargets.Find(mMainWindowId);
+		if (it == mWindowRenderTargets.end()){
+			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "No main window render target found.");
+			return -1;
+		}
+		return it->second->GetId();
 	}
 
 	IScenePtr GetMainScene() const{
@@ -2594,7 +2633,19 @@ public:
 
 		Logger::Log(FB_ERROR_LOG_ARG, "No main camera");
 		return 0;
+	}
 
+	void SetActiveOverrideCamera(bool active){
+		if (!mOverridingCamera){
+			mOverridingCamera = Camera::Create();
+		}
+		if (active){
+			*mOverridingCamera = *GetMainCamera();
+			GetMainCamera()->SetOverridingCamera(mOverridingCamera);			
+		}
+		else{
+			GetMainCamera()->SetOverridingCamera(0);
+		}
 	}
 
 	HWindow GetMainWindowHandle(){
@@ -3160,6 +3211,10 @@ RenderTargetPtr Renderer::GetMainRenderTarget() const {
 	return mImpl->GetMainRenderTarget();
 }
 
+unsigned Renderer::GetMainRenderTargetId() const{
+	return mImpl->GetMainRenderTargetId();
+}
+
 IScenePtr Renderer::GetMainScene() const {
 	return mImpl->GetMainScene();
 }
@@ -3308,6 +3363,10 @@ CameraPtr Renderer::GetCamera() const {
 
 CameraPtr Renderer::GetMainCamera() const {
 	return mImpl->GetMainCamera();
+}
+
+void Renderer::SetActiveOverrideCamera(bool active){
+	mImpl->SetActiveOverrideCamera(active);
 }
 
 HWindow Renderer::GetMainWindowHandle() const {
@@ -3463,6 +3522,11 @@ void Renderer::QueueDrawQuad(const Vec2I& pos, const Vec2I& size, const Color& c
 
 void Renderer::QueueDrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) {
 	mImpl->QueueDrawQuadLine(pos, size, color);
+}
+
+void Renderer::QueueDrawAABB(const AABB& aabb, const Transformation& transform, 
+	const Color& color){
+	mImpl->QueueDrawAABB(aabb, transform, color);
 }
 
 //-------------------------------------------------------------------

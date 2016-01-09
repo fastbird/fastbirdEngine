@@ -25,11 +25,13 @@ public:
 		float mFar;
 	};
 	OrthogonalData mOrthogonalData[MAX_CASCADES];
+	bool mMainRt;
 
 	//---------------------------------------------------------------------------
 	Impl(unsigned renderTargetId, const Vec2I& renderTargetSize)
 		: mRenderTargetId(renderTargetId)
 		, mRenderTargetSize(renderTargetSize)
+		, mMainRt(false)
 	{
 		mCascadePartitionsZeroToOne[0] = 0.05f;
 		mCascadePartitionsZeroToOne[1] = 0.15f;
@@ -41,7 +43,7 @@ public:
 		mCascadePartitionsZeroToOne[7] = 1.f;
 
 		for (int i = 0; i < MAX_CASCADES; ++i){
-			mCascadePartitionsFrustum[i] = 0.0f;
+			mCascadePartitionsFrustum[i] = FLT_MAX;
 		}
 
 		auto& renderer = Renderer::GetInstance();
@@ -391,19 +393,19 @@ public:
 			fCascadeIntervalBegin, frustum.mTopSlope * fCascadeIntervalBegin); // right top
 		pvCornerPointsWorld[1] = Vec3(frustum.mLeftSlope * fCascadeIntervalBegin,
 			fCascadeIntervalBegin, frustum.mTopSlope * fCascadeIntervalBegin);// left top
-		pvCornerPointsWorld[2] = Vec3(frustum.mLeftSlope * fCascadeIntervalBegin,
-			fCascadeIntervalBegin, frustum.mBottomSlope * fCascadeIntervalBegin);// left bottom
-		pvCornerPointsWorld[3] = Vec3(frustum.mRightSlope * fCascadeIntervalBegin,
-			fCascadeIntervalBegin, frustum.mBottomSlope * fCascadeIntervalBegin); // right bottom
+		pvCornerPointsWorld[2] = Vec3(frustum.mRightSlope * fCascadeIntervalBegin,
+			fCascadeIntervalBegin, frustum.mBottomSlope * fCascadeIntervalBegin);// right bottom
+		pvCornerPointsWorld[3] = Vec3(frustum.mLeftSlope * fCascadeIntervalBegin,
+			fCascadeIntervalBegin, frustum.mBottomSlope * fCascadeIntervalBegin); // left bottom
 
 		pvCornerPointsWorld[4] = Vec3(frustum.mRightSlope * fCascadeIntervalEnd,
 			fCascadeIntervalEnd, frustum.mTopSlope * fCascadeIntervalEnd); // right top
 		pvCornerPointsWorld[5] = Vec3(frustum.mLeftSlope * fCascadeIntervalEnd,
 			fCascadeIntervalEnd, frustum.mTopSlope * fCascadeIntervalEnd);// left top
-		pvCornerPointsWorld[6] = Vec3(frustum.mLeftSlope * fCascadeIntervalEnd,
-			fCascadeIntervalEnd, frustum.mBottomSlope * fCascadeIntervalEnd);// left bottom
-		pvCornerPointsWorld[7] = Vec3(frustum.mRightSlope * fCascadeIntervalEnd,
-			fCascadeIntervalEnd, frustum.mBottomSlope * fCascadeIntervalEnd); // right bottom
+		pvCornerPointsWorld[6] = Vec3(frustum.mRightSlope * fCascadeIntervalEnd,
+			fCascadeIntervalEnd, frustum.mBottomSlope * fCascadeIntervalEnd);// right bottom
+		pvCornerPointsWorld[7] = Vec3(frustum.mLeftSlope * fCascadeIntervalEnd,
+			fCascadeIntervalEnd, frustum.mBottomSlope * fCascadeIntervalEnd); // left bottom
 		for (int i = 0; i < 8; ++i){
 			pvCornerPointsWorld[i] = frustum.mOrientation * pvCornerPointsWorld[i];
 			pvCornerPointsWorld[i] += frustum.mOrigin;
@@ -434,6 +436,8 @@ public:
 
 	void UpdateFrame(CameraPtr viewerCamera, const Vec3& lightDir,
 		const AABB& sceneAABB){
+		auto overriding = viewerCamera->GetOverridingCamera();
+		viewerCamera->SetOverridingCamera(0);
 		mLightCamera->SetPosition(lightDir * 400.f);
 		mLightCamera->SetDirection(-lightDir);
 
@@ -459,6 +463,9 @@ public:
 		Vec3 vWorldUnitsPerTexel(0, 0, 0);
 		auto& renderer = Renderer::GetInstance();
 		auto options = renderer.GetRendererOptions();
+		for (int i = 0; i < 8; ++i){
+			mCascadePartitionsFrustum[i] = FLT_MAX;
+		}
 		// Loop over the cascades to calculate the orthographic projection for each cascade.
 		for (INT iCascadeIndex = 0; 
 			iCascadeIndex < options->r_ShadowCascadeLevels; 
@@ -580,6 +587,7 @@ public:
 
 			mCascadePartitionsFrustum[iCascadeIndex] = fFrustumIntervalEnd;
 		}
+		viewerCamera->SetOverridingCamera(overriding);
 	}
 
 	TexturePtr GetShadowMap() const{
@@ -588,6 +596,10 @@ public:
 
 	void DeleteShadowMap(){
 		mShadowMap = 0;
+	}
+
+	void SetMain(bool main){
+		mMainRt = main;
 	}
 
 	void RenderShadows(IScenePtr scene){
@@ -606,6 +618,17 @@ public:
 
 		provider->BindRasterizerState(ResourceTypes::RasterizerStates::ShadowMapRS);
 		auto options = renderer.GetRendererOptions();
+		
+		Color colors[MAX_CASCADES] = {
+			Color::Red,
+			Color::Green,
+			Color::Blue,
+			Color::White,
+			Color(0.8, 0.8, 0.8),
+			Color(0.6, 0.6, 0.6),
+			Color(0.4, 0.4, 0.4),
+			Color(0.2, 0.2, 0.2)
+		};
 		// Iterate over cascades and render shadows.
 		for (INT currentCascade = 0;
 			currentCascade < options->r_ShadowCascadeLevels;
@@ -625,16 +648,22 @@ public:
 			param.mCamera = mLightCamera.get();
 			//param.mLightCamera = param.mCamera;
 			param.mRenderPass = PASS_SHADOW;
-			scene->PreRender(param, 0);
+			scene->MakeVisibleSet(mLightCamera.get(), true);
 			scene->Render(param, 0);	
+			if (mMainRt){
+				AABB aabb;
+				aabb.SetMax(Vec3(orthogonalData.mR, orthogonalData.mFar, orthogonalData.mT));
+				aabb.SetMin(Vec3(orthogonalData.mL, orthogonalData.mNear, orthogonalData.mB));
+				renderer.QueueDrawAABB(aabb, mLightCamera->GetTransformation(), colors[currentCascade]);
+			}
 		}
 		provider->BindRasterizerState(ResourceTypes::RasterizerStates::Default);
 
 		SHADOW_CONSTANTS rc;				
 		rc.gCascadeBlendArea = options->r_ShadowCascadeBlendArea;
-		rc.gShadowPartitionSize = 1.0f / options->r_ShadowCascadeLevels;
-		rc.gShadowTexelSize = 1.0f / options->r_ShadowMapSize;
-		rc.gShadowTexelSizeX = rc.gShadowTexelSize / options->r_ShadowCascadeLevels;
+		rc.gShadowPartitionSize = 1.0f / (float)options->r_ShadowCascadeLevels;
+		rc.gShadowTexelSize = 1.0f / (float)options->r_ShadowMapSize;
+		rc.gShadowTexelSizeX = rc.gShadowTexelSize / (float)options->r_ShadowCascadeLevels;
 		Mat44 textureScaleTranslMat(
 			0.5f, 0, 0, .5,
 			0, -0.5, 0, .5,
@@ -668,7 +697,8 @@ CascadedShadowsManagerPtr CascadedShadowsManager::Create(
 		new CascadedShadowsManager(renderTargetId, renderTargetSize),
 		[](CascadedShadowsManager* obj){ delete obj; });
 }
-CascadedShadowsManager::CascadedShadowsManager(unsigned renderTargetId, const Vec2I& renderTargetSize)
+CascadedShadowsManager::CascadedShadowsManager(unsigned renderTargetId, 
+	const Vec2I& renderTargetSize)
 	: mImpl(new Impl(renderTargetId, renderTargetSize))
 {
 
@@ -704,4 +734,8 @@ void CascadedShadowsManager::DeleteShadowMap(){
 
 CameraPtr CascadedShadowsManager::GetLightCamera() const{
 	return mImpl->mLightCamera;
+}
+
+void CascadedShadowsManager::SetMain(bool main){
+	mImpl->SetMain(main);
 }

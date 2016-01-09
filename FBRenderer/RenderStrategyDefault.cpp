@@ -73,6 +73,7 @@ public:
 	TexturePtr mGlowTarget;
 	TexturePtr mGlowTexture[2];
 	bool mGlowSet;
+	bool mMain;
 	//CameraPtr mLightCamera;
 	//TexturePtr mShadowMap;
 	TexturePtr mCloudVolumeDepth;
@@ -100,6 +101,7 @@ public:
 		:mGlowSet(false), mFrameLuminanceCalced(0), mLuminance(0.5f)
 		, mRenderingFace(0)
 		, mStarGlareDef(0)
+		, mMain(false)
 	{
 		static bool s_aaColorCalced = false;
 		if (!s_aaColorCalced)
@@ -131,6 +133,11 @@ public:
 		mShadowManager = CascadedShadowsManager::Create(mId, mSize);
 		mShadowManager->CreateShadowMap();
 		mShadowManager->CreateViewports();		
+	}
+
+	void SetMain(bool main){
+		mMain = main;
+		mShadowManager->SetMain(main);
 	}
 
 	void UpdateLightCamera()
@@ -169,6 +176,7 @@ public:
 		RenderParam param;
 		memset(&param, 0, sizeof(RenderParam));
 		param.mCamera = renderer.GetCamera().get();
+		scene->MakeVisibleSet(param.mCamera);
 		scene->PreRender(param, 0);
 		mGlowSet = false;
 		GlowTarget(true);
@@ -1278,6 +1286,10 @@ void RenderStrategyDefault::SetScene(IScenePtr scene){
 
 void RenderStrategyDefault::SetRenderTarget(RenderTargetPtr renderTarget){
 	mImpl->SetRenderTarget(renderTarget);
+}
+
+void RenderStrategyDefault::SetMain(bool main){
+	mImpl->SetMain(main);
 }
 
 void RenderStrategyDefault::UpdateLightCamera(){

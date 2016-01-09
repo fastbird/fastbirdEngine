@@ -72,6 +72,7 @@ namespace fb
 		void ConsumeInput(IInputInjectorPtr injector);
 
 		//-------------------------------------------------------------------
+		void SetMain(bool main);
 		RenderTargetId GetId() const;
 		void SetAssociatedWindowId(HWindowId id);
 		HWindowId GetAssociatedWindowId() const;

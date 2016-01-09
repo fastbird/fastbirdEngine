@@ -45,6 +45,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		void SetScene(IScenePtr scene);
 		void SetRenderTarget(RenderTargetPtr renderTarget);
+		void SetMain(bool main);
 		void UpdateLightCamera();
 		void Render(size_t face);
 		bool IsHDR() const;

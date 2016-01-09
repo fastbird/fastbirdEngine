@@ -40,6 +40,7 @@ namespace fb{
 		virtual ~IRenderStrategy(){}
 
 	public:
+		virtual void SetMain(bool main) = 0;
 		virtual void SetScene(IScenePtr scene) = 0;
 		virtual void SetRenderTarget(RenderTargetPtr renderTarget) = 0;
 		virtual void UpdateLightCamera() = 0;
