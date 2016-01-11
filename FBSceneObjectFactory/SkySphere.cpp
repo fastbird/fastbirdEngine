@@ -210,8 +210,9 @@ public:
 		}
 
 		auto& renderer = Renderer::GetInstance();
-		TexturePtr pTexture = sRT->GetRenderTargetTexture();
-		SceneManager::GetInstance().CopyDirectionalLight(sRT->GetScene(), 0, renderer.GetMainRenderTarget()->GetScene(), 0);
+		TexturePtr pTexture = sRT->GetRenderTargetTexture();		
+		pTexture->Unbind();
+		SceneManager::GetInstance().CopyDirectionalLight(sRT->GetScene(), 0, renderer.GetMainRenderTarget()->GetScene(), 0);		
 		sRT->GetScene()->AttachSky(mSelfPtr.lock());
 		sRT->GetCamera()->SetPosition(origin);
 		sRT->GetCamera()->SetFOV(HALF_PI);

@@ -25,7 +25,7 @@ public:
 		if (!ValidCStringLength(path))
 			return;
 
-		auto& am = AudioManager::GetInstance();
+		auto& am = AudioManager::GetInstance();		
 		if (mCurrentAudioId != INVALID_AUDIO_ID){
 			am.SetLoop(mCurrentAudioId, false);
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
@@ -44,7 +44,7 @@ public:
 		AudioManager::GetInstance().SetGain(mCurrentAudioId, mGain * mMaxGain, true);
 	}
 
-	void PlayMusic(const char* path, float fadeOutOld, bool loop){
+	void PlayMusic(const char* path, float fadeOutOld, bool loop){		
 		PlayMusic(path, fadeOutOld);
 		AudioManager::GetInstance().SetLoop(mCurrentAudioId, loop);
 	}

@@ -119,5 +119,6 @@ namespace fb{
 		void SetAlpha(Real alpha);
 		void SetForceAlphaBlending(bool enable, Real alpha, Real forceGlow = 0.f, bool disableDepth = false);
 		void SetAmbientColor(const Color& color);
+		void SetCheckDistance(bool check);
 	};
 }

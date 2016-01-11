@@ -67,7 +67,7 @@ std::vector< std::pair<BINDING_SHADER, int> > FindSlotInfo(TexturePtr texture){
 		auto& shaderCategory = sBindedTextures[(BINDING_SHADER)bindingShaders[shader]];
 		for (auto it = shaderCategory.begin(); it != shaderCategory.end(); ++it){
 			if (it->second.lock() == texture){
-				result.push_back(std::make_pair((BINDING_SHADER)shader, it->first));
+				result.push_back(std::make_pair((BINDING_SHADER)bindingShaders[shader], it->first));
 			}
 		}
 	}

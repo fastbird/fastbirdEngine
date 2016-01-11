@@ -71,8 +71,7 @@ namespace fb
 		//-------------------------------------------------------------------
 		void ConsumeInput(IInputInjectorPtr injector);
 
-		//-------------------------------------------------------------------
-		void SetMain(bool main);
+		//-------------------------------------------------------------------		
 		RenderTargetId GetId() const;
 		void SetAssociatedWindowId(HWindowId id);
 		HWindowId GetAssociatedWindowId() const;
@@ -112,11 +111,10 @@ namespace fb
 		void Bind(size_t face = 0);
 		void BindTargetOnly(bool hdr);
 		void BindDepthTexture(bool bind);
-		bool Render(size_t face=0);
+		bool Render(size_t face = 0);
 		void Unbind();
 		void GlowRenderTarget(bool bind);
 
-		CameraPtr GetLightCamera() const;		
 		void SetLightCamWidth(Real width);
 		void SetLightCamHeight(Real height);
 		void SetLightCamNear(Real n);
@@ -129,8 +127,6 @@ namespace fb
 		bool SetBigSilouetteBuffer();		
 
 		void OnRendererOptionChanged(RendererOptionsPtr options, const char* name);
-
-		/// debugging features
-		TexturePtr GetShadowMap() const;
+		
 	};
 }

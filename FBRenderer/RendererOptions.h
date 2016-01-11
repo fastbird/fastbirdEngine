@@ -65,6 +65,7 @@ namespace fb{
 		float r_ShadowCascadeBlendArea;
 		int r_ShadowMapPCFBlurSize;
 		int r_ShadowMapSize;
+		int r_LightFrustum;
 		float r_ShadowCamWidth;
 		float r_ShadowCamHeight;
 		float r_ShadowNear;

@@ -40,23 +40,17 @@ namespace fb{
 		virtual ~IRenderStrategy(){}
 
 	public:
-		virtual void SetMain(bool main) = 0;
 		virtual void SetScene(IScenePtr scene) = 0;
-		virtual void SetRenderTarget(RenderTargetPtr renderTarget) = 0;
-		virtual void UpdateLightCamera() = 0;
+		virtual void SetRenderTarget(RenderTargetPtr renderTarget) = 0;		
 		virtual void Render(size_t face) = 0;
 		virtual bool IsHDR() const = 0;
-		virtual bool IsGlowSupported() = 0;		
-		virtual CameraPtr GetLightCamera() const = 0;
+		virtual bool IsGlowSupported() = 0;				
 		virtual bool SetHDRTarget() = 0;
 		virtual bool SetSmallSilouetteBuffer() = 0;
 		virtual bool SetBigSilouetteBuffer() = 0;	
 		virtual void GlowRenderTarget(bool bind) = 0;
 		virtual void DepthTexture(bool bind) = 0;
 		virtual void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName) = 0;
-		virtual void OnRenderTargetSizeChanged(const Vec2I& size) = 0;
-
-		// debugging feature
-		virtual TexturePtr GetShadowMap() = 0;
+		virtual void OnRenderTargetSizeChanged(const Vec2I& size) = 0;		
 	};
 }

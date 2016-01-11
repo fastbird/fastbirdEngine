@@ -283,6 +283,10 @@ namespace fb{
 		void SetLockBlendState(bool lock);
 		void SetFontTextureAtlas(const char* path);
 		void ClearFontScissor();
+		void UpdateLightFrustum();
+		void RenderShadows();
+		void SetBindShadowMap(bool bind);
+		void OnShadowOptionChanged();
 		
 
 		//-------------------------------------------------------------------
@@ -370,6 +374,11 @@ namespace fb{
 		//-------------------------------------------------------------------
 		void OnChangeDetected();
 		bool OnFileChanged(const char* watchDir, const char* file, const char* ext);
+
+		//-------------------------------------------------------------------
+		// Debug
+		//-------------------------------------------------------------------
+		std::vector<unsigned> mCurrentRenderTargetTextureIds;
 	};
 
 }

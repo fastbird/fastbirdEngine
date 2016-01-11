@@ -1365,15 +1365,8 @@ public:
 			TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(pDepthStencil.get());
 			mCurrentDSView = pTextureD3D11->GetDepthStencilView(dsViewIndex);			
 		}
-
-		try
-		{
-			mImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
-		}
-		catch (...)
-		{
-			Error(FB_ERROR_LOG_ARG, "OMSetRenderTargets failed!");
-		}
+		mImmediateContext->OMSetRenderTargets(mCurrentRTViews.size(), &mCurrentRTViews[0], mCurrentDSView);
+		
 	}
 
 	void SetViewports(const Viewport viewports[], int num){

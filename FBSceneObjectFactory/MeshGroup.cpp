@@ -183,6 +183,7 @@ public:
 	// transformation is in parent space.
 	size_t AddMesh(MeshObjectPtr mesh, const Transformation& transform, size_t parent){
 		mMeshObjects.push_back(MESH_OBJECTS::value_type(mesh, transform));
+		mesh->SetCheckDistance(false);
 		mLocalTransforms.push_back(Transformation::IDENTITY);
 		mChanges.push_back(true);
 

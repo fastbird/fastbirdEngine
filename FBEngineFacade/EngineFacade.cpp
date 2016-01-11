@@ -557,14 +557,20 @@ public:
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld){
+		if (mAudioOptions->a_MusicGain == 0)
+			return;
 		mMusicPlayer->PlayMusic(path, fadeOutOld);
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld, bool loop){
+		if (mAudioOptions->a_MusicGain == 0)
+			return;
 		mMusicPlayer->PlayMusic(path, fadeOutOld, loop);
 	}
 
 	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
+		if (mAudioOptions->a_MusicGain == 0)
+			return;
 		mMusicPlayer->ChangeMusic(path, fadeOutOld, startNewAfter);
 	}
 

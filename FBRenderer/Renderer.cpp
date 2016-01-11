@@ -48,6 +48,7 @@
 #include "Camera.h"
 #include "ConsoleRenderer.h"
 #include "StarDef.h"
+#include "CascadedShadowsManager.h"
 #include "FBMathLib/MurmurHash.h"
 #include "FBConsole/Console.h"
 #include "EssentialEngineData/shaders/Constants.h"
@@ -130,6 +131,8 @@ public:
 	CameraPtr mCamera;
 	CameraPtr mCameraBackup;
 	CameraPtr mOverridingCamera;
+	CascadedShadowsManagerPtr mShadowManager;
+
 	struct InputInfo{
 		Vec2I mCurrentMousePos;
 		bool mLButtonDown;
@@ -350,7 +353,6 @@ public:
 			mRenderTargetConstants.rendertarget_dummy = 0;
 			GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::RenderTarget, &mRenderTargetConstants, sizeof(RENDERTARGET_CONSTANTS));
 			if (mainCanvas){
-				rt->SetMain(true);
 				OnMainCavasCreated();				
 			}
 			return true;
@@ -566,6 +568,10 @@ public:
 		if (mDebugHud){
 			mDebugHud->SetRenderTargetSize(rtSize);
 		}
+
+		mShadowManager = CascadedShadowsManager::Create();
+		mShadowManager->CreateShadowMap();
+		mShadowManager->CreateViewports();
 	}
 
 	void DeinitCanvas(HWindowId id){
@@ -680,7 +686,7 @@ public:
 
 	void Render(){
 		if (mGenerateRadianceCoef && mEnvironmentTexture && mEnvironmentTexture->IsReady()){
-			GenerateRadianceCoef(mEnvironmentTexture);
+			GenerateRadianceCoef(mEnvironmentTexture);			
 		}
 		auto mainRT = GetMainRenderTarget();
 		if (!mainRT)
@@ -696,7 +702,7 @@ public:
 				rt->Render();
 		}
 
-		Render3DUIsToTexture();		
+		Render3DUIsToTexture();
 		for (auto it : mWindowRenderTargets)
 		{
 			RenderEventMarker mark(FormatString("Processing render target for %u", it.first).c_str());
@@ -1249,7 +1255,7 @@ public:
 		mCurrentDSViewIndex = dsViewIndex;
 		IPlatformTexturePtr platformRTs[4] = { 0 };
 		for (int i = 0; i < num; ++i){
-			platformRTs[i] = pRenderTargets[i] ? pRenderTargets[i]->GetPlatformTexture() : 0;
+			platformRTs[i] = pRenderTargets[i] ? pRenderTargets[i]->GetPlatformTexture() : 0;			
 		}
 
 		GetPlatformRenderer().SetRenderTarget(platformRTs, rtViewIndex, num,
@@ -1323,13 +1329,10 @@ public:
 	}
 
 	void SetTextures(TexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot){
-		static const int maxBindableTextures = 20; // D3D11_REQ_RESOURCE_VIEW_COUNT_PER_DEVICE_2_TO_EXP(20)
-		IPlatformTexturePtr textures[maxBindableTextures];
-		num = std::min(num, maxBindableTextures);
 		for (int i = 0; i < num; ++i){
-			textures[i] = pTextures[i] ? pTextures[i]->GetPlatformTexture() : 0;
+			if (pTextures[i])
+				pTextures[i]->Bind(shaderType, startSlot + i);
 		}
-		GetPlatformRenderer().SetTextures(textures, num, shaderType, startSlot);
 	}
 
 	void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture){
@@ -1506,7 +1509,7 @@ public:
 		if (!scene){
 			return;
 		}
-		auto pLightCam = mCurrentRenderTarget->GetLightCamera();
+		auto pLightCam = mShadowManager->GetLightCamera();
 		if (pLightCam)
 			mSceneConstants.gLightView = pLightCam->GetMatrix(ICamera::View);
 
@@ -2059,6 +2062,7 @@ public:
 
 	void SetCurrentScene(IScenePtr scene){
 		mCurrentScene = scene;
+		UpdateLightFrustum();
 		UpdateSceneConstantsBuffer();
 	}
 
@@ -2240,6 +2244,7 @@ public:
 
 	void GenerateRadianceCoef(TexturePtr pTex)
 	{
+		pTex->Unbind();
 		mGenerateRadianceCoef = false;
 		auto ENV_SIZE = pTex->GetSize().x;
 		int maxLod = (int)log2((float)ENV_SIZE);
@@ -2363,40 +2368,24 @@ public:
 
 	void SetEnvironmentTexture(TexturePtr pTexture){
 		mEnvironmentTexture = pTexture;
-		SetSystemTexture(SystemTextures::Environment, mEnvironmentTexture);
 		if (pTexture){
 			if (pTexture->IsReady())
 				GenerateRadianceCoef(pTexture);
 			else
 				mGenerateRadianceCoef = true;
-		}		
+		}
+		SetSystemTexture(SystemTextures::Environment, mEnvironmentTexture);		
 	}
 
 	void SetEnvironmentTextureOverride(TexturePtr texture){
 		mEnvironmentTextureOverride = texture;
 		if (mEnvironmentTextureOverride)
 		{
-			auto& bindings = GetSystemTextureBindings(SystemTextures::Environment);
-			for (auto& binding : bindings){
-				mEnvironmentTextureOverride->Bind(binding.mShader, binding.mSlot);
-			}
+			SetSystemTexture(SystemTextures::Environment, texture);			
 		}
 		else
 		{
-			if (mEnvironmentTexture)
-			{
-				auto& bindings = GetSystemTextureBindings(SystemTextures::Environment);
-				for (auto& binding : bindings){
-					mEnvironmentTexture->Bind(binding.mShader, binding.mSlot);
-				}			
-			}
-			else
-			{
-				auto& bindings = GetSystemTextureBindings(SystemTextures::Environment);
-				for (auto& binding : bindings){
-					UnbindTexture(binding.mShader, binding.mSlot);
-				}
-			}
+			SetSystemTexture(SystemTextures::Environment, mEnvironmentTexture);			
 		}
 	}
 
@@ -2405,7 +2394,7 @@ public:
 		auto mainRT = GetMainRenderTarget();
 		assert(mainRT);
 		if (_stricmp(textureName, "Shadow") == 0)
-			mDebugRenderTargets[idx].mTexture = mainRT->GetShadowMap();
+			mDebugRenderTargets[idx].mTexture = mShadowManager->GetShadowMap();
 		else
 			mDebugRenderTargets[idx].mTexture = 0;
 	}
@@ -2569,6 +2558,46 @@ public:
 		for (auto& it : mFonts){
 			it.second->SetRenderStates();
 		}
+	}
+
+	void UpdateLightFrustum(){
+		auto scene = mCurrentScene.lock();
+		if (scene){
+			mShadowManager->UpdateFrame(mCamera, scene->GetMainLightDirection(), scene->GetSceneAABB());
+		}
+	}
+
+	void SetBindShadowMap(bool bind){
+		if (bind)
+			SetSystemTexture(SystemTextures::ShadowMap, mShadowManager->GetShadowMap());
+		else
+			SetSystemTexture(SystemTextures::ShadowMap, 0);
+	}
+
+	void OnShadowOptionChanged(){
+		mShadowManager->CreateShadowMap();
+		mShadowManager->CreateViewports();
+	}
+
+	void SetBindShadowTarget(bool bind){
+		if (bind){
+			// empty
+		}
+		else{
+			if (mCurrentRenderTarget){
+				mCurrentRenderTarget->BindTargetOnly(false);
+				SetCamera(mCurrentRenderTarget->GetCamera());
+			}
+		}
+	}
+
+	void RenderShadows(){
+		RenderEventMarker marker("Shadow Pass");						
+		SetBindShadowMap(false);
+		SetBindShadowTarget(true);
+		mShadowManager->RenderShadows(mCurrentScene.lock(), 
+			mCurrentRenderTarget == GetMainRenderTarget());
+		SetBindShadowTarget(false);
 	}
 
 	//-------------------------------------------------------------------
@@ -2807,6 +2836,8 @@ RendererPtr Renderer::Create(){
 		renderer->mImpl->mSelfPtr = renderer;
 		sRenderer = renderer;
 		sRendererRaw = renderer.get();
+		Logger::Log(FB_DEFAULT_LOG_ARG,
+			FormatString("(info) renderer: 0x%x", renderer.get()).c_str());
 		return renderer;
 	}
 	return sRenderer.lock();
@@ -3324,6 +3355,22 @@ void Renderer::SetFontTextureAtlas(const char* path){
 
 void Renderer::ClearFontScissor(){
 	mImpl->ClearFontScissor();
+}
+
+void Renderer::UpdateLightFrustum(){
+	mImpl->UpdateLightFrustum();
+}
+
+void Renderer::RenderShadows(){
+	mImpl->RenderShadows();
+}
+
+void Renderer::SetBindShadowMap(bool bind){
+	mImpl->SetBindShadowMap(bind);
+}
+
+void Renderer::OnShadowOptionChanged(){
+	mImpl->OnShadowOptionChanged();
 }
 
 //-------------------------------------------------------------------

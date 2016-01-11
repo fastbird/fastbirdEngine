@@ -114,16 +114,6 @@ public:
 	}
 
 	//-------------------------------------------------------------------
-	void SetMain(bool main){
-		mMain = main;
-		if (!mStrategy){
-			Logger::Log(FB_ERROR_LOG_ARG, "Render strategy is not yet created.");
-		}
-		else{
-			mStrategy->SetMain(main);
-		}
-	}
-
 	bool CheckOptions(const RenderTargetParam& param)
 	{
 		return param.mSize == mSize && param.mPixelFormat == mFormat &&
@@ -241,9 +231,7 @@ public:
 			mCamera->ProcessInputData();
 		
 		//mStrategy->SetScene(scene);
-		mStrategy->UpdateLightCamera();
-		renderer.SetCurrentScene(scene);
-		
+		renderer.SetCurrentScene(scene);		
 
 		if (mEnvTexture)
 			renderer.SetEnvironmentTextureOverride(mEnvTexture);
@@ -287,12 +275,9 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		RenderEventMarker mark("RenderTarget");
 		mStrategy->Render(face);
-		
+		if (mEnvTexture)
+			renderer.SetEnvironmentTextureOverride(0);
 		return true;
-	}
-
-	CameraPtr GetLightCamera() const {
-		return mStrategy->GetLightCamera();
 	}
 
 	bool IsGlowSupported() const{
@@ -311,14 +296,10 @@ public:
 		return mStrategy->OnRendererOptionChanged(options, name);
 	}
 
-	TexturePtr GetShadowMap() const{
-		return mStrategy->GetShadowMap();
-	}
-
 	//---------------------------------------------------------------------------
 	// Additional Targets
 	//---------------------------------------------------------------------------
-	void SetLightCamWidth(Real width)
+	/*void SetLightCamWidth(Real width)
 	{
 		auto lightCam = mStrategy->GetLightCamera();
 		if (lightCam){
@@ -351,7 +332,7 @@ public:
 			lightCam->GetNearFar(on, of);
 			lightCam->SetNearFar(on, f);
 		}
-	}
+	}*/
 
 	void DrawOnEvent(bool set)
 	{
@@ -461,10 +442,6 @@ void RenderTarget::OnObserverAdded(IRenderTargetObserverPtr observer){
 }
 
 //-------------------------------------------------------------------
-void RenderTarget::SetMain(bool main){
-	mImpl->SetMain(main);
-}
-
 RenderTargetId RenderTarget::GetId() const{
 	return mImpl->mId;
 }
@@ -622,10 +599,6 @@ void RenderTarget::RemoveTextures(){
 	mImpl->RemoveTextures();
 }
 
-CameraPtr RenderTarget::GetLightCamera() const {
-	return mImpl->GetLightCamera();
-}
-
 const Viewport& RenderTarget::GetViewport() const{
 	return mImpl->mViewport;
 }
@@ -654,10 +627,6 @@ bool RenderTarget::SetBigSilouetteBuffer(){
 
 void RenderTarget::OnRendererOptionChanged(RendererOptionsPtr options, const char* name){
 	return mImpl->OnRendererOptionChanged(options, name);
-}
-
-TexturePtr RenderTarget::GetShadowMap() const{
-	return mImpl->GetShadowMap();
 }
 
 }

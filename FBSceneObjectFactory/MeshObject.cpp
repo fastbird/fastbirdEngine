@@ -96,6 +96,7 @@ public:
 
 	bool mUseDynamicVB[MeshVertexBufferType::Num];
 	bool mForceAlphaBlending;
+	bool mCheckDistance;
 
 	//---------------------------------------------------------------------------
 	Impl(MeshObject* self)
@@ -103,6 +104,7 @@ public:
 		, mRenderHighlight(false)
 		, mForceAlphaBlending(false)
 		, mLastPreRendered(0)
+		, mCheckDistance(true)
 	{
 		mTopology = PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		mObjectConstants.gWorld.MakeIdentity();
@@ -143,6 +145,10 @@ public:
 		}
 	}
 
+	void SetCheckDistance(bool check){
+		mCheckDistance = check;
+
+	}
 	//---------------------------------------------------------------------------
 	// IRenderable
 	//---------------------------------------------------------------------------
@@ -167,14 +173,10 @@ public:
 		auto renderOption = renderer.GetRendererOptions();
 		if (renderOption->r_noMesh)
 			return;		
-		if (strstr(mSelf->GetName(), "CommandModule")){
-			int a = 0;
-			a++;
-		}
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 
-		if (renderParam.mRenderPass == PASS_NORMAL){
+		if (mCheckDistance && renderParam.mRenderPass == PASS_NORMAL){
 			auto radius = mSelf->GetRadius();
 			auto distToCam = mSelf->GetDistToCam(renderParam.mCamera);
 			if (distToCam > 70 && radius < 0.5f)
@@ -1409,4 +1411,8 @@ void MeshObject::SetForceAlphaBlending(bool enable, Real alpha, Real forceGlow, 
 
 void MeshObject::SetAmbientColor(const Color& color) {
 	mImpl->SetAmbientColor(color);
+}
+
+void MeshObject::SetCheckDistance(bool check){
+	mImpl->SetCheckDistance(check);
 }

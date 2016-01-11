@@ -122,6 +122,11 @@ RendererOptions::RendererOptions(){
 	FB_REGISTER_CVAR(r_ShadowMapSize, r_ShadowMapSize, CVAR_CATEGORY_CLIENT,
 		"ShadowMap width");
 
+	r_LightFrustum = Console::GetInstance().GetIntVariable(
+		"r_LightFrustum", 0);
+	FB_REGISTER_CVAR(r_LightFrustum, r_LightFrustum, CVAR_CATEGORY_CLIENT,
+		"Draw light frustum");
+
 	/*r_ShadowMapHeight = Console::GetInstance().GetIntVariable(
 		"r_ShadowMapHeight", 1024);
 	FB_REGISTER_CVAR(r_ShadowMapHeight, r_ShadowMapHeight, CVAR_CATEGORY_CLIENT,
@@ -225,10 +230,7 @@ bool RendererOptions::OnChangeCVar(CVarPtr pCVar){
 		strcmp(pCVar->mName.c_str(), "r_shadownear") == 0 ||
 		strcmp(pCVar->mName.c_str(), "r_shadowfar") == 0)
 	{
-		auto rt = Renderer::GetInstance().GetMainRenderTarget();
-		if (rt){
-			rt->OnRendererOptionChanged(selfPtr, pCVar->mName.c_str());
-		}		
+		Renderer::GetInstance().OnShadowOptionChanged();
 	}	
 	else if (strcmp(pCVar->mName.c_str(), "r_resolution") == 0){
 		auto resol = pCVar->GetVec2I();

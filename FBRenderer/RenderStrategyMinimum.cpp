@@ -48,10 +48,6 @@ public:
 	Vec2I mSize; // Render target size.
 	RenderTargetId mId;
 	TexturePtr mDepthTarget;	
-	CascadedShadowsManagerPtr mShadowManager;
-	
-	
-	
 	size_t mRenderingFace;
 
 	//---------------------------------------------------------------------------
@@ -71,20 +67,6 @@ public:
 		mRenderTarget = renderTarget;
 		mSize = renderTarget->GetSize();
 		mId = renderTarget->GetId();
-		mShadowManager = CascadedShadowsManager::Create(mId, mSize);
-		mShadowManager->CreateShadowMap();
-		mShadowManager->CreateViewports();		
-	}
-
-	void UpdateLightCamera()
-	{
-		auto& renderer = Renderer::GetInstance();
-		auto scene = mScene.lock();
-		auto camera = renderer.GetCamera();
-		if (scene && camera){
-			auto lightDir = scene->GetMainLightDirection();
-			mShadowManager->UpdateFrame(camera, lightDir, scene->GetSceneAABB());
-		}
 	}
 
 	void Render(size_t face){
@@ -108,7 +90,7 @@ public:
 		memset(&renderParam, 0, sizeof(RenderParam));
 		memset(&renderParamOut, 0, sizeof(RenderParamOut));		
 		DepthTexture(false);		
-		ShadowMap(false);
+		renderer.SetBindShadowMap(false);
 		renderTarget->Bind(face);
 		RenderParam param;
 		memset(&param, 0, sizeof(RenderParam));
@@ -117,14 +99,7 @@ public:
 		scene->PreRender(param, 0);
 
 		{
-			RenderEventMarker marker("Shadow Pass");
-			memset(&renderParam, 0, sizeof(RenderParam));
-			memset(&renderParamOut, 0, sizeof(RenderParamOut));
-			renderParam.mRenderPass = PASS_SHADOW;
-			ShadowMap(false);
-			ShadowTarget(true);
-			mShadowManager->RenderShadows(mScene.lock());			
-			ShadowTarget(false);
+			renderer.RenderShadows();			
 		}
 		{
 			RenderEventMarker marker("Depth Pass");
@@ -145,7 +120,7 @@ public:
 			renderTarget->BindTargetOnly(false);
 			renderer.Clear(0., 0., 0., 1.);
 			DepthTexture(true);			
-			ShadowMap(true);
+			renderer.SetBindShadowMap(true);
 			renderParam.mCamera = renderer.GetCamera().get();			
 			scene->Render(renderParam, &renderParamOut);			
 		}
@@ -193,11 +168,7 @@ public:
 	}
 
 	void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName){
-		if (strcmp(optionName, "r_shadowmapsize") == 0)
-		{
-			mShadowManager->CreateShadowMap();
-			mShadowManager->CreateViewports();
-		}
+
 	}
 
 	void OnRenderTargetSizeChanged(const Vec2I& size){
@@ -218,26 +189,8 @@ public:
 		}
 	}
 
-	void ShadowMap(bool bind)
-	{
-		auto& renderer = Renderer::GetInstance();
-		if (bind)
-			renderer.SetSystemTexture(SystemTextures::ShadowMap, mShadowManager->GetShadowMap());
-		else
-			renderer.SetSystemTexture(SystemTextures::ShadowMap, 0);
-	}
-
 	void DepthWriteShaderCloud(){
 
-	}
-
-	TexturePtr GetShadowMap() const{
-		return mShadowManager->GetShadowMap();
-	}
-
-	void DeleteShadowMap()
-	{
-		mShadowManager->DeleteShadowMap();
 	}
 };
 
@@ -261,10 +214,6 @@ void RenderStrategyMinimum::SetRenderTarget(RenderTargetPtr renderTarget){
 	mImpl->SetRenderTarget(renderTarget);
 }
 
-void RenderStrategyMinimum::UpdateLightCamera(){
-	mImpl->UpdateLightCamera();
-}
-
 void RenderStrategyMinimum::Render(size_t face){
 	mImpl->Render(face);
 }
@@ -275,10 +224,6 @@ bool RenderStrategyMinimum::IsHDR() const{
 
 bool RenderStrategyMinimum::IsGlowSupported(){
 	return false;
-}
-
-CameraPtr RenderStrategyMinimum::GetLightCamera() const{
-	return mImpl->mShadowManager->GetLightCamera();
 }
 
 bool RenderStrategyMinimum::SetHDRTarget(){
@@ -306,8 +251,4 @@ void RenderStrategyMinimum::OnRendererOptionChanged(RendererOptionsPtr options, 
 
 void RenderStrategyMinimum::OnRenderTargetSizeChanged(const Vec2I& size){
 	mImpl->OnRenderTargetSizeChanged(size);
-}
-
-TexturePtr RenderStrategyMinimum::GetShadowMap(){
-	return mImpl->GetShadowMap();
 }

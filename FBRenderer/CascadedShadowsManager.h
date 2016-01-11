@@ -8,22 +8,19 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(CascadedShadowsManager);
 	class CascadedShadowsManager{
 		FB_DECLARE_PIMPL_NON_COPYABLE(CascadedShadowsManager);
-		CascadedShadowsManager(unsigned renderTargetId, 
-			const Vec2I& renderTargetSize);
+		CascadedShadowsManager();
 		~CascadedShadowsManager();
 
 	public:
-		static CascadedShadowsManagerPtr Create(unsigned renderTargetId, 
-			const Vec2I& renderTargetSize);
+		static CascadedShadowsManagerPtr Create();
 
 		void CreateViewports();
 		void CreateShadowMap();		
-		void RenderShadows(IScenePtr scene);
+		void RenderShadows(IScenePtr scene, bool mainRT);
 		void UpdateFrame(CameraPtr viewerCamera, const Vec3& lightDir,
 			const AABB& sceneAABB);
 		TexturePtr GetShadowMap() const;
 		void DeleteShadowMap();
-		CameraPtr GetLightCamera() const;		
-		void SetMain(bool main);
+		CameraPtr GetLightCamera() const;				
 	};
 }

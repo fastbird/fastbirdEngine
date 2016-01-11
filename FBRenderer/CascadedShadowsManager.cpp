@@ -25,13 +25,9 @@ public:
 		float mFar;
 	};
 	OrthogonalData mOrthogonalData[MAX_CASCADES];
-	bool mMainRt;
 
 	//---------------------------------------------------------------------------
-	Impl(unsigned renderTargetId, const Vec2I& renderTargetSize)
-		: mRenderTargetId(renderTargetId)
-		, mRenderTargetSize(renderTargetSize)
-		, mMainRt(false)
+	Impl()
 	{
 		mCascadePartitionsZeroToOne[0] = 0.05f;
 		mCascadePartitionsZeroToOne[1] = 0.15f;
@@ -598,11 +594,7 @@ public:
 		mShadowMap = 0;
 	}
 
-	void SetMain(bool main){
-		mMainRt = main;
-	}
-
-	void RenderShadows(IScenePtr scene){
+	void RenderShadows(IScenePtr scene, bool mainRT){
 		auto& renderer = Renderer::GetInstance();
 		if (!mShadowMap)
 		{
@@ -650,7 +642,7 @@ public:
 			param.mRenderPass = PASS_SHADOW;
 			scene->MakeVisibleSet(mLightCamera.get(), true);
 			scene->Render(param, 0);	
-			if (mMainRt){
+			if (mainRT && renderer.GetRendererOptions()->r_LightFrustum){
 				AABB aabb;
 				aabb.SetMax(Vec3(orthogonalData.mR, orthogonalData.mFar, orthogonalData.mT));
 				aabb.SetMin(Vec3(orthogonalData.mL, orthogonalData.mNear, orthogonalData.mB));
@@ -685,21 +677,16 @@ public:
 			rc.gCascadeOffset[i].w = 0;
 		}
 		renderer.UpdateShadowConstantsBuffer(&rc);
-
-
 	}
 };
 
 //---------------------------------------------------------------------------
-CascadedShadowsManagerPtr CascadedShadowsManager::Create(
-	unsigned renderTargetId, const Vec2I& renderTargetSize){
+CascadedShadowsManagerPtr CascadedShadowsManager::Create(){
 	return CascadedShadowsManagerPtr(
-		new CascadedShadowsManager(renderTargetId, renderTargetSize),
-		[](CascadedShadowsManager* obj){ delete obj; });
+		new CascadedShadowsManager(),	[](CascadedShadowsManager* obj){ delete obj; });
 }
-CascadedShadowsManager::CascadedShadowsManager(unsigned renderTargetId, 
-	const Vec2I& renderTargetSize)
-	: mImpl(new Impl(renderTargetId, renderTargetSize))
+CascadedShadowsManager::CascadedShadowsManager()
+	: mImpl(new Impl())
 {
 
 }
@@ -716,8 +703,8 @@ void CascadedShadowsManager::CreateShadowMap() {
 	mImpl->CreateShadowMap();
 }
 
-void CascadedShadowsManager::RenderShadows(IScenePtr scene) {
-	mImpl->RenderShadows(scene);
+void CascadedShadowsManager::RenderShadows(IScenePtr scene, bool mainRT) {
+	mImpl->RenderShadows(scene, mainRT);
 }
 
 void CascadedShadowsManager::UpdateFrame(CameraPtr viewerCamera, const Vec3& lightDir,	const AABB& sceneAABB) {
@@ -734,8 +721,4 @@ void CascadedShadowsManager::DeleteShadowMap(){
 
 CameraPtr CascadedShadowsManager::GetLightCamera() const{
 	return mImpl->mLightCamera;
-}
-
-void CascadedShadowsManager::SetMain(bool main){
-	mImpl->SetMain(main);
 }
