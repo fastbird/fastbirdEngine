@@ -175,6 +175,9 @@ public:
 		auto& renderer = Renderer::GetInstance();		
 		mRenderTargetTexture = renderer.CreateTexture(0, width, height, format,
 			BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+		if (!mRenderTargetTexture){
+			Logger::Log(FB_ERROR_LOG_ARG, "Failed to create render target");
+		}
 		if (mCamera){
 			mCamera->SetWidth((float)width);
 			mCamera->SetHeight((float)height);
@@ -248,6 +251,9 @@ public:
 		else{
 			if (mRenderTargetTexture)
 				mRenderTargetTexture->Unbind();
+			if (!mRenderTargetTexture){
+				Logger::Log(FB_ERROR_LOG_ARG, "No rendertarget.");
+			}
 			TexturePtr rt[] = { mRenderTargetTexture };
 			// we need to have 6 glow textures to support for cube map.
 			// but don't need to.
@@ -369,6 +375,9 @@ public:
 
 	void SetColorTexture(TexturePtr pTexture)
 	{
+		if (!pTexture){
+			Logger::Log(FB_ERROR_LOG_ARG, "Setting null color texture");
+		}
 		mRenderTargetTexture = pTexture;
 		auto oldSize = mSize;
 		mSize = pTexture->GetSize();
@@ -412,6 +421,7 @@ public:
 	}
 
 	void RemoveTextures(){
+		Logger::Log(FB_DEFAULT_LOG_ARG, "(info) removed render target textures");
 		mRenderTargetTexture = 0;
 		mDepthStencilTexture = 0;
 	}
@@ -503,6 +513,7 @@ const Vec2I& RenderTarget::GetSize() const
 }
 
 void RenderTarget::DeleteBuffers(){
+	Logger::Log(FB_DEFAULT_LOG_ARG, "(info) deleted buffers");
 	mImpl->mRenderTargetTexture = 0;
 	mImpl->mDepthStencilTexture = 0;
 }

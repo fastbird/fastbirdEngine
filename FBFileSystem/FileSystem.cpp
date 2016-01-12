@@ -349,10 +349,10 @@ void FileSystem::SetApplicationName(const char* name){
 std::string FileSystem::GetAppDataFolder(){
 #if defined(_PLATFORM_WINDOWS_)
 	PWSTR path=0;
-	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, 0, &path))){
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, 0, &path))){
 		auto ret = std::string(WideToAnsi(path));
 		if (!gApplicationName.empty())
-			ret += "\\" + gApplicationName;
+			ret += "\\my games\\" + gApplicationName;
 		CoTaskMemFree(path);
 		boost::filesystem::path p(ret);
 		return p.generic_string();		

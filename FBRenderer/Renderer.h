@@ -379,6 +379,7 @@ namespace fb{
 		// Debug
 		//-------------------------------------------------------------------
 		std::vector<unsigned> mCurrentRenderTargetTextureIds;
+		bool mDebug;
 	};
 
 }

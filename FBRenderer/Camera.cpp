@@ -32,6 +32,7 @@
 #include "FBInputManager/IInputInjector.h"
 #include "FBInputManager/KeyCodes.h"
 #include "FBSceneManager/ISpatialObject.h"
+#include "FBCommonHeaders/VectorMap.h"
 
 using namespace fb;
 
@@ -98,6 +99,7 @@ public:
 	std::mutex mMutex;
 	Frustum mFrustum;
 	CameraPtr mOverridingCamera;
+	VectorMap<Vec2I, Ray3> mRayCache;
 
 	Impl(Camera* self) 
 		: mSelf(self)
@@ -448,7 +450,8 @@ public:
 					++it;
 					observer->OnProjMatrixChanged();
 				}
-			}			
+			}		
+			mRayCache.clear();
 		}
 	}
 
@@ -523,6 +526,10 @@ public:
 	Ray3 ScreenPosToRay(long x, long y)
 	{
 		Update();
+		auto it = mRayCache.Find(Vec2I(x, y));
+		if (it != mRayCache.end()){
+			return it->second;
+		}
 
 		Real fx = 2.0f * x / GetWidth() - 1.0f;
 		Real fy = 1.0f - 2.0f * y / GetHeight();
@@ -533,7 +540,8 @@ public:
 		Vec3 dir = target - origin;
 		dir.Normalize();
 
-		Ray3 ray(origin, dir);
+		Ray3 ray(mTransformation.GetTranslation(), dir);
+		mRayCache[Vec2I(x, y)] = ray;
 		return ray;
 	}
 

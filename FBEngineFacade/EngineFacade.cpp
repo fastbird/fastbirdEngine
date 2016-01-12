@@ -84,7 +84,6 @@ public:
 	AudioManagerPtr mAudioManager;
 	MusicPlayerPtr mMusicPlayer;
 	GeometryRendererPtr mGeometryRenderer;
-	bool mRayFromCursorCalced;
 
 	// EngineFacade
 	std::vector<MeshFacadePtr> mTempMeshes;
@@ -98,7 +97,6 @@ public:
 	Impl()
 		: mL(0)
 		, mNextWindowId(MainWindowId)
-		, mRayFromCursorCalced(false)
 		, mLockSceneOverriding(false)
 	{
 		FileSystem::StartLoggingIfNot();
@@ -372,7 +370,6 @@ public:
 	}
 
 	void UpdateInput(){
-		mRayFromCursorCalced = false;
 		mInputManager->Update();
 	}
 
@@ -462,19 +459,13 @@ public:
 	}
 
 	const Ray3& GetWorldRayFromCursor(){
-		static Ray3 worldRay(Vec3::ZERO, Vec3::UNIT_Y);
-		if (mRayFromCursorCalced){
-			return worldRay;
-		}
-
-		auto cam = mMainCamera;
-		if (cam)
+		Ray3 worldRay;
+		if (mMainCamera)
 		{
-			mRayFromCursorCalced = true;
 			auto injector = mInputManager->GetInputInjector();
 			long x, y;
 			injector->GetMousePos(x, y);
-			worldRay = cam->ScreenPosToRay(x, y);
+			worldRay = mMainCamera->ScreenPosToRay(x, y);
 		}
 		else
 		{
@@ -629,7 +620,9 @@ EngineFacade::EngineFacade()
 
 }
 EngineFacade::~EngineFacade(){
-
+	Logger::Log(FB_DEFAULT_LOG_ARG, "Deleting EngineFacade.");
+	mImpl = 0;
+	Logger::Log(FB_DEFAULT_LOG_ARG, "EngineFacade Deleted.");
 }
 
 void EngineFacade::SetApplicationName(const char* applicationName){

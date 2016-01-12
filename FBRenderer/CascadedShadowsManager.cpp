@@ -600,10 +600,11 @@ public:
 		{
 			CreateShadowMap();
 		}
+		auto provider = renderer.GetResourceProvider();		
 		TexturePtr rts[] = { 0 };
 		size_t index[] = { 0 };
 		renderer.SetRenderTarget(rts, index, 1, mShadowMap, 0);
-		auto provider = renderer.GetResourceProvider();
+		
 		provider->BindShader(ResourceTypes::Shaders::ShadowMapShader);		
 		//the full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
 		renderer.Clear(0, 0, 0, 0, 1.0f, 0);

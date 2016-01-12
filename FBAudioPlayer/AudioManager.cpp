@@ -1545,10 +1545,12 @@ AudioManager::AudioManager()
 }
 AudioManager::~AudioManager()
 {
+	Logger::Log(FB_ERROR_LOG_ARG, "Deleting Audio Manager.");
 	sAudioManagerRaw = 0;
 	mImpl->Deinit();
 	mImpl->JoinThread();	
 	mImpl = 0;	
+	Logger::Log(FB_ERROR_LOG_ARG, "Audio Manager deleted.");
 }
 
 bool AudioManager::Init(){

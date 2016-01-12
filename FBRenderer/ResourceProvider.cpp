@@ -111,7 +111,8 @@ public:
 		case ResourceTypes::Textures::LuminanceMap:
 		{
 			for (int i = 0; i < NumLuminanceMaps; ++i){
-				auto texture = renderer.CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
+				auto texture = renderer.CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, 
+					BUFFER_USAGE_DEFAULT,
 					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 				if (!texture){
 					Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create luminance map(%d)", i).c_str());
@@ -597,7 +598,7 @@ public:
 			desc.AddressU = TEXTURE_ADDRESS_BORDER;
 			desc.AddressV = TEXTURE_ADDRESS_BORDER;
 			desc.AddressW = TEXTURE_ADDRESS_BORDER;			
-			desc.MaxAnisotropy = 0.f;
+			desc.MaxAnisotropy = 0;
 			desc.MinLOD = 0.f;
 			desc.MaxLOD = 0.f;
 			desc.ComparisonFunc = COMPARISON_LESS;				

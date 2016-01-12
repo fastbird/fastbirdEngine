@@ -495,21 +495,14 @@ public:
 	bool ChangeResolution(HWindowId id, HWindow window, const Vec2ITuple& newResol,
 		IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture){
 		auto swIt = mSwapChains.Find(id);
-		if (swIt == mSwapChains.end())
+		if (swIt == mSwapChains.end()){
+			Logger::Log(FB_ERROR_LOG_ARG, "No swap chain found.");
 			return false;
+		}
 		Vec2I resol = newResol;
-		if (resol.x == 0 || resol.y == 0)
+		if (resol.x == 0 || resol.y == 0){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid resolution");
 			return false;
-
-		Vec2I originalResol(0, 0);
-		{
-			auto rtIt = mRenderTargetTextures.Find(id);
-			if (rtIt != mRenderTargetTextures.end()){
-				originalResol = rtIt->second.first->GetSize();
-				if (originalResol == resol)
-					return false;
-			}
-
 		}
 		BOOL fullscreen;
 		IDXGIOutput* output = 0;
@@ -909,7 +902,6 @@ public:
 			: mShader(pshader)
 		{
 			assert(mShader);
-			mWorkingDirectory = FileSystem::GetParentPath(filename) + "/";
 		}
 		~IncludeProcessor()
 		{
@@ -925,30 +917,13 @@ public:
 		{
 			assert(IncludeType == D3D10_INCLUDE_LOCAL);
 			FILE* file = 0;
-			std::string filepath = mWorkingDirectory + pFileName;
+			std::string filepath = pFileName;
 			fopen_s(&file, filepath.c_str(), "rb");
-			if (file == 0)
+			if (!file)
 			{
-				const char* paths[] = { "EssentialEngineData/shaders/"
-				};
-				for (int i = 0; i < ARRAYCOUNT(paths); i++)
-				{
-					std::string filepath = paths[i];
-					filepath += pFileName;
-					fopen_s(&file, filepath.c_str(), "rb");
-					if (file)
-					{
-						break;
-					}
-				}
-				if (!file)
-				{
-					Error("Failed to open include file %s", pFileName);
-					return S_OK;
-				}
-
+				Error("Failed to open include file %s", pFileName);
+				return S_OK;
 			}
-
 			ToLowerCase(filepath);
 			mProcessedFiles.insert(filepath);
 
@@ -971,7 +946,6 @@ public:
 		}
 
 	private:
-		std::string mWorkingDirectory;
 		std::set<std::string> mProcessedFiles;
 		ShaderD3D11Ptr mShader;
 

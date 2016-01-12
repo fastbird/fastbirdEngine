@@ -180,7 +180,8 @@ void Shader::ReloadShader(const char* filepath)
 	for (auto it = sAllShaders.begin(); it != sAllShaders.end(); /**/){
 		IteratingWeakContainer(sAllShaders, it, shader);
 		if (shader->mImpl->mPlatformShader){
-			if (strcmp(filepath, shader->GetPath()) == 0 || shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
+			if (strcmp(filepath, shader->GetPath()) == 0 || 
+				shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
 			{
 				renderer.ReloadShader(shader, shader->GetPath());
 			}

@@ -66,6 +66,7 @@
 #include "FBLua/LuaObject.h"
 #include "TinyXmlLib/tinyxml2.h"
 #include "FBTimer/Timer.h"
+#include "FBDebugLib/DebugLib.h"
 #include <set>
 #undef DrawText
 #undef CreateDirectory
@@ -1224,7 +1225,8 @@ public:
 			if (mCurrentRTTextures.size() == num && mCurrentViewIndices.size() == num){
 				bool same = true;
 				for (int i = 0; i < num; ++i){
-					if (mCurrentRTTextures[i] != pRenderTargets[i] || mCurrentViewIndices[i] != rtViewIndex[i]){
+					if (mCurrentRTTextures[i] != pRenderTargets[i] || 
+						mCurrentViewIndices[i] != rtViewIndex[i]){
 						same = false;
 					}
 				}
@@ -1254,8 +1256,15 @@ public:
 		mCurrentDSTexture = pDepthStencil;
 		mCurrentDSViewIndex = dsViewIndex;
 		IPlatformTexturePtr platformRTs[4] = { 0 };
+		//mSelf->mCurrentRenderTargetTextureIds.clear();
 		for (int i = 0; i < num; ++i){
 			platformRTs[i] = pRenderTargets[i] ? pRenderTargets[i]->GetPlatformTexture() : 0;			
+			/*while (mSelf->mCurrentRenderTargetTextureIds.size() <= (unsigned)i){
+				mSelf->mCurrentRenderTargetTextureIds.push_back(-1);
+			}
+			mSelf->mCurrentRenderTargetTextureIds[i] = pRenderTargets[i] ? 
+				pRenderTargets[i]->GetTextureID()
+				: -1;*/
 		}
 
 		GetPlatformRenderer().SetRenderTarget(platformRTs, rtViewIndex, num,
@@ -1564,12 +1573,22 @@ public:
 	// GPU Manipulation
 	//-------------------------------------------------------------------
 	void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation){
+		/*if (mSelf->mCurrentRenderTargetTextureIds.empty() ||
+			mSelf->mCurrentRenderTargetTextureIds[0] == -1){
+			int a = 0;
+			a++;
+		}*/
 		GetPlatformRenderer().DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
 		mFrameProfiler.NumDrawIndexedCall++;
 		mFrameProfiler.NumIndexCount += indexCount;
 	}
 
 	void Draw(unsigned int vertexCount, unsigned int startVertexLocation){
+		/*if (mSelf->mCurrentRenderTargetTextureIds.empty() ||
+			mSelf->mCurrentRenderTargetTextureIds[0] == -1){
+			int a = 0;
+			a++;
+		}*/
 		GetPlatformRenderer().Draw(vertexCount, startVertexLocation);
 		mFrameProfiler.NumDrawCall++;
 		mFrameProfiler.NumVertexCount += vertexCount;
@@ -1898,6 +1917,8 @@ public:
 
 		auto handleId = GetWindowHandleId(window);
 		auto rt = GetRenderTarget(handleId);
+		if (rt->GetRenderTargetTexture()->GetSize() == resol)
+			return;		
 		rt->RemoveTextures();
 		mCurrentRTTextures.clear();
 		mCurrentDSTexture = 0;
@@ -2870,6 +2891,7 @@ RendererPtr Renderer::GetInstancePtr(){
 //---------------------------------------------------------------------------
 Renderer::Renderer()
 	: mImpl(new Impl(this))
+	, mDebug(false)
 {
 
 }
