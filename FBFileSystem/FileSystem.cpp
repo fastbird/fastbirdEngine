@@ -201,7 +201,10 @@ std::string FileSystem::UnifyFilepath(const char* path){
 }
 
 std::string FileSystem::Absolute(const char* path){
-	return boost::filesystem::absolute(path).generic_string();
+	std::string ret = boost::filesystem::absolute(path).generic_string();
+	if (ret.size() > 2 && ret.back() == '.')
+		ret.erase(ret.end() - 1);
+	return ret;
 }
 
 std::string FileSystem::MakrEndingSlashIfNot(const char* directory){

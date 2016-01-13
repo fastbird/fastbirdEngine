@@ -35,6 +35,7 @@
 #include "FBRenderer/Camera.h"
 #include "FBRenderer/Material.h"
 #include "FBRenderer/Texture.h"
+#include "FBRenderer/RenderStrategyMinimum.h"
 using namespace fb;
 class Voxelizer::Impl{
 public:
@@ -110,6 +111,8 @@ public:
 		param.mSceneNameToCreateAndOwn = FormatString("Voxelizer_%x", this);
 		RenderTargetPtr pDepthRT = EngineFacade::GetInstance().CreateRenderTarget(param);			
 		pDepthRT->SetDepthStencilDesc(mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT, false, false);
+		IRenderStrategyPtr minimum = RenderStrategyMinimum::Create();
+		pDepthRT->SetRenderStrategy(minimum);
 		auto pCam = pDepthRT->GetCamera();
 		pCam->SetOrthogonal(true);
 		pCam->SetOrthogonalData(-radius, -radius, radius, radius);

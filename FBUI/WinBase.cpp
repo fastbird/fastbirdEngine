@@ -3348,9 +3348,13 @@ void WinBase::RefreshScissorRects()
 	{
 		mUIObject->SetUseScissor(true, GetScissorRegion());
 	}
-	else
+	else if (mUIObject)
 	{
 		mUIObject->SetUseScissor(false, Rect());
+	}
+	else{
+		int a = 0;
+		a++;
 	}
 }
 

@@ -100,6 +100,7 @@ namespace fb
 		virtual void DeleteBTShape(unsigned id) = 0;
 		virtual void DrawDebugInfo() = 0;
 		virtual void ResetConstraintsSolver() = 0;
+		virtual bool NeedToCollides(RigidBodyPtr a, RigidBodyPtr b) = 0;
 
 		//-------------------------------------------------------------------
 		// collision shape manager

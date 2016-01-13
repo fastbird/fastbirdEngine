@@ -701,8 +701,10 @@ public:
 			btTransform trB = btTarget->getWorldTransform().inverse() * globalFrame;
 
 
-			btFixedConstraint* fixed = FB_NEW_ALIGNED(btFixedConstraint, MemAlign)(*btMaster, *btTarget, trA, trB);
-			fixed->setOverrideNumSolverIterations(30);
+			auto* fixed = FB_NEW_ALIGNED(btFixedConstraint, MemAlign)(*btMaster, *btTarget, trA, trB);
+			fixed->setAngularLowerLimit(btVector3(0, 0, 0));
+			fixed->setAngularUpperLimit(btVector3(0, 0, 0));
+			//fixed->setOverrideNumSolverIterations(30);
 			mDynamicsWorld->addConstraint(fixed, true);
 		}
 	}
@@ -1058,6 +1060,10 @@ public:
 		mDynamicsWorld->getConstraintSolver()->reset();
 	}
 
+	bool NeedToCollides(RigidBodyPtr a, RigidBodyPtr b){
+		return a->CheckCollideWith(b);
+	}
+
 
 	//-------------------------------------------------------------------
 	// collision shape manager
@@ -1371,6 +1377,10 @@ void Physics::DrawDebugInfo() {
 
 void Physics::ResetConstraintsSolver(){
 	mImpl->ResetConstraintsSolver();
+}
+
+bool Physics::NeedToCollides(RigidBodyPtr a, RigidBodyPtr b){
+	return mImpl->NeedToCollides(a, b);
 }
 
 BoxShapePtr Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {

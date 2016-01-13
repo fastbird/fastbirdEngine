@@ -44,7 +44,7 @@ namespace fb{
 	void CheckALError(){
 		auto error = alGetError();
 		if (error){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Open al error code : 0x%x", error).c_str());
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("OpenAL error code : 0x%x", error).c_str());
 		}
 	}
 
@@ -337,6 +337,9 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
 			return false;
 		}		
+		if (mNumPlaying >= 256){
+			return false;
+		}
 		auto audioId = audioSource->GetAudioId();
 		assert(audioId != INVALID_AUDIO_ID);
 		audioSource->SetAudioBuffer(buffer);
@@ -366,6 +369,7 @@ public:
 			alGenSources(1, &alsource);
 			if (alGetError() != AL_NO_ERROR){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio source. Current playing: %d", mNumPlaying).c_str());
+				alsource = -1;
 			}
 			else{
 				++mNumGeneratedSources;

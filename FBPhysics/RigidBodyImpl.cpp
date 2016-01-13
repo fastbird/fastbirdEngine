@@ -447,14 +447,7 @@ public:
 
 	void SetIgnoreCollisionCheck(RigidBodyPtr rigidBody, bool ignore){
 		auto colObj = dynamic_cast<btCollisionObject*>(rigidBody.get());
-		assert(colObj);
-		if (ignore){
-			int i = mSelf->m_objectsWithoutCollisionCheck.findLinearSearch(colObj);
-			if (i == mSelf->m_objectsWithoutCollisionCheck.size()){
-				mSelf->setIgnoreCollisionCheck(colObj, ignore);
-			}
-		}
-		else{
+		if (mSelf->checkCollideWithOverride(colObj) == ignore){
 			mSelf->setIgnoreCollisionCheck(colObj, ignore);
 		}
 	}
@@ -594,6 +587,10 @@ public:
 	void SetDebug(bool debug){
 		mDebug = debug;
 		mSelf->btSetDebug(debug);
+	}
+
+	bool CheckCollideWith(RigidBodyPtr other){
+		return mSelf->checkCollideWith((RigidBodyImpl*)other.get());
 	}
 };
 
@@ -825,5 +822,9 @@ unsigned RigidBodyImpl::GetGameFlag() const {
 
 void RigidBodyImpl::SetDebug(bool debug) {
 	mImpl->SetDebug(debug);
+}
+
+bool RigidBodyImpl::CheckCollideWith(RigidBodyPtr other){
+	return mImpl->CheckCollideWith(other);
 }
 

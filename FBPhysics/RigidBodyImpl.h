@@ -119,5 +119,6 @@ namespace fb
 		unsigned GetGameFlag() const;
 
 		void SetDebug(bool debug);
+		bool CheckCollideWith(RigidBodyPtr other);
 	};
 }

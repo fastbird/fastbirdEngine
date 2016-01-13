@@ -91,6 +91,7 @@ namespace fb
 		void DeleteBTShape(unsigned id);
 		void DrawDebugInfo();
 		void ResetConstraintsSolver();
+		bool NeedToCollides(RigidBodyPtr a, RigidBodyPtr b);
 
 		//-------------------------------------------------------------------
 		// collision shape manager

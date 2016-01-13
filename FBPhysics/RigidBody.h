@@ -110,5 +110,6 @@ namespace fb
 		virtual void SetGameFlag(unsigned flag) = 0;
 		virtual unsigned GetGameFlag() const = 0;
 		virtual void SetDebug(bool debug) = 0;		
+		virtual bool CheckCollideWith(RigidBodyPtr other) = 0;
 	};
 }
