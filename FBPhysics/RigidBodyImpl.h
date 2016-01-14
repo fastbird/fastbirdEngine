@@ -113,6 +113,7 @@ namespace fb
 
 		void RemoveConstraints();
 		void RemoveConstraint(void* constraintPtr);
+		void RemoveConstraintsFor(void* gamePtr);
 		void* GetLastConstraintsPtr();
 
 		void SetGameFlag(unsigned flag);

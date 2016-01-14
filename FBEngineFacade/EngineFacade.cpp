@@ -430,7 +430,7 @@ public:
 	}
 
 	void GetFractureMeshObjects(const char* daeFilePath, std::vector<MeshFacadePtr>& objects){
-		if (ValidCStringLength(daeFilePath))
+		if (!ValidCStringLength(daeFilePath))
 			return;
 
 		objects.clear();
@@ -1189,6 +1189,7 @@ RenderTargetPtr EngineFacade::CreateRenderTarget(const RenderTargetParamEx& para
 		if (!param.mSceneNameToCreateAndOwn.empty()){
 			auto scene = SceneManager::GetInstance().CreateScene(param.mSceneNameToCreateAndOwn.c_str());
 			rt->TakeOwnershipScene(scene);
+			scene->SetRttScene(true);
 		}
 		if (!param.mEnvironmentTexture.empty()){
 			rt->SetEnvTexture(Renderer::GetInstance().CreateTexture(param.mEnvironmentTexture.c_str()));

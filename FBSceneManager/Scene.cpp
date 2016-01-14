@@ -626,10 +626,12 @@ public:
 			mSceneAABB.Invalidate();
 			for (auto it = mSpatialObjects.begin(); it != mSpatialObjects.end(); /**/){
 				IteratingWeakContainer(mSpatialObjects, it, spatialObj);
-				const auto& pos = spatialObj->GetPosition();
-				auto radius = spatialObj->GetRadius();
-				mSceneAABB.Merge(pos+radius);
-				mSceneAABB.Merge(pos-radius);
+				if (spatialObj->GetVisible()){
+					const auto& pos = spatialObj->GetPosition();
+					auto radius = spatialObj->GetRadius();
+					mSceneAABB.Merge(pos + radius);
+					mSceneAABB.Merge(pos - radius);
+				}
 			}
 			mSceneAABBLastFrame = gpTimer->GetFrame();
 		}

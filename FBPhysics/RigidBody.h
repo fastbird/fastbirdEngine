@@ -105,6 +105,7 @@ namespace fb
 		virtual bool IsGrouped() const = 0;
 		virtual void RemoveConstraints() = 0;
 		virtual void RemoveConstraint(void* constraintPtr)  = 0;
+		virtual void RemoveConstraintsFor(void* gamePtr) = 0;
 		virtual void* GetLastConstraintsPtr() = 0;
 
 		virtual void SetGameFlag(unsigned flag) = 0;

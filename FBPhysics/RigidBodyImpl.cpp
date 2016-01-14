@@ -140,6 +140,9 @@ public:
 			colShape->calculateLocalInertia(mass, inertia);
 			mSelf->setMassProps(mass, inertia);
 		}
+		else{
+			SetMass(0.f);
+		}
 		assert(!mAddedToWorld);
 		mWorld->addRigidBody(mSelf, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
 		mAddedToWorld = true;
@@ -567,6 +570,20 @@ public:
 		}
 	}
 
+	void RemoveConstraintsFor(void* gamePtr){
+		auto num = mSelf->getNumConstraintRefs();
+		for (int i = 0; i < num; ){
+			btTypedConstraint* pConstraint = mSelf->getConstraintRef(i);
+			if (pConstraint->getRigidBodyA().getUserPointer() ==
+				pConstraint->getRigidBodyB().getUserPointer()){
+				Physics::GetInstance().RemoveConstraint(pConstraint);
+			}
+			else{
+				++i;
+			}
+		}
+	}
+
 	void* GetLastConstraintsPtr(){
 		auto num = mSelf->getNumConstraintRefs();
 		if (num == 0)
@@ -806,6 +823,10 @@ void RigidBodyImpl::RemoveConstraints() {
 
 void RigidBodyImpl::RemoveConstraint(void* constraintPtr) {
 	mImpl->RemoveConstraint(constraintPtr);
+}
+
+void RigidBodyImpl::RemoveConstraintsFor(void* gamePtr){
+	mImpl->RemoveConstraintsFor(gamePtr);
 }
 
 void* RigidBodyImpl::GetLastConstraintsPtr() {
