@@ -350,12 +350,12 @@ public:
 			auto mesh = ConvertMeshData(it.second.mMesh, daeFilepath, buildTangent, keepDataInMesh);
 			auto transformation = ConvertCollada(it.second.mTransformation);
 			auto animData = mesh->GetAnimationData();
+			
+			unsigned idx = meshGroup->AddMesh(mesh, transformation, it.second.mParentMeshIdx);
 			if (animData){
-				Transformation inversed;
-				transformation.Inverse(inversed);
-				animData->ApplyTransform(inversed);
+				Transformation toLocal = meshGroup->GetToLocalTransform(idx);
+				animData->ApplyTransform(toLocal);
 			}
-			meshGroup->AddMesh(mesh, transformation, it.second.mParentMeshIdx);
 		}
 
 		for (auto& it : groupData->mAuxiliaries){

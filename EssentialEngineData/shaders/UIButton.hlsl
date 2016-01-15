@@ -32,7 +32,7 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 #ifdef _ALPHA_TEXTURE
 Texture2D  gAlphaTexture : register(t1);

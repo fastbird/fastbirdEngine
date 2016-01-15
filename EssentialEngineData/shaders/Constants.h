@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "ShaderCommon.h"
+#include "EssentialEngineData/shaders/ShaderCommon.h"
 #ifndef __SHADER_CONSTANTS_H_
 #define __SHADER_CONSTANTS_H_
 #ifdef CPP

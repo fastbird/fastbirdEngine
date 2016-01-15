@@ -1,0 +1,27 @@
+<Material>
+	<ShaderFile>EssentialEngineData/shaders/MeshPBR.hlsl</ShaderFile>
+	<MaterialConstants>
+		<AmbientColor>0.0, 0.0, 0.0, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/biggun/diffuse.png</Texture>
+		<Texture slot="1" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/biggun/normal.png</Texture>
+		<Texture slot="2" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/biggun/metallic.png</Texture>
+		<Texture slot="3" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/biggun/roughness.png</Texture>
+	</Textures>
+	<MaterialParameters>
+	</MaterialParameters>
+	<ShaderDefines>
+		<Define name="NORMAL_TEXTURE" val="1"/>
+		<Define name="ENV_TEXTURE" val="1"/>
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="2" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+		<input semantic="TANGENT" index="0" format="FLOAT3" slot="4" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
+	</InputLayout>
+</Material>

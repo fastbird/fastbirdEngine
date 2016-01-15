@@ -32,7 +32,7 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 //
 Texture2D  gDiffuseTexture : register(t0);

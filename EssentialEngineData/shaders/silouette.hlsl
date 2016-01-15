@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 Texture2D gSmallMap : register(t0);
 Texture2D gBigMap : register(t1);

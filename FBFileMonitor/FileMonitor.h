@@ -48,6 +48,7 @@ namespace fb{
 		bool Check();
 
 		void IgnoreMonitoringOnFile(const char* filepath);
+		void IgnoreMonitoringOnFile(const char* filepath, float sec);
 		void ResumeMonitoringOnFile(const char* filepath);
 
 		/// Internal function

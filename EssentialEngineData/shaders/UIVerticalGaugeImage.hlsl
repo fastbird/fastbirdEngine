@@ -32,7 +32,7 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 Texture2D  gImageFilled : register(t0);
 Texture2D  gImageNotFilled : register(t1);

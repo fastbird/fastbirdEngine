@@ -32,9 +32,9 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
-#include "CommonFunctions.h"
-#include "CommonLighting.h"
+#include "EssentialEngineData/shaders/Constants.h"
+#include "EssentialEngineData/shaders/CommonFunctions.h"
+#include "EssentialEngineData/shaders/CommonLighting.h"
 
 Texture2D  gDiffuseTexture : register(t0);
 #ifdef NORMAL_TEXTURE
@@ -140,11 +140,11 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	specColor *= gDirectionalLightSpecular[0];
 
 	float dotNL = dot(normal, toLightDir);
-	float ndl = max(dotNL, 0);
-	float ndl2 = max(-dotNL, 0);
+	float ndl = saturate(dotNL);
+	float ndl2 = saturate(-dotNL);
 	float3 h = normalize(toViewDir + toLightDir);
-	float ndh = max( dot(normal, h), 1e-8);
-	float vdh = max( dot(toViewDir, h), 1e-8);
+	float ndh = saturate( dot(normal, h) );
+	float vdh = saturate( dot(toViewDir, h) );
 	//INPUT.WorldPos.w == current pixel depth
 	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));

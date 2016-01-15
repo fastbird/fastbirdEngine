@@ -37,7 +37,7 @@ public:
 	MeshFacadePtr mMesh;
 
 	Impl(){
-		mMesh = MeshFacade::Create()->LoadMeshGroup("data/aagun2.dae");
+		mMesh = MeshFacade::Create()->LoadMeshGroup("data/biggun.dae");
 		mMesh->AttachToScene();
 		mMesh->SetPosition(Vec3(100, 100, 100));
 		Quat q;

@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "CommonDefines.h"
+#include "EssentialEngineData/shaders/CommonDefines.h"
 
 #ifdef ENV_TEXTURE
 TextureCube gEnvTexture : register(t4);

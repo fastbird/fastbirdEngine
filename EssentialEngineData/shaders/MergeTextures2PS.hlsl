@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 //---------------------------------------------------------------------------
 Texture2D gSrcTexture0 : register(t0);

@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 Texture2D gYTexture : register(t0);
 Texture2D gUTexture : register(t1);

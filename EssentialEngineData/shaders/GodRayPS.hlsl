@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 
 #ifdef _MULTI_SAMPLE
 Texture2DMS<float4> gFrameTexture : register(t0);

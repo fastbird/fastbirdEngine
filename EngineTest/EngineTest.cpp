@@ -91,11 +91,11 @@ void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
-	//gMeshTest = MeshTest::Create();	
-	//gMeshTest->SetCameraTarget();
+	gMeshTest = MeshTest::Create();	
+	gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	//gParticleTest = ParticleTest::Create();
-	gAudioTest = AudioTest::Create();
+	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();
 }

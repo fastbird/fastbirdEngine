@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "ShaderCommon.h"
+#include "EssentialEngineData/shaders/ShaderCommon.h"
 #ifdef _MULTI_SAMPLE
 Texture2DMS<float4> gSrcTexture : register(t0);
 #else

@@ -425,6 +425,8 @@ public:
 					tinyxml2::XMLDocument doc;
 					SaveUI(uiname.c_str(), doc);
 					if (!itFind->second.empty()){
+						/*FileMonitor::GetInstance().IgnoreMonitoringOnFile(
+							itFind->second[0]->GetUIFilePath(), 1.0f);*/
 						doc.SaveFile(itFind->second[0]->GetUIFilePath());
 					}
 				}
@@ -1010,8 +1012,11 @@ public:
 	void DeleteWindow(WinBasePtr pWnd){
 		if (!pWnd)
 			return;
+
+		
 		if (pWnd == mKeyboardFocus.lock())
 		{
+			mUIEditor->OnComponentSelected(0);
 			mKeyboardFocus.reset();
 		}
 		if (pWnd == mModalWindow.lock()){
@@ -2344,15 +2349,13 @@ mPopup->SetVisible(true);
 			}
 
 			auto oldFilepath = root->GetUIFilePath();
-			FileMonitor::GetInstance().IgnoreMonitoringOnFile(oldFilepath);
-			FileMonitor::GetInstance().IgnoreMonitoringOnFile(newfile);
+			FileMonitor::GetInstance().IgnoreMonitoringOnFile(oldFilepath, 1.0f);
+			FileMonitor::GetInstance().IgnoreMonitoringOnFile(newfile, 1.0f);
 			FileSystem::Rename(oldFilepath, newfile);			
 			mLuaUIs[lowerNewName].swap(it->second);
 			mLuaUIs.erase(it);
 			root->SetUIFilePath(newfile);
-			root->SetName(newName.c_str());
-			FileMonitor::GetInstance().ResumeMonitoringOnFile(newfile);
-			FileMonitor::GetInstance().ResumeMonitoringOnFile(oldFilepath);
+			root->SetName(newName.c_str());			
 		}
 	}
 

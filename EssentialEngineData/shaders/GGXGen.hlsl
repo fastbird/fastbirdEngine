@@ -25,8 +25,8 @@
  -----------------------------------------------------------------------------
 */
 
-#include "Constants.h"
-#include "CommonFunctions.h"
+#include "EssentialEngineData/shaders/Constants.h"
+#include "EssentialEngineData/shaders/CommonFunctions.h"
 
 //---------------------------------------------------------------------------
 struct QuadVS_Output

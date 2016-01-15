@@ -28,7 +28,7 @@
 //--------------------------------------------------------------------------------------
 // File: OccPrePass.hlsl
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
+#include "EssentialEngineData/shaders/Constants.h"
 struct a2v
 {
 	float3 Position : POSITION;

@@ -32,8 +32,8 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
-#include "CommonFunctions.h"
+#include "EssentialEngineData/shaders/Constants.h"
+#include "EssentialEngineData/shaders/CommonFunctions.h"
 //
 Texture2D  gDiffuseTexture : register(t0);
 Texture2D  gDepthTexture : register(t5);

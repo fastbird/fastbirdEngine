@@ -210,6 +210,7 @@ public:
 	std::streambuf* mStdErrorStream;
 	std::vector<std::pair<std::string, std::string> > mChangedFiles;
 	std::set<std::string> mIgnoreFileChanges;
+	std::vector<std::pair<std::string, float>> mIgnoreFileChangesForSec;
 	INT64 mLastCheckedTime;
 
 	Impl(FileMonitor* self)
@@ -262,6 +263,17 @@ public:
 		bool recheck = true;
 		if (curTick - mLastCheckedTime > 500)
 		{
+			for (auto it = mIgnoreFileChangesForSec.begin();
+				it != mIgnoreFileChangesForSec.end();
+				/**/){
+				it->second -= 0.5f;
+				if (it->second <= 0){
+					it = mIgnoreFileChangesForSec.erase(it);
+				}
+				else{
+					++it;
+				}				
+			}
 			recheck = false;
 			mLastCheckedTime = curTick;
 			for (auto& it : mFileMonitorThread){
@@ -293,9 +305,14 @@ public:
 				bool canOpen = true;
 				bool throwAway = false;
 				auto ignoreIt = mIgnoreFileChanges.find(filepath);
-				if (ignoreIt != mIgnoreFileChanges.end()){
-					mIgnoreFileChanges.erase(ignoreIt);
+				if (ignoreIt != mIgnoreFileChanges.end()){					
 					throwAway = true;
+				}
+				std::string fileKey(filepath);
+				for (auto& it : mIgnoreFileChangesForSec){
+					if (it.first == fileKey){
+						throwAway = true;
+					}
 				}
 				if (!hasExtension || sdfFile || throwAway)
 				{
@@ -352,6 +369,19 @@ public:
 	void IgnoreMonitoringOnFile(const char* filepath){
 		mIgnoreFileChanges.insert(filepath);
 	}
+	void IgnoreMonitoringOnFile(const char* filepath, float sec){
+		if (!ValidCStringLength(filepath))
+			return;
+		std::string filekey(filepath);
+		ToLowerCase(filekey);
+		for (auto& it : mIgnoreFileChangesForSec){
+			if (it.first == filekey){
+				it.second = sec;
+				return;
+			}
+		}
+		mIgnoreFileChangesForSec.push_back(std::make_pair(filekey, sec));
+	}
 
 	void ResumeMonitoringOnFile(const char* filepath){
 		auto it = mIgnoreFileChanges.find(filepath);
@@ -407,6 +437,10 @@ bool FileMonitor::Check(){
 
 void FileMonitor::IgnoreMonitoringOnFile(const char* filepath){
 	mImpl->IgnoreMonitoringOnFile(filepath);
+}
+
+void FileMonitor::IgnoreMonitoringOnFile(const char* filepath, float sec){
+	mImpl->IgnoreMonitoringOnFile(filepath, sec);
 }
 
 void FileMonitor::ResumeMonitoringOnFile(const char* filepath){
