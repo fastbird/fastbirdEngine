@@ -40,6 +40,7 @@ namespace fb{
 		void SetAudioExFile(const char* audioEx);
 		void SetStartLoopEnd(const char* start, const char* loop, const char* end);	
 		void SetPosition(float x, float y, float z);
+		const Vec3Tuple& GetPosition() const;
 		void SetRelative(bool relative);
 		void SetReferenceDistance(float referenceDistance);
 		void SetGain(float gain);

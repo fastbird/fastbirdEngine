@@ -121,5 +121,7 @@ namespace fb
 
 		void SetDebug(bool debug);
 		bool CheckCollideWith(RigidBodyPtr other);
+		float GetTimeToStopRotation(const Vec3& torque, float& currentAngularSpeed) const;
+		virtual Mat33 GetInertiaTensor() const;
 	};
 }

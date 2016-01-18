@@ -301,7 +301,8 @@ public:
 		}
 
 
-		bool mouseNotMoved = abs((std::get<0>(mLastDownPos) - mAbsX)) < 4 && abs((std::get<1>(mLastDownPos)- mAbsY)) < 4;
+		bool mouseNotMoved = abs((std::get<0>(mLastDownPos) - mAbsX)) < 6 && 
+			abs((std::get<1>(mLastDownPos)- mAbsY)) < 6;
 
 		auto curTime = gameTimeInSec;
 		auto leftElapsedTime = (curTime - mLastLeftDownTime);
@@ -330,7 +331,9 @@ public:
 				mButtonsDown &= ~MOUSE_BUTTON_LEFT;
 
 				Real doubleClickElapsedTime = curTime - mLastClickTime;
-				bool doubleClickMouseNotMoved = abs((std::get<0>(mLastClickPos)- mAbsX)) < 6 && abs((std::get<1>(mLastClickPos)- mAbsY)) < 6;
+				bool doubleClickMouseNotMoved = 
+					abs((std::get<0>(mLastClickPos)- mAbsX)) < 6 && 
+					abs((std::get<1>(mLastClickPos)- mAbsY)) < 6;
 				if (doubleClickElapsedTime < mDoubleClickSpeed && doubleClickMouseNotMoved)
 				{
 					//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double clicked");

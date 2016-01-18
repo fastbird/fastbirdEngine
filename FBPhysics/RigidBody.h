@@ -112,5 +112,8 @@ namespace fb
 		virtual unsigned GetGameFlag() const = 0;
 		virtual void SetDebug(bool debug) = 0;		
 		virtual bool CheckCollideWith(RigidBodyPtr other) = 0;
+		virtual float GetTimeToStopRotation(
+			const Vec3& torque, float& currentAngularSpeed) const = 0;
+		virtual Mat33 GetInertiaTensor() const = 0;
 	};
 }

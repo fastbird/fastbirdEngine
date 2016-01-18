@@ -87,3 +87,37 @@ void ClearWithSwap(T& m)
 	T empty;
 	std::swap(m, empty);
 }
+
+namespace fb{
+	inline float GetDistanceBetween(const Vec3Tuple& a, const Vec3Tuple& b){
+		float ax = std::get<0>(a);
+		float ay = std::get<1>(a);
+		float az = std::get<2>(a);
+
+		float bx = std::get<0>(b);
+		float by = std::get<1>(b);
+		float bz = std::get<2>(b);
+
+		float mx = ax - bx;
+		float my = ay - by;
+		float mz = az - bz;
+
+		return sqrt(mx*mx + my*my + mz*mz);
+	}
+
+	inline float GetDistanceSQBetween(const Vec3Tuple& a, const Vec3Tuple& b){
+		float ax = std::get<0>(a);
+		float ay = std::get<1>(a);
+		float az = std::get<2>(a);
+
+		float bx = std::get<0>(b);
+		float by = std::get<1>(b);
+		float bz = std::get<2>(b);
+
+		float mx = ax - bx;
+		float my = ay - by;
+		float mz = az - bz;
+
+		return mx*mx + my*my + mz*mz;
+	}
+}

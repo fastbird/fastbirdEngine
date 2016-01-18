@@ -411,10 +411,9 @@ public:
 		{
 			colShape->calculateLocalInertia(mass, localInertia);
 			if (obj && createMotionSTate)
-				motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);
-
+				motionState = FB_NEW_ALIGNED(fbMotionState, MemAlign)(obj);			
 		}
-
+		
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(
 			mass, motionState, colShape, localInertia);
 		rbInfo.m_angularDamping = obj->GetAngularDamping();

@@ -32,6 +32,9 @@
 #include "FBCommonHeaders/Helpers.h"
 using namespace fb;
 using namespace std::chrono;
+VectorMap<std::string, std::vector<AudioExWeakPtr>> sAudioExList;
+FB_READ_WRITE_CS sAudioExListLock;
+
 class AudioEx::Impl{
 public:
 	enum AudioType{
@@ -56,6 +59,9 @@ public:
 	TIME_PRECISION mReservedRequestTime;
 
 	AudioProperty mProperty;
+	std::string mFilePathKey;
+
+	
 
 	Impl()
 		: mStartTick(0)
@@ -96,6 +102,8 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
+		mFilePathKey = audioEx;
+		ToLowerCase(mFilePathKey);
 
 		tinyxml2::XMLDocument doc;
 		auto err = doc.LoadFile(audioEx);
@@ -158,13 +166,30 @@ public:
 
 		sz = root->Attribute("rollOffFactor");
 		if (sz){
-			mProperty.mRolloffFactor = StringConverter::ParseReal(sz, mProperty.mRolloffFactor);
+			mProperty.mRolloffFactor = StringConverter::ParseReal(sz, 
+				mProperty.mRolloffFactor);
 		}
 
 		sz = root->Attribute("referenceDistance");
 		if (sz){
-			mProperty.mReferenceDistance = StringConverter::ParseReal(sz, mProperty.mReferenceDistance);
+			mProperty.mReferenceDistance = StringConverter::ParseReal(sz, 
+				mProperty.mReferenceDistance);
 		}
+
+		sz = root->Attribute("numberOfSimultaneous");
+		if (sz){
+			mProperty.mNumSimultaneous = StringConverter::ParseUnsignedInt(sz, 
+				mProperty.mNumSimultaneous);
+		}
+
+		sz = root->Attribute("simultaneousCheckRange");
+		if (sz){
+			mProperty.mSimultaneousCheckRange = StringConverter::ParseReal(sz, 
+				mProperty.mSimultaneousCheckRange);
+		}
+
+		WRITE_LOCK l(sAudioExListLock);
+		sAudioExList[mFilePathKey].push_back(mSelfPtr);
 	}
 
 	void SetStartLoopEnd(const char* start, const char* loop, const char* end){
@@ -203,6 +228,10 @@ public:
 		if (mCurAudioId != INVALID_AUDIO_ID){
 			AudioManager::GetInstance().SetPosition(mCurAudioId, x, y, z);
 		}
+	}
+
+	const Vec3Tuple& GetPosition(){
+		return mProperty.mPosition;
 	}
 
 	void SetRelative(bool relative){
@@ -262,7 +291,55 @@ public:
 		}
 	}
 
+	/// returns true, when playable
+	/// should be called after the position for this audioex has set.
+	/// Audio Thread + Main Thread
+	bool CheckSimultaneous(){
+		if (mFilePathKey.empty())
+			return true;
+
+		if (mProperty.mNumSimultaneous == 0)
+			return true;
+		
+		VectorMap< std::string, std::vector<AudioExWeakPtr>>::iterator audioListIt;
+		{
+			READ_LOCK l(sAudioExListLock);
+			audioListIt = sAudioExList.Find(mFilePathKey);
+			if (audioListIt == sAudioExList.end())
+				return true;
+		}
+
+		std::vector<AudioExPtr> audioExesInRange;
+		audioExesInRange.reserve(10);
+		auto& audioList = audioListIt->second;
+		float rangeSQ = mProperty.mSimultaneousCheckRange * mProperty.mSimultaneousCheckRange;
+		// gather audioList in range
+		for (auto it = audioList.begin(); it != audioList.end(); /**/){
+			IteratingWeakContainer(audioList, it, audio);
+			if (!audio->IsPlaying())
+				continue;
+			if (mProperty.mSimultaneousCheckRange == 0.f){
+				audioExesInRange.push_back(audio);
+			}
+			else{
+				// check distance
+				const auto& position = audio->GetPosition();
+				auto distSq = GetDistanceSQBetween(position, mProperty.mPosition);
+				if (distSq <= rangeSQ){
+					audioExesInRange.push_back(audio);
+				}
+			}
+		}
+		if (audioExesInRange.size() < mProperty.mNumSimultaneous)
+			return true;
+
+		return false;
+	}
+
 	void Play(TIME_PRECISION forSec){		
+		auto canPlay = CheckSimultaneous();
+		if (!canPlay)
+			return;
 		auto& am = AudioManager::GetInstance();
 		am.RegisterAudioEx(mSelfPtr.lock());
 		if (!IsPlaying()){
@@ -341,6 +418,12 @@ public:
 	bool Update(){
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 		mPlayingTime = (curTick - mStartTick) / (TIME_PRECISION)std::milli::den;
+		if (!IsPlaying()){
+			auto canPlay = CheckSimultaneous();
+			if (!canPlay)
+				return mPlayingTime >= mRequestedTime; // finished
+		}
+
 		auto& am = AudioManager::GetInstance();
 		auto leftTime = mRequestedTime - mPlayingTime;
 		if (mCurPlaying == AudioType::Start){
@@ -451,6 +534,10 @@ void AudioEx::SetStartLoopEnd(const char* start, const char* loop, const char* e
 
 void AudioEx::SetPosition(float x, float y, float z) {
 	mImpl->SetPosition(x, y, z);
+}
+
+const Vec3Tuple& AudioEx::GetPosition() const{
+	return mImpl->GetPosition();
 }
 
 void AudioEx::SetRelative(bool relative) {

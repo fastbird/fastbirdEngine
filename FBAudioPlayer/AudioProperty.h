@@ -36,6 +36,8 @@ namespace fb{
 			, mGain(1.f)
 			, mMaxGain(1.0f)
 			, mLoop(false)
+			, mNumSimultaneous(0)
+			, mSimultaneousCheckRange(0)
 		{
 		}
 		Vec3Tuple mPosition;
@@ -47,6 +49,8 @@ namespace fb{
 		float mRolloffFactor;
 		float mGain;
 		float mMaxGain;
+		unsigned mNumSimultaneous;
+		float mSimultaneousCheckRange;
 		bool mRelative;
 		bool mLoop;
 	};

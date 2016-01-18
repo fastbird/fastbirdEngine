@@ -137,7 +137,7 @@ public:
 		if (mass > 0 && colShape)
 		{
 			btVector3 inertia;
-			colShape->calculateLocalInertia(mass, inertia);
+			colShape->calculateLocalInertia(mass, inertia);			
 			mSelf->setMassProps(mass, inertia);
 		}
 		else{
@@ -254,7 +254,7 @@ public:
 
 	void SetMass(float mass){
 		btVector3 inertia;
-		mSelf->getCollisionShape()->calculateLocalInertia(mass, inertia);
+		mSelf->getCollisionShape()->calculateLocalInertia(mass, inertia);		
 		mSelf->setMassProps(mass, inertia);
 	}
 
@@ -849,3 +849,17 @@ bool RigidBodyImpl::CheckCollideWith(RigidBodyPtr other){
 	return mImpl->CheckCollideWith(other);
 }
 
+float RigidBodyImpl::GetTimeToStopRotation(const Vec3& torque, float& currentAngularSpeed) const{
+	auto btTorque = FBToBullet(torque);
+	auto& angularVelV = getAngularVelocity();
+	currentAngularSpeed = angularVelV.length();
+	// dw : angular acceleration
+	auto& invInertiaTensor = getInvInertiaTensorWorld();
+	auto dwV = invInertiaTensor * btTorque;
+	float dw = dwV.length();
+	return currentAngularSpeed / dw;
+}
+
+Mat33 RigidBodyImpl::GetInertiaTensor() const{
+	return Mat33();
+}

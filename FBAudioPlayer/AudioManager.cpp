@@ -246,7 +246,7 @@ public:
 		if (desiredDrop <= 0)
 			return;
 		auto it = mAudioSourcesSorted.begin();
-		std::advance(it, MaximumAudioSources);
+		std::advance(it, MaximumAudioSources-1);
 		for (; it != mAudioSourcesSorted.end();++it){
 			auto audioIt = mAudioSources.Find(it->second);
 			if (audioIt == mAudioSources.end()){
@@ -359,7 +359,7 @@ public:
 			audioDistance /= audioSource->GetReferenceDistance();				
 			mAudioSourcesSorted.insert(std::make_pair(audioDistance, audioId));
 			auto it = mAudioSourcesSorted.begin();
-			std::advance(it, MaximumAudioSources);			
+			std::advance(it, MaximumAudioSources-1);			
 			if (audioDistance >= it->first) {
 				audioSource->SetStatus(AudioSourceStatus::Waiting);
 				return false;

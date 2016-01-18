@@ -81,5 +81,7 @@ namespace fb
 		virtual void OnRigidBodyUpdated(const fb::RigidBodyEvents& data){}
 
 		virtual bool ForceCompound() const { return false; }
+		/// not using
+		virtual bool UseSymmetricInertia() const { return false; }
 	};
 }
