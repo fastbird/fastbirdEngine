@@ -72,6 +72,7 @@
     <ClInclude Include="PrimitiveTopology.h" />
     <ClInclude Include="RenderStrategyNull.h" />
     <ClInclude Include="CascadedShadowsManager.h" />
+    <ClInclude Include="LuaFunctions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
@@ -111,6 +112,7 @@
     <ClCompile Include="ConsoleRenderer.cpp" />
     <ClCompile Include="RenderStrategyNull.cpp" />
     <ClCompile Include="CascadedShadowsManager.cpp" />
+    <ClCompile Include="LuaFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Enum&amp;Structures">

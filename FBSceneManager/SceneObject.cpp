@@ -181,6 +181,23 @@ bool SceneObject::DetachFromScene(bool includingRtt){
 	return detached;
 }
 
+bool SceneObject::DetachFromScene(IScene* scene){
+	bool detached = false;
+	bool found = false;
+	for (auto it = mScenes.begin(); it != mScenes.end(); /**/)
+	{
+		IteratingWeakContainer(mScenes, it, scenePtr);
+		if (scenePtr.get() == scene){
+			found = true;
+			break;
+		}
+	}
+	if (found){
+		detached = scene->DetachObject(this);
+	}
+	return detached;
+}
+
 std::vector<ScenePtr> SceneObject::GetScenes()const {
 	std::vector<ScenePtr> scenes;
 	for (auto it = mScenes.begin(); it != mScenes.end(); /**/){

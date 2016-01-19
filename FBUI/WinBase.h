@@ -378,7 +378,7 @@ namespace fb
 
 		virtual void RefreshScissorRects();
 
-		virtual void SetEnable(bool enable);
+		virtual void SetEnable(bool enable, bool ignoreSame = true);
 		virtual bool GetEnable() const;
 
 		virtual bool HasUIObject() const { return mUIObject != 0; }

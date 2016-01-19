@@ -143,11 +143,13 @@ namespace fb
 	int GetLastChangedRow(lua_State* L);
 	int SetListBoxItemProperty(lua_State* L);
 	int DisableListBoxItemEvent(lua_State* L);
+	int EnableListBoxItemEvent(lua_State* L);
 
 	// etc
 	int SetTooltipString(lua_State* L);
 	int SetEnableUIInput(lua_State* L);
 	int SetCheckRadioBox(lua_State* L);
+	
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -1741,6 +1743,16 @@ namespace fb
 		auto listBox = dynamic_cast<ListBox*>(UIManager::GetInstance().FindComp(uiname, compName).get());
 		if (listBox) {
 			listBox->DisableItemEvent(LuaUtils::checkunsigned(L, 3));
+		}
+		return 0;
+	}
+
+	int EnableListBoxItemEvent(lua_State* L){
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compName = LuaUtils::checkstring(L, 2);
+		auto listBox = dynamic_cast<ListBox*>(UIManager::GetInstance().FindComp(uiname, compName).get());
+		if (listBox) {
+			listBox->EnableItemEvent(LuaUtils::checkunsigned(L, 3));
 		}
 		return 0;
 	}

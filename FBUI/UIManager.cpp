@@ -1016,7 +1016,8 @@ public:
 		
 		if (pWnd == mKeyboardFocus.lock())
 		{
-			mUIEditor->OnComponentSelected(0);
+			if (mUIEditor)
+				mUIEditor->OnComponentSelected(0);
 			mKeyboardFocus.reset();
 		}
 		if (pWnd == mModalWindow.lock()){

@@ -35,6 +35,38 @@ class BillboardQuadFacade::Impl{
 public:
 	BillboardQuadPtr mBillboardQuad;
 
+	void SetBillobardData(const Vec3& pos, const Vec2& size, const Vec2& offset, const Color& color){
+		if (!mBillboardQuad){
+			CreateBillboardQuad();
+		}
+		mBillboardQuad->SetBillobardData(pos, size, offset, color);
+	}
+
+	void CreateBillboardQuad(){
+		mBillboardQuad = BillboardQuad::Create();
+	}
+
+	void SetMaterial(MaterialPtr mat){
+		if (!mBillboardQuad){
+			CreateBillboardQuad();
+		}
+		mBillboardQuad->SetMaterial(mat);
+	}
+
+	MaterialPtr GetMaterial() {
+		if (mBillboardQuad)
+			return mBillboardQuad->GetMaterial();
+		return 0;
+	}
+
+	void AttachToScene(IScene* scene){
+		if (scene && mBillboardQuad)
+			scene->AttachObjectFB(mBillboardQuad);
+	}
+
+	void DetachFromScene(IScene* scene){
+		mBillboardQuad->DetachFromScene(scene);		
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -57,14 +89,17 @@ BillboardQuadFacade::~BillboardQuadFacade(){
 	}
 }
 
-void BillboardQuadFacade::AttachToCurrentScene(){
-	auto scene = EngineFacade::GetInstance().GetCurrentScene();
-	if (scene)
+void BillboardQuadFacade::AttachToMainScene(){
+	auto scene = EngineFacade::GetInstance().GetMainScene();
+	if (scene){
 		scene->AttachObjectFB(mImpl->mBillboardQuad);
+		mImpl->mBillboardQuad->mDebug = true;
+	}
 }
 
 void BillboardQuadFacade::DetachFromScenes(){
 	mImpl->mBillboardQuad->DetachFromScene();
+	mImpl->mBillboardQuad->mDebug = false;
 }
 
 void BillboardQuadFacade::SetAlwaysPassCullingTest(bool passAlways){
@@ -72,13 +107,20 @@ void BillboardQuadFacade::SetAlwaysPassCullingTest(bool passAlways){
 }
 
 void BillboardQuadFacade::SetBillobardData(const Vec3& pos, const Vec2& size, const Vec2& offset, const Color& color){
-	mImpl->mBillboardQuad->SetBillobardData(pos, size, offset, color);
+	mImpl->SetBillobardData(pos, size, offset, color);	
 }
 
 void BillboardQuadFacade::SetMaterial(MaterialPtr mat){
-	mImpl->mBillboardQuad->SetMaterial(mat);
+	mImpl->SetMaterial(mat);	
 }
 
 MaterialPtr BillboardQuadFacade::GetMaterial() const{
-	return mImpl->mBillboardQuad->GetMaterial();
+	return mImpl->GetMaterial();
+}
+
+void BillboardQuadFacade::AttachToScene(IScene* scene){
+	mImpl->AttachToScene(scene);
+}
+void BillboardQuadFacade::DetachFromScene(IScene* scene){
+	mImpl->DetachFromScene(scene);
 }

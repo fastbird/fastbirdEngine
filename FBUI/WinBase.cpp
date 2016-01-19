@@ -3406,9 +3406,9 @@ void WinBase::GetScissorIntersection(Rect& scissor)
 		manualParent->GetScissorIntersection(scissor);
 }
 
-void WinBase::SetEnable(bool enable)
+void WinBase::SetEnable(bool enable, bool ignoreSame)
 {
-	if (mEnable == enable)
+	if (ignoreSame && mEnable == enable)
 		return;
 
 	mEnable = enable;

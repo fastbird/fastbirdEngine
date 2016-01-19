@@ -37,8 +37,10 @@ namespace fb{
 
 	public:
 		static BillboardQuadFacadePtr Create();
-		void AttachToCurrentScene();
+		void AttachToMainScene();
 		void DetachFromScenes();
+		void AttachToScene(IScene* scene);
+		void DetachFromScene(IScene* scene);
 		void SetAlwaysPassCullingTest(bool passAlways);
 		void SetBillobardData(const Vec3& pos, const Vec2& size, const Vec2& offset, const Color& color);
 		void SetMaterial(MaterialPtr mat);

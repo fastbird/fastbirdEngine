@@ -39,5 +39,6 @@ namespace fb{
 	public:
 		using SceneObject::DetachFromScene;
 		virtual bool DetachFromScene(bool includingRtt);
+		virtual bool DetachFromScene(IScene* scene);
 	};
 }

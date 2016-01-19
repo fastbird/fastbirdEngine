@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 namespace fb{	
+	class IScene;
 	FB_DECLARE_SMART_PTR(Scene);
 	FB_DECLARE_SMART_PTR(SceneObject);
 	class FB_DLL_SCENEMANAGER SceneObject : public RenderableObject{
@@ -65,6 +66,7 @@ namespace fb{
 		/// not including rtt
 		bool DetachFromScene();
 		virtual bool DetachFromScene(bool includingRtt);
+		virtual bool DetachFromScene(IScene* scene);
 
 		std::vector<ScenePtr> GetScenes() const;
 

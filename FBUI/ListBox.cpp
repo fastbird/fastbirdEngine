@@ -1613,6 +1613,14 @@ void ListBox::FillItem(unsigned index){
 			}
 		}
 	}
+	else{
+		for (auto it : mItems[index]){
+			auto col = it.lock();
+			assert(col);
+			SetDefaultProperty(col);			
+		}
+	}
+
 	{
 		auto key = mData->GetStringKey(index);
 		if (wcslen(key) != 0) {
@@ -1647,6 +1655,31 @@ void ListBox::FillItem(unsigned index){
 			}
 		}
 	}
+
+	auto itDisabled = mDisabledItemKeys.find(key);
+	if (itDisabled != mDisabledItemKeys.end()){
+		for (auto it : mItems[index]){
+			auto col = it.lock();
+			assert(col);
+			col->SetEnable(false, false);
+		}
+	}
+	else{
+		for (auto it : mItems[index]){
+			auto col = it.lock();
+			assert(col);
+			col->SetEnable(true, false);
+		}
+	}
+}
+
+void ListBox::SetDefaultProperty(ListItemPtr listItem){
+	if (!listItem){
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
+	}
+	listItem->SetProperty(UIProperty::TEXT_COLOR, 
+		StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(UIProperty::TEXT_COLOR)).c_str());
+
 }
 
 void ListBox::MoveToRecycle(unsigned row){
@@ -2078,6 +2111,7 @@ void ListBox::ClearItemProperties(){
 }
 
 void ListBox::DisableItemEvent(unsigned uniqueKey){
+	mDisabledItemKeys.insert(uniqueKey);
 	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
 	if (rowIndex == -1)
 		return;
@@ -2086,6 +2120,23 @@ void ListBox::DisableItemEvent(unsigned uniqueKey){
 	for (auto& col : row){
 		if (!col.expired()){
 			col.lock()->SetEnable(false);
+		}
+	}
+}
+
+void ListBox::EnableItemEvent(unsigned uniqueKey){
+	auto it = mDisabledItemKeys.find(uniqueKey);
+	if (it != mDisabledItemKeys.end()){
+		mDisabledItemKeys.erase(it);
+	}
+	auto rowIndex = mData->FindRowIndexWithKey(uniqueKey);
+	if (rowIndex == -1)
+		return;
+	assert(rowIndex < mItems.size());
+	auto& row = mItems[rowIndex];
+	for (auto& col : row){
+		if (!col.expired()){
+			col.lock()->SetEnable(true);
 		}
 	}
 }

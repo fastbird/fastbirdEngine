@@ -72,7 +72,10 @@ public:
 
 
 	void SetMaterial(MaterialPtr mat){
-		mMaterial = mat;
+		mMaterial = mat;		
+		if (mMaterial){
+			mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, mMaterial->IsTransparent());
+		}
 	}
 
 	MaterialPtr GetMaterial() const{

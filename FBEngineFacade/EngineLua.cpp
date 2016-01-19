@@ -32,6 +32,7 @@
 #include "FBSceneManager/SpatialObject.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBEngineFacade/MeshFacade.h"
+#include "FBSceneManager/Scene.h"
 namespace fb{
 	int GetResolution(lua_State* L);
 	int GetFrameCounter(lua_State* L);
@@ -84,8 +85,8 @@ namespace fb{
 		auto scene = EngineFacade::GetInstance().GetMainScene();
 		if (scene)
 		{
-			Logger::Log(FB_DEFAULT_LOG_ARG, "PrintSpatialObject() is under construction.");
-			//scene->PrintSpatialObject();
+			//Logger::Log(FB_DEFAULT_LOG_ARG, "PrintSpatialObject() is under construction.");
+			scene->PrintSpatialObject();
 		}
 		return 0;
 	}

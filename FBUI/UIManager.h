@@ -202,6 +202,8 @@ namespace fb
 		void CancelLocatingComponent();
 		void ChangeFilepath(WinBasePtr root, const char* newfile);
 		void CopyCompsAtMousePos(const std::vector<WinBasePtr>& src);
+
+		
 	};
 }
 

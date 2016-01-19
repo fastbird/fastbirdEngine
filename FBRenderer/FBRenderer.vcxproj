@@ -32,6 +32,7 @@
     <ClInclude Include="IPlatformShader.h" />
     <ClInclude Include="IPlatformTexture.h" />
     <ClInclude Include="IPlatformVertexBuffer.h" />
+    <ClInclude Include="LuaFunctions.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="NullPlatformRenderer.h" />
     <ClInclude Include="PixelFormats.h" />
@@ -75,6 +76,7 @@
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="InputElementDesc.cpp" />
     <ClCompile Include="InputLayout.cpp" />
+    <ClCompile Include="LuaFunctions.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="NullPlatformRenderer.cpp" />
     <ClCompile Include="Renderer.cpp" />

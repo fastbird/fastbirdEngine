@@ -203,7 +203,7 @@ public:
 				if (obj->mDebug){
 					int a = 0;
 					a++;
-				}
+				}				
 				if (!cam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
 					if (obj->HasObjFlag(SceneObjectFlag::Transparent))
 					{

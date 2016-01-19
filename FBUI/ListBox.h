@@ -78,6 +78,7 @@ protected:
 	VectorMap<unsigned, PropertyData> mItemPropertyByColumn;
 	VectorMap<Vec2I, PropertyData> mItemPropertyKeyCol;
 	std::set<unsigned> mNoVirtualizingRows;
+	std::set<unsigned> mDisabledItemKeys;
 	bool mMultiSelection;
 	bool mNoHighlight;
 	bool mNoSearch;
@@ -168,6 +169,7 @@ public:
 	void SetItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop, const char* val);
 	void ClearItemProperties();
 	void DisableItemEvent(unsigned uniqueKey);
+	void EnableItemEvent(unsigned uniqueKey);
 
 	void VisualizeData(unsigned index);
 	void FillItem(unsigned index);
@@ -199,6 +201,7 @@ protected:
 	void SetHighlightRow(size_t row, bool highlight);
 	void SetHighlightRowCol(unsigned row, unsigned col, bool highlight);
 	void SetHighlightRowAndSelect(size_t row, bool highlight);
+	void SetDefaultProperty(ListItemPtr listItem);
 
 
 

@@ -287,6 +287,7 @@ namespace fb{
 		void RenderShadows();
 		void SetBindShadowMap(bool bind);
 		void OnShadowOptionChanged();
+		void KeepTextureReference(const char* filepath);
 		
 
 		//-------------------------------------------------------------------

@@ -49,6 +49,7 @@
 #include "ConsoleRenderer.h"
 #include "StarDef.h"
 #include "CascadedShadowsManager.h"
+#include "LuaFunctions.h"
 #include "FBMathLib/MurmurHash.h"
 #include "FBConsole/Console.h"
 #include "EssentialEngineData/shaders/Constants.h"
@@ -133,6 +134,7 @@ public:
 	CameraPtr mCameraBackup;
 	CameraPtr mOverridingCamera;
 	CascadedShadowsManagerPtr mShadowManager;
+	VectorMap<std::string, TexturePtr> mTexturesReferenceKeeper;
 
 	struct InputInfo{
 		Vec2I mCurrentMousePos;
@@ -266,6 +268,7 @@ public:
 		else{
 			Logger::Log(FB_ERROR_LOG_ARG, "The console is not initialized!");
 		}
+		RegisterRendererLuaFunctions();
 	}
 
 	~Impl(){
@@ -2600,6 +2603,22 @@ public:
 		mShadowManager->CreateViewports();
 	}
 
+	void KeepTextureReference(const char* filepath){
+		if (!ValidCStringLength(filepath)){
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+		std::string filepathKey(filepath);
+		ToLowerCase(filepathKey);
+		auto it = mTexturesReferenceKeeper.Find(filepathKey);
+		if (it != mTexturesReferenceKeeper.end())
+			return;
+		auto texture = CreateTexture(filepath, true);
+		if (texture){
+			mTexturesReferenceKeeper.Insert(std::make_pair(filepathKey, texture));
+		}
+	}
+
 	void SetBindShadowTarget(bool bind){
 		if (bind){
 			// empty
@@ -3393,6 +3412,10 @@ void Renderer::SetBindShadowMap(bool bind){
 
 void Renderer::OnShadowOptionChanged(){
 	mImpl->OnShadowOptionChanged();
+}
+
+void Renderer::KeepTextureReference(const char* filepath){
+	mImpl->KeepTextureReference(filepath);
 }
 
 //-------------------------------------------------------------------

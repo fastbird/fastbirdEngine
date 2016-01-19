@@ -54,3 +54,20 @@ bool SpatialSceneObject::DetachFromScene(bool includingRtt){
 
 	return detached;
 }
+
+bool SpatialSceneObject::DetachFromScene(IScene* scene){
+	bool detached = false;
+	bool found = false;
+	auto allScenes = GetScenes();
+	for (auto it = allScenes.begin(); it != allScenes.end(); /**/)
+	{		
+		if (it->get() == scene){
+			found = true;
+			break;
+		}
+	}
+	if (found){
+		detached = scene->DetachObject(this);
+	}
+	return detached;
+}

@@ -37,6 +37,7 @@
 #include "FBSceneManager/IScene.h"
 #include "FBInputManager/IInputInjector.h"
 #include "FBCommonHeaders/Observable.h"
+#include "FBTimer/Timer.h"
 
 namespace fb
 {
@@ -252,7 +253,7 @@ public:
 			if (mRenderTargetTexture)
 				mRenderTargetTexture->Unbind();
 			if (!mRenderTargetTexture){
-				Logger::Log(FB_ERROR_LOG_ARG, "No rendertarget.");
+				Logger::Log(gpTimer->GetFrame(), gpTimer->GetTime(), FB_ERROR_LOG_ARG, "No rendertarget.");
 			}
 			TexturePtr rt[] = { mRenderTargetTexture };
 			// we need to have 6 glow textures to support for cube map.
