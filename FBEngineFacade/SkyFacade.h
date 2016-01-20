@@ -53,8 +53,9 @@ namespace fb{
 		/// Attach as a blending sky of the main scene.
 		void AttachToBlend();
 		void SetAlpha(float alpha);
-		void PrepareInterpolation(float time, SkyFacadePtr startFrom);
+		void PrepareInterpolation(float time, SkyFacadePtr startFrom);		
 		void AttachBlendingSky(SkyFacadePtr blending);
 		void SetInterpolationData(unsigned index, const Vec4& data);
+		void StartInterpolation(float time);
 	};
 }

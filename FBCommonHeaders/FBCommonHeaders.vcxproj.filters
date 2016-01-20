@@ -14,5 +14,6 @@
     <ClInclude Include="LockFreeQueue.h" />
     <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="IteratorWrapper.h" />
+    <ClInclude Include="Serialization.h" />
   </ItemGroup>
 </Project>

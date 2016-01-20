@@ -252,6 +252,12 @@ public:
 		}
 	}
 
+	void StartInterpolation(float time){
+		mInterpolationTime = time;
+		mCurInterpolationTime = 0;
+		mInterpolating = true;
+	}
+
 	void PrepareInterpolation(float time, SkySpherePtr startFrom){
 		MaterialPtr srcMaterial = mMaterial;
 		if (startFrom)
@@ -368,6 +374,10 @@ void SkySphere::UpdateEnvironmentMap(const Vec3& origin) {
 
 void SkySphere::SetInterpolationData(unsigned index, const Vec4& data) {
 	mImpl->SetInterpolationData(index, data);
+}
+
+void SkySphere::StartInterpolation(float time){
+	mImpl->StartInterpolation(time);
 }
 
 void SkySphere::PrepareInterpolation(float time, SkySpherePtr startFrom) {

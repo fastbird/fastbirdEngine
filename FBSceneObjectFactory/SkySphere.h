@@ -53,6 +53,7 @@ namespace fb{
 		MaterialPtr GetMaterial(int pass = 0) const;
 		void UpdateEnvironmentMap(const Vec3& origin);
 		void SetInterpolationData(unsigned index, const Vec4& data);
+		void StartInterpolation(float time);
 		void PrepareInterpolation(float time, SkySpherePtr startFrom);
 		void SetUseAlphaBlend(bool use);
 		void SetAlpha(float alpha);

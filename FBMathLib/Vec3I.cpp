@@ -146,3 +146,15 @@ namespace fb
 		return dif.lengthSQ();
 	}
 }
+
+std::istream& operator>>(std::istream& stream, fb::Vec3I& v)
+{
+	stream >> v.x >> v.y >> v.z;
+	return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, const fb::Vec3I& v)
+{
+	stream << v.x << v.y << v.z;
+	return stream;
+}

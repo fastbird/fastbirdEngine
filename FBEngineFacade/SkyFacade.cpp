@@ -125,6 +125,11 @@ public:
 			mSkySphere->SetInterpolationData(index, data);
 	}
 
+	void StartInterpolation(float time){
+		if (mSkySphere)
+			mSkySphere->StartInterpolation(time);
+	}
+
 };
 
 //---------------------------------------------------------------------------
@@ -214,4 +219,8 @@ void SkyFacade::AttachBlendingSky(SkyFacadePtr blending){
 
 void SkyFacade::SetInterpolationData(unsigned index, const Vec4& data){
 	mImpl->SetInterpolationData(index, data);
+}
+
+void SkyFacade::StartInterpolation(float time){
+	mImpl->StartInterpolation(time);
 }

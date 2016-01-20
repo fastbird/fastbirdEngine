@@ -117,3 +117,7 @@ namespace fb
 //		lua_rawseti(L, -2, 3);
 //	}
 //};
+
+// serialization
+std::istream& operator>>(std::istream& stream, fb::Vec3I& v);
+std::ostream& operator<<(std::ostream& stream, const fb::Vec3I& v);
