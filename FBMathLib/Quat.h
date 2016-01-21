@@ -93,6 +93,9 @@ namespace fb
 		Real GetYaw(bool reprojectAxis = true) const;
 		bool Equals(const Quat& rhs, const Real toleranceRadian) const;
 		bool IsNaN() const;	
+
+		void write(std::ostream& stream) const;
+		void read(std::istream& stream);
 	};
 }
 

@@ -392,6 +392,18 @@ namespace fb
 		return std::max(std::max(x, y), z);
 	}
 
+	void Vec3::write(std::ostream& stream) const{
+		stream.write((char*)&x, sizeof(x));
+		stream.write((char*)&y, sizeof(y));
+		stream.write((char*)&z, sizeof(z));
+	}
+
+	void Vec3::read(std::istream& stream){
+		stream.read((char*)&x, sizeof(x));
+		stream.read((char*)&y, sizeof(y));
+		stream.read((char*)&z, sizeof(z));
+	}
+
 	//--------------------------------------------------------------------------
 	Vec3 operator* (Real l, const Vec3& r)
 	{

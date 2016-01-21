@@ -1027,7 +1027,8 @@ namespace fb
 		int now = lua_gettop(lua);
 		if (top != now)
 		{
-			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Stack is polluted - %s", mName).c_str());
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"Stack is polluted(prev:%d, now:%d) - %s", top, now, mName).c_str());
 		}
 		assert(top == now);
 	}

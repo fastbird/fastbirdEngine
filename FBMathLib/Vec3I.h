@@ -66,7 +66,13 @@ namespace fb
 		Real lengthSQ() const;
 		Real distance(const Vec3I& to) const;
 		Real distanceSQ(const Vec3I& to) const;
+
+		void write(std::ostream& stream) const;
+		void read(std::istream& stream);
 	};
+
+	/*void write(std::ostream& stream, fb::Vec3I& v);
+	void read(std::istream& stream, fb::Vec3I& v);*/
 }
 
 //// luawapper util

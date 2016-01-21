@@ -1,5 +1,8 @@
 #pragma once
+#include <iostream>
+#include <vector>
 namespace fb{
+	// Vectors
 	template < class T,
 		typename std::enable_if<std::is_pod<T>::value, void>::type* = nullptr >
 	void write(std::ostream& out, const std::vector<T>& data)
@@ -11,19 +14,9 @@ namespace fb{
 		}
 	}
 
-	template <class T>
-	void write(std::ostream& out, const std::vector<T>& data)
-	{
-		auto size = data.size();
-		out.write((char*)&size, sizeof(size));
-		for (const auto& d : data){
-			d.write(out);
-		}
-	}
-
 	template < class T,
 		typename std::enable_if<std::is_pod<T>::value, void>::type* = nullptr >
-	void read(std::istream& out, std::vector<T>& data)
+		void read(std::istream& out, std::vector<T>& data)
 	{
 		size_t size;
 		out.read((char*)&size, sizeof(size));
@@ -33,8 +26,18 @@ namespace fb{
 			data.push_back(T());
 			auto& dest = data.back();
 			out.read((char*)&dest, sizeof(T));
-		}		
+		}
 	}
+
+	template <class T>
+	void write(std::ostream& out, const std::vector<T>& data)
+	{
+		auto size = data.size();
+		out.write((char*)&size, sizeof(size));
+		for (const auto& d : data){
+			d.write(out);
+		}
+	}	
 
 	template <class T>
 	void read(std::istream& out, std::vector<T>& data)
@@ -48,5 +51,9 @@ namespace fb{
 			auto& dest = data.back();
 			dest.read(out);
 		}
-	}
+	}	
+
+	// string
+	void write(std::ostream& stream, const std::string& str);
+	void read(std::istream& stream, std::string& str);
 }

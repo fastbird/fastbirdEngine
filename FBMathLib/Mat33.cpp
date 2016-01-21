@@ -207,3 +207,18 @@ void Mat33::SetColumn(int index, const Vec3& v)
 	m[2][index] = v.z;
 }
 
+void Mat33::write(std::ostream& stream) const{
+	for (int row = 0; row < 3; ++row){
+		for (int col = 0; col < 3; ++col){
+			stream.write((char*)&m[row][col], sizeof(Real));
+		}
+	}
+}
+
+void Mat33::read(std::istream& stream){
+	for (int row = 0; row < 3; ++row){
+		for (int col = 0; col < 3; ++col){
+			stream.read((char*)&m[row][col], sizeof(Real));
+		}
+	}
+}

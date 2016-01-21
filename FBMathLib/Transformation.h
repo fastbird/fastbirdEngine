@@ -141,6 +141,9 @@ namespace fb
 		bool _GetIdentity() { return mIdentity; }
 		bool _GetRSSeperated() { return mRSSeperated; }
 		bool _GetUniformScale() { return mUniformScale; }
+
+		void write(std::ostream& stream) const;
+		void read(std::istream& stream);
 	};
 }
 

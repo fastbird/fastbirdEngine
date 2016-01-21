@@ -241,14 +241,10 @@ public:
 
 	void SetInterpolationData(unsigned index, const Vec4& data){
 		assert(index < 5);
+		mMaterialParamDest[index] = data;
 		if (index == 2)
 		{
-			mMaterialParamDest[index] = data;
 			mMaterialParamDest[index].w = mAlpha;
-		}
-		else
-		{
-			mMaterialParamDest[index] = data;
 		}
 	}
 

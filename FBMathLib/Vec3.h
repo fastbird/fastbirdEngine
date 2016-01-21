@@ -104,7 +104,9 @@ namespace fb
 		Real AngleBetween(const Vec3& v) const;
 
 		Real GetMax() const;
-		
+
+		void write(std::ostream& stream) const;
+		void read(std::istream& stream);
 	};
 
 	Vec3 operator* (Real l, const Vec3& r);

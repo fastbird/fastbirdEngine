@@ -742,4 +742,24 @@ Transformation::operator TransformationTuple() const{
 		mIdentity, mRSSeperated, mUniformScale);
 }
 
+void Transformation::write(std::ostream& stream) const{
+	mMat.write(stream);
+	mR.write(stream);
+	mT.write(stream);
+	mS.write(stream);
+	stream.write((char*)&mIdentity, sizeof(mIdentity));
+	stream.write((char*)&mRSSeperated, sizeof(mRSSeperated));
+	stream.write((char*)&mUniformScale, sizeof(mUniformScale));
+}
+
+void Transformation::read(std::istream& stream){
+	mMat.read(stream);
+	mR.read(stream);
+	mT.read(stream);
+	mS.read(stream);
+	stream.read((char*)&mIdentity, sizeof(mIdentity));
+	stream.read((char*)&mRSSeperated, sizeof(mRSSeperated));
+	stream.read((char*)&mUniformScale, sizeof(mUniformScale));
+}
+
 }
