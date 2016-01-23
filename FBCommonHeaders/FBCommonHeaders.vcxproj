@@ -19,7 +19,6 @@
     <ClInclude Include="LockFreeQueue.h" />
     <ClInclude Include="Observable.h" />
     <ClInclude Include="RecursiveSpinLock.h" />
-    <ClInclude Include="Serialization.h" />
     <ClInclude Include="SpinLock.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="Types.h" />

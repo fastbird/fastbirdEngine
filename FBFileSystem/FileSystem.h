@@ -70,6 +70,7 @@ namespace fb{
 		//---------------------------------------------------------------------------
 		static bool Exists(const char* path);
 		static bool IsDirectory(const char* path);
+		static unsigned GetFileSize(const char* path);
 		/** Rename a file.
 		@remark  If \a path and \a newpath resolve to the same existing file, no action is taken. 
 		Otherwise, if \a newpath resolves to an existing non-directory file, it is removed, 

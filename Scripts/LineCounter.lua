@@ -23,12 +23,13 @@
 -- THE SOFTWARE.
 ------------------------------------------------------------------------------
 
-lines = 0
 function CountLines(filename)
+	local lines = 0
 	io.input(filename)
 	for line in io.lines() do
 		lines = lines + 1
 	end	
 	io.input()	
 	print('current lines = ' .. lines)
+	return lines;
 end

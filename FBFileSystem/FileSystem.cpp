@@ -60,6 +60,10 @@ bool FileSystem::IsDirectory(const char* path){
 	return boost::filesystem::is_directory(path);
 }
 
+unsigned FileSystem::GetFileSize(const char* path){
+	return boost::filesystem::file_size(path);
+}
+
 int FileSystem::Rename(const char* path, const char* newpath){
 	if (!Exists(path)){
 		return RENAME_NO_SOURCE;

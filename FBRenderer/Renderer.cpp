@@ -1915,6 +1915,9 @@ public:
 	}
 
 	void ChangeResolution(HWindow window, const Vec2I& resol){
+		if (resol == Vec2I::ZERO)
+			return;
+
 		if (window == GetMainWindowHandle())
 			mRendererOptions->r_resolution = resol;
 

@@ -710,6 +710,15 @@ namespace fb
 			}
 			return true;
 		}
+		case UIProperty::IMAGE_DISPLAY:
+		case UIProperty::IMAGE_LINEAR_SAMPLER:
+		{
+			auto image = mImages[ButtonImages::Image].lock();
+			if (image)
+			{
+				return image->SetProperty(prop, val);
+			}
+		}
 		case UIProperty::NO_BUTTON:
 		{
 			mNoButton = StringConverter::ParseBool(val);
@@ -1089,6 +1098,17 @@ namespace fb
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
+		case UIProperty::IMAGE_DISPLAY:
+		case UIProperty::IMAGE_LINEAR_SAMPLER:
+		{
+			auto image = mImages[ButtonImages::Image].lock();
+			if (image)
+			{
+				return image->GetProperty(prop, val, bufsize, notDefaultOnly);
+			}
+			break;
+		}		
+
 		case UIProperty::NO_BUTTON:
 		{
 			if (notDefaultOnly)
