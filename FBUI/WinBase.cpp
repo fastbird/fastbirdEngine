@@ -1129,19 +1129,19 @@ void WinBase::AlignText()
 		{
 		case ALIGNH::LEFT:
 			{
-				offset.x += LEFT_GAP + mTextGap.x;
+				offset.x = LEFT_GAP + mTextGap.x;
 			}
 			break;
 
 		case ALIGNH::CENTER:
 			{
-				offset.x += Round(mSize.x * .5f - mTextWidth * .5f + mTextGap.x);
+				offset.x = Round(mSize.x * .5f - mTextWidth * .5f + mTextGap.x);
 			}
 			break;
 
 		case ALIGNH::RIGHT:
 			{
-				offset.x += mSize.x - mTextWidth - mTextGap.y;
+				offset.x = mSize.x - mTextWidth - mTextGap.y;
 			}
 			break;
 		}
@@ -1150,18 +1150,21 @@ void WinBase::AlignText()
 		{
 		case ALIGNV::TOP:
 		{
-			offset.y += Round(mTextSize);
+			offset.y = Round(mTextSize);
 		}
 			break;
 		case ALIGNV::MIDDLE:
 		{
-			offset.y += Round(mSize.y * .5f +
-						((mTextSize * 0.5f) - (mTextSize * (mNumTextLines-1) * 0.5f)));
+			auto pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);			
+			auto lineheight = pFont->LineHeightForText(mTextw.c_str());
+			offset.y = Round((mSize.y * .5f) - lineheight * mNumTextLines * 0.5f +lineheight);
+			/*offset.y += Round(mSize.y * .5f +
+				((lineheight * 0.5f) - (lineheight * (mNumTextLines - 1) * 0.5f)));*/
 		}
 			break;
 		case ALIGNV::BOTTOM:
 		{
-			offset.y += mSize.y - BOTTOM_GAP;
+			offset.y = mSize.y - BOTTOM_GAP;
 		}
 			break;
 		}
@@ -2244,8 +2247,8 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 
 bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
 {
-	char buf[256];
-	bool get = GetProperty(prop, buf, 256, false);
+	char buf[UIManager::PROPERTY_BUF_SIZE];
+	bool get = GetProperty(prop, buf, UIManager::PROPERTY_BUF_SIZE, false);
 	if (get)
 	{
 		return StringConverter::ParseBool(buf);
@@ -2255,8 +2258,8 @@ bool WinBase::GetPropertyAsBool(UIProperty::Enum prop, bool defaultVal)
 
 float WinBase::GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal)
 {
-	char buf[256];
-	bool get = GetProperty(prop, buf, 256, false);
+	char buf[UIManager::PROPERTY_BUF_SIZE];
+	bool get = GetProperty(prop, buf, UIManager::PROPERTY_BUF_SIZE, false);
 	if (get)
 	{
 		return StringConverter::ParseReal(buf);
@@ -2266,8 +2269,8 @@ float WinBase::GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal)
 
 int WinBase::GetPropertyAsInt(UIProperty::Enum prop, int defaultVal)
 {
-	char buf[256];
-	bool get = GetProperty(prop, buf, 256, false);
+	char buf[UIManager::PROPERTY_BUF_SIZE];
+	bool get = GetProperty(prop, buf, UIManager::PROPERTY_BUF_SIZE, false);
 	if (get)
 	{
 		return StringConverter::ParseInt(buf);
@@ -3273,8 +3276,8 @@ void WinBase::Save(tinyxml2::XMLElement& elem)
 		
 	for (int i = UIProperty::BACK_COLOR; i < UIProperty::COUNT; ++i)
 	{
-		char buf[256];
-		auto got = GetProperty(UIProperty::Enum(i), buf, 256, true);
+		char buf[UIManager::PROPERTY_BUF_SIZE];
+		auto got = GetProperty(UIProperty::Enum(i), buf, UIManager::PROPERTY_BUF_SIZE, true);
 		if (got)
 		{
 			elem.SetAttribute(UIProperty::ConvertToString(i), buf);

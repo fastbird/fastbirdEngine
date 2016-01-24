@@ -68,6 +68,7 @@ namespace fb
 		static UIManagerPtr Create();
 		static bool HasInstance();
 		static UIManager& GetInstance();
+		static const int PROPERTY_BUF_SIZE = 512;
 
 		typedef std::vector<WinBasePtr> WinBases;
 		enum POPUP_TYPE

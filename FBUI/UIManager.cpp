@@ -1634,9 +1634,9 @@ mPopup->SetVisible(true);
 /*
 		if (affected){
 			if (visible){
-				char buffer[512];
+				char buffer[UIManager::PROPERTY_BUF_SIZE];
 				std::string openSound = mSounds[UISounds::WindowOpen];
-				if ((*windows->begin())->GetProperty(UIProperty::OPEN_SOUND, buffer, 512, false)){
+				if ((*windows->begin())->GetProperty(UIProperty::OPEN_SOUND, buffer, UIManager::PROPERTY_BUF_SIZE, false)){
 					bool play = true;
 					if (strlen(buffer))
 						openSound = buffer;
@@ -1651,9 +1651,9 @@ mPopup->SetVisible(true);
 				}
 			}
 			else{
-				char buffer[512];
+				char buffer[UIManager::PROPERTY_BUF_SIZE];
 				std::string closeSound = mSounds[UISounds::WindowClose];
-				if ((*windows->begin())->GetProperty(UIProperty::CLOSE_SOUND, buffer, 512, false)){
+				if ((*windows->begin())->GetProperty(UIProperty::CLOSE_SOUND, buffer, UIManager::PROPERTY_BUF_SIZE, false)){
 					bool play = true;
 					if (strlen(buffer))
 						closeSound = buffer;

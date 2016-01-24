@@ -254,6 +254,7 @@ public:
 		mEncoding = encoding;
 	}
 
+	// y is center
 	bool ApplyTag(const char* text, int start, int end, Real& x, Real y, int* imgYSize = 0)
 	{
 		auto& renderer = Renderer::GetInstance();
@@ -273,9 +274,10 @@ public:
 					auto& regionSize = region->GetSize();
 					Real ratio = regionSize.x / (Real)regionSize.y;
 					Vec2I imgSize = regionSize;
-					Real yoffset = (mScaledFontHeight - imgSize.y) * .5f;					
+					//Real yoffset = (mScaledFontHeight - imgSize.y) * .5f;					
+					Real yoffset = imgSize.y * .5f;
 					mTextureMaterial->SetDiffuseColor(Vec4(1, 1, 1, ((mColor & 0xff000000) >> 24) / 255.f));
-					renderer.DrawQuadWithTextureUV(Vec2I(Round(x), Round(y + yoffset)), imgSize, region->mUVStart, region->mUVEnd,
+					renderer.DrawQuadWithTextureUV(Vec2I(Round(x), Round(y - yoffset)), imgSize, region->mUVStart, region->mUVEnd,
 						Color::White, mTextureAtlas->GetTexture(), mTextureMaterial);					
 					x += (Real)imgSize.x;
 					if (imgYSize){
@@ -412,6 +414,10 @@ public:
 		Real newLineHeight = LineHeightForText((const wchar_t*)text);
 			//mScaledFontHeight;
 		int imgY = 0;
+		if (newLineHeight > mScaledFontHeight)
+		{
+			fy -= (newLineHeight - mScaledFontHeight)*.5f;
+		}
 		// fy is the basis of the glyphs.
 		unsigned int batchingVertices = 0;
 		for (int n = 0; n < count;)
@@ -422,8 +428,12 @@ public:
 			{
 				do
 				{
-					reapplyRender = ApplyTag(text, n, n + skiplen, fx, fy - mBase * mScale, &imgY) || reapplyRender;
-					newLineHeight = std::max(newLineHeight, (Real)imgY);
+					// passing center of y
+					reapplyRender = ApplyTag(text, n, n + skiplen, 
+						fx, 
+						fy - (mBase * mScale) + mScaledFontHeight * .5f, 
+						&imgY) || reapplyRender;
+					//newLineHeight = std::max(newLineHeight, (Real)imgY);
 					n += skiplen;
 					skiplen = SkipTags(&text[n]);
 				} while (skiplen > 0);
@@ -445,6 +455,10 @@ public:
 			if (charId == L'\n')
 			{
 				fy += newLineHeight;
+				if (newLineHeight > mScaledFontHeight)
+				{
+					fy -= (newLineHeight - mScaledFontHeight)*.5f;
+				}
 				fx = (Real)initialX;
 				if (batchingVertices > 0)
 				{
@@ -808,7 +822,7 @@ public:
 		{
 			RASTERIZER_DESC rd;
 			rd.ScissorEnable = false;
-			mTextureMaterial->SetRasterizerState(rd);
+			mTextureMaterial->SetRasterizerState(rd);			
 		}
 		if (depthEnable)
 		{

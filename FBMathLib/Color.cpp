@@ -225,6 +225,11 @@ unsigned Color::FixColorByteOrder(unsigned c)
 	return *(unsigned*)&color;
 }
 
+unsigned Color::ReplaceAlpha(unsigned c, float alpha){
+	char a = (char)Round(alpha * 255.f);
+	return (c & 0xffffff) + (a << 24);
+}
+
 
 Color Color::RandomColor(){
 	return Color(Random(), Random(), Random(), 1.f);

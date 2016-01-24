@@ -690,9 +690,10 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
 		if (comp)
 		{
-			char buf[256];
+			char buf[UIManager::PROPERTY_BUF_SIZE];
 
-			bool result = comp->GetProperty(UIProperty::ConvertToEnum(prop), buf, 256, false);
+			bool result = comp->GetProperty(UIProperty::ConvertToEnum(prop), 
+				buf, UIManager::PROPERTY_BUF_SIZE, false);
 			if (result)
 			{
 				LuaUtils::pushstring(L, buf);

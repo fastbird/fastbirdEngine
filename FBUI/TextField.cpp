@@ -191,10 +191,10 @@ void TextField::OnFocusLost()
 		propertyList->GetCurKeyValue(key, value);
 		if (editingUI)
 		{
-			char buf[256] = { 0 };
+			char buf[UIManager::PROPERTY_BUF_SIZE] = { 0 };
 			auto prop = UIProperty::IsUIProperty(key.c_str());
 			if (prop != UIProperty::COUNT){
-				auto got = editingUI->GetProperty(prop, buf, 256, false);
+				auto got = editingUI->GetProperty(prop, buf, UIManager::PROPERTY_BUF_SIZE, false);
 				if (got)
 					SetText(AnsiToWide(buf));
 			}

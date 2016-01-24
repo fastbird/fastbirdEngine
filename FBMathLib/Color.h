@@ -54,6 +54,7 @@ namespace fb
 			BYTE a;
 		};
 		static unsigned FixColorByteOrder(unsigned c);
+		static unsigned ReplaceAlpha(unsigned c, float alpha);
 
 		static Color RandomColor();
 
