@@ -81,10 +81,20 @@ LuaObject::LuaObject(lua_State* L, const char* globalName)
 	: LuaObject(L)
 {
 	assert(globalName != 0);
-	lua_getglobal(L, globalName);
-	CheckType();
+	auto splitted = Split(globalName, ".");
+	LUA_STACK_CLIPPER clip(L);
+	for (auto& name : splitted){
+		if (!IsTable()){
+			lua_getglobal(L, name.c_str());
+			CheckType();
+		}
+		else{			
+			lua_getfield(L, -1, name.c_str());
+			CheckType();
+		}
+	}	
 	mRef = luaL_ref(L, LUA_REGISTRYINDEX);
-	AddUsedCount(mRef);
+	AddUsedCount(mRef);	
 	mName = globalName;
 }
 
