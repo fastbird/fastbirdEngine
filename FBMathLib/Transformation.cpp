@@ -731,6 +731,10 @@ bool Transformation::operator==(const Transformation& other) const
 	}
 }
 
+bool Transformation::operator!=(const Transformation& other) const{
+	return !operator==(other);
+}
+
 Transformation::operator TransformationTuple() const{
 	return std::make_tuple(
 		mMat[0][0], mMat[0][1], mMat[0][2],

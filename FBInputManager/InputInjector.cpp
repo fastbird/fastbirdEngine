@@ -125,6 +125,18 @@ Vec2ITuple InputInjector::GetDeltaXY() const{
 	return std::make_tuple(0, 0);
 }
 
+void InputInjector::GetAbsDeltaXY(long &x, long &y) const{
+	if (mImpl->mMouse)
+		mImpl->mMouse->GetAbsDeltaXY(x, y);
+}
+
+Vec2ITuple InputInjector::GetAbsDeltaXY() const{
+	if (mImpl->mMouse)
+		return mImpl->mMouse->GetAbsDeltaXY();
+
+	return std::make_tuple(0, 0);
+}
+
 void InputInjector::GetMousePos(long &x, long &y) const{
 	if (mImpl->mMouse)
 		mImpl->mMouse->GetPos(x, y);

@@ -30,6 +30,7 @@
 #include "FBSceneManager/SpatialSceneObject.h"
 #include "MeshAuxiliary.h"
 #include "CollisionInfo.h"
+#include "MeshCamera.h"
 #include "FBRenderer/RenderPass.h"
 namespace fb
 {
@@ -81,6 +82,8 @@ namespace fb
 		void AddAuxiliary(size_t idx, const AUXILIARY& v);
 		void SetCollisionShapes(COLLISION_INFOS& colInfos);
 		void AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data);		
+		void SetMeshCameras(const MeshCameras& cam);		
+		const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const;
 		// force == false
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut);
 		void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut, bool force);

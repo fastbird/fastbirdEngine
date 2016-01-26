@@ -59,6 +59,8 @@ namespace fb{
 		// Positions
 		virtual void GetDeltaXY(long &x, long &y) const = 0;
 		virtual Vec2ITuple GetDeltaXY() const = 0;
+		virtual void GetAbsDeltaXY(long &x, long &y) const = 0;
+		virtual Vec2ITuple GetAbsDeltaXY() const = 0;
 		virtual void GetMousePos(long &x, long &y) const = 0;
 		virtual Vec2ITuple GetMousePos() const = 0;
 		virtual void GetMousePrevPos(long &x, long &y) const = 0;

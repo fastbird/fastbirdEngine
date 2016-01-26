@@ -30,6 +30,7 @@
 #include "FBRenderer/PrimitiveTopology.h"
 #include "FBSceneManager/SceneObjectFlag.h"
 #include "FBSceneObjectFactory/MeshVertexBufferType.h"
+#include "FBSceneObjectFactory/MeshCamera.h"
 #include "CollisionShapeInfo.h"
 #include "MeshLoadOptions.h"
 namespace fb{
@@ -100,6 +101,7 @@ namespace fb{
 		Transformation GetAuxiliaryWorldTransformation(const char* name, bool& outFound) const;
 		Transformations GetAuxiliaryWorldTransformations(const char* name) const;
 		Transformations GetAuxiliaryTransformations(const char* name) const;
+		const MeshCamera& GetMeshCameraAndWorldTransformation(const char* name, Transformation& outWorld, bool& outFound);
 		Vec3s GetAuxiliaryWorldPositions(const char* name) const;
 		Vec3s GetAuxiliaryPositions(const char* name) const;
 		

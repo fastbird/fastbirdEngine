@@ -45,6 +45,7 @@ public:
 	ImportOptions mOptions;
 	ColladaMeshObjects mMeshObjects;
 	ColladaMeshObjects mCollisionMeshes;
+	collada::CAMERA_DATAS mCameraDatas;
 	collada::MeshGroupPtr mMeshGroup;
 	std::string mFilepath;	
 	
@@ -180,6 +181,16 @@ public:
 
 	IteratorWrapper<ColladaMeshObjects> GetMeshIterator(){
 		return IteratorWrapper<ColladaMeshObjects>(mMeshObjects);
+	}
+
+	const collada::CameraData& GetCameraData(const char* id) const{
+		auto it = mCameraDatas.Find(id);
+		if (it == mCameraDatas.end()){
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Collada Camera %s is not found", id).c_str());
+			static collada::CameraData dummy;
+			return dummy;
+		}
+		return it->second;
 	}
 	
 	// Private functions
@@ -638,6 +649,7 @@ public:
 		location.mQuat = ConvertData(rot);		
 		bool auxiliaryNode = name.find("_POS") == 0;
 		bool collisionNode = name.find("_COL") == 0;
+		bool cameraNode = name.find("_CAM") == 0;
 		bool parsingChildMesh = parentMeshIdx != -1;
 		if (auxiliaryNode)
 		{
@@ -658,6 +670,27 @@ public:
 			{
 				assert(!mMeshObjects.empty());
 				mMeshObjects.begin()->second->mCollisionInfo.push_back(colInfo);				
+			}
+		}
+		else if (cameraNode){
+			collada::CameraInfo camInfo(name, location);
+			const auto& instance_cameras = node->getInstanceCameras();
+			auto numCameras = instance_cameras.getCount();
+			assert(numCameras == 1); // currently support only one
+			auto strCameraId = instance_cameras[0]->getInstanciatedObjectId().toAscii();
+			camInfo.mData = GetCameraData(strCameraId.c_str());			 
+			if (mOptions.mUseMeshGroup){
+				assert(mMeshGroup->mMeshes[parentMeshIdx].mMesh);
+				assert(parsingChildMesh);
+				auto& camInfos = mMeshGroup->mMeshes[parentMeshIdx].mMesh->mCameraInfo;
+				assert(camInfos.Find(name) == camInfos.end());
+				camInfos.Insert(std::make_pair(name, camInfo));
+			}
+			else{
+				assert(!mMeshObjects.empty());
+				auto& camInfos = mMeshObjects.begin()->second->mCameraInfo;
+				assert(camInfos.Find(name) == camInfos.end());
+				camInfos.Insert(std::make_pair(name, camInfo));
 			}
 		}
 
@@ -694,7 +727,7 @@ public:
 				{
 					assert(!mMeshObjects.empty());
 					mMeshObjects.begin()->second->mCollisionInfo.back().mCollisionMesh = pMeshObject;	
-				}
+				}				
 			}
 		}
 
@@ -807,6 +840,7 @@ public:
 			// auxiliaries
 			bool auxiliaryNode = name.find("_POS") == 0;
 			bool collisionNode = name.find("_COL") == 0;
+			bool cameraNode = name.find("_CAM") == 0;
 			if (auxiliaryNode)
 			{
 				if (mOptions.mUseMeshGroup){
@@ -824,6 +858,25 @@ public:
 				}
 				else{
 					mMeshObjects.begin()->second->mCollisionInfo.push_back(collada::CollisionInfo(shape, location, 0));
+				}
+			}
+			else if (cameraNode){
+				collada::CameraInfo camInfo(name, location);				
+				const auto& instance_cameras = node[i]->getInstanceCameras();
+				auto numCameras = instance_cameras.getCount();
+				assert(numCameras == 1); // currently support only one
+				auto strCameraId = instance_cameras[0]->getInstanciatedObjectId().toAscii();
+				camInfo.mData = GetCameraData(strCameraId.c_str());
+				if (mOptions.mUseMeshGroup){
+					auto& camInfos = mMeshGroup->mCameraInfo;
+					assert(camInfos.Find(name) == camInfos.end());
+					camInfos.Insert(std::make_pair(name, camInfo));
+				}
+				else{
+					assert(!mMeshObjects.empty());
+					auto& camInfos = mMeshObjects.begin()->second->mCameraInfo;
+					assert(camInfos.Find(name) == camInfos.end());
+					camInfos.Insert(std::make_pair(name, camInfo));
 				}
 			}
 
@@ -877,6 +930,18 @@ public:
 	/** When this method is called, the writer must write the camera.
 	@return The writer should return true, if writing succeeded, false otherwise.*/
 	bool writeCamera(const COLLADAFW::Camera* camera){
+		auto uniqueId = camera->getUniqueId().toAscii();
+		collada::CameraData data;
+		data.mAspectRatio = (float)camera->getAspectRatio();
+		data.mNear = (float)camera->getNearClippingPlane();
+		data.mFar = (float)camera->getFarClippingPlane();
+		data.mXFov = (float)camera->getXFov();
+		data.mYFov = (float)camera->getYFov();
+		data.mType = (float)camera->getCameraType() == COLLADAFW::Camera::ORTHOGRAPHIC ?
+			collada::CameraData::Orthogonal : 
+			collada::CameraData::Perspective;
+
+		mCameraDatas.Insert(std::make_pair(uniqueId, data));
 		return true;
 	}
 

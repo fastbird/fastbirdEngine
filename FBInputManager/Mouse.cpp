@@ -419,16 +419,22 @@ public:
 		}
 	}
 
-	void GetDeltaXY(long &x, long &y) const{
-		//x = mAbsX - mAbsXPrev;
-		//y = mAbsY - mAbsYPrev;
+	void GetDeltaXY(long &x, long &y) const{		
 		x = mAbsDeltaX;
 		y = mAbsDeltaY;
 	}
 
-	Vec2ITuple GetDeltaXY() const{
-		//return Vec2ITuple(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
+	Vec2ITuple GetDeltaXY() const{		
 		return Vec2ITuple(mAbsDeltaX, mAbsDeltaY);
+	}
+
+	void GetAbsDeltaXY(long &x, long &y) const{
+		x = mAbsX - mAbsXPrev;
+		y = mAbsY - mAbsYPrev;
+	}
+
+	Vec2ITuple GetAbsDeltaXY() const{
+		return Vec2ITuple(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
 	}
 
 	void GetPos(long &x, long &y) const{
@@ -798,6 +804,14 @@ void Mouse::GetDeltaXY(long &x, long &y) const	{
 
 Vec2ITuple Mouse::GetDeltaXY() const{
 	return mImpl->GetDeltaXY();
+}
+
+void Mouse::GetAbsDeltaXY(long &x, long &y) const{
+	mImpl->GetAbsDeltaXY(x, y);
+}
+
+Vec2ITuple Mouse::GetAbsDeltaXY() const{
+	return mImpl->GetAbsDeltaXY();
 }
 
 void Mouse::GetPos(long &x, long &y) const{

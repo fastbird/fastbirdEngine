@@ -131,6 +131,7 @@ namespace fb
 		Vec3 GetUp() const;	
 
 		bool operator==(const Transformation& other) const;	
+		bool operator!=(const Transformation& other) const;
 		operator TransformationTuple() const;
 
 		// for serialization

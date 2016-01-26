@@ -700,8 +700,8 @@ void Wnd::OnTitlebarDrag(void *arg)
 	else
 	{
 		long x, y;		
-		injector->GetDeltaXY(x, y);
-		Move(Vec2I(x, y));
+		injector->GetAbsDeltaXY(x, y);
+		Move(Vec2I(x, y));		
 		/*auto rtSize = GetRenderTargetSize();
 		Vec2 nposOffset = { x / (float)rtSize.x, y / (float)rtSize.y };
 		SetNPos(GetNPos() + nposOffset);*/

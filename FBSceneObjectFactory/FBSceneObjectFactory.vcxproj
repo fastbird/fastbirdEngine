@@ -79,6 +79,7 @@
     <ClInclude Include="DustRenderer.h" />
     <ClInclude Include="FBCollisionShape.h" />
     <ClInclude Include="MeshAuxiliary.h" />
+    <ClInclude Include="MeshCamera.h" />
     <ClInclude Include="MeshGroup.h" />
     <ClInclude Include="MeshImportDesc.h" />
     <ClInclude Include="MeshObject.h" />

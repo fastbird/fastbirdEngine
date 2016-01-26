@@ -149,6 +149,12 @@ namespace fb{
 		return stream.str();
 	}
 
+	TString StringConverter::ToHexa(unsigned val){
+		std::stringstream stream;
+		stream << "0x" << std::hex << val;
+		return stream.str();
+	}
+
 	//-----------------------------------------------------------------------
 	Real StringConverter::ParseReal(const TString& val, Real defaultValue)
 	{

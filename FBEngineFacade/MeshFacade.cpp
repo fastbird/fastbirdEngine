@@ -402,6 +402,32 @@ public:
 		return ret;
 	}
 
+	const MeshCamera& GetMeshCameraAndWorldTransformation(const char* name, 
+		Transformation& outWorld, bool& outFound)
+	{
+		if (mMeshObject)
+			return mMeshObject->GetMeshCamera(name, outFound);
+
+		if (mMeshGroup){			
+			auto& meshCamera = mMeshGroup->GetMeshCamera(name, outFound);
+			if (outFound)
+				return meshCamera;
+
+			unsigned numMeshes = mMeshGroup->GetNumMeshes();
+			for (unsigned m = 0; m < numMeshes; ++m){
+				auto mesh = mMeshGroup->GetMeshObject(m);
+				auto& meshCamera = mesh->GetMeshCamera(name, outFound);
+				if (outFound){
+					outWorld = mesh->GetAnimatedLocation() * meshCamera.mLocation;
+					return meshCamera;
+				}				
+			}		
+		}
+		static MeshCamera dummy;
+		outFound = false;
+		return dummy;
+	}
+
 	Vec3s GetAuxiliaryPositions(const char* name) const{
 		Vec3s ret;
 		if (mMeshObject){
@@ -870,6 +896,11 @@ Transformations MeshFacade::GetAuxiliaryWorldTransformations(const char* name) c
 
 Transformations MeshFacade::GetAuxiliaryTransformations(const char* name) const{
 	return mImpl->GetAuxiliaryTransformations(name);
+}
+
+const MeshCamera& MeshFacade::GetMeshCameraAndWorldTransformation(const char* name, 
+	Transformation& outWorld, bool& outFound){
+	return mImpl->GetMeshCameraAndWorldTransformation(name, outWorld, outFound);
 }
 
 Vec3s MeshFacade::GetAuxiliaryPositions(const char* name) const{

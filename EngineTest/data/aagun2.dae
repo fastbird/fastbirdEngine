@@ -5,11 +5,32 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.70.0 commit date:2014-04-10, commit time:11:49, hash:f93bc76</authoring_tool>
     </contributor>
-    <created>2015-04-13T13:48:43</created>
-    <modified>2015-04-13T13:48:43</modified>
+    <created>2016-01-26T18:08:22</created>
+    <modified>2016-01-26T18:08:22</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
+  <library_cameras>
+    <camera id="_CAM_FP-camera" name="Camera">
+      <optics>
+        <technique_common>
+          <perspective>
+            <xfov sid="xfov">67.71006</xfov>
+            <aspect_ratio>1.777778</aspect_ratio>
+            <znear sid="znear">0.04999995</znear>
+            <zfar sid="zfar">100</zfar>
+          </perspective>
+        </technique_common>
+      </optics>
+      <extra>
+        <technique profile="blender">
+          <YF_dofdist>0</YF_dofdist>
+          <shiftx>0</shiftx>
+          <shifty>0</shifty>
+        </technique>
+      </extra>
+    </camera>
+  </library_cameras>
   <library_images/>
   <library_effects>
     <effect id="data_objects_parts_aagun2_material-effect">
@@ -382,6 +403,14 @@
               <rotate sid="rotationX">1 0 0 0</rotate>
               <scale sid="scale">1 1 1</scale>
             </node>
+          </node>
+          <node id="_CAM_FP" name="_CAM_FP" type="NODE">
+            <translate sid="location">-3.96371e-6 0.01625939 0.4887647</translate>
+            <rotate sid="rotationZ">0 0 1 0</rotate>
+            <rotate sid="rotationY">0 1 0 0</rotate>
+            <rotate sid="rotationX">1 0 0 83.90825</rotate>
+            <scale sid="scale">1 1 1</scale>
+            <instance_camera url="#_CAM_FP-camera"/>
           </node>
         </node>
         <node id="_COL_CUBE" name="_COL_CUBE" type="NODE">

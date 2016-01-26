@@ -68,6 +68,7 @@ public:
 	FRAME_PRECISION mLastUpdateFrame;
 	typedef std::vector< FBCollisionShapePtr > COLLISION_SHAPES;
 	CowPtr<COLLISION_SHAPES> mCollisions;
+	CowPtr<MeshCameras> mMeshCameras;
 
 	unsigned mLastPreRendered;
 	bool mRootAnimated;
@@ -89,6 +90,7 @@ public:
 		, mAuxiliaries(other.mAuxiliaries)
 		, mLastUpdateFrame(other.mLastUpdateFrame)
 		, mCollisions(other.mCollisions)
+		, mMeshCameras(other.mMeshCameras)
 		, mLastPreRendered(0)
 	{
 		for (auto it : other.mMeshObjects)
@@ -323,6 +325,26 @@ public:
 			}
 		}
 	}	
+
+	void SetMeshCameras(const MeshCameras& cam){
+		if (!mMeshCameras)
+			mMeshCameras = new MeshCameras;
+
+		*mMeshCameras = cam;
+	}
+
+	const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const{
+		if (mMeshCameras.const_get()){
+			auto it = mMeshCameras.const_get()->Find(name);
+			if (it != mMeshCameras.const_get()->end()){
+				outFound = true;
+				return it->second;
+			}
+		}
+		outFound = false;		
+		static MeshCamera dummy;
+		return dummy;
+	}
 
 	void UpdateTransform(const RenderParam& param, RenderParamOut* paramOut, bool force){
 		FRAME_PRECISION f = gpTimer->GetFrame();
@@ -603,6 +625,14 @@ void MeshGroup::SetCollisionShapes(COLLISION_INFOS& colInfos) {
 
 void MeshGroup::AddCollisionShape(size_t idx, std::pair<ColisionShapeType::Enum, Transformation>& data) {
 	mImpl->AddCollisionShape(idx, data);
+}
+
+void MeshGroup::SetMeshCameras(const MeshCameras& cam){
+	mImpl->SetMeshCameras(cam);
+}
+
+const MeshCamera& MeshGroup::GetMeshCamera(const char* name, bool& outFound) const{
+	return mImpl->GetMeshCamera(name, outFound);
 }
 
 void MeshGroup::UpdateTransform(const RenderParam& param, RenderParamOut* paramOut) {

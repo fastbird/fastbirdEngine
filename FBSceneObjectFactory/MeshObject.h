@@ -30,6 +30,7 @@
 #include "FBCollisionShape.h"
 #include "CollisionInfo.h"
 #include "MeshAuxiliary.h"
+#include "MeshCamera.h"
 #include "MeshVertexBufferType.h"
 #include "FBSceneManager/SpatialSceneObject.h"
 #include "FBRenderer/RenderParam.h"
@@ -103,6 +104,8 @@ namespace fb{
 		void AddCollisionShape(const COL_SHAPE& data);
 		void SetCollisionShapes(const COLLISION_INFOS& colInfos);
 		void SetCollisionMesh(MeshObjectPtr colMesh);
+		void SetMeshCameras(const MeshCameras& cam);		
+		const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const;
 		unsigned GetNumCollisionShapes() const;
 		bool HasCollisionShapes() const;
 		FBCollisionShapeConstPtr GetCollisionShape(unsigned idx) const;

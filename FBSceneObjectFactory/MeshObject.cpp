@@ -94,6 +94,8 @@ public:
 	CowPtr<COLLISION_SHAPES> mCollisions;	
 	FRAME_PRECISION mLastPreRendered;
 
+	CowPtr<MeshCameras> mMeshCameras;
+
 	bool mUseDynamicVB[MeshVertexBufferType::Num];
 	bool mForceAlphaBlending;
 	bool mCheckDistance;
@@ -127,6 +129,7 @@ public:
 		, mModifying(other.mModifying)
 		, mRenderHighlight(other.mRenderHighlight)
 		, mCollisions(other.mCollisions)
+		, mMeshCameras(other.mMeshCameras)
 		, mLastPreRendered(other.mLastPreRendered)
 		, mForceAlphaBlending(other.mForceAlphaBlending)
 
@@ -763,6 +766,26 @@ public:
 		mCollisions->back()->SetCollisionMesh(colMesh);
 	}
 
+	void SetMeshCameras(const MeshCameras& cam){
+		if (!mMeshCameras)
+			mMeshCameras = new MeshCameras;
+
+		*mMeshCameras = cam;
+	}
+
+	const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const {
+		if (mMeshCameras.const_get()){
+			auto it = mMeshCameras.const_get()->Find(name);
+			if (it != mMeshCameras.const_get()->end()){
+				outFound = true;
+				return it->second;
+			}
+		}
+		outFound = false;
+		static MeshCamera dummy;		
+		return dummy;
+	}
+
 	unsigned GetNumCollisionShapes() const { 
 		if (!mCollisions)
 			return 0;
@@ -1347,6 +1370,14 @@ void MeshObject::SetCollisionShapes(const COLLISION_INFOS& colInfos) {
 
 void MeshObject::SetCollisionMesh(MeshObjectPtr colMesh) {
 	mImpl->SetCollisionMesh(colMesh);
+}
+
+void MeshObject::SetMeshCameras(const MeshCameras& cam){
+	mImpl->SetMeshCameras(cam);
+}
+
+const MeshCamera& MeshObject::GetMeshCamera(const char* name, bool& outFound) const{
+	return mImpl->GetMeshCamera(name, outFound);
 }
 
 unsigned MeshObject::GetNumCollisionShapes() const {

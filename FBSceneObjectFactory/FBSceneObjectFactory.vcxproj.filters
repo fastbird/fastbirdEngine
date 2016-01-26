@@ -17,6 +17,7 @@
     <ClInclude Include="MeshVertexBufferType.h" />
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="SkyBox.h" />
+    <ClInclude Include="MeshCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />

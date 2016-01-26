@@ -27,6 +27,7 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
+#include "FBCommonHeaders/VectorMap.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -108,6 +109,7 @@ namespace fb{
 			Vec4 mQuat; // w, x, y, z order.
 			Vec3 mPos;
 		};
+
 		struct CollisionInfo
 		{
 			ColShape mColShapeType;
@@ -129,6 +131,52 @@ namespace fb{
 		
 		typedef std::vector< std::pair<std::string, Location> > AUXILIARIES;
 
+		struct CameraData{
+			float mXFov;
+			float mYFov;
+			float mAspectRatio;
+			float mNear;
+			float mFar;
+
+			enum Type
+			{
+				Perspective,
+				Orthogonal,
+			};
+			Type mType;
+
+			CameraData()
+				: mXFov(1.5708)
+				, mYFov(1.5708)
+				, mAspectRatio(1.f)
+				, mNear(0.1f)
+				, mFar(1000.f)
+				, mType(Perspective)
+			{
+			}
+		};
+
+		// actual camera data.
+		typedef VectorMap<std::string, CameraData> CAMERA_DATAS;
+
+		struct CameraInfo{
+			std::string mName;
+			Location mLocation;
+			CameraData mData;
+			CameraInfo()				
+			{
+			}
+
+			CameraInfo(std::string name, const Location& l)
+				: mName(name), mLocation(l)				
+			{
+
+			}
+		};
+
+		// node camera combination
+		typedef VectorMap<std::string, CameraInfo> CAMERA_INFOS;
+
 		struct Mesh{
 			std::string mName;
 			std::map<int, MaterialGroup> mMaterialGroups;			
@@ -136,6 +184,7 @@ namespace fb{
 			AnimationDataPtr mAnimationData;
 			AUXILIARIES mAuxiliaries;
 			COLLISION_INFOS mCollisionInfo;
+			CAMERA_INFOS mCameraInfo;
 		};
 
 		struct MeshGroup
@@ -148,6 +197,7 @@ namespace fb{
 			std::map<int, Data> mMeshes;
 			AUXILIARIES mAuxiliaries;			
 			COLLISION_INFOS mCollisionInfo;
+			CAMERA_INFOS mCameraInfo;
 		};
 		typedef std::shared_ptr<MeshGroup> MeshGroupPtr;		
 

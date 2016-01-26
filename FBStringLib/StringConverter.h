@@ -48,7 +48,8 @@ namespace fb{
 		*/
 		static TString ToString(bool val, bool yesNo = false);
 		/// Should not contain a ' ' in the each string elements.
-		TString StringConverter::ToString(const TStringVector& val);
+		static TString ToString(const TStringVector& val);		
+		static TString ToHexa(unsigned val);
 
 		static Real ParseReal(const TString& val, Real defaultValue = 0);
 		static int ParseInt(const TString& val, int defaultValue = 0);

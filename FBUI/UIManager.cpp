@@ -2623,7 +2623,7 @@ mPopup->SetVisible(true);
 		}
 
 		if (sDragStarted){
-			Vec2I delta = injector->GetDeltaXY();
+			Vec2I delta = injector->GetAbsDeltaXY();
 			for (unsigned i = 0; i < num; ++i){
 				auto curUI = mUIEditor->GetCurSelected(i);
 				bool sizing = false;

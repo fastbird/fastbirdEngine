@@ -63,6 +63,9 @@ namespace fb
 		// Positions		
 		virtual void GetDeltaXY(long &x, long &y) const;
 		virtual Vec2ITuple GetDeltaXY() const;
+		// exactlay match to the cursor
+		virtual void GetAbsDeltaXY(long &x, long &y) const;
+		virtual Vec2ITuple GetAbsDeltaXY() const;
 		virtual void GetPos(long &x, long &y) const;
 		virtual Vec2ITuple GetPos() const;
 		virtual void GetPrevPos(long &x, long &y) const;

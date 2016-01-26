@@ -158,6 +158,30 @@ public:
 		return ret;
 	}
 
+	MeshCamera ConvertCollada(const collada::CameraInfo& camInfo){
+		MeshCamera ret;
+		ret.mAspectRatio = camInfo.mData.mAspectRatio;
+		ret.mFar = camInfo.mData.mFar;
+		ret.mLocation = ConvertCollada(camInfo.mLocation);
+		Quat rot(Radian(-90), Vec3::UNIT_X);
+		ret.mLocation.AddRotation(rot);
+		ret.mName = camInfo.mName;
+		ret.mNear = camInfo.mData.mNear;
+		if (camInfo.mData.mXFov > 0.f){
+			// convert to y;
+			ret.mFov = Radian(camInfo.mData.mXFov / ret.mAspectRatio);
+		}
+		else if (camInfo.mData.mYFov > 0.f){
+			ret.mFov = Radian(camInfo.mData.mYFov);
+		}
+		else{
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Collada camera info(%s) doesn't have fov", camInfo.mName.c_str()).c_str());
+		}
+		
+		return ret;
+	}
+
 	MaterialPtr GetFallbackMaterial(const char* originalPath, const char* daePath){
 		auto materialFileName = FileSystem::GetFileName(originalPath);
 		auto path = FileSystem::GetParentPath(daePath);
@@ -227,6 +251,15 @@ public:
 		}
 		mesh->SetCollisionShapes(ConvertCollada(meshData->mCollisionInfo));
 
+		MeshCameras cameras;
+		if (!meshData->mCameraInfo.empty()){
+			MeshCameras cameras;
+			for (auto& it : meshData->mCameraInfo){
+				MeshCamera cam = ConvertCollada(it.second);
+				cameras.Insert(std::make_pair(it.first, cam));				
+			}
+			mesh->SetMeshCameras(cameras);
+		}
 
 		return mesh;
 	}
@@ -365,6 +398,15 @@ public:
 			meshGroup->AddAuxiliary(aux);
 		}
 		meshGroup->SetCollisionShapes(ConvertCollada(groupData->mCollisionInfo));
+
+		if (!groupData->mCameraInfo.empty()){
+			MeshCameras cameras;
+			for (auto& it : groupData->mCameraInfo){
+				MeshCamera cam = ConvertCollada(it.second);
+				cameras.Insert(std::make_pair(it.first, cam));
+			}
+			meshGroup->SetMeshCameras(cameras);
+		}
 		return meshGroup;
 	}
 

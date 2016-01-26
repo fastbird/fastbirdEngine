@@ -37,7 +37,7 @@ public:
 	MeshFacadePtr mMesh;
 
 	Impl(){
-		mMesh = MeshFacade::Create()->LoadMeshGroup("data/biggun.dae");
+		mMesh = MeshFacade::Create()->LoadMeshGroup("data/aagun2.dae");
 		mMesh->AttachToScene();
 		mMesh->SetPosition(Vec3(100, 100, 100));
 		Quat q;
@@ -45,6 +45,9 @@ public:
 		mMesh->SetMeshRotation(1, q);
 		q.FromAngleAxis(Radian(45), Vec3::UNIT_X);
 		mMesh->SetMeshRotation(2, q);
+		Transformation world;
+		bool found;
+		mMesh->GetMeshCameraAndWorldTransformation("_CAM_FP", world, found);		
 	}
 
 	~Impl(){
