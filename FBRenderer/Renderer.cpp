@@ -1988,7 +1988,7 @@ public:
 		while (it->HasNext())
 		{
 			const char* szfilename = it->GetNextFilePath();
-			std::regex match(".*screenshot_([0-9]+)\\.bmp");
+			std::regex match(".*screenshot_([0-9]+)\\.jpg");
 			std::smatch result;
 			std::string filename(szfilename);
 			if (std::regex_match(filename, result, match)){
@@ -2002,7 +2002,7 @@ public:
 				}
 			}			
 		}
-		return FormatString("%sscreenshot_%d.bmp", screenShotFolder.c_str(), n);
+		return FormatString("%sscreenshot_%d.jpg", screenShotFolder.c_str(), n);
 	}
 
 	//-------------------------------------------------------------------
