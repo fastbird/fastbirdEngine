@@ -1319,3 +1319,18 @@ bool LuaObject::HasFunction() const
 	}
 	return false;
 }
+
+unsigned LuaObject::GetElementCount() const{
+	if (!IsTable()){
+		Logger::Log(FB_ERROR_LOG_ARG, "Not a table.");
+		return 0;
+	}
+
+	auto iter = GetTableIterator();
+	LuaTableIterator::KeyValue kv;
+	unsigned num = 0;
+	while (iter.GetNext(kv)){
+		++num;
+	}
+	return num;
+}

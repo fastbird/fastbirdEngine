@@ -120,4 +120,19 @@ namespace fb{
 
 		return mx*mx + my*my + mz*mz;
 	}
+
+	template<class T>
+	unsigned RemoveInvalidWeakPtr(std::vector<T>& v){
+		unsigned numDeleted = 0;
+		for (auto it = v.begin(); it != v.end(); /**/){
+			auto data = it->lock();
+			if (!data){
+				it = v.erase(it);
+				++numDeleted;
+				continue;
+			}
+			++it;
+		}
+		return numDeleted;
+	}
 }

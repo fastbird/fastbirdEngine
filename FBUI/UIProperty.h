@@ -185,6 +185,7 @@ namespace fb
 
 			OPEN_SOUND,
 			CLOSE_SOUND,
+			USER_DATA_INT,
 
 			COUNT
 		};
@@ -341,6 +342,8 @@ namespace fb
 
 			"OPEN_SOUND",
 			"CLOSE_SOUND",
+			
+			"USER_DATA_INT",
 
 			"COUNT"
 		};
@@ -589,6 +592,8 @@ namespace fb
 				return 200;
 			case IMAGE_DISPLAY:
 				return 0;
+			case USER_DATA_INT:
+				return -1;
 			}
 			assert(0);
 			return 0;

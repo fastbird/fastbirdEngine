@@ -204,6 +204,10 @@ namespace fb
 		QuatTuple GetQuat(bool& success)const;
 		TransformationTuple GetTransformation(bool& success) const;
 
+
+		// this is for table
+		unsigned GetElementCount() const;
+
 		void PushToStack() const;
 		bool Call();
 		bool CallWithManualArgs(unsigned numArgs, unsigned numRets);

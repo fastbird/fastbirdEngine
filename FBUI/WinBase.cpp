@@ -110,6 +110,7 @@ WinBase::WinBase()
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
 , mHand(false), mHandFuncId(-1), mNoFocusByClick(false), mReceiveEventFromParent(false)
+, mUserDataInt(-1)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -1717,6 +1718,12 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			mReceiveEventFromParent = StringConverter::ParseBool(val);
 			return true;
 		}
+
+		case UIProperty::USER_DATA_INT:
+		{
+			mUserDataInt = StringConverter::ParseInt(val);
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning)
 		Error(FB_ERROR_LOG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
@@ -2238,6 +2245,16 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 				return false;
 		}
 		strcpy_s(val, bufsize, StringConverter::ToString(mReceiveEventFromParent).c_str());
+		return true;
+	}
+
+	case UIProperty::USER_DATA_INT:
+	{
+		if (notDefaultOnly){
+			if (mUserDataInt == UIProperty::GetDefaultValueInt(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::ToString(mUserDataInt).c_str());
 		return true;
 	}
 	}
