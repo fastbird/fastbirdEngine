@@ -538,6 +538,10 @@ void RenderTarget::SetClearColor(const Color& color)
 	mImpl->mClearColor = color;
 }
 
+const Color& RenderTarget::GetClearColor() const{
+	return mImpl->mClearColor;
+}
+
 void RenderTarget::SetClearDepthStencil(Real z, UINT8 stencil)
 {
 	mImpl->mDepthClear = z;

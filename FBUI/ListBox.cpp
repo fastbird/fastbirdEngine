@@ -408,7 +408,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 {
 	switch (prop)
 	{
-	case UIProperty::LISTBOX_HIGHLIGHT_COLOR:
+	case UIProperty::HIGHLIGHT_COLOR:
 	{
 		mHighlightColor = val;
 		return true;
@@ -626,7 +626,7 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 {
 	switch (prop)
 	{
-	case UIProperty::LISTBOX_HIGHLIGHT_COLOR:
+	case UIProperty::HIGHLIGHT_COLOR:
 	{
 		if (notDefaultOnly)
 		{

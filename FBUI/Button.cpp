@@ -63,6 +63,7 @@ namespace fb
 		mTextColorHover = Color(1.0f, 1.0f, 0.5f);
 		mTextColorDown = Color(1.0f, 0.2f, 0.2f);
 		mUIObject->SetTextColor(mTextColor);
+		mHighlightColor = UIProperty::GetDefaultValueVec4(UIProperty::HIGHLIGHT_COLOR);
 
 		// default colors
 		mBackColor = Color(0.0f, 0.0f, 0.0f, 0.7f);
@@ -748,6 +749,12 @@ namespace fb
 			return true;
 		}
 
+		case UIProperty::HIGHLIGHT_COLOR:
+		{
+			mHighlightColor = StringMathConverter::ParseColor(val);
+			return true;
+		}
+
 		}
 
 		return __super::SetProperty(prop, val);
@@ -1143,6 +1150,18 @@ namespace fb
 			return true;
 		}
 
+		case UIProperty::HIGHLIGHT_COLOR:
+		{
+			if (notDefaultOnly){
+				if (mHighlightColor == UIProperty::GetDefaultValueVec4(prop)){
+					return false;
+				}
+			}
+			strcpy_s(val, bufsize, StringMathConverter::ToString(mHighlightColor).c_str());
+			return true;
+		}
+
+
 		}
 
 		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
@@ -1245,7 +1264,7 @@ namespace fb
 	{
 		if (highlight && mEnable)
 		{
-			mUIObject->GetMaterial()->SetAmbientColor(0.09f, 0.02f, 0.03f, 1.0f);
+			mUIObject->GetMaterial()->SetAmbientColor(mHighlightColor.GetVec4());
 		}
 		else
 		{

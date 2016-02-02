@@ -173,6 +173,43 @@ public:
 		mMaterial->SetMaterialParameter(0, val);
 	}
 
+	void SetSeperatedBackground(bool seperated){
+		if (seperated){
+			mMaterial->AddShaderDefine("_SEPERATED_BACKGROUND", "1");
+		}
+		else{
+			mMaterial->RemoveShaderDefine("_SEPERATED_BACKGROUND");
+		}
+	}
+
+	void SetUseSeperatedUVForAlpha(bool seperatedUV){
+		if (seperatedUV){
+			mMaterial->AddShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV", "1");
+			Vec2 texcoords[4] = {
+				Vec2(0.f, 1.f),
+				Vec2(0.f, 0.f),
+				Vec2(1.f, 1.f),
+				Vec2(1.f, 0.f)
+			};
+			SetTexCoord(texcoords, 4, 1);
+			INPUT_ELEMENT_DESCS descs;
+			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 1, INPUT_ELEMENT_FORMAT_FLOAT2, 3, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			mMaterial->SetInputLayout(descs);
+		}
+		else{
+			mMaterial->RemoveShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV");
+			ClearTexCoord(1);
+			INPUT_ELEMENT_DESCS descs;
+			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));			
+			mMaterial->SetInputLayout(descs);
+		}
+	}
+
 	void SetAlpha(float alpha)
 	{
 		mAlpha = alpha;
@@ -473,6 +510,10 @@ public:
 		return !mTexcoords[0].empty() || !mTexcoords[1].empty();
 	}
 
+	bool HasTexCoord(int index) const{
+		return !mTexcoords[index].empty();
+	}
+
 	void EnableLinearSampler(bool linear){
 		if (mMaterial){			
 			if (linear){
@@ -615,6 +656,10 @@ bool UIObject::HasTexCoord() const {
 	return mImpl->HasTexCoord();
 }
 
+bool UIObject::HasTexCoord(int index) const{
+	return mImpl->HasTexCoord(index);
+}
+
 void UIObject::EnableLinearSampler(bool linear) {
 	mImpl->EnableLinearSampler(linear);
 }
@@ -639,3 +684,10 @@ void UIObject::UpdateRegion() {
 	mImpl->UpdateRegion();
 }
 
+void UIObject::SetSeperatedBackground(bool seperated){
+	mImpl->SetSeperatedBackground(seperated);
+}
+
+void UIObject::SetUseSeperatedUVForAlpha(bool seperatedUV){
+	mImpl->SetUseSeperatedUVForAlpha(seperatedUV);
+}

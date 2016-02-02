@@ -53,3 +53,5 @@ A group containing header files only.
 #if !defined(FBCommonHeaders_Types_h)
 #include "Types.h"
 #endif
+
+#include <assert.h>

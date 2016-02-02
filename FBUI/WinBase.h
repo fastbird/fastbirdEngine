@@ -177,6 +177,7 @@ namespace fb
 		bool mReceiveEventFromParent;
 		FunctionId mHandFuncId;
 		int mUserDataInt;
+		bool mUseBorderAlpha;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -464,8 +465,7 @@ namespace fb
 
 		virtual bool GetUseScissor() const { return mUseScissor; }
 		virtual bool GetNoFocusByClick() const { return mNoFocusByClick; }
-		virtual bool GetReceiveEventFromParent() const { return mReceiveEventFromParent; }
-
+		virtual bool GetReceiveEventFromParent() const { return mReceiveEventFromParent; }		
 
 	protected:
 		virtual void OnPosChanged(bool anim);
@@ -476,6 +476,7 @@ namespace fb
 		Rect GetScissorRegion() const;
 		void GetScissorIntersection(Rect& region);
 		virtual void SetUseBorder(bool use);
+		void SetUseBorderAlpha(bool use);
 		void RefreshBorder();
 		virtual void GatherVisit(std::vector<UIObject*>& v);
 		virtual void CalcTextWidth(); // virtual for mutiline text

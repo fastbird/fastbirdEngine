@@ -72,6 +72,8 @@ namespace fb{
 		
 		if (!module) {
 			Logger::Log("\tFailed.\n");
+			DWORD lastError = GetLastError();
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("\t error code = %d", lastError).c_str());
 		}
 		else{
 			Logger::Log("\tSucceeded.\n");

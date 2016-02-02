@@ -87,6 +87,7 @@ namespace fb
 			BACKGROUND_IMAGE_DISABLED,
 			BACKGROUND_IMAGE_NOATLAS,
 			BACKGROUND_IMAGE_HOVER_NOATLAS,
+			BACKGROUND_GRADIENT,
 			FRAME_IMAGE,
 			FRAME_IMAGE_DISABLED,
 			CHANGE_IMAGE_ACTIVATE,
@@ -120,7 +121,7 @@ namespace fb
 			LISTBOX_COL_ALIGNH,
 			LISTBOX_COL_HEADERS,
 			LISTBOX_COL_HEADERS_TEXT_SIZE,
-			LISTBOX_HIGHLIGHT_COLOR,
+			HIGHLIGHT_COLOR,
 			LISTBOX_MULTI_SELECTION,
 			LISTBOX_NO_HIGHLIGHT,
 			LISTBOX_NO_SEARCH,
@@ -131,6 +132,7 @@ namespace fb
 			TITLEBAR,
 			CLOSE_BTN,
 			USE_BORDER,
+			USE_BORDER_ALPHA_FORCE, // do not need to set when USE_BORDER is true
 			SPECIAL_ORDER, // higher will render top
 			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
 			VISIBLE,
@@ -140,6 +142,7 @@ namespace fb
 			IMAGE_COLOR_OVERLAY,
 			IMAGE_ROTATE,
 			IMAGE_LINEAR_SAMPLER,
+			IMAGE_SEPERATED_BACKGROUND,
 			ALPHA_REGION,
 
 			NO_BUTTON,
@@ -243,6 +246,7 @@ namespace fb
 			"BACKGROUND_IMAGE_DISABLED",
 			"BACKGROUND_IMAGE_NOATLAS",
 			"BACKGROUND_IMAGE_HOVER_NOATLAS",
+			"BACKGROUND_GRADIENT",
 			"FRAME_IMAGE",
 			"FRAME_IMAGE_DISABLED",
 			"CHANGE_IMAGE_ACTIVATE",
@@ -276,7 +280,7 @@ namespace fb
 			"LISTBOX_COL_ALIGNH",
 			"LISTBOX_COL_HEADERS",
 			"LISTBOX_COL_HEADERS_TEXT_SIZE",
-			"LISTBOX_HIGHLIGHT_COLOR",
+			"HIGHLIGHT_COLOR",
 			"LISTBOX_MULTI_SELECTION",
 			"LISTBOX_NO_HIGHLIGHT",
 			"LISTBOX_NO_SEARCH",
@@ -287,6 +291,7 @@ namespace fb
 			"TITLEBAR",
 			"CLOSE_BTN",
 			"USE_BORDER",
+			"USE_BORDER_ALPHA_FORCE",
 			"SPECIAL_ORDER",
 			"INHERIT_VISIBLE_TRUE",
 			"VISIBLE",
@@ -296,6 +301,7 @@ namespace fb
 			"IMAGE_COLOR_OVERLAY",			
 			"IMAGE_ROTATE",
 			"IMAGE_LINEAR_SAMPLER",
+			"IMAGE_SEPERATED_BACKGROUND",
 			"ALPHA_REGION",
 			"NO_BUTTON",
 			"CHECKBOX_CHECKED",
@@ -414,7 +420,7 @@ namespace fb
 				return Vec4(1, 1, 0, 1);
 			case GAUGE_BORDER_COLOR:
 				return Vec4(0.5f, 0.5f, 0.5f, 0.5f);
-			case LISTBOX_HIGHLIGHT_COLOR:
+			case HIGHLIGHT_COLOR:
 				return Vec4(0.1f, 0.3f, 0.3f, 0.7f);
 			}
 			assert(0);
@@ -476,6 +482,8 @@ namespace fb
 				return true;
 			case USE_BORDER:
 				return false;
+			case USE_BORDER_ALPHA_FORCE:
+				return false;
 			case INHERIT_VISIBLE_TRUE:
 				return true;
 			case VISIBLE:
@@ -503,6 +511,8 @@ namespace fb
 			case IMAGE_ROTATE:
 				return false;
 			case IMAGE_LINEAR_SAMPLER:
+				return false;
+			case IMAGE_SEPERATED_BACKGROUND:
 				return false;
 			case RADIO_CHECK:
 				return false;
@@ -541,6 +551,8 @@ namespace fb
 			case SEND_EVENT_TO_CHILDREN:
 				return false;
 			case RECEIVE_EVENT_FROM_PARENT:
+				return false;
+			case BACKGROUND_GRADIENT:
 				return false;
 			}
 			assert(0);
@@ -603,7 +615,7 @@ namespace fb
 		{
 			switch (prop)
 			{
-			case LISTBOX_HIGHLIGHT_COLOR:
+			case HIGHLIGHT_COLOR:
 				return "0.1, 0.3, 0.3, 0.7";			
 			}			
 			return "";

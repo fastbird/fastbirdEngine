@@ -104,7 +104,9 @@ namespace fb{
 		namespace BlendStates{
 			enum Enum{
 				Default,
+				DefaultKeepAlpha,
 				Additive,
+				AdditiveKeepAlpha,
 				AlphaBlend,
 				MaxBlend,				
 				RedAlphaMask,

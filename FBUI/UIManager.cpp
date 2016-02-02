@@ -464,7 +464,7 @@ public:
 					if (error)
 					{
 						char buf[1024];
-						sprintf_s(buf, "\n%s/%s", FileSystem::GetCurrentDir(), LuaUtils::tostring(-1));
+						sprintf_s(buf, "\n%s/%s", FileSystem::GetCurrentDir().c_str(), LuaUtils::tostring(-1));
 						Error(FB_ERROR_LOG_ARG, buf);
 						assert(0);
 					}
@@ -1360,7 +1360,13 @@ public:
 				dragStartedUI->OnMouseDrag(injector);
 			}
 
-			if (injector->IsLButtonClicked()){
+			if (injector->IsLButtonDoubleClicked()){
+				auto mouseOvered = mMouseOvered.lock();
+				if (mouseOvered){
+					mouseOvered->OnMouseDoubleClicked(injector);
+				}
+			}
+			else  if (injector->IsLButtonClicked()){
 				auto keyboardFocus = mKeyboardFocus.lock();
 				if (keyboardFocus != focusWnd)
 				{
@@ -1381,12 +1387,7 @@ public:
 					}
 				}
 			}
-			else if (injector->IsLButtonDoubleClicked()){
-				auto mouseOvered = mMouseOvered.lock();
-				if (mouseOvered){
-					mouseOvered->OnMouseDoubleClicked(injector);
-				}
-			}
+			
 			else if (injector->IsRButtonClicked()){
 				auto mouseOvered = mMouseOvered.lock();
 				if (mouseOvered){
@@ -1416,11 +1417,11 @@ public:
 		SetCursor(WinBase::GetMouseCursorOver());
 	}
 
-	void DisplayMsg(const std::string& msg, ...){
+	void DisplayMsg(const char* msg, ...){
 		char buf[2048] = { 0 };
 		va_list args;
 		va_start(args, msg);
-		vsprintf_s(buf, 2048, msg.c_str(), args);
+		vsprintf_s(buf, 2048, msg, args);
 		va_end(args);
 
 		if (strlen(buf)>0)
@@ -1622,7 +1623,8 @@ mPopup->SetVisible(true);
 			}
 		}
 		if (!windows){
-			Log("UIManager::SetVisible(): UI(%s) is not found.", uiname);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"UI(%s) is not found.", uiname).c_str());			
 			return;
 		}
 
@@ -2914,7 +2916,7 @@ void UIManager::SetMouseCursorOver() {
 }
 
 void UIManager::DisplayMsg(const std::string& msg, ...) {
-	mImpl->DisplayMsg(msg);
+	mImpl->DisplayMsg(msg.c_str());
 }
 
 bool UIManager::IsMouseInUI() const {

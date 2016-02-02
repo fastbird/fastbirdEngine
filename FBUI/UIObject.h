@@ -77,6 +77,7 @@ namespace fb
 		void SetRenderTargetSize(const Vec2I& rtSize);
 		const Vec2I& GetRenderTargetSize() const;
 		bool HasTexCoord() const;
+		bool HasTexCoord(int index) const;
 		void EnableLinearSampler(bool linear);
 
 		void PreRender();
@@ -87,5 +88,8 @@ namespace fb
 
 		
 		void UpdateRegion();
+
+		void SetSeperatedBackground(bool seperated);
+		void SetUseSeperatedUVForAlpha(bool seperatedUV);
 	};
 }

@@ -160,7 +160,9 @@ public:
 		scene->PreRender(param, 0);
 		mGlowSet = false;
 		GlowTarget(true);
-		renderer.Clear(0., 0., 0., 1.);
+		auto& clearcolor = renderTarget->GetClearColor();
+		renderer.Clear(clearcolor.r(), clearcolor.g(), clearcolor.b(), clearcolor.a());
+
 		GlowTarget(false);
 		{
 			renderer.RenderShadows();			
@@ -220,7 +222,8 @@ public:
 			memset(&renderParamOut, 0, sizeof(RenderParamOut));
 			renderParam.mRenderPass = PASS_NORMAL;
 			HDRTarget(true);
-			renderer.Clear(0., 0., 0., 1.);
+			auto& clearcolor = renderTarget->GetClearColor();
+			renderer.Clear(clearcolor.r(), clearcolor.g(), clearcolor.b(), clearcolor.a());
 			DepthTexture(true);
 			CloudVolumeTexture(true);
 			renderer.SetBindShadowMap(true);
@@ -628,7 +631,8 @@ public:
 		rt->BindTargetOnly(true);
 		mGlowTexture[0]->Bind(BINDING_SHADER_PS, 0);
 		auto provider = renderer.GetResourceProvider();
-		provider->BindBlendState(ResourceTypes::BlendStates::Additive);
+		provider->BindBlendState(ResourceTypes::BlendStates::AdditiveKeepAlpha);
+		//provider->BindBlendState(ResourceTypes::BlendStates::Additive);
 		provider->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthStencil);
 		if (renderer.GetMultiSampleCount() == 1)
 			renderer.DrawFullscreenQuad(provider->GetShader(ResourceTypes::Shaders::CopyPS), false);
@@ -646,7 +650,8 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		mGodRayTarget[0]->Bind(BINDING_SHADER_PS, 0);
 		auto provider = renderer.GetResourceProvider();
-		provider->BindBlendState(ResourceTypes::BlendStates::Additive);
+		provider->BindBlendState(ResourceTypes::BlendStates::AdditiveKeepAlpha);
+		//provider->BindBlendState(ResourceTypes::BlendStates::Additive);
 		provider->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthStencil);
 		renderer.DrawFullscreenQuad(provider->GetShader(ResourceTypes::Shaders::CopyPS), false);
 		renderer.RestoreBlendState();
@@ -1163,6 +1168,7 @@ public:
 		auto rt = mRenderTarget.lock();
 		rt->BindTargetOnly(false);
 		renderer.SetTextures(textures, 4, BINDING_SHADER_PS, 0);
+		provider->BindBlendState(ResourceTypes::BlendStates::Default);		
 		if (renderer.IsLuminanceOnCpu())
 		{
 			Vec4f* pData = (Vec4f*)renderer.MapMaterialParameterBuffer();

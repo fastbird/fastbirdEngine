@@ -3,6 +3,7 @@
 
 
 # Doxygen
+*.VC.opendb
 doc/
 
 EngineTest/EssentialEngineData/

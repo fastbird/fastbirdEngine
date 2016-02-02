@@ -56,6 +56,7 @@ ImageBox::ImageBox()
 	, mImageRot(false)
 	, mLinearSampler(false)
 	, mImageDisplay(ImageDisplay::FreeScaleImageMatchAll)
+	, mSeperatedBackground(false)
 {
 	mUIObject = UIObject::Create(GetRenderTargetSize());
 	mUIObject->SetMaterial("EssentialEngineData/materials/UIImageBox.material");
@@ -203,6 +204,15 @@ void ImageBox::CalcUV()
 		return;
 		break;
 	}
+	}
+
+	if (mImageDisplay != ImageDisplay::FreeScaleImageMatchAll && 
+		mImageDisplay != ImageDisplay::FreeScaleUIMatchAll)
+	{
+		mUIObject->SetUseSeperatedUVForAlpha(true);
+	}
+	else{
+		mUIObject->SetUseSeperatedUVForAlpha(false);
 	}
 }
 
@@ -564,6 +574,15 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 		return true;
 	}
 
+	case UIProperty::IMAGE_SEPERATED_BACKGROUND:
+	{
+		mSeperatedBackground = StringConverter::ParseBool(val);
+		if (mUIObject)
+			mUIObject->SetSeperatedBackground(mSeperatedBackground);
+		return true;
+
+	}
+
 	}
 
 	return __super::SetProperty(prop, val);
@@ -686,6 +705,16 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 				return false;
 		}
 		strcpy_s(val, bufsize, StringConverter::ToString(mLinearSampler).c_str());
+		return true;
+	}
+
+	case UIProperty::IMAGE_SEPERATED_BACKGROUND:
+	{
+		if (notDefaultOnly){
+			if (mSeperatedBackground == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::ToString(mSeperatedBackground).c_str());
 		return true;
 	}
 

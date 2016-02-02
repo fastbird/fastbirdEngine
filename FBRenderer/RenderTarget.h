@@ -95,6 +95,7 @@ namespace fb
 		void SetDepthStencilDesc(int width, int height, PIXEL_FORMAT format, bool srv, bool cubeMap);
 		void SetClearValues(const Color& color, Real z, UINT8 stencil);
 		void SetClearColor(const Color& color);
+		const Color& GetClearColor() const;
 		void SetClearDepthStencil(Real z, UINT8 stencil);
 		void SetColorTexture(TexturePtr pTexture);
 		void SetDepthTexture(TexturePtr pTexture);

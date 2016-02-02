@@ -43,6 +43,7 @@
 #include "HorizontalGauge.h"
 #include "RadioBox.h"
 #include "UIAnimation.h"
+#include "ImageBox.h"
 #include "FBLua/LuaUtils.h"
 //--------------------------------------------------------------------------------
 
@@ -99,6 +100,7 @@ namespace fb
 	int HideUIsExcept(lua_State* L);
 	int StartHighlightUI(lua_State* L);
 	int StopHighlightUI(lua_State* L);
+	int SetHighlightUIComp(lua_State* L);
 	int SetEnableComponent(lua_State* L);
 	int GetUIPath(lua_State* L);
 	int GetUIScriptPath(lua_State* L);
@@ -212,6 +214,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetEnableComponent);
 		LUA_SETCFUNCTION(mL, StartHighlightUI);
 		LUA_SETCFUNCTION(mL, StopHighlightUI);
+		LUA_SETCFUNCTION(mL, SetHighlightUIComp);
 		LUA_SETCFUNCTION(mL, HideUIsExcept);
 		LUA_SETCFUNCTION(mL, SetColorRampUIValues);
 		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
@@ -1066,6 +1069,36 @@ namespace fb
 	{
 		auto uiname = LuaUtils::checkstring(L, 1);
 		UIManager::GetInstance().StopHighlightUI(uiname);
+		return 0;
+	}
+
+	int SetHighlightUIComp(lua_State* L){
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compName = LuaUtils::checkstring(L, 2);
+		if (!LuaUtils::isboolean(L, 3))
+		{
+			Error(FB_ERROR_LOG_ARG, "Invalid param.");
+			return 0;
+		}
+		bool enable = LuaUtils::toboolean(L, 3) != 0;
+		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
+		if (comp)
+		{
+			auto type = comp->GetType();
+			switch (type){
+			case ComponentType::Button:
+			{
+				auto button = std::dynamic_pointer_cast<Button>(comp);
+				button->Highlight(true);
+				break;
+			}
+			case ComponentType::ImageBox:{
+				auto imageBox = std::dynamic_pointer_cast<ImageBox>(comp);
+				imageBox->Highlight(true);
+				break;
+			}
+			}
+		}
 		return 0;
 	}
 

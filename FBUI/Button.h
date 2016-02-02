@@ -112,6 +112,7 @@ private:
 	Vec2I mImageSize;
 
 	Color mImageColorOverlay;
+	Color mHighlightColor;
 	bool mActivatedRot;
 	float mFps;
 	HorizontalGaugeWeakPtr mProgressBar;

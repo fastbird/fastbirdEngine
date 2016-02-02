@@ -29,6 +29,7 @@
 #include "FBCommonHeaders/Types.h"
 #include "FBThreadLib/AsyncObjects.h"
 #include <thread>
+typedef void *HANDLE;
 namespace fb
 {
 
@@ -63,8 +64,6 @@ public:
 	int operator +=(int Amount);
 	int operator -=(int Amount);
 };
-
-
 //---------------------------------------------------------------------------
 class Thread;
 FB_DECLARE_SMART_PTR_STRUCT(ThreadHandle);

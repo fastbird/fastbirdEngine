@@ -121,5 +121,6 @@ private:
 	bool mColorOveraySet;
 	bool mImageRot;
 	bool mLinearSampler;
+	bool mSeperatedBackground;
 };
 }

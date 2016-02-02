@@ -411,11 +411,31 @@ public:
 		case ResourceTypes::BlendStates::Default:{
 			return renderer.CreateBlendState(desc);
 		}
+		case ResourceTypes::BlendStates::DefaultKeepAlpha:{
+			desc.RenderTarget[0].BlendEnable = true;
+			desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+			desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+			desc.RenderTarget[0].DestBlend = BLEND_ZERO;
+			desc.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
+			desc.RenderTarget[0].SrcBlendAlpha = BLEND_ZERO;
+			desc.RenderTarget[0].DestBlendAlpha = BLEND_ONE;
+			return renderer.CreateBlendState(desc);
+		}
 		case ResourceTypes::BlendStates::Additive:{
 			desc.RenderTarget[0].BlendEnable = true;
 			desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
 			desc.RenderTarget[0].SrcBlend = BLEND_ONE;
 			desc.RenderTarget[0].DestBlend = BLEND_ONE;
+			return renderer.CreateBlendState(desc);
+		}
+		case ResourceTypes::BlendStates::AdditiveKeepAlpha:{
+			desc.RenderTarget[0].BlendEnable = true;
+			desc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
+			desc.RenderTarget[0].SrcBlend = BLEND_ONE;
+			desc.RenderTarget[0].DestBlend = BLEND_ONE;
+			desc.RenderTarget[0].BlendOpAlpha = BLEND_OP_ADD;
+			desc.RenderTarget[0].SrcBlendAlpha = BLEND_ZERO;
+			desc.RenderTarget[0].DestBlendAlpha = BLEND_ONE;
 			return renderer.CreateBlendState(desc);
 		}
 		case ResourceTypes::BlendStates::AlphaBlend:{

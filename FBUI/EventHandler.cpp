@@ -73,11 +73,13 @@ bool EventHandler::RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncNam
 	std::string funcName = StripBoth(luaFuncName);
 	LuaObject func;
 	func.FindFunction(UIManager::GetInstance().GetLuaState(), funcName.c_str());
-	if_assert_pass(func.IsFunction()){
-		mLuaFuncMap[e] = func;
-		return true;
+	if (!func.IsFunction()){
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Cannot find lua function(%s) for ui event.", luaFuncName).c_str());
+		return false;
 	}
-	return false;
+	mLuaFuncMap[e] = func;
+	return true;	
 }
 
 void EventHandler::UnregisterEventLuaFunc(UIEvents::Enum e)

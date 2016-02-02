@@ -185,6 +185,7 @@ void Container::RemoveChild(WinBasePtr child, bool immediately)
 {
 	if (child == 0)
 		return;
+
 	auto contentUI = mWndContentUI.lock();
 	if (contentUI)
 	{

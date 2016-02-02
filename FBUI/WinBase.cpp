@@ -985,8 +985,7 @@ void WinBase::OnMouseClicked(IInputInjectorPtr injector){
 	}
 	else{
 		auto type = GetType();
-		bool invaliClickTime =
-			type == ComponentType::Button ||
+		bool invaliClickTime =			
 			type == ComponentType::DropDown ||
 			type == ComponentType::CheckBox;
 
@@ -1041,7 +1040,7 @@ void WinBase::OnMouseDrag(IInputInjectorPtr injector){
 		return;
 	}
 	long x, y;
-	injector->GetDeltaXY(x, y);	
+	injector->GetAbsDeltaXY(x, y);	
 	auto parent = mParent.lock();
 	if (x != 0 || y != 0)
 	{
@@ -1618,9 +1617,16 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 
 		case UIProperty::USE_BORDER:
 		{
-									   bool use = StringConverter::ParseBool(val);
-									   SetUseBorder(use);
-									   return true;
+			bool use = StringConverter::ParseBool(val);
+			SetUseBorder(use);
+			return true;
+		}
+
+		case UIProperty::USE_BORDER_ALPHA_FORCE:
+		{
+			bool use = StringConverter::ParseBool(val);
+			SetUseBorderAlpha(use);
+			return true;
 		}
 
 		case UIProperty::SPECIAL_ORDER:
@@ -2129,6 +2135,19 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		return true;
 	}
 
+	case UIProperty::USE_BORDER_ALPHA_FORCE:
+	{
+		if (notDefaultOnly) {
+			if (mUseBorderAlpha == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		auto data = StringConverter::ToString(mUseBorderAlpha);
+		strcpy_s(val, bufsize, data.c_str());
+
+		return true;
+	}
+
 	case UIProperty::SPECIAL_ORDER:
 	{
 		if (notDefaultOnly) {
@@ -2312,7 +2331,30 @@ void WinBase::SetUseBorder(bool use)
 		}
 		auto& um = UIManager::GetInstance();
 		um.DirtyRenderList(GetHwndId());
+		SetUseBorderAlpha(mUseBorderAlpha);
 	}
+}
+
+void WinBase::SetUseBorderAlpha(bool use){
+	mUseBorderAlpha = use;
+	if (!mBorders.empty())
+		return;
+	if (mUseBorderAlpha){
+		UpdateAlphaTexture();
+	}
+	else{
+		if (mUIObject->HasTexCoord(1)){
+			mUIObject->SetUseSeperatedUVForAlpha(false);
+		}
+		else{
+			mUIObject->ClearTexCoord(0);
+		}
+		auto mat = mUIObject->GetMaterial();
+		if (mat){
+			mat->RemoveShaderDefine("_ALPHA_TEXTURE");
+		}
+	}
+
 }
 void WinBase::RecreateBorders(){
 	auto& um = UIManager::GetInstance();
@@ -2498,13 +2540,13 @@ void WinBase::UpdateAlphaTexture(){
 			mat->AddShaderDefine("_ALPHA_TEXTURE", "1");
 				//mat->ApplyShaderDefines();
 
-			if (!mUIObject->HasTexCoord()){
-				Vec2 texcoords[4] = {
-					Vec2(0.f, 1.f),
-					Vec2(0.f, 0.f),
-					Vec2(1.f, 1.f),
-					Vec2(1.f, 0.f)
-				};
+			Vec2 texcoords[4] = {
+				Vec2(0.f, 1.f),
+				Vec2(0.f, 0.f),
+				Vec2(1.f, 1.f),
+				Vec2(1.f, 0.f)
+			};
+			if (!mUIObject->HasTexCoord(0)){			
 				mUIObject->SetTexCoord(texcoords, 4);
 				INPUT_ELEMENT_DESCS descs;
 				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
@@ -2512,10 +2554,12 @@ void WinBase::UpdateAlphaTexture(){
 				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
 				mat->SetInputLayout(descs);
 			}
+			else{
+				mUIObject->SetUseSeperatedUVForAlpha(true);
+			}
 		}
 		else{
-			mat->RemoveShaderDefine("_ALPHA_TEXTURE");
-				//mat->ApplyShaderDefines();
+			mat->RemoveShaderDefine("_ALPHA_TEXTURE");				
 
 			if (!texture && callmeLater){
 				mUpdateAlphaTexture = true;
