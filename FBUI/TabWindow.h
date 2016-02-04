@@ -57,6 +57,7 @@ namespace fb{
 		void Save(tinyxml2::XMLElement& elem);
 		bool SetVisible(bool show);
 		void UpdateTabIndex(unsigned index);
+		void AddTabChild(unsigned index, LuaObject data);
 
 	private:
 		void BuildTabWnd(unsigned numTabs);

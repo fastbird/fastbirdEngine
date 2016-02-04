@@ -44,6 +44,7 @@
 #include "RadioBox.h"
 #include "UIAnimation.h"
 #include "ImageBox.h"
+#include "TabWindow.h"
 #include "FBLua/LuaUtils.h"
 //--------------------------------------------------------------------------------
 
@@ -64,6 +65,7 @@ namespace fb
 	int RemoveAllChildrenOf(lua_State* L);
 	int RemoveComponent(lua_State* L);
 	int AddComponent(lua_State* L);
+	int AddComponentTabWindow(lua_State* L);
 	int CreateNewCard(lua_State* L);
 	int DeleteCard(lua_State* L);
 	int DeleteAllCard(lua_State* L);
@@ -242,6 +244,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
 		LUA_SETCFUNCTION(mL, RemoveComponent);
 		LUA_SETCFUNCTION(mL, AddComponent);
+		LUA_SETCFUNCTION(mL, AddComponentTabWindow);
 		LUA_SETCFUNCTION(mL, CreateNewCard);
 		LUA_SETCFUNCTION(mL, DeleteCard);
 		LUA_SETCFUNCTION(mL, DeleteAllCard);
@@ -469,6 +472,32 @@ namespace fb
 
 		LuaUtils::pushboolean(L, 0);
 		return 1;
+	}
+
+	int AddComponentTabWindow(lua_State* L) {
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compName = LuaUtils::checkstring(L, 2);
+		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
+		if (!comp) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find a comp(%s, %s)", uiname, compName).c_str());
+			return 0;
+		}
+		auto tabWindow = std::dynamic_pointer_cast<TabWindow>(comp);
+		if (!tabWindow) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"%s is not a TabWindow", compName).c_str());
+			return 0;
+		}
+
+		unsigned index = LuaUtils::checkunsigned(L, 3);
+		LuaObject data(L, 4);
+		if (!data.IsValid()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid ui data.");
+			return 0;
+		}
+
+		tabWindow->AddTabChild(index, data);
 	}
 
 	int CreateNewCard(lua_State* L)

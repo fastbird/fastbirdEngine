@@ -54,6 +54,7 @@ namespace fb{
 			EVENT_LISTBOX_CLEARED,
 			EVENT_LISTBOX_SELECTION_CHANGED,
 			EVENT_COLORRAMP_DRAGGED,
+			EVENT_TAB_WINDOW_CHANGED,
 
 			EVENT_NUM
 		};
@@ -82,6 +83,7 @@ namespace fb{
 			"OnListBoxCleared",
 			"OnListBoxSelectionChanged",
 			"OnColorRampDragged",
+			"OnTabWindowChanged",
 
 			"EVENT_NUM"
 		};

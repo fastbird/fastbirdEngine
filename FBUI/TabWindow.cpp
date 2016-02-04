@@ -85,6 +85,12 @@ namespace fb{
 			SetTabNames(names);
 			return true;
 		}
+		case UIProperty::TABWND_CURRENT_INDEX:
+		{
+			auto index = StringConverter::ParseInt(val);
+			UpdateTabIndex(index);
+			return true;
+		}
 		}
 		return __super::SetProperty(prop, val);
 	}
@@ -110,6 +116,16 @@ namespace fb{
 			}
 			// 255 is enough?
 			strncpy_s(val, bufsize, mStrTabNames.c_str(), 255);
+			return true;
+		}
+		case UIProperty::TABWND_CURRENT_INDEX:
+		{
+			if (notDefaultOnly) {
+				if (mCurTabIndex == UIProperty::GetDefaultValueInt(prop))
+					return false;
+			}
+
+			strcpy_s(val, bufsize, StringConverter::ToString(mCurTabIndex).c_str());
 			return true;
 		}
 		}
@@ -226,6 +242,7 @@ namespace fb{
 			return;
 		
 		UpdateTabIndex(index);
+		OnEvent(UIEvents::EVENT_TAB_WINDOW_CHANGED);
 	}
 
 	void TabWindow::UpdateTabIndex(unsigned index){
@@ -247,5 +264,22 @@ namespace fb{
 					StringMathConverter::ToString(GetDefaultValueVec4(UIProperty::BACK_COLOR)).c_str());
 			}			
 		}
+	}
+
+	void TabWindow::AddTabChild(unsigned index, LuaObject data)
+	{
+		if (index >= mNumTabs || index >= mWindows.size()) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Invalid index(%u)", index).c_str());
+			return;
+		}
+
+		auto windows = mWindows[index].lock();
+		if (!windows) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Tab windows(%u) is deleted.", index).c_str());
+			return;
+		}
+		windows->AddChild(data);
 	}
 }

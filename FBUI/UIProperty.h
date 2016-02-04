@@ -175,6 +175,7 @@ namespace fb
 
 			TABWND_NUM_TABS,
 			TABWND_TAB_NAMES,
+			TABWND_CURRENT_INDEX,
 
 			BUTTON_IMAGE_SIZE,
 
@@ -334,6 +335,7 @@ namespace fb
 
 			"TABWND_NUM_TABS",
 			"TABWND_TAB_NAMES",
+			"TABWND_CURRENT_INDEX",
 
 			"BUTTON_IMAGE_SIZE",
 
@@ -606,6 +608,8 @@ namespace fb
 				return 0;
 			case USER_DATA_INT:
 				return -1;
+			case TABWND_CURRENT_INDEX:
+				return 0;
 			}
 			assert(0);
 			return 0;
