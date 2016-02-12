@@ -45,28 +45,32 @@ namespace fb
 	{
 		mUIObject = UIObject::Create(GetRenderTargetSize());		
 		mUIObject->mOwnerUI = this;
-		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-		auto imageBox = std::static_pointer_cast<ImageBox>(AddChild(0.5f, 0.0f, 1.0f, 0.8f, ComponentType::ImageBox));
-		mImageBox = imageBox;		
-		imageBox->SetRuntimeChild(true);
-		auto textBox = std::static_pointer_cast<TextBox>(AddChild(0.5f, 1.0f, 1.f, 0.2f, ComponentType::TextBox));
-		mTextBox = textBox;		
-		textBox->SetRuntimeChild(true);
-		textBox->SetProperty(UIProperty::TEXT_SIZE, "22");
+		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());		
 	}
 
 	NamedPortrait::~NamedPortrait()
 	{
 	}
 
+	void NamedPortrait::CreateImageBoxTextBoxIfNot() {
+		if (!mImageBox.lock()) {
+			mImageBox = std::static_pointer_cast<ImageBox>(AddChild(0.5f, 0.0f, 1.0f, 0.8f, ComponentType::ImageBox));			
+		}
+		if (!mTextBox.lock()) {
+			mTextBox = std::static_pointer_cast<TextBox>(AddChild(0.5f, 1.0f, 1.f, 0.2f, ComponentType::TextBox));			
+		}
+	}
+
 	void NamedPortrait::OnCreated()
 	{
-		auto imageBox = mImageBox.lock();
-		assert(imageBox);
+		CreateImageBoxTextBoxIfNot();
+		auto imageBox = mImageBox.lock();		
 		imageBox->SetAlign(ALIGNH::CENTER, ALIGNV::TOP);
 		imageBox->SetProperty(UIProperty::OFFSETY, "2");
-		auto textBox = mTextBox.lock();
-		assert(textBox);
+		imageBox->SetRuntimeChild(true);
+		auto textBox = mTextBox.lock();		
+		textBox->SetRuntimeChild(true);
+		textBox->SetProperty(UIProperty::TEXT_SIZE, "22");			
 		textBox->SetPosY(imageBox->GetSize().y + 2);
 		textBox->SetProperty(UIProperty::TEXT_GAP, "2");
 		textBox->SetProperty(UIProperty::NSIZEY, "fill");
@@ -92,13 +96,17 @@ namespace fb
 		case UIProperty::TEXTURE_FILE:
 		case UIProperty::IMAGE_DISPLAY:
 		case UIProperty::FRAME_IMAGE:
-		case UIProperty::IMAGE_COLOR_OVERLAY:		
+		case UIProperty::IMAGE_COLOR_OVERLAY:
+			CreateImageBoxTextBoxIfNot();
 			return mImageBox.lock()->SetProperty(prop, val);	
 		case UIProperty::NAMED_PORTRAIT_IMAGE_SIZE:
+			CreateImageBoxTextBoxIfNot();
 			return mImageBox.lock()->SetProperty(UIProperty::SIZE, val);
 		case UIProperty::NAMED_PORTRAIT_TEXT:
+			CreateImageBoxTextBoxIfNot();
 			return mTextBox.lock()->SetProperty(UIProperty::TEXT, val);
 		case UIProperty::NAMED_PORTRAIT_TEXT_COLOR:
+			CreateImageBoxTextBoxIfNot();
 			return mTextBox.lock()->SetProperty(UIProperty::TEXT_COLOR, val);
 		}
 

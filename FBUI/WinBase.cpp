@@ -497,7 +497,7 @@ void WinBase::OnParentSizeChanged() {
 //---------------------------------------------------------------------------
 void WinBase::ModifySize(const Vec2I& sizemod)
 {
-	mSizeMod = sizemod;
+	mSizeMod += sizemod;
 	Vec2I newSize = mSize + sizemod;
 	ChangeSize(newSize);
 	//SetSize(newSize);
@@ -998,16 +998,16 @@ void WinBase::OnMouseClicked(IInputInjectorPtr injector){
 
 }
 
-void WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
+bool WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
 	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
 	{
-		return;
+		return false;
 	}
 	auto parent = mParent.lock();
 	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) && parent){
-		parent->OnMouseDoubleClicked(injector);
+		return parent->OnMouseDoubleClicked(injector);
 	}
-	else{
+	else{		
 		if (GetType() == ComponentType::Button){
 			injector->InvalidateClickTime();
 		}
@@ -1017,6 +1017,7 @@ void WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
 		
 		UIManager::GetInstance().CleanTooltip();
 		TriggerRedraw();
+		return true;
 	}
 }
 
@@ -1155,11 +1156,13 @@ void WinBase::AlignText()
 			break;
 		case ALIGNV::MIDDLE:
 		{
-			auto pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);			
+			auto pFont = Renderer::GetInstance().GetFontWithHeight(mTextSize);						
 			auto lineheight = pFont->LineHeightForText(mTextw.c_str());
-			offset.y = Round((mSize.y * .5f) - lineheight * mNumTextLines * 0.5f +lineheight);
-			/*offset.y += Round(mSize.y * .5f +
-				((lineheight * 0.5f) - (lineheight * (mNumTextLines - 1) * 0.5f)));*/
+			auto totalHeight = Round(mTextSize);
+			if (mNumTextLines > 1) {
+				totalHeight += Round(lineheight * (mNumTextLines - 1));
+			}
+			offset.y = Round(mSize.y * .5f - totalHeight * 0.5f + mTextSize);			
 		}
 			break;
 		case ALIGNV::BOTTOM:
@@ -2908,6 +2911,23 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 		SetSizeY(sizeY);
 	}
 
+	sz = pelem->Attribute("useNPosX");
+	if (sz){
+		mUseAbsoluteXPos = !StringConverter::ParseBool(sz);
+	}
+	sz = pelem->Attribute("useNPosY");
+	if (sz){
+		mUseAbsoluteYPos = !StringConverter::ParseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeX");
+	if (sz){
+		mUseAbsoluteXSize = !StringConverter::ParseBool(sz);
+	}
+	sz = pelem->Attribute("useNSizeY");
+	if (sz){
+		mUseAbsoluteYSize = !StringConverter::ParseBool(sz);
+	}
+
 	// size mod
 	sz = pelem->Attribute("sizeMod");
 	if (sz)
@@ -2927,23 +2947,6 @@ bool WinBase::ParseXML(tinyxml2::XMLElement* pelem)
 	{
 		int y = StringConverter::ParseInt(sz);
 		ModifySize(Vec2I(0, y));
-	}
-
-	sz = pelem->Attribute("useNPosX");
-	if (sz){
-		mUseAbsoluteXPos = !StringConverter::ParseBool(sz);
-	}
-	sz = pelem->Attribute("useNPosY");
-	if (sz){
-		mUseAbsoluteYPos = !StringConverter::ParseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeX");
-	if (sz){
-		mUseAbsoluteXSize = !StringConverter::ParseBool(sz);
-	}
-	sz = pelem->Attribute("useNSizeY");
-	if (sz){
-		mUseAbsoluteYSize = !StringConverter::ParseBool(sz);
 	}
 
 	OnSizeChanged();
@@ -3159,6 +3162,23 @@ bool WinBase::ParseLua(const fb::LuaObject& compTable)
 		SetSizeY(sizeY);
 	}
 
+	bool b = compTable.GetField("useNPosX").GetBool(success);
+	if (success){
+		mUseAbsoluteXPos = !b;
+	}
+	b = compTable.GetField("useNPosY").GetBool(success);
+	if (success){
+		mUseAbsoluteYPos = !b;
+	}
+	b = compTable.GetField("useNSizeX").GetBool(success);
+	if (success){
+		mUseAbsoluteXSize = !b;
+	}
+	b = compTable.GetField("useNSizeY").GetBool(success);
+	if (success){
+		mUseAbsoluteYSize = !b;
+	}
+
 	// size mod
 	Vec2I sizeMod = compTable.GetField("sizeMod").GetVec2I(success);
 	if (success)
@@ -3175,23 +3195,6 @@ bool WinBase::ParseLua(const fb::LuaObject& compTable)
 		if (success) {
 			ModifySize(Vec2I(0, y));
 		}
-	}
-
-	bool b = compTable.GetField("useNPosX").GetBool(success);
-	if (success){
-		mUseAbsoluteXPos = !b;
-	}
-	b = compTable.GetField("useNPosY").GetBool(success);
-	if (success){
-		mUseAbsoluteYPos = !b;
-	}
-	b = compTable.GetField("useNSizeX").GetBool(success);
-	if (success){
-		mUseAbsoluteXSize = !b;
-	}
-	b = compTable.GetField("useNSizeY").GetBool(success);
-	if (success){
-		mUseAbsoluteYSize = !b;
 	}
 
 	OnSizeChanged();
@@ -3740,6 +3743,9 @@ void WinBase::TriggerRedraw()
 WinBasePtr WinBase::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
 	if (param.mNoRuntimeComp && mRunTimeChild)
+		return 0;
+
+	if (param.mCheckMouseEvent && (mNoMouseEvent || mNoMouseEventAlone))
 		return 0;
 
 	if (IsIn(pt, param.mIgnoreScissor))

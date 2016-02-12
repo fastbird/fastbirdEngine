@@ -38,6 +38,8 @@ namespace fb
 		NamedPortrait();
 		~NamedPortrait();
 
+		void CreateImageBoxTextBoxIfNot();
+
 	public:
 		static NamedPortraitPtr Create();
 

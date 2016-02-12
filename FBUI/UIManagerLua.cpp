@@ -1128,6 +1128,9 @@ namespace fb
 			}
 			}
 		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find a ui comp(%s)", compName).c_str());
+		}
 		return 0;
 	}
 

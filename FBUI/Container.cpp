@@ -90,11 +90,11 @@ WinBasePtr Container::AddChild(ComponentType::Enum type)
 		pWinBase->SetHwndId(GetHwndId());
 		pWinBase->SetRender3D(mRender3D, GetRenderTargetSize());
 		mChildren.push_back(pWinBase);
+		pWinBase->SetParent(std::dynamic_pointer_cast<Container>(mSelfPtr.lock()));
 		if (mNoMouseEvent)
 		{
 			pWinBase->SetProperty(UIProperty::NO_MOUSE_EVENT, "true");
-		}
-		pWinBase->SetParent(std::dynamic_pointer_cast<Container>(mSelfPtr.lock()));
+		}		
 		UIManager::GetInstance().DirtyRenderList(GetHwndId());
 	}
 	SetChildrenPosSizeChanged();
@@ -1079,6 +1079,9 @@ void Container::SetHwndId(HWindowId hwndId)
 
 WinBasePtr Container::WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param) const
 {
+	if (param.mCheckMouseEvent && mNoMouseEvent)
+		return 0;
+
 	auto in = IsIn(pt, param.mIgnoreScissor);
 	bool hasScissorIgnoringChild = HasScissorIgnoringChild();
 	if (in || hasScissorIgnoringChild){

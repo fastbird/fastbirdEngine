@@ -66,6 +66,7 @@ void CheckBox::OnCreated()
 	imageBox->SetAlign(ALIGNH::LEFT, ALIGNV::MIDDLE);
 	imageBox->ChangeSize(Vec2I(24, 24));
 	imageBox->ChangeNPos(Vec2(0.0, 0.5f));
+	imageBox->SetProperty(UIProperty::IMAGE_LINEAR_SAMPLER, "true");
 
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&CheckBox::OnClicked, this, std::placeholders::_1));

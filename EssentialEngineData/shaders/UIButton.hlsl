@@ -77,18 +77,19 @@ float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
 	
 	// gMaterialParam[1] is edge color
 #ifdef BUTTON_EDGE
-	if (uv.x > 1.0-(2.0/width))
+	if (uv.x > 1.0-(2.0/width)){
+		return float4(1, 1, 1, 1);
 		return gMaterialParam[1];
-	if (uv.y> 1.0-(2.0/height))
+	}
+	if (uv.y> 1.0-(2.0/height)){
+		return float4(1, 1, 1, 1);
 		return gMaterialParam[1];
-#endif
-		
-#if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)
-    
-#endif
+	}
+#endif		
 
 	float4 color = gDiffuseColor;
-	color.rgb += gAmbientColor.rgb;
+	color += gAmbientColor;
+	
 	
 #ifdef _ALPHA_TEXTURE	
 	float4 t_color = gAlphaTexture.Sample(gLinearSampler, INPUT.UV);

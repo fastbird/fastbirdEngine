@@ -63,6 +63,7 @@ namespace fb
 		mTextColorHover = Color(1.0f, 1.0f, 0.5f);
 		mTextColorDown = Color(1.0f, 0.2f, 0.2f);
 		mUIObject->SetTextColor(mTextColor);
+		
 		mHighlightColor = UIProperty::GetDefaultValueVec4(UIProperty::HIGHLIGHT_COLOR);
 
 		// default colors
@@ -73,6 +74,7 @@ namespace fb
 		mEdgeColorOver = Color(0.9f, 0.85f, 0.0f, 0.7f);
 
 		mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
+		mUIObject->GetMaterial()->SetAmbientColor(0, 0, 0, 0.0f);
 		// material param 0 : ratio, sizes
 		// material param 1 : edge color
 		mUIObject->GetMaterial()->SetMaterialParameter(1, mEdgeColor.GetVec4());
@@ -279,7 +281,7 @@ namespace fb
 		case UIProperty::BACK_COLOR:
 		{
 			mBackColor = Color(val);
-			mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());
+			mUIObject->GetMaterial()->SetDiffuseColor(mBackColor.GetVec4());			
 			return true;
 		}
 		case UIProperty::BACK_COLOR_OVER:
@@ -1268,7 +1270,7 @@ namespace fb
 		}
 		else
 		{
-			mUIObject->GetMaterial()->SetAmbientColor(0, 0, 0, 1.0f);
+			mUIObject->GetMaterial()->SetAmbientColor(0, 0, 0, 0.0f);
 		}
 	}
 

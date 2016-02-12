@@ -86,18 +86,21 @@ def export_layers_info(image, drawable, filepath, ddspath, ddspathInXml):
     
     #Compression format (0 = None, 1 = BC1/DXT1, 2 = BC2/DXT3, 3 = BC3/DXT5, 4 = BC3n/DXT5nm,
     #5 = BC4/ATI1N, 6 = BC5/ATI2N, 7 = RXGB (DXT5), 8 = Alpha Exponent (DXT5), 9 = YCoCg (DXT5), 10 = YCoCg scaled (DXT5))
-    compression_format = 0
+    compression_format = 0    
     mipmaps = 0
     savetype = 0
     format = 0
-    transparent_index = -1
-    color_type=0
-    dither = 0
+    transparent_index = -1    
     mipmap_filter=0
+    mipmap_wrap = 0
     gamma_correct=0
     gamma = 2.2
+    srgb = 0
+    perceptual_metric = 0
+    preserve_alpha_coverage = 0
+    alpha_test_threshold = 0.5
     dplimg.active_layer.resize_to_image_size()
-    gimp.pdb.file_dds_save(dplimg, dplimg.active_layer, ddspath, ddspath, compression_format, mipmaps, savetype, format, transparent_index, color_type, dither, mipmap_filter, gamma_correct, gamma)
+    gimp.pdb.file_dds_save(dplimg, dplimg.active_layer, ddspath, ddspath, compression_format, mipmaps, savetype, format, transparent_index, mipmap_filter, mipmap_wrap, gamma_correct, srgb, gamma, perceptual_metric, preserve_alpha_coverage, alpha_test_threshold)
     gimp.delete(dplimg)
     
 	

@@ -35,7 +35,8 @@ namespace fb
 			Img,
 			ColorStart,
 			ColorEnd,
-
+			FixedWidthStart,
+			FixedWidthEnd,
 			Num
 		};
 	}

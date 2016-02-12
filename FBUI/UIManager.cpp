@@ -1360,13 +1360,14 @@ public:
 				dragStartedUI->OnMouseDrag(injector);
 			}
 
+			bool doubleClickProcessed = false;
 			if (injector->IsLButtonDoubleClicked()){
 				auto mouseOvered = mMouseOvered.lock();
 				if (mouseOvered){
-					mouseOvered->OnMouseDoubleClicked(injector);
+					doubleClickProcessed = mouseOvered->OnMouseDoubleClicked(injector);
 				}
 			}
-			else  if (injector->IsLButtonClicked()){
+			if (!doubleClickProcessed && injector->IsLButtonClicked()){
 				auto keyboardFocus = mKeyboardFocus.lock();
 				if (keyboardFocus != focusWnd)
 				{

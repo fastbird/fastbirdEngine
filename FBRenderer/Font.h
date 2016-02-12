@@ -113,7 +113,7 @@ namespace fb{
 		SCharDescr *GetChar(int id);
 
 		int GetTextLength(const char *text);
-		int SkipTags(const char* text, TextTags::Enum* tag = 0, int* imgLen = 0);
+		int SkipTags(const char* text, float curX, TextTags::Enum* tag = 0, int* xAddition = 0);
 		int GetTextChar(const char *text, int pos, int *nextPos = 0);
 		int FindTextChar(const char *text, int start, int length, int ch);
 

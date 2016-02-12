@@ -488,7 +488,8 @@ namespace fb
 		virtual void OnMouseHover(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseDown(IInputInjectorPtr injector);
 		virtual void OnMouseClicked(IInputInjectorPtr injector);
-		virtual void OnMouseDoubleClicked(IInputInjectorPtr injector);
+		// return processed
+		virtual bool OnMouseDoubleClicked(IInputInjectorPtr injector);
 		virtual void OnMouseRButtonClicked(IInputInjectorPtr injector);
 		virtual void OnMouseDrag(IInputInjectorPtr injector);
 

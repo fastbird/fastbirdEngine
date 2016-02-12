@@ -85,12 +85,14 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	if ( xPos >= 1.0 - 0.03  / ratio || yPos >= 0.93)
 	{
 		float4 color = float4(1.0, 1.0, 1.0, 1.0) * gAmbientColor;
+		color.rgb *= 1.f - yPos*.5f;
 		color.a *= a;
 		return color;
 	}
 	else if (xPos >= 1.0- 0.06 / ratio || yPos >= 0.88)
 	{
 		float4 color = float4(0.87058, 0.87058, 0.847058, 1.0) * gAmbientColor;
+		color.rgb *= 1.f - yPos*.5f;
 		color.a *= a;
 		return color;
 	}
@@ -98,6 +100,7 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	else if (xPos >= 1.0- 0.09 / ratio || yPos >= 0.80)
 	{
 		float4 color = float4(0.521568, 0.521568, 0.505882, 1.0) *  gAmbientColor;
+		color.rgb *= 1.f - yPos*.5f;
 		color.a *= a;
 		return color;
 	}
@@ -113,10 +116,11 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		// 3x: sin
 		float4 color = lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
 		color.a *= a;
+		color.rgb *= 1.f - yPos*.5f;
 		return color;
 	}
 	
 	float4 color = lerp(gDiffuseColor, gMaterialParam[2], gMaterialParam[3].x);
-	color.a *= a;
+	color.a *= a;	
     return color;
 }

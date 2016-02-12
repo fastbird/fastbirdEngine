@@ -103,14 +103,21 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 	float4 color = gDiffuseTexture.Sample(gLinearBlackBorderSampler, INPUT.UV);
 	#else
 	float4 color = gDiffuseTexture.Sample(gPointBlackBorderSampler, INPUT.UV);
-	#endif
+	#endif	
+	
+	#if defined(_SEPERATED_BACKGROUND)
+	color.rgb = lerp(gDiffuseColor.rgb, color.rgb, color.a);
+	color.a = max(color.a, gDiffuseColor.a);
+	#else
 	color *= gDiffuseColor;
-	float highlight = gEmissiveColor.w;
+	#endif	
+	
+	float highlight = gEmissiveColor.w;	
 	float2 glowss = smoothstep(0.9, 1.0, abs(saturate(INPUT.UV)*2.0-1.0) * highlight);
-	color = lerp(color, gEmissiveColor, glowss.x+glowss.y);
+	color.rgb = lerp(color.rgb, gEmissiveColor.rgb, glowss.x+glowss.y);		
 #else
-	float4 color = gDiffuseColor;
-#endif
+	float4 color = gDiffuseColor;	
+#endif	
 	
 #ifdef _DESATURATE
 	color.rgb = (0.212671 * color.r + 0.71516 * color.g + 0.072169 * color.b)*.7;
@@ -121,13 +128,14 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 	color.a *= gMaterialParam[4].w;
 	
 #if defined(_ALPHA_TEXTURE)
-	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV).a;
-	color.a *= a;
-#endif
-
 #if defined(_ALPHA_TEXTURE_SEPERATED_UV)
 	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV2).a;
 	color.a *= a;
+#else
+	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV).a;
+	color.a *= a;
+#endif
+	
 #endif
     return color;
 

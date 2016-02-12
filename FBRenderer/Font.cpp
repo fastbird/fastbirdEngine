@@ -144,6 +144,8 @@ public:
 	OBJECT_CONSTANTS mObjectConstants;
 	Vec2I mRenderTargetSize;
 	TextureAtlasPtr mTextureAtlas;
+	float mFixedWidth;
+	float mFixedWidthStart;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -159,6 +161,8 @@ public:
 		, mColor(0xFFFFFFFF)
 		, mInitialized(false)
 		, mFontSize(0)
+		, mFixedWidth(0)
+		, mFixedWidthStart(0)
 	{}
 
 	~Impl(){
@@ -255,7 +259,7 @@ public:
 	}
 
 	// y is center
-	bool ApplyTag(const char* text, int start, int end, Real& x, Real y, int* imgYSize = 0)
+	bool ApplyTag(const char* text, int start, int end, Real& x, Real y)
 	{
 		auto& renderer = Renderer::GetInstance();
 
@@ -279,10 +283,7 @@ public:
 					mTextureMaterial->SetDiffuseColor(Vec4(1, 1, 1, ((mColor & 0xff000000) >> 24) / 255.f));
 					renderer.DrawQuadWithTextureUV(Vec2I(Round(x), Round(y - yoffset)), imgSize, region->mUVStart, region->mUVEnd,
 						Color::White, mTextureAtlas->GetTexture(), mTextureMaterial);					
-					x += (Real)imgSize.x;
-					if (imgYSize){
-						*imgYSize = std::max(*imgYSize, imgSize.y);
-					}
+					x += (Real)imgSize.x;					
 					PrepareRenderResources();
 					return true;
 				}
@@ -309,12 +310,27 @@ public:
 			}
 			break;
 		}
+
+		case TextTags::FixedWidthStart:
+		{
+			mFixedWidthStart = x;
+			mFixedWidth = StringConverter::ParseReal(buf);
+			break;
+		}
+
+		case TextTags::FixedWidthEnd:
+		{
+			if (x - mFixedWidthStart < mFixedWidth) {
+				x = mFixedWidthStart + mFixedWidth;
+			}
+			break;
+		}
 		}
 
 		return false;
 	}
 
-	int SkipTags(const char* text, TextTags::Enum* tag = 0, int* imgLen = 0)
+	int SkipTags(const char* text, float curX, TextTags::Enum* tag = 0, int* xAddition = 0)
 	{
 		if (tag)
 		{
@@ -343,17 +359,28 @@ public:
 						*tag = tagType;
 					}
 					if (tagType == TextTags::Img){
-						if (imgLen){
-							*imgLen = 24;
+						if (xAddition){
+							*xAddition = 24;
 							if (mTextureAtlas){
 								auto region = mTextureAtlas->GetRegion(buf);
 								if (region)
 								{
 									auto& regionSize = region->GetSize();
-									*imgLen = regionSize.x;
+									*xAddition = regionSize.x;
 								}
 							}
 						}						
+					}
+					if (tagType == TextTags::FixedWidthStart) {
+						mFixedWidthStart = curX;
+						mFixedWidth = StringConverter::ParseReal(buf);
+					}
+					else if (tagType == TextTags::FixedWidthEnd) {
+						if (curX - mFixedWidthStart < mFixedWidth) {
+							if (xAddition) {
+								*xAddition = Round(mFixedWidth - (curX - mFixedWidthStart));
+							}
+						}
 					}
 					return endLen;
 				}
@@ -399,6 +426,18 @@ public:
 			return tagStart[8] == '$' ? TextTags::ColorEnd : TextTags::ColorStart;
 		}
 
+		if (tagStart[4] == 'f' && tagStart[6] == 'w') {
+			if (buf) {
+				int oneI = 0;
+				for (int i = 8; tagStart[i] != '$'&& tagStart[i + 2] != ']'; i += 2)
+				{
+					buf[oneI++] = tagStart[i];
+				}
+				buf[oneI] = 0;
+			}
+			return tagStart[8] == '$' ? TextTags::FixedWidthEnd : TextTags::FixedWidthStart;
+		}
+
 		return TextTags::Num;
 	}
 
@@ -407,35 +446,28 @@ public:
 	{
 		static FontVertex vertices[MAX_BATCH];		
 		const Real initialX = fx;		
+		Real minY = FLT_MAX;
+		Real maxY = -FLT_MAX;
 		int page = -1;
 		// this is moving up the text slight to the top.		
 		Real oy2 = mScale * (mFontHeight - mBase);
 		fy -= oy2;
-		Real newLineHeight = LineHeightForText((const wchar_t*)text);
-			//mScaledFontHeight;
-		int imgY = 0;
-		if (newLineHeight > mScaledFontHeight)
-		{
-			fy -= (newLineHeight - mScaledFontHeight)*.5f;
-		}
+		Real newLineHeight = LineHeightForText((const wchar_t*)text);				
 		// fy is the basis of the glyphs.
 		unsigned int batchingVertices = 0;
 		for (int n = 0; n < count;)
 		{
 			bool reapplyRender = false;
-			int skiplen = SkipTags(&text[n]);
+			int skiplen = SkipTags(&text[n], fx);
 			if (skiplen>0)
 			{
 				do
 				{
 					// passing center of y
 					reapplyRender = ApplyTag(text, n, n + skiplen, 
-						fx, 
-						fy - (mBase * mScale) + mScaledFontHeight * .5f, 
-						&imgY) || reapplyRender;
-					//newLineHeight = std::max(newLineHeight, (Real)imgY);
+						fx, fy - (mBase * mScale) + mScaledFontHeight * .5f) || reapplyRender;
 					n += skiplen;
-					skiplen = SkipTags(&text[n]);
+					skiplen = SkipTags(&text[n], fx);
 				} while (skiplen > 0);
 			}
 
@@ -455,10 +487,6 @@ public:
 			if (charId == L'\n')
 			{
 				fy += newLineHeight;
-				if (newLineHeight > mScaledFontHeight)
-				{
-					fy -= (newLineHeight - mScaledFontHeight)*.5f;
-				}
 				fx = (Real)initialX;
 				if (batchingVertices > 0)
 				{
@@ -508,20 +536,6 @@ public:
 			
 			top = fy - (mBase - ch->yOff)*mScale;			
 			bottom = top + h;
-			
-
-			//Vec4 pos = mOrthogonalMat * Vec4(left, top, z, 1.0f);
-			//vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u, v), ch->chnl);
-			//pos = mOrthogonalMat * Vec4(right, top, z, 1.0f);
-			//vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u2, v), ch->chnl);
-			//pos = mOrthogonalMat * Vec4(left, bottom, z, 1.0f);
-			//vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u, v2), ch->chnl);
-			//pos = mOrthogonalMat * Vec4(right, bottom, z, 1.0f);
-			//vertices[mVertexLocation + batchingVertices++] = FontVertex(
-			//	Vec3(pos.x, pos.y, pos.z), mColor, Vec2(u2, v2), ch->chnl);
 
 			vertices[mVertexLocation + batchingVertices++] = FontVertex(
 				Vec3(left, top, fz), mColor, Vec2(u, v), ch->chnl);
@@ -647,16 +661,16 @@ public:
 		for (int n = 0; n < count;)
 		{
 			TextTags::Enum tag = TextTags::Num;
-			int imgLen = 0;
-			int numSkip = SkipTags(&text[n], &tag, &imgLen);
+			int xAddition = 0;
+			int numSkip = SkipTags(&text[n], curX, &tag, &xAddition);
 			if (numSkip)
 			{
 				do
 				{
 					if (tag == TextTags::Img)
 					{
-						curX += imgLen;
-						lengthAfterSpace += imgLen;
+						curX += xAddition;
+						lengthAfterSpace += xAddition;
 					}
 					int startN = n;
 					for (; n < startN + numSkip;)
@@ -665,7 +679,7 @@ public:
 						++inputBeforeSpace;
 						multilineString.push_back(charId);
 					}
-					numSkip = SkipTags(&text[n], &tag, &imgLen);
+					numSkip = SkipTags(&text[n], curX, &tag, &xAddition);
 
 				} while (numSkip);
 				if (n >= count)
@@ -751,21 +765,21 @@ public:
 		for (int n = 0; n < count;)
 		{
 			TextTags::Enum tag;
-			int imgLen;
-			int skiplen = SkipTags(&text[n], &tag, &imgLen);
+			int xAddition;
+			int skiplen = SkipTags(&text[n], x, &tag, &xAddition);
 			if (skiplen>0)
 			{
 				if (tag == TextTags::Img)
 				{
-					x += imgLen;
+					x += xAddition;
 				}
 				do
 				{
 					n += skiplen;
-					skiplen = SkipTags(&text[n], &tag, &imgLen);
+					skiplen = SkipTags(&text[n], x, &tag, &xAddition);
 					if (tag == TextTags::Img)
 					{
-						x += imgLen;
+						x += xAddition;
 					}
 				} while (skiplen > 0);
 			}
@@ -1010,6 +1024,9 @@ public:
 			height = std::max(height, GetImageHeight(imgStart));
 			imgStart = wcsstr(imgStart + 1, L"[$img");
 		}
+		if (height > mScaledFontHeight) {
+			height -= (height - mScaledFontHeight)*.5f;
+		}
 		return height;
 	}
 };
@@ -1049,8 +1066,8 @@ bool Font::ApplyTag(const char* text, int start, int end, Real& x, Real y) {
 	return mImpl->ApplyTag(text, start, end, x, y);
 }
 
-int Font::SkipTags(const char* text, TextTags::Enum* tag, int* imgLen){
-	return mImpl->SkipTags(text, tag, imgLen);
+int Font::SkipTags(const char* text, float curX, TextTags::Enum* tag, int* xAddition){
+	return mImpl->SkipTags(text, curX, tag, xAddition);
 }
 
 TextTags::Enum Font::GetTagType(const char* tagStart, int length, char* buf) const {

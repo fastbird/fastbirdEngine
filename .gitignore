@@ -3,8 +3,10 @@
 
 
 # Doxygen
-*.VC.opendb
 doc/
+
+*.ffs_db
+*.VC.opendb
 
 EngineTest/EssentialEngineData/
 EngineTest/Backup_Log/

@@ -83,15 +83,15 @@ float4 tonemapping_PixelShader(QuadVS_Output Input
 #endif
 	float3 originalColor = vColor.rgb;
 	float3 vBloom = gBloomTexture.Sample(gLinearSampler, Input.Tex);
-	float4 vStar = gStarGlareTexture.Sample(gLinearSampler, Input.Tex);
+	float3 vStar = gStarGlareTexture.Sample(gLinearSampler, Input.Tex).rgb;
 
 #ifdef _FILMIC_TONEMAP
-	float3 CurrentColor = FilmicTonemap( vColor*2.0 );
+	float3 CurrentColor = FilmicTonemap( vColor.rgb*2.0 );
     float3 WhiteScale = FilmicTonemap( 2.0 );
 	vColor.rgb = (CurrentColor) / WhiteScale;
 	vColor.rgb += gStarPower * vStar;
 	vColor.rgb += gBloomPower * vBloom;
-	return float4( vColor.rgb, 1.0f );   
+	return vColor; 
 #else
 	
 	
@@ -109,7 +109,7 @@ float4 tonemapping_PixelShader(QuadVS_Output Input
 	vColor.rgb += gStarPower * vStar;
 	vColor.rgb += gBloomPower * vBloom;
 	
-	vColor.a = 1.0f;
+	//vColor.a = 1.0f;
 	
 	return vColor;
 #endif
