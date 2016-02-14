@@ -788,7 +788,7 @@ void EngineFacade::SetMainCameraPos(const Vec3& pos){
 	mImpl->mMainCamera->SetPosition(pos);
 }
 
-const Vec3& EngineFacade::GetMainCameraDirection() const{
+const Vec3 EngineFacade::GetMainCameraDirection() const{
 	return mImpl->mMainCamera->GetDirection();
 }
 
@@ -1000,9 +1000,11 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 		GetClientRect((HWND)window, &rc);
 		auto width = rc.right - rc.left;
 		auto height = rc.bottom - rc.top;
-		auto hwndId = Renderer::GetInstance().GetWindowHandleId(window);
-		if (hwndId != INVALID_HWND_ID && Renderer::HasInstance()){
-			Renderer::GetInstance().OnWindowSizeChanged(window, Vec2I(width, height));
+		if (Renderer::HasInstance()) {
+			auto hwndId = Renderer::GetInstance().GetWindowHandleId(window);
+			if (hwndId != INVALID_HWND_ID && Renderer::HasInstance()) {
+				Renderer::GetInstance().OnWindowSizeChanged(window, Vec2I(width, height));
+			}
 		}
 		return 0;
 	}

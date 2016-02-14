@@ -65,6 +65,7 @@ namespace fb{
 			COPYFILE_DEST_ALREADY_EXISTS = 6,
 			COPYFILE_ERROR = 7,
 		};
+		static void SetSecurityCheck(bool enable);
 		//---------------------------------------------------------------------------
 		// File Operataions
 		//---------------------------------------------------------------------------

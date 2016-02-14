@@ -34,6 +34,7 @@
 using namespace fb;
 
 static bool gLogginStarted = false;
+static bool gSecurityCheck = true;
 static boost::filesystem::path gWorkingPath;
 std::string gApplicationName;
 void FileSystem::StartLoggingIfNot(){
@@ -50,6 +51,10 @@ void FileSystem::StopLogging(){
 		return;
 
 	Logger::Release();
+}
+
+void FileSystem::SetSecurityCheck(bool enable) {
+	gSecurityCheck = enable;
 }
 
 bool FileSystem::Exists(const char* path){
@@ -241,17 +246,24 @@ void FileSystem::BackupFile(const char* filepath, unsigned numKeeping) {
 }
 
 void FileSystem::BackupFile(const char* filepath, unsigned numKeeping, const char* directory){
-	std::string strDirectory = MakrEndingSlashIfNot(directory);
-	auto backupPath = FileSystem::ReplaceExtension(filepath, "");
+	boost::filesystem::path path(filepath);
+	auto parentPath = path.parent_path().generic_string();
+	if (parentPath.empty()) {
+		parentPath = "./";
+	}
+	parentPath = MakrEndingSlashIfNot(parentPath.c_str());
+	auto filename = path.filename().generic_string();
+	std::string backupDir = MakrEndingSlashIfNot(directory);
+	auto filenameOnly = FileSystem::ReplaceExtension(filename.c_str(), "");
 	auto extension = FileSystem::GetExtension(filepath);
 	for (int i = (int)numKeeping - 1; i > 0; --i){
-		auto oldPath = FormatString("%s%s_bak%d%s", strDirectory.c_str(), backupPath.c_str(), i, extension);
-		auto newPath = FormatString("%s%s_bak%d%s", strDirectory.c_str(), backupPath.c_str(), i + 1, extension);		
+		auto oldPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), i, extension);
+		auto newPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), i + 1, extension);
 		boost::filesystem::create_directories(boost::filesystem::path(newPath).parent_path());
 		FileSystem::Rename(oldPath.c_str(), newPath.c_str());
 	}
-	auto newPath = FormatString("%s%s_bak%d%s", strDirectory.c_str(), backupPath.c_str(), 1, extension);
-	FileSystem::Rename(filepath, newPath.c_str());
+	auto newPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), 1, extension);
+	FileSystem::CopyFile(filepath, newPath.c_str(), true, true);
 }
 
 int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
@@ -278,6 +290,9 @@ int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
 }
 
 bool FileSystem::SecurityOK(const char* filepath){
+	if (!gSecurityCheck)
+		return true;
+
 	auto cwd = GetCurrentDir();
 	auto abspath = boost::filesystem::absolute(filepath);
 	if (abspath.generic_string().find(cwd) != std::string::npos)

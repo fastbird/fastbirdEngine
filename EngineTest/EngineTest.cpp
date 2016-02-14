@@ -37,6 +37,7 @@
 #include "VideoTest.h"
 #include "TextTest.h"
 #include "FBEngineFacade/EngineFacade.h"
+#include "FBFileSystem/FileSystem.h"
 using namespace fb;
 EngineFacadePtr gEngine;
 #define MAX_LOADSTRING 100
@@ -91,8 +92,11 @@ void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
-	gMeshTest = MeshTest::Create();	
-	gMeshTest->SetCameraTarget();
+	FileSystem::BackupFile("C:/Users/Jungwan/Documents/Mount&Blade Warband Savegames/Brytenwalda HOMB(original)/sg01.sav", 5, "BackupByMnBCharReset");
+	
+
+	//gMeshTest = MeshTest::Create();	
+	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	//gParticleTest = ParticleTest::Create();
 	//gAudioTest = AudioTest::Create();

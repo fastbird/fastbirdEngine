@@ -176,7 +176,7 @@ namespace fb{
 		Real GetMainCameraFov() const;
 		const Vec3& GetMainCameraPos() const;
 		void SetMainCameraPos(const Vec3& pos);
-		const Vec3& GetMainCameraDirection() const;
+		const Vec3 GetMainCameraDirection() const;
 		/// Get matrices of the main camera
 		const Mat44& GetCameraMatrix(ICamera::MatrixType type) const;
 		void SetMainCameraTarget(ISpatialObjectPtr spatialObject);

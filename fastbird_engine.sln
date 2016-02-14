@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBRenderer", "FBRenderer\FBRenderer.vcxproj", "{FD658A50-2D36-4BB4-8EDA-635BF71B4CDB}"
 EndProject
@@ -74,6 +74,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Test", "_Test", "{E19922FF-28EB-4FB8-BF4F-E3597C4110CB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineTest", "EngineTest\EngineTest.vcxproj", "{915A8C63-23CD-44EC-810E-97EAE02235E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{970770A8-F3C4-43AD-B4A0-C076EC6FE610} = {970770A8-F3C4-43AD-B4A0-C076EC6FE610}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDevFileSync", "FBDevFileSync\FBDevFileSync.vcxproj", "{431C6068-51EC-4FC1-BBC2-7AC66F50B706}"
 EndProject
