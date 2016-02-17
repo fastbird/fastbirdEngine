@@ -89,6 +89,7 @@ float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
 
 	float4 color = gDiffuseColor;
 	color += gAmbientColor;
+	color = saturate(color);
 	
 	
 #ifdef _ALPHA_TEXTURE	
