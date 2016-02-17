@@ -192,8 +192,8 @@ namespace fb
 		TriggerRedraw();
 	}
 
-	void Button::OnMouseClicked(IInputInjectorPtr injector){		
-		if (!mNoButton && GetVisible())
+	void Button::OnMouseClicked(IInputInjectorPtr injector){	
+		if (!mNoButton && GetVisible() && mEnable)
 			UIManager::GetInstance().PlaySound(UISounds::ButtonClick);
 		__super::OnMouseClicked(injector);		
 	}
@@ -201,6 +201,8 @@ namespace fb
 	void Button::OnMouseHover(void* arg)
 	{
 		if (mNoButton)
+			return;
+		if (!mEnable)
 			return;
 		mUIObject->GetMaterial()->SetDiffuseColor(mBackColorOver.GetVec4());
 		mUIObject->SetTextColor(mEnable ? mTextColorHover : mTextColorHover * .5f);
@@ -235,7 +237,7 @@ namespace fb
 	}
 
 	void Button::OnMouseIn(void* arg){
-		if (!mNoButton && GetVisible())
+		if (!mNoButton && GetVisible() && mEnable)
 			UIManager::GetInstance().PlaySound(UISounds::ButtonIn);
 		if (!mImages[ButtonImages::ImageHover].expired() || !mImages[ButtonImages::BackImageHover].expired())
 			UIManager::GetInstance().DirtyRenderList(GetHwndId());	

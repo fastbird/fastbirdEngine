@@ -103,6 +103,7 @@ public:
 	int mIgnoreInput;
 	WinBaseWeakPtr mModalWindow;
 
+	WinBaseWeakPtr mCachedComponent;
 	ListBoxWeakPtr mCachedListBox;
 	WinBasesWeak mAlwaysOnTopWindows;
 	WINDOWSWeak mMoveToBottomReserved;
@@ -1134,6 +1135,24 @@ public:
 		}
 	}
 
+	bool CacheUIComponent(const char* uiname, const char* compname) {
+		if (!ValidCStringLength(uiname) || !ValidCStringLength(compname)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
+			return false;
+		}
+		auto comp = FindComp(uiname, compname);
+		mCachedComponent = comp;
+		return comp != nullptr;
+	}
+
+	void SetUIPropertyCached(const char* prop, const char* val, bool updatePosSize = false) {
+		auto comp = mCachedComponent.lock();
+		if (!comp) {
+			Logger::Log(FB_ERROR_LOG_ARG, "No cached ui component found!");
+			return;
+		}
+		SetUIProperty(comp, UIProperty::ConvertToEnum(prop), val, updatePosSize);
+	}
 
 	void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize = false){
 		SetUIProperty(uiname, compname, UIProperty::ConvertToEnum(prop), val, updatePosSize);
@@ -1143,18 +1162,24 @@ public:
 		if_assert_fail(uiname && compname && val)
 			return;
 
-		auto comp = FindComp(uiname, compname);
+		auto comp = FindComp(uiname, compname);		
 		if (comp)
 		{
-			comp->SetProperty(prop, val);
-			if (updatePosSize){
-				comp->OnSizeChanged();
-				comp->OnPosChanged(false);
-			}
+			SetUIProperty(comp, prop, val, updatePosSize);
 		}
 		else
 		{
 			Error("Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", compname, uiname, UIProperty::ConvertToString(prop));
+		}
+	}
+
+	void SetUIProperty(WinBasePtr component, UIProperty::Enum prop, const char* val, bool updatePosSize = false) {		
+		if (component) {
+			component->SetProperty(prop, val);
+			if (updatePosSize) {
+				component->OnSizeChanged();
+				component->OnPosChanged(false);
+			}
 		}
 	}
 
@@ -1364,7 +1389,7 @@ public:
 			if (injector->IsLButtonDoubleClicked()){
 				auto mouseOvered = mMouseOvered.lock();
 				if (mouseOvered){
-					doubleClickProcessed = mouseOvered->OnMouseDoubleClicked(injector);
+					doubleClickProcessed = mouseOvered->OnMouseDoubleClicked(injector);					
 				}
 			}
 			if (!doubleClickProcessed && injector->IsLButtonClicked()){
@@ -1560,6 +1585,8 @@ mPopup->SetVisible(true);
 
 		for (const auto& comp : itFind->second)
 		{
+			if (comp->IsPendingDeleteReserved())
+				continue;
 			if (strcmp(comp->GetName(), compName) == 0)
 			{
 				return comp;
@@ -2880,12 +2907,24 @@ void UIManager::DirtyRenderList(HWindowId hwndId) {
 	mImpl->DirtyRenderList(hwndId);
 }
 
+bool UIManager::CacheUIComponent(const char* uiname, const char* compname) {
+	return mImpl->CacheUIComponent(uiname, compname);
+}
+
+void UIManager::SetUIPropertyCached(const char* prop, const char* val, bool updatePosSize) {
+	mImpl->SetUIPropertyCached(prop, val, updatePosSize);
+}
+
 void UIManager::SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize) {
 	mImpl->SetUIProperty(uiname, compname, prop, val, updatePosSize);
 }
 
 void UIManager::SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val, bool updatePosSize) {
 	mImpl->SetUIProperty(uiname, compname, prop, val, updatePosSize);
+}
+
+void UIManager::SetUIProperty(WinBasePtr component, UIProperty::Enum prop, const char* val, bool updatePosSize) {
+	mImpl->SetUIProperty(component, prop, val, updatePosSize);
 }
 
 void UIManager::SetEnableComponent(const char* uiname, const char* compname, bool enable) {

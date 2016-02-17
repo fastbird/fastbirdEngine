@@ -178,6 +178,7 @@ namespace fb
 		FunctionId mHandFuncId;
 		int mUserDataInt;
 		bool mUseBorderAlpha;
+		bool mPendingDelete;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 
@@ -492,6 +493,9 @@ namespace fb
 		virtual bool OnMouseDoubleClicked(IInputInjectorPtr injector);
 		virtual void OnMouseRButtonClicked(IInputInjectorPtr injector);
 		virtual void OnMouseDrag(IInputInjectorPtr injector);
+
+		virtual void ReservePendingDelete(bool pendingDelete);
+		bool IsPendingDeleteReserved() const;
 
 		
 	private:

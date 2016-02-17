@@ -116,8 +116,11 @@ namespace fb
 		bool IsFocused(const WinBasePtr pWnd) const;
 		void DirtyRenderList(HWindowId hwndId);
 
+		bool CacheUIComponent(const char* uiname, const char* compname);
+		void SetUIPropertyCached(const char* prop, const char* val, bool updatePosSize = false);
 		void SetUIProperty(const char* uiname, const char* compname, const char* prop, const char* val, bool updatePosSize = false);
 		void SetUIProperty(const char* uiname, const char* compname, UIProperty::Enum prop, const char* val, bool updatePosSize = false);
+		void SetUIProperty(WinBasePtr component, UIProperty::Enum prop, const char* val, bool updatePosSize = false);
 		void SetEnableComponent(const char* uiname, const char* compname, bool enable);
 
 		// IInputListener Interfaces

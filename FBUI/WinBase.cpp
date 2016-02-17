@@ -110,7 +110,7 @@ WinBase::WinBase()
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
 , mHand(false), mHandFuncId(-1), mNoFocusByClick(false), mReceiveEventFromParent(false)
-, mUserDataInt(-1)
+, mUserDataInt(-1), mPendingDelete(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -1004,8 +1004,10 @@ bool WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
 		return false;
 	}
 	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) && parent){
-		return parent->OnMouseDoubleClicked(injector);
+	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) ){
+		if (parent)
+			return parent->OnMouseDoubleClicked(injector);
+		return false;
 	}
 	else{		
 		if (GetType() == ComponentType::Button){
@@ -3853,5 +3855,11 @@ void WinBase::OnMouseHoverHand(void* arg){
 	SetCursor(WinBase::sCursorOver);
 }
 
+void WinBase::ReservePendingDelete(bool pendingDelete) {
+	mPendingDelete = pendingDelete;
+}
 
+bool WinBase::IsPendingDeleteReserved() const {
+	return mPendingDelete;
+}
 }

@@ -123,6 +123,8 @@ namespace fb
 
 		ScrollerPtr GetScrollerV() const { return mScrollerV.lock(); }
 
+		virtual void ReservePendingDelete(bool pendingDelete);
+
 
 
 	private:

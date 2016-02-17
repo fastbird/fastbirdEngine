@@ -76,6 +76,8 @@ namespace fb
 	int EndButtonProgressBar(lua_State* L);
 	int SetTextBoxText(lua_State* L);
 	int SetUIBackground(lua_State* L);
+	int CacheUIComponent(lua_State* L);
+	int SetUIPropertyCached(lua_State* L);
 	int SetUIProperty(lua_State* L);
 	int GetUIProperty(lua_State* L);
 	int SetCardUIProperty(lua_State* L);
@@ -255,7 +257,9 @@ namespace fb
 		LUA_SETCFUNCTION(mL, EndButtonProgressBar);
 		LUA_SETCFUNCTION(mL, SetTextBoxText);
 		LUA_SETCFUNCTION(mL, SetUIBackground);
-		LUA_SETCFUNCTION(mL, SetUIProperty);
+		LUA_SETCFUNCTION(mL, SetUIPropertyCached);
+		LUA_SETCFUNCTION(mL, CacheUIComponent);
+		LUA_SETCFUNCTION(mL, SetUIProperty);		
 		LUA_SETCFUNCTION(mL, GetUIProperty);
 		LUA_SETCFUNCTION(mL, SetCardUIProperty);
 		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
@@ -433,7 +437,7 @@ namespace fb
 	int RemoveComponent(lua_State* L)
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);
-		const char* compName = LuaUtils::checkstring(L, 2);
+		const char* compName = LuaUtils::checkstring(L, 2);		
 		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
 		if (comp)
 		{
@@ -498,6 +502,7 @@ namespace fb
 		}
 
 		tabWindow->AddTabChild(index, data);
+		return 0;
 	}
 
 	int CreateNewCard(lua_State* L)
@@ -695,6 +700,25 @@ namespace fb
 			return 0;
 		}
 		assert(0);
+		return 0;
+	}
+
+	int CacheUIComponent(lua_State* L) {
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compName = LuaUtils::checkstring(L, 2);
+		auto success = UIManager::GetInstance().CacheUIComponent(uiname, compName);
+		LuaUtils::pushboolean(L, success);
+		return 1;
+	}
+
+	int SetUIPropertyCached(lua_State* L) {
+		const char* prop = LuaUtils::checkstring(L, 1);
+		const char* val = LuaUtils::checkstring(L, 2);
+		bool updatePosSize = false;
+		if (LuaUtils::gettop(L) == 3) {
+			updatePosSize = LuaUtils::toboolean(L, 3);
+		}
+		UIManager::GetInstance().SetUIPropertyCached(prop, val, updatePosSize);
 		return 0;
 	}
 
@@ -1118,12 +1142,12 @@ namespace fb
 			case ComponentType::Button:
 			{
 				auto button = std::dynamic_pointer_cast<Button>(comp);
-				button->Highlight(true);
+				button->Highlight(enable);
 				break;
 			}
 			case ComponentType::ImageBox:{
 				auto imageBox = std::dynamic_pointer_cast<ImageBox>(comp);
-				imageBox->Highlight(true);
+				imageBox->Highlight(enable);
 				break;
 			}
 			}

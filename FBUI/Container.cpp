@@ -200,10 +200,13 @@ void Container::RemoveChild(WinBasePtr child, bool immediately)
 	}
 	else
 	{
-		if (!ValueExistsInVector(mPendingDelete, child))
+		if (!ValueExistsInVector(mPendingDelete, child)) {
+			child->ReservePendingDelete(true);
 			mPendingDelete.push_back(child);
+		}
 	}
 	SetChildrenPosSizeChanged();
+	RefreshVScrollbar();
 }
 
 //void Container::RemoveChildNotDelete(WinBasePtr child)
@@ -325,8 +328,7 @@ WinBasePtr Container::GetChild(const std::string& name, bool includeSubChildren/
 	{
 		if (_stricmp(var->GetName(), name.c_str()) == 0)
 		{
-			auto it = std::find(mPendingDelete.begin(), mPendingDelete.end(), var);
-			if (it == mPendingDelete.end())
+			if (!var->IsPendingDeleteReserved())			
 				return var;
 		}
 	}
@@ -335,9 +337,11 @@ WinBasePtr Container::GetChild(const std::string& name, bool includeSubChildren/
 		WinBasePtr sub = 0;
 		for (auto var : mChildren)
 		{
-			sub = var->GetChild(name, true);
-			if (sub)
-				return sub;
+			if (!var->IsPendingDeleteReserved()) {
+				sub = var->GetChild(name, true);
+				if (sub)
+					return sub;
+			}
 		}
 	}
 	return 0;
@@ -1324,6 +1328,15 @@ void Container::OnMouseHover(IInputInjectorPtr injector, bool propergated){
 			}
 		}
 	}
+}
+
+void Container::ReservePendingDelete(bool pendingDelete) {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI)
+	{
+		return contentUI->ReservePendingDelete(pendingDelete);
+	}
+	__super::ReservePendingDelete(pendingDelete);
 }
 
 }

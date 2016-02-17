@@ -2011,6 +2011,7 @@ public:
 	ResourceProviderPtr GetResourceProvider() const{
 		return mResourceProvider;
 	}
+
 	void SetResourceProvider(ResourceProviderPtr provider){
 		if (!provider)
 			return;

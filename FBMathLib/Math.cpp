@@ -32,7 +32,7 @@ namespace fb
 {
 	bool IsEqual(Real a, Real b, Real epsilon)
 	{
-		return abs(a - b) < epsilon;
+		return abs(a - b) <= epsilon;
 	}
 
 	bool IsNaN(Real f)
@@ -649,6 +649,11 @@ namespace fb
 		Real size = max - min;
 		Real pos = v - min;
 		return pos / size;
+	}
+
+	Real RemapValue(Real min, Real max, Real v) {
+		Real size = max - min;
+		return size * v + min;
 	}
 
 	Real Squared(Real x)

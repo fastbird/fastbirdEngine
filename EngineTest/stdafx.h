@@ -52,5 +52,6 @@
 #define FB_DLL_AUDIOPLAYER __declspec(dllimport)
 #define FB_DLL_VIDEOPLAYER __declspec(dllimport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
+#define FB_DLL_LUA __declspec(dllimport)
 #include "FBTimer/Timer.h"
 #include "FBMathLib/Math.h"

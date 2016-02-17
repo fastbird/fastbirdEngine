@@ -59,7 +59,7 @@ public:
 	// ImageBox;
 	void SetTexture(const char* file);
 	void SetTexture(TexturePtr pTexture);
-	const Vec2I& GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const;
+	const Vec2I GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const;
 	// image box will own the rt.
 	void SetRenderTargetTexture(RenderTargetPtr rt);
 	RenderTargetPtr GetRenderTargetTexture() const { return mRenderTarget; }

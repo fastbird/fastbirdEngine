@@ -36,8 +36,10 @@
 #include "AudioTest.h"
 #include "VideoTest.h"
 #include "TextTest.h"
+#include "LuaTest.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBFileSystem/FileSystem.h"
+#include "FBLua/LuaObject.h"
 using namespace fb;
 EngineFacadePtr gEngine;
 #define MAX_LOADSTRING 100
@@ -53,6 +55,10 @@ ParticleTestPtr gParticleTest;
 AudioTestPtr gAudioTest;
 VideoTestPtr gVideoTest;
 TextTestPtr gTextTest;
+LuaTestPtr gLuaTest;
+
+int _FBPrint(lua_State* L);
+
 
 void UpdateFrame(){
 	gpTimer->Tick();
@@ -93,6 +99,8 @@ void StartTest(){
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);
 	FileSystem::BackupFile("C:/Users/Jungwan/Documents/Mount&Blade Warband Savegames/Brytenwalda HOMB(original)/sg01.sav", 5, "BackupByMnBCharReset");
+	auto L = LuaUtils::GetLuaState();
+	LUA_SETCFUNCTION(L, _FBPrint);
 	
 
 	//gMeshTest = MeshTest::Create();	
@@ -102,6 +110,7 @@ void StartTest(){
 	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();
+	gLuaTest = LuaTest::Create();
 }
 
 void EndTest(){
@@ -111,6 +120,7 @@ void EndTest(){
 	gMeshTest = 0;
 	gSkyBoxTest = 0;
 	gAudioTest = 0;
+	gLuaTest = 0;
 }
 
 // Forward declarations of functions included in this code module:
@@ -291,4 +301,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return (INT_PTR)FALSE;
+}
+
+int _FBPrint(lua_State* L)
+{
+	std::string msg = std::string("Lua: ") + LuaUtils::checkstring(L, -1);
+	std::wstring tagRemoved = EngineFacade::GetInstance().StripTextTags(msg.c_str());
+	Logger::Log(FB_DEFAULT_LOG_ARG, fb::WideToAnsi(tagRemoved.c_str()));	
+	return 0;
 }

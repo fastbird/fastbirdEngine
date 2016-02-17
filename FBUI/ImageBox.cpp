@@ -281,7 +281,7 @@ void ImageBox::SetTexture(TexturePtr pTexture)
 	}
 }
 
-const Vec2I& ImageBox::GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const{
+const Vec2I ImageBox::GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const{
 	if (mAtlasRegion){
 		if (outIsAtlas)
 			*outIsAtlas = true;
@@ -405,10 +405,13 @@ void ImageBox::GatherVisit(std::vector<UIObject*>& v)
 	if (!mVisibility.IsVisible())
 		return;
 
-	if (!mTexture && mImageFile.empty())
+	if (!mTexture && mImageFile.empty()) {
+		__super::GatherVisit(v);
 		return;
+	}
 	v.push_back(mUIObject.get());
 	__super::GatherVisit(v);
+	
 }
 
 void ImageBox::OnSizeChanged()

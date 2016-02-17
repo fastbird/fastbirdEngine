@@ -145,7 +145,9 @@ namespace fb
 	/// for r == 1.0
 	Vec3 SphericalToCartesian(Real theta, Real phi);
 	Vec3 CartesianToSpherical(const Vec3& c);
+	// min < (v) < max => 0~1
 	Real SmoothStep(Real min, Real max, Real v);
+	Real RemapValue(Real min, Real max, Real v);
 	Real Squared(Real x);
 	// outPos and TimeToTarget have to be specified both if you need.
 	void CalcInterceptPosition(const Vec3& firePos, Real ammoSpeed, const Vec3& toTargetDir, Real distance, const Vec3& targetVel,
