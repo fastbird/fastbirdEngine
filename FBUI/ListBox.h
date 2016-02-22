@@ -56,6 +56,7 @@ protected:
 	unsigned mNumCols;
 
 	std::vector < float > mColSizes;
+	std::vector<int> mColSizesInt;
 	std::vector< std::string > mColAlignes;
 	std::vector< std::string> mHeaderTextSize;
 	std::vector < std::string > mTextSizes;
@@ -166,7 +167,11 @@ public:
 	void SetItemProperty(unsigned uniqueKey, UIProperty::Enum prop, const char* val);
 	void SetItemProperty(const wchar_t* uniqueKey, UIProperty::Enum prop, const char* val);
 	void SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char* val);
-	void SetItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop, const char* val);
+	// returns 'added?'
+	bool SetItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop, const char* val);
+	// returns 'deleted?'
+	bool RemoveItemPropertyKeyCol(const Vec2I& keycol, UIProperty::Enum prop);
+	bool RemoveItemPropertiesForCol(int col, UIProperty::Enum prop);
 	void ClearItemProperties();
 	void DisableItemEvent(unsigned uniqueKey);
 	void EnableItemEvent(unsigned uniqueKey);
@@ -195,6 +200,10 @@ public:
 
 	void RemoveAllChildren(bool immediately = false);
 
+	void MoveUpListBoxItems(const std::vector<unsigned>& ids);
+	void MoveDownListBoxItems(const std::vector<unsigned>& ids);
+	void RemoveDataWithKeys(const std::vector<unsigned>& ids);
+
 protected:
 
 	ListItemPtr CreateNewItem(int row, int col);
@@ -202,10 +211,7 @@ protected:
 	void SetHighlightRowCol(unsigned row, unsigned col, bool highlight);
 	void SetHighlightRowAndSelect(size_t row, bool highlight);
 	void SetDefaultProperty(ListItemPtr listItem);
-
-
-
-	
+	void RefreshVisual();
 };
 
 }

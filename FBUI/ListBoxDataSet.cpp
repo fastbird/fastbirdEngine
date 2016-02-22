@@ -523,4 +523,30 @@ namespace fb
 		} while (--tryCount);
 		return false;
 	}
+
+	bool ListBoxDataSet::MoveUpData(unsigned key) {
+		for (auto it = mData.begin(); it != mData.end(); ++it) {
+			if ((*it)[0].GetKey() == key) {
+				if (it != mData.begin()) {
+					auto itPrev = it - 1;
+					std::iter_swap(it, itPrev);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	bool ListBoxDataSet::MoveDownData(unsigned key) {
+		for (auto it = mData.begin(); it != mData.end(); ++it) {
+			if ((*it)[0].GetKey() == key) {
+				auto itNext = it + 1;
+				if (itNext != mData.end()) {
+					std::iter_swap(it, itNext);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }
+

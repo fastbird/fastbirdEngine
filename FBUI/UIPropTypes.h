@@ -38,6 +38,7 @@ namespace fb
 			Vec2I,
 			Float,
 			String,
+			Vec4,
 
 			Num
 		};

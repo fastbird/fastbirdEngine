@@ -28,6 +28,7 @@
 #pragma once
 #include "Align.h"
 #include "FBCommonHeaders/Helpers.h"
+#include "UIPropTypes.h"
 namespace fb
 {
 	namespace UIProperty
@@ -395,8 +396,12 @@ namespace fb
 			return COUNT;
 		}
 
-		inline Vec4 GetDefaultValueVec4(UIProperty::Enum prop)
+
+		inline Vec4 GetDefaultValueVec4(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
 			switch (prop){
 			case BACK_COLOR:
 				return Vec4(0.05f, 0.1f, 0.15f, 0.8f);
@@ -424,13 +429,19 @@ namespace fb
 				return Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 			case HIGHLIGHT_COLOR:
 				return Vec4(0.1f, 0.3f, 0.3f, 0.7f);
+			}			
+			if (invalidType) {
+				*invalidType = true;
 			}
-			assert(0);
 			return Vec4::ZERO;
 		}
 
-		inline Vec2I GetDefaultValueVec2I(UIProperty::Enum prop)
+		inline Vec2I GetDefaultValueVec2I(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
+
 			switch (prop){
 			case TEXT_GAP:
 				return Vec2I::ZERO;
@@ -441,12 +452,17 @@ namespace fb
 			case BUTTON_IMAGE_SIZE:
 				return Vec2I(0, 0);
 			}
-			assert(0);
+			if (invalidType) {
+				*invalidType = true;
+			}
 			return Vec2I::ZERO;
 		}
 
-		inline float GetDefaultValueFloat(UIProperty::Enum prop)
+		inline float GetDefaultValueFloat(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
 			switch (prop){
 			case TEXT_SIZE:
 				return 16.f;
@@ -461,12 +477,18 @@ namespace fb
 			case UI_RATIO:
 				return 1.f;
 			}
-			assert(0);
+			
+			if (invalidType) {
+				*invalidType = true;
+			}
 			return 0.f;
 		}
 
-		inline bool GetDefaultValueBool(UIProperty::Enum prop)
+		inline bool GetDefaultValueBool(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
 			switch (prop){
 			case FIXED_TEXT_SIZE:
 				return true;
@@ -557,12 +579,18 @@ namespace fb
 			case BACKGROUND_GRADIENT:
 				return false;
 			}
-			assert(0);
+			
+			if (invalidType) {
+				*invalidType = true;
+			}
 			return false;
 		}
 
-		inline int GetDefaultValueInt(UIProperty::Enum prop)
+		inline int GetDefaultValueInt(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
 			switch (prop){
 			case TEXT_ALIGN:
 				return ALIGNH::LEFT;
@@ -611,18 +639,56 @@ namespace fb
 			case TABWND_CURRENT_INDEX:
 				return 0;
 			}
-			assert(0);
+			
+			if (invalidType) {
+				*invalidType = true;
+			}
 			return 0;
 		}
 
-		inline const char* GetDefaultValueString(UIProperty::Enum prop)
+		inline const char* GetDefaultValueString(UIProperty::Enum prop, bool* invalidType = 0)
 		{
+			if (invalidType) {
+				*invalidType = false;
+			}
 			switch (prop)
 			{
 			case HIGHLIGHT_COLOR:
 				return "0.1, 0.3, 0.3, 0.7";			
 			}			
+			if (invalidType) {
+				*invalidType = true;
+			}
 			return "";
+		}
+
+		inline UIPropTypes::Enum GetType(Enum prop) {
+			bool invalidType = false;
+			GetDefaultValueBool(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::Bool;
+
+			GetDefaultValueFloat(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::Float;
+
+			GetDefaultValueInt(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::Int;
+
+			GetDefaultValueString(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::String;
+
+			GetDefaultValueVec2I(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::Vec2I;
+
+			GetDefaultValueVec4(prop, &invalidType);
+			if (!invalidType)
+				return UIPropTypes::Vec4;
+
+			return UIPropTypes::Num;
 		}
 	}
 }

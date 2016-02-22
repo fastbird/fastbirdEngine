@@ -120,6 +120,7 @@ namespace fb
 	int HasComponent(lua_State* L);
 	int GetScrollbarOffset(lua_State* L);
 	int SetScrollbarOffset(lua_State* L);
+	int SetScrollbarEnd(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -150,6 +151,9 @@ namespace fb
 	int SetListBoxItemProperty(lua_State* L);
 	int DisableListBoxItemEvent(lua_State* L);
 	int EnableListBoxItemEvent(lua_State* L);
+	int MoveUpListBoxItems(lua_State* L);
+	int MoveDownListBoxItems(lua_State* L);
+	int RemoveListBoxItems(lua_State* L);
 
 	// etc
 	int SetTooltipString(lua_State* L);
@@ -163,9 +167,13 @@ namespace fb
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
+		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
+		LUA_SETCFUNCTION(mL, MoveUpListBoxItems);
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, SetScrollbarEnd);
 		LUA_SETCFUNCTION(mL, SetScrollbarOffset);
 		LUA_SETCFUNCTION(mL, GetScrollbarOffset);
 		LUA_SETCFUNCTION(mL, HasComponent);
@@ -1931,6 +1939,78 @@ namespace fb
 			Vec2 offset = LuaUtils::checkVec2(L, 3);
 			comp->SetScrollOffset(offset);
 		}
+		return 0;
+	}
+
+	int SetScrollbarEnd(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto comp = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (comp) {			
+			comp->SetScrollOffset(Vec2(0, -FLT_MAX));
+		}
+		return 0;
+	}
+
+	int MoveUpListBoxItems(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		std::vector<unsigned> ids;
+		{
+			LuaObject t(L, 3);
+			LuaObject data;
+			auto it = t.GetSequenceIterator();
+			while (it.GetNext(data)) {
+				auto id = data.GetUnsigned();
+				ids.push_back(id);
+			}
+			auto listbox = std::dynamic_pointer_cast<ListBox>(UIManager::GetInstance().FindComp(uiname, comp));
+			if (listbox) {
+				listbox->MoveUpListBoxItems(ids);
+			}
+			return 0;
+		}		
+	}
+
+	int MoveDownListBoxItems(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		std::vector<unsigned> ids;
+		{
+			LuaObject t(L, 3);
+			LuaObject data;
+			auto it = t.GetSequenceIterator();
+			while (it.GetNext(data)) {
+				auto id = data.GetUnsigned();
+				ids.push_back(id);
+			}
+			auto listbox = std::dynamic_pointer_cast<ListBox>(UIManager::GetInstance().FindComp(uiname, comp));
+			if (listbox) {
+				listbox->MoveDownListBoxItems(ids);
+			}
+			return 0;
+		}
+	}
+
+	int RemoveListBoxItems(lua_State* L) {
+		auto ui = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		auto listbox = std::dynamic_pointer_cast<ListBox>(UIManager::GetInstance().FindComp(ui, comp));
+		if (!listbox) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Listbox(%s:%s) is not found", ui, comp).c_str());
+			return 0;
+		}
+		std::vector<unsigned> ids;
+		{
+			LuaObject t(L, 3);
+			LuaObject data;
+			auto it = t.GetSequenceIterator();
+			while(it.GetNext(data)) {
+				ids.push_back(data.GetUnsigned(-1));
+			}
+		}
+		listbox->RemoveDataWithKeys(ids);
 		return 0;
 	}
 }

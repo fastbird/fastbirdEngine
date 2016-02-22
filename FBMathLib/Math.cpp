@@ -75,6 +75,10 @@ namespace fb
 		return Vec3I(Round(v.x), Round(v.y), Round(v.z));
 	}
 
+	int Floor(Real v) {
+		return int(v);
+	}
+
 	Vec3 FixPrecisionScaleVector(const Vec3& v)
 	{
 		Vec3 fixedScale = v;

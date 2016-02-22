@@ -100,5 +100,8 @@ namespace fb
 
 		bool FindNextFocus(unsigned& rowIndex, unsigned& colIndex);
 		bool FindPrevFocus(unsigned& rowIndex, unsigned& colIndex);
+
+		bool MoveUpData(unsigned key);
+		bool MoveDownData(unsigned key);
 	};
 }

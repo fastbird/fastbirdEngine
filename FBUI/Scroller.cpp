@@ -38,15 +38,15 @@ ScrollerPtr Scroller::Create(){
 }
 
 Scroller::Scroller()
-	: mScrollAmount(0.0015f)
+	: mScrollAmount(0.005f)
 	, mOffset(0, 0)
 	, mMaxOffset(0, 0)	
 	, mDestOffset(0)
 	, mCurOffset(0)
-	, mScrollAcc(10)
+	, mScrollAcc(20)
 	, mCurScrollSpeed(0)
 	, mMaxScrollSpeed(10)
-	, mScrollAmountScale(1.f)
+	, mScrollAmountScale(2.f)
 	, mLastWheel(0)
 {
 	mUIObject = UIObject::Create(GetRenderTargetSize());
@@ -145,9 +145,7 @@ void Scroller::SetMaxOffset(const Vec2& maxOffset)
 			GetParent()->Scrolled();
 		}
 
-		mScrollAmount = 22 / (float)GetRenderTargetSize().y;
-			
-		
+		mScrollAmount = 22 / (float)GetRenderTargetSize().y;		
 	}
 }
 

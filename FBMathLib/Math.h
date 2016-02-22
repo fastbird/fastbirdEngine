@@ -66,6 +66,7 @@ namespace fb
 	int Round(Real v);
 	Vec2I Round(const Vec2& v);
 	Vec3I Round(const Vec3& v);
+	int Floor(Real v);
 	Vec3 FixPrecisionScaleVector(const Vec3& v);
 	Real log2(Real v);
 	Real sinc(Real x);	
@@ -73,7 +74,7 @@ namespace fb
 	void Halfp2Singles(void *target, void *source, unsigned num);
 	void Halfp2Doubles(void *target, void *source, unsigned num);
 	void Doubles2Halfp(void *target, void *source, unsigned num);
-	void Singles2Halfp(void *target, void *source, unsigned num);
+	void Singles2Halfp(void *target, void *source, unsigned num);	
 
 	//-----------------------------------------------------------------------
 	unsigned long GetNextPowerOfTwo(unsigned long Value);

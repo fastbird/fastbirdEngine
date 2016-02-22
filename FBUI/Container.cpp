@@ -205,8 +205,7 @@ void Container::RemoveChild(WinBasePtr child, bool immediately)
 			mPendingDelete.push_back(child);
 		}
 	}
-	SetChildrenPosSizeChanged();
-	RefreshVScrollbar();
+	SetChildrenPosSizeChanged();	
 }
 
 //void Container::RemoveChildNotDelete(WinBasePtr child)
@@ -293,6 +292,7 @@ void Container::RemoveAllChildren(bool immediately)
 			}
 		}		
 	}
+	mScrollerV.reset();
 	SetChildrenPosSizeChanged();
 }
 
@@ -413,9 +413,10 @@ void Container::OnStartUpdate(float elapsedTime)
 		{
 			assert(0);
 		}
-		mChildrenPosSizeChanged = true;
+		SetChildrenPosSizeChanged();
 	}
 	mPendingDelete.clear();
+
 	if (deleted)
 		UIManager::GetInstance().DirtyRenderList(GetHwndId());
 
@@ -555,6 +556,14 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (mMatchHeight) {
+		auto scrollerV = mScrollerV.lock();
+		if (scrollerV) {
+			RemoveChild(scrollerV, false);
+			mScrollerV.reset();
+		}
+		return;
+	}
 	auto contentUI = mWndContentUI.lock();
 	if (contentUI){
 		contentUI->RefreshVScrollbar();
@@ -591,6 +600,12 @@ void Container::RefreshVScrollbar()
 			scrollerV->SetUseAbsPos(false);
 			scrollerV->SetProperty(UIProperty::BACK_COLOR, "0.46f, 0.46f, 0.36f, 0.7f");			
 			scrollerV->SetVisible(true);
+			const Vec2& offset = scrollerV->GetOffset();
+			for (auto child : mChildren) {
+				if (child->GetType() != ComponentType::Scroller) {
+					child->SetWNScollingOffset(offset);
+				}
+			}
 		}
 
 		if (scrollerV)
@@ -598,7 +613,7 @@ void Container::RefreshVScrollbar()
 			scrollerV->SetVisible(true);
 			scrollerV->ChangeNSizeY(visableRatio);
 			//scrollerV->OnPosChanged(false);			
-			scrollerV->SetMaxOffset(Vec2(0, length));
+			scrollerV->SetMaxOffset(Vec2(0, length));			
 		}
 	}
 	else
@@ -660,8 +675,10 @@ float Container::GetChildrenContentEnd() const{
 
 	float end = 0;
 	for (auto& winbase : mChildren){		
-		float cend = winbase->GetContentEnd();
-		end = std::max(end, cend);
+		if (!winbase->IsPendingDeleteReserved()) {
+			float cend = winbase->GetContentEnd();
+			end = std::max(end, cend);
+		}
 	}
 	return end;
 }
@@ -873,7 +890,9 @@ bool Container::ParseLua(const fb::LuaObject& compTable)
 
 void Container::MatchHeight(bool checkName)
 {
-	int contentWNEnd = 0;
+	auto nend = GetChildrenContentEnd();
+	auto contentWNEnd = Round(nend * GetRenderTargetSize().y);
+	/*int contentWNEnd = 0;
 	for (auto& pWinBase : mChildren)
 	{
 		if (pWinBase->GetVisible())
@@ -883,7 +902,7 @@ void Container::MatchHeight(bool checkName)
 			int wnEnd = (pWinBase->GetFinalPos().y + pWinBase->GetFinalSize().y);
 			contentWNEnd = std::max(wnEnd, contentWNEnd);
 		}
-	}
+	}*/
 
 	int sizeY = contentWNEnd - GetFinalPos().y;
 	// todo: remove this hard coded number.
@@ -1272,6 +1291,15 @@ void Container::AddChild(WinBasePtr child){
 	child->OnParentPosChanged();
 
 	SetChildrenPosSizeChanged();	
+
+	auto scroller = mScrollerV.lock();
+	if (scroller) {
+		const Vec2& offset = scroller->GetOffset();
+		if (child->GetType() != ComponentType::Scroller)
+		{
+			child->SetWNScollingOffset(offset);
+		}
+	}
 }
 
 void Container::AddChildSimple(WinBasePtr child){

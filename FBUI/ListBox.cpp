@@ -64,6 +64,7 @@ ListBox::ListBox()
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mColSizes.push_back(0.97f);
+	mColSizes.push_back(10);
 	SetProperty(UIProperty::SCROLLERV, "true");
 	mMultiSelection = GetDefaultValueBool(UIProperty::LISTBOX_MULTI_SELECTION);
 	mNoHighlight = GetDefaultValueBool(UIProperty::LISTBOX_NO_HIGHLIGHT);
@@ -93,17 +94,15 @@ ListItemPtr ListBox::CreateNewItem(int row, int col)
 {
 	int hgap = mRowHeight + mRowGap;
 	int y = hgap * row + mRowGap;
-	int x = 0;
-	float nx = 0.f;
+	int x = 0;	
 	const auto& finalSize = GetFinalSize();
 	for (int c = 0; c < col; ++c) {
-		nx += mColSizes[c];
-	}
-	x = Round(nx * finalSize.x);
-
-	auto item = std::static_pointer_cast<ListItem>(AddChild(Vec2I(x, y), Vec2I(Round(mColSizes[col] * finalSize.x), mRowHeight), ComponentType::ListItem));
-	item->SetUseAbsXSize(false);
-	item->SetUseAbsXPos(false);
+		x += mColSizesInt[c];
+	}	
+	
+	auto item = std::static_pointer_cast<ListItem>(AddChild(Vec2I(x, y), Vec2I(mColSizesInt[col], mRowHeight), ComponentType::ListItem));
+	item->SetUseAbsXSize(true);
+	item->SetUseAbsXPos(true);
 	item->SetRuntimeChild(true);
 	item->SetRuntimeChildRecursive(true);
 	if (col < (int)mColAlignes.size())
@@ -419,9 +418,11 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		mNumCols = StringConverter::ParseUnsignedInt(val);
 		float colsize = 1.0f / (float)mNumCols;
 		mColSizes.clear();
+		auto xsize = GetParentSize().x;
 		for (unsigned i = 0; i < mNumCols; ++i)
 		{
 			mColSizes.push_back(colsize);
+			mColSizesInt.push_back(Round(colsize * xsize));
 		}
 		if (mData){
 			Clear();
@@ -450,10 +451,12 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			assert(mNumCols != 1);
 			mColSizes.clear();
 			StringVector strs = Split(val);
+			auto xsize = GetParentSize().x;
 			assert(!strs.empty());
 			for (unsigned i = 0; i < strs.size(); ++i)
 			{
 				mColSizes.push_back(StringConverter::ParseReal(strs[i]));
+				mColSizesInt.push_back(Round(mColSizes.back() * xsize));
 			}
 			UpdateColSizes();
 			return true;
@@ -533,7 +536,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 				}
 
 				auto pAddedItem = std::static_pointer_cast<ListItem>(
-					AddChild(Vec2I(posX, 0), Vec2I(Round(mColSizes[i] * finalSize.x), mRowHeight), ComponentType::ListItem));
+					AddChild(Vec2I(posX, 0), Vec2I(mColSizesInt[i], mRowHeight), ComponentType::ListItem));
 				mHeaders.push_back(pAddedItem);				
 				pAddedItem->RegisterEventFunc(UIEvents::EVENT_MOUSE_DRAG,
 					std::bind(&ListBox::OnDragHeader, this, std::placeholders::_1));
@@ -1184,13 +1187,17 @@ void ListBox::OnDragHeader(void* arg){
 		if (col != mNumCols - 1){ // not last
 			float fMove = mouseMove / (float)GetParentSize().x;
 			mColSizes[col] += fMove;
+			mColSizesInt[col] += mouseMove;
 			mColSizes[col+1] -= fMove;
+			mColSizesInt[col+1] -= mouseMove;
 			UpdateColSizes();
 		}
 		else{
 			float fMove = mouseMove / (float)GetParentSize().x;
 			mColSizes[col] += fMove;
+			mColSizesInt[col] += mouseMove;
 			mColSizes[col - 1] -= fMove;
+			mColSizesInt[col-1] -= mouseMove;
 			UpdateColSizes();
 		}
 	}
@@ -1198,13 +1205,18 @@ void ListBox::OnDragHeader(void* arg){
 		if (col != mNumCols - 1){ // not last
 			float fMove = mouseMove / (float)GetParentSize().x;
 			mColSizes[col] += fMove;
+			mColSizesInt[col] += mouseMove;
 			mColSizes[col + 1] -= fMove;
+			mColSizesInt[col+1] -= mouseMove;
 			UpdateColSizes();
 		}
 		else{
 			float fMove = mouseMove / (float)GetParentSize().x;
 			mColSizes[col] += fMove;
+			mColSizesInt[col] += mouseMove;
 			mColSizes[col - 1] -= fMove;
+			mColSizesInt[col-1] -= mouseMove;
+
 			UpdateColSizes();
 		}
 	}
@@ -1227,7 +1239,8 @@ WinBasePtr ListBox::MakeMergedRow(unsigned row)
 	auto firstItem = mItems[row][0].lock();
 	assert(firstItem);
 	firstItem->ChangeNSizeX(1.0f);
-	firstItem->ModifySize(Vec2I(-4, 0));
+	if (mScrollerV.lock())
+		firstItem->ModifySize(Vec2I(-4, 0));
 	for (unsigned i = 1; i < mNumCols; ++i){
 		mItems[row][i].lock()->ChangeNPosX(1.f);
 	}
@@ -1396,7 +1409,7 @@ void ListBox::VisualizeData(unsigned index){
 			}
 			FillItem(index);
 		}
-	}	
+	}
 }
 
 void ListBox::FillItem(unsigned index){
@@ -2003,7 +2016,7 @@ void ListBox::SetItemPropertyCol(unsigned col, UIProperty::Enum prop, const char
 	}
 }
 
-void ListBox::SetItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum prop, const char* val){
+bool ListBox::SetItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum prop, const char* val){
 	auto& properties = mItemPropertyKeyCol[keyCol];
 	bool found = false;
 	for (auto& it : properties){
@@ -2018,6 +2031,117 @@ void ListBox::SetItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum prop, 
 	if (mItems.size() > (unsigned)row && !mItems[row][keyCol.y].expired()){
 		mItems[row][keyCol.y].lock()->SetProperty(prop, val);
 	}
+	// returns 'added?'
+	return !found;
+}
+
+bool ListBox::RemoveItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum prop) {
+	auto& properties = mItemPropertyKeyCol[keyCol];
+	bool found = false;
+	for (auto it = properties.begin(); it != properties.end(); /**/) {
+		if (it->first == prop) {
+			it = properties.erase(it);
+			found = true;
+		}
+		else {
+			++it;
+		}
+	}
+	unsigned row = mData->FindRowIndexWithKey((unsigned)keyCol.x);
+	if (mItems.size() > (unsigned)row && !mItems[row][keyCol.y].expired()) {
+		auto propertyType = UIProperty::GetType(prop);
+		switch (propertyType) {
+		case UIPropTypes::Bool: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop, 
+				StringConverter::ToString(UIProperty::GetDefaultValueBool(prop)).c_str());
+			break;
+		}
+		case UIPropTypes::Float: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop, 
+				StringConverter::ToString(UIProperty::GetDefaultValueFloat(prop)).c_str());
+			break;
+		}
+		case UIPropTypes::Int: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop, 
+				StringConverter::ToString(UIProperty::GetDefaultValueInt(prop)).c_str());
+			break;
+		}
+		case UIPropTypes::String: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop, UIProperty::GetDefaultValueString(prop));
+			break;
+		}
+		case UIPropTypes::Vec2I: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop, 
+				StringMathConverter::ToString(UIProperty::GetDefaultValueVec2I(prop)).c_str());
+			break;
+		}
+		case UIPropTypes::Vec4: {
+			mItems[row][keyCol.y].lock()->SetProperty(prop,
+				StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(prop)).c_str());
+			break;
+		default:
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Property(%d) doesn't have default value", prop).c_str());
+		}
+		}
+	}
+	return found;
+}
+
+bool ListBox::RemoveItemPropertiesForCol(int col, UIProperty::Enum prop) {
+	bool found = false;
+	for (auto keyColIt = mItemPropertyKeyCol.begin(); keyColIt != mItemPropertyKeyCol.end(); ++keyColIt) {
+		if (keyColIt->first.y != col)
+			continue;
+		auto& properties = keyColIt->second;
+		
+		for (auto it = properties.begin(); it != properties.end(); /**/) {
+			if (it->first == prop) {
+				it = properties.erase(it);
+				found = true;
+			}
+			else {
+				++it;
+			}
+		}
+		unsigned row = mData->FindRowIndexWithKey((unsigned)keyColIt->first.x);
+		if (mItems.size() > (unsigned)row && !mItems[row][col].expired()) {
+			auto propertyType = UIProperty::GetType(prop);
+			switch (propertyType) {
+			case UIPropTypes::Bool: {
+				mItems[row][col].lock()->SetProperty(prop,
+					StringConverter::ToString(UIProperty::GetDefaultValueBool(prop)).c_str());
+				break;
+			}
+			case UIPropTypes::Float: {
+				mItems[row][col].lock()->SetProperty(prop,
+					StringConverter::ToString(UIProperty::GetDefaultValueFloat(prop)).c_str());
+				break;
+			}
+			case UIPropTypes::Int: {
+				mItems[row][col].lock()->SetProperty(prop,
+					StringConverter::ToString(UIProperty::GetDefaultValueInt(prop)).c_str());
+				break;
+			}
+			case UIPropTypes::String: {
+				mItems[row][col].lock()->SetProperty(prop, UIProperty::GetDefaultValueString(prop));
+				break;
+			}
+			case UIPropTypes::Vec2I: {
+				mItems[row][col].lock()->SetProperty(prop,
+					StringMathConverter::ToString(UIProperty::GetDefaultValueVec2I(prop)).c_str());
+				break;
+			}
+			case UIPropTypes::Vec4: {
+				mItems[row][col].lock()->SetProperty(prop,
+					StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(prop)).c_str());
+				break;
+			default:
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Property(%d) doesn't have default value", prop).c_str());
+			}
+			}
+		}
+	}
+	return found;
 }
 
 void ListBox::NoVirtualizingItem(unsigned rowIndex){
@@ -2029,7 +2153,7 @@ void ListBox::NoVirtualizingItem(unsigned rowIndex){
 	VisualizeData(rowIndex);
 }
 
-void ListBox::UpdateColSizes(){
+void ListBox::UpdateColSizes(){	
 	float totalSize = 0.f;
 	for (auto size : mColSizes)	{
 		totalSize += size;
@@ -2044,19 +2168,19 @@ void ListBox::UpdateColSizes(){
 	mStrColSizes.pop_back();
 
 	unsigned colHeader = 0;
-	float posHeader = 0.f;
+	int posHeader = 0;
 	for (auto itemIt : mHeaders){
 		if (colHeader >= mColSizes.size())
 			break;
 		auto item = itemIt.lock();
 		assert(item);
-		item->ChangeNPosX(posHeader);
-		item->ChangeNSizeX(mColSizes[colHeader]);
-		posHeader += mColSizes[colHeader++];
+		item->ChangePosX(posHeader);
+		item->ChangeSizeX(mColSizesInt[colHeader]);
+		posHeader += mColSizesInt[colHeader++];
 	}
 	for (auto row : mItems){
 		unsigned col = 0;
-		float pos = 0.f;
+		int pos = 0;
 		for (auto itemIt : row){
 			auto item = itemIt.lock();
 			assert(item);
@@ -2064,9 +2188,9 @@ void ListBox::UpdateColSizes(){
 				break;
 			if (col >= mColSizes.size())
 				break;
-			item->ChangeNPosX(pos);
-			item->ChangeNSizeX(mColSizes[col]);
-			pos += mColSizes[col++];
+			item->ChangePosX(pos);
+			item->ChangeSizeX(mColSizesInt[col]);
+			pos += mColSizesInt[col++];
 		}
 	}
 }
@@ -2145,7 +2269,11 @@ float ListBox::GetChildrenContentEnd() const{
 	auto num = mItems.size();
 	int hgap = mRowHeight + mRowGap;
 
-	int sizeY = hgap * num + mRowGap + mRowHeight;
+	int sizeY = hgap * num;
+	if (!mHeaders.empty())
+		sizeY += mRowGap + mRowHeight;
+	if (num > 0)
+		hgap -= mRowGap;
 	return mWNPos.y + sizeY / (float)GetRenderTargetSize().y;
 }
 
@@ -2154,4 +2282,82 @@ void ListBox::RemoveAllChildren(bool immediately/* = false*/){
 	Clear(immediately);
 
 }
+
+void ListBox::MoveUpListBoxItems(const std::vector<unsigned>& ids) {
+	if (mData->Size() == 0)
+		return;
+	for (auto id : ids) {
+		auto index = mData->FindRowIndexWithKey(id);
+		bool moved = mData->MoveUpData(id);
+		if (moved) {
+			auto it = std::find(mSelectedIndices.begin(), mSelectedIndices.end(), index);
+			if (it != mSelectedIndices.end()) {
+				DeselectRow(index);
+				SelectRow(index - 1);
+			}
+		}
+	}
+	RefreshVisual();
+}
+
+void ListBox::MoveDownListBoxItems(const std::vector<unsigned>& ids) {
+	if (mData->Size() == 0)
+		return;
+	auto reversed = ids;
+	std::reverse(reversed.begin(), reversed.end());
+	for (auto id : reversed) {
+		auto index = mData->FindRowIndexWithKey(id);
+		auto moved = mData->MoveDownData(id);
+		if (moved) {
+			auto it = std::find(mSelectedIndices.begin(), mSelectedIndices.end(), index);
+			if (it != mSelectedIndices.end()) {
+				DeselectRow(index);
+				SelectRow(index + 1);
+			}
+		}
+	}
+	RefreshVisual();
+}
+
+void ListBox::RemoveDataWithKeys(const std::vector<unsigned>& ids) {
+	for (auto id : ids) {
+		mData->DelDataWithKey(id);
+	}
+	RefreshVisual();
+}
+
+void ListBox::RefreshVisual() {
+	// remove deleted items
+	int dataSize = mData->Size();
+	int itemSize = mItems.size();
+	if (itemSize > dataSize) {
+		auto deleteStart = dataSize;
+		for (int i = itemSize - 1; i >= dataSize; --i) {
+			bool noVirtualizing = mNoVirtualizingRows.find(i) != mNoVirtualizingRows.end();
+			if (!noVirtualizing) {
+				if (!mItems[i][0].expired())
+				{
+					MoveToRecycle(i);
+				}
+				else {
+					auto columnSize = mItems[i].size();
+					for (unsigned c = 0; c < columnSize; ++c) {
+						auto item = mItems[i][c].lock();						
+						RemoveChild(item);
+						mItems[i][c].reset();
+					}					
+				}
+			}
+		}
+	}	
+
+	// refresh
+	int startIndex = mStartIndex - 1;
+	startIndex = std::max(0, startIndex);
+	int endIndex = mEndIndex - 1;
+	endIndex = std::min((int)mData->Size(), endIndex);
+	for (int i = startIndex; i <= endIndex; ++i)
+		VisualizeData(i);
+}
+
 }
