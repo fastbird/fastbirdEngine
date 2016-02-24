@@ -158,4 +158,8 @@ namespace fb
 	Vec2I Vec2I::Scale(Real f) const {
 		return Vec2I(Round(x*f), Round(y*f));
 	}
+
+	Vec2I operator*(const Vec2I& left, unsigned right) {
+		return Vec2I(left.x * right, left.y * right);
+	}
 }

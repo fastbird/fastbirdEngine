@@ -66,6 +66,8 @@ namespace fb
 		Real Length() const;
 		Vec2I Scale(Real f) const;
 	};
+
+	Vec2I operator*(const Vec2I& left, unsigned right);
 }
 
 //// luawapper util

@@ -200,8 +200,7 @@ void ImageBox::CalcUV()
 		if (textureAtlas){
 			ConvertAtlasUV(texcoords, defaultUV);
 		}
-		mUIObject->SetTexCoord(texcoords, 4);
-		return;
+		mUIObject->SetTexCoord(texcoords, 4);		
 		break;
 	}
 	}

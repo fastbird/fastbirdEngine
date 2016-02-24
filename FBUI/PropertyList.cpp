@@ -66,6 +66,11 @@ void PropertyList::OnCreated()
 	}
 
 	mData = FB_NEW(ListBoxDataSet)(mNumCols);
+
+	mColSizesInt.clear();
+	auto parentX = GetParentSize().x;
+	mColSizesInt.push_back(Round(0.47f * parentX));
+	mColSizesInt.push_back(Round(0.50f * parentX));
 }
 
 const wchar_t* PropertyList::GetValue(const wchar_t* key)

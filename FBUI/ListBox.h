@@ -151,6 +151,7 @@ public:
 	void SetRowHeight(int rowHeight) { mRowHeight = rowHeight; }
 
 	void SelectRow(unsigned index);
+	void SelectId(unsigned id);
 	void DeselectRow(unsigned index);
 	void DeselectAll();
 	void ToggleSelection(unsigned index);
@@ -203,6 +204,8 @@ public:
 	void MoveUpListBoxItems(const std::vector<unsigned>& ids);
 	void MoveDownListBoxItems(const std::vector<unsigned>& ids);
 	void RemoveDataWithKeys(const std::vector<unsigned>& ids);
+
+	virtual void OnParentSizeChanged();
 
 protected:
 

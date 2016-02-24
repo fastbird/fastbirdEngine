@@ -140,6 +140,7 @@ namespace fb
 	int GetListBoxRowIndexCached(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
 	int SelectListBoxItems(lua_State* L);	
+	int SelectListBoxItemsById(lua_State* L);
 	int GetListItemData(lua_State* L);	
 	int GetListItemDataCachedListBox(lua_State* L);
 	int SetListItemProperty(lua_State* L);
@@ -196,6 +197,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetListItemProperty);
 		LUA_SETCFUNCTION(mL, GetListItemDataCachedListBox);
 		LUA_SETCFUNCTION(mL, GetListItemData);
+		LUA_SETCFUNCTION(mL, SelectListBoxItemsById);
 		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);		
 		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
@@ -1483,12 +1485,7 @@ namespace fb
 		{
 			std::vector<unsigned> keys;
 			listbox->GetSelectedUniqueIdsUnsigned(keys);
-
-			if (keys.empty())
-			{
-				LuaUtils::pushnil(L);
-				return 1;
-			}
+			
 			LuaObject luaRows;
 			luaRows.NewTable(L);
 			int i = 1;
@@ -1635,6 +1632,35 @@ namespace fb
 			{
 				unsigned row = rows.GetUnsignedAt(i);
 				listbox->SelectRow(row);
+			}
+		}
+
+		return 0;
+	}
+
+	int SelectListBoxItemsById(lua_State* L) {
+		const char* wnd = LuaUtils::checkstring(L, 1);
+		const char* comp = LuaUtils::checkstring(L, 2);
+		if (LuaUtils::isnil(L, 3))
+		{
+			return 0;
+		}
+		LuaObject ids(L, 3);
+		if (!ids.IsTable())
+		{
+			Error(FB_ERROR_LOG_ARG, "Invalid Param.");
+			return 0;
+		}
+		auto winbase = UIManager::GetInstance().FindComp(wnd, comp).get();
+		ListBox* listbox = dynamic_cast<ListBox*>(winbase);
+		if (listbox)
+		{
+			listbox->ClearSelection();
+			unsigned len = ids.GetLen();
+			for (unsigned i = 1; i <= len; ++i)
+			{
+				unsigned id = ids.GetUnsignedAt(i);
+				listbox->SelectId(id);
 			}
 		}
 

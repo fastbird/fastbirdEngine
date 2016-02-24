@@ -497,7 +497,7 @@ void WinBase::OnParentSizeChanged() {
 //---------------------------------------------------------------------------
 void WinBase::ModifySize(const Vec2I& sizemod)
 {
-	mSizeMod += sizemod;
+	//mSizeMod += sizemod;
 	Vec2I newSize = mSize + sizemod;
 	ChangeSize(newSize);
 	//SetSize(newSize);

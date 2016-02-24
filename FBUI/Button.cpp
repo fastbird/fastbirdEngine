@@ -317,6 +317,18 @@ namespace fb
 			SetDefaultImageAtlasPathIfNotSet();
 			image->SetTextureAtlasRegion(mImageAtlas.c_str(), val);
 			image->MatchUISizeToImageAtCenter();
+			auto size = image->GetSize();
+			bool resize = false;
+			if (size.x > mSize.x) {
+				size.x = mSize.x;
+				resize = true;
+			}
+			if (size.y > mSize.y) {
+				size.y = mSize.y;
+				resize = true;
+			}
+			if (resize)
+				image->ChangeSize(size);
 			//mImages[ButtonImages::Image]->MatchUISizeToImageCenteredAt(GetFinalPos() + Round(GetFinalSize() * .5f));
 			if (mIconText)
 			{
@@ -723,6 +735,7 @@ namespace fb
 			{
 				return image->SetProperty(prop, val);
 			}
+			break;
 		}
 		case UIProperty::NO_BUTTON:
 		{

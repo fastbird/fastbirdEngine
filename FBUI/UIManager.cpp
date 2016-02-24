@@ -58,6 +58,7 @@
 #include "FBRenderer/TextureAtlas.h"
 #include "FBRenderer/Texture.h"
 #include "FBAudioPlayer/AudioManager.h"
+#include "FBStringLib/StringLib.h"
 using namespace fb;
 namespace fb{
 	static float gTooltipFontSize = 20;
@@ -1725,7 +1726,7 @@ mPopup->SetVisible(true);
 		for (auto& it : mLuaUIs)
 		{
 			for (auto& ui : it.second)
-			{
+			{				
 				ui->SetVisible(false);
 			}
 		}

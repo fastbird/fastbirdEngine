@@ -418,6 +418,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		mNumCols = StringConverter::ParseUnsignedInt(val);
 		float colsize = 1.0f / (float)mNumCols;
 		mColSizes.clear();
+		mColSizesInt.clear();
 		auto xsize = GetParentSize().x;
 		for (unsigned i = 0; i < mNumCols; ++i)
 		{
@@ -450,6 +451,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			mStrColSizes = val;
 			assert(mNumCols != 1);
 			mColSizes.clear();
+			mColSizesInt.clear();
 			StringVector strs = Split(val);
 			auto xsize = GetParentSize().x;
 			assert(!strs.empty());
@@ -806,6 +808,13 @@ void ListBox::SelectRow(unsigned index)
 		}
 	}
 	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+}
+
+void ListBox::SelectId(unsigned id) {
+	auto row = FindRowIndex(id);
+	if (row != -1) {
+		SelectRow(row);
+	}
 }
 
 void ListBox::DeselectRow(unsigned index){
@@ -2160,6 +2169,7 @@ void ListBox::UpdateColSizes(){
 	}
 	float gap = 1.0f - totalSize;
 	mColSizes[0] += gap;
+	mColSizesInt[0] += Round(gap * GetParentSize().x);
 	mStrColSizes.clear();
 	for (auto size : mColSizes){
 		mStrColSizes += StringConverter::ToString(size);
@@ -2360,4 +2370,14 @@ void ListBox::RefreshVisual() {
 		VisualizeData(i);
 }
 
+void ListBox::OnParentSizeChanged() {
+	__super::OnParentSizeChanged();
+	mColSizesInt.clear();
+	auto parentX = GetParentSize().x;
+	for (auto nsize : mColSizes) {
+		mColSizesInt.push_back(Round(nsize * parentX));
+	}
 }
+
+}
+
