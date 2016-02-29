@@ -514,4 +514,6 @@ namespace fb
 
 		void OnMouseHoverHand(void* arg);
 	};
+
+	void SetDefaultPropertyForUI(WinBasePtr winbase, UIProperty::Enum prop);
 }

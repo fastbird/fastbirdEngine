@@ -1098,7 +1098,7 @@ void ListBox::OnItemClicked(void* arg)
 		if (!mSelectedIndices.empty())
 			lastIndex = mSelectedIndices.back();
 
-		if (injector->IsKeyDown(VK_SHIFT)){
+		if (injector->IsKeyDown(VK_SHIFT) && mMultiSelection){
 			if (clickedIndex == lastIndex){
 				DeselectRow(clickedIndex);
 			}
@@ -1114,7 +1114,7 @@ void ListBox::OnItemClicked(void* arg)
 				ToggleSelection(clickedIndex);
 			}
 		}
-		else if (injector->IsKeyDown(VK_CONTROL) || mMultiSelection){
+		else if (injector->IsKeyDown(VK_CONTROL) && mMultiSelection){
 			ToggleSelection(clickedIndex);
 		}		
 		else
@@ -2058,40 +2058,7 @@ bool ListBox::RemoveItemPropertyKeyCol(const Vec2I& keyCol, UIProperty::Enum pro
 	}
 	unsigned row = mData->FindRowIndexWithKey((unsigned)keyCol.x);
 	if (mItems.size() > (unsigned)row && !mItems[row][keyCol.y].expired()) {
-		auto propertyType = UIProperty::GetType(prop);
-		switch (propertyType) {
-		case UIPropTypes::Bool: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop, 
-				StringConverter::ToString(UIProperty::GetDefaultValueBool(prop)).c_str());
-			break;
-		}
-		case UIPropTypes::Float: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop, 
-				StringConverter::ToString(UIProperty::GetDefaultValueFloat(prop)).c_str());
-			break;
-		}
-		case UIPropTypes::Int: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop, 
-				StringConverter::ToString(UIProperty::GetDefaultValueInt(prop)).c_str());
-			break;
-		}
-		case UIPropTypes::String: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop, UIProperty::GetDefaultValueString(prop));
-			break;
-		}
-		case UIPropTypes::Vec2I: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop, 
-				StringMathConverter::ToString(UIProperty::GetDefaultValueVec2I(prop)).c_str());
-			break;
-		}
-		case UIPropTypes::Vec4: {
-			mItems[row][keyCol.y].lock()->SetProperty(prop,
-				StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(prop)).c_str());
-			break;
-		default:
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Property(%d) doesn't have default value", prop).c_str());
-		}
-		}
+		SetDefaultPropertyForUI(mItems[row][keyCol.y].lock(), prop);		
 	}
 	return found;
 }
@@ -2114,40 +2081,7 @@ bool ListBox::RemoveItemPropertiesForCol(int col, UIProperty::Enum prop) {
 		}
 		unsigned row = mData->FindRowIndexWithKey((unsigned)keyColIt->first.x);
 		if (mItems.size() > (unsigned)row && !mItems[row][col].expired()) {
-			auto propertyType = UIProperty::GetType(prop);
-			switch (propertyType) {
-			case UIPropTypes::Bool: {
-				mItems[row][col].lock()->SetProperty(prop,
-					StringConverter::ToString(UIProperty::GetDefaultValueBool(prop)).c_str());
-				break;
-			}
-			case UIPropTypes::Float: {
-				mItems[row][col].lock()->SetProperty(prop,
-					StringConverter::ToString(UIProperty::GetDefaultValueFloat(prop)).c_str());
-				break;
-			}
-			case UIPropTypes::Int: {
-				mItems[row][col].lock()->SetProperty(prop,
-					StringConverter::ToString(UIProperty::GetDefaultValueInt(prop)).c_str());
-				break;
-			}
-			case UIPropTypes::String: {
-				mItems[row][col].lock()->SetProperty(prop, UIProperty::GetDefaultValueString(prop));
-				break;
-			}
-			case UIPropTypes::Vec2I: {
-				mItems[row][col].lock()->SetProperty(prop,
-					StringMathConverter::ToString(UIProperty::GetDefaultValueVec2I(prop)).c_str());
-				break;
-			}
-			case UIPropTypes::Vec4: {
-				mItems[row][col].lock()->SetProperty(prop,
-					StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(prop)).c_str());
-				break;
-			default:
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Property(%d) doesn't have default value", prop).c_str());
-			}
-			}
+			SetDefaultPropertyForUI(mItems[row][col].lock(), prop);			
 		}
 	}
 	return found;
@@ -2238,10 +2172,68 @@ void ListBox::UpdateItemAlign(){
 }
 
 void ListBox::ClearItemProperties(){
+	for (auto items : mItems) {
+		int col = 0;
+		for (auto itemIt : items) {
+			auto item = itemIt.lock();
+			if (item) {
+				const auto& prop = mItemPropertyByColumn[col];
+				for (auto p : prop) {
+					SetDefaultPropertyForUI(item, p.first);
+				}
+			}
+			++col;
+		}
+	}
 	mItemPropertyByColumn.clear();
+
+	int row = 0;
+	for (auto items : mItems) {		
+		auto key = mData->GetUnsignedKey(row);
+		auto it = mItemPropertyByUnsigned.Find(key);
+		if (it != mItemPropertyByUnsigned.end()) {
+			for (auto& property : it->second) {
+				for (auto itemIt : items) {
+					auto item = itemIt.lock();
+					if (item)
+						SetDefaultPropertyForUI(item, property.first);
+				}
+			}
+		}
+		++row;
+	}	
 	mItemPropertyByUnsigned.clear();
+
+
+	row = 0;
+	for (auto items : mItems) {
+		auto key = mData->GetStringKey(row);
+		auto it = mItemPropertyByString.Find(key);
+		if (it != mItemPropertyByString.end()) {
+			for (auto& property : it->second) {
+				for (auto itemIt : items) {
+					auto item = itemIt.lock();
+					if (item)
+						SetDefaultPropertyForUI(item, property.first);
+				}
+			}
+		}
+		++row;
+	}
 	mItemPropertyByString.clear();
+
+
+	for (auto it : mItemPropertyKeyCol) {
+		auto key = mData->FindRowIndexWithKey(it.first.x);
+		auto item = mItems[key][it.first.y].lock();
+		if (item) {
+			for (auto prop : it.second) {
+				SetDefaultPropertyForUI(item, prop.first);
+			}
+		}
+	}
 	mItemPropertyKeyCol.clear();
+	mRecycleBin.clear();
 }
 
 void ListBox::DisableItemEvent(unsigned uniqueKey){

@@ -3862,4 +3862,47 @@ void WinBase::ReservePendingDelete(bool pendingDelete) {
 bool WinBase::IsPendingDeleteReserved() const {
 	return mPendingDelete;
 }
+
+void SetDefaultPropertyForUI(WinBasePtr winbase, UIProperty::Enum prop) {
+	if (!winbase || prop == UIProperty::COUNT)
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return;
+	}
+
+	auto propertyType = UIProperty::GetType(prop);
+	switch (propertyType) {
+	case UIPropTypes::Bool: {
+		winbase->SetProperty(prop,
+			StringConverter::ToString(UIProperty::GetDefaultValueBool(prop)).c_str());
+		break;
+	}
+	case UIPropTypes::Float: {
+		winbase->SetProperty(prop,
+			StringConverter::ToString(UIProperty::GetDefaultValueFloat(prop)).c_str());
+		break;
+	}
+	case UIPropTypes::Int: {
+		winbase->SetProperty(prop,
+			StringConverter::ToString(UIProperty::GetDefaultValueInt(prop)).c_str());
+		break;
+	}
+	case UIPropTypes::String: {
+		winbase->SetProperty(prop, UIProperty::GetDefaultValueString(prop));
+		break;
+	}
+	case UIPropTypes::Vec2I: {
+		winbase->SetProperty(prop,
+			StringMathConverter::ToString(UIProperty::GetDefaultValueVec2I(prop)).c_str());
+		break;
+	}
+	case UIPropTypes::Vec4: {
+		winbase->SetProperty(prop,
+			StringMathConverter::ToString(UIProperty::GetDefaultValueVec4(prop)).c_str());
+		break;
+	default:
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Property(%d) doesn't have default value", prop).c_str());
+	}
+	}
+}
 }
