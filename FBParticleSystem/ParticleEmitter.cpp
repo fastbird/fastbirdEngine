@@ -93,6 +93,7 @@ public:
 	Vec3 mStartPos;
 	float mFinalAlphaMod; // for glares in the opposite side of camera.	
 	bool mVisible;
+	int mScreenspace;
 
 	VectorMap<std::string, std::string>  mShaderDefines;
 	struct SoundData{
@@ -126,6 +127,7 @@ public:
 		, mRelativeVelocityDir(Vec3::ZERO)
 		, mFinalAlphaMod(1.0f)
 		, mVisible(true)
+		, mScreenspace(0)
 		, mAudioId(INVALID_AUDIO_ID)
 		, mSoundCallback(INVALID_FUNCTION_ID)
 	{
@@ -149,6 +151,7 @@ public:
 		, mAudioId(INVALID_AUDIO_ID)
 		, mSoundData(other.mSoundData)
 		, mSoundCallback(INVALID_FUNCTION_ID)
+		, mScreenspace(other.mScreenspace)
 	{
 		for (const auto& it : *(mTemplates.const_get())){
 			PARTICLES_PTR particles(new PARTICLES, [](PARTICLES* obj){delete obj; });
@@ -205,6 +208,11 @@ public:
 			mSoundData.mPath = sz;
 		}
 
+		sz = pPE->Attribute("screenSpace");
+		if (sz) {
+			mScreenspace = StringConverter::ParseInt(sz);
+		}
+
 		sz = pPE->Attribute("soundAlignToLine");
 		if (sz){
 			mSoundData.mUpdateToLine = StringConverter::ParseBool(sz);
@@ -236,9 +244,10 @@ public:
 		}
 		else{
 			mTemplates = new PARTICLE_TEMPLATES;
-			templates = mTemplates.get();
-		}
+			templates = mTemplates.get();			
+		}	
 		templates->clear();
+
 		tinyxml2::XMLElement* pPT = pPE->FirstChildElement("ParticleTemplate");
 		while (pPT)
 		{
@@ -1083,7 +1092,7 @@ public:
 						for (int i = 0; i < iteration; i++)
 						{
 							Vec3 udir = p.mUDirection;
-							Vec3 vdir = p.mVDirection;
+							Vec3 vdir = p.mVDirection;							
 							if (pt->IsLocalSpace())
 							{
 								if (pt->IsAlignDirection())
@@ -1352,51 +1361,53 @@ public:
 			}
 
 			bool created = false;
-			ParticleRenderKey key(scene.get(), pt.mTexturePath.c_str(), desc, pt.mGlow > 0.f, pt.mDepthFade);			
+			ParticleRenderKey key(scene.get(), pt.mTexturePath.c_str(), desc, 
+				pt.mGlow > 0.f, pt.mDepthFade, mScreenspace);
 			auto pro = ParticleRenderObject::GetRenderObject(scene, key, created);
 			mParticleRenderObjects[&pt] = pro;
 			assert(pro);
 			auto material = pro->GetMaterial();
-			assert(material);
-			bool defineChanged = false;
+			assert(material);			
 			if (created)
 			{
 				switch (pt.mBlendMode)
 				{
 				case ParticleBlendMode::InvColorBlend:
 				{
-					defineChanged = material->AddShaderDefine("_INV_COLOR_BLEND", "1") || defineChanged;
+					material->AddShaderDefine("_INV_COLOR_BLEND", "1");
 					break;
 				}
 				case ParticleBlendMode::Replace:
 				{
-					defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
+					material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
 					break;
 				}
 				}
 
+				if (mScreenspace) {
+					material->AddShaderDefine("_SCREEN_SPACE", "1");
+					pro->SetScreenspace(mScreenspace);
+				}
 				if (pt.mPreMultiAlpha)
 				{
-					defineChanged = material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1") || defineChanged;
+					material->AddShaderDefine("_PRE_MULTIPLIED_ALPHA", "1");
 				}
 
 				if (pt.mGlow == 0.f)
 				{
-					defineChanged = material->AddShaderDefine("_NO_GLOW", "1") || defineChanged;
+					material->AddShaderDefine("_NO_GLOW", "1");
 					material->SetGlow(false);
 				}
 				else
 				{
-					defineChanged = material->RemoveShaderDefine("_NO_GLOW") || defineChanged;
+					material->RemoveShaderDefine("_NO_GLOW");
 					material->SetGlow(true);
 				}
 
 				if (!pt.mDepthFade)
 				{
-					defineChanged = material->AddShaderDefine("_NO_DEPTH_FADE", "1") || defineChanged;
-				}
-				/*if (defineChanged)
-				pro->GetMaterial()->ApplyShaderDefines();*/
+					material->AddShaderDefine("_NO_DEPTH_FADE", "1");
+				}				
 				material->SetMaterialParameter(0, Vec4(pt.mGlow, 0, 0, 0));
 			}
 		}
@@ -1530,6 +1541,9 @@ public:
 		{
 			p.mUDirection = Vec3::UNIT_Y;
 			p.mVDirection = -Vec3::UNIT_Z;
+		}
+		if (mScreenspace) {
+			p.mVDirection = Vec3::UNIT_Y;
 		}
 
 		p.mUVIndex = Vec2(0, 0);

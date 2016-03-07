@@ -155,6 +155,7 @@ public:
 	void PrepareFileMonitor(){
 		mFileMonitor = FileMonitor::Create();
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mRenderer);
+		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mParticleSystem);
 		mFileMonitor->StartMonitor(".");
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mSelfPtr.lock());
 	}

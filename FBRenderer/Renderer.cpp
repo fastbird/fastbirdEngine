@@ -135,6 +135,7 @@ public:
 	CameraPtr mOverridingCamera;
 	CascadedShadowsManagerPtr mShadowManager;
 	VectorMap<std::string, TexturePtr> mTexturesReferenceKeeper;
+	Mat44 mScreenToNDCMatrix;
 
 	struct InputInfo{
 		Vec2I mCurrentMousePos;
@@ -576,6 +577,11 @@ public:
 		mShadowManager = CascadedShadowsManager::Create();
 		mShadowManager->CreateShadowMap();
 		mShadowManager->CreateViewports();
+
+		mScreenToNDCMatrix = MakeOrthogonalMatrix(0, 0,
+			(Real)mRenderTargetConstants.gScreenSize.x,
+			(Real)mRenderTargetConstants.gScreenSize.y,
+			0.f, 1.0f);
 	}
 
 	void DeinitCanvas(HWindowId id){
@@ -1418,6 +1424,10 @@ public:
 		return noBindingInfo;
 	}
 
+	const Mat44& GetScreenToNDCMatric() {
+		return mScreenToNDCMatrix;
+	}
+
 	//-------------------------------------------------------------------
 	// Device RenderStates
 	//-------------------------------------------------------------------
@@ -1912,14 +1922,19 @@ public:
 			return;
 
 		ChangeResolution(GetMainWindowHandle(), clientSize);
-	}
+	}	
 
 	void ChangeResolution(HWindow window, const Vec2I& resol){
 		if (resol == Vec2I::ZERO)
 			return;
 
-		if (window == GetMainWindowHandle())
+		if (window == GetMainWindowHandle()) {
 			mRendererOptions->r_resolution = resol;
+			mScreenToNDCMatrix = MakeOrthogonalMatrix(0, 0,
+				(Real)resol.x,
+				(Real)resol.y,
+				0.f, 1.0f);			
+		}
 
 		auto handleId = GetWindowHandleId(window);
 		auto rt = GetRenderTarget(handleId);
@@ -3115,6 +3130,10 @@ void Renderer::SetSystemTextureBindings(SystemTextures::Enum type, const Texture
 
 const TextureBindings& Renderer::GetSystemTextureBindings(SystemTextures::Enum type) const {
 	return mImpl->GetSystemTextureBindings(type);
+}
+
+const Mat44& Renderer::GetScreenToNDCMatric() {
+	return mImpl->GetScreenToNDCMatric();
 }
 
 //-------------------------------------------------------------------

@@ -191,6 +191,7 @@ namespace fb{
 
 		void SetSystemTextureBindings(SystemTextures::Enum type, const TextureBindings& bindings);
 		const TextureBindings& GetSystemTextureBindings(SystemTextures::Enum type) const;				
+		const Mat44& GetScreenToNDCMatric();
 
 		//-------------------------------------------------------------------
 		// Device RenderStates

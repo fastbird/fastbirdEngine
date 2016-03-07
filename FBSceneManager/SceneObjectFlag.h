@@ -35,7 +35,9 @@ namespace fb{
 			NoDepthPath = 1 << 3, // todo: move to renderable flag
 			HighlightDedi = 1 << 4, // todo: move to renderable flag			
 			Transparent = 1 << 5,
-			Last = Transparent // Can define user flag from Last << 1
+			AfterRenderObjects = 1 << 6,
+			AfterUI = 1 << 7,
+			Last = AfterUI // Can define user flag from Last << 1
 		};
 	}
 }

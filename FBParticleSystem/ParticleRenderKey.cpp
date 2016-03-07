@@ -29,14 +29,16 @@
 #include "ParticleRenderKey.h"
 namespace fb{
 	ParticleRenderKey::ParticleRenderKey()
-		: mScene(0), mGlow(false), mDepthFade(true)
+		: mScene(0), mGlow(false), mDepthFade(true), mScreenspace(false)
 	{
 		memset(mTexturePath, 0, 256);
 		memset(padding, 0, 2);
 	}
 
-	ParticleRenderKey::ParticleRenderKey(IScene* scene, const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade)
-		:mScene(scene), mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
+	ParticleRenderKey::ParticleRenderKey(IScene* scene, const char* texturePath, 
+		const BLEND_DESC& desc, bool glow, bool depthFade, int screenspace)
+		: mScene(scene), mGlow(glow), mBDesc(desc), mDepthFade(depthFade)
+		, mScreenspace(screenspace)
 	{
 		memset(mTexturePath, 0, 256);
 		strcpy_s(mTexturePath, texturePath);

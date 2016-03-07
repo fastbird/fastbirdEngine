@@ -33,6 +33,7 @@
 #include "FBRenderer/Material.h"
 #include "FBSceneManager/SceneManager.h"
 #include "FBSceneManager/Scene.h"
+#include "EssentialEngineData/shaders/Constants.h"
 using namespace fb;
 
 namespace fb{
@@ -59,6 +60,7 @@ public:
 	BATCHES mBatches;
 	Vertex* mMapped;
 	bool mDoubleSided;
+	int mScreenspace;
 
 	//---------------------------------------------------------------------------
 	Impl(ParticleRenderObject* self)
@@ -68,6 +70,7 @@ public:
 		, mDoubleSided(false)
 		, mMaxVertices(MAX_SHARED_VERTICES)
 		, mLastFrameNumVertices(0)
+		, mScreenspace(0)
 	{
 		mMaterial = Renderer::GetInstance().CreateMaterial("EssentialEngineData/materials/particle.material");
 		mSelf->GetBoundingVolumeWorld()->SetAlwaysPass(true);
@@ -96,6 +99,16 @@ public:
 		mMaterial->Bind(true);
 		mVertexBuffer->Bind();
 		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
+		if (mScreenspace) {
+			static unsigned lastFrame = -1;
+			if (lastFrame != gpTimer->GetFrame()) {
+				lastFrame = gpTimer->GetFrame();
+				auto& mat = renderer.GetScreenToNDCMatric();
+				OBJECT_CONSTANTS cont;
+				cont.gWorldViewProj = mat;
+				renderer.UpdateObjectConstantsBuffer(&cont);
+			}
+		}
 
 		/*for (auto batch : mBatches){
 		++sNumDrawCalls;
@@ -189,6 +202,30 @@ public:
 			mMaterial->SetTexture(texturePath, BINDING_SHADER_PS, 0);
 	}
 
+	void SetScreenspace(int set) {
+		mScreenspace = set;
+		switch (set) {
+		case 1: // normal
+		{
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterRenderObjects, false);
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterUI, false);
+			break;
+		}
+		case 2: // after objects
+		{
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterRenderObjects, true);
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterUI, false);
+			break;
+		}
+		case 3: // after ui
+		{
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterRenderObjects, false);
+			mSelf->ModifyObjFlag(SceneObjectFlag::AfterUI, true);
+			break;
+		}
+		}
+	}
+
 	Vertex* Map(UINT numVertices, unsigned& canWrite){
 		mLastFrameNumVertices += numVertices;
 		assert(numVertices < mMaxVertices / 2);
@@ -229,7 +266,8 @@ public:
 };
 
 //---------------------------------------------------------------------------
-ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene, const ParticleRenderKey& key, bool& created)
+ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene, 
+	const ParticleRenderKey& key, bool& created)
 {
 	if (!scene){
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
@@ -335,6 +373,10 @@ void ParticleRenderObject::SetDoubleSided(bool set) {
 
 void ParticleRenderObject::SetTexture(const char* texturePath) {
 	mImpl->SetTexture(texturePath);
+}
+
+void ParticleRenderObject::SetScreenspace(int set) {
+	mImpl->SetScreenspace(set);
 }
 
 ParticleRenderObject::Vertex* ParticleRenderObject::Map(UINT numVertices, unsigned& canWrite) {

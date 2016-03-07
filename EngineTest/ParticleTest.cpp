@@ -33,10 +33,19 @@ using namespace fb;
 class ParticleTest::Impl{
 public:
 	Impl(){
+		
 	}
 
 	void Update(TIME_PRECISION dt){
-		
+		static float time = 0.f;
+		time += dt;
+		if (time > 1.5f) {
+			time = 0;
+			auto emitter = ParticleFacade::Create();
+			emitter->Load(71);
+			emitter->SetPosition(Vec3(200, 200, 0));
+			emitter->Active(true);
+		}
 	}
 };
 

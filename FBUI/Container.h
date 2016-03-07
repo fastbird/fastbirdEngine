@@ -105,6 +105,7 @@ namespace fb
 		virtual float GetContentHeight() const;
 		virtual float GetContentEnd() const;
 		virtual float GetChildrenContentEnd() const;
+		int GetChildrenContentEndInPixel() const;
 		
 		virtual void SetSpecialOrder(int specialOrder);
 
@@ -124,6 +125,8 @@ namespace fb
 		ScrollerPtr GetScrollerV() const { return mScrollerV.lock(); }
 
 		virtual void ReservePendingDelete(bool pendingDelete);
+		void RemoveGapChildren();
+		void GetChildrenNames(LuaObject& t);
 
 
 

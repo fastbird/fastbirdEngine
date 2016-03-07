@@ -65,6 +65,7 @@ namespace fb
 		void EndUpdate();
 		void SetDoubleSided(bool set);
 		void SetTexture(const char* texturePath);
+		void SetScreenspace(int screenSpace);
 
 		struct Vertex
 		{

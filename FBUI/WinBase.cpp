@@ -3254,10 +3254,18 @@ void WinBase::Save(tinyxml2::XMLElement& elem)
 {
 	elem.SetAttribute("name", mName.c_str());
 	elem.SetAttribute("type", ComponentType::ConvertToString(GetType()));
-	elem.SetAttribute("useNPosX", !mUseAbsoluteXPos);
-	elem.SetAttribute("useNPosY", !mUseAbsoluteYPos);
-	elem.SetAttribute("useNSizeX", !mUseAbsoluteXSize);
-	elem.SetAttribute("useNSizeY", !mUseAbsoluteYSize);
+	if (!mUseAbsoluteXPos) {
+		elem.SetAttribute("useNPosX", !mUseAbsoluteXPos);
+	}
+	if (!mUseAbsoluteYPos) {
+		elem.SetAttribute("useNPosY", !mUseAbsoluteYPos);
+	}
+	if (!mUseAbsoluteXSize) {
+		elem.SetAttribute("useNSizeX", !mUseAbsoluteXSize);
+	}
+	if (!mUseAbsoluteYSize) {
+		elem.SetAttribute("useNSizeY", !mUseAbsoluteYSize);
+	}
 
 	if (mUseAbsoluteXSize && mUseAbsoluteYSize)
 	{

@@ -1351,6 +1351,11 @@ void ListBox::VisualizeData(unsigned index){
 	if (mItems.empty())
 		return;
 
+	if (index >= mItems.size()) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Invalid index(%u)", index).c_str());
+		return;
+	}
+
 	bool noVirtualizing = mNoVirtualizingRows.find(index)!= mNoVirtualizingRows.end();
 	if (index < mStartIndex || index > mEndIndex)
 	{

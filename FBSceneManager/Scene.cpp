@@ -59,6 +59,8 @@ public:
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleObjectsLight;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mPreRenderList;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleTransparentObjects;
+	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleAfterObjects;
+	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleAfterUI;
 	
 	/*std::vector<SceneObjectWeakPtr> mMarkObjects;
 	std::vector<SceneObjectWeakPtr> mHPBarObjects;*/
@@ -171,6 +173,8 @@ public:
 		mVisibleObjectsMain[cam].clear();
 		//mVisibleObjectsLight[lightCam].clear();
 		mVisibleTransparentObjects[cam].clear();
+		mVisibleAfterObjects[cam].clear();
+		mVisibleAfterUI[cam].clear();
 		mPreRenderList[cam].clear();
 
 		if (!cam)
@@ -207,7 +211,15 @@ public:
 				if (!cam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
 					if (obj->HasObjFlag(SceneObjectFlag::Transparent))
 					{
-						mVisibleTransparentObjects[cam].push_back(obj.get());
+						if (obj->HasObjFlag(SceneObjectFlag::AfterRenderObjects)) {
+							mVisibleAfterObjects[cam].push_back(obj.get());
+						}
+						else if (obj->HasObjFlag(SceneObjectFlag::AfterUI)) {
+							mVisibleAfterUI[cam].push_back(obj.get());
+						}
+						else {
+							mVisibleTransparentObjects[cam].push_back(obj.get());
+						}
 					}
 					else
 					{
@@ -375,6 +387,14 @@ public:
 					if (obj){
 						obj->Render(param, paramOut);						
 					}
+				}
+			}
+			if (!mSkipSpatialObjects)
+			{
+				auto it = mVisibleAfterObjects[cam].begin(), itEnd = mVisibleAfterObjects[cam].end();
+				for (; it != itEnd; it++)
+				{
+					(*it)->Render(param, paramOut);
 				}
 			}
 		}

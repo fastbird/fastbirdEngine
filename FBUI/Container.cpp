@@ -683,6 +683,13 @@ float Container::GetChildrenContentEnd() const{
 	return end;
 }
 
+int Container::GetChildrenContentEndInPixel() const {
+	auto end = GetChildrenContentEnd();
+	end *= GetParentSize().y;
+	
+	return Round(end);
+}
+
 void Container::SetSpecialOrder(int specialOrder){
 	__super::SetSpecialOrder(specialOrder);
 	for (auto c : mChildren){
@@ -1365,6 +1372,69 @@ void Container::ReservePendingDelete(bool pendingDelete) {
 		return contentUI->ReservePendingDelete(pendingDelete);
 	}
 	__super::ReservePendingDelete(pendingDelete);
+}
+
+void Container::RemoveGapChildren() {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI) {
+		contentUI->RemoveGapChildren();
+		return;
+	}
+
+	if (mChildren.empty())
+		return;
+
+	struct comp {
+		WinBase* c;
+		int mEnd;
+
+		comp(WinBase* _c) {
+			c = _c;
+			mEnd = c->GetPos().y + c->GetSize().y;
+		}
+		bool operator < (const comp& other) const {
+			return mEnd < other.mEnd;
+		}
+	};
+
+	std::vector<comp> comps;
+	for (auto c : mChildren)
+	{
+		comps.push_back(comp(c.get()));
+	}
+	
+	std::sort(comps.begin(), comps.end());
+	auto num = (int)comps.size();
+	for (int i = num; i >= 1; --i) {
+		auto prevEnd = comps[i-1].mEnd;
+		auto nowStart = comps[i].c->GetPos().y;
+		if (nowStart - prevEnd > 10) {
+			int move = (nowStart - prevEnd) - 10;
+			for (int c = i; c < num; ++c) {
+				comps[c].c->Move(Vec2I(0, -move));
+			}
+		}
+	}
+	auto prevEnd = 0;
+	auto nowStart = comps[0].c->GetPos().y;
+	if (nowStart - prevEnd > 10) {
+		int move = (nowStart - prevEnd) - 10;
+		for (int c = 0; c < num; ++c) {
+			comps[c].c->Move(Vec2I(0, -move));
+		}
+	}
+}
+
+void Container::GetChildrenNames(LuaObject& t) {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI) {
+		contentUI->GetChildrenNames(t);
+		return;
+	}
+	int n = 1;
+	for (auto c : mChildren) {
+		t.SetSeq(n++, c->GetName());
+	}
 }
 
 }

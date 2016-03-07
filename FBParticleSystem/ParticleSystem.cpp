@@ -74,7 +74,7 @@ public:
 	}
 
 	bool OnFileChanged(const char* watchDir, const char* file, const char* ext){
-		if (ext == ".particle"){
+		if (strcmp(ext, ".particle")==0){
 			ReloadParticle(file);
 			return true;
 		}

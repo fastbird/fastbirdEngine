@@ -882,4 +882,38 @@ namespace fb
 				return from + backwardLength;
 		}
 	}
+
+	void CalcRatio(float src[], float dest[], int num) {
+		float sum = 0;
+		for (int i = 0; i < num; ++i) {
+			sum += src[i];
+		}
+
+		for (int i = 0; i < num; ++i) {
+			dest[i]= src[i] / sum;
+		}
+	}
+
+	void CalcRatio(int src[], float dest[], int num) {
+		float sum = 0;
+		for (int i = 0; i < num; ++i) {
+			sum += (int)src[i];
+		}
+
+		for (int i = 0; i < num; ++i) {
+			dest[i] = src[i] / sum;
+		}
+	}
+
+	void CalcRatio(const std::vector<float>& src, std::vector<float>& dest) {
+		dest.clear();
+		dest.reserve(src.size());
+		float sum = 0.f;
+		for (auto v : src) {
+			sum += v;
+		}
+		for (auto v : src) {
+			dest.push_back(v / sum);
+		}
+	}
 }

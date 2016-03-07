@@ -31,14 +31,16 @@ namespace fb{
 	class IScene;
 	struct ParticleRenderKey{
 		IScene* mScene;
+		int mScreenspace;
 		char mTexturePath[256];
 		BLEND_DESC mBDesc;
 		bool mGlow;
-		bool mDepthFade;
+		bool mDepthFade;		
 		char padding[2];
 
 		ParticleRenderKey();
-		ParticleRenderKey(IScene* scene, const char* texturePath, const BLEND_DESC& desc, bool glow, bool depthFade);
+		ParticleRenderKey(IScene* scene, const char* texturePath, 
+			const BLEND_DESC& desc, bool glow, bool depthFade, int screenspace);
 		bool operator==(const ParticleRenderKey& other) const;
 		bool operator<(const ParticleRenderKey& other) const;
 	};

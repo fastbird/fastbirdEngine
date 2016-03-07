@@ -1,0 +1,84 @@
+<!-- emitterLifeTime : 0 for infinite -->
+<!-- align(ParticleAlign::Enum) : Billboard, Direction -->
+<!-- emiitTo(ParticleEmitTo::Enum) : LocalSpace, WorldSpace -->
+<!-- range(ParticleRangeType::Enum) : Point, Sphere, Box, Cone, Hemisphere -->
+<!-- emitPerSec <-> emitCount : mutual exclusive -->
+<!-- rottations in degree -->
+<!-- until/after in percentage -->
+<!-- pivot in d3d uv space: 0.5, 0.5 is center -->
+<!-- blendMode: Additive, AlphaBlend, InvColorBlend, Replace-->
+<ParticleEmitter emitterLifeTime="1.5" emitterID="7" 
+playSound="Data/audio/explosion.fbaudio" screenSpace="true">
+	
+	<!--ParticleTemplate texture="data/particles/nova.png" emitPerSec="0" numInitialParticle="1"
+	
+		cross="false" blendMode="Additive" preMultiAlpha="true"
+		glow="5.0" emitTo="WorldSpace" range="Point" rangeRadius="0.0"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="1.0, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="4.0, 8.0" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="40.0" scaleAccelUntil="10 percent" scaleDeaccel="1.0" scaleDeaccelAfter="50 percent"
+		
+		velocityMinMax="0.0,0.0" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1, 1, 1"
+		accel="0" accelUntil="0 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="0, 0 deg" rotSpeedMin = "35" rotSpeedMax="15"		
+		rotAccel="0 deg" rotAccelUntil="0 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="50 percent" fadeOutAfter="50 percent"
+		
+		Intensity="0.5, 0.5"
+	/-->
+	
+	<ParticleTemplate texture="data/particles/explosion2.png" emitPerSec="50.0" numInitialParticle="5"
+	
+		cross="false" blendMode="Additive" preMultiAlpha="true"
+		glow="0.5" emitTo="WorldSpace" range="Sphere" rangeRadius="30.0"
+		
+		uvAnimColRow="4, 4" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="0.5, 1.0" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="10, 20" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="2.5" scaleAccelUntil="20 percent" scaleDeaccel="5.0" scaleDeaccelAfter="70 percent"
+		
+		velocityMinMax="-0.2,0.2" velocityDirectionMin="-1, -1, -1" velocityDirectionMax="1,1,1"		
+		accel="0.2" accelUntil="10 percent" deaccel="1" deaccelAfter="70 percent" 
+		
+		rotMinMax="-100, 100 deg" rotSpeedMin="0 deg" rotSpeedMax="0 deg"		
+		rotAccel="10 deg" rotAccelUntil="10 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="10 percent" fadeOutAfter="80 percent"
+		
+		Intensity="1.0, 1.0"
+	/>
+	
+	<!--ParticleTemplate texture="data/particles/smoke_alpha.png" emitPerSec="10" numInitialParticle="5"
+	
+		cross="false" blendMode="Additive" glow="0.0" emitTo="WorldSpace" range="Point" rangeRadius="30.0"
+		
+		uvAnimColRow="1, 1" uvAnimFramesPerSec="0"
+		
+		lifeTimeMinMax="0.3, 0.3" align="Billboard" DefaultDirection="0, 1, 0"		
+		
+		sizeMinMax="2, 4" sizeRatioMinMax="1.0, 1.0" pivot="0.5, 0.5"		
+		scaleVelMinMax="0.00, 0.00" scaleVelRatio="1.00, 1.00"		
+		scaleAccel="0.0" scaleAccelUntil="0 percent" scaleDeaccel="0.0" scaleDeaccelAfter="100 percent"
+		
+		velocityMinMax="1,2" velocityDirectionMin="-1,-1,-1"	velocityDirectionMax="1,1,1"	
+		accel="10" accelUntil="30 percent" deaccel="0" deaccelAfter="0 percent" 
+		
+		rotMinMax="-360, 360 deg" rotSpeedMin="-360 deg" rotSpeedMax="360 deg"		
+		rotAccel="180 deg" rotAccelUntil="30 percent" rotDeaccel="0 deg" rotDeaccelAfter="100 percent"		
+		
+		fadeInUntil="0 percent" fadeOutAfter="80 percent"
+		
+		Intensity=".5, 0.5"		
+	/-->	
+	
+</ParticleEmitter>

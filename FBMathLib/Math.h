@@ -184,4 +184,7 @@ namespace fb
 	void GenerateHammersley(int numSamples, std::vector<Vec2>& outResult);
 	int CropSize8(int size);
 	Real ShortestYaw(Real from, Real to);
+	void CalcRatio(float src[], float dest[], int num);
+	void CalcRatio(int src[], float dest[], int num);
+	void CalcRatio(const std::vector<float>& src, std::vector<float>& dest);
 }

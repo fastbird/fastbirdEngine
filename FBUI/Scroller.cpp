@@ -160,7 +160,7 @@ void Scroller::SetOffset(const Vec2& offset)
 	mDestOffset = mCurOffset;
 	auto parent = GetParent();
 	if (parent)
-		GetParent()->Scrolled();
+		parent->Scrolled();
 }
 
 }

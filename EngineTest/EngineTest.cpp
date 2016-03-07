@@ -97,8 +97,7 @@ void DeinitEngine(){
 void StartTest(){
 	gEngine->SetEnvironmentMap("data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
-	gEngine->EnableCameraInput(true);
-	FileSystem::BackupFile("C:/Users/Jungwan/Documents/Mount&Blade Warband Savegames/Brytenwalda HOMB(original)/sg01.sav", 5, "BackupByMnBCharReset");
+	gEngine->EnableCameraInput(true);	
 	auto L = LuaUtils::GetLuaState();
 	LUA_SETCFUNCTION(L, _FBPrint);
 	
@@ -106,7 +105,7 @@ void StartTest(){
 	//gMeshTest = MeshTest::Create();	
 	//gMeshTest->SetCameraTarget();
 	//gSkyBoxTest = SkyBoxTest::Create();
-	//gParticleTest = ParticleTest::Create();
+	gParticleTest = ParticleTest::Create();
 	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();

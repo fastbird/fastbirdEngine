@@ -121,6 +121,9 @@ namespace fb
 	int GetScrollbarOffset(lua_State* L);
 	int SetScrollbarOffset(lua_State* L);
 	int SetScrollbarEnd(lua_State* L);
+	int GetContentEndY(lua_State* L);
+	int RemoveGapChildren(lua_State* L);
+	int GetChildrenNames(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -174,6 +177,9 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, GetChildrenNames);
+		LUA_SETCFUNCTION(mL, RemoveGapChildren);
+		LUA_SETCFUNCTION(mL, GetContentEndY);
 		LUA_SETCFUNCTION(mL, SetScrollbarEnd);
 		LUA_SETCFUNCTION(mL, SetScrollbarOffset);
 		LUA_SETCFUNCTION(mL, GetScrollbarOffset);
@@ -1976,6 +1982,43 @@ namespace fb
 			comp->SetScrollOffset(Vec2(0, -FLT_MAX));
 		}
 		return 0;
+	}
+
+	int GetContentEndY(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto comp = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (comp) {
+			auto end = comp->GetChildrenContentEndInPixel();
+			LuaUtils::pushinteger(L, end);
+			return 1;
+		}
+		LuaUtils::pushinteger(L, 0);
+		return 1;
+	}
+
+	int RemoveGapChildren(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto comp = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (comp) {
+			comp->RemoveGapChildren();
+		}
+		return 0;
+	}
+
+	int GetChildrenNames(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto container = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		LuaObject t;
+		t.NewTable(L);
+		if (container) {
+			container->GetChildrenNames(t);
+			
+		}
+		t.PushToStack();
+		return 1;
 	}
 
 	int MoveUpListBoxItems(lua_State* L) {
