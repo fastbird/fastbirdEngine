@@ -135,7 +135,7 @@ public:
 			}
 			else
 			{
-				return mPlayingTime <= mCurPlayingAction->mLength;
+				return mPlayingTime < mCurPlayingAction->mLength;
 			}
 		}
 		return false;

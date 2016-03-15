@@ -80,7 +80,7 @@ namespace fb{
 		void SetAnimation(AnimationPtr anim);
 		AnimationDataPtr GetAnimationData() const;
 		void PlayAction(const char* name, bool immediate, bool reverse);			
-		bool IsPlayingAction() const;
+		bool IsPlayingAction() const;		
 		bool IsActionDone(const char* action) const;
 		void NotifyTransformChanged();		
 

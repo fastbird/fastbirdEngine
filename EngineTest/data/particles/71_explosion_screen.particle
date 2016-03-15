@@ -7,8 +7,9 @@
 <!-- until/after in percentage -->
 <!-- pivot in d3d uv space: 0.5, 0.5 is center -->
 <!-- blendMode: Additive, AlphaBlend, InvColorBlend, Replace-->
-<ParticleEmitter emitterLifeTime="1.5" emitterID="7" 
-playSound="Data/audio/explosion.fbaudio" screenSpace="true">
+<!-- screenSpace 1: normal, 2: after render objects(like starmap renderer), 3 : after ui-->
+<ParticleEmitter emitterLifeTime="-1" emitterID="71" 
+playSound="Data/audio/explosion.fbaudio" screenSpace="2" afterUI="true">
 	
 	<!--ParticleTemplate texture="data/particles/nova.png" emitPerSec="0" numInitialParticle="1"
 	
@@ -34,10 +35,10 @@ playSound="Data/audio/explosion.fbaudio" screenSpace="true">
 		Intensity="0.5, 0.5"
 	/-->
 	
-	<ParticleTemplate texture="data/particles/explosion2.png" emitPerSec="50.0" numInitialParticle="5"
+	<ParticleTemplate texture="data/particles/explosion2.png" emitPerSec="60.0" numInitialParticle="5"
 	
 		cross="false" blendMode="Additive" preMultiAlpha="true"
-		glow="0.5" emitTo="WorldSpace" range="Sphere" rangeRadius="30.0"
+		glow="0.5" emitTo="WorldSpace" range="Sphere" rangeRadius="40.0"
 		
 		uvAnimColRow="4, 4" uvAnimFramesPerSec="0"
 		

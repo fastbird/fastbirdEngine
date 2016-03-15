@@ -49,11 +49,7 @@ struct a2v
 
 struct v2g
 {
-#if _SCREEN_SPACE
-	float3 PixelPosition : POSITION;
-#else
 	float3 ViewPosition : POSITION;
-#endif
 	float4 UDirection_Intensity : TEXCOORD0;
 	float3 VDirection : TEXCOORD1;
 	float4 mPivot_Size : TEXCOORD2;
@@ -77,11 +73,7 @@ struct g2p
 v2g particle_VertexShader(in a2v INPUT)
 {
 	v2g OUTPUT;
-#if _SCREEN_SPACE
-	OUTPUT.PixelPosition = INPUT.Position;
-#else	
 	OUTPUT.ViewPosition = mul(gView, float4(INPUT.Position, 1));
-#endif
 	OUTPUT.UDirection_Intensity = INPUT.UDirection_Intensity;
 	OUTPUT.VDirection = INPUT.VDirection;
 	OUTPUT.mPivot_Size = INPUT.mPivot_Size;
@@ -121,20 +113,13 @@ void particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> strea
 		float2 scale = INPUT[0].mPivot_Size.zw;
 		float3 u = INPUT[0].UDirection_Intensity.xyz * scale.x;
 		float3 v = INPUT[0].VDirection * scale.y;
-		float2x2 matRot = GetMatRot(INPUT[0].mRot_Alpha_uv.x);		
-#if _SCREEN_SPACE
-		u.xy = mul(matRot, u.xy);
-		v.xy = mul(matRot, v.xy);
-		float3 viewPos = INPUT[0].PixelPosition + u * (gUVs[i].x-pivot.x) + v * (gUVs[i].y - pivot.y);
-		// gWorldViewProj : pixel to ndc
-		OUTPUT.Position = mul(gWorldViewProj, float4(viewPos, 1.0));
-#else
+		float2x2 matRot = GetMatRot(INPUT[0].mRot_Alpha_uv.x);
 		u.xz = mul(matRot, u.xz);
 		v.xz = mul(matRot, v.xz);
 
 		float3 viewPos = INPUT[0].ViewPosition + u * (gUVs[i].x-pivot.x) + v * (gUVs[i].y - pivot.y);
+
 		OUTPUT.Position = mul(gProj, float4(viewPos, 1.0));
-#endif		
 
 		float2 uvIndex = INPUT[0].mRot_Alpha_uv.zw;
 		float2 uvStep = INPUT[0].mUVStep;
@@ -176,18 +161,20 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	PS_OUT output;
 	#endif
 	
-	
-#if _NO_DEPTH_FADE || _SCREEN_SPACE
-	float depthFade = 1.0f;
-#else	
 	float2 screenTex = 0.5*( (INPUT.ScreenUVData) + float2(1,1));
     screenTex.y = 1 - screenTex.y;
-	float particleDepth = (INPUT.ViewPos.y - gNearFar.x) / (gNearFar.y - gNearFar.x);
+	
 	float sceneDepth = gDepthTexture.Sample(gLinearSampler, screenTex);	
+	float particleDepth = (INPUT.ViewPos.y - gNearFar.x) / (gNearFar.y - gNearFar.x);
+
+#if _NO_DEPTH_FADE
+	float depthFade = 1.0f;
+#else
 	float diff = abs(sceneDepth - particleDepth);
 	diff *= diff;
 	float depthFadeScale = 70000000;
-	float depthFade = saturate(diff*depthFadeScale);			
+	float depthFade = saturate(diff*depthFadeScale);		
+	
 #endif
 	
 	float4 diffuse = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV_Intensity_Alpha.xy);
@@ -203,9 +190,9 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 
 
 #ifdef _NO_GLOW
-	return float4(outColor.rgb, outColor.a * depthFade);	
+	return float4(outColor.rgb, outColor.a * depthFade);
 #else
-	output.color0 = float4(outColor.rgb, outColor.a*depthFade);	
+	output.color0 = float4(outColor.rgb, outColor.a*depthFade);
 	float glowPower = gMaterialParam[0].x;
 	output.color1 = float4(outColor.xyz * glowPower, outColor.a*depthFade);
 	return output;

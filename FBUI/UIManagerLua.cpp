@@ -95,6 +95,7 @@ namespace fb
 	int GetNumericUpDownValue(lua_State* L);
 	int SetNumericUpDownValue(lua_State* L);
 	int MoveUIToBottom(lua_State* L);
+	int MoveUIToTop(lua_State* L);
 	int SetDropDownIndex(lua_State* L);
 	int GetDropDownIndex(lua_State* L);
 	int GetDropDownString(lua_State* L);
@@ -124,6 +125,7 @@ namespace fb
 	int GetContentEndY(lua_State* L);
 	int RemoveGapChildren(lua_State* L);
 	int GetChildrenNames(lua_State* L);
+	int GetNumUIChildren(lua_State* L);
 
 	// listbox
 	int ClearListBox(lua_State* L);
@@ -177,6 +179,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
 		LUA_SETCFUNCTION(mL, SetEnableUIInput);
 
+		LUA_SETCFUNCTION(mL, GetNumUIChildren);
 		LUA_SETCFUNCTION(mL, GetChildrenNames);
 		LUA_SETCFUNCTION(mL, RemoveGapChildren);
 		LUA_SETCFUNCTION(mL, GetContentEndY);
@@ -243,6 +246,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, GetDropDownString);
 		LUA_SETCFUNCTION(mL, SetDropDownIndex);
 		LUA_SETCFUNCTION(mL, MoveUIToBottom);
+		LUA_SETCFUNCTION(mL, MoveUIToTop);
 		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
 		LUA_SETCFUNCTION(mL, GetNumericUpDownValue);
 		LUA_SETCFUNCTION(mL, GetCheckedFromCheckBox);
@@ -466,6 +470,10 @@ namespace fb
 			{
 				Error(FB_ERROR_LOG_ARG, "Cannot remove root component.");
 			}
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Comp(%s) is not found", compName).c_str());
 		}
 		return 0;
 	}
@@ -1011,6 +1019,13 @@ namespace fb
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);
 		UIManager::GetInstance().MoveToBottom(uiname);
+		return 0;
+	}
+
+	int MoveUIToTop(lua_State* L) 
+	{
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		UIManager::GetInstance().MoveToTop(uiname);
 		return 0;
 	}
 
@@ -2005,6 +2020,19 @@ namespace fb
 			comp->RemoveGapChildren();
 		}
 		return 0;
+	}
+
+	int GetNumUIChildren(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto container = std::dynamic_pointer_cast<Container>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (container) {
+			LuaUtils::pushinteger(L, container->GetNumChildren());			
+		}
+		else {
+			LuaUtils::pushinteger(L, 0);
+		}
+		return 1;
 	}
 
 	int GetChildrenNames(lua_State* L) {

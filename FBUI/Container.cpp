@@ -379,14 +379,20 @@ unsigned Container::GetNumChildren(bool excludeRunTimeChild) const
 		unsigned num = 0;
 		for (auto& child : mChildren)
 		{
-			if (!child->IsRuntimeChild())
+			if (!child->IsRuntimeChild() && !child->IsPendingDeleteReserved())
 				++num;
 		}
 		return num;
 	}
 	else
 	{
-		return mChildren.size();
+		unsigned num = 0;
+		for (auto& child : mChildren)
+		{
+			if (!child->IsPendingDeleteReserved())
+				++num;
+		}
+		return num;
 	}
 }
 
@@ -669,6 +675,10 @@ void Container::SetChildrenContentEndFunc(ChildrenContentEndFunc func){
 }
 
 float Container::GetChildrenContentEnd() const{
+	auto contentWnd = mWndContentUI.lock();
+	if (contentWnd) {
+		return contentWnd->GetChildrenContentEnd();
+	}
 	if (mChildrenContentEndFunc){
 		return mChildrenContentEndFunc();
 	}
@@ -1400,12 +1410,15 @@ void Container::RemoveGapChildren() {
 	std::vector<comp> comps;
 	for (auto c : mChildren)
 	{
-		comps.push_back(comp(c.get()));
+		if (c && c != mScrollerV.lock() && !ValueExistsInVector(mPendingDelete, c))
+			comps.push_back(comp(c.get()));
 	}
+	if (comps.empty())
+		return;
 	
 	std::sort(comps.begin(), comps.end());
 	auto num = (int)comps.size();
-	for (int i = num; i >= 1; --i) {
+	for (int i = num-1; i >= 1; --i) {
 		auto prevEnd = comps[i-1].mEnd;
 		auto nowStart = comps[i].c->GetPos().y;
 		if (nowStart - prevEnd > 10) {
@@ -1433,7 +1446,8 @@ void Container::GetChildrenNames(LuaObject& t) {
 	}
 	int n = 1;
 	for (auto c : mChildren) {
-		t.SetSeq(n++, c->GetName());
+		if (!ValueExistsInVector(mPendingDelete, c))
+			t.SetSeq(n++, c->GetName());
 	}
 }
 

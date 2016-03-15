@@ -1590,7 +1590,7 @@ public:
 			p.mPosWorld = p.mPos;
 		}
 
-		if (!pt.mGeometryPath.empty())
+		if (pt.mMeshObject)
 		{
 			if (!p.mMeshObject){
 				p.mMeshObject = pt.mMeshObject->Clone();

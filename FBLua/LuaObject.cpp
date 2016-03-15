@@ -644,7 +644,7 @@ void LuaObject::AppendTable(LuaObject& table) const{
 
 double LuaObject::GetNumberAt(int index) const
 {
-	LUA_STACK_WATCHER watcher(mL, "double LuaObject::GetNumberAt(int index) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	lua_rawgeti(mL, -1, index);
 	double number = lua_tonumber(mL, -1);
@@ -654,7 +654,7 @@ double LuaObject::GetNumberAt(int index) const
 
 unsigned LuaObject::GetUnsignedAt(int index) const
 {
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedAt(int index) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	lua_rawgeti(mL, -1, index);
 	if (lua_isnumber(mL, -1))
@@ -669,9 +669,25 @@ unsigned LuaObject::GetUnsignedAt(int index) const
 	return 0;
 }
 
+int LuaObject::GetIntAt(int index) const {
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	PushToStack();
+	lua_rawgeti(mL, -1, index);
+	if (lua_isnumber(mL, -1))
+	{
+		auto v = lua_tointeger(mL, -1);
+		lua_pop(mL, 2);
+		return v;
+	}
+	else {
+		Logger::Log(FB_ERROR_LOG_ARG, "No element found.");
+	}
+	return 0;
+}
+
 LuaObject LuaObject::GetTableAt(int index) const
 {
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedAt(int index) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	lua_rawgeti(mL, -1, index);
 	if (lua_istable(mL, -1))
@@ -710,7 +726,7 @@ std::string LuaObject::GetString(std::string& def) const
 {
 	if (!IsString())
 		return def;
-	LUA_STACK_WATCHER watcher(mL, "std::string LuaObject::GetString(std::string& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	std::string ret;
 	const char* sz = lua_tostring(mL, -1);
@@ -727,7 +743,7 @@ std::string LuaObject::GetString(bool& success) const
 		success = false;
 		return std::string();
 	}
-	LUA_STACK_WATCHER watcher(mL, "std::string LuaObject::GetString(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	std::string ret;
 	const char* sz = lua_tostring(mL, -1);
@@ -746,7 +762,7 @@ float	LuaObject::GetFloat(float def) const
 {
 	if (!IsNumber())
 		return def;
-	LUA_STACK_WATCHER watcher(mL, "float	LuaObject::GetFloat(float def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	float f = (float)lua_tonumber(mL, -1);
 	lua_pop(mL, 1);
@@ -760,7 +776,7 @@ double LuaObject::GetDouble() const{
 double LuaObject::GetDouble(double def) const{
 	if (!IsNumber())
 		return def;
-	LUA_STACK_WATCHER watcher(mL, "float	LuaObject::GetDouble(double def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	double d = lua_tonumber(mL, -1);
 	lua_pop(mL, 1);
@@ -774,7 +790,7 @@ float LuaObject::GetFloat(bool& success) const
 		success = false;
 		return 0.f;
 	}
-	LUA_STACK_WATCHER watcher(mL, "float LuaObject::GetFloat(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	float f = (float)lua_tonumber(mL, -1);
 	lua_pop(mL, 1);
@@ -791,7 +807,7 @@ int LuaObject::GetInt(int def) const
 	if (!IsNumber())
 		return def;
 
-	LUA_STACK_WATCHER watcher(mL, "int LuaObject::GetInt(int def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	int i = lua_tointeger(mL, -1);
 	lua_pop(mL, 1);
@@ -806,7 +822,7 @@ int LuaObject::GetInt(bool& success) const
 		return 0;
 	}
 
-	LUA_STACK_WATCHER watcher(mL, "int LuaObject::GetInt(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	int i = lua_tointeger(mL, -1);
 	lua_pop(mL, 1);
@@ -824,7 +840,7 @@ unsigned LuaObject::GetUnsigned(unsigned def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsigned(unsigned def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	unsigned u = lua_tounsigned(mL, -1);
 	lua_pop(mL, 1);
@@ -838,7 +854,7 @@ unsigned LuaObject::GetUnsigned(bool& success) const
 		success = false;
 		return 0;
 	}
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsigned(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	unsigned u = lua_tounsigned(mL, -1);
 	lua_pop(mL, 1);
@@ -856,7 +872,7 @@ unsigned LuaObject::GetUnsignedFromString(unsigned def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedFromString(unsigned def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	std::string ret;
 	const char* sz = lua_tostring(mL, -1);
@@ -873,7 +889,7 @@ unsigned LuaObject::GetUnsignedFromString(bool& success) const
 		success = false;
 		return 0;
 	}
-	LUA_STACK_WATCHER watcher(mL, "unsigned LuaObject::GetUnsignedFromString(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	std::string ret;
 	const char* sz = lua_tostring(mL, -1);
@@ -894,7 +910,7 @@ bool LuaObject::GetBoolWithDef(bool def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "bool LuaObject::GetBoolWithDef(bool def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	bool b = lua_toboolean(mL, -1) != 0;
 	lua_pop(mL, 1);
@@ -908,7 +924,7 @@ bool LuaObject::GetBool(bool& success) const
 		success = false;
 		return false;
 	}
-	LUA_STACK_WATCHER watcher(mL, "bool LuaObject::GetBool(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	bool b = lua_toboolean(mL, -1) != 0;
 	lua_pop(mL, 1);
@@ -926,7 +942,7 @@ Vec3Tuple LuaObject::GetVec3(const Vec3Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec3 LuaObject::GetVec3(const Vec3& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec3Tuple ret = luaU_check<Vec3Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -940,7 +956,7 @@ Vec3Tuple LuaObject::GetVec3(bool& success) const
 		success = false;
 		return Vec3Tuple(0.f, 0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec3 LuaObject::GetVec3(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec3Tuple ret = luaU_check<Vec3Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -958,7 +974,7 @@ Vec4Tuple LuaObject::GetVec4(const Vec4Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec4 LuaObject::GetVec4(const Vec4& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec4Tuple ret = luaU_check<Vec4Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -972,7 +988,7 @@ Vec4Tuple LuaObject::GetVec4(bool& success) const
 		success = false;
 		return Vec4Tuple(0.f, 0.f, 0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec4 LuaObject::GetVec4(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec4Tuple ret = luaU_check<Vec4Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -990,7 +1006,7 @@ Vec3ITuple LuaObject::GetVec3I(const Vec3ITuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec3I LuaObject::GetVec3I(const Vec3I& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec3ITuple ret = luaU_check<Vec3ITuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1004,7 +1020,7 @@ Vec3ITuple LuaObject::GetVec3I(bool& success) const
 		success = false;
 		return Vec3ITuple(0, 0, 0);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec3I LuaObject::GetVec3I(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec3ITuple ret = luaU_check<Vec3ITuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1022,7 +1038,7 @@ Vec2Tuple LuaObject::GetVec2(const Vec2Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec2 LuaObject::GetVec2(const Vec2& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec2Tuple ret = luaU_check<Vec2Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1036,7 +1052,7 @@ Vec2Tuple LuaObject::GetVec2(bool& success) const
 		success = false;
 		return Vec2Tuple(0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec2 LuaObject::GetVec2(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec2Tuple ret = luaU_check<Vec2Tuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1055,7 +1071,7 @@ Vec2ITuple LuaObject::GetVec2I(const Vec2ITuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec2I LuaObject::GetVec2I(const Vec2I& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec2ITuple ret = luaU_check<Vec2ITuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1070,7 +1086,7 @@ Vec2ITuple LuaObject::GetVec2I(bool& success) const
 		success = false;
 		return Vec2ITuple(0, 0);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Vec2I LuaObject::GetVec2I(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	Vec2ITuple ret = luaU_check<Vec2ITuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1089,7 +1105,7 @@ QuatTuple LuaObject::GetQuat(const QuatTuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Quat LuaObject::GetQuat(const Quat& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	QuatTuple ret = luaU_check<QuatTuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1113,7 +1129,7 @@ TransformationTuple LuaObject::GetTransformation(const TransformationTuple& def)
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, "Transformation LuaObject::GetTransformation(const Transformation& def) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	TransformationTuple ret = luaU_check<TransformationTuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1128,7 +1144,7 @@ QuatTuple LuaObject::GetQuat(bool& success)const
 		success = false;
 		return QuatTuple(1., 0., 0., 0.);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Quat LuaObject::GetQuat(bool& success)const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	QuatTuple ret = luaU_check<QuatTuple>(mL, -1);
 	lua_pop(mL, 1);
@@ -1152,7 +1168,7 @@ TransformationTuple LuaObject::GetTransformation(bool& success) const
 			true, true, true
 			);
 	}
-	LUA_STACK_WATCHER watcher(mL, "Transformation LuaObject::GetTransformation(bool& success) const");
+	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
 	TransformationTuple ret = luaU_check<TransformationTuple>(mL, -1);
 	lua_pop(mL, 1);

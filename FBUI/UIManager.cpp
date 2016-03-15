@@ -1874,12 +1874,7 @@ mPopup->SetVisible(true);
 
 	void MoveToBottom(const char* moveToBottom){
 		auto ui = FindComp(moveToBottom, 0);
-		if (ui)
-		{
-			if (!ValueExistsInVector(mMoveToBottomReserved, ui))
-				mMoveToBottomReserved.push_back(ui);
-			DeleteValuesInVector(mMoveToTopReserved, ui);
-		}
+		MoveToBottom(ui);
 	}
 
 	void MoveToBottom(WinBasePtr moveToBottom){
@@ -1888,6 +1883,11 @@ mPopup->SetVisible(true);
 				mMoveToBottomReserved.push_back(moveToBottom);
 			DeleteValuesInVector(mMoveToTopReserved, moveToBottom);
 		}
+	}
+
+	void MoveToTop(const char* moveToTop) {
+		auto ui = FindComp(moveToTop, 0);
+		MoveToTop(ui);
 	}
 
 	void MoveToTop(WinBasePtr moveToTop){
@@ -3054,6 +3054,10 @@ void UIManager::MoveToBottom(const char* moveToBottom) {
 
 void UIManager::MoveToBottom(WinBasePtr moveToBottom) {
 	mImpl->MoveToBottom(moveToBottom);
+}
+
+void UIManager::MoveToTop(const char* moveToTop) {
+	mImpl->MoveToTop(moveToTop);
 }
 
 void UIManager::MoveToTop(WinBasePtr moveToTop) {

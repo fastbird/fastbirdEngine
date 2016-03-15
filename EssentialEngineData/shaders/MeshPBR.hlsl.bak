@@ -32,9 +32,9 @@
 //--------------------------------------------------------------------------------------
 // Constant Buffer
 //--------------------------------------------------------------------------------------
-#include "Constants.h"
-#include "CommonFunctions.h"
-#include "CommonLighting.h"
+#include "EssentialEngineData/shaders/Constants.h"
+#include "EssentialEngineData/shaders/CommonFunctions.h"
+#include "EssentialEngineData/shaders/CommonLighting.h"
 
 Texture2D  gDiffuseTexture : register(t0);
 #ifdef NORMAL_TEXTURE
@@ -72,7 +72,8 @@ struct v2p
 
 v2p meshpbr_VertexShader( in a2v INPUT )
 {
-    v2p OUTPUT;	
+    v2p OUTPUT;
+
 	OUTPUT.Position = mul( gWorldViewProj, INPUT.Position );
 	OUTPUT.Normal = normalize(mul((float3x3)gWorld, INPUT.Normal));
 	OUTPUT.UV = INPUT.UV;
@@ -80,7 +81,7 @@ v2p meshpbr_VertexShader( in a2v INPUT )
 	OUTPUT.Binormal= normalize(cross(OUTPUT.Tangent, OUTPUT.Normal));
 	float3 worldPos = mul(gWorld, INPUT.Position).xyz;
 	OUTPUT.WorldPos.xyz = worldPos;
-	OUTPUT.WorldPos.w = mul(gWorldView, Input.Position).y;
+	OUTPUT.WorldPos.w = mul(gWorldView, INPUT.Position).y;
 	OUTPUT.TexShadow = mul(gLightView, float4(worldPos, 1.0));
 
 	return OUTPUT;
@@ -139,11 +140,11 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	specColor *= gDirectionalLightSpecular[0];
 
 	float dotNL = dot(normal, toLightDir);
-	float ndl = max(dotNL, 0);
-	float ndl2 = max(-dotNL, 0);
+	float ndl = saturate(dotNL);
+	float ndl2 = saturate(-dotNL);
 	float3 h = normalize(toViewDir + toLightDir);
-	float ndh = max( dot(normal, h), 1e-8);
-	float vdh = max( dot(toViewDir, h), 1e-8);
+	float ndh = saturate( dot(normal, h) );
+	float vdh = saturate( dot(toViewDir, h) );
 	//INPUT.WorldPos.w == current pixel depth
 	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));
@@ -164,6 +165,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 #if Glow
 	PS_OUT psout;
 	psout.color0 = float4(foggedColor * invShadow + baseColor * emissive + gAmbientColor.rgb, gDiffuseColor.a);
+	//psout.color0 = float4(1, 1, 1, 1);
 	psout.color1 = psout.color0 * emissive;
 	return psout;
 #else

@@ -103,19 +103,19 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 {
 	INPUT.UV.y = 1.0 - INPUT.UV.y;
 	// process normal map.
-	float3 baseColor = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz;
+	float3 baseColor = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV).xyz;
 #if MergedMaterialTexture
-	float4 materialData = gMaterialTexture.Sample(gLinearSampler, INPUT.UV);
+	float4 materialData = gMaterialTexture.Sample(gLinearWrapSampler, INPUT.UV);
 	float metallic = materialData.x;
 	float roughness = materialData.y;
 	float emissive = materialData.z;
 #else
-	float metallic = gMetallicTexture.Sample(gLinearSampler, INPUT.UV).r;	
-	float roughness = gRoughnessTexture.Sample(gLinearSampler, INPUT.UV).r;
+	float metallic = gMetallicTexture.Sample(gLinearWrapSampler, INPUT.UV).r;	
+	float roughness = gRoughnessTexture.Sample(gLinearWrapSampler, INPUT.UV).r;
 	float emissive = 0;
 #endif
 #ifdef NORMAL_TEXTURE
-	float3 normalT = gNormalTexture.Sample(gLinearSampler, INPUT.UV).xyz;
+	float3 normalT = gNormalTexture.Sample(gLinearWrapSampler, INPUT.UV).xyz;
 #endif //NORMAL_TEXTURE
 	
 	float3 normal = INPUT.Normal;

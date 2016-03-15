@@ -199,6 +199,8 @@ namespace fb
 
 	void LuaUtils::PrintLuaErrorString(lua_State* L, const char* luaString)
 	{
+		if (!luaString)
+			return;
 		std::regex e(":(\\d+):");
 		char buf[1024];
 		sprintf_s(buf, "\n\n*****\n%s/%s (%s)\n", GetCWD(), std::regex_replace(luaString, e, "($1):").c_str(), "error");

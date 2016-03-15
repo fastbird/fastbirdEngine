@@ -161,7 +161,9 @@ namespace fb
 
 		void MoveToBottom(const char* moveToBottom);
 		void MoveToBottom(WinBasePtr moveToBottom);
+		void MoveToTop(const char* moveToTop);
 		void MoveToTop(WinBasePtr moveToTop);
+		
 		void HideUIsExcept(const std::vector<std::string>& excepts);
 
 		void HighlightUI(const char* uiname);
