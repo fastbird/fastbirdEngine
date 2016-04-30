@@ -44,7 +44,7 @@ Task::Task(bool _WaitEvent, ThreadSafeCounter* _ExecCounter)
 	, mMyHash(-1)
 	, mTriggered(false)
 {
-    static volatile DWORD UniqueTaskID = 0;	
+	static volatile DWORD UniqueTaskID = 0;	
 	mTaskID = ++counter;		
 	if (_WaitEvent){
 		mWaitEvent = CreateSyncEvent(true);
@@ -57,33 +57,32 @@ Task::~Task()
 
 void Task::OnExecuted()
 {
-    if(mExecCounter)
-    {
+	if(mExecCounter)
+	{
 		mExecCounter->operator--();
-    }
+	}
 
-    if(mWaitEvent)
-    {
+	if(mWaitEvent)
+	{
 		mWaitEvent->Trigger();
-    }
+	}
 }
 
 void Task::Trigger(TaskScheduler* pScheduler)
 {
 	mTriggered = true;
-    Execute(pScheduler);
-
+	Execute(pScheduler);
 	mExecuted = true;
 
-    if(!mIsHashed && IsExecuted())
-    {
-        OnExecuted();
-    }
-    else
-    {
+  if(!mIsHashed && IsExecuted())
+  {
+		OnExecuted();
+  }
+  else
+  {
 		pScheduler->AddPendingTask(this->shared_from_this());
 		pScheduler->SchedulerSlice();
-    }
+  }
 }
 
 int Task::GetDependencies(TaskPtr Dependencies[])

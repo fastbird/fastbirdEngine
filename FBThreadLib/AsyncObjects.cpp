@@ -49,17 +49,51 @@ void FB_CRITICAL_SECTION::Unlock()
 }
 
 //---------------------------------------------------------------------------
-LOCK_CRITICAL_SECTION::LOCK_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs)
+FB_CRITICAL_SECTION_R::FB_CRITICAL_SECTION_R()
+{
+}
+
+FB_CRITICAL_SECTION_R::~FB_CRITICAL_SECTION_R()
+{
+}
+
+void FB_CRITICAL_SECTION_R::Lock()
+{
+	mMutex.lock();
+}
+
+void FB_CRITICAL_SECTION_R::Unlock()
+{
+	mMutex.unlock();
+}
+
+//---------------------------------------------------------------------------
+ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs)
 	:mCS(cs)
 {
 	mCS->Lock();
 }
-LOCK_CRITICAL_SECTION::LOCK_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs)
+ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs)
 	:mCS(&cs)
 {
 	mCS->Lock();
 }
-LOCK_CRITICAL_SECTION::~LOCK_CRITICAL_SECTION()
+ENTER_CRITICAL_SECTION::~ENTER_CRITICAL_SECTION()
+{
+	mCS->Unlock();
+}
+
+ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R* cs)
+	:mCS(cs)
+{
+	mCS->Lock();
+}
+ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R& cs)
+	: mCS(&cs)
+{
+	mCS->Lock();
+}
+ENTER_CRITICAL_SECTION_R::~ENTER_CRITICAL_SECTION_R()
 {
 	mCS->Unlock();
 }
@@ -67,34 +101,38 @@ LOCK_CRITICAL_SECTION::~LOCK_CRITICAL_SECTION()
 //---------------------------------------------------------------------------
 FB_READ_WRITE_CS::FB_READ_WRITE_CS()
 	: mNumReaders(0)
+	, mWriting(false)
 {
-	mReaderCleared.notify_all();
+	mC.notify_all();
 }
 FB_READ_WRITE_CS::~FB_READ_WRITE_CS()
 {
 }
 void FB_READ_WRITE_CS::EnterReader()
 {
-	std::lock_guard<std::mutex> lk(mWriteMutex);	
-	LOCK_CRITICAL_SECTION lockReadCount(mReaderCountCS);
+	std::unique_lock<std::mutex> lg(mMutex);
+	while(mWriting)
+		mC.wait(lg);
 	++mNumReaders;	
 }
 void FB_READ_WRITE_CS::LeaveReader()
 {
-	LOCK_CRITICAL_SECTION lockReadCount(mReaderCountCS);	
 	--mNumReaders;
-	if (mNumReaders == 0){
-		mReaderCleared.notify_all();
+	if (mNumReaders == 0) {
+		mC.notify_one();
 	}
 }
 void FB_READ_WRITE_CS::EnterWriter()
 {
-	mPendingLock = std::unique_lock<std::mutex>(mWriteMutex);	 
-	mReaderCleared.wait(mPendingLock, [&]{return mNumReaders == 0; });
+	std::unique_lock<std::mutex> lg(mMutex);
+	while (mWriting || mNumReaders > 0)
+		mC.wait(lg);
+	mWriting = true;
 }
 void FB_READ_WRITE_CS::LeaveWriter()
 {
-	mPendingLock.unlock();
+	mWriting = false;
+	mC.notify_all();
 }
 
 //---------------------------------------------------------------------------

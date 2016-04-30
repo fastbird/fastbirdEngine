@@ -12,9 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="tinyxml2.cpp" />
+    <ClCompile Include="XMLHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tinyxml2.h" />
+    <ClInclude Include="XMLHelper.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{23117A44-391E-4542-968F-C99C1BAC52C0}</ProjectGuid>
@@ -51,6 +53,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -65,6 +68,7 @@
       <SDLCheck>true</SDLCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

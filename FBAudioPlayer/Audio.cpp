@@ -38,8 +38,7 @@ using namespace fb;
 class Audio::Impl
 {
 public:
-	std::string mFilepath;
-	FILE* mFile;
+	std::string mFilepath;	
 	bool mError;
 	ogg_stream_state mStreamStateVorbis;
 	std::vector<ogg_packet> mPacketsVorbis;
@@ -275,11 +274,15 @@ public:
 			return false;
 		}
 
-		auto error = fopen_s(&mFile, path, "rb");
-		if (error){
-			Error("Cannot open the file %s", path);
-			return false;
+		{
+			FileSystem::Open file(path, "rb");
+			auto err = file.Error();
+			if (err) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Cannot open the file.");
+				return false;
+			}
 		}
+
 		if (!mFilepath.empty())
 			Clear();
 		mAudioBuffers[0] = alureCreateBufferFromFile(path);

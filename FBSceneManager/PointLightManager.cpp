@@ -78,7 +78,7 @@ public:
 		}		
 	}
 
-	void GatherPointLightData(const BoundingVolume* aabb, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst)
+	void GatherPointLightData(const BoundingVolume* boundingVolume, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst)
 	{
 		struct GatheredData
 		{
@@ -99,9 +99,9 @@ public:
 			IteratingWeakContainer(mPointLights, it, p);
 			if (!p->GetEnabled())
 				continue;
-			Ray3 ray(p->GetPosition(), transform.GetTranslation() - p->GetPosition());
-			Ray3 localRay = transform.ApplyInverse(ray);
-			auto iresult = localRay.Intersects(aabb);
+			Ray ray(p->GetPosition(), transform.GetTranslation() - p->GetPosition());
+			Ray localRay = transform.ApplyInverse(ray, false);
+			auto iresult = localRay.Intersects(boundingVolume);
 			Real distSQ = Squared(iresult.second);
 			Real range = p->GetRange();
 			if (distSQ < (range*range))

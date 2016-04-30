@@ -14,5 +14,8 @@
     <ClInclude Include="LockFreeQueue.h" />
     <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="IteratorWrapper.h" />
+    <ClInclude Include="Buffer.h" />
+    <ClInclude Include="Iterator.h" />
+    <ClInclude Include="GenericNotifier.h" />
   </ItemGroup>
 </Project>

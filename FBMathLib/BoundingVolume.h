@@ -32,10 +32,11 @@
 namespace fb
 {
 	class Transformation;
-	class Plane3;
-	class Ray3;
+	class Plane;
+	class Ray;
 	class Vec3;
 	class BoundingVolume;
+	class Intersection;
 	typedef std::shared_ptr<BoundingVolume> BoundingVolumePtr;
 	typedef std::weak_ptr<BoundingVolume> BoundingVolumeWeakPtr;
 	class BoundingVolume
@@ -72,9 +73,14 @@ namespace fb
 		virtual void AddComputeData(const Vec3& vert) = 0;
 		virtual void EndComputeFromData() = 0;
 		virtual void TransformBy(const Transformation& transform,BoundingVolumePtr result) = 0;
-		virtual int WhichSide(const Plane3& plane) const;
+		virtual int WhichSide(const Plane& plane) const;
 		virtual int WhichSide(const Vec3& min, const Vec3& max) const;
-		virtual bool TestIntersection(const Ray3& ray) const = 0;
+		/// intersected?, distant
+		virtual std::vector<Intersection> Intersect(const Ray& ray) const = 0;
+		virtual std::vector<Intersection> Intersect(BoundingVolume* pBV) const = 0;
+
+		/// deprecated
+		virtual bool TestIntersection(const Ray& ray) const = 0;
 		virtual bool TestIntersection(BoundingVolume* pBV) const = 0;
 		virtual Vec3 GetRandomPosInVolume(const Vec3* nearLocal = 0) const = 0;
 		virtual bool Contain(const Vec3& pos) const = 0;

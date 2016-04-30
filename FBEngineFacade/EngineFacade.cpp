@@ -459,8 +459,8 @@ public:
 		}
 	}
 
-	const Ray3& GetWorldRayFromCursor(){
-		Ray3 worldRay;
+	Ray GetWorldRayFromCursor(){
+		Ray worldRay;
 		if (mMainCamera)
 		{
 			auto injector = mInputManager->GetInputInjector();
@@ -805,7 +805,7 @@ void EngineFacade::EnableCameraInput(bool enable){
 	mImpl->mMainCamera->SetEnalbeInput(enable);
 }
 
-const Ray3& EngineFacade::GetWorldRayFromCursor(){
+Ray EngineFacade::GetWorldRayFromCursor(){
 	return mImpl->GetWorldRayFromCursor();
 }
 
@@ -938,7 +938,7 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 		UINT dwSize = 40;
 		static BYTE lpb[40];
 
-		GetRawInputData((HRAWINPUT)lp, RID_INPUT,
+		unsigned ret = GetRawInputData((HRAWINPUT)lp, RID_INPUT,
 			lpb, &dwSize, sizeof(RAWINPUTHEADER));
 
 		RAWINPUT* raw = (RAWINPUT*)lpb;
@@ -950,12 +950,12 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 				MouseEvent* evt = (MouseEvent*)&raw->data.mouse;	
 				mImpl->mInputManager->PushMouseEvent(window, *(evt), gpTimer->GetTime());
 			}
-			return 0;
+			break;
 			case RIM_TYPEKEYBOARD:
 			{
 				mImpl->mInputManager->PushKeyEvent(window, *((KeyboardEvent*)&raw->data.keyboard));
 			}
-			return 0;
+			break;
 			}
 		}
 	}
@@ -1235,6 +1235,11 @@ void EngineFacade::OnChangeDetected(){
 
 bool EngineFacade::OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension){
 	return false;
+}
+
+void EngineFacade::IgnoreMonitoringDirectory(const char* dir)
+{
+	mImpl->mFileMonitor->IgnoreDirectory(dir);
 }
 
 void EngineFacade::StopAllParticles(){

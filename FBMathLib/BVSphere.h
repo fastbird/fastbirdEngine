@@ -53,9 +53,15 @@ namespace fb
 		virtual void EndComputeFromData();
 		virtual void TransformBy(const Transformation& transform,
 			BoundingVolumePtr result);
-		virtual int WhichSide(const Plane3& plane) const;
-		virtual bool TestIntersection(const Ray3& ray) const;
+		virtual int WhichSide(const Plane& plane) const;
+
+		virtual std::vector<Intersection> Intersect(const Ray& ray) const;
+		virtual std::vector<Intersection> Intersect(BoundingVolume* pBV) const;
+
+		/// deprecated
+		virtual bool TestIntersection(const Ray& ray) const;
 		virtual bool TestIntersection(BoundingVolume* pBV) const;
+
 		virtual void Merge(const BoundingVolume* pBV);
 		virtual void Merge(const Vec3& pos);		
 		virtual fb::Vec3 GetSurfaceFrom(const Vec3& src, Vec3& normal);

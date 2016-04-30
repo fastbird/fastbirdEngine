@@ -11,10 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Buffer.h" />
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="CowPtr.h" />
     <ClInclude Include="Factory.h" />
+    <ClInclude Include="GenericNotifier.h" />
     <ClInclude Include="Helpers.h" />
+    <ClInclude Include="Iterator.h" />
     <ClInclude Include="IteratorWrapper.h" />
     <ClInclude Include="LockFreeQueue.h" />
     <ClInclude Include="Observable.h" />

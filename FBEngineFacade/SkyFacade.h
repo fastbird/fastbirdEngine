@@ -45,6 +45,7 @@ namespace fb{
 		SkyFacadePtr CreateSkyBox(const char* materialPath);
 
 		void SetMaterial(const char* path, RENDER_PASS pass);
+		void SetGeometry(const char* path);
 		void AttachToScene();
 		void AttachToScene(IScenePtr scene);
 		void DetachFromScene();

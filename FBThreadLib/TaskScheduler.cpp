@@ -37,7 +37,7 @@
 #include <thread>
 using namespace fb;
 
-static const int MAX_NUM_QUEUE = 65536;
+static const int MAX_NUM_TASK = 2048;
 SyncEventPtr gScheduleSliceEvent = 0;
 bool sFinalize = false;
 namespace fb
@@ -76,7 +76,7 @@ public:
 	FB_CRITICAL_SECTION mQueueCS;
 
 	// Used to maintain the number of scheduling slices requested
-	volatile long mSchedulingSlices;
+	volatile long mNumTask;
 
 
 	//---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ public:
 	}
 
 	void Init(){
-		mSchedulingSlices = 0;
+		mNumTask = 0;
 		for (int i = 0; i<ARRAYCOUNT(mActiveTasksMap); i++)
 		{
 			mActiveTasksMap[i] = NULL;
@@ -134,6 +134,7 @@ public:
 	void AddTask(TaskPtr NewTask){
 		if (sFinalize)
 			return;
+		mNumTask++;
 		assert(NewTask);
 		TaskPtr* Dependencies = NULL;
 		int NumDependencies = NewTask->GetDependencies(Dependencies);
@@ -158,20 +159,26 @@ public:
 		}
 	}
 
+	bool IsFull() const
+	{
+		return mNumTask > MAX_NUM_TASK;
+	}
+
 	//---------------------------------------------------------------------------
 	// Called by WorkerThread or Task
 	//---------------------------------------------------------------------------
 	void AddIdleWorker(WorkerThread* w){
 		if (sFinalize)
 			return;
-		LOCK_CRITICAL_SECTION lock(mQueueCS);
+		ENTER_CRITICAL_SECTION lock(mQueueCS);
 		mIdleThreadsQueue.Enq(w);
 	}
 
 	void AddPendingTask(TaskPtr t){
 		if (sFinalize)
 			return;
-		LOCK_CRITICAL_SECTION lock(mQueueCS);
+		mNumTask++;
+		ENTER_CRITICAL_SECTION lock(mQueueCS);
 		mPendingTasksQueue.Enq(t);
 	}
 
@@ -311,15 +318,12 @@ public:
 	TaskPtr GetNextReadyTask(WorkerThread* Thread){
 		if (sFinalize)
 			return 0;
-		LOCK_CRITICAL_SECTION lock(mQueueCS);
-
-		auto ReadyTask = mReadyTasksQueue.Deq();
-		if (ReadyTask)
-		{
-			return ReadyTask;
+		ENTER_CRITICAL_SECTION lock(mQueueCS);
+		auto nextReadyTask = mReadyTasksQueue.Deq();
+		if (nextReadyTask) {
+			--mNumTask;
 		}
-
-		return NULL;
+		return nextReadyTask;
 	}
 
 	//---------------------------------------------------------------------------
@@ -328,7 +332,7 @@ public:
 	WorkerThread* GetNextIdleThread(TaskPtr t){
 		if (sFinalize)
 			return 0;
-		LOCK_CRITICAL_SECTION lock(mQueueCS);
+		ENTER_CRITICAL_SECTION lock(mQueueCS);
 
 		return mIdleThreadsQueue.Deq();
 	}
@@ -336,7 +340,7 @@ public:
 	void AddReadyTask(TaskPtr t){
 		if (sFinalize)
 			return;
-		LOCK_CRITICAL_SECTION lock(mQueueCS);
+		ENTER_CRITICAL_SECTION lock(mQueueCS);
 		mReadyTasksQueue.Enq(t);
 	}
 
@@ -347,7 +351,8 @@ public:
 		WorkerThread* WorkerThread = GetNextIdleThread(t);
 		if (WorkerThread)
 		{
-			WorkerThread->SetTask(t);
+			--mNumTask;
+			WorkerThread->SetTask(t);			
 		}
 		else
 		{
@@ -371,6 +376,11 @@ TaskScheduler::~TaskScheduler(){
 
 void TaskScheduler::AddTask(TaskPtr NewTask){
 	mImpl->AddTask(NewTask);
+}
+
+bool TaskScheduler::IsFull() const
+{
+	return mImpl->IsFull();
 }
 
 bool TaskScheduler::_IsFinalized() const{

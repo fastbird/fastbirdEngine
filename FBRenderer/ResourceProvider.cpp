@@ -163,7 +163,7 @@ public:
 	ShaderPtr CreateShader(int ResourceTypes_Shaders){
 		auto& renderer = Renderer::GetInstance();
 		SHADER_DEFINES shaderDefines;
-		switch (ResourceTypes_Shaders){
+		switch (ResourceTypes_Shaders) {
 		case ResourceTypes::Shaders::FullscreenQuadNearVS:
 		{
 			return renderer.CreateShader("EssentialEnginedata/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS);
@@ -171,11 +171,11 @@ public:
 		case ResourceTypes::Shaders::FullscreenQuadFarVS:
 		{
 			shaderDefines.push_back(ShaderDefine("_FAR_SIDE_QUAD", "1"));
-			return renderer.CreateShader("EssentialEnginedata/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS, shaderDefines);			
+			return renderer.CreateShader("EssentialEnginedata/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::CopyPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/copyps.hlsl", BINDING_SHADER_PS);			
+			return renderer.CreateShader("EssentialEnginedata/shaders/copyps.hlsl", BINDING_SHADER_PS);
 		}
 		case ResourceTypes::Shaders::CopyPSMS:
 		{
@@ -201,7 +201,7 @@ public:
 		case ResourceTypes::Shaders::SampleLumInitialPS:
 		{
 			if (renderer.GetMultiSampleCount() != 1) {
-				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));				
+				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			}
 			return renderer.CreateShader("EssentialEnginedata/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
 		}
@@ -230,6 +230,15 @@ public:
 			return renderer.CreateShader("EssentialEnginedata/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
 
 		}
+
+		case ResourceTypes::Shaders::SimpleToneMappingPS:
+		{
+			if (renderer.GetMultiSampleCount() != 1)
+				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
+
+			return renderer.CreateShader("EssentialEnginedata/shaders/simpletonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+		}
+
 		case ResourceTypes::Shaders::BrightPassPS:
 		{
 			if (renderer.GetMultiSampleCount() != 1) {
@@ -658,6 +667,14 @@ public:
 			desc.AddressW = TEXTURE_ADDRESS_BORDER;
 			for (int i = 0; i < 4; i++)
 				desc.BorderColor[i] = 0;
+			return renderer.CreateSamplerState(desc);
+		}
+		case ResourceTypes::SamplerStates::LinearMirror:
+		{
+			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+			desc.AddressU = TEXTURE_ADDRESS_MIRROR;
+			desc.AddressV = TEXTURE_ADDRESS_MIRROR;
+			desc.AddressW = TEXTURE_ADDRESS_MIRROR;
 			return renderer.CreateSamplerState(desc);
 		}
 		default:

@@ -140,6 +140,10 @@ namespace fb
 		return std::make_tuple(x, y);
 	}
 
+	Vec2ITuple Vec2I::ToTuple() const {
+		return std::make_tuple(x, y);
+	}
+
 	int Vec2I::Cross(const Vec2I& right){
 		return x * right.y - y * right.x;
 	}

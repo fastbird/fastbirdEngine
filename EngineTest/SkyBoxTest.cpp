@@ -34,7 +34,13 @@ public:
 	SkyFacadePtr mSky;
 
 	Impl(){
-		mSky = SkyFacade::Create()->CreateSkyBox("data/skybox.material");
+		//mSky = SkyFacade::Create()->CreateSkyBox("data/skybox.material");
+		mSky = SkyFacade::Create()->CreateSkySphere();		
+		mSky->SetMaterial("Data/skysphere_equirectangular.material", RENDER_PASS::PASS_NORMAL);
+
+		//mSky->SetMaterial("Data/skysphere_geom.material", RENDER_PASS::PASS_NORMAL);
+		//mSky->SetGeometry("data/SkySphere.dae");
+
 		mSky->AttachToScene();
 	}
 };

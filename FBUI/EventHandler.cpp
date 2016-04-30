@@ -117,7 +117,13 @@ bool EventHandler::OnEvent(UIEvents::Enum e)
 			it->second.PushToStack();
 			WinBase* pComp = dynamic_cast<WinBase*>(this);
 			LuaUtils::pushstring(pComp->GetName());			
-			it->second.CallWithManualArgs(1, 0);
+			auto root = pComp->GetRootWnd();
+			if (root)
+				LuaUtils::pushstring(root->GetName());
+			else
+				LuaUtils::pushnil();
+
+			it->second.CallWithManualArgs(2, 0);
 			processed = processed || true;
 		}
 		

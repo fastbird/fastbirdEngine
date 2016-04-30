@@ -37,6 +37,7 @@
 #include "VideoTest.h"
 #include "TextTest.h"
 #include "LuaTest.h"
+#include "FBCommonHeaders/Helpers.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBFileSystem/FileSystem.h"
 #include "FBLua/LuaObject.h"
@@ -102,10 +103,10 @@ void StartTest(){
 	LUA_SETCFUNCTION(L, _FBPrint);
 	
 
-	//gMeshTest = MeshTest::Create();	
-	//gMeshTest->SetCameraTarget();
-	//gSkyBoxTest = SkyBoxTest::Create();
-	gParticleTest = ParticleTest::Create();
+	gMeshTest = MeshTest::Create();	
+	gMeshTest->SetCameraTarget();
+	gSkyBoxTest = SkyBoxTest::Create();
+	//gParticleTest = ParticleTest::Create();
 	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();
@@ -135,6 +136,16 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	int testarray[][3] = {
+		{1, 2, 3},
+		{ 1, 2, 3 },
+		{ 1, 2, 3 },
+		{ 1, 2, 3 },
+		{ 1, 2, 3 },
+
+	};
+	int count = ARRAYCOUNT(testarray);
 
  	// TODO: Place code here.
 	MSG msg = {};

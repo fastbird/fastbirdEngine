@@ -27,6 +27,10 @@
 
 #include "stdafx.h"
 #include "Mat44.h"
+#include "Mat33.h"
+#include "Vec3.h"
+#include "Vec4.h"
+#include "Math.h"
 
 namespace fb
 {
@@ -56,6 +60,93 @@ namespace fb
 		m[1][0] = mat33[1][0]; m[1][1] = mat33[1][1]; m[1][2] = mat33[1][2]; m[1][3] = translation.y;
 		m[2][0] = mat33[2][0]; m[2][1] = mat33[2][1]; m[2][2] = mat33[2][2]; m[2][3] = translation.z;
 		m[3][0] = 0; m[3][1] = 0; m[3][2] = 0; m[3][3] = 1.f;
+	}
+
+	//-------------------------------------------------------------------------
+	Mat44 Mat44::FromTranslation(const Vec3& translate) 
+	{
+		Mat44 mat(
+			1.f,	0,		0,		translate.x,
+			0,		1.f,	0,		translate.y,
+			0,		0,		1.f,	translate.z,
+			0,		0,		0,		1.f
+			);
+		return mat;
+	}
+
+	//-------------------------------------------------------------------------
+	Mat44 Mat44::FromRotationY(Real rotYRadian)
+	{
+		auto c = cos(rotYRadian);
+		auto s = sin(rotYRadian);
+		Mat44 m(
+			c,			0.f,			s,			0.f,
+			0.f,		1.f,			0.f,		0.f,
+			-s,			0.f,			c,			0.f,
+			0.f,		0.f,			0.f,		1.f
+			);
+		return m;
+	}
+
+	Mat44 Mat44::FromRotationX(Real rotXRadian) {
+		auto c = cos(rotXRadian);
+		auto s = sin(rotXRadian);
+		return Mat44 (
+			1.f,			0.f,		0.f,		0.f,
+			0.f,			c,			-s,			0.f,
+			0.f,			s,			c,			0.f,
+			0.f,			0.f,		0.f,		1.f
+			);
+	}
+
+	Mat44 Mat44::FromRotationZ(Real rotXRadian) {
+		auto c = cos(rotXRadian);
+		auto s = sin(rotXRadian);
+		return Mat44(
+			c, -s, 0.0, 0.0,
+			s, c, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+			);
+	}
+
+	Mat44 Mat44::FromAxisAngle(const Vec3& axis, Real radian) {
+		Real fCos = cos(radian);
+		Real fSin = sin(radian);
+		Real fOneMinusCos = 1.0f - fCos;
+		Real fX2 = axis.x*axis.x;
+		Real fY2 = axis.y*axis.y;
+		Real fZ2 = axis.z*axis.z;
+		Real fXYM = axis.x*axis.y*fOneMinusCos;
+		Real fXZM = axis.x*axis.z*fOneMinusCos;
+		Real fYZM = axis.y*axis.z*fOneMinusCos;
+		Real fXSin = axis.x*fSin;
+		Real fYSin = axis.y*fSin;
+		Real fZSin = axis.z*fSin;
+
+		return Mat44(
+			// Row 1
+			fX2*fOneMinusCos + fCos,
+			fXYM - fZSin,
+			fXZM + fYSin,
+			0.0,
+			// Row 2
+			fXYM + fZSin,
+			fY2*fOneMinusCos + fCos,
+			fYZM - fXSin,
+			0.0,
+			// Row 3
+			fXZM - fYSin,
+			fYZM + fXSin,
+			fZ2*fOneMinusCos + fCos,
+			0.0,
+			// Row 4
+			0.0, 0.0, 0.0, 1.0);
+	}
+
+	Mat44 Mat44::FromViewLookAt(const Vec3& eye, const Vec3& center, const Vec3& up)
+	{
+		return MakeViewMatrix(eye, center, up);
 	}
 
 	//-------------------------------------------------------------------------
@@ -289,6 +380,66 @@ namespace fb
 		return ret;
 	}
 
+	Real Mat44::GetRotationZ() const
+	{
+		Real yRadians = asin(m[0][2]);
+		Real cosY = cos(yRadians);
+		if (cosY==0.f)
+			return 0.f;
+
+		Real zRadians;
+		// No Gimball lock.
+		if (abs(cosY) > 0.005f)
+		{
+			zRadians = atan2(-m[0][1] / cosY, m[0][0] / cosY);
+		}
+		// Gimball lock has occurred. Rotation around X axis becomes rotation around Z axis.
+		else
+		{
+			zRadians = atan2(m[1][0], m[1][1]);
+		}
+
+		if (IsNaN(zRadians))
+			return 0.f;
+
+		return zRadians;
+	}
+
+	Real Mat44::GetRotationX() const
+	{
+		Real yRadians = asin(m[0][2]);
+		Real cosY = cos(yRadians);
+		if (cosY==0.f)
+			return 0.f;
+
+		Real xRadians;
+		// No Gimball lock.
+		if (abs(cosY) > 0.005f)
+		{
+			xRadians = atan2(-m[1][2] / cosY, m[2][2] / cosY);
+		}
+		// Gimball lock has occurred. Rotation around X axis becomes rotation around Z axis.
+		else
+		{
+			xRadians = 0;
+		}
+
+		if (IsNaN(xRadians))
+			return 0.f;
+
+		return xRadians;
+	}
+
+	Real Mat44::GetRotationY() const
+	{
+		auto yRadians = asin(m[0][2]);
+		if (IsNaN(yRadians))
+			return 0.f;
+
+		return yRadians;
+	}
+
+
 #if defined(FB_DOUBLE_PRECISION)
 	Mat44f::Mat44f(){
 
@@ -322,4 +473,212 @@ namespace fb
 		m[3][0] = 0.f; m[3][1] = 0.f; m[3][2] = 0.f; m[3][3] = 1.f;
 	}
 #endif
+
+	Vec3 Mat44::ComputeAveragePoint3(const Real* coordinates, int numElem, int stride)
+	{
+		if (stride < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return Vec3::ZERO;
+		}
+
+		int count = 0;
+		Real x = 0;
+		Real y = 0;
+		Real z = 0;		
+		for (int i = 0; i <= numElem - stride; i += stride)
+		{
+			count++;
+			x += coordinates[i];
+			y += coordinates[i + 1];
+			z += coordinates[i + 2];
+		}
+
+		if (count == 0)
+			return Vec3::ZERO;
+
+		return Vec3(x / (Real)count, y / (Real)count, z / (Real)count);
+	}
+
+	/**
+	* Computes a symmetric covariance Matrix from the x, y, z coordinates.
+	* layout:
+	* C(x, x)  C(x, y)  C(x, z)
+	* C(x, y)  C(y, y)  C(y, z)
+	* C(x, z)  C(y, z)  C(z, z)
+	*
+	*/
+	Mat44 Mat44::FromCovarianceOfVertices(const Real* coordinates, int numElem, int stride)
+	{
+		Mat44 mat = Mat44::IDENTITY;
+
+		if (stride < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return mat;
+		}
+
+		Vec3 mean = ComputeAveragePoint3(coordinates, numElem, stride);
+
+		int count = 0;
+		Real c11 = 0;
+		Real c22 = 0;
+		Real c33 = 0;
+		Real c12 = 0;
+		Real c13 = 0;
+		Real c23 = 0;		
+		for (int i = 0; i <= numElem - stride; i += stride)
+		{
+			Real x = coordinates[i];
+			Real y = coordinates[i + 1];
+			Real z = coordinates[i + 2];
+			count++;
+			c11 += (x - mean.x) * (x - mean.x);
+			c22 += (y - mean.y) * (y - mean.y);
+			c33 += (z - mean.z) * (z - mean.z);
+			c12 += (x - mean.x) * (y - mean.y); // c12 = c21
+			c13 += (x - mean.x) * (z - mean.z); // c13 = c31
+			c23 += (y - mean.y) * (z - mean.z); // c23 = c32
+		}
+
+		if (count == 0)
+			return mat;
+
+		return Mat44(
+			c11 / (Real)count, c12 / (Real)count, c13 / (Real)count, 0,
+			c12 / (Real)count, c22 / (Real)count, c23 / (Real)count, 0,
+			c13 / (Real)count, c23 / (Real)count, c33 / (Real)count, 0,
+			0, 0, 0, 0);
+	}
+
+
+	bool Mat44::IsSymmetric() const {
+		return m[0][1] == m[1][0] && m[0][2] == m[2][0] && m[1][2] == m[2][1];
+	}
+	/// Computes the eigensystem of the specified symmetric Matrix's upper 3x3 matrix. 		
+	void Mat44::ComputeEigensystemFromSymmetricMatrix3(const Mat44& matrix, Real outEigenvalues[3],
+		Vec3 outEigenvectors[3])
+	{
+		if (!matrix.IsSymmetric())
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Matrix is not symmetric.");
+			return;
+		}
+
+		// Take from "Mathematics for 3D Game Programming and Computer Graphics, Second Edition" by Eric Lengyel,
+		// Listing 14.6 (pages 441-444).
+		const Real EPSILON = 1.0e-10;
+		const int MAX_SWEEPS = 32;
+
+		// Since the Matrix is symmetric, m12=m21, m13=m31, and m23=m32. Therefore we can ignore the values m21, m31,
+		// and m32.
+		Real m11 = matrix.m[0][0];
+		Real m12 = matrix.m[0][1];
+		Real m13 = matrix.m[0][2];
+		Real m22 = matrix.m[1][1];
+		Real m23 = matrix.m[1][2];
+		Real m33 = matrix.m[2][2];
+
+		Real r[3][3];
+		r[0][0] = r[1][1] = r[2][2] = 1;
+		for (int a = 0; a < MAX_SWEEPS; a++)
+		{
+			// Exit if off-diagonal entries small enough
+			if ((std::abs(m12) < EPSILON) && (std::abs(m13) < EPSILON) && (std::abs(m23) < EPSILON))
+				break;
+
+			// Annihilate (1,2) entry
+			if (m12 != 0.f)
+			{
+				Real u = (m22 - m11) * 0.5f / m12;
+				Real u2 = u * u;
+				Real u2p1 = u2 + 1.f;
+				Real t = (u2p1 != u2) ?
+					((u < 0.f) ? -1.f : 1.f) * (sqrt(u2p1) - std::abs(u))
+					: 0.5f / u;
+				Real c = 1.f / sqrt(t * t + 1.f);
+				Real s = c * t;
+
+				m11 -= t * m12;
+				m22 += t * m12;
+				m12 = 0.f;
+
+				Real temp = c * m13 - s * m23;
+				m23 = s * m13 + c * m23;
+				m13 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][0] - s * r[i][1];
+					r[i][1] = s * r[i][0] + c * r[i][1];
+					r[i][0] = temp;
+				}
+			}
+
+			// Annihilate (1,3) entry
+			if (m13 != 0.f)
+			{
+				Real u = (m33 - m11) * 0.5f / m13;
+				Real u2 = u * u;
+				Real u2p1 = u2 + 1.f;
+				Real t = (u2p1 != u2) ?
+					((u < 0.f) ? -1.f : 1.f) * (sqrt(u2p1) - std::abs(u))
+					: 0.5f / u;
+				Real c = 1.f / sqrt(t * t + 1.f);
+				Real s = c * t;
+
+				m11 -= t * m13;
+				m33 += t * m13;
+				m13 = 0.f;
+
+				Real temp = c * m12 - s * m23;
+				m23 = s * m12 + c * m23;
+				m12 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][0] - s * r[i][2];
+					r[i][2] = s * r[i][0] + c * r[i][2];
+					r[i][0] = temp;
+				}
+			}
+
+			// Annihilate (2,3) entry
+			if (m23 != 0.f)
+			{
+				Real u = (m33 - m22) * 0.5f / m23;
+				Real u2 = u * u;
+				Real u2p1 = u2 + 1.f;
+				Real t = (u2p1 != u2) ?
+					((u < 0.f) ? -1.f : 1.f) * (sqrt(u2p1) - std::abs(u))
+					: 0.5f / u;
+				Real c = 1.f / sqrt(t * t + 1.f);
+				Real s = c * t;
+
+				m22 -= t * m23;
+				m33 += t * m23;
+				m23 = 0.f;
+
+				Real temp = c * m12 - s * m13;
+				m13 = s * m12 + c * m13;
+				m12 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][1] - s * r[i][2];
+					r[i][2] = s * r[i][1] + c * r[i][2];
+					r[i][1] = temp;
+				}
+			}
+		}
+
+		outEigenvalues[0] = m11;
+		outEigenvalues[1] = m22;
+		outEigenvalues[2] = m33;
+
+		outEigenvectors[0] = Vec3(r[0][0], r[1][0], r[2][0]);
+		outEigenvectors[1] = Vec3(r[0][1], r[1][1], r[2][1]);
+		outEigenvectors[2] = Vec3(r[0][2], r[1][2], r[2][2]);
+	}
 }
+

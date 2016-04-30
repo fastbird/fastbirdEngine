@@ -33,6 +33,7 @@
 #include "FBInputManager/KeyCodes.h"
 #include "FBSceneManager/ISpatialObject.h"
 #include "FBCommonHeaders/VectorMap.h"
+#include "FBTimer/Timer.h"
 
 using namespace fb;
 
@@ -88,9 +89,10 @@ public:
 	Real mNear;
 	Real mFar;
 	Rectf mOrthogonalData;
-	std::string mName;
-	Plane3 mPlanes[6];
+	std::string mName;	
 	ISpatialObjectWeakPtr mTarget;
+	Vec3 mTargetPos; /// used when mTarget is nullptr
+	Real mMaxDistToTarget;
 	size_t mCamIndex;
 	bool mYZSwap;
 	bool mCurrentCamera;
@@ -98,8 +100,10 @@ public:
 	Vec3 mPrevTargetPos;
 	std::mutex mMutex;
 	Frustum mFrustum;
+	Frustum mFrustumInCameraSpace;
+	size_t mFrustumInCameraSpaceCalcFrame = -1;
 	CameraPtr mOverridingCamera;
-	VectorMap<Vec2I, Ray3> mRayCache;
+	VectorMap<Vec2I, Ray> mRayCache;
 
 	Impl(Camera* self) 
 		: mSelf(self)
@@ -111,7 +115,10 @@ public:
 		, mCurrentCamera(false)
 		, mCamIndex(-1)
 		, mProcessInput(false)
-		, mPrevTargetPos(0, 0, 0){
+		, mPrevTargetPos(0, 0, 0)
+		, mTargetPos(0, 0, 0)
+		, mMaxDistToTarget(FLT_MAX)
+	{
 		// proj properties
 		SetFOV(Radian(45));
 		mNear = 0.5f;
@@ -135,10 +142,7 @@ public:
 		mNear = other.mNear;
 		mFar = other.mFar;
 		mOrthogonalData = other.mOrthogonalData;
-		mName = other.mName;
-		for (int i = 0; i < 6; ++i){
-			mPlanes[i] = other.mPlanes[i];
-		}
+		mName = other.mName;		
 		mTarget = other.mTarget;
 		mCamIndex = other.mCamIndex;
 		mYZSwap = other.mYZSwap;
@@ -293,6 +297,28 @@ public:
 		f = mFar;
 	}
 
+	Real GetNear() const
+	{
+		return mNear;
+	}
+
+	Real GetFar() const
+	{
+		return mFar;
+	}
+
+	void SetNear(Real n)
+	{
+		mNear = n;		
+		mProjPropertyChanged = true;
+	}
+
+	void SetFar(Real f)
+	{
+		mFar = f;
+		mProjPropertyChanged = true;
+	}
+
 	Real GetWidth() const{
 		if (mOverridingCamera){
 			return mOverridingCamera->GetWidth();
@@ -315,14 +341,15 @@ public:
 			return;
 		}
 		auto target = mTarget.lock();
-		if (!mProcessInput || !mCurrentCamera || !target)
+		auto& targetPos = target ? target->GetPosition() : mTargetPos;
+		if (!mProcessInput || !mCurrentCamera)
 			return;
-		if (mUserParams.Changed() || mPrevTargetPos != target->GetPosition())
+		if (mUserParams.Changed() || mPrevTargetPos != targetPos)
 		{
 			mInternalParams.dist += mUserParams.dDist;
 			mInternalParams.dist = std::max((Real)2.0f, (Real)mInternalParams.dist);
-			if (mInternalParams.dist > 300.0)
-				mInternalParams.dist = 300.0;
+			if (mInternalParams.dist > mMaxDistToTarget)
+				mInternalParams.dist = mMaxDistToTarget;
 
 			mInternalParams.pitch += mUserParams.dPitch;
 			if (mInternalParams.pitch > fb::HALF_PI - fb::Radian(5))
@@ -358,10 +385,10 @@ public:
 			Mat33 rot(right.x, forward.x, up.x,
 				right.y, forward.y, up.y,
 				right.z, forward.z, up.z);
-			Vec3 pos = target->GetPosition() + toCam * mInternalParams.dist;
+			Vec3 pos = targetPos + toCam * mInternalParams.dist;
 			SetTransformation(pos, Quat(rot));
 			mUserParams.Clear();
-			mPrevTargetPos = target->GetPosition();
+			mPrevTargetPos = targetPos;
 		}
 	}
 
@@ -462,42 +489,7 @@ public:
 			mOverridingCamera->UpdateFrustum();
 		}
 		const auto& viewProjMat = mMatrices[ViewProj];
-		mPlanes[FRUSTUM_PLANE_LEFT].mNormal.x = viewProjMat[3][0] + viewProjMat[0][0];
-		mPlanes[FRUSTUM_PLANE_LEFT].mNormal.y = viewProjMat[3][1] + viewProjMat[0][1];
-		mPlanes[FRUSTUM_PLANE_LEFT].mNormal.z = viewProjMat[3][2] + viewProjMat[0][2];
-		mPlanes[FRUSTUM_PLANE_LEFT].mConstant = -(viewProjMat[3][3] + viewProjMat[0][3]);
-
-		mPlanes[FRUSTUM_PLANE_RIGHT].mNormal.x = viewProjMat[3][0] - viewProjMat[0][0];
-		mPlanes[FRUSTUM_PLANE_RIGHT].mNormal.y = viewProjMat[3][1] - viewProjMat[0][1];
-		mPlanes[FRUSTUM_PLANE_RIGHT].mNormal.z = viewProjMat[3][2] - viewProjMat[0][2];
-		mPlanes[FRUSTUM_PLANE_RIGHT].mConstant = -(viewProjMat[3][3] - viewProjMat[0][3]);
-
-		mPlanes[FRUSTUM_PLANE_TOP].mNormal.x = viewProjMat[3][0] - viewProjMat[1][0];
-		mPlanes[FRUSTUM_PLANE_TOP].mNormal.y = viewProjMat[3][1] - viewProjMat[1][1];
-		mPlanes[FRUSTUM_PLANE_TOP].mNormal.z = viewProjMat[3][2] - viewProjMat[1][2];
-		mPlanes[FRUSTUM_PLANE_TOP].mConstant = -(viewProjMat[3][3] - viewProjMat[1][3]);
-
-		mPlanes[FRUSTUM_PLANE_BOTTOM].mNormal.x = viewProjMat[3][0] + viewProjMat[1][0];
-		mPlanes[FRUSTUM_PLANE_BOTTOM].mNormal.y = viewProjMat[3][1] + viewProjMat[1][1];
-		mPlanes[FRUSTUM_PLANE_BOTTOM].mNormal.z = viewProjMat[3][2] + viewProjMat[1][2];
-		mPlanes[FRUSTUM_PLANE_BOTTOM].mConstant = -(viewProjMat[3][3] + viewProjMat[1][3]);
-
-		mPlanes[FRUSTUM_PLANE_NEAR].mNormal.x = viewProjMat[3][0] + viewProjMat[2][0];
-		mPlanes[FRUSTUM_PLANE_NEAR].mNormal.y = viewProjMat[3][1] + viewProjMat[2][1];
-		mPlanes[FRUSTUM_PLANE_NEAR].mNormal.z = viewProjMat[3][2] + viewProjMat[2][2];
-		mPlanes[FRUSTUM_PLANE_NEAR].mConstant = -(viewProjMat[3][3] + viewProjMat[2][3]);
-
-		mPlanes[FRUSTUM_PLANE_FAR].mNormal.x = viewProjMat[3][0] - viewProjMat[2][0];
-		mPlanes[FRUSTUM_PLANE_FAR].mNormal.y = viewProjMat[3][1] - viewProjMat[2][1];
-		mPlanes[FRUSTUM_PLANE_FAR].mNormal.z = viewProjMat[3][2] - viewProjMat[2][2];
-		mPlanes[FRUSTUM_PLANE_FAR].mConstant = -(viewProjMat[3][3] - viewProjMat[2][3]);
-
-		// Renormalise any normals which were not unit length
-		for (int i = 0; i<6; i++)
-		{
-			Real length = mPlanes[i].mNormal.Normalize();
-			mPlanes[i].mConstant /= length;
-		}
+		mFrustum.UpdatePlaneWithViewProjMat(viewProjMat);
 	}
 
 	const Mat44& GetMatrix(MatrixType type){
@@ -513,17 +505,11 @@ public:
 	//----------------------------------------------------------------------------
 	bool IsCulled(BoundingVolume* pBV) const
 	{
-		for (int i = 0; i<6; i++)
-		{
-			if (pBV->WhichSide(mPlanes[i])<0)
-				return true;
-		}
-
-		return false;
+		return mFrustum.IsCulled(pBV);		
 	}
 
 	//----------------------------------------------------------------------------
-	Ray3 ScreenPosToRay(long x, long y)
+	Ray ScreenPosToRay(long x, long y)
 	{
 		Update();
 		auto it = mRayCache.Find(Vec2I(x, y));
@@ -540,9 +526,16 @@ public:
 		Vec3 dir = target - origin;
 		dir.Normalize();
 
-		Ray3 ray(mTransformation.GetTranslation(), dir);
+		Ray ray(mTransformation.GetTranslation(), dir);
 		mRayCache[Vec2I(x, y)] = ray;
 		return ray;
+	}
+
+	Vec3 ScreenToNDC(const Vec2I& screenPos)
+	{
+		Real fx = 2.0f * screenPos.x / GetWidth() - 1.0f;
+		Real fy = 1.0f - 2.0f * screenPos.y / GetHeight();
+		return Vec3((Real)fx, (Real)fy, 0.5f);		
 	}
 
 	Vec2I WorldToScreen(const Vec3& worldPos) const
@@ -588,11 +581,12 @@ public:
 		if (!mCurrentCamera)
 			return;
 		auto target = mTarget.lock();
-		if (!mProcessInput || !target)
+		auto& targetPos = target ? target->GetPosition() : mTargetPos;
+		if (!mProcessInput)
 			return;
 		if (injector->IsValid(InputDevice::Mouse) && !injector->IsKeyDown(VK_CONTROL)){
 			const Vec3 camPos = GetPosition();
-			Vec3 toCam = camPos - target->GetPosition();
+			Vec3 toCam = camPos - targetPos;
 			const Real distToTarget = toCam.Normalize();
 			long dx, dy;
 			injector->GetDeltaXY(dx, dy);
@@ -639,8 +633,28 @@ public:
 		return mFrustum;
 	}
 
+	const Frustum& GetFrustumLocal()
+	{
+		if (mFrustumInCameraSpaceCalcFrame == gpTimer->GetFrame())
+		{
+			return mFrustumInCameraSpace;
+		}
+
+		mFrustumInCameraSpace = mFrustum.TransformBy(mMatrices[ICamera::MatrixType::View]);
+		mFrustumInCameraSpaceCalcFrame = gpTimer->GetFrame();
+		return mFrustumInCameraSpace;		
+	}
+
 	void SetOverridingCamera(CameraPtr cam){
 		mOverridingCamera = cam;
+	}
+
+	Real ComputePixelSizeAtDistance(Real distance) {
+		// If the viewport width is zero, than replace it with 1, which effectively ignores the viewport width.
+		Real viewportWidth = GetWidth();
+		Real pixelSizeScale = 2.f * mTanHalfFOV / (viewportWidth <= 0 ? 1 : viewportWidth);
+
+		return std::abs(distance) * pixelSizeScale;
 	}
 
 	void SetEnalbeInput(bool enable)
@@ -650,6 +664,10 @@ public:
 			return;
 		}
 		mProcessInput = enable;
+		if (enable) {
+			mPrevTargetPos = mTargetPos;
+			mInternalParams.dist = mTargetPos.DistanceTo(mTransformation.GetTranslation());
+		}
 	}
 
 	void SetInitialDistToTarget(Real dist)
@@ -659,6 +677,11 @@ public:
 			return;
 		}
 		mInternalParams.dist = dist;
+	}
+
+	void SetMaxDistToTarget(Real dist)
+	{
+		mMaxDistToTarget = dist;
 	}
 
 	void SetFOV(Real fov)
@@ -807,6 +830,26 @@ void Camera::GetNearFar(Real& n, Real& f) const{
 	mImpl->GetNearFar(n, f);
 }
 
+Real Camera::GetNear() const
+{
+	return mImpl->GetNear();
+}
+
+Real Camera::GetFar() const
+{
+	return mImpl->GetFar();
+}
+
+void Camera::SetNear(Real n)
+{
+	mImpl->SetNear(n);
+}
+
+void Camera::SetFar(Real f)
+{
+	mImpl->SetFar(f);
+}
+
 //----------------------------------------------------------------------------
 void Camera::ProcessInputData(){
 	mImpl->ProcessInputData();
@@ -833,8 +876,13 @@ bool Camera::IsCulled(BoundingVolume* pBV) const{
 }
 
 //----------------------------------------------------------------------------
-Ray3 Camera::ScreenPosToRay(long x, long y){
+Ray Camera::ScreenPosToRay(long x, long y){
 	return mImpl->ScreenPosToRay(x, y);
+}
+
+Vec3 Camera::ScreenToNDC(const Vec2I& screenPos)
+{
+	return mImpl->ScreenToNDC(screenPos);
 }
 
 Vec2I Camera::WorldToScreen(const Vec3& worldPos) const{
@@ -847,6 +895,11 @@ void Camera::SetEnalbeInput(bool enable){
 
 void Camera::SetInitialDistToTarget(Real dist){
 	mImpl->SetInitialDistToTarget(dist);
+}
+
+void Camera::SetMaxDistToTarget(Real dist)
+{
+	mImpl->SetMaxDistToTarget(dist);
 }
 
 void Camera::SetFOV(Real fov)
@@ -935,10 +988,23 @@ const Frustum& Camera::GetFrustum(){
 	return mImpl->GetFrustum();
 }
 
+const Frustum& Camera::GetFrustumLocal()
+{
+	return mImpl->GetFrustumLocal();
+}
+
 void Camera::SetOverridingCamera(CameraPtr cam){
 	mImpl->SetOverridingCamera(cam);
 }
 
 CameraPtr Camera::GetOverridingCamera() const{
 	return mImpl->mOverridingCamera;
+}
+
+Real Camera::ComputePixelSizeAtDistance(Real distance) {
+	return mImpl->ComputePixelSizeAtDistance(distance);
+}
+
+void Camera::SetTargetPos(const Vec3& pos) {
+	mImpl->mTargetPos = pos;
 }

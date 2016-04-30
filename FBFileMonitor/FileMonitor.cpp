@@ -30,7 +30,7 @@
 using namespace fb;
 FileMonitor* sMonitorRaw = 0;
 FileMonitorWeakPtr sMonitor;
-
+std::set<std::string> mIgnoreDirectories;
 namespace fb {
 	//FB_CRITICAL_SECTION gFileMonitorMutex;
 	static const unsigned FILE_CHANGE_BUFFER_SIZE = 8000;
@@ -133,12 +133,21 @@ namespace fb {
 						fileName, _ARRAYSIZE(fileName) - 1, 0, 0);
 					fileName[count] = 0;
 					auto unifiedPath = FileSystem::UnifyFilepath(fileName);
-					LOCK_CRITICAL_SECTION lock(mChangedFilesGuard);
-					mChangedFiles.insert(unifiedPath);
-					mHasChangedFiles = true;
+					bool ignore = false;
+					for (auto& dir : mIgnoreDirectories) {
+						if (StartsWith(unifiedPath, dir)) {
+							ignore = true;
+							break;
+						}
+					}
+					if (!ignore) {
+						ENTER_CRITICAL_SECTION lock(mChangedFilesGuard);
+						mChangedFiles.insert(unifiedPath);
+						mHasChangedFiles = true;
 
-					if (sMonitorRaw){						
-						sMonitorRaw->OnChangeDetected();
+						if (sMonitorRaw) {
+							sMonitorRaw->OnChangeDetected();
+						}
 					}
 				}
 				break;
@@ -189,7 +198,7 @@ namespace fb {
 
 		bool HasChangedFiles() const { return mHasChangedFiles; }
 		void GetChangedFiles(std::vector<std::pair<std::string, std::string> >& files){
-			LOCK_CRITICAL_SECTION lock(mChangedFilesGuard);
+			ENTER_CRITICAL_SECTION lock(mChangedFilesGuard);
 			for (auto& str : mChangedFiles){
 				auto v = std::make_pair(mWatchDir, str);
 				if (!ValueExistsInVector(files, v))
@@ -303,7 +312,7 @@ public:
 				bool hasExtension = strlen(extension) != 0;
 				bool sdfFile = _stricmp(extension, "sdf") == 0;
 				bool canOpen = true;
-				bool throwAway = false;
+				bool throwAway = false;				
 				auto ignoreIt = mIgnoreFileChanges.find(filepath);
 				if (ignoreIt != mIgnoreFileChanges.end()){					
 					throwAway = true;
@@ -319,18 +328,13 @@ public:
 					it = mChangedFiles.erase(it);
 					continue;
 				}
-				FILE* file = 0;
-				errno_t err = fopen_s(&file, filefullpath.c_str(), "r");
-				if (!err && file)
 				{
-					fclose(file);
-					err = fopen_s(&file, filefullpath.c_str(), "a+");
-					if (err){
+					FileSystem::Open file(filefullpath.c_str(), "a+", FileSystem::ReadAllow, FileSystem::SkipErrorMsg);
+					auto err = file.Error();
+					if (err) {
 						canOpen = false;
 					}
 				}
-				if (file)
-					fclose(file);
 
 				if (canOpen)
 				{
@@ -421,7 +425,7 @@ FileMonitor::FileMonitor()
 }
 FileMonitor::~FileMonitor(){
 	mImpl->TerminatesAllThreads();
-	//LOCK_CRITICAL_SECTION l(gFileMonitorMutex);
+	//ENTER_CRITICAL_SECTION l(gFileMonitorMutex);
 	mImpl = 0;
 	sMonitorRaw = 0;
 	Logger::Log(FB_DEFAULT_LOG_ARG, "FileMonitor Deleted");
@@ -449,4 +453,9 @@ void FileMonitor::ResumeMonitoringOnFile(const char* filepath){
 
 void FileMonitor::OnChangeDetected(){
 	mImpl->OnChangeDetected();
+}
+
+void FileMonitor::IgnoreDirectory(const char* dirpath)
+{
+	mIgnoreDirectories.insert(std::string(dirpath));
 }

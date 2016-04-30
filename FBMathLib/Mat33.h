@@ -61,6 +61,7 @@ namespace fb
 		//-------------------------------------------------------------------
 		void MakeIdentity();		
 		void FromAxisAngle(const Vec3& axis, Real radian);
+		static Mat33 FromAxisAngleStatic(const Vec3& axis, Real radian);
 		Mat33 Inverse() const;
 		Mat33 Transpose() const;
 		Mat33 ScaleAxis(const Vec3& scale) const;

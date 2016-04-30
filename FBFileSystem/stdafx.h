@@ -37,3 +37,7 @@
     #include "PrefixHeader.pch"
 #endif
 #include <boost/filesystem.hpp>
+
+#include "FBDebugLib/Logger.h"
+#include "FBStringLib/StringLib.h"
+#include "FBCommonHeaders/Helpers.h"

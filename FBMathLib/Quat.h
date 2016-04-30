@@ -76,6 +76,7 @@ namespace fb
 		void FromRotationMatrix(const Mat33& rot);
 		void ToRotationMatrix(Mat33& rot) const;
 		void FromAngleAxis(const Real radian, const Vec3& axis);
+		static Quat CreateFromAngleAxis(const Real radian, const Vec3& axis);
 		void ToAngleAxis(Real& radian, Vec3& axis);
 		void FromAxes(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis);
 		void ToAxes(Vec3& xAxis, Vec3& yAxis, Vec3& zAxis);

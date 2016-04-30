@@ -45,7 +45,7 @@ namespace fb{
 		}
 	}
 
-	int BoundingVolume::WhichSide(const Plane3& plane) const { 
+	int BoundingVolume::WhichSide(const Plane& plane) const { 
 		assert(0); return -1; 
 	}
 	int BoundingVolume::WhichSide(const Vec3& min, const Vec3& max) const { 

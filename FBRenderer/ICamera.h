@@ -27,10 +27,13 @@
 
 #pragma once
 namespace fb{
+	class Ray;
 	class BoundingVolume;
 	class Mat44;
 	class Transformation;
+	class Frustum;
 	class Vec3;
+	FB_DECLARE_SMART_PTR(ISpatialObject);
 	class ICamera{
 	public:
 		enum MatrixType {
@@ -47,6 +50,27 @@ namespace fb{
 		virtual const Transformation& GetTransformation() const = 0;
 		virtual bool IsCulled(BoundingVolume* pBV) const = 0;
 		virtual const Vec3& GetPosition() const = 0;
+		virtual const Vec3 GetDirection() const = 0;
+		virtual Real ComputePixelSizeAtDistance(Real distance) = 0;		
+		virtual void SetFOV(Real radians) = 0;
+		virtual Real GetFOV() const = 0;
+		virtual Real GetTanHalfFOV() const = 0;
+		virtual const Frustum& GetFrustum() = 0;
+		virtual const Frustum& GetFrustumLocal() = 0;
+		virtual Real GetNear() const = 0;
+		virtual Real GetFar() const = 0;
+		virtual void GetNearFar(Real& nearPlane, Real& farPlane) const = 0;
+		virtual void SetNearFar(Real nearPlane, Real farPlane) = 0;
+		virtual void SetNear(Real n) = 0;
+		virtual void SetFar(Real f) = 0;
+		virtual Ray ScreenPosToRay(long x, long y) = 0;
+		virtual Vec3 ScreenToNDC(const Vec2I& screenPos) = 0;		
+		virtual void SetPosition(const Vec3& pos) = 0;
+		virtual void SetDirection(const Vec3& dir) = 0;
+		virtual void SetTarget(ISpatialObjectPtr pObj) = 0;
+		virtual ISpatialObjectPtr GetTarget() const = 0;
+		virtual void SetTargetPos(const Vec3& pos) = 0;
+		virtual void SetMaxDistToTarget(Real dist) = 0;
 		/*
 		virtual Vec2I WorldToScreen(const Vec3& pos) = 0;
 		

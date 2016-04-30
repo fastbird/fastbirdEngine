@@ -38,8 +38,7 @@ namespace fb
 	class Frustum;
 	FB_DECLARE_SMART_PTR(IInputInjector);
 	FB_DECLARE_SMART_PTR(IMouse);
-	FB_DECLARE_SMART_PTR(IKeyboard);
-	FB_DECLARE_SMART_PTR(ISpatialObject);
+	FB_DECLARE_SMART_PTR(IKeyboard);	
 	FB_DECLARE_SMART_PTR(ICameraObserver);
 	FB_DECLARE_SMART_PTR(Camera);
 	class FB_DLL_RENDERER Camera : public ICamera, public Observable<ICameraObserver>
@@ -48,16 +47,6 @@ namespace fb
 		Camera();
 
 	public:
-		enum FRUSTUM_PLANE
-		{
-			FRUSTUM_PLANE_NEAR   = 0,
-			FRUSTUM_PLANE_FAR    = 1,
-			FRUSTUM_PLANE_LEFT   = 2,
-			FRUSTUM_PLANE_RIGHT  = 3,
-			FRUSTUM_PLANE_TOP    = 4,
-			FRUSTUM_PLANE_BOTTOM = 5
-		};
-
 		enum ObserverEvents{
 			TransformChanged,
 		};
@@ -85,7 +74,7 @@ namespace fb
 		const Vec3 GetDirection() const;
 		const Mat44& GetMatrix(MatrixType type);
 		
-		// field of view in the y direction, in radians.
+		// vertical field of view, in radians.
 		void SetFOV(Real fov);
 		Real GetFOV() const;
 		Real GetTanHalfFOV() const;
@@ -95,6 +84,10 @@ namespace fb
 		// near/far view-plane
 		void SetNearFar(Real nearPlane, Real farPlane);
 		void GetNearFar(Real& nearPlane, Real& farPlane) const;
+		Real GetNear() const;
+		Real GetFar() const;		
+		void SetNear(Real n);
+		void SetFar(Real f);
 		// width and height of the view volume at the near view-plane		
 		void SetWidth(Real width);
 		void SetHeight(Real height);
@@ -105,22 +98,27 @@ namespace fb
 		const char* GetName() const;
 		void Update();
 		bool IsCulled(BoundingVolume* pBV) const;
-		Ray3 ScreenPosToRay(long x, long y);
+		Ray ScreenPosToRay(long x, long y);
+		Vec3 ScreenToNDC(const Vec2I& screenPos);
 		Vec2I WorldToScreen(const Vec3& worldPos) const;
 		void SetYZSwap(bool enable);
 		void SetDistanceFromTarget(Real dist);
 		void SetTarget(ISpatialObjectPtr pObj);
 		ISpatialObjectPtr GetTarget() const;
+		void SetTargetPos(const Vec3& pos);
 		void SetCurrent(bool cur);
 		bool GetCurrent() const;
 		void SetCameraIndex(size_t idx);
 		void SetEnalbeInput(bool enable);
 		void SetInitialDistToTarget(Real dist);
+		void SetMaxDistToTarget(Real dist);
 		void ProcessInputData();
 		const Frustum& GetFrustum();
+		const Frustum& GetFrustumLocal();
 
 		void SetOverridingCamera(CameraPtr cam);
 		CameraPtr GetOverridingCamera() const;
+		Real ComputePixelSizeAtDistance(Real distance);
 
 		//-------------------------------------------------------------------
 		// InputConsumer From Renderer

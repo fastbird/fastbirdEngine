@@ -29,8 +29,8 @@
 #include "Mat33.h"
 #include "Vec3.h"
 #include "Quat.h"
-#include "Plane3.h"
-#include "Ray3.h"
+#include "Plane.h"
+#include "Ray.h"
 
 namespace fb
 {
@@ -104,22 +104,25 @@ namespace fb
 
 		Real GetNorm () const;
 		Vec3 ApplyForward (const Vec3& p) const;
+		Vec3 ApplyForwardDir(const Vec3& dir) const;
 		void ApplyForward (int iQuantity, const Vec3* points, Vec3* output) const;
+		Plane ApplyForward(const Plane& p) const;
+		AABB ApplyForward(const AABB& aabb) const;
+		Ray ApplyForward(const Ray& r, bool scaleLength) const;
 
 		// X = M^{-1}*(Y-T) where Y is the input and X is the output.
 		Vec3 ApplyInverse (const Vec3& p) const;
+		Vec3 ApplyInverseDir(const Vec3& dir) const;
 		void ApplyInverse (int iQuantity, const Vec3* points, Vec3* output) const;
-		Ray3 ApplyInverse(const Ray3& r) const;
+		Ray ApplyInverse(const Ray& r, bool scaleLength) const;
 
 		Vec3 InvertVector (const Vec3& v) const;
 
-		Plane3 ApplyForward (const Plane3& p) const;
-		AABB ApplyForward(const AABB& aabb) const;
-
 		void Product (const Transformation& a, const Transformation& b);
-		Transformation operator* (const Transformation& t) const;
+		Transformation operator* (const Transformation& t) const;			
 		
 		void Inverse (Transformation& t) const;
+		Transformation Inverse() const;
 		void GetHomogeneous (Mat44& hm) const;
 #if defined(FB_DOUBLE_PRECISION)
 		void GetHomogeneous(Mat44f& hm) const;

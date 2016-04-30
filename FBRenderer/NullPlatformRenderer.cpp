@@ -46,7 +46,8 @@ bool NullPlatformRenderer::GetResolutionList(unsigned& outNum, Vec2ITuple* list)
 	return false;
 }
 
-bool NullPlatformRenderer::InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) {
+bool NullPlatformRenderer::InitCanvas(const CanvasInitInfo& info, 
+	IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) {
 	return false;
 }
 

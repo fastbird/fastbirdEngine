@@ -1581,8 +1581,7 @@ namespace tinyxml2
 		#endif
 			SetError( XML_ERROR_FILE_NOT_FOUND, filename, 0 );
 			return errorID;
-		}
-		LoadFile( fp );
+		}		LoadFile( fp );
 		fclose( fp );
 		return errorID;
 	}

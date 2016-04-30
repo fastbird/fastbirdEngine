@@ -50,6 +50,7 @@ namespace fb
 		bool IsReady() const;	
 		MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag);
 		void Unmap(UINT subResource);
+		bool UpdateBuffer(void* data, unsigned bytes);
 
 		// OWN
 		ID3D11Buffer* GetHardwareBuffer() const;

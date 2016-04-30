@@ -40,7 +40,7 @@ namespace fb{
 	class ProfilerSimple;
 	class LuaObject;
 	class Color;
-	class Ray3;
+	class Ray;
 	FB_DECLARE_SMART_PTR(AudioExFacade);
 	FB_DECLARE_SMART_PTR(ISpatialObject);
 	FB_DECLARE_SMART_PTR(MeshFacade);
@@ -111,6 +111,7 @@ namespace fb{
 		// IFileChangeObserver
 		void OnChangeDetected();
 		bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension);
+		void IgnoreMonitoringDirectory(const char* dir);
 
 		
 		//---------------------------------------------------------------------------
@@ -182,7 +183,7 @@ namespace fb{
 		void SetMainCameraTarget(ISpatialObjectPtr spatialObject);
 		// enable internal input mechanism for the main camera
 		void EnableCameraInput(bool enable);
-		const Ray3& GetWorldRayFromCursor();
+		Ray GetWorldRayFromCursor();
 		void DrawProfileResult(const ProfilerSimple& profiler, const char* posVarName);
 		void DrawProfileResult(const ProfilerSimple& profiler, const char* posVarName, int tab);
 		void DrawProfileResult(wchar_t* buf, const char* posVarName);

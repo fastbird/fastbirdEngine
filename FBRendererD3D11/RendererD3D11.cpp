@@ -79,6 +79,7 @@ public:
 	D3D_DRIVER_TYPE			mDriverType;
 	D3D_FEATURE_LEVEL		mFeatureLevel;
 	ID3DX11ThreadPumpPtr	mThreadPump;
+	PIXEL_FORMAT			mColorFormat;
 	PIXEL_FORMAT			mDepthStencilFormat;
 
 	// constant buffers
@@ -103,6 +104,7 @@ public:
 		: mStandBy(false)
 		, mUseShaderCache(true)
 		, mGenerateShaderCache(true)
+		, mColorFormat(PIXEL_FORMAT_R8G8B8A8_UNORM)
 		, mDepthStencilFormat(PIXEL_FORMAT_D24_UNORM_S8_UINT)
 	{
 		IDXGIFactory1* dxgiFactory;
@@ -303,7 +305,7 @@ public:
 		}
 		auto outputPtr = IDXGIOutputPtr(output, IUnknownDeleter());
 		UINT num = 0;
-		if (FAILED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, 0))){
+		if (FAILED(output->GetDisplayModeList(ConvertEnumD3D11(mColorFormat), 0, &num, 0))){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("RendererD3D11::FindClosestSize : GetDisplayModeList #1 is failed for swap chain %d", id).c_str());			
 			return closest;
 		}
@@ -311,7 +313,7 @@ public:
 		Real shortestDist = FLT_MAX;
 		auto descsPtr = std::shared_ptr<DXGI_MODE_DESC>(FB_ARRAY_NEW(DXGI_MODE_DESC, num), [](DXGI_MODE_DESC* obj){ FB_ARRAY_DELETE(obj); });
 		DXGI_MODE_DESC* descs = descsPtr.get();
-		if (SUCCEEDED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, descs))){
+		if (SUCCEEDED(output->GetDisplayModeList(ConvertEnumD3D11(mColorFormat), 0, &num, descs))){
 			for (UINT i = 0; i < num; ++i){
 				auto curSize = Vec2I(descs[i].Width, descs[i].Height);
 				Real dist = curSize.DistanceTo(input);
@@ -340,7 +342,7 @@ public:
 		IDXGIOutputPtr outputPtr(output, IUnknownDeleter());
 		UINT num = 0;
 		if (list == 0){
-			if (FAILED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, 0))){
+			if (FAILED(output->GetDisplayModeList(ConvertEnumD3D11(mColorFormat), 0, &num, 0))){
 				Logger::Log(FB_ERROR_LOG_ARG, "RendererD3D11::GetResolutionList : GetDisplayModeList #1 is failed for swap chain 1");
 				return false;
 			}
@@ -351,7 +353,7 @@ public:
 			num = outNum;
 			std::shared_ptr<DXGI_MODE_DESC> descsPtr(FB_ARRAY_NEW(DXGI_MODE_DESC, num), [](DXGI_MODE_DESC* obj){FB_ARRAY_DELETE(obj); });
 			DXGI_MODE_DESC* descs = descsPtr.get();
-			if (SUCCEEDED(output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &num, descs))){
+			if (SUCCEEDED(output->GetDisplayModeList(ConvertEnumD3D11(mColorFormat), 0, &num, descs))){
 				for (UINT i = 0; i < num; ++i){
 					list[i] = Vec2ITuple{ descs[i].Width, descs[i].Height };
 				}
@@ -363,34 +365,36 @@ public:
 		}
 	}
 
-	bool InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,
+	bool InitCanvas(const CanvasInitInfo& info,
 		IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture){				
-		if (window == INVALID_HWND)
+		if (info.mWindow == INVALID_HWND)
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "No valid window.");
 			return false;
 		}
 
+		mDepthStencilFormat = info.mDepthFormat;
+		mColorFormat = info.mColorFormat;
 		DXGI_SWAP_CHAIN_DESC sd = {};
 		sd.BufferCount = 1;
-		sd.BufferDesc.Width = width;
-		sd.BufferDesc.Height = height;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.Width = info.mWidth;
+		sd.BufferDesc.Height = info.mHeight;
+		sd.BufferDesc.Format = ConvertEnumD3D11(info.mColorFormat);
 		sd.BufferDesc.RefreshRate.Numerator = 60;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
 		sd.Flags = 0;
 
-		DXGI_MODE_DESC findingMode;
-		findingMode.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		findingMode.Width = width;
-		findingMode.Height = height;
+		DXGI_MODE_DESC findingMode;		
+		findingMode.Width = info.mWidth;
+		findingMode.Height = info.mHeight;
+		findingMode.Format = ConvertEnumD3D11(info.mColorFormat);
 		findingMode.RefreshRate.Numerator = 60;
 		findingMode.RefreshRate.Denominator = 1;
 		findingMode.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 		findingMode.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		DXGI_MODE_DESC bestMatch;
-		if (id == 1){
-			HMONITOR monitorHandle = MonitorFromWindow((HWND)window, MONITOR_DEFAULTTONEAREST);
+		if (info.mId == 1){
+			HMONITOR monitorHandle = MonitorFromWindow((HWND)info.mWindow, MONITOR_DEFAULTTONEAREST);
 			if (monitorHandle){
 				bool found = FindClosestMatchingMode(&findingMode, &bestMatch, monitorHandle);
 				if (found){
@@ -415,9 +419,9 @@ public:
 		*/
 		sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.OutputWindow = (HWND)window;
+		sd.OutputWindow = (HWND)info.mWindow;
 		sd.SampleDesc = mMultiSampleDesc;
-		auto r_fullscreen = fullscreen;
+		auto r_fullscreen = info.mFullscreen;
 		/*
 		Since the target output cannot be chosen explicitly when the swap-chain is created,
 		you should not create a full-screen swap chain. This can reduce presentation performance
@@ -433,7 +437,7 @@ public:
 			assert(0);
 			return false;
 		}
-		mSwapChains[id] = IDXGISwapChainPtr(pSwapChain, IUnknownDeleter());
+		mSwapChains[info.mId] = IDXGISwapChainPtr(pSwapChain, IUnknownDeleter());
 
 		if (r_fullscreen == 2){
 			// faked fullscreen
@@ -441,8 +445,8 @@ public:
 			if (SUCCEEDED(pSwapChain->GetContainingOutput(&output))){
 				DXGI_OUTPUT_DESC desc;
 				if (SUCCEEDED(output->GetDesc(&desc))){
-					ChangeWindowStyle((HWND)window, 0);
-					ChangeWindowRect((HWND)window, desc.DesktopCoordinates);
+					ChangeWindowStyle((HWND)info.mWindow, 0);
+					ChangeWindowRect((HWND)info.mWindow, desc.DesktopCoordinates);
 				}
 				SAFE_RELEASE(output);
 			}
@@ -460,7 +464,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "Create swap-chain target texture is failed!");
 			return false;
 		}
-		mRenderTargetTextures[id] = { color, depth };
+		mRenderTargetTextures[info.mId] = { color, depth };
 		outColorTexture = color;
 		outDepthTexture = depth;
 		return true;
@@ -824,6 +828,7 @@ public:
 			}
 		}
 
+		texture->SetPixelFormat(desc.Format);
 		return texture;
 	}
 
@@ -891,6 +896,7 @@ public:
 		}
 
 		pIndexBufferD3D11->SetHardwareBuffer(pHardwareBuffer);
+		pIndexBufferD3D11->SetFormatD3D11(ConvertEnumD3D11(format));
 		return pIndexBufferD3D11;
 		
 	}
@@ -916,10 +922,10 @@ public:
 			)
 		{
 			assert(IncludeType == D3D10_INCLUDE_LOCAL);
-			FILE* file = 0;
 			std::string filepath = pFileName;
-			fopen_s(&file, filepath.c_str(), "rb");
-			if (!file)
+			FileSystem::Open file(filepath.c_str(), "rb");
+			auto err = file.Error();			
+			if (err)
 			{
 				Error("Failed to open include file %s", pFileName);
 				return S_OK;
@@ -934,8 +940,7 @@ public:
 			int elements = fread(buffer, 1, size, file);
 			assert(elements == size);
 			*ppData = buffer;
-			*pBytes = size;
-			fclose(file);
+			*pBytes = size;			
 			return S_OK;
 		}
 
@@ -1654,6 +1659,24 @@ public:
 	void UnmapBuffer(ID3D11Resource* pResource, UINT subResource) const{
 		mImmediateContext->Unmap(pResource, subResource);
 	}
+	
+	bool UpdateBuffer(ID3D11Resource* pResource, void* data, unsigned bytes) {
+		if (!pResource) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return false;
+		}
+		if (!data) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg2.");
+			return false;
+		}
+		if (bytes == 0) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg3.");
+			return false;
+		}
+		mImmediateContext->UpdateSubresource(pResource, 0,
+			0, data, bytes, 0);
+		return true;
+	}
 
 	void SaveTextureToFile(TextureD3D11* texture, const char* filename){
 		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(texture);
@@ -1958,7 +1981,8 @@ public:
 		color = TextureD3D11::Create();
 		color->SetHardwareTexture(pBackBuffer);
 		color->AddRenderTargetView(pRenderTargetView);
-		color->SetSize(size);
+		color->SetSize(size);		
+		color->SetPixelFormat(ConvertEnumD3D11(mColorFormat));
 
 		depth = std::dynamic_pointer_cast<TextureD3D11>(
 			CreateTexture(0, size.x, size.y, mDepthStencilFormat, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL));
@@ -1990,7 +2014,7 @@ public:
 		if (itSwapChain != mSwapChains.end()) {
 			BOOL fullscreen;
 			itSwapChain->second->GetFullscreenState(&fullscreen, 0);
-			auto hr = itSwapChain->second->ResizeBuffers(1, resol.x, resol.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+			auto hr = itSwapChain->second->ResizeBuffers(1, resol.x, resol.y, ConvertEnumD3D11(mColorFormat), 0);
 			if (!SUCCEEDED(hr)){
 				Error("Resizing swapchain to %dx%d is failed(0x%x", resol.x, resol.y, hr);	
 				bool successful = CreateTargetTexturesFor(itSwapChain->second.get(), originalSize, color, depth);
@@ -2067,8 +2091,8 @@ bool RendererD3D11::GetResolutionList(unsigned& outNum, Vec2ITuple* list) {
 	return mImpl->GetResolutionList(outNum, list);
 }
 
-bool RendererD3D11::InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,	IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) {
-	return mImpl->InitCanvas(id, window, width, height, fullscreen, outColorTexture, outDepthTexture);
+bool RendererD3D11::InitCanvas(const CanvasInitInfo& info,	IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) {
+	return mImpl->InitCanvas(info, outColorTexture, outDepthTexture);
 }
 
 void RendererD3D11::DeinitCanvas(HWindowId id, HWindow window) {
@@ -2245,6 +2269,10 @@ MapData RendererD3D11::MapBuffer(ID3D11Resource* pResource, UINT subResource, MA
 
 void RendererD3D11::UnmapBuffer(ID3D11Resource* pResource, UINT subResource) const {
 	mImpl->UnmapBuffer(pResource, subResource);
+}
+
+bool RendererD3D11::UpdateBuffer(ID3D11Resource* pResource, void* data, unsigned bytes) {
+	return mImpl->UpdateBuffer(pResource, data, bytes);
 }
 
 void RendererD3D11::SaveTextureToFile(TextureD3D11* texture, const char* filename) {

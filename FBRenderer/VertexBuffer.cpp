@@ -34,11 +34,16 @@ class VertexBuffer::Impl{
 public:
 	unsigned mStride;
 	unsigned mNumVertices;
+	BUFFER_USAGE mUsage;
+	BUFFER_CPU_ACCESS_FLAG mAccessFlag;
 	IPlatformVertexBufferPtr mPlatformBuffer;
 	//---------------------------------------------------------------------------
-	Impl(unsigned stride, unsigned numVertices)
+	Impl(unsigned stride, unsigned numVertices,
+		BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag)
 		: mStride(stride)
 		, mNumVertices(numVertices)
+		, mUsage(usage)
+		, mAccessFlag(accessFlag)
 	{
 	}
 
@@ -56,6 +61,31 @@ public:
 
 	IPlatformVertexBufferPtr GetPlatformBuffer() const{
 		return mPlatformBuffer;
+	}
+
+	bool IsSame(unsigned stride, unsigned numVertices, BUFFER_USAGE usage,
+		BUFFER_CPU_ACCESS_FLAG accessFlag) const {
+		return mStride == stride && mNumVertices == numVertices &&
+			mUsage == usage && mAccessFlag == accessFlag;
+	}
+
+	bool UpdateData(void* data) {		
+		if (mUsage == BUFFER_USAGE::BUFFER_USAGE_DYNAMIC) {
+			auto map = Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+			if (!map.pData)
+				return false;
+			memcpy(map.pData, data, mStride * mNumVertices);
+			Unmap(0);
+			return true;
+		}
+		else if (mUsage != BUFFER_USAGE::BUFFER_USAGE_IMMUTABLE) {
+			return mPlatformBuffer->UpdateBuffer(data, mStride * mNumVertices);
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot update vertex buffer(usage : %d)", mUsage).c_str());
+			return false;
+		}
 	}
 
 	bool IsReady() const{
@@ -76,12 +106,16 @@ public:
 };
 
 //---------------------------------------------------------------------------
-VertexBufferPtr VertexBuffer::Create(unsigned stride, unsigned numVertices){
-	return VertexBufferPtr(new VertexBuffer(stride, numVertices), [](VertexBuffer* obj){ delete obj; });
+VertexBufferPtr VertexBuffer::Create(unsigned stride, unsigned numVertices, 
+	BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag)
+{
+	return VertexBufferPtr(new VertexBuffer(stride, numVertices, usage, accessFlag), 
+		[](VertexBuffer* obj){ delete obj; });
 }
 
-VertexBuffer::VertexBuffer(unsigned stride, unsigned numVertices)
-	: mImpl(new Impl(stride, numVertices))
+VertexBuffer::VertexBuffer(unsigned stride, unsigned numVertices,
+	BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag)
+	: mImpl(new Impl(stride, numVertices, usage, accessFlag))
 {
 }
 
@@ -108,10 +142,23 @@ unsigned VertexBuffer::GetNumVertices() const{
 	return mImpl->GetNumVertices();
 }
 
+BUFFER_USAGE VertexBuffer::GetBufferUsage() const {
+	return mImpl->mUsage;
+}
+
 void VertexBuffer::SetPlatformBuffer(IPlatformVertexBufferPtr buffer){
 	mImpl->SetPlatformBuffer(buffer);
 }
 
 IPlatformVertexBufferPtr VertexBuffer::GetPlatformBuffer() const{
 	return mImpl->GetPlatformBuffer();
+}
+
+bool VertexBuffer::IsSame(unsigned stride, unsigned numVertices, BUFFER_USAGE usage,
+	BUFFER_CPU_ACCESS_FLAG accessFlag) const {
+	return mImpl->IsSame(stride, numVertices, usage, accessFlag);
+}
+
+bool VertexBuffer::UpdateData(void* data) {
+	return mImpl->UpdateData(data);
 }

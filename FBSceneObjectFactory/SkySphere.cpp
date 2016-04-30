@@ -38,6 +38,7 @@
 #include "FBSceneManager/DirectionalLight.h"
 #include "FBRenderer/Camera.h"
 #include "SceneObjectFactory.h"
+#include "MeshObject.h"
 
 using namespace fb;
 static RenderTargetPtr sRT;
@@ -62,6 +63,7 @@ public:
 	unsigned mLastPreRendered;
 	// alphablend sky
 	SkySpherePtr mBlendingSkySphere;
+	MeshObjectPtr mMesh;
 	
 
 	Impl(SkySphere* self)
@@ -150,7 +152,13 @@ public:
 			{
 				renderer.GetResourceProvider()->BindBlendState(ResourceTypes::BlendStates::AlphaBlend);
 			}
-			renderer.Draw(3, 0);
+			if (mMesh) {
+				renderer.GetResourceProvider()->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthWrite_LessEqual);
+				mMesh->RenderSimple(false);
+			}
+			else {
+				renderer.Draw(3, 0);
+			}
 		}
 
 		if (mBlendingSkySphere && mBlendingSkySphere->GetAlpha() != 0.f){
@@ -176,6 +184,12 @@ public:
 				assert(0);
 			}
 		}
+	}
+
+	void SetGeometry(const char* path) {
+		MeshImportDesc desc;
+		desc.generateTangent = false;
+		mMesh = SceneObjectFactory::GetInstance().CreateMeshObject(path, desc);
 	}
 
 	void SetMaterial(MaterialPtr pMat, int pass){
@@ -402,4 +416,8 @@ void SkySphere::DetachBlendingSky(){
 
 SkySpherePtr SkySphere::GetBlendingSky(){
 	return mImpl->GetBlendingSky();
+}
+
+void SkySphere::SetGeometry(const char* path) {
+	mImpl->SetGeometry(path);
 }

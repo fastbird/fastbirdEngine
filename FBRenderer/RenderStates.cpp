@@ -31,7 +31,7 @@
 #include "FBCommonHeaders/CowPtr.h"
 
 namespace fb{
-
+bool RasterizerState::sLock = false;
 class RasterizerState::Impl{
 public:
 	IPlatformRasterizerStatePtr mPlatformRasterizerState;
@@ -42,7 +42,7 @@ public:
 	}
 
 	void Bind(){
-		if (!Renderer::GetInstance().GetForcedWireFrame())
+		if (!sLock)
 			mPlatformRasterizerState->Bind();
 	}
 
@@ -71,6 +71,11 @@ void RasterizerState::Bind(){
 
 void RasterizerState::SetDebugName(const char* name){
 	mImpl->SetDebugName(name);
+}
+
+void RasterizerState::SetLock(bool lock)
+{
+	sLock = lock;
 }
 
 //---------------------------------------------------------------------------

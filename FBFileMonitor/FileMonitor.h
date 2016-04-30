@@ -50,6 +50,7 @@ namespace fb{
 		void IgnoreMonitoringOnFile(const char* filepath);
 		void IgnoreMonitoringOnFile(const char* filepath, float sec);
 		void ResumeMonitoringOnFile(const char* filepath);
+		void IgnoreDirectory(const char* dirpath);
 
 		/// Internal function
 		void OnChangeDetected();

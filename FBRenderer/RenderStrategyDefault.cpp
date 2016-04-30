@@ -216,6 +216,7 @@ public:
 			scene->Render(renderParam, 0);
 			GodRay();
 		}
+		auto forceWireframe = renderTarget->GetForceWireframe();
 		{
 			RenderEventMarker marker("Main Render Pass");
 			memset(&renderParam, 0, sizeof(RenderParam));
@@ -228,27 +229,46 @@ public:
 			CloudVolumeTexture(true);
 			renderer.SetBindShadowMap(true);
 			renderParam.mCamera = renderer.GetCamera().get();
+			
+			if (forceWireframe) {
+				renderer.GetResourceProvider()->BindRasterizerState(ResourceTypes::RasterizerStates::WireFrame);				
+				RasterizerState::SetLock(true);
+			}
 			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, &renderParamOut);
+			if (forceWireframe) {
+				RasterizerState::SetLock(false);
+				renderer.GetResourceProvider()->BindRasterizerState(ResourceTypes::RasterizerStates::Default);
+			}
+			
+
 			if (renderParamOut.mSilouetteRendered)
 				Silouette();
 		}
 
+		if (forceWireframe)
 		{
-			RenderEventMarker marker("Blend Glow and God Ray");
-			BlendGlow();
-			BlendGodRay();
+			RenderEventMarker marker("HDR simple copy");
 			HDRTarget(false);
+			SimpleToneMapping();
 		}
-		{
-			RenderEventMarker marker("HDR and Bloom");
-			MeasureLuminanceOfHDRTarget();
-			BrightPass();
-			BrightPassToStarSource();
-			StarSourceToBloomSource();
-			Bloom();
-			RenderStarGlare();
-			ToneMapping();
+		else {
+			{
+				RenderEventMarker marker("Blend Glow and God Ray");
+				BlendGlow();
+				BlendGodRay();
+				HDRTarget(false);
+			}
+			{
+				RenderEventMarker marker("HDR and Bloom");
+				MeasureLuminanceOfHDRTarget();
+				BrightPass();
+				BrightPassToStarSource();
+				StarSourceToBloomSource();
+				Bloom();
+				RenderStarGlare();
+				ToneMapping();
+			}
 		}
 		renderTarget->Unbind();
 	}
@@ -895,7 +915,7 @@ public:
 				mBloomTexture[i] = renderer.CreateTexture(0, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
 					BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 				char buff[255];
-				sprintf_s(buff, "rt%u_%u_%u_Bloom(%d) %u", mId, size.x, size.y, i);
+				sprintf_s(buff, "rt%u_%u_%u_Bloom(%d)", mId, size.x, size.y, i);
 				mBloomTexture[i]->SetDebugName(buff);
 			}
 		}
@@ -1109,8 +1129,8 @@ public:
 				renderer.DrawFullscreenQuad(provider->GetShader(ResourceTypes::Shaders::StarGlarePS), false);
 
 				// Setup next expansion
-				vtStepUV *= starGlareSamples;
-				attnPowScale *= starGlareSamples;
+				vtStepUV *= (Real)starGlareSamples;
+				attnPowScale *= (Real)starGlareSamples;
 
 				// Set the work drawn just before to next texture source.
 				pSrcTexture = mStarTextures[iWorkTexture];
@@ -1184,6 +1204,21 @@ public:
 		renderer.UnbindTexture(BINDING_SHADER_PS, 3);			
 		renderer.UnbindTexture(BINDING_SHADER_PS, 0);		
 	}	
+
+	void SimpleToneMapping()
+	{
+		auto& renderer = Renderer::GetInstance();				
+		auto rt = mRenderTarget.lock();
+		rt->BindTargetOnly(false);
+		mHDRTarget->Bind(BINDING_SHADER_PS, 0);		
+		auto& provider = renderer.GetResourceProvider();
+		provider->BindBlendState(ResourceTypes::BlendStates::Default);		
+		renderer.DrawFullscreenQuad(provider->GetShader(ResourceTypes::Shaders::SimpleToneMappingPS), false);
+		renderer.RestoreDepthStencilState();
+		renderer.UnbindTexture(BINDING_SHADER_PS, 3);
+		renderer.UnbindTexture(BINDING_SHADER_PS, 0);
+
+	}
 
 	void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName){
 	

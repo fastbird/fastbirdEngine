@@ -116,18 +116,18 @@ namespace fb
 		void Unbind();
 		void GlowRenderTarget(bool bind);
 
-		void SetLightCamWidth(Real width);
-		void SetLightCamHeight(Real height);
-		void SetLightCamNear(Real n);
-		void SetLightCamFar(Real f);
-
 		void DrawOnEvent(bool set);
 		void TriggerDrawEvent();
 
 		bool SetSmallSilouetteBuffer();
 		bool SetBigSilouetteBuffer();		
-
+		
 		void OnRendererOptionChanged(RendererOptionsPtr options, const char* name);
+
+		int GetDepthBits() const;
+		void ToggleForceWireframe();
+		void SetForceWireframe(bool wireframe);
+		bool GetForceWireframe() const;
 		
 	};
 }

@@ -106,7 +106,7 @@ namespace fb
 	unsigned ListBoxDataSet::FindRowIndexWithKey(unsigned uniqueKey){
 		unsigned row = 0;
 		for (auto& cols : mData){
-			if (cols[0].GetKey()== uniqueKey){
+			if (cols && cols[0].GetKey() == uniqueKey){
 				return row;
 			}
 			++row;

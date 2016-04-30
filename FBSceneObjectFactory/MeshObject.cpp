@@ -429,12 +429,12 @@ public:
 		mRenderHighlight = enable;
 	}
 
-	void RenderSimple(){
+	void RenderSimple(bool bindPosOnly){
 		for(auto& it: mMaterialGroups)
 		{
 			if (!it.mVBPos)
 				continue;
-			RenderMaterialGroup(&it, true);
+			RenderMaterialGroup(&it, bindPosOnly);
 		}
 	}
 
@@ -822,10 +822,10 @@ public:
 		return false;
 	}
 
-	Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const{
+	Ray::IResult CheckNarrowCollisionRay(const Ray& ray) const{
 		unsigned num = GetNumCollisionShapes();
 		if (!num)
-			return Ray3::IResult(false, 0.f);
+			return Ray::IResult(false, 0.f);
 
 		Real minDist = FLT_MAX;
 		bool collided = false;
@@ -842,7 +842,7 @@ public:
 			}
 		}
 
-		return Ray3::IResult(collided, minDist);
+		return Ray::IResult(collided, minDist);
 	}
 
 	Vec3 GetRandomPosInVolume(const Vec3* nearWorld = 0) const{
@@ -926,7 +926,7 @@ public:
 		assert(0);
 	}
 
-	bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri = 0) const{
+	bool RayCast(const Ray& ray, Vec3& location, const ModelTriangle** outTri = 0) const{
 		auto& factory = SceneObjectFactory::GetInstance();		
 		auto mesh = factory.GetMeshArcheType(mSelf->GetName());
 		assert(mesh);
@@ -1256,8 +1256,8 @@ void MeshObject::SetEnableHighlight(bool enable) {
 	mImpl->SetEnableHighlight(enable);
 }
 
-void MeshObject::RenderSimple() {
-	mImpl->RenderSimple();
+void MeshObject::RenderSimple(bool bindPosOnly) {
+	mImpl->RenderSimple(bindPosOnly);
 }
 
 void MeshObject::ClearMeshData() {
@@ -1396,7 +1396,7 @@ bool MeshObject::CheckNarrowCollision(const BoundingVolume* pBV) const {
 	return mImpl->CheckNarrowCollision(pBV);
 }
 
-Ray3::IResult MeshObject::CheckNarrowCollisionRay(const Ray3& ray) const {
+Ray::IResult MeshObject::CheckNarrowCollisionRay(const Ray& ray) const {
 	return mImpl->CheckNarrowCollisionRay(ray);
 }
 
@@ -1420,7 +1420,7 @@ void MeshObject::UnmapVB(MeshVertexBufferType::Enum type, size_t materialGroupId
 	mImpl->UnmapVB(type, materialGroupIdx);
 }
 
-bool MeshObject::RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri) const {
+bool MeshObject::RayCast(const Ray& ray, Vec3& location, const ModelTriangle** outTri) const {
 	return mImpl->RayCast(ray, location, outTri);
 }
 

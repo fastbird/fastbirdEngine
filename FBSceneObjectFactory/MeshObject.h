@@ -72,7 +72,7 @@ namespace fb{
 		void SetMaterial(MaterialPtr pMat, int pass);
 		MaterialPtr GetMaterial(int pass = 0) const;
 		void SetEnableHighlight(bool enable);
-		void RenderSimple();
+		void RenderSimple(bool bindPosOnly);
 		void ClearMeshData();
 		void StartModification();
 		void AddTriangle(int matGroupIdx, const Vec3& pos0, const Vec3& pos1, const Vec3& pos2);
@@ -110,13 +110,13 @@ namespace fb{
 		bool HasCollisionShapes() const;
 		FBCollisionShapeConstPtr GetCollisionShape(unsigned idx) const;
 		bool CheckNarrowCollision(const BoundingVolume* pBV) const;
-		Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray) const;
+		Ray::IResult CheckNarrowCollisionRay(const Ray& ray) const;
 		Vec3 GetRandomPosInVolume(const Vec3* nearWorld = 0) const;
 		void DeleteCollisionShapes();
 		void SetUseDynamicVB(MeshVertexBufferType::Enum type, bool useDynamicVB);
 		MapData MapVB(MeshVertexBufferType::Enum type, size_t materialGroupIdx);
 		void UnmapVB(MeshVertexBufferType::Enum type, size_t materialGroupIdx);
-		bool RayCast(const Ray3& ray, Vec3& location, const ModelTriangle** outTri = 0) const;
+		bool RayCast(const Ray& ray, Vec3& location, const ModelTriangle** outTri = 0) const;
 		BoundingVolumeConstPtr GetAABB() const;
 		void ClearVertexBuffers();
 		void SetAlpha(Real alpha);

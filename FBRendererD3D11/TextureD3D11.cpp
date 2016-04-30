@@ -76,6 +76,10 @@ public:
 		return  ConvertEnumFB(mImageInfo.Format);
 	}
 
+	void SetPixelFormat(DXGI_FORMAT format) {
+		mImageInfo.Format = format;
+	}
+
 	bool IsReady() const {
 		if (!mSRView && mSRViewSync) {
 			mSRView = ID3D11ShaderResourceViewPtr(mSRViewSync, IUnknownDeleter());
@@ -270,6 +274,10 @@ Vec2ITuple TextureD3D11::GetSize() const {
 
 PIXEL_FORMAT TextureD3D11::GetPixelFormat() const {
 	return mImpl->GetPixelFormat();
+}
+
+void TextureD3D11::SetPixelFormat(DXGI_FORMAT format){
+	mImpl->SetPixelFormat(format);
 }
 
 bool TextureD3D11::IsReady() const {

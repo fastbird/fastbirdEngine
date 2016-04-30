@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "BVSphere.h"
 #include "Math.h"
+#include "Intersection.h"
 
 using namespace fb;
 
@@ -113,7 +114,7 @@ void BVSphere::TransformBy(const Transformation& transform,
 }
 
 //----------------------------------------------------------------------------
-int BVSphere::WhichSide(const Plane3& plane) const
+int BVSphere::WhichSide(const Plane& plane) const
 {
 	if (mAlwaysPass)
 		return 1;
@@ -132,8 +133,53 @@ int BVSphere::WhichSide(const Plane3& plane) const
     return 0;
 }
 
+std::vector<Intersection> BVSphere::Intersect(const Ray& ray) const
+{
+	const auto& rayOrigin = ray.GetOrigin();
+	// to relative space
+	Vec3 toRayOrigin = rayOrigin - mCenter;	
+
+	auto dir = ray.GetDir();
+	if (!ray.IsUnitVector()) {
+		dir = dir / ray.GetDirLen();
+	}
+	// t = (-b +/- sqrt(b*b + 4ac)) / 2a
+	Real a = dir.Dot(dir);
+	Real b = 2 * toRayOrigin.Dot(dir);
+	Real c = toRayOrigin.Dot(toRayOrigin) - mRadius*mRadius;
+
+	// Discriminant
+	Real discriminant = Discriminant(a, b, c);
+	if (discriminant < 0)
+		return{};
+
+	Real discriminantRoot = sqrt(discriminant);
+	if (discriminant == 0)
+	{
+		auto p = ray.GetPointAt((-b - discriminantRoot) / (2 * a));
+		return{ Intersection(p, true) };
+	}
+	else // (discriminant > 0)
+	{
+		auto n = ray.GetPointAt((-b - discriminantRoot) / (2 * a));
+		auto f = ray.GetPointAt((-b + discriminantRoot) / (2 * a));
+		if (c >= 0) // Ray originates outside the Globe.
+			return{ Intersection(n, false), Intersection(f, false) };
+		else // Ray originates inside the Globe.
+			return{ Intersection(f, false) };
+	}
+}
+
+std::vector<Intersection> BVSphere::Intersect(BoundingVolume* pBV) const
+{
+	Real distSQ = pBV->GetCenter().DistanceToSQ(mCenter);
+	Real radiusSQ = mRadius + pBV->GetRadius();
+	return distSQ < radiusSQ*radiusSQ ? std::vector<Intersection>{Intersection::DummyIntersection}
+																		: std::vector<Intersection>{};
+}
+
 //----------------------------------------------------------------------------
-bool BVSphere::TestIntersection(const Ray3& ray) const
+bool BVSphere::TestIntersection(const Ray& ray) const
 {
 	assert(0 && "Not Implemented!");
 	return false;

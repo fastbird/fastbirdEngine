@@ -37,11 +37,13 @@ namespace fb
 	class Vec4
 	{
 	public:
+		typedef std::vector<Vec4> Array;
 		Real x, y, z, w;
 
 		static const Vec4 UNIT_X;
 		static const Vec4 UNIT_Y;
 		static const Vec4 UNIT_Z;
+		static const Vec4 UNIT_W;
 		static const Vec4 ZERO;
 
 		//-------------------------------------------------------------------------

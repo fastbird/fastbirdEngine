@@ -84,6 +84,7 @@ public:
 	void MatchUISizeToImage();
 	void SetDesaturate(bool desat);
 	void SetAmbientColor(const Vec4& color);
+	// color multiplier
 	void SetSpecularColor(const Vec4& color);
 	void SetDefaultImageAtlasPathIfNotSet();
 	void SetBorderAlpha(bool use);	

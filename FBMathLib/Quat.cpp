@@ -242,6 +242,12 @@ void Quat::FromAngleAxis (Real radian,
     z = fSin*axis.z;
 }
 
+Quat Quat::CreateFromAngleAxis(const Real radian, const Vec3& axis) {
+	Quat q;
+	q.FromAngleAxis(radian, axis);
+	return q;
+}
+
 void Quat::ToAngleAxis(Real& radian, Vec3& axis)
 {
 	//   q = cos(A/2)+sin(A/2)*(x*i+y*j+z*k)
@@ -328,6 +334,12 @@ Real Quat::Normalise()
 Quat Quat::Inverse() const
 {
 	return Quat(w, -x, -y, -z);
+}
+
+Real Quat::GetPitch(bool reprojectAxis) const {
+	auto radians = atan2((2.f * x * w) - (2.f * y * z),
+		1.f - 2.f * x * x - 2.f * z * z);
+	return radians;	
 }
 
 bool Quat::Equals(const Quat& rhs, const Real toleranceRadian) const

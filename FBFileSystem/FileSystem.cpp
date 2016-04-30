@@ -28,9 +28,7 @@
 #include "stdafx.h"
 #include "FileSystem.h"
 #include "DirectoryIterator.h"
-#include "FBDebugLib/Logger.h"
-#include "FBStringLib/StringLib.h"
-#include "FBCommonHeaders/Helpers.h"
+#include "File.h"
 using namespace fb;
 
 static bool gLogginStarted = false;
@@ -66,7 +64,7 @@ bool FileSystem::IsDirectory(const char* path){
 }
 
 unsigned FileSystem::GetFileSize(const char* path){
-	return boost::filesystem::file_size(path);
+	return (unsigned)boost::filesystem::file_size(path);
 }
 
 int FileSystem::Rename(const char* path, const char* newpath){
@@ -174,6 +172,17 @@ const char* FileSystem::GetExtensionWithOutDot(const char* path){
 		++count;
 	}
 	return "";
+}
+
+bool FileSystem::HasExtension(const char* filepath, const char* extension) {
+	if (!ValidCStringLength(extension) || !ValidCStringLength(filepath))
+		return false;
+	if (extension[0] == '.') {
+		return _stricmp(GetExtension(filepath), extension) == 0;
+	}
+	else {
+		return _stricmp(GetExtensionWithOutDot(filepath), extension) == 0;
+	}
 }
 
 std::string FileSystem::GetFileName(const char* path){
@@ -322,7 +331,7 @@ BinaryData FileSystem::ReadBinaryFile(const char* path, std::streamoff& outLengt
 		return 0;
 }
 
-void FileSystem::WriteBinaryFile(const char* path, char* data, size_t length){
+void FileSystem::WriteBinaryFile(const char* path, const char* data, size_t length){
 	if (!data || length == 0 || path == 0)
 		return;
 
@@ -341,6 +350,80 @@ void FileSystem::WriteBinaryFile(const char* path, char* data, size_t length){
 	ofs.write(data, length);
 }
 
+namespace fb {
+	static std::vector<std::string> sDeleteOnExit;
+	class DeleteOnExit {
+	public:
+		DeleteOnExit() {
+		}
+		~DeleteOnExit() {
+			for (auto& path : sDeleteOnExit) {
+				if (FileSystem::SecurityOK(path.c_str())) {
+					FileSystem::Remove(path.c_str());
+				}
+			}
+			sDeleteOnExit.clear();
+		}
+		
+	};
+}
+
+static DeleteOnExit DeleteOnExitInst;
+
+void FileSystem::DeleteOnExit(const char* path) {
+	sDeleteOnExit.push_back(path);
+}
+
+bool FileSystem::IsFileOutOfDate(const char* path, time_t expiryTime) {
+	if (!ValidCStringLength(path)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return false;
+	}
+	if (IsOpaqueURI(path))
+		return false;
+
+	return Exists(path) && GetLastModified(path) < expiryTime;		
+}
+
+bool FileSystem::IsOpaqueURI(const char* uri) {
+	if (!ValidCStringLength(uri)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return false;
+	}
+
+	auto len = strlen(uri);
+	for (size_t i = 0; i < len; ++i) {
+		if (uri[i] == '/')
+			return false;
+	}
+	return true;
+}
+
+bool FileSystem::IsFileOutOfDate(const char* url, size_t expiryTime) {
+	if (!ValidCStringLength(url))
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, "URLIsNull");
+		return false;
+	}
+
+	try
+	{
+		// Determine whether the file can be treated like a File, e.g., a jar entry.		
+		if (IsOpaqueURI(url))
+			return false; // TODO: Determine how to check the date of non-Files
+
+		auto file = File::From(url);
+
+		return file->Exists() && file->LastModified() < expiryTime;
+	}
+	catch (std::exception& e)
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, "Exception occurred : %s", e.what());
+		return false;
+	}
+}
+
+
 //---------------------------------------------------------------------------
 // Directory Operataions
 //---------------------------------------------------------------------------
@@ -350,7 +433,7 @@ DirectoryIteratorPtr FileSystem::GetDirectoryIterator(const char* filepath, bool
 }
 
 bool FileSystem::CreateDirectory(const char* filepath){
-	bool ret = true;
+	bool ret = false;
 	try{
 		ret = boost::filesystem::create_directories(filepath);
 	}
@@ -391,4 +474,249 @@ std::string FileSystem::GetCurrentDir(){
 		gWorkingPath = boost::filesystem::current_path(); // absolute
 	}
 	return gWorkingPath.generic_string();
+}
+
+std::string FileSystem::TempFileName(const char* prefix, const char* suffix) {
+	auto cwd = ConcatPath(GetCurrentDir().c_str(), "/tmp/");
+	char buffer[L_tmpnam];
+	
+	if (ValidCStringLength(prefix))
+		cwd += prefix;
+
+	tmpnam_s(buffer);
+	cwd += buffer;
+
+	if (ValidCStringLength(suffix))
+		cwd += suffix;
+	return cwd;
+}
+
+static std::string ILLEGAL_FILE_PATH_PART_CHARACTERS = "[?=+<>:;,\"^";
+void FileSystem::ReplaceIllegalFileNameCharacters(std::string& filepath) {
+	std::replace_if(filepath.begin(), filepath.end(), [](char c) {
+		for (auto ic : ILLEGAL_FILE_PATH_PART_CHARACTERS) {
+			if (ic == c)
+				return true;
+		}
+		return false;},
+		'_');
+}
+
+bool FileSystem::CanWrite(const char* filepath) {
+	FileSystem::Open file(filepath, "a+", ReadAllow, SkipErrorMsg);
+	auto err = file.Error();
+	if (err) {
+		return false;
+	}
+	return true;
+}
+
+void FileSystem::SetLastModified(const char* filepath) {
+	try {
+		boost::filesystem::last_write_time(filepath, time(NULL));
+	}
+	catch (boost::filesystem::filesystem_error& error){
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Cannot change last write time : %s", error.what()));
+	}
+}
+
+time_t FileSystem::GetLastModified(const char* filepath) {
+	try {
+		return boost::filesystem::last_write_time(filepath);
+	}
+	catch (boost::filesystem::filesystem_error& error) {
+		Logger::Log(FB_ERROR_LOG_ARG, 
+			"Cannot get last write time for : %s(%s)", filepath, error.what());
+	}
+	return 0;
+}
+
+std::string FileSystem::FormPath(int n, ...) {
+	std::string ret;
+	va_list vl;
+	va_start(vl, n);
+	std::string val;
+	for (int i = 0; i<n; i++)
+	{
+		val = va_arg(vl, std::string);
+		if (!val.empty()) {
+			ReplaceIllegalFileNameCharacters(val);
+			ret += val;
+			ret += "/";
+		}		
+	}
+	va_end(vl);
+	return ret;
+}
+
+FileSystem::Open::Open()
+	: mFile(0)
+	, mErr(0)
+{
+
+}
+
+FileSystem::Open::Open(const char* path, const char* mode)
+	: Open()
+{
+	operator()(path, mode, PrintErrorMsg);
+}
+
+FileSystem::Open::Open(const char* path, const char* mode, ErrorMode errorMsgMode)
+	: Open()
+{
+	operator()(path, mode, errorMsgMode);
+}
+
+FileSystem::Open::Open(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode)
+	:Open()
+{
+	operator()(path, mode, share, errorMsgMode);
+}
+
+
+FileSystem::Open::Open(Open&& other) _NOEXCEPT
+	: mFile(other.Release())
+	, mErr(other.mErr)
+{
+}
+
+FileSystem::Open::~Open()
+{
+	Close();
+}
+
+void FileSystem::Open::Close()
+{
+	if (mFile) {
+		fclose(mFile);
+		mFile = 0;		
+	}
+	mErr = 0;
+}
+
+FILE* FileSystem::Open::Release()
+{
+	auto ret = mFile;
+	mFile = 0;	
+	return ret;
+}
+
+errno_t FileSystem::Open::operator()(const char* path, const char* mode)
+{
+	return operator()(path, mode, PrintErrorMsg);
+}
+
+errno_t FileSystem::Open::operator()(const char* path, const char* mode, ErrorMode errorMsgMode)
+{
+	return operator()(path, mode, NoSharing, errorMsgMode);
+}
+
+errno_t FileSystem::Open::operator()(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode)
+{
+	Close();
+	mFilePath = path;
+	if (share != NoSharing) {
+		int smode = 0;
+		if (!(share & ReadAllow)) {
+			smode = _SH_DENYRD;
+		}
+		if (!(share & WriteAllow)) {
+			smode += _SH_DENYWR;
+		}
+		if (!smode) {
+			smode = _SH_DENYNO;
+		}
+		mFile = _fsopen(path, mode, smode);
+		if (!mFile) {
+			mErr = errno;
+		}
+	}
+	else {
+		mErr = fopen_s(&mFile, path, mode);
+	}
+
+	if (mErr && errorMsgMode == PrintErrorMsg) {
+		char errString[512] = {};
+		strerror_s(errString, mErr);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
+			path, mErr, errString).c_str());
+	}
+
+	return mErr;
+}
+
+FileSystem::Open::operator FILE* () const
+{
+	return mFile;
+}
+
+errno_t FileSystem::Open::Error() const
+{
+	return mErr;
+}
+
+FILE* FileSystem::OpenFile(const char* path, const char* mode, errno_t* errorNo)
+{
+	if (errorNo)
+		*errorNo = 0;
+	FILE* f = 0;
+	auto err = fopen_s(&f, path, mode);
+	if (err) {
+		if (errorNo) {
+			*errorNo = err;
+		}
+		char errString[512] = {};
+		strerror_s(errString, err);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
+			path, err, errString).c_str());
+	}
+	return f;
+}
+
+FILE* FileSystem::OpenFileShared(const char* path, const char* mode, SharingMode sharingMode, errno_t* errorNo)
+{
+	if (errorNo)
+		*errorNo = 0;
+	int smode = 0;
+	if (!(sharingMode & ReadAllow)) {
+		smode = _SH_DENYRD;
+	}
+	if (!(sharingMode & WriteAllow)) {
+		smode += _SH_DENYWR;
+	}
+	if (!smode) {
+		smode = _SH_DENYNO;
+	}
+	FILE* f = _fsopen(path, mode, smode);
+	if (!f) {
+		auto errNo = errno;
+		if (errorNo) {
+			*errorNo = errNo;
+		}
+		char errString[512] = {};
+		strerror_s(errString, errNo);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
+			path, errNo, errString).c_str());
+	}
+	return f;
+}
+
+void FileSystem::CloseFile(FILE* &file)
+{
+	if (!file)
+		return;
+	fclose(file);
+	file = 0;
+}
+
+FILE* FileSystem::OpenFileByMode(const char* path, const char* mode, errno_t* errorNo)
+{
+	if (strchr(mode, 'r')) {
+		return FileSystem::OpenFileShared(path, mode, FileSystem::ReadAllow, errorNo);
+	}
+	else {
+		return FileSystem::OpenFile(path, mode, errorNo);
+	}
 }

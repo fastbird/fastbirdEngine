@@ -1528,5 +1528,5 @@ private:
 
 }	// tinyxml2
 
-
+#include "XMLHelper.h"
 #endif // TINYXML2_INCLUDED

@@ -112,7 +112,7 @@ namespace fb
 					if (first == last)
 					{
 						if (next == nullptr)
-							return 0; // empty
+							return nullptr; // empty
 
 						mTail.compare_exchange_weak(last, next);
 					}

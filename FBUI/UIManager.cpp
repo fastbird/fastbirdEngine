@@ -1778,11 +1778,11 @@ mPopup->SetVisible(true);
 
 		std::string scriptPath;
 		const char* sz = pRoot->Attribute("script");
-		if (sz && strlen(sz)>0)
+		/*if (sz && strlen(sz)>0)
 		{
 			Error(FB_ERROR_LOG_ARG, "cannot clone scriptable ui");
 			return;
-		}
+		}*/
 
 		bool render3d = false;
 		sz = pRoot->Attribute("render3d");

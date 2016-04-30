@@ -33,6 +33,7 @@ namespace fb
 const Vec4 Vec4::UNIT_X(1.f, 0, 0, 0);
 const Vec4 Vec4::UNIT_Y(0, 1.f, 0, 0);
 const Vec4 Vec4::UNIT_Z(0, 0, 1.f, 0);
+const Vec4 Vec4::UNIT_W(0, 0, 0, 1.f);
 const Vec4 Vec4::ZERO(0, 0, 0, 0);
 
 //-------------------------------------------------------------------------

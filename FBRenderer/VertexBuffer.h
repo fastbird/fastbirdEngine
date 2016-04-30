@@ -33,18 +33,25 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(VertexBuffer);
 	class FB_DLL_RENDERER VertexBuffer{
 		FB_DECLARE_PIMPL_NON_COPYABLE(VertexBuffer);
-		VertexBuffer(unsigned stride, unsigned numVertices);
+		VertexBuffer(unsigned stride, unsigned numVertices,
+			BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		~VertexBuffer();
 
 	public:
-		static VertexBufferPtr Create(unsigned stride, unsigned numVertices);
+		static VertexBufferPtr Create(unsigned stride, unsigned numVertices,
+			BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 
 		void Bind();
 		MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag) const;
 		void Unmap(UINT subResource) const;
 		unsigned GetStride() const;
 		unsigned GetNumVertices() const;
+		BUFFER_USAGE GetBufferUsage() const;
 		void SetPlatformBuffer(IPlatformVertexBufferPtr buffer);
 		IPlatformVertexBufferPtr GetPlatformBuffer() const;
+		bool IsSame(unsigned stride, unsigned numVertices, BUFFER_USAGE usage, 
+			BUFFER_CPU_ACCESS_FLAG accessFlag) const;
+		
+		bool UpdateData(void* data);
 	};
 }

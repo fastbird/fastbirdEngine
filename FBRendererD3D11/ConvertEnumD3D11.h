@@ -135,6 +135,20 @@ namespace fb
 		return PIXEL_FORMAT(format);
 	}
 
+	inline DXGI_FORMAT ConvertEnumD3D11(INDEXBUFFER_FORMAT format)
+	{
+		switch (format)
+		{
+		case INDEXBUFFER_FORMAT_16BIT:
+			return DXGI_FORMAT_R16_UINT;
+		case INDEXBUFFER_FORMAT_32BIT:
+			return DXGI_FORMAT_R32_UINT;
+		default:
+			Logger::Log(FB_ERROR_LOG_ARG, "Unknown index buffer format.");
+			return DXGI_FORMAT_R32_UINT;
+		}
+	}
+
 	inline int PixelFormat2Bytes(PIXEL_FORMAT format)
 	{
 		if (format>=PIXEL_FORMAT_R32G32B32A32_TYPELESS && format <= PIXEL_FORMAT_R32G32B32A32_SINT)

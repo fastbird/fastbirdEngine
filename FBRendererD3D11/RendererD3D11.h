@@ -66,8 +66,8 @@ namespace fb
 		//-------------------------------------------------------------------		
 		// Device features
 		Vec2ITuple FindClosestSize(HWindowId id, const Vec2ITuple& input);
-		bool GetResolutionList(unsigned& outNum, Vec2ITuple* list);
-		bool InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,
+		bool GetResolutionList(unsigned& outNum, Vec2ITuple* list);		
+		bool InitCanvas(const CanvasInitInfo& info,
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture);
 		void DeinitCanvas(HWindowId id, HWindow window);
 		bool ChangeResolution(HWindowId id, HWindow window, const Vec2ITuple& resol,
@@ -135,6 +135,7 @@ namespace fb
 		// Resource Manipulations
 		MapData MapBuffer(ID3D11Resource* pResource, UINT subResource, MAP_TYPE type, MAP_FLAG flag) const;
 		void UnmapBuffer(ID3D11Resource* pResource, UINT subResource) const;
+		bool UpdateBuffer(ID3D11Resource* pResource, void* data, unsigned bytes);
 		void SaveTextureToFile(TextureD3D11* texture, const char* filename);		
 		void GenerateMips(TextureD3D11* pTexture);
 		

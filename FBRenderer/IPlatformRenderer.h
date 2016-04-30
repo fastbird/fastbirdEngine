@@ -47,6 +47,25 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(IPlatformVertexBuffer);		
 	FB_DECLARE_SMART_PTR(IPlatformRenderer);
 	
+	struct CanvasInitInfo
+	{
+		CanvasInitInfo(HWindowId windowId, HWindow window, int width, int height, int fullscreen,
+			PIXEL_FORMAT colorFormat, PIXEL_FORMAT depthFormat)
+			: mId(windowId)
+			, mWindow(window)
+			, mWidth(width)
+			, mHeight(height)
+			, mColorFormat(colorFormat)
+			, mDepthFormat(depthFormat)
+		{
+		}
+
+		HWindowId mId;
+		HWindow mWindow;
+		int mWidth, mHeight, mFullscreen;
+		PIXEL_FORMAT mColorFormat, mDepthFormat;
+	};
+
 	/** Plug-in interface for render engine like D3D11, OpenGL.	
 	*/
 	class IPlatformRenderer{
@@ -63,7 +82,7 @@ namespace fb{
 		/** Initializes canvas(swap-chain)
 		\param fullscreen 0: window mode, 1: full-screen, 2: faked full-screen
 		*/
-		virtual bool InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,
+		virtual bool InitCanvas(const CanvasInitInfo& info, 
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) = 0;		
 		virtual void DeinitCanvas(HWindowId id, HWindow window) = 0;
 		/** Changes the resolution.

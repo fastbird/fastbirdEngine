@@ -155,7 +155,8 @@ namespace fb{
 		SamplerStatePtr CreateSamplerState(const SAMPLER_DESC& desc);		
 		TextureAtlasPtr GetTextureAtlas(const char* path);		
 		TextureAtlasRegionPtr GetTextureAtlasRegion(const char* path, const char* region);
-		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);		
+		TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key);	
+		void Cache(VertexBufferPtr buffer);
 
 		//-------------------------------------------------------------------
 		// Hot reloading
@@ -248,9 +249,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		ResourceProviderPtr GetResourceProvider() const;
 		/// \param provider cannot be null
-		void SetResourceProvider(ResourceProviderPtr provider);
-		void SetForcedWireFrame(bool enable);
-		bool GetForcedWireFrame() const;
+		void SetResourceProvider(ResourceProviderPtr provider);		
 		RenderTargetPtr GetMainRenderTarget() const;
 		unsigned GetMainRenderTargetId() const;
 		IScenePtr GetMainScene() const; // move to SceneManager
@@ -303,6 +302,8 @@ namespace fb{
 		void SetCamera(CameraPtr pCamera);
 		CameraPtr GetCamera() const; // this is for current carmera.
 		CameraPtr GetMainCamera() const;
+		ICameraPtr GetICamera() const;
+		ICameraPtr GetMainICamera() const;
 		void SetActiveOverrideCamera(bool active);
 		HWindow GetMainWindowHandle() const;
 		HWindowId GetMainWindowHandleId();		

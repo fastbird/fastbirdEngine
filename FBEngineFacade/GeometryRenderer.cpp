@@ -446,7 +446,7 @@ public:
 				renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
 				mSphereMesh->GetMaterial()->SetMaterialParameter(0, sphere.mColor.GetVec4());
 				mSphereMesh->GetMaterial()->Bind(true);
-				mSphereMesh->RenderSimple();
+				mSphereMesh->RenderSimple(true);
 			}
 		}
 		mSpheres.clear();

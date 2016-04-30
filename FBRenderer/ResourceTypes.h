@@ -56,6 +56,7 @@ namespace fb{
 				SampleLumFinalPS,
 				CalcAdaptedLumPS,
 				ToneMappingPS,
+				SimpleToneMappingPS,
 				BrightPassPS,
 				BloomPS,
 				Blur5x5PS,
@@ -141,7 +142,8 @@ namespace fb{
 				LinearWrap,
 				BlackBorder,
 				PointBlackBorder,
-				Last = PointBlackBorder,
+				LinearMirror,
+				Last = LinearMirror,
 				Num = Last + 1,
 			};
 		}

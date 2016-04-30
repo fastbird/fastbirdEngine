@@ -39,6 +39,7 @@
 #include "ResourceProvider.h"
 #include "ResourceTypes.h"
 #include "FBTimer/Profiler.h"
+#include "FBFileSystem/FileSystem.h"
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
 #include "EssentialEngineData/shaders/Constants.h"
@@ -181,14 +182,10 @@ public:
 			return 0;
 		mFilePath = fontFile;
 		Profiler profiler("'Font Init'");
-		// Load the font
-		FILE *f = 0;
-#if _MSC_VER >= 1400 // MSVC 8.0 / 2005
-		fopen_s(&f, fontFile, "rb");
-#else
-		f = fopen(fontFile, "rb");
-#endif
-		if (f == 0)
+		// Load the font		
+		FileSystem::Open f(fontFile, "rb");
+		auto err = f.Error();
+		if (err)
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to open a font file(%s).", fontFile).c_str());
 			return -1;
@@ -1344,8 +1341,6 @@ int FontLoaderTextFormat::Load()
 		}
 	}
 
-	fclose(f);
-
 	// Success
 	return 0;
 }
@@ -1642,8 +1637,7 @@ int FontLoaderBinaryFormat::Load()
 	fread(magicString, 4, 1, f);
 	if (strncmp(magicString, "BMF\003", 4) != 0)
 	{
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Unrecognized format for '%s'", fontFile.c_str()).c_str());		
-		fclose(f);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Unrecognized format for '%s'", fontFile.c_str()).c_str());				
 		return -1;
 	}
 
@@ -1673,13 +1667,10 @@ int FontLoaderBinaryFormat::Load()
 			ReadKerningPairsBlock(blockSize);
 			break;
 		default:
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Unexpected block type(%d)", blockType).c_str());
-			fclose(f);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Unexpected block type(%d)", blockType).c_str());			
 			return -1;
 		}
 	}
-
-	fclose(f);
 
 	// Success
 	return 0;

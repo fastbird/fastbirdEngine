@@ -37,6 +37,7 @@ namespace fb
 		virtual bool IsReady() const = 0;				
 		virtual MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag) = 0;
 		virtual void Unmap(UINT subResource) = 0;
+		virtual bool UpdateBuffer(void* data, unsigned bytes) = 0;
 
 	protected:
 		~IPlatformVertexBuffer() {}

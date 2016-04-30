@@ -73,6 +73,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)\Lib\x86;$(ZLIB_HOME)\lib</AdditionalLibraryDirectories>
       <ShowProgress>LinkVerboseLib</ShowProgress>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

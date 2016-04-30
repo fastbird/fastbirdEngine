@@ -46,8 +46,8 @@ namespace fb
 		static const Vec3 ZERO;
 		static const Vec3 ONE;
 		static const Vec3 MAX;
-		static const Vec3 MIN;
-
+		static const Vec3 MIN;		
+		typedef std::vector<Vec3> Array;
 		//-------------------------------------------------------------------
 		Vec3();
 		Vec3(Real _x, Real _y, Real _z);
@@ -56,6 +56,8 @@ namespace fb
 		explicit Vec3(const Vec3I& v);
 		explicit Vec3(const char* s);
 		Vec3(const Vec3Tuple& t);
+
+		bool IsInitialized() const;
 
 		//-------------------------------------------------------------------
 		Vec3 operator+ (const Vec3& r) const;
@@ -107,6 +109,8 @@ namespace fb
 
 		void write(std::ostream& stream) const;
 		void read(std::istream& stream);
+
+		std::string ToString() const;
 	};
 
 	Vec3 operator* (Real l, const Vec3& r);

@@ -1,0 +1,23 @@
+<Material>
+	<DepthStencilDesc DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
+	<ShaderFile>EssentialEngineData/shaders/skysphere_equirectangular.hlsl</ShaderFile>
+	<Shaders>VS|PS</Shaders>
+	<MaterialConstants>
+		<AmbientColor>1, 1, 1, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+		<Texture slot="0" shader="ps" Filter="MIN_MAG_MIP_LINEAR" AddressU="Mirror">data/textures/Ocean from horn.dds</Texture>		
+		<!-- 4 is used as environment map-->		
+	</Textures>
+	<MaterialParameters>		
+	</MaterialParameters>
+	<ShaderDefines>		
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"/>
+		<input semantic="TEXCOORD" index="0" format="FLOAT2" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"/>
+	</InputLayout>
+</Material>

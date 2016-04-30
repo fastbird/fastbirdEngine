@@ -44,6 +44,7 @@ public:
 	static TaskSchedulerPtr Create(int numThread);
 	
 	void AddTask(TaskPtr NewTask);
+	bool IsFull() const;
 	bool _IsFinalized() const; // internal.
 	void _Schedule(); // internal.
 

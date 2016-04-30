@@ -576,7 +576,7 @@ public:
 		return 0;
 	}
 
-	bool RayCast(const Ray3& ray, Vec3& pos, const ModelTriangle** tri){
+	bool RayCast(const Ray& ray, Vec3& pos, const ModelTriangle** tri){
 		if (mMeshObject)
 			return mMeshObject->RayCast(ray, pos, tri);
 		else if (mMeshGroup){
@@ -594,14 +594,14 @@ public:
 		return true;
 	}
 
-	Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray){
+	Ray::IResult CheckNarrowCollisionRay(const Ray& ray){
 		if (mMeshObject)
 			return mMeshObject->CheckNarrowCollisionRay(ray);
 		else if (mMeshGroup){
 			assert(0 && "Not Implemented.");
 		}
 
-		return Ray3::IResult{ false, 0.f };
+		return Ray::IResult{ false, 0.f };
 	}
 
 	bool HasCollisionShapes() const{
@@ -947,7 +947,7 @@ const BoundingVolumePtr MeshFacade::GetBoundingVolumeWorld() const {
 	return mImpl->GetBoundingVolumeWorld();
 }
 
-bool MeshFacade::RayCast(const Ray3& ray, Vec3& pos, const ModelTriangle** tri) {
+bool MeshFacade::RayCast(const Ray& ray, Vec3& pos, const ModelTriangle** tri) {
 	return mImpl->RayCast(ray, pos, tri);
 }
 
@@ -955,7 +955,7 @@ bool MeshFacade::CheckNarrowCollision(const BoundingVolume* bv) {
 	return mImpl->CheckNarrowCollision(bv);
 }
 
-Ray3::IResult MeshFacade::CheckNarrowCollisionRay(const Ray3& ray) {
+Ray::IResult MeshFacade::CheckNarrowCollisionRay(const Ray& ray) {
 	return mImpl->CheckNarrowCollisionRay(ray);
 }
 
@@ -1078,9 +1078,9 @@ void MeshFacade::OnMainCameraTargeted(){
 	}
 }
 
-void MeshFacade::RenderSimple(){
+void MeshFacade::RenderSimple(bool bindPosOnly){
 	if (mImpl->mMeshObject){
-		mImpl->mMeshObject->RenderSimple();
+		mImpl->mMeshObject->RenderSimple(bindPosOnly);
 	}
 }
 

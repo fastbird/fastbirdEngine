@@ -499,8 +499,12 @@ public:
 
 
 	void RegisterToWorld(){
-		if (mWorld && mColProvider){
-			assert(!mAddedToWorld);
+		if (mAddedToWorld) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Already registered rigid body.");
+			return;
+		}
+
+		if (mWorld && mColProvider){			
 			mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
 			mAddedToWorld = true;
 			auto num = mSelf->getNumConstraintRefs();

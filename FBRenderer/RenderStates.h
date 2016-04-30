@@ -36,9 +36,11 @@ namespace fb{
 		FB_DECLARE_PIMPL_NON_COPYABLE(RasterizerState);
 		RasterizerState();
 		~RasterizerState();
+		static bool sLock;
 
 	public:
 		static RasterizerStatePtr Create();		
+		static void SetLock(bool lock);
 
 		void SetPlatformState(IPlatformRasterizerStatePtr state);
 		void Bind();

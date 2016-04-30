@@ -26,7 +26,10 @@
 */
 
 #pragma once
+#include "Types.h"
 #include <algorithm>
+#undef min
+#undef max
 /**
 \file FBHelpers.h
 Convenent macros for manipulating stl containers.
@@ -134,5 +137,31 @@ namespace fb{
 			++it;
 		}
 		return numDeleted;
+	}
+
+	inline unsigned GetStringMemSize(const std::string& str) {
+		return sizeof(size_t) + str.length();
+	}
+
+	template <size_t _Size>
+	inline unsigned ByteBufferToString(const ByteArray& byteBuffer, char (&dest)[_Size]) {
+		if (byteBuffer.empty())
+			return 0;
+		memset(dest, 0, _Size);
+		auto len = byteBuffer.size();
+		auto copiedLen = std::min(_Size, len);
+		if (copiedLen == _Size)
+			copiedLen = _Size - 1;
+		strncpy_s(dest, (const char*)&byteBuffer[0], copiedLen);
+		return copiedLen;
+	}
+
+	inline size_t hash_combine_ret(size_t a, size_t b) {
+		a ^= b + 0x9e3779b9 + (a << 6) + (a >> 2);
+		return a;
+	}
+
+	inline void hash_combine(size_t& a, size_t b) {
+		a ^= b + 0x9e3779b9 + (a << 6) + (a >> 2);		
 	}
 }

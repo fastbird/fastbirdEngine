@@ -27,12 +27,11 @@
 
 #pragma once
 
-#include "Mat33.h"
-#include "Vec3.h"
-#include "Vec4.h"
-
 namespace fb
 {
+	class Vec3;
+	class Vec4;
+	class Mat33;
 	class Mat44
 	{
 	public:
@@ -40,6 +39,13 @@ namespace fb
 		Real m[4][4];
 
 		static const Mat44 IDENTITY;
+
+		static Mat44 FromTranslation(const Vec3& translate);
+		static Mat44 FromRotationY(Real rotYRadian);
+		static Mat44 FromRotationX(Real rotXRadian);
+		static Mat44 FromRotationZ(Real rotZRadian);
+		static Mat44 FromAxisAngle(const Vec3& axis, Real radian);
+		static Mat44 FromViewLookAt(const Vec3& eye, const Vec3& center, const Vec3& up);
 
 		//-------------------------------------------------------------------------
 		Mat44();
@@ -66,11 +72,33 @@ namespace fb
 		Mat44 Transpose(void) const;		
 		const Vec4& Row(size_t iRow) const;		
 		void SetTranslation(const Vec3& pos);
-		Vec3 GetTranslation() const;
+		Vec3 GetTranslation() const;		
 		Mat33 To33() const;
+		Real GetRotationZ() const;
+		Real GetRotationX() const;
+		Real GetRotationY() const;
+
+		/**
+		* Returns the arithmetic mean of the x, y, z coordinates of the specified 
+		* points buffer. This returns null if the buffer is empty.
+		*/
+		static Vec3 ComputeAveragePoint3(const Real* coordinates, int numElem, int stride);
+		/**
+		* Computes a symmetric covariance Matrix from the x, y, z coordinates.
+		* layout:
+		* C(x, x)  C(x, y)  C(x, z) 
+		* C(x, y)  C(y, y)  C(y, z)
+		* C(x, z)  C(y, z)  C(z, z) 		
+		*
+		*/
+		static Mat44 FromCovarianceOfVertices(const Real* coordinates, int numElem, int stride);		
+		bool IsSymmetric() const;
+		/// Computes the eigensystem of the specified symmetric Matrix's upper 3x3 matrix. 		
+		static void ComputeEigensystemFromSymmetricMatrix3(const Mat44& matrix, Real outEigenvalues[3],
+			Vec3 outEigenvectors[3]);
 	};
 
-#if defined(FB_DOUBLE_PRECISION)
+#if defined(FB_Real_PRECISION)
 	class Mat44f{
 	public:
 		float m[4][4];

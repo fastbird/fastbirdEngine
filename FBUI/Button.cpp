@@ -1413,6 +1413,22 @@ namespace fb
 	void Button::SetEnable(bool enable){
 		if (!enable){
 			this->OnMouseOut(0);
+			if (mIconText) {
+				auto image = mImages[ButtonImages::Image].lock();
+				if (image)
+				{
+					image->SetSpecularColor(Vec4(.1f, .1f, .1f, 1.f));					
+				}
+			}
+		}
+		else {
+			if (mIconText) {
+				auto image = mImages[ButtonImages::Image].lock();
+				if (image)
+				{
+					image->SetSpecularColor(Vec4(1.f, 1.f, 1.f, 1.f));
+				}
+			}
 		}
 		__super::SetEnable(enable);
 	}

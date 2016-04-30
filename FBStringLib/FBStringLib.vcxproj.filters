@@ -3,9 +3,13 @@
   <ItemGroup>
     <ClCompile Include="StringLib.cpp" />
     <ClCompile Include="StringConverter.cpp" />
+    <ClCompile Include="BitManipulator.cpp" />
+    <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StringLib.h" />
     <ClInclude Include="StringConverter.h" />
+    <ClInclude Include="BitManipulator.h" />
+    <ClInclude Include="stdafx.h" />
   </ItemGroup>
 </Project>

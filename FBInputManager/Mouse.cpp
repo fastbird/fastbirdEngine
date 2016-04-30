@@ -156,9 +156,11 @@ public:
 		if (mLockMouse){
 			// mLastEventWindow is ok?
 			// or need the current forground window.
-			SetCurrentMousePos(mAbsXPrev, mAbsYPrev);
-			mAbsX = mAbsXPrev;
-			mAbsY = mAbsYPrev;			
+			if (mAbsX != mAbsXPrev || mAbsY != mAbsYPrev) {
+				SetCurrentMousePos(mAbsXPrev, mAbsYPrev);
+				mAbsX = mAbsXPrev;
+				mAbsY = mAbsYPrev;
+			}
 		}
 		else{
 			mAbsXPrev = mAbsX;
@@ -203,7 +205,7 @@ public:
 			mouseEvent.ulRawButtons,
 			mouseEvent.lLastX,
 			mouseEvent.lLastY,
-			mouseEvent.ulExtraInformation).c_str());*/	
+			mouseEvent.ulExtraInformation).c_str());*/
 
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
@@ -358,10 +360,10 @@ public:
 			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
-		{
+		{			
 			mRDragEndX = mAbsX;
 			mRDragEndY = mAbsY;
-			if (mRDragStarted){
+			if (mRDragStarted) {
 				mRDragStarted = false;
 			}
 			mRDragEnd = true;
@@ -373,13 +375,13 @@ public:
 			mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 
 
-			if (mNoClickOnce){
+			if (mNoClickOnce) {
 				mNoClickOnce = false;
 			}
-			else{
+			else {
 				mButtonsClicked |= MOUSE_BUTTON_RIGHT;
 				mLastClickTime = gameTimeInSec;
-				mLastClickPos = std::make_tuple( mAbsX, mAbsY );
+				mLastClickPos = std::make_tuple(mAbsX, mAbsY);
 			}
 
 			LockMousePos(false, (void*)-1);

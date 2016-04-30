@@ -83,7 +83,7 @@ namespace fb
 	int SetCardUIProperty(lua_State* L);
 	int RemoveUIEventhandler(lua_State* L);
 	int GetMousePos(lua_State* L);
-	int GetComponentWidth(lua_State* L);
+	int GetComponentWidth(lua_State* L);	
 	int FindAndRememberComponent(lua_State* L);
 	int SetActivationUIAnim(lua_State* L);
 	int SetFocusUI(lua_State* L);
@@ -166,6 +166,7 @@ namespace fb
 	int SetEnableUIInput(lua_State* L);
 	int SetCheckRadioBox(lua_State* L);
 	
+	int GetComponentFinalPos(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -173,6 +174,7 @@ namespace fb
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, GetComponentFinalPos);
 		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
 		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
 		LUA_SETCFUNCTION(mL, MoveUpListBoxItems);
@@ -284,7 +286,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetCardUIProperty);
 		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
 		LUA_SETCFUNCTION(mL, GetMousePos);
-		LUA_SETCFUNCTION(mL, GetComponentWidth);
+		LUA_SETCFUNCTION(mL, GetComponentWidth);		
 		LUA_SETCFUNCTION(mL, FindAndRememberComponent);
 		LUA_SETCFUNCTION(mL, SetActivationUIAnim);
 		LUA_SETCFUNCTION(mL, SetFocusUI);		
@@ -848,6 +850,7 @@ namespace fb
 		LuaUtils::pushinteger(L, 0);
 		return 1;
 	}
+
 	WinBase* gRememberedComp = 0;
 	int FindAndRememberComponent(lua_State* L)
 	{
@@ -2108,6 +2111,17 @@ namespace fb
 			}
 		}
 		listbox->RemoveDataWithKeys(ids);
+		return 0;
+	}
+
+	int GetComponentFinalPos(lua_State* L) {
+		auto ui = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		auto winbase = UIManager::GetInstance().FindComp(ui, comp);
+		if (winbase) {
+			luaU_push<Vec2ITuple>(L, winbase->GetFinalPos().ToTuple());
+			return 1;
+		}
 		return 0;
 	}
 }

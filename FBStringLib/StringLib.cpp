@@ -24,24 +24,45 @@
  THE SOFTWARE.
  -----------------------------------------------------------------------------
 */
-
+#include "stdafx.h"
 #include "StringLib.h"
-#include "FBCommonHeaders/platform.h"
-#if defined(_PLATFORM_WINDOWS_)
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#else
-#endif
+#include "FBCommonHeaders/String.h"
+#include "FBCommonHeaders/Helpers.h"
 
-#include <algorithm>
-#include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <iostream>
-#include <clocale>
 
 namespace fb{
+
+	void RemoveNewLine(std::string& str)
+	{
+		for (auto rit = str.rbegin(); rit != str.rend(); ) {
+			auto c = *rit;
+			if (isspace(*rit)) {
+				++rit;
+				str.erase(rit.base());
+			}
+			else {
+				++rit;
+			}
+		}
+	}
+
+	std::string RemoveNewLine(const char* szstr)
+	{
+		if (!ValidCStringLength(szstr))
+			return{};
+		std::string str(szstr);
+		for (auto rit = str.rbegin(); rit != str.rend(); ) {
+			auto c = *rit;
+			if (isspace(*rit)) {
+				++rit;
+				str.erase(rit.base());
+			}
+			else {
+				++rit;
+			}
+		}
+		return str;
+	}
 
 	void ReplaceCharacter(TCHAR* s, TCHAR target, TCHAR replace){
 		auto size = _tstrlen(s);
@@ -49,6 +70,27 @@ namespace fb{
 		{
 			if (s[i] == target)
 				s[i] = replace;
+		}
+	}
+
+	void ReplaceCharacter(char* s, const std::string& target, char replace) {
+		auto size = _tstrlen(s);
+		for (unsigned i = 0; i < size; i++)
+		{
+			for (auto c : target) {
+				if (s[i] == c)
+					s[i] = replace;
+			}
+		}
+	}
+
+	void ReplaceAll(std::string& str, const std::string& from, const std::string& to) {
+		if (from.empty())
+			return;
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
 		}
 	}
 
@@ -63,6 +105,10 @@ namespace fb{
 		while (*s && _tisspace((*s)))
 			s++;
 		return s;
+	}
+
+	void StripBoth(std::string& str) {
+		str = StripBoth(str.c_str());
 	}
 
 	std::string StripBoth(LPCTSTR s){
@@ -189,9 +235,33 @@ namespace fb{
 
 	}
 
+	bool StringContainNoCase(const std::string& string, const std::string& find) {
+		auto stringSize = (int)string.size();
+		auto findSize = (int)find.size();
+		if (findSize > stringSize)
+			return false;
+
+		for (int si = 0; si <= stringSize - findSize; ++si) {
+			bool found = true;
+			for (int fi = 0; fi < findSize; ++fi) {
+				if (tolower(string[si + fi]) != tolower(find[fi])) {
+					found = false;
+					break;
+				}
+			}		
+			if (found)
+				return true;
+		}
+		return false;
+	}
+
 	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase){
 		auto thisLen = str.length();
 		auto patternLen = pattern.length();
+		std::string transformedPatten = pattern;
+		if (lowerCase) {
+			ToLowerCase(transformedPatten);
+		}
 		if (thisLen < patternLen || patternLen == 0)
 			return false;
 
@@ -199,7 +269,15 @@ namespace fb{
 		if (lowerCase)
 			ToLowerCase(startOfThis);
 
-		return (startOfThis == pattern);
+		return (startOfThis == transformedPatten);
+	}
+	
+	bool EndsWith(const std::string& str, const char* pattern) {		
+		auto it = str.find_last_of(pattern);
+		if (it == str.size() - strlen(pattern))
+			return true;
+
+		return false;
 	}
 
 	void ToLowerCase(std::string& str){
@@ -273,6 +351,62 @@ namespace fb{
 		va_end(args);
 
 		return std::string(buf);
+	}
+
+	size_t FindLastIndexOf(const char* sz, char c) {
+		if (!ValidCStringLength(sz))
+			return -1;
+		auto len = strlen(sz);
+		return FindLastIndexOf(sz, c, len - 1);
+	}
+
+	size_t FindLastIndexOf(const char* sz, char c, size_t startIndex) {
+		if (!ValidCStringLength(sz))
+			return -1;
+		auto len = strlen(sz);
+		if (startIndex >= len)
+			startIndex = len - 1;
+		for (int i = startIndex; i >= 0; --i) {
+			if (sz[i] == c)
+				return i;
+		}
+		return -1;
+
+
+	}
+
+	std::string SubString(const char* sz, size_t s, size_t e) {
+		if (!ValidCStringLength(sz))
+			return std::string();
+
+		auto len = strlen(sz);
+		if (e > len)
+			e = len;
+		if (s > len)
+			s = len;
+		if (s == e)
+			return std::string();
+		return std::string(sz + s, sz + e);
+	}
+
+	std::string GetFileSuffix(const char* filePath) {
+		if (!ValidCStringLength(filePath))
+		{
+			return std::string();
+		}
+
+		int len = strlen(filePath);
+		int p = FindLastIndexOf(filePath, '.');
+		auto suffix = (p >= 0 && p + 1 < len) ? SubString(filePath, p+1, len) : std::string();
+
+		// handle .bil.gz extensions
+		if (!suffix.empty() && p > 0 && suffix == "gz")
+		{
+			int idx = FindLastIndexOf(filePath, '.', p-1);
+			suffix = (idx >= 0 && idx + 1 < len) ? SubString(filePath, idx + 1, len) : std::string();
+		}
+
+		return suffix;
 	}
 
 	//-----------------------------------------------------------------------
@@ -375,7 +509,7 @@ namespace fb{
 		return length;
 	}
 
-	int DecodeUTF16(const unsigned char *encodedBuffer, unsigned int *outLength, EUnicodeByteOrder byteOrder)
+	int DecodeUTF16(const unsigned char *encodedBuffer, unsigned int *outLength, Endianness byteOrder)
 	{
 		const unsigned char *buf = (const unsigned char *)encodedBuffer;
 		int value = 0;
@@ -426,7 +560,7 @@ namespace fb{
 		return -1;
 	}
 
-	int EncodeUTF16(unsigned int value, unsigned char *outEncodedBuffer, unsigned int *outCharLength, EUnicodeByteOrder byteOrder)
+	int EncodeUTF16(unsigned int value, unsigned char *outEncodedBuffer, unsigned int *outCharLength, Endianness byteOrder)
 	{
 		if (value < 0x10000)
 		{
@@ -560,6 +694,14 @@ namespace fb{
 		return ansiBuffer;
 	}
 
+	size_t Length(std::stringstream& s) {
+		auto pos = s.tellg();
+		s.seekg(0, std::ios::end);
+		auto size = s.tellg();
+		s.seekg(pos, std::ios::end);
+		return (size_t)size;
+	}
+
 	HashedString::HashedString(char const * const pIdentString)
 		: mIdent(hash_name(pIdentString))
 		, mIdentStr(pIdentString)
@@ -660,5 +802,4 @@ namespace fb{
 #undef DO8
 #undef DO16
 	}
-
 }

@@ -39,9 +39,11 @@
 
 namespace fb
 {
+	typedef std::stack<std::string> MSG_STACK;	
+	thread_local int indent = 0;
+	thread_local MSG_STACK msgs;
 	static std::ofstream profileLogFile("fb_profile_result.log");
-	int Profiler::indent = 0;
-	Profiler::MSG_STACK Profiler::msgs;
+	
 
 	static void DebugOutput(const char* format, ...){
 		va_list args;
@@ -90,13 +92,15 @@ namespace fb
 		if (indent != 0)
 		{
 			char buffer[255];
-			sprintf_s(buffer, 255, "%s[Profiler] %s takes %f secs.\n", sp, mName.c_str(), elapsedTime);
+			sprintf_s(buffer, 255, "%s[Profiler] %s takes %f secs.\n", sp, mName.c_str(), elapsedTime);			
 			msgs.push(buffer);
 		}
 		else
 		{
-			DebugOutput("%s[Profiler] %s takes %f secs.\n", sp, mName.c_str(), elapsedTime);
-			// print stack
+			char buffer[255];
+			sprintf_s(buffer, 255, "[Profiler] %s takes %f secs.\n", mName.c_str(), elapsedTime);
+			msgs.push(buffer);			
+			// print stack			
 			while (!msgs.empty())
 			{
 				DebugOutput(msgs.top().c_str());

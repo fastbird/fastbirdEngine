@@ -37,7 +37,7 @@
 namespace fb{
 	class Vec3;
 	class Color;
-	class Ray3;
+	class Ray;
 	FB_DECLARE_SMART_PTR(PointLight);
 	FB_DECLARE_SMART_PTR(PointLightManager);
 	FB_DECLARE_SMART_PTR(ICamera);

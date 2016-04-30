@@ -131,27 +131,34 @@ void Mat33::MakeIdentity()
 void Mat33::FromAxisAngle(const Vec3& axis, Real radian)
 {
 	Real fCos = cos(radian);
-    Real fSin = sin(radian);
-    Real fOneMinusCos = 1.0f-fCos;
-    Real fX2 = axis.x*axis.x;
-    Real fY2 = axis.y*axis.y;
-    Real fZ2 = axis.z*axis.z;
-    Real fXYM = axis.x*axis.y*fOneMinusCos;
-    Real fXZM = axis.x*axis.z*fOneMinusCos;
-    Real fYZM = axis.y*axis.z*fOneMinusCos;
-    Real fXSin = axis.x*fSin;
-    Real fYSin = axis.y*fSin;
-    Real fZSin = axis.z*fSin;
+  Real fSin = sin(radian);
+  Real fOneMinusCos = 1.0f-fCos;
+  Real fX2 = axis.x*axis.x;
+  Real fY2 = axis.y*axis.y;
+  Real fZ2 = axis.z*axis.z;
+  Real fXYM = axis.x*axis.y*fOneMinusCos;
+  Real fXZM = axis.x*axis.z*fOneMinusCos;
+  Real fYZM = axis.y*axis.z*fOneMinusCos;
+  Real fXSin = axis.x*fSin;
+  Real fYSin = axis.y*fSin;
+  Real fZSin = axis.z*fSin;
 
-    m[0][0] = fX2*fOneMinusCos+fCos;
-    m[0][1] = fXYM-fZSin;
-    m[0][2] = fXZM+fYSin;
-    m[1][0] = fXYM+fZSin;
-    m[1][1] = fY2*fOneMinusCos+fCos;
-    m[1][2] = fYZM-fXSin;
-    m[2][0] = fXZM-fYSin;
-    m[2][1] = fYZM+fXSin;
-    m[2][2] = fZ2*fOneMinusCos+fCos;
+  m[0][0] = fX2*fOneMinusCos+fCos;
+  m[0][1] = fXYM-fZSin;
+  m[0][2] = fXZM+fYSin;
+  m[1][0] = fXYM+fZSin;
+  m[1][1] = fY2*fOneMinusCos+fCos;
+  m[1][2] = fYZM-fXSin;
+  m[2][0] = fXZM-fYSin;
+  m[2][1] = fYZM+fXSin;
+  m[2][2] = fZ2*fOneMinusCos+fCos;
+}
+
+Mat33 Mat33::FromAxisAngleStatic(const Vec3& axis, Real radian)
+{
+	Mat33 m;
+	m.FromAxisAngle(axis, radian);
+	return m;
 }
 
 Mat33 Mat33::Inverse() const

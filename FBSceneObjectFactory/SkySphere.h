@@ -50,6 +50,7 @@ namespace fb{
 		// SkySphere
 		void SetMaterial(const char* filepath, int pass);
 		void SetMaterial(MaterialPtr pMat, int pass);
+		void SetGeometry(const char* path);
 		MaterialPtr GetMaterial(int pass = 0) const;
 		void UpdateEnvironmentMap(const Vec3& origin);
 		void SetInterpolationData(unsigned index, const Vec4& data);

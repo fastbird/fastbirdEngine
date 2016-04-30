@@ -465,6 +465,16 @@ namespace fb
 	}
 
 	//------------------------------------------------------------------------
+	Mat44 MakeViewMatrix(const Vec3& eye, const Vec3& center, const Vec3& up)
+	{
+		auto forward = center - eye;
+		forward.SafeNormalize();
+		auto right = forward.Cross(up);
+		right.SafeNormalize();
+		auto newUp = right.Cross(forward);
+		return MakeViewMatrix(eye, right, forward, newUp);
+	}
+
 	Mat44 MakeViewMatrix(const Vec3& pos, const Vec3& x, const Vec3& y, const Vec3& z)
 	{
 		// transposed
@@ -562,12 +572,12 @@ namespace fb
         return tangent;
     }
 
-	Vec3 ProjectTo(const Plane3& plane, const Ray3& ray0, const Ray3& ray1)
+	Vec3 ProjectTo(const Plane& plane, const Ray& ray0, const Ray& ray1)
 	{
-		Ray3::IResult ret0 = ray0.Intersects(plane);
+		Ray::IResult ret0 = ray0.Intersects(plane);
 		if (ret0.second!=0.f)
 		{
-			Ray3::IResult ret1 = ray1.Intersects(plane);
+			Ray::IResult ret1 = ray1.Intersects(plane);
 			if (ret1.second!=0.f)
 			{
 				Vec3 startOnPlane = ray0.GetPoint(ret0.second);
@@ -593,6 +603,11 @@ namespace fb
 	Real Sign(Real s)
 	{
 		return s < 0.0f ? -1.0f : (s == 0.0f ? 0.0f : 1.0f);
+	}
+
+	Real Sign(int s)
+	{
+		return s < 0 ? -1.0f : (s == 0 ? 0.0f : 1.0f);
 	}
 
 	Vec3 Max(const Vec3& a, const Vec3& b)
@@ -700,6 +715,45 @@ namespace fb
 		}
 	}
 
+	Real ComputePerspectiveNearDistance(Real farDistance, Real farResolution, int depthBits)
+	{
+		if (farDistance < 0)
+		{
+			return 1.f;
+		}
+
+		if (farResolution < 0)
+		{
+			return 1.f;
+		}
+
+		if (depthBits < 1)
+		{
+			return 1.f;
+		}
+
+		if (farDistance == 0 || farResolution == 0)
+		{
+			return 0.f;
+		}
+
+		auto maxDepthValue = (1 << depthBits) - 1;
+
+		Real slotRatio = farResolution / farDistance;
+		return farDistance / (float)(maxDepthValue / (1 - slotRatio) - maxDepthValue + 1);
+	}
+
+	Real ComputePerspectiveMaxNearDistance(Real halfFov, Real distantToObj)
+	{
+		return distantToObj * cos(halfFov);
+		/*if (distantToObj < 0)
+		{
+			return 1.f;
+		}
+
+		return distantToObj / (2 * sqrt(2.f * tanHalfFov * tanHalfFov + 1.f));*/
+	}
+
 	SegmentIntersectResult SegmentIntersect(const Vec2& p, const Vec2& pend,
 		const Vec2& q, const Vec2& qend,
 		Vec2& outIntersect){
@@ -781,6 +835,7 @@ namespace fb
 
 		if ((min > zmax) || (zmin > max))
 			return false;
+
 		if (zmin > min)
 		{
 			min = zmin;
@@ -916,4 +971,143 @@ namespace fb
 			dest.push_back(v / sum);
 		}
 	}
-}
+
+	std::vector<Vec3> ComputePrincipalAxes(const Real* coordinates, int numelem, int stride) {
+		std::vector<Vec3> ret;
+		if (stride < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return ret;
+		}
+		
+		auto covariance = Mat44::FromCovarianceOfVertices(coordinates, numelem, stride);
+
+		// Compute the eigenvalues and eigenvectors of the covariance matrix. Since the covariance matrix is symmetric
+		// by definition, we can safely use the method Matrix.computeEigensystemFromSymmetricMatrix3().
+		Real eigenValues[3];
+		Vec3 eigenVectors[3];
+		Mat44::ComputeEigensystemFromSymmetricMatrix3(covariance, eigenValues, eigenVectors);
+
+		// Compute an index array who's entries define the order in which the eigenValues array can be sorted in
+		// ascending order.
+		int indexArray[] = { 0, 1, 2 };
+		std::sort(indexArray, indexArray + 2, [&eigenValues](int a, int b) {
+			return eigenValues[a] < eigenValues[b];
+		});
+
+
+		// Return the normalized eigenvectors in order of decreasing eigenvalue. This has the effect of returning three
+		// normalized orthognal vectors defining a coordinate system, which are sorted from the most prominent axis to
+		// the least prominent.		
+		return 
+		{
+			eigenVectors[indexArray[2]].NormalizeCopy(),
+			eigenVectors[indexArray[1]].NormalizeCopy(),
+			eigenVectors[indexArray[0]].NormalizeCopy()
+		};
+	}
+
+	Real Discriminant(Real a, Real b, Real c)
+	{
+		return b * b - 4.f * a * c;
+	}
+
+	std::pair<Vec3, Vec3> ComputeExtrema(const Vec3* points, int numElem) {
+		if (!points || numElem<1) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return{ Vec3::ZERO, Vec3::ZERO };
+		}
+		Real xmin = points[0].x;
+		Real ymin = points[0].y;
+		Real zmin = points[0].z;
+		Real xmax = xmin;
+		Real ymax = ymin;
+		Real zmax = zmin;
+
+		for (int i = 1; i < numElem; i++)
+		{
+			Real x = points[i].x;
+			if (x > xmax)
+			{
+				xmax = x;
+			}
+			else if (x < xmin)
+			{
+				xmin = x;
+			}
+
+			Real y = points[i].y;
+			if (y > ymax)
+			{
+				ymax = y;
+			}
+			else if (y < ymin)
+			{
+				ymin = y;
+			}
+
+			Real z = points[i].z;
+			if (z > zmax)
+			{
+				zmax = z;
+			}
+			else if (z < zmin)
+			{
+				zmin = z;
+			}
+		}
+
+		return { Vec3(xmin, ymin, zmin), Vec3(xmax, ymax, zmax) };
+	}
+
+	std::pair<Vec3, Vec3> ComputeExtrema(const Real* points, int numElem) {
+		if (!points || numElem < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return std::pair<Vec3, Vec3>();
+		}
+
+		Real xmin = points[0];
+		Real ymin = points[1];
+		Real zmin = points[2];
+		Real xmax = xmin;
+		Real ymax = ymin;
+		Real zmax = zmin;
+		int numPoints = numElem / 3;
+		for (int i = 1; i < numPoints; i++)
+		{
+			Real x = points[i * 3];
+			if (x > xmax)
+			{
+				xmax = x;
+			}
+			else if (x < xmin)
+			{
+				xmin = x;
+			}
+
+			Real y = points[i * 3 + 1];
+			if (y > ymax)
+			{
+				ymax = y;
+			}
+			else if (y < ymin)
+			{
+				ymin = y;
+			}
+
+			Real z = points[i * 3 + 2];
+			if (z > zmax)
+			{
+				zmax = z;
+			}
+			else if (z < zmin)
+			{
+				zmin = z;
+			}
+		}
+
+		return { Vec3(xmin, ymin, zmin), Vec3(xmax, ymax, zmax) };
+	}
+
+} // namespace fb

@@ -177,7 +177,13 @@ SkyFacadePtr SkyFacade::CreateSkyBox(const char* materialPath){
 }
 
 void SkyFacade::SetMaterial(const char* path, RENDER_PASS pass){
-	mImpl->mSkySphere->SetMaterial(path, pass);
+	if (mImpl->mSkySphere)
+		mImpl->mSkySphere->SetMaterial(path, pass);
+}
+
+void SkyFacade::SetGeometry(const char* path) {
+	if (mImpl->mSkySphere)
+		mImpl->mSkySphere->SetGeometry(path);
 }
 
 void SkyFacade::AttachToScene(){

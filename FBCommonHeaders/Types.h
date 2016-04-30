@@ -45,11 +45,16 @@ typedef unsigned int UINT;
 typedef unsigned long DWORD;
 typedef unsigned __int64 UINT64;
 typedef __int64 INT64;
+#define FB_INVALID_REAL -FLT_MAX
 namespace fb{
 	typedef intptr_t ModuleHandle;
 	typedef intptr_t FunctionHandle;
 	//#define FB_DOUBLE_PRECISION
 	typedef float Real;
+	typedef std::vector<Real> RealArray;
+	typedef std::vector<float> FloatArray;
+	typedef std::vector<int> IntArray;
+	typedef std::vector<unsigned char> ByteArray;
 
 	typedef __int64 HWindowId;
 	static const HWindowId INVALID_HWND_ID = (HWindowId)-1;

@@ -33,3 +33,6 @@
 #include <math.h>
 #include <sstream>
 #include "FBCommonHeaders/Types.h"
+
+#include "FBDebugLib/DebugLib.h"
+#include "FBStringLib/StringLib.h"

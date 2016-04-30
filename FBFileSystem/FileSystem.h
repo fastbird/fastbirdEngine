@@ -33,6 +33,7 @@ Handling file operations. Implemented on the top of boost::filesystem
 Handling file operations. Implemented on the top of boost::filesystem
 */
 #pragma once
+#include "FBCommonHeaders/Types.h"
 #include "FBCommonHeaders/String.h"
 #include "DirectoryIterator.h"
 #include <memory>
@@ -84,7 +85,7 @@ namespace fb{
 		/** Remove a file.
 		@return 'false' if \b path did not exist in the first place, otherwise true.
 		*/
-		static bool Remove(const char* path);		
+		static bool Remove(const char* path);
 		/** If filepath exists, rename it to preserve. 
 		\param numKeeping decides how many backup files need to be kept.
 		*/
@@ -101,7 +102,14 @@ namespace fb{
 		static int CompareFileModifiedTime(const char* file1, const char* file2);
 		static bool SecurityOK(const char* filepath);		
 		static BinaryData ReadBinaryFile(const char* path, std::streamoff& outLength);
-		static void WriteBinaryFile(const char* path, char* data, size_t length);
+		static void WriteBinaryFile(const char* path, const char* data, size_t length);
+		static void DeleteOnExit(const char* path);
+		/// @param expiryTime number of seconds that have passed since 1 January 1970 00:00 UTC
+		static bool IsFileOutOfDate(const char* path, time_t expiryTime);
+		/// opaque uir doesn't have '/' character in content.
+		/// otherwise we call it hierarchical
+		static bool IsOpaqueURI(const char* uri);
+		static bool IsFileOutOfDate(const char* url, size_t expiryTime);
 
 		//---------------------------------------------------------------------------
 		// Directory Operataions
@@ -132,6 +140,7 @@ namespace fb{
 		*/
 		static const char* GetExtension(const char* path);	
 		static const char* GetExtensionWithOutDot(const char* path);
+		static bool HasExtension(const char* filepath, const char* extension);
 		/** Get filename + extension*/
 		static std::string GetFileName(const char* path);
 		/** Get file name.
@@ -154,5 +163,52 @@ namespace fb{
 		if the first directory is stripped, \a outStripped will be true otherwise false.
 		*/
 		static std::string StripFirstDirectoryPath(const char* path, bool* outStripped);
+		static std::string TempFileName(const char* prefix, const char* suffix);
+		static void ReplaceIllegalFileNameCharacters(std::string& filepath);
+		static bool CanWrite(const char* filepath);
+		static void SetLastModified(const char* filepath);
+		// returns seconds
+		static time_t GetLastModified(const char* filepath);
+		static std::string FormPath(int n, ...);
+
+		enum SharingMode
+		{
+			NoSharing,
+			ReadAllow = 1,
+			WriteAllow = 1<<1,
+		};
+
+		enum ErrorMode
+		{
+			SkipErrorMsg,
+			PrintErrorMsg,
+		};
+		class FB_DLL_FILESYSTEM Open {
+			FB_DECLARE_NON_COPYABLE(Open);
+			FILE* mFile;
+			errno_t mErr;
+			std::string mFilePath;
+		public:
+			Open();
+			Open(const char* path, const char* mode);
+			Open(const char* path, const char* mode, ErrorMode errorMsgMode);
+			Open(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode);
+			Open(Open&& other) _NOEXCEPT;
+			~Open();
+			void Close();
+			FILE* Release();
+			errno_t operator()(const char* path, const char* mode);
+			errno_t operator()(const char* path, const char* mode, ErrorMode errorMsgMode);
+			errno_t operator()(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode);
+			operator FILE* () const;
+			errno_t Error() const;
+		};
+
+		static FILE* OpenFile(const char* path, const char* mode, errno_t* errorNo = 0);
+		static FILE* OpenFileShared(const char* path, const char* mode, SharingMode sharingMode, errno_t* errorNo = 0);
+		/// mode 'r' will allow another open file for read.
+		static FILE* OpenFileByMode(const char* path, const char* mode, errno_t* errorNo = 0);
+		static void CloseFile(FILE* &file);
+
 	};
 }

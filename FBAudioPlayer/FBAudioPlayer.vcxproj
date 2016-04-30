@@ -72,6 +72,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(ALURE_DIR)\binaries\$(Configuration);$(OPENAL_SOFT_DIR)\binaries\$(Configuration);$(OGG_DIR)\lib\Release;$(VORBIS_DIR)\win32\VS2010\Win32\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -187,7 +187,6 @@ public:
 	VectorMap<int, FontPtr> mFonts;
 	DebugHudPtr		mDebugHud;	
 	RendererOptionsPtr mRendererOptions;
-	bool mForcedWireframe;
 	RENDERER_FRAME_PROFILER mFrameProfiler;
 	PRIMITIVE_TOPOLOGY mCurrentTopology;	
 	const int DEFAULT_DYN_VERTEX_COUNTS=100;
@@ -232,8 +231,7 @@ public:
 	Impl(Renderer* renderer)
 		: mSelf(renderer)
 		, mNullRenderer(NullPlatformRenderer::Create())
-		, mCurrentTopology(PRIMITIVE_TOPOLOGY_UNKNOWN)
-		, mForcedWireframe(false)
+		, mCurrentTopology(PRIMITIVE_TOPOLOGY_UNKNOWN)		
 		, mUseFilmicToneMapping(true)
 		, mFadeAlpha(0.)
 		, mLuminance(0.5f)
@@ -339,16 +337,20 @@ public:
 			height = mRendererOptions->r_resolution.y;
 		}
 		mWindowSizes[id] = { width, height };		
-		IPlatformTexturePtr colorTexture;
-		IPlatformTexturePtr depthTexture;
-		GetPlatformRenderer().InitCanvas(id, window, width, height, false, colorTexture, depthTexture);
-		if (colorTexture && depthTexture){
+		IPlatformTexturePtr platformColorTexture;
+		IPlatformTexturePtr platformDepthTexture;
+		
+		GetPlatformRenderer().InitCanvas(CanvasInitInfo(id, window, width, height, 0, 
+			PIXEL_FORMAT_R8G8B8A8_UNORM, PIXEL_FORMAT_D24_UNORM_S8_UINT)
+			, platformColorTexture, platformDepthTexture);
+
+		if (platformColorTexture && platformDepthTexture){
 			RenderTargetParam param;
 			param.mSize = { width, height };
 			param.mWillCreateDepth = true;
-			auto rt = CreateRenderTarget(param);	
-			rt->SetColorTexture(CreateTexture(colorTexture));
-			rt->SetDepthTexture(CreateTexture(depthTexture));
+			auto rt = CreateRenderTarget(param);				
+			rt->SetColorTexture(CreateTexture(platformColorTexture));
+			rt->SetDepthTexture(CreateTexture(platformDepthTexture));
 			rt->SetAssociatedWindowId(id);
 			
 			mWindowRenderTargets[id] = rt;
@@ -872,13 +874,23 @@ public:
 	}
 
 	VertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
-		unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) {
+		unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) 
+	{
+		for (auto it = mVertexBufferCache.begin(); it != mVertexBufferCache.end(); ++it) {
+			auto buffer = *it;
+			if (buffer->IsSame(stride, numVertices, usage, accessFlag)) {
+				mVertexBufferCache.erase(it);
+				buffer->UpdateData(data);
+				return buffer;
+			}
+		}
+
 		auto platformBuffer = GetPlatformRenderer().CreateVertexBuffer(data, stride, numVertices, usage, accessFlag);
 		if (!platformBuffer){
 			Logger::Log(FB_ERROR_LOG_ARG, "Platform renderer failed to create a vertex buffer");
 			return 0;
 		}
-		auto vertexBuffer = VertexBuffer::Create(stride, numVertices);
+		auto vertexBuffer = VertexBuffer::Create(stride, numVertices, usage, accessFlag);
 		vertexBuffer->SetPlatformBuffer(platformBuffer);
 		return vertexBuffer;
 	}
@@ -1026,7 +1038,7 @@ public:
 		}
 		auto descsSize = sizeof(INPUT_ELEMENT_DESCS) * descs.size();
 		auto totalSize = descsSize + size;
-		BinaryData temp(new char[totalSize]);
+		BinaryData temp(new char[totalSize], std::default_delete<char[]>());
 		memcpy(temp.get(), &descs[0], sizeof(descs));
 		memcpy(temp.get() + descsSize, data, size);
 		unsigned key = murmur3_32(temp.get(), totalSize, murmurSeed);
@@ -1221,6 +1233,19 @@ public:
 			return depthBuffer;
 		}
 		return it->second;
+	}
+
+	std::vector<VertexBufferPtr> mVertexBufferCache;
+	void Cache(VertexBufferPtr buffer) {
+		if (!buffer)
+			return;
+
+		auto usage = buffer->GetBufferUsage();
+		if (usage == BUFFER_USAGE_IMMUTABLE) {
+			Logger::Log(FB_DEFAULT_LOG_ARG, "Cannot cache the immutable buffer");
+			return;
+		}
+		mVertexBufferCache.push_back(buffer);
 	}
 	
 
@@ -2033,29 +2058,6 @@ public:
 		mResourceProvider = provider;
 	}
 
-	void SetForcedWireFrame(bool enable){
-		if (mForcedWireframe != enable){
-			if (enable)
-			{
-				auto wireFrameR = mResourceProvider->GetRasterizerState(ResourceTypes::RasterizerStates::WireFrame);
-				if (wireFrameR)
-					wireFrameR->Bind();
-				mForcedWireframe = true;
-			}
-			else
-			{
-				mForcedWireframe = false;
-				auto defaultR = mResourceProvider->GetRasterizerState(ResourceTypes::RasterizerStates::Default);
-				if (defaultR)
-					defaultR->Bind();
-			}
-		}
-	}
-
-	bool GetForcedWireFrame() const{
-		return mForcedWireframe;
-	}
-
 	RenderTargetPtr GetMainRenderTarget() const{
 		auto it = mWindowRenderTargets.Find(mMainWindowId);
 		if (it == mWindowRenderTargets.end()){
@@ -2801,14 +2803,14 @@ public:
 	}
 
 	bool GetResolutionList(unsigned& outNum, Vec2I* list){
-		std::shared_ptr<Vec2ITuple> tuples;
+		std::unique_ptr<Vec2ITuple[]> tuples;
 		if (list){
-			tuples = std::shared_ptr<Vec2ITuple>(new Vec2ITuple[outNum], [](Vec2ITuple* obj){ delete [] obj; });
+			tuples = std::unique_ptr<Vec2ITuple[]>(new Vec2ITuple[outNum]);
 		}
 		auto ret = GetPlatformRenderer().GetResolutionList(outNum, list ? tuples.get() : 0);
 		if (ret && list){
 			for (unsigned i = 0; i < outNum; ++i){
-				list[i] = tuples.get()[i];
+				list[i] = tuples[i];
 			}
 		}
 		return ret;
@@ -3043,6 +3045,10 @@ TextureAtlasRegionPtr Renderer::GetTextureAtlasRegion(const char* path, const ch
 
 TexturePtr Renderer::GetTemporalDepthBuffer(const Vec2I& size, const char* key) {
 	return mImpl->GetTemporalDepthBuffer(size, key);
+}
+
+void Renderer::Cache(VertexBufferPtr buffer) {
+	mImpl->Cache(buffer);
 }
 
 //-------------------------------------------------------------------
@@ -3294,14 +3300,6 @@ void Renderer::SetResourceProvider(ResourceProviderPtr provider){
 	mImpl->SetResourceProvider(provider);
 }
 
-void Renderer::SetForcedWireFrame(bool enable) {
-	mImpl->SetForcedWireFrame(enable);
-}
-
-bool Renderer::GetForcedWireFrame() const {
-	return mImpl->GetForcedWireFrame();
-}
-
 RenderTargetPtr Renderer::GetMainRenderTarget() const {
 	return mImpl->GetMainRenderTarget();
 }
@@ -3477,6 +3475,13 @@ CameraPtr Renderer::GetCamera() const {
 }
 
 CameraPtr Renderer::GetMainCamera() const {
+	return mImpl->GetMainCamera();
+}
+
+ICameraPtr Renderer::GetICamera() const {
+	return mImpl->GetCamera();
+}
+ICameraPtr Renderer::GetMainICamera() const {
 	return mImpl->GetMainCamera();
 }
 

@@ -36,10 +36,10 @@
 #include "Vec2.h"
 #include "Vec2I.h"
 #include "Quat.h"
-#include "Plane3.h"
+#include "Plane.h"
 #include "AABB.h"
 #include "Random.h"
-#include "Ray3.h"
+#include "Ray.h"
 #include "Transformation.h"
 #include "MathDefines.h"
 #include "Rect.h"
@@ -116,7 +116,8 @@ namespace fb
 	Real ACos(Real fValue);
 	bool IsOverlapped(const Rect& a, const Rect& b);
 	Real Step(Real edge, Real s);	
-	Mat44 MakeViewMatrix(const Vec3& pos, const Vec3& x, const Vec3& y, const Vec3& z);	
+	Mat44 MakeViewMatrix(const Vec3& eye, const Vec3& center, const Vec3& up);
+	Mat44 MakeViewMatrix(const Vec3& eye, const Vec3& x, const Vec3& y, const Vec3& z);	
 	/// d3d left handed
 	Mat44 MakeProjectionMatrix(Real fov, Real aspectRatio, Real n, Real f);	
 	/// d3d left handed
@@ -127,12 +128,13 @@ namespace fb
         const Vec3& position1, const Vec3& position2, const Vec3& position3,
         const Vec2& uv1, const Vec2& uv2, const Vec2& uv3);
 
-	Vec3 ProjectTo(const Plane3& plane, const Ray3& ray0, const Ray3& ray1);
+	Vec3 ProjectTo(const Plane& plane, const Ray& ray0, const Ray& ray1);
 	// lineDir should be normalized one.
 	Vec3 ProjectPointOnToLine(const Vec3& lineStartP, const Vec3& lineDir, const Vec3& point);
 
 	int GetMipLevels(Real v);
 	Real Sign(Real s);
+	Real Sign(int s);
 	Vec3 Max(const Vec3& a, const Vec3& b);
 	Vec3 Min(const Vec3& a, const Vec3& b);
 	Vec2 Abs(const Vec2& v);
@@ -153,6 +155,9 @@ namespace fb
 	// outPos and TimeToTarget have to be specified both if you need.
 	void CalcInterceptPosition(const Vec3& firePos, Real ammoSpeed, const Vec3& toTargetDir, Real distance, const Vec3& targetVel,
 		Vec3& outVelocity, Vec3* outPos = 0, Real* timeToTarget = 0);
+	
+	Real ComputePerspectiveNearDistance(Real farDistance, Real farResolution, int depthBits);
+	Real ComputePerspectiveMaxNearDistance(Real halfFov, Real distantToObj);
 	
 	enum SegmentIntersectResult{
 		SIR_COLLINEAR,
@@ -187,4 +192,14 @@ namespace fb
 	void CalcRatio(float src[], float dest[], int num);
 	void CalcRatio(int src[], float dest[], int num);
 	void CalcRatio(const std::vector<float>& src, std::vector<float>& dest);
+	std::vector<Vec3> ComputePrincipalAxes(const Real* coordinates, int numElem, int stride);
+	/**
+	* Calculates a discriminant.  b squared minus 4ac
+	* < 0 : no roots
+	* == 0 : one root
+	* > 0 : two roots
+	*/
+	Real Discriminant(Real a, Real b, Real c);
+	std::pair<Vec3, Vec3> ComputeExtrema(const Vec3* points, int numElem);
+	std::pair<Vec3, Vec3> ComputeExtrema(const Real* points, int numElem);
 }

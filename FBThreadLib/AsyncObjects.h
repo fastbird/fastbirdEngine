@@ -45,24 +45,44 @@ namespace fb
 	};
 
 	//---------------------------------------------------------------------------
-	struct LOCK_CRITICAL_SECTION
+	struct FB_CRITICAL_SECTION_R
+	{
+	private:
+		std::recursive_mutex mMutex;
+	public:
+		FB_CRITICAL_SECTION_R();
+		~FB_CRITICAL_SECTION_R();
+		void Lock();
+		void Unlock();
+	};
+
+	//---------------------------------------------------------------------------
+	struct ENTER_CRITICAL_SECTION
 	{
 		FB_CRITICAL_SECTION* mCS;
 
-		LOCK_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs);
-		LOCK_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs);
-		~LOCK_CRITICAL_SECTION();
+		ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs);
+		ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs);
+		~ENTER_CRITICAL_SECTION();
+	};
+
+	struct ENTER_CRITICAL_SECTION_R
+	{
+		FB_CRITICAL_SECTION_R* mCS;
+
+		ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R* cs);
+		ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R& cs);
+		~ENTER_CRITICAL_SECTION_R();
 	};
 
 	//---------------------------------------------------------------------------
 	struct FB_READ_WRITE_CS
 	{
 	private:
-		std::mutex mWriteMutex;		
-		std::condition_variable mReaderCleared;
-		std::unique_lock<std::mutex> mPendingLock;
-		FB_CRITICAL_SECTION mReaderCountCS;
+		std::mutex mMutex;		
+		std::condition_variable mC;				
 		volatile int mNumReaders;
+		volatile bool mWriting;
 
 	public:
 		FB_READ_WRITE_CS();

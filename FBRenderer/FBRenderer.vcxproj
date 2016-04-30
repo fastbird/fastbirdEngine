@@ -64,6 +64,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureAtlas.h" />
     <ClInclude Include="TextureBinding.h" />
+    <ClInclude Include="TriangleType.h" />
     <ClInclude Include="VertexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
@@ -200,6 +201,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

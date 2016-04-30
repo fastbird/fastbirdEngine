@@ -79,6 +79,10 @@ namespace fb
 
 		}
 
+		virtual ~VectorMap() {
+
+		}
+
 		//--------------------------------------------------------------------
 		iterator Insert(const _Val_type& data)
 		{

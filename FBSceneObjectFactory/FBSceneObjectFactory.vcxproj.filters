@@ -18,6 +18,12 @@
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="MeshCamera.h" />
+    <ClInclude Include="Terrain.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainMesh.h">
+      <Filter>Terrain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />
@@ -30,5 +36,10 @@
     <ClCompile Include="TrailObject.cpp" />
     <ClCompile Include="SkySphere.cpp" />
     <ClCompile Include="SkyBox.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Terrain">
+      <UniqueIdentifier>{a4fdeed3-7027-4da5-b4ba-46d25462dc73}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

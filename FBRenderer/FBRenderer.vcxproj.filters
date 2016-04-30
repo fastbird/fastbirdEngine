@@ -73,6 +73,9 @@
     <ClInclude Include="RenderStrategyNull.h" />
     <ClInclude Include="CascadedShadowsManager.h" />
     <ClInclude Include="LuaFunctions.h" />
+    <ClInclude Include="TriangleType.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />

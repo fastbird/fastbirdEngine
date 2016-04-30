@@ -40,6 +40,7 @@ namespace fb{
 			char fill = ' ', std::ios::fmtflags flags = std::ios::fmtflags(0));		
 		static TString ToString(unsigned long val, unsigned short width = 0, 
 			char fill = ' ', std::ios::fmtflags flags = std::ios::fmtflags(0));
+		static TString ToString(UINT64 val);
 		static TString ToStringK(unsigned val);		
 		static TString ToString(long val, unsigned short width = 0, char fill = ' ',
 			std::ios::fmtflags flags = std::ios::fmtflags(0));
@@ -58,6 +59,7 @@ namespace fb{
 		static long ParseLong(const TString& val, long defaultValue = 0);
 		static unsigned long ParseUnsignedLong(const TString& val, unsigned long defaultValue = 0);
 		static unsigned long long ParseUnsignedLongLong(const TString& val, unsigned long long defaultValue = 0);
+		static UINT64 ParseUINT64(const TString& val, unsigned long long defaultValue = 0);
 		/** Converts a TString to a boolean.
 		@remarks
 		Returns true if case-insensitive match of the start of the string

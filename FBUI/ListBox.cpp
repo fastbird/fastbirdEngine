@@ -2230,10 +2230,12 @@ void ListBox::ClearItemProperties(){
 
 	for (auto it : mItemPropertyKeyCol) {
 		auto key = mData->FindRowIndexWithKey(it.first.x);
-		auto item = mItems[key][it.first.y].lock();
-		if (item) {
-			for (auto prop : it.second) {
-				SetDefaultPropertyForUI(item, prop.first);
+		if (key != -1) {
+			auto item = mItems[key][it.first.y].lock();
+			if (item) {
+				for (auto prop : it.second) {
+					SetDefaultPropertyForUI(item, prop.first);
+				}
 			}
 		}
 	}

@@ -45,6 +45,7 @@ namespace fb
 		//--------------------------------------------------------------------		
 		Vec2ITuple GetSize() const;
 		PIXEL_FORMAT GetPixelFormat() const;
+		void SetPixelFormat(DXGI_FORMAT format);
 		bool IsReady() const;
 		void Bind(BINDING_SHADER shader, int slot) const;		
 		MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag) const;

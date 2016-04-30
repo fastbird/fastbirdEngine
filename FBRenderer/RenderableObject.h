@@ -29,6 +29,7 @@
 namespace fb{
 	struct RenderParam;
 	struct RenderParamOut;
+	FB_DECLARE_SMART_PTR(RenderableObject);
 	class RenderableObject{
 	public:
 		//-------------------------------------------------------------------

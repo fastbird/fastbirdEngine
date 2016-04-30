@@ -24,10 +24,9 @@
  THE SOFTWARE.
  -----------------------------------------------------------------------------
 */
-
+#include "stdafx.h"
 #include "StringConverter.h"
 #include "StringLib.h"
-#include <sstream>
 namespace fb{
 	TString StringConverter::ToString(Real val, unsigned short precision,
 		unsigned short width, char fill, std::ios::fmtflags flags)
@@ -103,6 +102,12 @@ namespace fb{
 		stream.fill(fill);
 		if (flags)
 			stream.setf(flags);
+		stream << val;
+		return stream.str();
+	}
+
+	TString StringConverter::ToString(UINT64 val) {
+		std::_tstringstream stream;				
 		stream << val;
 		return stream.str();
 	}
@@ -219,6 +224,10 @@ namespace fb{
 		str >> ret;
 
 		return ret;
+	}
+
+	UINT64 StringConverter::ParseUINT64(const TString& val, unsigned long long defaultValue) {
+		return ParseUnsignedLongLong(val, defaultValue);
 	}
 
 	//-----------------------------------------------------------------------

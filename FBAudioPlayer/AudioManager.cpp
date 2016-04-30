@@ -344,7 +344,7 @@ public:
 		assert(audioId != INVALID_AUDIO_ID);
 		audioSource->SetAudioBuffer(buffer);
 		{
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			mAudioSources[audioId] = audioSource;
 		}
 		
@@ -411,7 +411,7 @@ public:
 		using namespace std::chrono;
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();		
 		std::pair<AudioId, ALuint> audioIdSrcId;
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioBuffers.Find(loweredPath);
 		if (it != mAudioBuffers.end()){
 			it->second->mLastAccessed = curTick;
@@ -572,7 +572,7 @@ public:
 		}
 		
 		
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 
 		AudioId audioId = NextAudioId++;
 		auto audioSource = AudioSource::Create(audioId);
@@ -595,7 +595,7 @@ public:
 		auto id = PlayAudio(path, prop);
 		if (id != INVALID_AUDIO_ID){			
 			auto fadeIn = SmoothGain::Create(id, 1.0f / inSec, 0.f, prop.mGain);
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			mAudioManipulatorsQueue[id].push_back(fadeIn);			
 		}
 		return id;
@@ -615,7 +615,7 @@ public:
 			return false;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);		
+		ENTER_CRITICAL_SECTION l(mAudioMutex);		
 		mStopQueue.push_back(StopData{ id, -1.0f });
 		return true;
 	}
@@ -626,7 +626,7 @@ public:
 			return false;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);		
+		ENTER_CRITICAL_SECTION l(mAudioMutex);		
 		mStopQueue.push_back(StopData{ id, sec });
 		return true;		
 	}
@@ -637,7 +637,7 @@ public:
 			return 0.f;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto itQueue = mAudioPlayQueue.Find(id);
 		if (itQueue != mAudioPlayQueue.end()){
 			return GetAudioLength(itQueue->second.mFilePath.c_str());
@@ -677,7 +677,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Canno get a length for invalid audio(%u)", id).c_str());
 			return 0.f;
 		}
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto itQueue = mAudioPlayQueue.Find(id);
 		if (itQueue != mAudioPlayQueue.end()){
 			return GetAudioLength(itQueue->second.mFilePath.c_str());
@@ -695,7 +695,7 @@ public:
 	}
 
 	FunctionId RegisterEndCallback(AudioId id, std::function< void(AudioId) > callback){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		mEndCallbacks[NextCallbackId] = callback;
 		if (!ValueExistsInVector(mEndCallbackIds[id], NextCallbackId))
 			mEndCallbackIds[id].push_back(NextCallbackId);
@@ -704,7 +704,7 @@ public:
 	}
 
 	void UnregisterEndCallbackForAudio(AudioId id){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto idIt = mEndCallbackIds.Find(id);
 		if (idIt != mEndCallbackIds.end()){
 			for (auto& funcId : idIt->second){
@@ -718,7 +718,7 @@ public:
 	}
 
 	void UnregisterEndCallbackFunc(FunctionId functionId){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		// functionId, function
 		auto funcIt = mEndCallbacks.Find(functionId);
 		if (funcIt != mEndCallbacks.end()){
@@ -786,7 +786,7 @@ public:
 		AudioSources sources;
 		SettingDataVector positionData;
 		{
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			sources = mAudioSources;
 			for (auto& settingData : mSettingDataQueue){
 				if (settingData.mPropertyType == AL_POSITION){
@@ -824,7 +824,7 @@ public:
 	}
 
 	bool IsValidSource(AudioId id) const{
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end())
 			return true;		
@@ -843,7 +843,7 @@ public:
 		StopQueue stopQueue;		
 		std::vector<AudioExPtr> audioExQueue;
 		{
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			playQueue.swap(mAudioPlayQueue);			
 			mListenerPos = mListenerPosMainThread;
 			setttingDataQueue.swap(mSettingDataQueue);			
@@ -957,7 +957,7 @@ public:
 						else{							
 							auto fadeOut = SmoothGain::Create(it.mAudioId, 1.0f / std::min(leftTime, it.mSec),
 								itSource->second->GetGain(), 0.f);
-							LOCK_CRITICAL_SECTION l(mAudioMutex);
+							ENTER_CRITICAL_SECTION l(mAudioMutex);
 							mAudioManipulators[it.mAudioId].push_back(fadeOut);
 						}
 					}
@@ -968,7 +968,7 @@ public:
 				}
 				else{
 					OnPlayFinishedInternal(it.mAudioId);
-					LOCK_CRITICAL_SECTION l(mAudioMutex);
+					ENTER_CRITICAL_SECTION l(mAudioMutex);
 					mAudioSources.erase(itSource);					
 				}
 			}
@@ -1014,7 +1014,7 @@ public:
 		for (auto it = mAudioSources.begin(); it != mAudioSources.end(); /**/){
 			if (it->second->Update(dt)){
 				OnPlayFinishedInternal(it->second->GetAudioId());
-				LOCK_CRITICAL_SECTION l(mAudioMutex);
+				ENTER_CRITICAL_SECTION l(mAudioMutex);
 				it = mAudioSources.erase(it);
 			}
 			else{
@@ -1073,7 +1073,7 @@ public:
 			return false;
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);			
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetPosition(x, y, z);			
@@ -1112,7 +1112,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No source found.");
 			return false;
 		}
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetRelative(relative);
@@ -1135,7 +1135,7 @@ public:
 	}
 
 	void SetListenerPosition(const Vec3Tuple& pos){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		mListenerPosMainThread = pos;
 	}
 
@@ -1149,7 +1149,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No source found.");
 			return false;
 		}
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetReferenceDistance(distance);
@@ -1181,7 +1181,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No source found.");
 			return false;
 		}
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetRollOffFactor(factor);
@@ -1213,7 +1213,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No source found.");
 			return false;
 		}
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetOffsetInSec(sec);
@@ -1298,7 +1298,7 @@ public:
 			return SetGainAudioThread(id, gain, checkManipulator);
 		}
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetGain(gain);
@@ -1327,7 +1327,7 @@ public:
 			return SetGainSmoothAudioThread(id, gain, inSec);
 		}
 		if (mInvalidatedAudioIds.find(id) == mInvalidatedAudioIds.end()){
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			mSettingDataQueue.push_back(SettingData());
 			auto& data = mSettingDataQueue.back();
 			data.mAudioId = id;
@@ -1344,7 +1344,7 @@ public:
 	}
 
 	float GetGain(AudioId id) const{
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
 			return it->second->GetGain();
@@ -1360,7 +1360,7 @@ public:
 	}
 
 	bool SetLoop(AudioId id, bool loop){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetLoop(loop);
@@ -1383,7 +1383,7 @@ public:
 	}
 
 	bool GetLoop(AudioId id) const{
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
 			return it->second->GetLoop();
@@ -1395,7 +1395,7 @@ public:
 	}
 
 	bool SetMaxGain(AudioId id, float maxGain){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioPlayQueue.Find(id);
 		if (it != mAudioPlayQueue.end()){
 			it->second.mSource->SetMaxGain(maxGain);
@@ -1418,7 +1418,7 @@ public:
 	}
 
 	float GetMaxGain(AudioId id){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto it = mAudioSources.Find(id);
 		if (it != mAudioSources.end()){
 			return it->second->GetMaxGain();
@@ -1430,7 +1430,7 @@ public:
 	}
 
 	void RegisterAudioEx(AudioExPtr audioex){
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		if (!ValueExistsInVector(mAudioExsQueue, audioex)){
 			mAudioExsQueue.push_back(audioex);
 		}
@@ -1441,7 +1441,7 @@ public:
 		if (exist)
 			return true;
 
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		return ValueExistsInVector(mAudioExs, audioex);
 	}
 
@@ -1452,7 +1452,7 @@ public:
 		}
 
 		// AudioId, FunctionIds
-		LOCK_CRITICAL_SECTION l(mAudioMutex);
+		ENTER_CRITICAL_SECTION l(mAudioMutex);
 		auto callbackIt = mEndCallbackIds.Find(id);
 		if (callbackIt != mEndCallbackIds.end()){
 			for (auto funcId : callbackIt->second){
@@ -1471,7 +1471,7 @@ public:
 		assert(IsAudioThread());		
 		AudioId id = (AudioId)userdata;
 		{
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			mInvalidatedAudioIds.insert(id);
 		}
 		OnPlayFinishedInternal(id);
@@ -1480,7 +1480,7 @@ public:
 		if (it != mAudioSources.end()){
 			assert(it->second->GetALAudioSource() != -1);
 			mALSources.push(it->second->GetALAudioSource());			
-			LOCK_CRITICAL_SECTION l(mAudioMutex);
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
 			mAudioSources.erase(it);			
 		}
 		else{

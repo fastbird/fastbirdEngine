@@ -29,8 +29,9 @@
 #include "Math.h"
 #include "BVaabb.h"
 #include "Transformation.h"
-#include "Plane3.h"
-#include "Ray3.h"
+#include "Plane.h"
+#include "Ray.h"
+#include "Intersection.h"
 
 namespace fb
 {
@@ -172,7 +173,7 @@ void BVaabb::TransformBy(const Transformation& transform,
 	pNewBound->SetAABB(newAABB);
 }
 
-int BVaabb::WhichSide(const Plane3& plane) const
+int BVaabb::WhichSide(const Plane& plane) const
 {
 	if (mAlwaysPass)
 		return 1;
@@ -190,10 +191,42 @@ int BVaabb::WhichSide(const Plane3& plane) const
 	return 0;
 }
 
-bool BVaabb::TestIntersection(const Ray3& ray) const
+std::vector<Intersection> BVaabb::Intersect(const Ray& ray) const
+{
+	Real impactT = 1.0f;
+	Real pseudo_min = 0.0f;
+	Real pseudo_max = ray.IsUnitVector() ? 5000.0f : ray.GetDirLen();
+	Vec3 normal;
+	bool collide = RayAABB(ray.GetOrigin(), ray.GetDirInv(), ray.GetSigns(), mAABB, impactT, normal, pseudo_min, pseudo_max);
+	if (!collide) {
+		return{};
+	}
+	else {
+		return{ Intersection(ray.GetPointAt(impactT), normal) };
+	}	
+}
+
+std::vector<Intersection> BVaabb::Intersect(BoundingVolume* pBV) const
+{
+	Real R = pBV->GetRadius();
+	const auto& S = pBV->GetCenter();
+	Real dist_squared = R * R;
+	const auto& C1 = mAABB.GetMin();
+	const auto& C2 = mAABB.GetMax();
+	if (S.x < C1.x) dist_squared -= Squared(S.x - C1.x);
+	else if (S.x > C2.x) dist_squared -= Squared(S.x - C2.x);
+	if (S.y < C1.y) dist_squared -= Squared(S.y - C1.y);
+	else if (S.y > C2.y) dist_squared -= Squared(S.y - C2.y);
+	if (S.z < C1.z) dist_squared -= Squared(S.z - C1.z);
+	else if (S.z > C2.z) dist_squared -= Squared(S.z - C2.z);
+	return dist_squared > 0 ? std::vector<Intersection>{Intersection::DummyIntersection}
+													: std::vector<Intersection>{};
+}
+
+bool BVaabb::TestIntersection(const Ray& ray) const
 {
 	Vec3 normal;
-	Ray3::IResult ret = ray.Intersects(mAABB, normal);
+	Ray::IResult ret = ray.Intersects(mAABB, normal);
 	return ret.first;
 }
 
@@ -225,8 +258,8 @@ Vec3 BVaabb::GetSurfaceFrom(const Vec3& src, Vec3& normal)
 {
 	Vec3 dir = mCenter - src;
 	dir.Normalize();
-	Ray3 ray(src, dir);
-	Ray3::IResult ret = ray.Intersects(mAABB, normal);
+	Ray ray(src, dir);
+	Ray::IResult ret = ray.Intersects(mAABB, normal);
 	return dir * ret.second;
 }
 
@@ -252,9 +285,9 @@ Vec3 BVaabb::GetRandomPosInVolume(const Vec3* nearLocal) const
 		pos = Lerp(pos, *nearLocal, (Real)Random(0.5, 1.0));
 	}
 	Vec3 dir = (pos - mAABB.GetCenter()).NormalizeCopy();
-	Ray3 ray(pos, -dir);
+	Ray ray(pos, -dir);
 	Vec3 normal;
-	Ray3::IResult ret = ray.Intersects(mAABB, normal);
+	Ray::IResult ret = ray.Intersects(mAABB, normal);
 	if (ret.first)
 	{
 		if (mAABB.Contain(pos))

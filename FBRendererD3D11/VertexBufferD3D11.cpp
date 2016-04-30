@@ -61,6 +61,10 @@ namespace fb
 		RendererD3D11::GetInstance().UnmapBuffer(mVertexBuffer.get(), subResource);
 	}
 
+	bool VertexBufferD3D11::UpdateBuffer(void* data, unsigned bytes) {
+		return RendererD3D11::GetInstance().UpdateBuffer(mVertexBuffer.get(), data, bytes);
+	}
+
 	ID3D11Buffer* VertexBufferD3D11::GetHardwareBuffer() const{
 		return mVertexBuffer.get();
 	}

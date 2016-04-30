@@ -38,9 +38,8 @@ class Task : std::enable_shared_from_this<Task>
     friend class WorkerThread;
 
 protected:
-	Task(bool _WaitEvent = false, ThreadSafeCounter* _ExecCounter = NULL);
-	virtual ~Task();
-    void Trigger(TaskScheduler* Scheduler);
+	
+  void Trigger(TaskScheduler* Scheduler);
 	virtual int GetDependencies(TaskPtr Dependencies[]);
 
     // Called by the scheduler when the task is fully executed.
@@ -54,14 +53,15 @@ protected:
 	SyncEventPtr mWaitEvent;       // Event used to wait for a task to complete.
 	std::atomic<bool> mExecuted;          // Is this task executed?
 	std::atomic<bool> mIsHashed;          // Is this task in the dependencies hashmap?
-    bool mScheduled : 1;         // Is this task scheduled?
-    bool mIsDependency : 1;      // Is this task a dependency for another task?
+  bool mScheduled : 1;         // Is this task scheduled?
+  bool mIsDependency : 1;      // Is this task a dependency for another task?
 	bool mTriggered : 1;
     
 
 public:
-
-    virtual void Execute(TaskScheduler* Scheduler)=0;
+	Task(bool _WaitEvent = false, ThreadSafeCounter* _ExecCounter = NULL);
+	virtual ~Task();
+  virtual void Execute(TaskScheduler* Scheduler)=0;
 
 	bool IsExecuted() const;
 	bool IsTriggered() const;

@@ -53,7 +53,7 @@ namespace fb
 		Quat GetRot() const;
 		Vec3 GetScale() const;
 		typedef std::pair<bool, Real> IResult;
-		IResult Intersects(const Ray3& ray, const Transformation& objT) const;
+		IResult Intersects(const Ray& ray, const Transformation& objT) const;
 		bool TestCollision(const BoundingVolume* pBV, const Transformation& objT) const;
 		Vec3 GetRandomPosInVolume(const Vec3* nearWorld, const Transformation& objT) const;
 

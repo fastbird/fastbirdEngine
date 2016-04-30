@@ -77,7 +77,7 @@ namespace fb{
 		int GetWidth() const;
 		int GetHeight() const;
 		Vec2I GetSize();
-		PIXEL_FORMAT GetFormat() const;		
+		PIXEL_FORMAT GetFormat() const;
 		void SetDebugName(const char* name);
 
 		bool IsReady() const;

@@ -115,9 +115,9 @@ namespace fb{
 		void SetScale(const Vec3& scale);
 		const BoundingVolumePtr GetBoundingVolume() const;
 		const BoundingVolumePtr GetBoundingVolumeWorld() const;
-		bool RayCast(const Ray3& ray, Vec3& pos, const ModelTriangle** tri);
+		bool RayCast(const Ray& ray, Vec3& pos, const ModelTriangle** tri);
 		bool CheckNarrowCollision(const BoundingVolume* bv);
-		Ray3::IResult CheckNarrowCollisionRay(const Ray3& ray);
+		Ray::IResult CheckNarrowCollisionRay(const Ray& ray);
 		bool HasCollisionShapes() const;		
 		CollisionShapeInfos GetCollisionShapeInfos() const;
 		ColisionShapeType::Enum GetColShapeType() const;
@@ -149,7 +149,7 @@ namespace fb{
 		Real GetRadius() const;
 		Vec3* GetPositionVertices(int matGroupIdx, size_t& outNumPositions);
 		void OnMainCameraTargeted();
-		void RenderSimple();
+		void RenderSimple(bool bindPosOnly);
 		void SetDebug(bool debug);
 	};
 }

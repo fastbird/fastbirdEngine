@@ -70,6 +70,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -78,6 +79,7 @@
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="DustRenderer.h" />
     <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="Terrain.h" />
     <ClInclude Include="MeshAuxiliary.h" />
     <ClInclude Include="MeshCamera.h" />
     <ClInclude Include="MeshGroup.h" />
@@ -89,6 +91,7 @@
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="SkySphere.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TerrainMesh.h" />
     <ClInclude Include="TrailObject.h" />
   </ItemGroup>
   <ItemGroup>

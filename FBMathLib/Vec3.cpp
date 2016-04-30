@@ -42,7 +42,9 @@ namespace fb
 	const Vec3 Vec3::MIN(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 	//-------------------------------------------------------------------
-	Vec3::Vec3() {
+	Vec3::Vec3() 
+		: x(FB_INVALID_REAL)
+	{
 	}
 
 	Vec3::Vec3(Real _x, Real _y, Real _z)
@@ -99,6 +101,11 @@ namespace fb
 	}
 
 	//-------------------------------------------------------------------
+
+	bool Vec3::IsInitialized() const
+	{
+		return x != FB_INVALID_REAL;
+	}
 	Vec3 Vec3::operator+ (const Vec3& r) const
 	{
 		return Vec3(x + r.x, y + r.y, z + r.z);
@@ -181,7 +188,8 @@ namespace fb
 
 	Vec3 Vec3::operator/ (Real scalar) const
 	{
-		return Vec3(x / scalar, y / scalar, z / scalar);
+		auto invScalar = 1.f / scalar;
+		return Vec3(x * invScalar, y *invScalar, z *invScalar);
 	}
 
 	Vec3 Vec3::operator/ (const Vec3& v) const
@@ -402,6 +410,10 @@ namespace fb
 		stream.read((char*)&x, sizeof(x));
 		stream.read((char*)&y, sizeof(y));
 		stream.read((char*)&z, sizeof(z));
+	}
+
+	std::string Vec3::ToString() const {
+		return FormatString("%f %f %f", x, y, z);
 	}
 
 	//--------------------------------------------------------------------------

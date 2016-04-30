@@ -47,7 +47,7 @@ namespace fb{
 		/** Initializes canvas(swap-chain)
 		\param fullscreen 0: window mode, 1: full-screen, 2: faked full-screen
 		*/
-		bool InitCanvas(HWindowId id, HWindow window, int width, int height, int fullscreen,
+		bool InitCanvas(const CanvasInitInfo& info,
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture);
 		void DeinitCanvas(HWindowId id, HWindow window);
 		bool ChangeResolution(HWindowId id, HWindow window, const Vec2ITuple& resol,

@@ -300,7 +300,7 @@ public:
 		using namespace COLLADAFW;
 		if (src.getType() == FloatOrDoubleArray::DATA_TYPE_FLOAT)
 		{
-			FloatArray* pFloatArray = src.getFloatValues();
+			COLLADAFW::FloatArray* pFloatArray = src.getFloatValues();
 			size_t numFloats = pFloatArray->getCount();
 			dest.assign(pFloatArray->getData(), pFloatArray->getData() + numFloats);
 		}

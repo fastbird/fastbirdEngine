@@ -36,6 +36,8 @@ namespace fb
 	public:
 		int x, y;
 
+		typedef std::vector<Vec2I> Array;
+
 		static const Vec2I ZERO;
 
 		//-------------------------------------------------------------------
@@ -59,6 +61,7 @@ namespace fb
 		bool operator!=(const Vec2I& v) const;		
 		bool operator<(const Vec2I& v) const;
 		operator Vec2ITuple() const;
+		Vec2ITuple ToTuple() const;
 
 		int Cross(const Vec2I& right);
 		int Dot(const Vec2I& right);
