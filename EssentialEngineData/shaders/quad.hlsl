@@ -61,7 +61,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p quad_VertexShader( in a2v IN )
+v2p Quad_VertexShader( in a2v IN )
 {
     v2p OUT;
 
@@ -77,7 +77,7 @@ v2p quad_VertexShader( in a2v IN )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 quad_PixelShader( in v2p IN ) : SV_Target
+float4 Quad_PixelShader( in v2p IN ) : SV_Target
 {
 #ifdef DIFFUSE_TEXTURE	
 	return IN.color * gTexture.Sample(gLinearSampler, IN.uv) * gDiffuseColor;

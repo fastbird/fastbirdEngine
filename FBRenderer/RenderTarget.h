@@ -128,6 +128,10 @@ namespace fb
 		void ToggleForceWireframe();
 		void SetForceWireframe(bool wireframe);
 		bool GetForceWireframe() const;
+
+		void OverrideDepthTarget(bool enable);		
+		void UnbindColorTarget();
+		void RebindColorTarget();
 		
 	};
 }

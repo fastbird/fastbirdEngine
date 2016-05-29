@@ -38,6 +38,12 @@ e_NoMeshLoad=0
 
 e_Profile = 0
 
+r_renderAxis = 1
+
+resourcePath={
+	"D:/Projects/fastbird-engine/EssentialEngineData",
+}
+
 -- profiles
 e_profile=0
 local y = 34

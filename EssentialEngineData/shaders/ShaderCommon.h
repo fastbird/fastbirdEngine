@@ -60,6 +60,7 @@ SamplerState gPointWrapSampler : register(s4);
 SamplerState gLinearWrapSampler : register(s5);
 SamplerState gLinearBlackBorderSampler : register(s6);
 SamplerState gPointBlackBorderSampler : register(s7);
+SamplerState gLinearMirror : register(s8);
 
 #endif // !CPP
 

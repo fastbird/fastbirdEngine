@@ -9,8 +9,8 @@
 	<Textures>
 		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">EssentialEngineData/textures/missingmaterial.dds</Texture>
 	</Textures>
-	<MaterialParameters>
-	</MaterialParameters>
+	<ShaderConstants>
+	</ShaderConstants>
 	<ShaderDefines>
 	</ShaderDefines>
 	<InputLayout>

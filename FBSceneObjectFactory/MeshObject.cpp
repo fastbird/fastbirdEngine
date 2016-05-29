@@ -217,7 +217,7 @@ public:
 				if (!it.mMaterial->BindSubPass(RENDER_PASS::PASS_SHADOW, true))
 				{
 					renderer.SetPositionInputLayout();
-					provider->BindShader(ResourceTypes::Shaders::ShadowMapShader);					
+					provider->BindShader(ResourceTypes::Shaders::ShadowMapShader, true);
 				}
 				RenderMaterialGroup(&it, true);
 			}
@@ -258,13 +258,14 @@ public:
 				if (!it.mMaterial || !it.mVBPos || it.mMaterial->IsNoShadowCast())
 					continue;
 
-				if (it.mMaterial->GetBindingShaders() & BINDING_SHADER_GS) {
-					renderer.GetResourceProvider()->BindShader(ResourceTypes::Shaders::OcclusionPrePassVSGSPS);					
+				if (it.mMaterial->GetBindingShaders() & SHADER_TYPE_GS) {
+					// TODO: Get shader from the material.
+					renderer.GetResourceProvider()->BindShader(ResourceTypes::Shaders::OcclusionPrePassVSGSPS, true);
 				}
 				else {
-					renderer.GetResourceProvider()->BindShader(ResourceTypes::Shaders::OcclusionPrePassVSPS);					
+					renderer.GetResourceProvider()->BindShader(ResourceTypes::Shaders::OcclusionPrePassVSPS, true);
 				}
-				it.mMaterial->BindMaterialParams();
+				it.mMaterial->BindShaderConstants();
 
 				RenderMaterialGroup(&it, true);
 			}
@@ -300,7 +301,7 @@ public:
 						renderer.RestoreDepthStencilState();
 						provider->BindRasterizerState(ResourceTypes::RasterizerStates::OneBiased);
 						provider->BindBlendState(ResourceTypes::BlendStates::NoColorWrite);
-						provider->BindShader(ResourceTypes::Shaders::DepthOnlyVSPS);
+						provider->BindShader(ResourceTypes::Shaders::DepthOnlyVSPS, true);
 						
 						// write only depth
 						for(auto& it:mMaterialGroups)

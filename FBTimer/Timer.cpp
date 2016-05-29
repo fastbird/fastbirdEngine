@@ -35,7 +35,7 @@ namespace fb
 	class Timer::Impl{
 	public:
 		std::chrono::high_resolution_clock::time_point mPreviousTimePoint;
-		FRAME_PRECISION mFrames;
+		std::atomic<FRAME_PRECISION> mFrames;
 		TIME_PRECISION mTime;
 		TIME_PRECISION mTimeNotPausable;
 		TIME_PRECISION mDeltaTime;
@@ -58,7 +58,8 @@ namespace fb
 			mDeltaTimeNotPausable = diff.count();
 			mTimeNotPausable += mDeltaTimeNotPausable;
 
-			++mFrames;
+			mFrames.fetch_add(1, std::memory_order_relaxed);
+
 			if (mPaused)
 				return;
 
@@ -104,7 +105,7 @@ namespace fb
 		}
 
 		FRAME_PRECISION GetFrame() const{
-			return mFrames;
+			return mFrames.load(std::memory_order_relaxed);
 		}
 
 		INT64 GetTickCount() const
@@ -112,6 +113,12 @@ namespace fb
 			return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 		}
 
+		time_t GetPosixTime() const
+		{
+			return duration_cast<seconds>(system_clock::now().time_since_epoch()).count();			
+		}
+
+		
 		void Pause()
 		{
 			mPaused = true;
@@ -192,9 +199,12 @@ namespace fb
 		return mImpl->GetFrame();
 	}
 
-	INT64 Timer::GetTickCount() const
-	{
+	INT64 Timer::GetTickCount() const	{
 		return mImpl->GetTickCount();
+	}
+
+	time_t Timer::GetPosixTime() const {
+		return mImpl->GetPosixTime();
 	}
 
 	INT64 Timer::GetFrequency() const{
@@ -215,3 +225,4 @@ namespace fb
 		return mImpl->IsPaused();
 	}
 }
+

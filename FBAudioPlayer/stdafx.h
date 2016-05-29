@@ -34,6 +34,7 @@
 #if defined(_PLATFORM_WINDOWS_) 
 #define FB_DLL_AUDIOPLAYER __declspec(dllexport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
+#define FB_DLL_THREAD __declspec(dllimport)
 #else
 #define FB_DLL_AUDIOPLAYER
 #endif
@@ -55,7 +56,7 @@
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
 #include "FBFileSystem/FileSystem.h"
-#include "FBThreadLib/threads.h"
+#include "FBThread/threads.h"
 #include "TinyXmlLib/tinyxml2.h"
 
 namespace fb{

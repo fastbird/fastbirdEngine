@@ -12,8 +12,8 @@
 		<Texture slot="2" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/aagun2/texture/metallic.png</Texture>
 		<Texture slot="3" shader="ps" AddressU="Wrap" AddressV="Wrap">Data/objects/parts/aagun2/texture/roughness.png</Texture>
 	</Textures>
-	<MaterialParameters>
-	</MaterialParameters>
+	<ShaderConstants>
+	</ShaderConstants>
 	<ShaderDefines>
 		<Define name="NORMAL_TEXTURE" val="1"/>
 		<Define name="ENV_TEXTURE" val="1"/>

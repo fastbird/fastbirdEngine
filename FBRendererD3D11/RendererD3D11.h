@@ -28,13 +28,12 @@
 #pragma once
 #ifndef __Rendererd3d11_header_included__
 #define __Rendererd3d11_header_included__
-
 #include "FBCommonHeaders/Types.h"
+#include "RenderStatesD3D11.h"
+
 #include "FBRenderer/IPlatformRenderer.h"
 #include "FBRenderer/RendererStructs.h"
-
 #include "EssentialEngineData/shaders/Constants.h"
-#include "RenderStatesD3D11.h"
 
 namespace fb
 {
@@ -47,6 +46,10 @@ namespace fb
 	class RendererD3D11;
 	class IRenderTarget;
 	class ShaderD3D11;
+	class VertexShaderD3D11;
+	class GeometryShaderD3D11;
+	class PixelShaderD3D11;
+	class ComputeShaderD3D11;
 	class InputLayoutD3D11;
 	
 	FB_DECLARE_SMART_PTR(RendererD3D11);
@@ -61,6 +64,7 @@ namespace fb
 		static void Destroy();
 		static RendererD3D11& GetInstance();			
 
+		void PrepareQuit() OVERRIDE;
 		//-------------------------------------------------------------------
 		// IPlatformRenderer interface
 		//-------------------------------------------------------------------		
@@ -77,16 +81,27 @@ namespace fb
 
 		// Resource creation
 		void SetShaderCacheOption(bool useShaderCache, bool generateCache);
-		IPlatformTexturePtr CreateTexture(const char* path, bool async);
+		IPlatformTexturePtr CreateTexture(const char* path, const TextureCreationOption& options);
 		IPlatformTexturePtr CreateTexture(void* data, int width, int height,
-			PIXEL_FORMAT format, BUFFER_USAGE usage, int  buffer_cpu_access,
+			PIXEL_FORMAT format, int numMips, BUFFER_USAGE usage, int  buffer_cpu_access,
 			int texture_type);
 		IPlatformVertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
 			unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		IPlatformIndexBufferPtr CreateIndexBuffer(void* data, unsigned int numIndices,
 			INDEXBUFFER_FORMAT format);
-		IPlatformShaderPtr CreateShader(const char* path, int shaders,
-			const SHADER_DEFINES& defines, bool ignoreCache);
+
+		IPlatformShaderPtr CreateVertexShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) OVERRIDE;
+		IPlatformShaderPtr CreateGeometryShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) OVERRIDE;
+		IPlatformShaderPtr CreatePixelShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) OVERRIDE;
+		IPlatformShaderPtr CreateComputeShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) OVERRIDE;
+		IPlatformShaderPtr CompileComputeShader(const char* code, const char* entry, 
+			const SHADER_DEFINES& defines) OVERRIDE;
+		bool ReloadShader(ShaderD3D11* shader, const SHADER_DEFINES& defines);
+
 		IPlatformInputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			void* shaderByteCode, unsigned size);
 		IPlatformBlendStatePtr CreateBlendState(const BLEND_DESC& desc);
@@ -98,28 +113,31 @@ namespace fb
 		// Resource Binding
 		void SetRenderTarget(IPlatformTexturePtr pRenderTargets[], size_t rtViewIndex[], int num,
 			IPlatformTexturePtr pDepthStencil, size_t dsViewIndex);
+		void SetDepthTarget(IPlatformTexturePtr pDepthStencil, size_t dsViewIndex);
 		void SetViewports(const Viewport viewports[], int num);
 		void SetScissorRects(const Rect rects[], int num);
 		void SetVertexBuffers(unsigned int startSlot, unsigned int numBuffers,
 			IPlatformVertexBuffer const * pVertexBuffers[], unsigned int const strides[], unsigned int offsets[]);
 		void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt);		
-		void SetTextures(IPlatformTexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot);		
+		void SetTextures(IPlatformTexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot);		
 		void UpdateShaderConstants(ShaderConstants::Enum type, const void* data, int size);
-		void* MapMaterialParameterBuffer() const;
-		void UnmapMaterialParameterBuffer() const;
+		void* MapShaderConstantsBuffer() const;
+		void UnmapShaderConstantsBuffer() const;
 		void* MapBigBuffer() const;
 		void UnmapBigBuffer() const;
 		void UnbindInputLayout();
-		void UnbindShader(BINDING_SHADER shader);
-		void UnbindTexture(BINDING_SHADER shader, int slot);
-		void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,
+		void UnbindShader(SHADER_TYPE shader);
+		void UnbindTexture(SHADER_TYPE shader, int slot);
+		void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,		
 			IPlatformTexture* src, UINT srcSubresource, Box3D* pBox);
+		void CopyResource(IPlatformTexture* dst, IPlatformTexture* src);
 
 		// Drawing
 		void Draw(unsigned int vertexCount, unsigned int startVertexLocation);
 		void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation);				
 		void Clear(Real r, Real g, Real b, Real a, Real z, unsigned char stencil);
 		void Clear(Real r, Real g, Real b, Real a);
+		void ClearDepthStencil(Real z, UINT8 stencil);
 		void ClearState();
 		void Present();
 
@@ -137,23 +155,31 @@ namespace fb
 		void UnmapBuffer(ID3D11Resource* pResource, UINT subResource) const;
 		bool UpdateBuffer(ID3D11Resource* pResource, void* data, unsigned bytes);
 		void SaveTextureToFile(TextureD3D11* texture, const char* filename);		
+		/// If the base resource wasn't created with 
+		/// D3D11_BIND_RENDER_TARGET, 
+		/// D3D11_BIND_SHADER_RESOURCE, and 
+		/// D3D11_RESOURCE_MISC_GENERATE_MIPS, 
+		/// the call to GenerateMips has no effect.
 		void GenerateMips(TextureD3D11* pTexture);
 		
 		// Resource Bindings
 		void SetIndexBuffer(IndexBufferD3D11* pIndexBuffer, unsigned offset);
-		void SetTexture(TextureD3D11* pTexture, BINDING_SHADER shaderType, unsigned int slot);
-		void SetShaders(ShaderD3D11* pShader);
-		void SetVSShader(ShaderD3D11* pShader);
-		void SetHSShader(ShaderD3D11* pShader);
-		void SetDSShader(ShaderD3D11* pShader);		
-		void SetGSShader(ShaderD3D11* pShader);
-		void SetPSShader(ShaderD3D11* pShader);	
+		void SetTexture(TextureD3D11* pTexture, SHADER_TYPE shaderType, unsigned int slot);		
+		void SetShader(VertexShaderD3D11* pShader);		
+		void SetShader(GeometryShaderD3D11* pShader);
+		void SetShader(PixelShaderD3D11* pShader);		
+		void SetShader(ComputeShaderD3D11* pShader);
+		/// constants, size : struct SHADER_CONSTANTS
+		bool RunComputeShader(ComputeShaderD3D11* pShader, void* constants, size_t size, 
+			int x, int y, int z, ByteArray& output, size_t outputSize);
+		bool QueueRunComputeShader(ComputeShaderD3D11* pShader, void* constants, size_t size,
+			int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback);
 		
 		void SetInputLayout(InputLayoutD3D11* pInputLayout);		
 		void SetRasterizerState(RasterizerStateD3D11* pRasterizerState);
 		void SetBlendState(BlendStateD3D11* pBlendState);
-		void SetDepthStencilState(DepthStencilStateD3D11* pDepthStencilState, unsigned stencilRef);
-		void SetSamplerState(SamplerStateD3D11* pSamplerState, BINDING_SHADER shader, int slot);
+		void SetDepthStencilState(DepthStencilStateD3D11* pDepthStencilState, int stencilRef);
+		void SetSamplerState(SamplerStateD3D11* pSamplerState, SHADER_TYPE shader, int slot);
 	};
 }
 

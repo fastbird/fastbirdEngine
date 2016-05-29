@@ -51,6 +51,7 @@ public:
 		: mTheta(0)
 		, mPhi(0)
 		, mInterpolating(false)
+		, mSpecular(1, 1, 1)
 	{
 	}
 
@@ -127,7 +128,7 @@ public:
 		mInterpolTime[1] += time;
 	}
 
-	const Vec3& GetInterpolDir(unsigned target) const
+	Vec3 GetInterpolDir(unsigned target) const
 	{
 		assert(target <= 1);
 		return SphericalToCartesian(mInterpolTheta[target], mInterpolPhi[target]);
@@ -270,7 +271,7 @@ void DirectionalLight::AddInterpolTime(Real time){
 	mImpl->mInterpolTime[1] += time;
 }
 
-const Vec3& DirectionalLight::GetInterpolDir(unsigned target) const{
+Vec3 DirectionalLight::GetInterpolDir(unsigned target) const{
 	return mImpl->GetInterpolDir(target);	
 }
 Real DirectionalLight::GetInterpolIntensity(unsigned target) const

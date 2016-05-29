@@ -55,7 +55,7 @@ struct v2p
 	float3 ViewPos : TEXCOORD2;
 };
 
-v2p ui3d_VertexShader( in a2v INPUT )
+v2p UI3D_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -69,7 +69,7 @@ v2p ui3d_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 ui3d_PixelShader( in v2p INPUT ) : SV_Target
+float4 UI3D_PixelShader( in v2p INPUT ) : SV_Target
 {	
 	float2 screenTex = 0.5*( (INPUT.ScreenUVData) + float2(1,1));
     screenTex.y = 1 - screenTex.y;

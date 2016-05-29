@@ -31,8 +31,12 @@
 #include "Renderer.h"
 #include "Texture.h"
 #include "Shader.h"
+#include "IndexBuffer.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBStringLib/StringLib.h"
+#include "FBFileSystem/FileSystem.h"
+#include "FBSerializationLib/Serialization.h"
+#include "EssentialEngineData/shaders/CommonDefines.h"
 using namespace fb;
 
 static const int NumToneMaps = 5;
@@ -46,16 +50,62 @@ public:
 	VectorMap<int, RasterizerStatePtr> mRasterizerStates;
 	VectorMap<int, BlendStatePtr> mBlendStates;
 	VectorMap<int, DepthStencilStatePtr> mDepthStencilStates;
-	VectorMap<int, SamplerStatePtr> mSamplerStates;	
+	VectorMap<int, SamplerStatePtr> mSamplerStates;
+	VectorMap<ResourceTypes::IndexBuffer, IndexBufferPtr> mIndexBuffers;
+
+	//---------------------------------------------------------------------------
+	std::vector<TexturePtr> CreatePermutationTexture() {
+		ByteArray p;
+		auto path = FileSystem::GetResourcePathIfPathNotExists("EssentialEngineData/Permutation_256_extented.dat");
+		std::ifstream file(path, std::ios::binary);
+		if (file) {
+			read(file, p);
+			std::vector<TexturePtr> ret;
+			ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
+			ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
+			return ret;
+		}
+		Logger::Log(FB_ERROR_LOG_ARG, "Failed to create Permutation_256_Extended texture.");
+		return{};
+	}
+
+	std::vector<TexturePtr> CreateGradientTexture() {
+		std::vector<Vec4> g;
+		auto path = FileSystem::GetResourcePathIfPathNotExists("EssentialEngineData/Gradiants_256_extended.dat");
+		std::ifstream file(path, std::ios::binary);
+		if (file) {
+			read(file, g);
+			std::vector<TexturePtr> ret;
+			ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
+			ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
+			return ret;
+		}
+		Logger::Log(FB_ERROR_LOG_ARG, "Failed to create Gradiants_256_Extended texture.");
+		return{};
+	}
+
+	TexturePtr CreatePermutationTextureFloat() {
+		std::vector<float> data(256);
+		for (int i = 0; i < 256; ++i) {
+			data[i] = Random(-1.f, 1.f);
+		}
+		return Renderer::GetInstance().CreateTexture(&data[0], 256, 1, PIXEL_FORMAT_R32_FLOAT,
+			1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D);
+	}
 
 	//---------------------------------------------------------------------------
 	std::vector<TexturePtr> CreateTexture(int ResourceTypes_Textures){
 		std::vector<TexturePtr> ret;
 		auto& renderer = Renderer::GetInstance();
+		TextureCreationOption option;
 		switch (ResourceTypes_Textures){		
 		case ResourceTypes::Textures::Noise:
 		{
-			auto texture = renderer.CreateTexture("EssentialEngineData/textures/pnoise.dds");
+			auto texture = renderer.CreateTexture("EssentialEngineData/textures/pnoise.dds", option);
 			if (!texture){
 				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create noise texture.");				
 			}
@@ -66,8 +116,8 @@ public:
 		}
 		case ResourceTypes::Textures::GGXGenTarget:
 		{
-			auto texture = renderer.CreateTexture(0, 512, 128, PIXEL_FORMAT_R16G16B16A16_FLOAT, BUFFER_USAGE_DEFAULT,
-				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+			auto texture = renderer.CreateTexture(0, 512, 128, PIXEL_FORMAT_R16G16B16A16_FLOAT, 
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 			if (!texture){
 				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create ggx gen target.");				
 			}
@@ -78,7 +128,8 @@ public:
 		}	
 		case ResourceTypes::Textures::GGX:
 		{
-			auto texture = renderer.CreateTexture("EssentialEngineData/textures/ggx.dds");
+			option.generateMip = false;
+			auto texture = renderer.CreateTexture("EssentialEngineData/textures/ggx.dds", option);
 			if (!texture){
 				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create ggx texture.");
 			}
@@ -92,9 +143,8 @@ public:
 			int nSampleLen = 1;
 			// 1, 3, 9, 27, 81
 			for (int i = 0; i < NumToneMaps; ++i){
-				auto texture = renderer.CreateTexture(0, nSampleLen, nSampleLen,
-					PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+				auto texture = renderer.CreateTexture(0, nSampleLen, nSampleLen, PIXEL_FORMAT_R16_FLOAT, 
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 				if (!texture){
 					Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create a tone map with size (%d)", nSampleLen).c_str());
 				}
@@ -112,14 +162,33 @@ public:
 		{
 			for (int i = 0; i < NumLuminanceMaps; ++i){
 				auto texture = renderer.CreateTexture(0, 1, 1, PIXEL_FORMAT_R16_FLOAT, 
-					BUFFER_USAGE_DEFAULT,
-					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 				if (!texture){
 					Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create luminance map(%d)", i).c_str());
 				}
 				else{
 					ret.push_back(texture);
 				}
+			}
+			return ret;
+		}
+		case ResourceTypes::Textures::Permutation_256_Extended:
+		{
+			return CreatePermutationTexture();
+		}
+
+		case ResourceTypes::Textures::Gradiants_256_Extended:
+		{
+			return CreateGradientTexture();			
+		}
+		case ResourceTypes::Textures::ValueNoise:
+		{
+			auto texture = CreatePermutationTextureFloat();
+			if (!texture) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create noise texture.");
+			}
+			else {
+				ret.push_back(texture);
 			}
 			return ret;
 		}
@@ -166,56 +235,64 @@ public:
 		switch (ResourceTypes_Shaders) {
 		case ResourceTypes::Shaders::FullscreenQuadNearVS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS);
+			return renderer.CreateShader("EssentialEngineData/shaders/FullScreenQuadVS.hlsl", SHADER_TYPE_VS);
 		}
 		case ResourceTypes::Shaders::FullscreenQuadFarVS:
 		{
 			shaderDefines.push_back(ShaderDefine("_FAR_SIDE_QUAD", "1"));
-			return renderer.CreateShader("EssentialEnginedata/shaders/fullscreenquadvs.hlsl", BINDING_SHADER_VS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/FullScreenQuadVS.hlsl", SHADER_TYPE_VS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::CopyPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/copyps.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/CopyPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::CopyPSMS:
 		{
 			shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
-			return renderer.CreateShader("EssentialEnginedata/shaders/copyps.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/CopyPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::ShadowMapShader:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/shadowdepth.hlsl", BINDING_SHADER_VS);
+			return renderer.CreateShader("EssentialEngineData/shaders/ShadowDepthVS.hlsl", SHADER_TYPE_VS);
 		}
 		case ResourceTypes::Shaders::DepthWriteVSPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/depth.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/Depth.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::DepthOnlyVSPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/DepthOnly.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/DepthOnly.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::CloudDepthWriteVSPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/depth_cloud.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/DepthCloud.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
+		}
+		case ResourceTypes::Shaders::LineVSPS:
+		{
+			return renderer.CreateShader("EssentialEngineData/shaders/Line.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
+		}
+
+		case ResourceTypes::Shaders::PointVSGSPS: {
+			return renderer.CreateShader("EssentialEngineData/shaders/Point.hlsl", SHADER_TYPE_VS | SHADER_TYPE_GS| SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::SampleLumInitialPS:
 		{
 			if (renderer.GetMultiSampleCount() != 1) {
 				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			}
-			return renderer.CreateShader("EssentialEnginedata/shaders/SampleLumInitialNew.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/SampleLumInitialNewPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::SampleLumIterativePS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/SampleLumIterativeNew.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/SampleLumIterativeNewPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::SampleLumFinalPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/SampleLumFinalNew.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/SampleLumFinalNewPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::CalcAdaptedLumPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/CalculateAdaptedLum.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/CalculateAdaptedLumPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::ToneMappingPS:
 		{
@@ -227,7 +304,7 @@ public:
 
 			if (renderer.GetFilmicToneMapping())
 				shaderDefines.push_back(ShaderDefine("_FILMIC_TONEMAP", "1"));
-			return renderer.CreateShader("EssentialEnginedata/shaders/tonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/ToneMappingPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 
 		}
 
@@ -236,7 +313,7 @@ public:
 			if (renderer.GetMultiSampleCount() != 1)
 				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 
-			return renderer.CreateShader("EssentialEnginedata/shaders/simpletonemapping.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/SimpleToneMappingPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 
 		case ResourceTypes::Shaders::BrightPassPS:
@@ -244,53 +321,53 @@ public:
 			if (renderer.GetMultiSampleCount() != 1) {
 				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			}
-			return renderer.CreateShader("EssentialEnginedata/shaders/brightpassps.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/BrightPassPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::BloomPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/bloomps.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/BloomPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::Blur5x5PS:
 		{
 			if (renderer.GetMultiSampleCount() != 1) {
 				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			}
-			return renderer.CreateShader("EssentialEnginedata/shaders/gaussblur5x5.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/GaussianBlur5x5PS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::StarGlarePS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/starglare.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/StarGlarePS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::MergeTextures2PS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/mergetextures2ps.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/MergeTextures2PS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::GodRayPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/GodRayPS.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/GodRayPS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::OcclusionPrePassVSPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/OccPrePass.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/OccPrePass.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::OcclusionPrePassVSGSPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/OccPrePassGS.hlsl", BINDING_SHADER_VS | BINDING_SHADER_GS | BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/OccPrePassWithGS.hlsl", SHADER_TYPE_VS | SHADER_TYPE_GS | SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::GlowPS:
 		{
 			if (renderer.GetMultiSampleCount() != 1) {
 				shaderDefines.push_back(ShaderDefine("_MULTI_SAMPLE", "1"));
 			}
-			return renderer.CreateShader("EssentialEnginedata/shaders/BloomPS.hlsl", BINDING_SHADER_PS, shaderDefines);
+			return renderer.CreateShader("EssentialEngineData/shaders/BloomPS.hlsl", SHADER_TYPE_PS, shaderDefines);
 		}
 		case ResourceTypes::Shaders::SilouettePS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/silouette.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/SilouettePS.hlsl", SHADER_TYPE_PS);
 		}
 		case ResourceTypes::Shaders::GGXGenPS:
 		{
-			return renderer.CreateShader("EssentialEnginedata/shaders/GGXGen.hlsl", BINDING_SHADER_PS);
+			return renderer.CreateShader("EssentialEngineData/shaders/GGXGenPS.hlsl", SHADER_TYPE_PS);
 		}
 		default:
 			Logger::Log(FB_ERROR_LOG_ARG, "Resource Provider - Unknown shader type");
@@ -312,10 +389,10 @@ public:
 		return it->second;
 	}
 
-	void BindShader(int ResourceTypes_Shaders){
+	void BindShader(int ResourceTypes_Shaders, bool unbindEmptySlot){
 		auto shader = GetShader(ResourceTypes_Shaders);
 		if (shader)
-			shader->Bind();
+			shader->Bind(unbindEmptySlot);
 	}
 
 	MaterialPtr CreateMaterial(int ResourceTypes_Materials){
@@ -332,6 +409,9 @@ public:
 		}
 		case ResourceTypes::Materials::BillboardQuad:{
 			return renderer.CreateMaterial("EssentialEngineData/materials/billboardQuad.material");
+		}
+		case ResourceTypes::Materials::Frustum: {
+			return renderer.CreateMaterial("EssentialEngineData/materials/frustum.material");
 		}
 		default:
 			Logger::Log(FB_ERROR_LOG_ARG, "Resource Provider - Unknown resource type.");
@@ -365,6 +445,11 @@ public:
 		case ResourceTypes::RasterizerStates::CullFrontFace:
 		{
 			desc.CullMode = CULL_MODE_FRONT;
+			return renderer.CreateRasterizerState(desc);
+		}
+		case ResourceTypes::RasterizerStates::NoCull:
+		{
+			desc.CullMode = CULL_MODE_NONE;
 			return renderer.CreateRasterizerState(desc);
 		}
 		case ResourceTypes::RasterizerStates::OneBiased:
@@ -581,6 +666,16 @@ public:
 			desc.DepthFunc = COMPARISON_LESS_EQUAL;
 			return renderer.CreateDepthStencilState(desc);
 		}
+		case ResourceTypes::DepthStencilStates::Greater: {
+			desc.DepthFunc = COMPARISON_GREATER;
+			return renderer.CreateDepthStencilState(desc);
+		}
+		case ResourceTypes::DepthStencilStates::IncrementalStencilOpaqueIf: {
+			desc.StencilEnable = true;
+			desc.FrontFace.StencilPassOp = STENCIL_OP_REPLACE;
+			desc.FrontFace.StencilFunc = COMPARISON_GREATER_EQUAL;
+			return renderer.CreateDepthStencilState(desc);
+		}
 		default:
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Resource Provider - Unknown depth stencil states (%d)", ResourceTypes_DepthStencilStates).c_str());
 			return 0;
@@ -683,18 +778,69 @@ public:
 		}
 	}
 
+	IndexBufferPtr CreateIndexBuffer(ResourceTypes::IndexBuffer type) {
+		auto& renderer = Renderer::GetInstance();
+		switch (type) {
+		case ResourceTypes::IndexBuffer::Frustum:
+		{
+			/// near (left, bottom), (left, top), (right, bottom), (right, top)
+			/// far (left, bottom), (left, top), (right, bottom), (right, top)
+			short indices[] = {
+				// near
+				0, 1, 2,
+				2, 1, 3,
+				// far
+				4, 6, 5,
+				6, 7, 5,
+				// left
+				4, 5, 0,
+				0, 5, 1,
+				// right
+				2, 3, 6,
+				6, 3, 7,
+				// top
+				1, 5, 3,
+				3, 5, 7,
+				// bottom
+				0, 2, 4,
+				2, 6, 4,
+			};
+			return renderer.CreateIndexBuffer(indices, ARRAYCOUNT(indices), INDEXBUFFER_FORMAT_16BIT);			
+		}
+		}
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Unknown index buffer type(%d)", type).c_str());
+		return nullptr;
+	}
+
 	SamplerStatePtr GetSamplerState(int ResourceTypes_SamplerStates){
 		auto it = mSamplerStates.Find(ResourceTypes_SamplerStates);
 		if (it == mSamplerStates.end()){
 			auto state = CreateSamplerState(ResourceTypes_SamplerStates);
 			if (!state){
-				Logger::Log(FB_ERROR_LOG_ARG, "Resource Provider - Failed to create a depth stencil state(%d)", ResourceTypes_SamplerStates);
+				Logger::Log(FB_ERROR_LOG_ARG, 
+					FormatString("Resource Provider - Failed to create a depth stencil state(%d)", ResourceTypes_SamplerStates).c_str());
 				return 0;
 			}
 			mSamplerStates[ResourceTypes_SamplerStates] = state;
 			return state;
 		}
 
+		return it->second;
+	}
+
+	IndexBufferPtr GetIndexBuffer(ResourceTypes::IndexBuffer type) {
+		auto it = mIndexBuffers.Find(type);
+		if (it == mIndexBuffers.end()) {
+			auto ib = CreateIndexBuffer(type);
+			if (!ib)
+			{
+				Logger::Log(FB_ERROR_LOG_ARG, 
+					FormatString("Failed to create index buffer type(%d)", type).c_str());
+				return nullptr;
+			}
+			mIndexBuffers[type] = ib;
+			return ib;
+		}
 		return it->second;
 	}
 
@@ -712,10 +858,10 @@ public:
 		}
 	}
 
-	void BindDepthStencilState(int ResourceTypes_DepthStencilStates){
+	void BindDepthStencilState(int ResourceTypes_DepthStencilStates, int stencilRef){
 		auto state = GetDepthStencilState(ResourceTypes_DepthStencilStates);
 		if (state){
-			state->Bind();
+			state->Bind(stencilRef);
 		}
 	}
 
@@ -769,8 +915,8 @@ ShaderPtr ResourceProvider::GetShader(int ResourceTypes_Shaders) {
 	return mImpl->GetShader(ResourceTypes_Shaders);
 }
 
-void ResourceProvider::BindShader(int ResourceTypes_Shaders){
-	return mImpl->BindShader(ResourceTypes_Shaders);
+void ResourceProvider::BindShader(int ResourceTypes_Shaders, bool unbindEmptySlot){
+	return mImpl->BindShader(ResourceTypes_Shaders, unbindEmptySlot);
 }
 
 MaterialPtr ResourceProvider::GetMaterial(int ResourceTypes_Materials) {
@@ -793,6 +939,10 @@ SamplerStatePtr ResourceProvider::GetSamplerState(int ResourceTypes_SamplerState
 	return mImpl->GetSamplerState(ResourceTypes_SamplerStates);
 }
 
+IndexBufferPtr ResourceProvider::GetIndexBuffer(ResourceTypes::IndexBuffer type) {
+	return mImpl->GetIndexBuffer(type);
+}
+
 void ResourceProvider::BindRasterizerState(int ResourceTypes_RasterizerStates){
 	mImpl->BindRasterizerState(ResourceTypes_RasterizerStates);
 }
@@ -801,8 +951,8 @@ void ResourceProvider::BindBlendState(int ResourceTypes_BlendStates){
 	mImpl->BindBlendState(ResourceTypes_BlendStates);
 }
 
-void ResourceProvider::BindDepthStencilState(int ResourceTypes_DepthStencilStates){
-	mImpl->BindDepthStencilState(ResourceTypes_DepthStencilStates);
+void ResourceProvider::BindDepthStencilState(int ResourceTypes_DepthStencilStates, int stencilRef){
+	mImpl->BindDepthStencilState(ResourceTypes_DepthStencilStates, stencilRef);
 }
 
 int ResourceProvider::GetNumToneMaps() const {

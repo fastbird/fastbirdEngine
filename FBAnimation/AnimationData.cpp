@@ -209,7 +209,7 @@ public:
 	}
 
 	bool ParseAction(const char* filename){
-		if (!ValidCStringLength(filename)){
+		if (!ValidCString(filename)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return false;
 		}

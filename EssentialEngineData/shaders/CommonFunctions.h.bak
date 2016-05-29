@@ -1,4 +1,31 @@
-#include "CommonDefines.h"
+/*
+ -----------------------------------------------------------------------------
+ This source file is part of fastbird engine
+ For the latest info, see http://www.jungwan.net/
+ 
+ Copyright (c) 2013-2015 Jungwan Byun
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ -----------------------------------------------------------------------------
+*/
+
+#include "EssentialEngineData/shaders/CommonDefines.h"
 
 #ifdef ENV_TEXTURE
 TextureCube gEnvTexture : register(t4);
@@ -11,6 +38,7 @@ Texture2D gFogMap : register(t6);
 
 Texture2D gNoiseMap : register(t7);
 
+float turbulence(float3 p, int octaves, float lacunarity = 2.0, float gain = 0.5);
 
 float2 SphericalCoord(float3 dir)
 {
@@ -25,6 +53,23 @@ float2 SphericalCoord(float3 dir)
 	return uv;
 }
 
+float2 SphericalCoord2(float3 dir)
+{	
+	float u, v;
+	if (dir.x == 0 && dir.y == 0)
+		u = 0;
+	else
+		u = atan2(dir.y, dir.x) / (2*PI) + 0.5;
+	
+	float len = length(dir.xy);
+	if (dir.z == 0 && len == 0)
+		v = 0;
+	else
+		v = atan2(dir.z, len) / PI + 0.5;	
+
+	return float2(u, v);
+}
+
 #ifdef ENV_TEXTURE
 float3 SampleEnvironmentMap(float3 dir, float lod)
 {
@@ -32,6 +77,68 @@ float3 SampleEnvironmentMap(float3 dir, float lod)
 	return color;
 }
 #endif
+
+float3 fixNormalSample(float3 v)
+{
+	float3 res;
+	res	= (v - 0.5f) * 2.f;	
+	res.z = sqrt(1.0f - min(1, (res.x*res.x + res.y*res.y)));	
+	//res.y = -res.y;
+	return res;
+}
+
+float mod(float x, float y)
+{
+  return x - y * floor(x/y);
+}
+
+float3 mod(float3 x, float3 y)
+{
+  return x - y * floor(x/y);
+}
+
+float3 GetFoggedColor(float2 uv, float3 incidentColor, float3 worldPos)
+{	
+	float4 volumeFog  = gFogMap.Sample(gPointSampler, uv);
+	float start = volumeFog.x;
+	float end = volumeFog.y;	
+	end += volumeFog.b*volumeFog.a;
+	
+	float volumeFogDensity = (end - start);
+	volumeFogDensity = volumeFogDensity * gFogColor.w * turbulence(worldPos * 0.35f + float3(gTime*0.02f, 0, 0), 2);
+	
+	//return volumeFogDensity.xxx;
+	float p = volumeFogDensity*volumeFogDensity;
+	float f = 1.0/(pow(2.71828, p));
+	//return f.xxx;
+	//float noise = inoise(worldPos*10);
+	//return noise.xxx;
+	float3 foggedColor = f * incidentColor + (1.0-f) * gFogColor.rgb;
+	return foggedColor;
+}
+
+float2 GetScreenUV(float2 screenxy)
+{
+	float2 uv = screenxy / gScreenSize.xy;
+	return uv;
+}
+
+float3 srgb_to_linear(float3 c)
+{
+    return pow(c,float3(2.2,2.2,2.2));
+}
+
+float4 srgb_to_linear(float4 c)
+{
+    return float4(pow(c.rgb,float3(2.2,2.2,2.2)), c.a);
+}
+
+float SymetricCurve(float x)
+{
+	static const float ContrastPower = 4;
+	return 0.5f * pow(saturate(2*((x>0.5) ? 1-x : x)), ContrastPower);
+}
+
 
 float3 fade(float3 t)
 {
@@ -135,7 +242,7 @@ float inoise(float3 p)
   return lerp(AABA_ABBB, AABA_ABBB_1, f.z);
 }
 
-float turbulence(float3 p, int octaves, float lacunarity = 2.0, float gain = 0.5)
+float turbulence(float3 p, int octaves, float lacunarity, float gain)
 {
     float sum = 0;
     float freq = 1.0, amp = 1.0;
@@ -147,69 +254,46 @@ float turbulence(float3 p, int octaves, float lacunarity = 2.0, float gain = 0.5
     return sum;
 }
 
-float3 fixNormalSample(float3 v)
+float fBm(float3 p, int octaves, float lacunarity = 2.0, float gain = 0.5)
 {
-	float3 res;
-	res.xy	= v.xy * 2.0 - 1.0;
-	res.z = sqrt(1.0 - min(1, (res.x*res.x + res.y*res.y)));
+    float sum = 0;
+    float freq = 1.0, amp = 1.0;
+    for (int i = 0; i<octaves; i++) {
+        sum += inoise(p*freq)*amp;
+        freq *= lacunarity;
+        amp *= gain;
+    }
+    return sum;
+}
+
+/// Fractional Brownian motion
+/// \param H the fractal increment parameter
+/// \param lacunarity the gap between successive frequencies
+/// \octaves the number of frequencies in the fBm
+
+float fBm(float3 p, float octaves, float lacunarity, float H)
+{
+	float value = 0;	
+	for (int i = 0; i<octaves; ++i){
+		value += inoise(p) * pow(lacunarity, -H*i);
+		p *= lacunarity;
+	}
 	
-	//res.y = -res.y;
-	return normalize(res);
-}
-
-float mod(float x, float y)
-{
-  return x - y * floor(x/y);
-}
-
-float3 mod(float3 x, float3 y)
-{
-  return x - y * floor(x/y);
-}
-
-float3 GetFoggedColor(float2 uv, float3 incidentColor, float3 worldPos)
-{
-	float depth = gDepthMap.Sample(gPointSampler, uv);
-	float4 volumeFog  = gFogMap.Sample(gPointSampler, uv);
-	float start = volumeFog.x;
-	float end = volumeFog.y;	
-	end += volumeFog.b*volumeFog.a;
+	float remainder = octaves - (int)octaves;
+	if (remainder)
+		value += remainder * inoise(p) * pow(lacunarity, -H*i);
 	
-	float volumeFogDensity = (end - start);
-	volumeFogDensity = volumeFogDensity * gFogColor.w * turbulence(worldPos * 0.35f + float3(gTime*0.02f, 0, 0), 2);
-	
-	//return volumeFogDensity.xxx;
-	float p = volumeFogDensity*volumeFogDensity;
-	float f = 1.0/(pow(2.71828, p));
-	//return f.xxx;
-	//float noise = inoise(worldPos*10);
-	//return noise.xxx;
-	float3 foggedColor = f * incidentColor + (1.0-f) * gFogColor.rgb;
-	return foggedColor;
+	return value;	
 }
 
-float2 GetScreenUV(float2 screenxy)
-{
-	float2 uv = screenxy / gScreenSize.xy;
-	return uv;
+float multifractal(float3 p, int octaves, float lacunarity, float H, float offset){
+	float value = 1.0;
+	for (int i = 0; i<octaves; ++i){
+		value *= (inoise(p) + offset) * pow(lacunarity, -H*i);
+		p *= lacunarity;
+	}
+	return value;
 }
-
-float3 srgb_to_linear(float3 c)
-{
-    return pow(c,float3(2.2,2.2,2.2));
-}
-
-float4 srgb_to_linear(float4 c)
-{
-    return float4(pow(c.rgb,float3(2.2,2.2,2.2)), c.a);
-}
-
-float SymetricCurve(float x)
-{
-	static const float ContrastPower = 4;
-	return 0.5f * pow(saturate(2*((x>0.5) ? 1-x : x)), ContrastPower);
-}
-
 
 float Noise(int x)
 {
@@ -328,4 +412,16 @@ float TriangleWave( float x )
 float SmoothTriangleWave( float x )
 {
 	return SmoothCurve( TriangleWave( x ) );
-}  
+}
+
+float3 VecNoise(float3 p){
+	float3 result;
+	result.x = inoise(p);
+	result.y = inoise(p+3.33);
+	result.z = inoise(p+7.77);
+	return result;
+}
+float DistNoise(float3 p, float distortion)
+{
+	return inoise(p + VecNoise(p  + 0.5) * distortion);
+}

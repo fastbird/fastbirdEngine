@@ -92,9 +92,9 @@ namespace fb{
 
 		Real GetBottomOffset();
 		Real GetTopOffset();
-
+				
 		void SetRenderTargetSize(const Vec2I& rtSize);
-		void RestoreRenderTargetSize();
+		void RestoreRenderTargetSize();		
 		std::wstring StripTags(const wchar_t* text);
 		void SetTextureAtlas(TextureAtlasPtr atlas);
 		Real LineHeightForText(const wchar_t* text);

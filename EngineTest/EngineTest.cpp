@@ -37,6 +37,11 @@
 #include "VideoTest.h"
 #include "TextTest.h"
 #include "LuaTest.h"
+#include "FractalTest.h"
+#include "GenerateNoise.h"
+#include "ComputeShaderTest.h"
+#include "TaskTest.h"
+
 #include "FBCommonHeaders/Helpers.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBFileSystem/FileSystem.h"
@@ -57,6 +62,10 @@ AudioTestPtr gAudioTest;
 VideoTestPtr gVideoTest;
 TextTestPtr gTextTest;
 LuaTestPtr gLuaTest;
+FractalTestPtr gFractalTest;
+GenerateNoisePtr gGenerateNoise;
+ComputeShaderTestPtr gComputeShaderTest;
+TaskTestPtr gTaskTest;
 
 int _FBPrint(lua_State* L);
 
@@ -102,18 +111,26 @@ void StartTest(){
 	auto L = LuaUtils::GetLuaState();
 	LUA_SETCFUNCTION(L, _FBPrint);
 	
+	gGenerateNoise = GenerateNoise::Create();
 
 	gMeshTest = MeshTest::Create();	
 	gMeshTest->SetCameraTarget();
-	gSkyBoxTest = SkyBoxTest::Create();
+	//gSkyBoxTest = SkyBoxTest::Create();
 	//gParticleTest = ParticleTest::Create();
 	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();
-	gLuaTest = LuaTest::Create();
+	//gLuaTest = LuaTest::Create();	
+	//gFractalTest = FractalTest::Create();
+	//gEngine->AddRendererObserver(IRendererObserver::DefaultRenderEvent, gFractalTest);
+	//gComputeShaderTest = ComputeShaderTest::Create();
+	gTaskTest = TaskTest::Create();
 }
 
 void EndTest(){
+	gEngine->PrepareQuit();
+	gTaskTest = 0;
+	gFractalTest = 0;
 	gTextTest = 0;
 	gVideoTest = 0;
 	gParticleTest = 0;

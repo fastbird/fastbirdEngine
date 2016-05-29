@@ -41,6 +41,7 @@ namespace fb{
 			RenderTarget,
 			Scene,
 			Shadow,
+			Immutable,
 
 			Num,
 		};

@@ -45,7 +45,7 @@ struct QuadVS_Output
 //       up to three passes of this shader, which samples from 8 points along
 //       the current line.
 //-----------------------------------------------------------------------------
-float4 mergetextures2ps_PixelShader(QuadVS_Output Input) : SV_Target
+float4 MergeTextures2PS_PixelShader(QuadVS_Output Input) : SV_Target
 {
 	float4 vColor = 0.0f;
 

@@ -1109,7 +1109,7 @@ public:
 		Returns XML_NO_ERROR (0) on success, or
 		an errorID.
 	*/
-	int LoadFile( const char* filename );
+	int LoadFile( const char* filename );	
 
 	/**
 		Load an XML file from disk. You are responsible

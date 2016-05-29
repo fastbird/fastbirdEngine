@@ -98,6 +98,11 @@ namespace fb{
 			return memcmp(this, &other, sizeof(INPUT_ELEMENT_DESC)) == 0;
 		}
 
+		bool operator!=(const INPUT_ELEMENT_DESC& other) const
+		{
+			return !operator==(other);
+		}
+
 		bool operator< (const INPUT_ELEMENT_DESC& other) const
 		{
 			return memcmp(this, &other, sizeof(INPUT_ELEMENT_DESC)) < 0;

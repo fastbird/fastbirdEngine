@@ -28,36 +28,25 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 #include "ShaderDefines.h"
+#include "RendererEnums.h"
 namespace fb
 {
 	FB_DECLARE_SMART_PTR(IPlatformShader);
-	class IPlatformShader
-	{
+	class IPlatformShader {
 	public:
+		virtual SHADER_TYPE GetShaderType() const = 0;
+		// Only for VS.
+		virtual void* GetVSByteCode(unsigned& size) const = 0;
+		// Only for CS.
+		virtual bool RunComputeShader(void* constants, size_t size,
+			int x, int y, int z, ByteArray& output, size_t outputSize) = 0;
+		virtual bool QueueRunComputeShader(void* constants, size_t size,
+			int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback) = 0;
 
-		/**Bind all type of platform shaders
-		Empty shader will be removed from the pipeline.
-		*/
 		virtual void Bind() = 0;
-		/** Bind vertex shader only.*/
-		virtual void BindVS() = 0;
-		/** Bind hull shader only.*/
-		virtual void BindHS() = 0;
-		/** Bind domain shader only.*/
-		virtual void BindDS() = 0;
-		/** Bind geometry shader only.*/
-		virtual void BindGS() = 0;
-		/** Bind pixel shader only.	*/
-		virtual void BindPS() = 0;	
-		
 		virtual bool GetCompileFailed() const = 0;
-		virtual void* GetVSByteCode(unsigned& size) const = 0;		
-		virtual void SetDebugName(const char* name) = 0;
-		/** Returns true if \a inc is a related header file.
-		*/
-		virtual bool CheckIncludes(const char* inc) = 0;
-
-	protected:
-		~IPlatformShader(){}
+		virtual void SetDebugName(const char* name) = 0;		
+		virtual bool IsRelatedFile(const char* inc) = 0;		
+		virtual bool Reload(const SHADER_DEFINES& defines) = 0;
 	};
 }

@@ -170,7 +170,7 @@ public:
 			(float)(mRegion.right - mRegion.left), (float)(mRegion.bottom - mRegion.top),
 			// empty
 			0);
-		mMaterial->SetMaterialParameter(0, val);
+		mMaterial->SetShaderParameter(0, val);
 	}
 
 	void SetSeperatedBackground(bool seperated){
@@ -184,7 +184,7 @@ public:
 
 	void SetUseSeperatedUVForAlpha(bool seperatedUV){
 		if (seperatedUV){
-			mMaterial->AddShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV", "1");
+			bool added = mMaterial->AddShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV", "1");
 			Vec2 texcoords[4] = {
 				Vec2(0.f, 1.f),
 				Vec2(0.f, 0.f),
@@ -192,21 +192,25 @@ public:
 				Vec2(1.f, 0.f)
 			};
 			SetTexCoord(texcoords, 4, 1);
-			INPUT_ELEMENT_DESCS descs;
-			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 1, INPUT_ELEMENT_FORMAT_FLOAT2, 3, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			mMaterial->SetInputLayout(descs);
+			if (added) {
+				INPUT_ELEMENT_DESCS descs;
+				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 1, INPUT_ELEMENT_FORMAT_FLOAT2, 3, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				mMaterial->SetInputLayout(descs);
+			}
 		}
 		else{
-			mMaterial->RemoveShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV");
+			bool removed = mMaterial->RemoveShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV");
 			ClearTexCoord(1);
-			INPUT_ELEMENT_DESCS descs;
-			descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-			descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));			
-			mMaterial->SetInputLayout(descs);
+			if (removed) {
+				INPUT_ELEMENT_DESCS descs;
+				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				mMaterial->SetInputLayout(descs);
+			}
 		}
 	}
 
@@ -246,7 +250,7 @@ public:
 		{
 			Vec2 uvStep = mTexcoords[0][2] - mTexcoords[0][1];
 			Vec4 val(uvStep.x, uvStep.y, mTexcoords[0][1].x, mTexcoords[0][1].y);
-			mMaterial->SetMaterialParameter(0, val);
+			mMaterial->SetShaderParameter(0, val);
 		}
 	}
 	
@@ -276,7 +280,7 @@ public:
 		if (mMaterial)
 		{
 			const Vec4& prev = mMaterial->GetMaterialParameter(4);
-			mMaterial->SetMaterialParameter(4, Vec4(prev.x, prev.y, prev.z, mAlpha));
+			mMaterial->SetShaderParameter(4, Vec4(prev.x, prev.y, prev.z, mAlpha));
 		}
 	}
 

@@ -11,10 +11,10 @@
 	</MaterialConstants>
 	<Textures>
 	</Textures>
-	<MaterialParameters>
+	<ShaderConstants>
 		<Param desc="uvstart_end">0, 0, 1, 1</Param>
 		<Param desc="offset, scale">1, 1, 0, 0</Param>
-	</MaterialParameters>
+	</ShaderConstants>
 	<ShaderDefines>
 	
 	</ShaderDefines>

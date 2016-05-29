@@ -13,9 +13,9 @@
 	<Textures>
 		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">EssentialEngineData/textures/trail.dds</Texture>
 	</Textures>
-	<MaterialParameters>
+	<ShaderConstants>
 		<param desc="width">0.025, 0, 0, 0</param>
-	</MaterialParameters>
+	</ShaderConstants>
 	<ShaderDefines>
 		<Define name="DIFFUSE_TEXTURE" val="1"/>
 	</ShaderDefines>

@@ -34,26 +34,11 @@
 #include "FBStringLib/StringLib.h"
 using namespace fb;
 
-static std::vector<ShaderWeakPtr> sAllShaders;
-
-namespace fb{
-	ShaderPtr GetShaderFromExistings(IPlatformShaderPtr platformTexture) {
-		for (auto it = sAllShaders.begin(); it != sAllShaders.end(); /**/){
-			IteratingWeakContainer(sAllShaders, it, shader);
-			if (shader->GetPlatformShader() == platformTexture){
-				return shader;
-			}
-		}
-		return 0;
-	}
-}
-
 class Shader::Impl{
 public:
-	// Do not acess member by this pointer
-	static Impl* sLastBindedFullSetShader;
+	// Do not acess member by this pointer	
 	Shader* mSelf;
-	IPlatformShaderPtr mPlatformShader;
+	IPlatformShaderPtr mPlatformShaders[SHADER_TYPE_COUNT];
 	SHADER_DEFINES mDefines;
 	std::set<std::string> mIncludeFiles;
 	std::string mPath;
@@ -66,59 +51,51 @@ public:
 	{
 	}
 
-	void Bind(){
-		if (mPlatformShader && !mPlatformShader->GetCompileFailed() && sLastBindedFullSetShader != this){
-			mPlatformShader->Bind();
-			sLastBindedFullSetShader = this;
+	// binding full set shader.
+	bool Bind(bool unbindEmptySlot){
+		int numShaders = 0;
+		int lastIndex = 0;
+		bool allSuccess = true;
+		for (int i = 0; i < SHADER_TYPE_COUNT; ++i) {
+			if (mPlatformShaders[i]) {
+				if (!mPlatformShaders[i]->GetCompileFailed()) {
+					mPlatformShaders[i]->Bind();
+				}
+				else {
+					allSuccess = false;					
+					Renderer::GetInstance().UnbindShader(ShaderType(i));
+				}
+			}
+			else {
+				if (unbindEmptySlot)
+					Renderer::GetInstance().UnbindShader(ShaderType(i));
+			}
 		}
-	}
 
-	void BindVS(){
-		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
-			sLastBindedFullSetShader = 0;
-			mPlatformShader->BindVS();
+		if (allSuccess) {			
+			return true;
 		}
-	}
-
-	void BindGS(){
-		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
-			sLastBindedFullSetShader = 0;
-			mPlatformShader->BindGS();
-		}
-	}
-
-	void BindPS(){
-		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
-			sLastBindedFullSetShader = 0;
-			mPlatformShader->BindPS();
-		}
-	}
-
-	void BindDS(){
-		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
-			sLastBindedFullSetShader = 0;
-			mPlatformShader->BindDS();
-		}
-	}
-
-	void BindHS(){
-		if (mPlatformShader&& !mPlatformShader->GetCompileFailed()){
-			sLastBindedFullSetShader = 0;
-			mPlatformShader->BindHS();
+		else {
+			return false;
 		}
 	}
 
 	bool GetCompileFailed() const{
-		if (mPlatformShader)
-			return mPlatformShader->GetCompileFailed();
-
-		return true;
+		bool allEmpty = true;
+		for (int i = 0; i < SHADER_TYPE_COUNT; ++i) {
+			if (mPlatformShaders[i]) {
+				allEmpty = false;
+				if (mPlatformShaders[i]->GetCompileFailed()) {
+					return true;
+				}
+			}
+		}
+		return allEmpty;
 	}
 
 	void* GetVSByteCode(unsigned& size) const{
-		if (mPlatformShader)
-			return mPlatformShader->GetVSByteCode(size);
-
+		if (mPlatformShaders[ShaderIndex(SHADER_TYPE_VS)])
+			return mPlatformShaders[ShaderIndex(SHADER_TYPE_VS)]->GetVSByteCode(size);
 		size = 0;
 		return 0;
 	}
@@ -146,52 +123,68 @@ public:
 		mDefines = defines;
 		std::sort(mDefines.begin(), mDefines.end());
 	}
-	const SHADER_DEFINES& GetShaderDefines() const { 
-		return mDefines; 
+
+	void SetPlatformShader(IPlatformShaderPtr shader, SHADER_TYPE shaderType){
+		if (shader && shader->GetShaderType() != shaderType) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
+			return;
+		}		
+
+		mPlatformShaders[ShaderIndex(shaderType)] = shader;		
+		if (shader) {
+			mBindingShaders |= (int)shaderType;
+		}
+		else {
+			mBindingShaders &= ~shaderType;
+		}
 	}
 
-	void SetDebugName(const char* debugName){
-		if (mPlatformShader)
-			mPlatformShader->SetDebugName(debugName);
+	IPlatformShaderPtr GetPlatformShader(SHADER_TYPE shaderType) const{
+		return mPlatformShaders[ShaderIndex(shaderType)];
 	}
 
-	bool CheckIncludes(const char* shaderHeaderFile) const{
-		return mPlatformShader ? mPlatformShader->CheckIncludes(shaderHeaderFile) : false;
+	bool IsRelatedFile(const char* file) const {
+		for (auto p : mPlatformShaders) {
+			if (p && p->IsRelatedFile(file))
+				return true;
+		}
+		return false;
 	}
 
-	void SetPlatformShader(IPlatformShaderPtr shader){
-		mPlatformShader = shader;		
+	bool RunComputeShader(void* constants, size_t size,
+		int x, int y, int z, ByteArray& output, size_t outputSize) 
+	{
+		if (!mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Not vaild cs.");
+			return false;
+		}
+		if (mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]->GetCompileFailed()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Compile failed.");
+			return false;
+		}
+		return mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]->RunComputeShader(constants, size,
+			x, y, z, output, outputSize);
 	}
 
-	IPlatformShaderPtr GetPlatformShader() const{
-		return mPlatformShader;
+	bool QueueRunComputeShader(void* constants, size_t size,
+		int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback)
+	{
+		if (!mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Not vaild cs.");
+			return false;
+		}
+		if (mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]->GetCompileFailed()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Compile failed.");
+			return false;
+		}
+		return mPlatformShaders[ShaderIndex(SHADER_TYPE_CS)]->QueueRunComputeShader(constants, size,
+			x, y, z, output, outputSize, std::move(callback));
 	}
 };
 
-Shader::Impl* Shader::Impl:: sLastBindedFullSetShader = 0;
-
 //----------------------------------------------------------------------------
-void Shader::ReloadShader(const char* filepath)
-{
-	Profiler profile("Reloading Shaders");
-	std::string path = filepath;
-	ToLowerCase(path);
-	auto& renderer = Renderer::GetInstance();
-	for (auto it = sAllShaders.begin(); it != sAllShaders.end(); /**/){
-		IteratingWeakContainer(sAllShaders, it, shader);
-		if (shader->mImpl->mPlatformShader){
-			if (strcmp(filepath, shader->GetPath()) == 0 || 
-				shader->mImpl->mPlatformShader->CheckIncludes(path.c_str()))
-			{
-				renderer.ReloadShader(shader, shader->GetPath());
-			}
-		}
-	}
-}
-
 ShaderPtr Shader::Create(){
 	auto shader = ShaderPtr(FB_NEW(Shader), [](Shader* obj){ FB_DELETE(obj); });
-	sAllShaders.push_back(shader);
 	return shader;
 }
 
@@ -201,37 +194,10 @@ Shader::Shader()
 }
 
 Shader::~Shader(){
-	auto itEnd = sAllShaders.end();
-	for (auto it = sAllShaders.begin(); it != itEnd; it++){
-		if (it->expired()){
-			sAllShaders.erase(it);
-			break;
-		}
-	}
 }
 
-void Shader::Bind(){
-	mImpl->Bind();
-}
-
-void Shader::BindVS(){
-	mImpl->BindVS();
-}
-
-void Shader::BindHS(){
-	mImpl->BindHS();
-}
-
-void Shader::BindDS(){
-	mImpl->BindDS();
-}
-
-void Shader::BindGS(){
-	mImpl->BindGS();
-}
-
-void Shader::BindPS(){
-	mImpl->BindPS();
+bool Shader::Bind(bool unbindEmptySlot){
+	return mImpl->Bind(unbindEmptySlot);
 }
 
 bool Shader::GetCompileFailed() const{
@@ -242,47 +208,40 @@ void* Shader::GetVSByteCode(unsigned& size) const{
 	return mImpl->GetVSByteCode(size);
 }
 
-void Shader::SetPath(const char* path){
-	mImpl->SetPath(path);
-}
+//void Shader::SetPath(const char* path){
+//	mImpl->SetPath(path);
+//}
 
-void Shader::SetBindingShaders(int bindingShaders){
-	mImpl->SetBindingShaders(bindingShaders);
-}
+//void Shader::SetBindingShaders(int bindingShaders){
+//	mImpl->SetBindingShaders(bindingShaders);
+//}
 
 int Shader::GetBindingShaders() const{
 	return mImpl->GetBindingShaders();
 }
 
-const char* Shader::GetPath() const{
-	return mImpl->GetPath();
-}
-
-void Shader::SetShaderDefines(const SHADER_DEFINES& defines){
-	return mImpl->SetShaderDefines(defines);
-}
-
-
-const SHADER_DEFINES& Shader::GetShaderDefines() const{
-	return mImpl->GetShaderDefines();
-}
-
-//void Shader::ApplyShaderDefines(){
-//	mImpl->ApplyShaderDefines();
+//const char* Shader::GetPath() const{
+//	return mImpl->GetPath();
 //}
-
-void Shader::SetDebugName(const char* debugName){
-	mImpl->SetDebugName(debugName);
+void Shader::SetPlatformShader(IPlatformShaderPtr shader, SHADER_TYPE shaderType){
+	mImpl->SetPlatformShader(shader, shaderType);
 }
 
-bool Shader::CheckIncludes(const char* shaderHeaderFile) const{
-	return mImpl->CheckIncludes(shaderHeaderFile);
+IPlatformShaderPtr Shader::GetPlatformShader(SHADER_TYPE shaderType) const{
+	return mImpl->GetPlatformShader(shaderType);
 }
 
-void Shader::SetPlatformShader(IPlatformShaderPtr shader){
-	mImpl->SetPlatformShader(shader);
+bool Shader::IsRelatedFile(const char* file) const {
+	return mImpl->IsRelatedFile(file);
 }
 
-IPlatformShaderPtr Shader::GetPlatformShader() const{
-	return mImpl->GetPlatformShader();
+bool Shader::RunComputeShader(void* constants, size_t size,
+	int x, int y, int z, ByteArray& output, size_t outputSize) 
+{
+	return mImpl->RunComputeShader(constants, size, x, y, z, output, outputSize);
+}
+bool Shader::QueueRunComputeShader(void* constants, size_t size,
+	int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback)
+{
+	return mImpl->QueueRunComputeShader(constants, size, x, y, z, output, outputSize, std::move(callback));
 }

@@ -32,7 +32,6 @@
 #include "IPlatformShader.h"
 namespace fb
 {
-	FB_DECLARE_SMART_PTR(IPlatformShader);
 	FB_DECLARE_SMART_PTR(Shader);
 	class FB_DLL_RENDERER Shader
 	{
@@ -41,37 +40,31 @@ namespace fb
 
 	public:
 		static ShaderPtr Create();
-		static void ReloadShader(const char* filepath);
 
 		~Shader();
 		 
 		/**Bind all type of platform shaders
 		Empty shader will be removed from the pipeline.
 		*/
-		void Bind();
-		/** Bind vertex shader only.*/
-		void BindVS();
-		/** Bind hull shader only.*/
-		void BindHS();
-		/** Bind domain shader only.*/
-		void BindDS();
-		/** Bind geometry shader only.*/
-		void BindGS();
-		/** Bind pixel shader only.*/
-		void BindPS();		
+		bool Bind(bool unbindEmptySlot);		
 
 		bool GetCompileFailed() const;
 		void* GetVSByteCode(unsigned& size) const;
-		void SetPath(const char* path);
-		void SetBindingShaders(int bindingShaders);
+		//void SetPath(const char* path);
+		//void SetBindingShaders(int bindingShaders);
 		int GetBindingShaders() const;
-		const char* GetPath() const;
-		void SetShaderDefines(const SHADER_DEFINES& defines);
-		const SHADER_DEFINES& GetShaderDefines() const;
-		//void ApplyShaderDefines();
-		void SetDebugName(const char* debugName);
-		bool CheckIncludes(const char* shaderHeaderFile) const;
-		void SetPlatformShader(IPlatformShaderPtr shader);
-		IPlatformShaderPtr GetPlatformShader() const;
+		//const char* GetPath() const;				
+		void SetPlatformShader(IPlatformShaderPtr shader, SHADER_TYPE shaderType);
+		IPlatformShaderPtr GetPlatformShader(SHADER_TYPE shaderType) const;
+		bool IsRelatedFile(const char* file) const;
+		/// Run in the current thread.
+		/// Make sure this function runs in only one thread. Use FB_CRITICAL_SECTOR to achieve it.
+		bool RunComputeShader(void* constants, size_t size,
+			int x, int y, int z, ByteArray& output, size_t outputSize);
+		/// Queue to run in main thread.
+		/// To access the output data, you need to capture it in your lambda closure.
+		/// \a constants will be copied.		
+		bool QueueRunComputeShader(void* constants, size_t size,
+			int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback);
 	};
 }

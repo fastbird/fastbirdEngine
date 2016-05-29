@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "Transformation.h"
 #include "Math.h"
+#include "Frustum.h"
 
 namespace fb
 {
@@ -80,6 +81,30 @@ namespace fb
 		, mRSSeperated(std::get<20>(t))
 		, mUniformScale(std::get<21>(t))
 	{
+	}
+
+	Transformation Transformation::FromScale(float x, float y, float z) {
+		return FromScale(Vec3(x, y, z));
+	}
+
+	Transformation Transformation::FromScale(const Vec3& scale) {
+		Transformation ret;
+		ret.SetScale(scale);
+		return ret;
+	}
+
+	Transformation Transformation::FromRotation(const Quat& rot) {
+		Transformation ret;
+		ret.SetRotation(rot);
+		return ret;
+	}
+	Transformation Transformation::FromTranslation(float x, float y, float z) {
+		return FromTranslation(Vec3(x, y, z));
+	}
+	Transformation Transformation::FromTranslation(const Vec3& translation)	{
+		Transformation ret;
+		ret.SetTranslation(translation);
+		return ret;
 	}
 
 	//----------------------------------------------------------------------------
@@ -400,6 +425,24 @@ namespace fb
 		}
 	}
 
+	Frustum Transformation::ApplyForward(const Frustum& f) const {
+		Frustum ret = f;
+		ret.mOrigin = ApplyForward(f.mOrigin);
+		ret.mCenter= ApplyForward(f.mCenter);
+		
+		for (int i = 0; i < Frustum::NumPlanes; ++i) {
+			ret.mPlanes[i] = ApplyForward(f.mPlanes[i]);
+		}
+		auto forward = ret.mPlanes[Frustum::FRUSTUM_PLANE_NEAR].mNormal;
+		auto rightTemp = ret.mPlanes[Frustum::FRUSTUM_PLANE_LEFT].mNormal;
+		auto up = forward.Cross(rightTemp);
+		up.Normalize();
+		auto right = forward.Cross(up);
+		ret.mOrientation = Quat(right, forward, up);
+
+		return ret;
+	}
+
 	//----------------------------------------------------------------------------
 	Plane Transformation::ApplyForward(const Plane& inputPlane) const
 	{
@@ -409,32 +452,12 @@ namespace fb
 		}
 
 		Plane output;
-		if (mRSSeperated)
-		{
-			if (mUniformScale)
-			{
-				output.mNormal = mMat*inputPlane.mNormal;
-				output.mConstant = GetUniformScale()*inputPlane.mConstant +
-					output.mNormal.Dot(mT);
-				return output;
-			}
+		Vec3 pointInPlane = inputPlane.mNormal * inputPlane.mConstant;
+		auto newPointInPlane = ApplyForward(pointInPlane);
+		output.mNormal = ApplyForwardDir(inputPlane.mNormal);
+		output.mConstant = output.mNormal.Dot(newPointInPlane);
 
-			output.mNormal = inputPlane.mNormal;
-			output.mNormal /= mS;
-			output.mNormal = mMat*output.mNormal;
-		}
-		else
-		{
-			Mat33 kInverse = mMat.Inverse();
-			output.mNormal = inputPlane.mNormal*kInverse;
-		}
-
-		Real fInvLength = 1.0f / output.mNormal.Length();
-		output.mNormal *= fInvLength;
-		output.mConstant = fInvLength*inputPlane.mConstant +
-			output.mNormal.Dot(mT);
-
-		return output;
+		return output;		
 	}
 
 	//----------------------------------------------------------------------------
@@ -562,6 +585,38 @@ namespace fb
 		else {
 			return Ray::FromSegment(ApplyInverse(r.GetOrigin()), ApplyInverseDir(r.GetPointB()));
 		}
+	}
+
+	Plane Transformation::ApplyInverse(const Plane& inputPlane) const {
+		if (mIdentity)
+		{
+			return inputPlane;
+		}
+		Plane output;
+		Vec3 pointInPlane = inputPlane.mNormal * inputPlane.mConstant;
+		auto newPointInPlane = ApplyInverse(pointInPlane);
+		output.mNormal = ApplyInverseDir(inputPlane.mNormal);
+		output.mConstant = output.mNormal.Dot(newPointInPlane);
+
+		return output;
+	}
+
+	Frustum Transformation::ApplyInverse(const Frustum& f) const {
+		Frustum ret = f;
+		ret.mOrigin = ApplyInverse(f.mOrigin);
+		ret.mCenter = ApplyInverse(f.mCenter);
+
+		for (int i = 0; i < Frustum::NumPlanes; ++i) {
+			ret.mPlanes[i] = ApplyInverse(f.mPlanes[i]);
+		}
+		auto forward = ret.mPlanes[Frustum::FRUSTUM_PLANE_NEAR].mNormal;
+		auto rightTemp = ret.mPlanes[Frustum::FRUSTUM_PLANE_LEFT].mNormal;
+		auto up = forward.Cross(rightTemp);
+		up.Normalize();
+		auto right = forward.Cross(up);
+		ret.mOrientation = Quat(right, forward, up);
+
+		return ret;
 	}
 
 	//----------------------------------------------------------------------------
@@ -837,24 +892,24 @@ namespace fb
 			mIdentity, mRSSeperated, mUniformScale);
 	}
 
-	void Transformation::write(std::ostream& stream) const {
-		mMat.write(stream);
-		mR.write(stream);
-		mT.write(stream);
-		mS.write(stream);
-		stream.write((char*)&mIdentity, sizeof(mIdentity));
-		stream.write((char*)&mRSSeperated, sizeof(mRSSeperated));
-		stream.write((char*)&mUniformScale, sizeof(mUniformScale));
+	void write(std::ostream& stream, const Transformation& data) {
+		write(stream, data.mMat);
+		write(stream, data.mR);
+		write(stream, data.mT);
+		write(stream, data.mS);		
+		stream.write((char*)&data.mIdentity, sizeof(data.mIdentity));
+		stream.write((char*)&data.mRSSeperated, sizeof(data.mRSSeperated));
+		stream.write((char*)&data.mUniformScale, sizeof(data.mUniformScale));
 	}
 
-	void Transformation::read(std::istream& stream) {
-		mMat.read(stream);
-		mR.read(stream);
-		mT.read(stream);
-		mS.read(stream);
-		stream.read((char*)&mIdentity, sizeof(mIdentity));
-		stream.read((char*)&mRSSeperated, sizeof(mRSSeperated));
-		stream.read((char*)&mUniformScale, sizeof(mUniformScale));
+	void read(std::istream& stream, Transformation& data) {
+		read(stream, data.mMat);
+		read(stream, data.mR);
+		read(stream, data.mT);
+		read(stream, data.mS);
+		stream.read((char*)&data.mIdentity, sizeof(data.mIdentity));
+		stream.read((char*)&data.mRSSeperated, sizeof(data.mRSSeperated));
+		stream.read((char*)&data.mUniformScale, sizeof(data.mUniformScale));
 	}
 
 }

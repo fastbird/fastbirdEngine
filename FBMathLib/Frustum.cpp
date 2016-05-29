@@ -6,6 +6,7 @@ using namespace fb;
 
 Frustum::Frustum()
 	: mOrigin(0, 0, 0)
+	, mOrthogonal(false)
 {
 
 }
@@ -21,6 +22,7 @@ Frustum::Frustum(const Plane& left, const Plane& right, const Plane& bottom, con
 	mPlanes[FRUSTUM_PLANE_FAR] = far;
 	mNear = near.mConstant;
 	mFar = far.mConstant;
+	mOrthogonal  = IsEqual(left.mNormal.Dot(near.mNormal), 0.f, 0.0001f);		
 
 	auto angle = top.mNormal.AngleBetween(near.mNormal);
 	auto topHalfFov = PI - HALF_PI - angle;
@@ -33,13 +35,14 @@ Frustum::Frustum(const Plane& left, const Plane& right, const Plane& bottom, con
 	mLeftSlope = -mRightSlope;	
 }
 
-void Frustum::SetData(float near, float far, float fov, float aspectRatio){
+void Frustum::SetData(float near, float far, float fov, float aspectRatio, bool orthogonal){
 	mNear = near;
 	mFar = far;
 	mTopSlope = tan(fov*.5f);
 	mBottomSlope = -mTopSlope;
 	mRightSlope = mTopSlope * aspectRatio;
 	mLeftSlope = -mRightSlope;	
+	mOrthogonal = orthogonal;
 }
 
 void Frustum::UpdatePlaneWithViewProjMat(const Mat44& viewProjMat) {
@@ -78,7 +81,76 @@ void Frustum::UpdatePlaneWithViewProjMat(const Mat44& viewProjMat) {
 	{
 		Real length = mPlanes[i].mNormal.Normalize();
 		mPlanes[i].mConstant /= length;
+	}	
+	
+	mCenter = mOrigin +
+		mPlanes[FRUSTUM_PLANE_NEAR].mNormal * mNear +
+		mPlanes[FRUSTUM_PLANE_NEAR].mNormal * ((mFar - mNear)*.5f);
+
+	// debug code
+	//_Validate();
+}
+
+void Frustum::_Validate() {
+	if (mOrthogonal)
+		return;
+
+	Mat33 rot;
+	mOrientation.ToRotationMatrix(rot);
+	auto dir = rot.Column(1);
+	auto up = rot.Column(2);
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_NEAR].mNormal, dir, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Near plane normal is wrong");
+		int a = 0;
+		a++;
 	}
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_FAR].mNormal, -dir, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Far plane normal is wrong");
+		int a = 0;
+		a++;
+	}
+
+	Vec3 lefttopn = mOrientation * Vec3(mLeftSlope * mNear, mNear, mTopSlope * mNear);
+	Vec3 leftbottomn = mOrientation * Vec3(mLeftSlope * mNear, mNear, mBottomSlope * mNear);
+	Vec3 leftbottomf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mBottomSlope * mFar);
+	Vec3 leftNormal = (leftbottomf - leftbottomn).Cross(lefttopn - leftbottomn).NormalizeCopy();
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_LEFT].mNormal, leftNormal, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");
+		int a = 0;
+		a++;
+	}
+
+	Vec3 righttopn = mOrientation * Vec3(mRightSlope * mNear, mNear, mTopSlope * mNear);
+	Vec3 rightbottomn = mOrientation * Vec3(mRightSlope * mNear, mNear, mBottomSlope * mNear);
+	Vec3 rightbottomf = mOrientation * Vec3(mRightSlope * mFar, mFar, mBottomSlope * mFar);
+	Vec3 rightNormal = (righttopn - rightbottomn).Cross(rightbottomf - rightbottomn).NormalizeCopy();
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_RIGHT].mNormal, rightNormal, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");
+		int a = 0;
+		a++;
+	}
+
+	Vec3 rightn = mOrientation * Vec3(mRightSlope * mNear, mNear, mTopSlope * mNear);
+	Vec3 leftn = mOrientation * Vec3(mLeftSlope * mNear, mNear, mTopSlope * mNear);
+	Vec3 leftf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mTopSlope * mFar);
+	Vec3 topNormal = (leftf - leftn).Cross(rightn - leftn).NormalizeCopy();
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_TOP].mNormal, topNormal, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Top plane normal is wrong");
+		int a = 0;
+		a++;
+	}
+
+	 rightn = mOrientation * Vec3(mRightSlope * mNear, mNear, mBottomSlope * mNear);
+	 leftn = mOrientation * Vec3(mLeftSlope * mNear, mNear, mBottomSlope * mNear);
+	 leftf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mBottomSlope * mFar);
+	Vec3 bottomNormal = (rightn - leftn).Cross(leftf - leftn).NormalizeCopy();
+	if (!IsEqual(mPlanes[FRUSTUM_PLANE_BOTTOM].mNormal, bottomNormal, 0.01f)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Bottom plane normal is wrong");
+		int a = 0;
+		a++;
+	}
+	
+
 }
 
 bool Frustum::IsCulled(BoundingVolume* pBV) const {
@@ -111,22 +183,6 @@ Frustum Frustum::TransformBy(const Mat44& mat)
 	return Frustum(left, right, bottom, top, near, far);
 }
 
-Frustum& Frustum::operator= (const Frustum& other) {
-	mOrigin = other.mOrigin;
-	mOrientation = other.mOrientation;
-	for (int i = 0; i < 6; ++i) {
-		mPlanes[i] = other.mPlanes[i];
-	}
-	
-	mRightSlope = other.mRightSlope; // x/y
-	mLeftSlope = other.mLeftSlope;
-	mTopSlope = other.mTopSlope; // z/y
-	mBottomSlope = other.mBottomSlope;
-	mNear = other.mNear;
-	mFar = other.mFar;
-	return *this;
-}
-
 const Plane& Frustum::GetPlane(FRUSTUM_PLANE p) const {
 	if (p <FRUSTUM_PLANE_NEAR || p > FRUSTUM_PLANE_BOTTOM) {
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
@@ -153,4 +209,36 @@ const Plane& Frustum::GetTop() const {
 }
 const Plane& Frustum::GetBottom() const {
 	return mPlanes[FRUSTUM_PLANE_BOTTOM];
+}
+
+/// near (left, bottom), (left, top), (right, bottom), (right, top)
+/// far (left, bottom), (left, top), (right, bottom), (right, top)
+std::vector<Vec3> Frustum::ToPoints() const
+{
+	std::vector<Vec3> ret(8);
+	auto nleft = mLeftSlope * mNear;
+	auto nright = mRightSlope * mNear;
+	auto ntop = mTopSlope * mNear;
+	auto nbottom = mBottomSlope * mNear;
+	ret[0] = Vec3(nleft, mNear, nbottom);
+	ret[1] = Vec3(nleft, mNear, ntop);
+	ret[2] = Vec3(nright, mNear, nbottom);
+	ret[3] = Vec3(nright, mNear, ntop);
+	auto fleft = mLeftSlope * mFar;
+	auto fright = mRightSlope * mFar;
+	auto ftop = mTopSlope * mFar;
+	auto fbottom = mBottomSlope * mFar;
+	ret[4] = Vec3(fleft, mFar, fbottom);
+	ret[5] = Vec3(fleft, mFar, ftop);
+	ret[6] = Vec3(fright, mFar, fbottom);
+	ret[7] = Vec3(fright, mFar, ftop);
+	for (auto i = 0; i < 8; ++i) {
+		ret[i] = mOrientation * ret[i] + mOrigin;
+	}
+	return ret;
+}
+
+void Frustum::SetOrthogonal(bool ortho)
+{
+	mOrthogonal = ortho;
 }

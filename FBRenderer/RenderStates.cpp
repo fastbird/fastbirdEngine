@@ -31,19 +31,22 @@
 #include "FBCommonHeaders/CowPtr.h"
 
 namespace fb{
-bool RasterizerState::sLock = false;
+static RasterizerStateWeakPtr sCurrentRasterizerState;
 class RasterizerState::Impl{
 public:
 	IPlatformRasterizerStatePtr mPlatformRasterizerState;
-	
+	RasterizerStateWeakPtr mSelfPtr;
+	static bool sLock;
 	//---------------------------------------------------------------------------
 	void SetPlatformState(IPlatformRasterizerStatePtr state){
 		mPlatformRasterizerState = state;
 	}
 
 	void Bind(){
-		if (!sLock)
+		if (!sLock) {
 			mPlatformRasterizerState->Bind();
+			sCurrentRasterizerState = mSelfPtr;
+		}
 	}
 
 	void SetDebugName(const char* name){
@@ -51,8 +54,9 @@ public:
 	}
 };
 
+bool RasterizerState::Impl::sLock = false;
 //---------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(RasterizerState);
+FB_IMPLEMENT_STATIC_CREATE_SELF_PTR(RasterizerState);
 RasterizerState::RasterizerState()
 	: mImpl(new Impl)
 {
@@ -75,13 +79,19 @@ void RasterizerState::SetDebugName(const char* name){
 
 void RasterizerState::SetLock(bool lock)
 {
-	sLock = lock;
+	Impl::sLock = lock;
 }
 
+RasterizerStatePtr RasterizerState::GetCurrentState() {
+	return sCurrentRasterizerState.lock();
+}
+
+BlendStateWeakPtr sCurrentBlendState;
 //---------------------------------------------------------------------------
 class BlendState::Impl{
 public:
 	IPlatformBlendStatePtr mPlatformBlendState;
+	BlendStateWeakPtr mSelfPtr;
 	static bool Lock;
 
 	//---------------------------------------------------------------------------
@@ -90,8 +100,10 @@ public:
 	}
 
 	void Bind(){
-		if (!Lock)
+		if (!Lock) {
 			mPlatformBlendState->Bind();
+			sCurrentBlendState = mSelfPtr;
+		}
 	}
 
 	void SetDebugName(const char* name){
@@ -101,7 +113,7 @@ public:
 bool BlendState::Impl::Lock = false;
 
 //---------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(BlendState);
+FB_IMPLEMENT_STATIC_CREATE_SELF_PTR(BlendState);
 BlendState::BlendState()
 	: mImpl(new Impl)
 {
@@ -127,10 +139,16 @@ void BlendState::SetDebugName(const char* name){
 	mImpl->SetDebugName(name);
 }
 
+BlendStatePtr BlendState::GetCurrentState() {
+	return sCurrentBlendState.lock();
+}
+
+static DepthStencilStateWeakPtr sCurrentDepthStencil;
 //---------------------------------------------------------------------------
 class DepthStencilState::Impl{
 public:
 	IPlatformDepthStencilStatePtr mPlatformDepthStencilState;
+	DepthStencilStateWeakPtr mSelfPtr;
 	static bool Lock;
 
 	//---------------------------------------------------------------------------
@@ -138,9 +156,11 @@ public:
 		mPlatformDepthStencilState = state;
 	}
 
-	void Bind(unsigned stencilRef){
-		if (!Lock)
+	void Bind(int stencilRef){
+		if (!Lock) {
 			mPlatformDepthStencilState->Bind(stencilRef);
+			sCurrentDepthStencil = mSelfPtr;
+		}
 	}
 
 	void SetDebugName(const char* name){
@@ -150,7 +170,7 @@ public:
 bool DepthStencilState::Impl::Lock = false;
 
 //---------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(DepthStencilState);
+FB_IMPLEMENT_STATIC_CREATE_SELF_PTR(DepthStencilState);
 DepthStencilState::DepthStencilState()
 	: mImpl(new Impl)
 {
@@ -172,12 +192,16 @@ void DepthStencilState::Bind(){
 	mImpl->Bind(0);
 }
 
-void DepthStencilState::Bind(unsigned stencilRef){
+void DepthStencilState::Bind(int stencilRef){
 	mImpl->Bind(stencilRef);
 }
 
 void DepthStencilState::SetDebugName(const char* name){
 	mImpl->SetDebugName(name);
+}
+
+DepthStencilStatePtr DepthStencilState::GetCurrentState() {
+	return sCurrentDepthStencil.lock();
 }
 
 //---------------------------------------------------------------------------
@@ -190,7 +214,7 @@ public:
 		mPlatformSamplerState = state;
 	}
 
-	void Bind(BINDING_SHADER shader, int slot){
+	void Bind(SHADER_TYPE shader, int slot){
 		mPlatformSamplerState->Bind(shader, slot);
 	}
 
@@ -214,7 +238,7 @@ void SamplerState::SetPlatformState(IPlatformSamplerStatePtr state){
 	mImpl->SetPlatformState(state);
 }
 
-void SamplerState::Bind(BINDING_SHADER shader, int slot){
+void SamplerState::Bind(SHADER_TYPE shader, int slot){
 	mImpl->Bind(shader, slot);
 }
 
@@ -222,7 +246,7 @@ void SamplerState::SetDebugName(const char* name){
 	mImpl->SetDebugName(name);
 }
 
-
+bool sForceIncrementalStencil = false;
 //---------------------------------------------------------------------------
 class RenderStates::Impl{
 public:
@@ -241,6 +265,16 @@ public:
 	Impl()
 	{
 		Reset();
+	}
+
+	bool operator==(const Impl& other) const {
+		return !operator!=(other);
+	}
+
+	bool operator!=(const Impl& other) const {
+		return *mRDesc.const_get() != *other.mRDesc.const_get() ||
+			*mBDesc.const_get() != *other.mBDesc.const_get() ||
+			*mDDesc.const_get() != *other.mDDesc.const_get();
 	}
 
 	//-----------------------------------------------------------------------
@@ -297,6 +331,7 @@ public:
 	}
 
 	void CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){
+		desc.ComputeHash();
 		auto& renderer = Renderer::GetInstance();
 		if (DefaultDDesc == desc){
 			if (mDDesc){
@@ -310,10 +345,15 @@ public:
 		}		
 	}
 
-	void Bind(unsigned stencilRef) const{
+	void Bind(int stencilRef) const{
 		mRasterizerState->Bind();
 		mBlendState->Bind();	
-		mDepthStencilState->Bind(stencilRef);
+		if (sForceIncrementalStencil) {
+			Renderer::GetInstance().BindIncrementalStencilState(2);
+		}
+		else {
+			mDepthStencilState->Bind(stencilRef);
+		}
 	}
 
 	void DebugPrint() const{
@@ -341,6 +381,20 @@ FB_IMPLEMENT_STATIC_CREATE(RenderStates);
 RenderStatesPtr RenderStates::Create(const RenderStates& other){
 	return RenderStatesPtr(new RenderStates(other), [](RenderStates* obj){ delete obj; });
 }
+
+RenderStatesPtr RenderStates::Create(
+	const RasterizerStatePtr& rasterizer,
+	const BlendStatePtr& blend,
+	const DepthStencilStatePtr& depth)
+{
+	return RenderStatesPtr(new RenderStates(rasterizer, blend, depth),
+		[](RenderStates* obj) {delete obj; });
+}
+
+void RenderStates::SetForceIncrementalStencilState(bool set) {
+	sForceIncrementalStencil = set;
+}
+
 RenderStates::RenderStates()
 	: mImpl(new Impl)
 {
@@ -351,7 +405,26 @@ RenderStates::RenderStates(const RenderStates& other)
 
 }
 
+RenderStates::RenderStates(
+	const RasterizerStatePtr& rasterizer,
+	const BlendStatePtr& blend,
+	const DepthStencilStatePtr& depth)
+	: mImpl(new Impl)
+{
+	mImpl->mRasterizerState = rasterizer;
+	mImpl->mBlendState = blend;
+	mImpl->mDepthStencilState = depth;
+}
+
 RenderStates::~RenderStates(){
+}
+
+bool RenderStates::operator==(const RenderStates& other) const {
+	return mImpl == other.mImpl;
+}
+
+bool RenderStates::operator!=(const RenderStates& other) const {
+	return mImpl != other.mImpl;
 }
 
 void RenderStates::Reset(){
@@ -380,7 +453,7 @@ void RenderStates::Bind() const{
 	mImpl->Bind(0);
 }
 
-void RenderStates::Bind(unsigned stencilRef) const{
+void RenderStates::Bind(int stencilRef) const{
 	mImpl->Bind(stencilRef);
 }
 

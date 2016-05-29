@@ -62,9 +62,7 @@ namespace fb{
 		typedef VectorMap<unsigned, Vec4f> Parameters;
 		typedef std::vector< TexturePtr > Textures;
 		typedef VectorMap<TextureBinding, TexturePtr> TextureByBinding;
-		typedef VectorMap<TexturePtr, TextureBinding> BindingsByTexture;
-
-		static void ReloadMaterial(const char* name);
+		typedef VectorMap<TexturePtr, TextureBinding> BindingsByTexture;		
 		
 		static MaterialPtr Create();
 		static MaterialPtr Create(const Material& other);
@@ -82,20 +80,21 @@ namespace fb{
 		void SetSpecularColor(const Vec4& specular);
 		void SetEmissiveColor(float r, float g, float b, float strength);
 		void SetEmissiveColor(const Vec4& emissive);
-		void SetTexture(const char* filepath, BINDING_SHADER shader, int slot,
+		void SetTexture(const char* filepath, SHADER_TYPE shader, int slot,
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
-		void SetTexture(TexturePtr pTexture, BINDING_SHADER shader, int slot,
+		void SetTexture(TexturePtr pTexture, SHADER_TYPE shader, int slot,
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
-		TexturePtr GetTexture(BINDING_SHADER shader, int slot);
-		void SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slot,
+		TexturePtr GetTexture(SHADER_TYPE shader, int slot);
+		void SetColorRampTexture(ColorRamp& cr, SHADER_TYPE shader, int slot,
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
 		void RemoveTexture(TexturePtr pTexture);
-		void RemoveTexture(BINDING_SHADER shader, int slot);
-		ColorRamp& GetColorRamp(int slot, BINDING_SHADER shader);
-		void RefreshColorRampTexture(int slot, BINDING_SHADER shader);
+		void RemoveTexture(SHADER_TYPE shader, int slot);
+		ColorRamp& GetColorRamp(int slot, SHADER_TYPE shader);
+		void RefreshColorRampTexture(int slot, SHADER_TYPE shader);
 		bool AddShaderDefine(const char* def, const char* val);
 		bool RemoveShaderDefine(const char* def);
-		void SetMaterialParameter(unsigned index, const Vec4& value);
+		bool HasShaderDefines(const char* def);
+		void SetShaderParameter(unsigned index, const Vec4& value);
 		const SHADER_DEFINES& GetShaderDefines() const;
 		/// Debugging features
 		//void MarkNoShaderDefineChanges();
@@ -120,17 +119,19 @@ namespace fb{
 		bool Bind();
 		/// stencilRef: 0
 		bool Bind(bool inputLayout);
-		bool Bind(bool inputLayout, unsigned stencilRef);
+		bool Bind(bool inputLayout, int stencilRef);
+		bool Bind(int stencilRef);
 		void Unbind();
 		MaterialPtr GetSubPassMaterial(RENDER_PASS p) const;
 		bool BindSubPass(RENDER_PASS p, bool includeInputLayout);
-		void BindMaterialParams();
+		void BindShaderConstants();
 		void SetTransparent(bool trans);
 		void SetGlow(bool glow);
+		void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY topology);
 		bool IsTransparent() const;
 		bool IsGlow() const;
 		bool IsNoShadowCast() const;
-		bool IsDoubleSided() const;		
+		bool IsDoubleSided() const;				
 		int GetBindingShaders() const;
 		void CopyMaterialParamFrom(MaterialConstPtr src);
 		void CopyMaterialConstFrom(MaterialConstPtr src);
@@ -145,10 +146,13 @@ namespace fb{
 		void ClearBlendState(const BLEND_DESC& desc);
 		void ClearDepthStencilState(const DEPTH_STENCIL_DESC& desc);
 		void SetInputLayout(const INPUT_ELEMENT_DESCS& desc);
+		void BindInputLayoutOnly();
 
 		/// internal only.
 		//void ApplyShaderDefines();
 
 		void* GetParameterAddress();
+
+		void Reload();
 	};
 }

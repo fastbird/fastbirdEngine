@@ -12,10 +12,10 @@
 	<Textures>
 		<!--Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">EssentialEngineData/Textures/hexagonal_background.dds</Texture-->
 	</Textures>
-	<MaterialParameters>
+	<ShaderConstants>
 		<param comment="uStep, vStep, uStart, vStart">0, 0, 0, 0</param>
 		<param comment="ratio, , , ">1, 0, 0, 0</param>
-	</MaterialParameters>
+	</ShaderConstants>
 	<ShaderDefines>
 		<!--Define name="DIFFUSE_TEXTURE" val="1"></Define-->>
 	</ShaderDefines>

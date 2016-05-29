@@ -172,6 +172,12 @@ namespace fb{
 	//-----------------------------------------------------------------------
 	int StringConverter::ParseInt(const TString& val, int defaultValue)
 	{
+		if (val[0] == '0' && val[1] == 'x')
+		{
+			unsigned c = StringConverter::ParseHexa(val, defaultValue);
+			return (int)c;
+		}
+
 		// Use istd::_tstringstream for direct correspondence with ToString
 		std::_tstringstream str(val);
 		int ret = defaultValue;

@@ -29,6 +29,7 @@
 #include "DebugLib.h"
 #include "FBCommonHeaders/platform.h"
 #include "FBCommonHeaders/VectorMap.h"
+#include "FBCommonHeaders/Helpers.h"
 #if defined(_PLATFORM_WINDOWS_)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -82,25 +83,26 @@ void Logger::Release(){
 	}
 }
 
-void Logger::Log(const char* str, ...){
-	static const unsigned BUFFER_SIZE = 2048;	
-	if (!str) return;
-	auto length = strlen(str);
-	if (length == 0) return;
-	if (length >= BUFFER_SIZE){
-		std::cerr << "Log message is too long to print and truncated. Maximum 2047 characters are supported.\n";
-	}
-	char buffer[BUFFER_SIZE];
+void Logger::Log(const char* format, ...){
+	if (!ValidCString(format))
+		return;
+	static const size_t CurrentBufferSize = 1024;
+	ByteArray buffer(CurrentBufferSize);
 	va_list args;
-	va_start(args, str);
-	vsprintf_s(buffer, str, args);
+	va_start(args, format);
+	auto len = (size_t)_vscprintf(format, args) + 1;
+	if (len > CurrentBufferSize) {
+		buffer.resize(len);			
+	}
+	auto s = buffer.size();
+	vsprintf_s((char*)&buffer[0], buffer.size(), format, args);
 	va_end(args);
 
-	std::cerr << buffer;
-	FBOutputDebugString(buffer);
+	std::cerr << (char*)&buffer[0];
+	FBOutputDebugString((char*)&buffer[0]);
 
 	if (sLogFile && sLogFile->is_open()){
-		*sLogFile << buffer;
+		*sLogFile << (char*)&buffer[0];
 		sLogFile->flush();
 	}
 }

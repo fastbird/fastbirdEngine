@@ -1,0 +1,25 @@
+<Material>	
+	<DepthStencilDesc DepthEnable="false"/>		
+	<!-- ShaderFile or SeperatedShaderFiles-->	
+	<SeperatedShaderFiles>
+		<VSFile>EssentialEngineData/shaders/ScreenLocalPosVS.hlsl</VSFile>
+		<PSFile>EssentialEngineData/shaders/FractalPS.hlsl</PSFile>
+	</SeperatedShaderFiles>
+	
+	<MaterialConstants>
+		<AmbientColor>0.0, 0.0, 0.0, 1</AmbientColor>
+		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
+		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
+		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
+	</MaterialConstants>
+	<Textures>
+	</Textures>
+	<ShaderConstants>
+		<Param desc="Scale_x_x_x">1.000, 0, 0, 0</Param>
+	</ShaderConstants>
+	<ShaderDefines>		
+	</ShaderDefines>
+	<InputLayout>
+		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>		
+	</InputLayout>
+</Material>

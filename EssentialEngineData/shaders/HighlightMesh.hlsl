@@ -49,7 +49,7 @@ struct v2p
 	float3 Normal : TEXCOORD0;
 };
 
-v2p highlightmesh_VertexShader( in a2v INPUT )
+v2p HighlightMesh_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 	float3 scaledPos = INPUT.Position.xyz * 1.005f;
@@ -62,7 +62,7 @@ v2p highlightmesh_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 highlightmesh_PixelShader( in v2p INPUT ) : SV_Target
+float4 HighlightMesh_PixelShader( in v2p INPUT ) : SV_Target
 {	
     return float4( 1.0f, 1.0f, 0.0f, 1.0f );    // Yellow, with Alpha = 1
 }

@@ -54,7 +54,7 @@ struct v2p
 	float2 UV		: TEXCOORD;
 };
 
-v2p uihorizontalgauge_VertexShader( in a2v INPUT )
+v2p UIHorizontalGauge_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 	OUTPUT.Position = INPUT.Position;
@@ -66,14 +66,14 @@ v2p uihorizontalgauge_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
+float4 UIHorizontalGauge_PixelShader( in v2p INPUT ) : SV_Target
 {	
 #if defined(_ALPHA_TEXTURE)
 	float a = gAlphaTexture.Sample(gPointSampler, INPUT.UV).a;
 #else
 	float a = 1.0;
-#endif
-	float ratio = gMaterialParam[0].x;
+#endif	
+	float ratio = gShaderParams[0].x;
 	
 	// signed nc
 	float2 snc = INPUT.UV * 2.0 - 1.0f;
@@ -108,19 +108,19 @@ float4 uihorizontalgauge_PixelShader( in v2p INPUT ) : SV_Target
 	// param 4
 	// x : percent
 	// y : maximum
-	float percent = gMaterialParam[4].x * 2.0 - 1.0;
+	float percent = gShaderParams[4].x * 2.0 - 1.0;
 	if (snc.x < percent)
 	{
 		// 1: gauge color
 		// 2: Blink color
 		// 3x: sin
-		float4 color = lerp(gMaterialParam[1], gMaterialParam[2], gMaterialParam[3].x);
+		float4 color = lerp(gShaderParams[1], gShaderParams[2], gShaderParams[3].x);
 		color.a *= a;
 		color.rgb *= 1.f - yPos*.5f;
 		return color;
 	}
 	
-	float4 color = lerp(gDiffuseColor, gMaterialParam[2], gMaterialParam[3].x);
+	float4 color = lerp(gDiffuseColor, gShaderParams[2], gShaderParams[3].x);
 	color.a *= a;	
     return color;
 }

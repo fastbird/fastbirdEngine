@@ -89,7 +89,7 @@ public:
 		, mVideoBufReady(false)
 		, mIsFirstFrame(true)
 	{
-		mPS = Renderer::GetInstance().CreateShader("EssentialEnginedata/shaders/YUVMovie.hlsl", BINDING_SHADER_PS);
+		mPS = Renderer::GetInstance().CreateShader("EssentialEngineData/shaders/YUVMoviePS.hlsl", SHADER_TYPE_PS);
 		if (!gpTimer){
 			gpTimer = Timer::GetMainTimer().get();
 		}
@@ -325,7 +325,7 @@ public:
 
 			auto& renderer = Renderer::GetInstance();
 			mTextures[pli] = renderer.CreateTexture(0, mYCbCr[pli].width, mYCbCr[pli].height,
-				PIXEL_FORMAT_A8_UNORM, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE, TEXTURE_TYPE_DEFAULT);			
+				PIXEL_FORMAT_A8_UNORM, 1, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE, TEXTURE_TYPE_DEFAULT);			
 			auto mapData = mTextures[pli]->Map(0, MAP_TYPE::MAP_TYPE_WRITE_DISCARD, MAP_FLAG::MAP_FLAG_NONE);
 			if (mapData.pData){
 				memset(mapData.pData, 0, mYCbCr[pli].width * mYCbCr[pli].height);
@@ -396,10 +396,10 @@ public:
 	void Render(){
 		RenderEventMarker mark("Video Rendering");
 		for (int pli = 0; pli<3; pli++){
-			mTextures[pli]->Bind(BINDING_SHADER_PS, pli);
+			mTextures[pli]->Bind(SHADER_TYPE_PS, pli);
 		}
 		auto& renderer = Renderer::GetInstance();
-		renderer.GetResourceProvider()->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthStencil);
+		renderer.GetResourceProvider()->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthStencil, 0);
 		renderer.DrawFullscreenQuad(mPS, false);
 	}
 

@@ -22,7 +22,7 @@ public:
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld){
-		if (!ValidCStringLength(path))
+		if (!ValidCString(path))
 			return;
 
 		auto& am = AudioManager::GetInstance();		
@@ -50,7 +50,7 @@ public:
 	}
 
 	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
-		if (!ValidCStringLength(path))
+		if (!ValidCString(path))
 			return;
 		startNewAfter = std::max(0.f, startNewAfter);
 		auto& am = AudioManager::GetInstance();
@@ -108,7 +108,8 @@ public:
 
 	void SetEnabled(bool enabled){
 		if (enabled){
-			PlayMusic(mCurrentAudioPath.c_str(), 0.f);
+			if (!mCurrentAudioPath.empty())
+				PlayMusic(mCurrentAudioPath.c_str(), 0.f);
 		}
 	}
 };

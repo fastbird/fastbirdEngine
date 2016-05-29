@@ -269,7 +269,7 @@ public:
 	}
 
 	bool PlayAudio(const char* path){
-		if (!ValidCStringLength(path)) {
+		if (!ValidCString(path)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");			
 			return false;
 		}

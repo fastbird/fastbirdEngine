@@ -13,6 +13,7 @@ namespace fb {
 		bool Exists() const;	
 		FilePtr Parent() const;
 		std::string Absolute() const;
+		bool IsAbsolute() const;
 		bool IsDir() const;
 		bool MakeDir() const;
 		bool operator==(const File& other) const;
@@ -22,6 +23,6 @@ namespace fb {
 		void DeleteOnExit();
 		bool HasExtension(const char* ext);
 		time_t LastModified() const;
-		std::unique_ptr<char[]> LoadBinary(size_t& size) const;
+		ByteArray ReadBinary() const;
 	};
 }

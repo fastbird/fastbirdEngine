@@ -26,7 +26,7 @@
 */
 
 //----------------------------------------------------------------------------
-// File: skybox.hlsl
+// File: SkyBox.hlsl
 //----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
@@ -55,7 +55,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p skybox_VertexShader(in a2v INPUT)
+v2p SkyBox_VertexShader(in a2v INPUT)
 {
 	v2p OUTPUT;
 	float3 camPos = {gCamTransform[0][3], gCamTransform[1][3], gCamTransform[2][3]};
@@ -67,7 +67,7 @@ v2p skybox_VertexShader(in a2v INPUT)
 }
 
 //----------------------------------------------------------------------------
-float4 skybox_PixelShader(in v2p INPUT) : SV_Target
+float4 SkyBox_PixelShader(in v2p INPUT) : SV_Target
 {
 	return gSkyCubeMap.Sample(gAnisotropicSampler, INPUT.uvw);
 }

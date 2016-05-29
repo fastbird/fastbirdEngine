@@ -33,51 +33,51 @@
 #include "IUnknownDeleter.h"
 #include "FBCommonHeaders/Helpers.h"
 #include "FBStringLib/StringLib.h"
-DEFINE_GUID(WKPDID_D3DDebugObjectName, 0x429b8c22, 0x9188, 0x4b0c, 0x87, 0x42, 0xac, 0xb0, 0xbf, 0x85, 0xc2, 0x00);
+//DEFINE_GUID(WKPDID_D3DDebugObjectName, 0x429b8c22, 0x9188, 0x4b0c, 0x87, 0x42, 0xac, 0xb0, 0xbf, 0x85, 0xc2, 0x00);
 using namespace fb;
-static unsigned sNextTextureId = 1;
-class TextureD3D11::Impl{
+static std::atomic<UINT64> sNextTextureId = 1ull;
+class TextureD3D11::Impl {
 public:
 	TextureD3D11* mSelf;
-	unsigned mId;
+	UINT64 mId;
 	std::string mPath;
-	ID3D11Texture2DPtr mTexture;
+	ID3D11ResourcePtr mTexture;
 	mutable ID3D11ShaderResourceViewPtr mSRView;
 	mutable ID3D11ShaderResourceView* mSRViewSync;
-	HRESULT mHr;
-	D3DX11_IMAGE_INFO mImageInfo;
-	D3DX11_IMAGE_LOAD_INFO mLoadInfo;	
+	DXGI_FORMAT mFormat;
+	Vec2I mSize;
 	// These views are in vector because Cube render targets has 6 views;
 	std::vector<ID3D11RenderTargetViewPtr> mRTViews;
 	std::vector<ID3D11DepthStencilViewPtr> mDSViews;
-	
+	size_t mSizeInBytes;
+	bool mMipGenerated = false;
+
 
 	//---------------------------------------------------------------------------
 	Impl(TextureD3D11* self)
 		: mSelf(self)
-		, mHr(S_FALSE)
 		, mSRViewSync(0)
 		, mId(sNextTextureId++)
+		, mSize(0, 0)
+		, mFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
+		, mSizeInBytes(0)
 	{
-		mLoadInfo.pSrcInfo = &mImageInfo;
-		mImageInfo.Width = 0;
-		mImageInfo.Height = 0;
-		mImageInfo.Format = ConvertEnumD3D11(PIXEL_FORMAT_R8G8B8A8_UNORM);
 	}
-	~Impl(){
+
+	~Impl() {
 
 	}
 
 	const Vec2ITuple GetSize() const {
-		return Vec2ITuple{ mImageInfo.Width, mImageInfo.Height };
+		return mSize;
 	}
 
 	PIXEL_FORMAT GetPixelFormat() const {
-		return  ConvertEnumFB(mImageInfo.Format);
+		return  ConvertEnumFB(mFormat);
 	}
 
 	void SetPixelFormat(DXGI_FORMAT format) {
-		mImageInfo.Format = format;
+		mFormat = format;
 	}
 
 	bool IsReady() const {
@@ -88,7 +88,7 @@ public:
 		return mSRView != 0;
 	}
 
-	void Bind(BINDING_SHADER shader, int slot) const {
+	void Bind(SHADER_TYPE shader, int slot) const {
 		RendererD3D11::GetInstance().SetTexture(mSelf, shader, slot);
 	}
 
@@ -100,10 +100,15 @@ public:
 		RendererD3D11::GetInstance().UnmapBuffer(mTexture.get(), subResource);
 	}
 
-	void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ, 
-		UINT srcSubresource, Box3D* srcBox) const {
+	void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ,
+		UINT srcSubresource, Box3D* srcBox) const 
+	{
 		RendererD3D11::GetInstance().CopyToStaging(dst, dstSubresource, dstX, dstY, dstZ,
 			mSelf, srcSubresource, srcBox);
+	}
+
+	void CopyToStaging(IPlatformTexture* dst) const {
+		RendererD3D11::GetInstance().CopyResource(dst, mSelf);
 	}
 
 	void SaveToFile(const char* filename) const {
@@ -112,6 +117,7 @@ public:
 
 	void GenerateMips() {
 		RendererD3D11::GetInstance().GenerateMips(mSelf);
+		mMipGenerated = true;
 	}
 
 	void SetDebugName(const char* name) {
@@ -143,14 +149,18 @@ public:
 		}
 	}
 
+	size_t GetSizeInBytes() const {
+		return mSizeInBytes;
+	}
+
 	//--------------------------------------------------------------------
 	// Own
 	//--------------------------------------------------------------------
-	ID3D11Texture2D* GetHardwareTexture() {
+	ID3D11Resource* GetHardwareTexture() {
 		if (!mTexture && mSRView){
 			ID3D11Resource* resource = 0;
 			mSRView->GetResource(&resource);
-			mTexture = ID3D11Texture2DPtr((ID3D11Texture2D*)resource, IUnknownDeleter());
+			mTexture = ID3D11ResourcePtr(resource, IUnknownDeleter());
 		}
 		return mTexture.get();
 	}
@@ -165,14 +175,19 @@ public:
 
 	// pTexture will be owned by this instance.
 	// DO NOT pass a pointer you get from shared_ptr.
-	void SetHardwareTexture(ID3D11Texture2D* pTexture){
-		mTexture = ID3D11Texture2DPtr(pTexture, IUnknownDeleter());
+	void SetHardwareTexture(ID3D11Resource* pTexture){
+		mTexture = ID3D11ResourcePtr(pTexture, IUnknownDeleter());
 	}
 
 	// pResourceView will be owned by this instance.
 	// DO NOT pass a pointer you get from shared_ptr.
 	void SetHardwareResourceView(ID3D11ShaderResourceView* pResourceView){
-		mSRView = ID3D11ShaderResourceViewPtr(pResourceView, IUnknownDeleter());
+		mSRView = ID3D11ShaderResourceViewPtr(pResourceView, IUnknownDeleter());		
+		if (pResourceView && !mTexture) {
+			ID3D11Resource* pResource = 0;
+			pResourceView->GetResource(&pResource);
+			SetHardwareTexture(pResource);
+		}
 	}
 
 	// pRenderTargetView will be owned by this instance.
@@ -220,32 +235,19 @@ public:
 	}
 
 	void SetSize(const Vec2I& size){
-		mImageInfo.Width = size.x;
-		mImageInfo.Height = size.y;
-	}
-
-	void SetLoadInfoTextureFormat(DXGI_FORMAT format){
-		mLoadInfo.Format = format;
-	}
-
-	D3DX11_IMAGE_LOAD_INFO* GetLoadInfoPtr() {
-		return &mLoadInfo;
+		mSize = size;
 	}
 
 	ID3D11ShaderResourceView** GetSRViewSyncPtr(){
 		return &mSRViewSync;
 	}
 
-	HRESULT* GetHRPtr() {
-		return &mHr;
-	}
-
-	unsigned GetTextureId() const{
+	UINT64 GetTextureId() const{
 		return mId;
 	}
 
 	void SetPath(const char* path){
-		if (ValidCStringLength(path))
+		if (ValidCString(path))
 			mPath = path;
 	}
 
@@ -284,7 +286,7 @@ bool TextureD3D11::IsReady() const {
 	return mImpl->IsReady();
 }
 
-void TextureD3D11::Bind(BINDING_SHADER shader, int slot) const {
+void TextureD3D11::Bind(SHADER_TYPE shader, int slot) const {
 	mImpl->Bind(shader, slot);
 }
 
@@ -300,6 +302,10 @@ void TextureD3D11::CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UIN
 	mImpl->CopyToStaging(dst, dstSubresource, dstX, dstY, dstZ, srcSubresource, srcBox);
 }
 
+void TextureD3D11::CopyToStaging(IPlatformTexture* dst) const {
+	mImpl->CopyToStaging(dst);
+}
+
 void TextureD3D11::SaveToFile(const char* filename) const {
 	mImpl->SaveToFile(filename);
 }
@@ -312,10 +318,18 @@ void TextureD3D11::SetDebugName(const char* name) {
 	mImpl->SetDebugName(name);
 }
 
+bool TextureD3D11::GetMipGenerated() const {
+	return mImpl->mMipGenerated;
+}
+
+size_t TextureD3D11::GetSizeInBytes() const {
+	return mImpl->GetSizeInBytes();
+}
+
 //--------------------------------------------------------------------
 // Own
 //--------------------------------------------------------------------		
-ID3D11Texture2D* TextureD3D11::GetHardwareTexture() const {
+ID3D11Resource* TextureD3D11::GetHardwareTexture() const {
 	return mImpl->GetHardwareTexture();
 }
 
@@ -325,7 +339,7 @@ ID3D11ShaderResourceView* TextureD3D11::GetHardwareResourceView() {
 
 // pTexture will be owned by this instance.
 // DO NOT pass a pointer you get from shared_ptr.
-void TextureD3D11::SetHardwareTexture(ID3D11Texture2D* pTexture) {
+void TextureD3D11::SetHardwareTexture(ID3D11Resource* pTexture) {
 	mImpl->SetHardwareTexture(pTexture);
 }
 
@@ -375,23 +389,11 @@ void TextureD3D11::SetSize(const Vec2I& size) {
 	mImpl->SetSize(size);
 }
 
-void TextureD3D11::SetLoadInfoTextureFormat(DXGI_FORMAT format) {
-	mImpl->SetLoadInfoTextureFormat(format);
-}
-
-D3DX11_IMAGE_LOAD_INFO* TextureD3D11::GetLoadInfoPtr() {
-	return mImpl->GetLoadInfoPtr();
-}
-
 ID3D11ShaderResourceView** TextureD3D11::GetSRViewSyncPtr() {
 	return mImpl->GetSRViewSyncPtr();
 }
 
-HRESULT* TextureD3D11::GetHRPtr() {
-	return mImpl->GetHRPtr();
-}
-
-unsigned TextureD3D11::GetTextureId() const {
+UINT64 TextureD3D11::GetTextureId() const {
 	return mImpl->GetTextureId();
 }
 
@@ -403,6 +405,14 @@ const char* TextureD3D11::GetPath() const {
 	return mImpl->GetPath();
 }
 
-ID3D11Texture2D* TextureD3D11::GetHardwareTexture() {
-	return mImpl->GetHardwareTexture();
+void TextureD3D11::SetMipGenerated(bool requested) {
+	mImpl->mMipGenerated = requested;
+}
+
+size_t TextureD3D11::Hash() const {
+	return (size_t)mImpl->mId;
+}
+
+void TextureD3D11::SetSizeInBytes(size_t bytes) {
+	mImpl->mSizeInBytes = bytes;
 }

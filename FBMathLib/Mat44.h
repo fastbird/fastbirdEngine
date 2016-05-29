@@ -30,6 +30,7 @@
 namespace fb
 {
 	class Vec3;
+	class Vec3d;
 	class Vec4;
 	class Mat33;
 	class Mat44
@@ -77,12 +78,8 @@ namespace fb
 		Real GetRotationZ() const;
 		Real GetRotationX() const;
 		Real GetRotationY() const;
+		void Translate2DTexTransform();
 
-		/**
-		* Returns the arithmetic mean of the x, y, z coordinates of the specified 
-		* points buffer. This returns null if the buffer is empty.
-		*/
-		static Vec3 ComputeAveragePoint3(const Real* coordinates, int numElem, int stride);
 		/**
 		* Computes a symmetric covariance Matrix from the x, y, z coordinates.
 		* layout:
@@ -91,11 +88,8 @@ namespace fb
 		* C(x, z)  C(y, z)  C(z, z) 		
 		*
 		*/
-		static Mat44 FromCovarianceOfVertices(const Real* coordinates, int numElem, int stride);		
-		bool IsSymmetric() const;
-		/// Computes the eigensystem of the specified symmetric Matrix's upper 3x3 matrix. 		
-		static void ComputeEigensystemFromSymmetricMatrix3(const Mat44& matrix, Real outEigenvalues[3],
-			Vec3 outEigenvectors[3]);
+		
+		bool IsSymmetric() const;		
 	};
 
 #if defined(FB_Real_PRECISION)

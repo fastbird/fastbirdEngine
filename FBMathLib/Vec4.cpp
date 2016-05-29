@@ -68,18 +68,18 @@ Vec4::Vec4(const char* s)
 	if (s!=0)
 	{
 		x = (Real)strtod(s, &next);
-		if (next!=0)
+		if (next != 0 && next[0] != 0)
 		{
 			StepToDigit_(&next);
 			y = (Real)strtod(next, &next);
-			if (next!=0)
+			if (next!=0 && next[0] != 0)
 			{
 				StepToDigit_(&next);
 				z = (Real)strtod(next, &next);
-				if (next!=0)
+				if (next!=0 && next[0] != 0)
 				{
 					StepToDigit_(&next);
-					if (next!=0)
+					if (next!=0 && next[0] != 0)
 						w = (Real)strtod(next, 0);
 				}
 
@@ -177,6 +177,20 @@ Vec3 Vec4::GetXYZ() const{
 Vec3 Vec4::ToVec3() const
 {
 	return Vec3(x, y, z);
+}
+
+void write(std::ostream& stream, const Vec4& data) {
+	stream.write((char*)&data.x, sizeof(data.x));
+	stream.write((char*)&data.y, sizeof(data.y));
+	stream.write((char*)&data.z, sizeof(data.z));
+	stream.write((char*)&data.w, sizeof(data.w));
+}
+
+void read(std::istream& stream, Vec4& data) {
+	stream.read((char*)&data.x, sizeof(data.x));
+	stream.read((char*)&data.y, sizeof(data.y));
+	stream.read((char*)&data.z, sizeof(data.z));
+	stream.read((char*)&data.w, sizeof(data.w));
 }
 
 #if defined(FB_DOUBLE_PRECISION)

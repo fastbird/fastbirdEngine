@@ -37,4 +37,15 @@ namespace fb{
 		PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 		PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
 	};
+
+	static const char* STR_PRIMITIVE_TOPOLOGY[] = {
+		"UNKNOWN",
+		"POINTLIST",
+		"LINELIST",
+		"LINESTRIP",
+		"LINESTRIP_ADJ",
+		"TRIANGLELIST",
+		"TRIANGLESTRIP",		
+	};
+	PRIMITIVE_TOPOLOGY PrimitiveTopologyFromString(const char* sz);
 }

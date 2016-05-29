@@ -61,6 +61,7 @@ namespace fb
 	{
 	public:
 
+		typedef VectorMap<_Kty, _Ty, _Pr> ThisType;
 		typedef std::pair< _Kty, _Ty > _Val_type;
 		typedef std::pair<const _Kty, _Ty> value_type;
 		typedef _Kty key_type;		
@@ -160,10 +161,14 @@ namespace fb
 		}
 
 		//--------------------------------------------------------------------
-		bool operator==( const VectorMapType& vec )const
+		bool operator==( const ThisType& other )const
 		{
-			const VectorMapType& other = static_cast<const VectorMapType&>( vec );
 			return mVector == other.mVector;
+		}
+
+		bool operator!=(const ThisType& other) const
+		{
+			return mVector != other.mVector;
 		}
 
 		//--------------------------------------------------------------------

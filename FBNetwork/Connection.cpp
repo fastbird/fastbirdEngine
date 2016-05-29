@@ -42,6 +42,22 @@ const ByteArray& Connection::GetBuffer() {
 	return mBuffer;
 }
 
+const ByteArray& Connection::GetStringBuffer() {
+	if (mFile && mBuffer.empty()) {
+		char buffer[256];
+		int nread = 0;
+		do {
+			nread = url_fread(buffer, 1, sizeof(buffer), mFile);
+			if (nread)
+				mBuffer.insert(mBuffer.end(), buffer, buffer + nread);
+		} while (nread);
+	}
+	if (mBuffer.back() != 0) {
+		mBuffer.push_back(0);
+	}
+	return mBuffer;
+}
+
 std::string Connection::getHeaderField(const char* header) const {
 	return{};
 }

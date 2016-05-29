@@ -32,6 +32,8 @@
 #include <assert.h>
 #include <math.h>
 #include <sstream>
+#include <numeric>
+#include <random>
 #include "FBCommonHeaders/Types.h"
 
 #include "FBDebugLib/DebugLib.h"

@@ -56,7 +56,7 @@ namespace fb
 	class IPlatformDepthStencilState
 	{
 	public:		
-		virtual void Bind(unsigned stencilRef) = 0;
+		virtual void Bind(int stencilRef) = 0;
 		virtual void SetDebugName(const char* name) = 0;
 
 	protected:
@@ -67,7 +67,7 @@ namespace fb
 	class IPlatformSamplerState
 	{
 	public:
-		virtual void Bind(BINDING_SHADER shader, int slot) = 0;
+		virtual void Bind(SHADER_TYPE shader, int slot) = 0;
 		virtual void SetDebugName(const char* name) = 0;
 
 	protected:

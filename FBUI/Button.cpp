@@ -77,7 +77,7 @@ namespace fb
 		mUIObject->GetMaterial()->SetAmbientColor(0, 0, 0, 0.0f);
 		// material param 0 : ratio, sizes
 		// material param 1 : edge color
-		mUIObject->GetMaterial()->SetMaterialParameter(1, mEdgeColor.GetVec4());
+		mUIObject->GetMaterial()->SetShaderParameter(1, mEdgeColor.GetVec4());
 
 		RegisterEventFunc(UIEvents::EVENT_MOUSE_DOWN,
 			std::bind(&Button::OnMouseDown, this, std::placeholders::_1));
@@ -210,7 +210,7 @@ namespace fb
 
 		mUIObject->GetMaterial()->SetEmissiveColor(0.8f, 0.8f, 0.1f, 1);
 		//  1 is edge color
-		mUIObject->GetMaterial()->SetMaterialParameter(1, mEdgeColorOver.GetVec4());
+		mUIObject->GetMaterial()->SetShaderParameter(1, mEdgeColorOver.GetVec4());
 		//if (mImages[ButtonImages::ImageHover] || mImages[ButtonImages::BackImageHover])
 		//UIManager::GetInstance().DirtyRenderList(GetHwndId());
 
@@ -252,7 +252,7 @@ namespace fb
 		mUIObject->SetTextColor(mEnable ? mTextColor : mTextColor*.5f);
 		mUIObject->GetMaterial()->SetEmissiveColor(0, 0, 0, 0);
 		//  1 is edge color
-		mUIObject->GetMaterial()->SetMaterialParameter(1, mEdgeColor.GetVec4());
+		mUIObject->GetMaterial()->SetShaderParameter(1, mEdgeColor.GetVec4());
 		if (!mImages[ButtonImages::ImageHover].expired() || !mImages[ButtonImages::BackImageHover].expired())
 			UIManager::GetInstance().DirtyRenderList(GetHwndId());
 
@@ -707,7 +707,7 @@ namespace fb
 		{
 			mEdgeColor = Color(val);
 			assert(mUIObject);
-			mUIObject->GetMaterial()->SetMaterialParameter(1, mEdgeColor.GetVec4());
+			mUIObject->GetMaterial()->SetShaderParameter(1, mEdgeColor.GetVec4());
 			return true;
 		}
 
@@ -1357,7 +1357,7 @@ namespace fb
 		auto mat = mUIObject->GetMaterial();
 		assert(mat);
 		if (mAlphaRegion.empty()){
-			mat->SetTexture(0, BINDING_SHADER_PS, 1);
+			mat->SetTexture(0, SHADER_TYPE_PS, 1);
 		}
 		else{
 			auto atlas = Renderer::GetInstance().GetTextureAtlas(mImageAtlas.c_str());
@@ -1374,7 +1374,7 @@ namespace fb
 			};
 			mUIObject->SetTexCoord(texcoords, 4);
 
-			mat->SetTexture(atlas->GetTexture(), BINDING_SHADER_PS, 1);
+			mat->SetTexture(atlas->GetTexture(), SHADER_TYPE_PS, 1);
 		}
 	}
 

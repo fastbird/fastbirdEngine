@@ -61,6 +61,6 @@ namespace fb{
 		static Mat44 ParseMat44(const std::string& str, const Mat44& def = Mat44::IDENTITY);
 		static Quat ParseQuat(const std::string& str, const Quat& def = Quat::IDENTITY);
 		static Rect ParseRect(const std::string& str, const Rect& def = { 0, 0, 0, 0 });
-		static Color ParseColor(const std::string& str, const Color& def = { 0, 0, 0, 0 });
+		static Color ParseColor(const std::string& str, const Color& def = Color(0.f, 0.f, 0.f));
 	};
 }

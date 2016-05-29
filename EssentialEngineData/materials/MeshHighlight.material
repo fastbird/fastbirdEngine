@@ -6,8 +6,8 @@
 		<SpecularColor_Shine>1, 1, 1, 2</SpecularColor_Shine>
 		<EmissiveColor_Strength>0, 0, 0, 0</EmissiveColor_Strength>
 	</MaterialConstants>
-	<MaterialParameters>
-	</MaterialParameters>
+	<ShaderConstants>
+	</ShaderConstants>
 	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="NORMAL" index="0" format="FLOAT3" slot="1" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>

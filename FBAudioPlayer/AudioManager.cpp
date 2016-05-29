@@ -548,7 +548,7 @@ public:
 
 	// normal audio
 	AudioId PlayAudio(const char* path){
-		if (!ValidCStringLength(path)){
+		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return INVALID_AUDIO_ID;
 		}
@@ -561,7 +561,7 @@ public:
 	}
 
 	AudioId PlayAudio(const char* path, const AudioProperty& property){
-		if (!ValidCStringLength(path)){
+		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return INVALID_AUDIO_ID;
 		}

@@ -32,7 +32,7 @@
 namespace fb{	
 	//---------------------------------------------------------------------------
 	FB_DECLARE_SMART_PTR(RasterizerState);
-	class FB_DLL_RENDERER RasterizerState{
+	class FB_DLL_RENDERER RasterizerState {
 		FB_DECLARE_PIMPL_NON_COPYABLE(RasterizerState);
 		RasterizerState();
 		~RasterizerState();
@@ -41,6 +41,7 @@ namespace fb{
 	public:
 		static RasterizerStatePtr Create();		
 		static void SetLock(bool lock);
+		static RasterizerStatePtr GetCurrentState();
 
 		void SetPlatformState(IPlatformRasterizerStatePtr state);
 		void Bind();
@@ -57,7 +58,7 @@ namespace fb{
 	public:
 		static BlendStatePtr Create();
 		static void SetLock(bool lock);
-
+		static BlendStatePtr GetCurrentState();
 		void SetPlatformState(IPlatformBlendStatePtr state);
 		void Bind();
 		void SetDebugName(const char* name);
@@ -74,9 +75,10 @@ namespace fb{
 		static DepthStencilStatePtr Create();
 		static void SetLock(bool lock);
 
+		static DepthStencilStatePtr GetCurrentState();
 		void SetPlatformState(IPlatformDepthStencilStatePtr state);
 		void Bind();
-		void Bind(unsigned stencilRef);
+		void Bind(int stencilRef);
 		void SetDebugName(const char* name);
 	};
 
@@ -91,7 +93,7 @@ namespace fb{
 		static SamplerStatePtr Create();
 
 		void SetPlatformState(IPlatformSamplerStatePtr state);
-		void Bind(BINDING_SHADER shader, int slot);
+		void Bind(SHADER_TYPE shader, int slot);
 		void SetDebugName(const char* name);
 	};
 
@@ -108,11 +110,19 @@ namespace fb{
 	public:
 		static RenderStatesPtr Create();
 		static RenderStatesPtr Create(const RenderStates& other);		
-
+		static RenderStatesPtr Create(
+			const RasterizerStatePtr& rasterizer,
+			const BlendStatePtr& blend,
+			const DepthStencilStatePtr& depth);
+		static void SetForceIncrementalStencilState(bool set);
 		RenderStates();
 		RenderStates(const RenderStates& other);
+		RenderStates(const RasterizerStatePtr& rasterizer,
+			const BlendStatePtr& blend,
+			const DepthStencilStatePtr& depth);
 		~RenderStates();
-		RenderStates& operator==(const RenderStates& other) = delete;
+		bool operator==(const RenderStates& other) const;
+		bool operator!=(const RenderStates& other) const;
 
 		void Reset();
 		void ResetRasterizerState();
@@ -122,7 +132,7 @@ namespace fb{
 		void CreateBlendState(const BLEND_DESC& desc);
 		void CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc);
 		void Bind() const;
-		void Bind(unsigned stencilRef) const;
+		void Bind(int stencilRef) const;
 		void DebugPrint() const;
 	};
 }

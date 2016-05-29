@@ -71,8 +71,13 @@ namespace fb{
 		// File Operataions
 		//---------------------------------------------------------------------------
 		static bool Exists(const char* path);
+		/** Check whether the resource file exists.
+		\param outResourcePath contains path if FileSystem::Exists(path). If not and
+		resource path is exists it contains the resourcePath. If both not exists, it's value unchanged.
+		*/
+		static bool ResourceExists(const char* path, std::string* outResoucePath = 0);
 		static bool IsDirectory(const char* path);
-		static unsigned GetFileSize(const char* path);
+		static size_t GetFileSize(const char* path);
 		/** Rename a file.
 		@remark  If \a path and \a newpath resolve to the same existing file, no action is taken. 
 		Otherwise, if \a newpath resolves to an existing non-directory file, it is removed, 
@@ -86,6 +91,8 @@ namespace fb{
 		@return 'false' if \b path did not exist in the first place, otherwise true.
 		*/
 		static bool Remove(const char* path);
+		// Remove all containing files and the \a path itself.
+		static size_t RemoveAll(const char* path);
 		/** If filepath exists, rename it to preserve. 
 		\param numKeeping decides how many backup files need to be kept.
 		*/
@@ -100,10 +107,15 @@ namespace fb{
 		If file1 or file2 does not exists, returns FILE_NO_EXISTS.
 		*/
 		static int CompareFileModifiedTime(const char* file1, const char* file2);
+		static int CompareResourceFileModifiedTime(const char* resourceFile, const char* file);
 		static bool SecurityOK(const char* filepath);		
-		static BinaryData ReadBinaryFile(const char* path, std::streamoff& outLength);
-		static void WriteBinaryFile(const char* path, const char* data, size_t length);
+		static ByteArray ReadBinaryFile(const char* path);
+		static bool WriteBinaryFile(const char* path, const char* data, size_t length);
+		static bool WriteBinaryFile(const char* path, const ByteArray& data);
+		static bool WriteTextFile(const char* path, const char* data, size_t length);
 		static void DeleteOnExit(const char* path);
+		/// Called from EngineFacade.
+		static void _PrepareQuit();
 		/// @param expiryTime number of seconds that have passed since 1 January 1970 00:00 UTC
 		static bool IsFileOutOfDate(const char* path, time_t expiryTime);
 		/// opaque uir doesn't have '/' character in content.
@@ -136,8 +148,7 @@ namespace fb{
 		static std::string ReplaceExtension(const char* path, const char* ext);
 		static std::string ReplaceFilename(const char* path, const char* newFilename);
 		/** If \a dot(.) is not in the \a path, empty string will be returned. 
-		If the extension is found, '.' is included in the returned string.
-		*/
+		If the extension is found, '.' is included in the returned string.*/
 		static const char* GetExtension(const char* path);	
 		static const char* GetExtensionWithOutDot(const char* path);
 		static bool HasExtension(const char* filepath, const char* extension);
@@ -148,10 +159,13 @@ namespace fb{
 		*/
 		static std::string GetName(const char* path);		
 		/** Returns the parent path.
-		ex) dir1/dir2/file.exe -> dir1/dir1
+		ex) dir1/dir2/file.exe -> dir1/dir2
+		ex) dir1/dir2 -> dir1
+		ex) dir1/dir2/ -> dir1/dir2
 		*/
 		static std::string GetParentPath(const char* path);
 		static std::string GetLastDirectory(const char* path);
+		static std::string GetFirstDirectory(const char* path);
 		static std::string ConcatPath(const char* path1, const char* path2);
 		static std::string UnifyFilepath(const char* path);
 		static std::string Absolute(const char* path);
@@ -167,10 +181,32 @@ namespace fb{
 		static void ReplaceIllegalFileNameCharacters(std::string& filepath);
 		static bool CanWrite(const char* filepath);
 		static void SetLastModified(const char* filepath);
-		// returns seconds
-		static time_t GetLastModified(const char* filepath);
+		/// Returns in seconds		
+		static time_t GetLastModified(const char* absFolderPath);
 		static std::string FormPath(int n, ...);
 
+		/** Resource Folder
+		The final folder name will be the key.
+			For example if absFolderPath is 'D:/projects/fastbird-engine/EssentialEngineData',
+			EssentialEngineData is the key. After registration, consecutive file open request
+			which has the Key string in the path will be redirected to the abs pass.
+			e.g The request 'EssentialEngineData/shaders/myshader.hlsl' will be redirected
+			to D:/projects/fastbird-engine/EssentialEngineData/shaders/myshader.hlsl'
+		*/
+		static void AddResourceFolder(const char* absFolderPath);
+		static void RemoveResourceFolder(const char* absFolderPath);
+		static const char* GetResourceFolder(const char* key);
+		static bool IsResourceFolder(const char* path);
+		/** Returns a altenative path considering the resource folders.*/
+		static std::string GetResourcePath(const char* originalPath);
+		static std::string GetResourcePathIfPathNotExists(const char* originalPath);
+
+		/** Opens a file considering resource folder.
+		if file exists in 'path' resource folder will not be considered.
+		*/
+		static errno_t OpenResourceFile(FILE** f, const char* path, const char* mode);
+
+		//---------------------------------------------------------------------------
 		enum SharingMode
 		{
 			NoSharing,
@@ -195,6 +231,11 @@ namespace fb{
 			Open(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode);
 			Open(Open&& other) _NOEXCEPT;
 			~Open();
+
+			errno_t Reset(const char* path, const char* mode);
+			errno_t Reset(const char* path, const char* mode, ErrorMode errorMsgMode);
+			errno_t Reset(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode);
+
 			void Close();
 			FILE* Release();
 			errno_t operator()(const char* path, const char* mode);

@@ -61,10 +61,10 @@ VerticalGauge::VerticalGauge()
 	auto mat = mUIObject->GetMaterial();
 	mGaugeColor = Color(1, 1, 1, 1);
 	mBlinkColor = Color(1, 0, 0, 1);
-	mat->SetMaterialParameter(2, mGaugeColor.GetVec4());
-	mat->SetMaterialParameter(3, mBlinkColor.GetVec4());
+	mat->SetShaderParameter(2, mGaugeColor.GetVec4());
+	mat->SetShaderParameter(3, mBlinkColor.GetVec4());
 	// x is lerp.
-	mat->SetMaterialParameter(4, Vec4(0, 0, 0, 0));
+	mat->SetShaderParameter(4, Vec4(0, 0, 0, 0));
 	Vec2 texcoords[4] = {
 		Vec2(0.f, 1.f),
 		Vec2(0.f, 0.f),
@@ -88,7 +88,7 @@ void VerticalGauge::OnStartUpdate(float elapsedTime)
 	if (mBlink)
 	{
 		auto mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameter(3, Vec4(sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+		mat->SetShaderParameter(3, Vec4(sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
 	}
 }
 
@@ -96,14 +96,14 @@ void VerticalGauge::SetPercentage(float p)
 {
 	mPercentage = p;
 	auto mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameter(1, Vec4(mPercentage, mMaximum, 0, 0));
+	mat->SetShaderParameter(1, Vec4(mPercentage, mMaximum, 0, 0));
 }
 
 void VerticalGauge::SetMaximum(float m)
 {
 	mMaximum = m;
 	auto mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameter(1, Vec4(mPercentage, m, 0, 0));
+	mat->SetShaderParameter(1, Vec4(mPercentage, m, 0, 0));
 }
 
 void VerticalGauge::Blink(bool blink)
@@ -112,7 +112,7 @@ void VerticalGauge::Blink(bool blink)
 	if (!blink)
 	{
 		auto mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameter(3, Vec4(0, 0, 0, 0));
+		mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
 	}
 }
 
@@ -120,14 +120,14 @@ void VerticalGauge::SetGaugeColor(const Color& color)
 {
 	mGaugeColor = color;
 	auto mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameter(2, color.GetVec4());
+	mat->SetShaderParameter(2, color.GetVec4());
 }
 
 void VerticalGauge::SetBlinkColor(const Color& color)
 {
 	mBlinkColor = color;
 	auto mat = mUIObject->GetMaterial();
-	mat->SetMaterialParameter(3, color.GetVec4());
+	mat->SetShaderParameter(3, color.GetVec4());
 }
 
 bool VerticalGauge::SetProperty(UIProperty::Enum prop, const char* val)
@@ -360,7 +360,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 		{
 			mMaterialUsingImage = true;
 			mUIObject->SetMaterial("EssentialEngineData/materials/UIVerticalGaugeImage.material");
-			mUIObject->GetMaterial()->SetMaterialParameter(1, Vec4(mPercentage, mMaximum, 0, 0));
+			mUIObject->GetMaterial()->SetShaderParameter(1, Vec4(mPercentage, mMaximum, 0, 0));
 		}
 		mTextures[index] = mTextureAtlas->GetTexture();
 		mAtlasRegions[index] = mTextureAtlas->GetRegion(region);
@@ -370,7 +370,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 		}
 		SAMPLER_DESC sdesc;
 		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-		mUIObject->GetMaterial()->SetTexture(mTextures[index], BINDING_SHADER_PS, index, sdesc);
+		mUIObject->GetMaterial()->SetTexture(mTextures[index], SHADER_TYPE_PS, index, sdesc);
 		if (mAtlasRegions[index])
 		{
 			Vec2 texcoords[4];
@@ -386,7 +386,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 				mUIObject->SetTexCoord(texcoords, 4, 1);
 			float minY = texcoords[1].y;
 			float maxY = texcoords[2].y;
-			mUIObject->GetMaterial()->SetMaterialParameter(2, Vec4(minY, maxY, 0, 0));
+			mUIObject->GetMaterial()->SetShaderParameter(2, Vec4(minY, maxY, 0, 0));
 			DWORD colors[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
 			mUIObject->SetColors(colors, 4);
 		}

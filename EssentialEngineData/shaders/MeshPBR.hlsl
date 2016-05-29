@@ -70,7 +70,7 @@ struct v2p
 	float4 TexShadow : TEXCOORD5;	
 };
 
-v2p meshpbr_VertexShader( in a2v INPUT )
+v2p MeshPBR_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -96,9 +96,9 @@ struct PS_OUT
 	float4 color0 : SV_Target0;
 	float4 color1 : SV_Target1;
 };
-PS_OUT meshpbr_PixelShader(in v2p INPUT) : SV_Target
+PS_OUT MeshPBR_PixelShader(in v2p INPUT) : SV_Target
 #else
-float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
+float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 #endif
 {
 	INPUT.UV.y = 1.0 - INPUT.UV.y;
@@ -147,7 +147,7 @@ float4 meshpbr_PixelShader( in v2p INPUT ) : SV_Target
 	float vdh = saturate( dot(toViewDir, h) );
 	//INPUT.WorldPos.w == current pixel depth
 	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
-	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, specColor, roughness));
+	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, ndl, specColor, roughness));
 	shadedColor +=  ndl2 * lightColor2 * max(float3(0.2f, 0.2f, 0.2f), diffColor);
 	float3 irrad = GetIrrad(float4(normal, 1.0f));
 	shadedColor+=irrad;	

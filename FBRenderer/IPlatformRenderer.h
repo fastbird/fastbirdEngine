@@ -35,13 +35,12 @@
 #include <memory>
 
 namespace fb{
-	class IPlatformShader;	
 	FB_DECLARE_SMART_PTR(IPlatformSamplerState);
 	FB_DECLARE_SMART_PTR(IPlatformRasterizerState);
 	FB_DECLARE_SMART_PTR(IPlatformDepthStencilState);
 	FB_DECLARE_SMART_PTR(IPlatformBlendState);
 	FB_DECLARE_SMART_PTR(IPlatformTexture);
-	FB_DECLARE_SMART_PTR(IPlatformShader);	
+	FB_DECLARE_SMART_PTR(IPlatformShader);		
 	FB_DECLARE_SMART_PTR(IPlatformInputLayout);
 	FB_DECLARE_SMART_PTR(IPlatformIndexBuffer);
 	FB_DECLARE_SMART_PTR(IPlatformVertexBuffer);		
@@ -70,6 +69,7 @@ namespace fb{
 	*/
 	class IPlatformRenderer{
 	public:		
+		virtual void PrepareQuit() = 0;
 		//-------------------------------------------------------------------
 		// Device features
 		//-------------------------------------------------------------------		
@@ -97,17 +97,26 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// Resource creation
 		//-------------------------------------------------------------------
-		virtual void SetShaderCacheOption(bool useShaderCache, bool generateCache) = 0;
-		virtual IPlatformTexturePtr CreateTexture(const char* path, bool async) = 0;
+		virtual void SetShaderCacheOption(bool useShaderCache, bool generateCache) = 0;		
+		virtual IPlatformTexturePtr CreateTexture(const char* path, const TextureCreationOption& option) = 0;
+		// mipLevels 0 for full generated mips.
 		virtual IPlatformTexturePtr CreateTexture(void* data, int width, int height,
-			PIXEL_FORMAT format, BUFFER_USAGE usage, int  buffer_cpu_access,
+			PIXEL_FORMAT format, int mipLevels, BUFFER_USAGE usage, int  buffer_cpu_access,
 			int texture_type) = 0;		
 		virtual IPlatformVertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
 			unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag) = 0;
 		virtual IPlatformIndexBufferPtr CreateIndexBuffer(void* data, unsigned int numIndices,
 			INDEXBUFFER_FORMAT format) = 0;
-		virtual IPlatformShaderPtr CreateShader(const char* path, int shaders,
+		virtual IPlatformShaderPtr CreateVertexShader(const char* path,
 			const SHADER_DEFINES& defines, bool ignoreCache) = 0;
+		virtual IPlatformShaderPtr CreateGeometryShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) = 0;
+		virtual IPlatformShaderPtr CreatePixelShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) = 0;
+		virtual IPlatformShaderPtr CreateComputeShader(const char* path,
+			const SHADER_DEFINES& defines, bool ignoreCache) = 0;
+		virtual IPlatformShaderPtr CompileComputeShader(const char* code, const char* entry,
+			const SHADER_DEFINES& defines) = 0;
 		virtual IPlatformInputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs,
 			void* shaderByteCode, unsigned size) = 0;
 		virtual IPlatformBlendStatePtr CreateBlendState(const BLEND_DESC& desc) = 0;
@@ -121,20 +130,21 @@ namespace fb{
 		//-------------------------------------------------------------------
 		virtual void SetRenderTarget(IPlatformTexturePtr pRenderTargets[], size_t rtViewIndex[], int num,
 			IPlatformTexturePtr pDepthStencil, size_t dsViewIndex) = 0;
+		virtual void SetDepthTarget(IPlatformTexturePtr pDepthStencil, size_t dsViewIndex) = 0;
 		virtual void SetViewports(const Viewport viewports[], int num) = 0;
 		virtual void SetScissorRects(const Rect rects[], int num) = 0;
 		virtual void SetVertexBuffers(unsigned int startSlot, unsigned int numBuffers,
 			IPlatformVertexBuffer const * pVertexBuffers[], unsigned int const strides[], unsigned int offsets[]) = 0;
 		virtual void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) = 0;
-		virtual void SetTextures(IPlatformTexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot) = 0;
+		virtual void SetTextures(IPlatformTexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot) = 0;
 		virtual void UpdateShaderConstants(ShaderConstants::Enum type, const void* data, int size) = 0;		
-		virtual void* MapMaterialParameterBuffer() const = 0;
-		virtual void UnmapMaterialParameterBuffer() const = 0;
+		virtual void* MapShaderConstantsBuffer() const = 0;
+		virtual void UnmapShaderConstantsBuffer() const = 0;
 		virtual void* MapBigBuffer() const = 0;
 		virtual void UnmapBigBuffer() const = 0;
 		virtual void UnbindInputLayout() = 0;
-		virtual void UnbindShader(BINDING_SHADER shader) = 0;
-		virtual void UnbindTexture(BINDING_SHADER shader, int slot) = 0;
+		virtual void UnbindShader(SHADER_TYPE shader) = 0;
+		virtual void UnbindTexture(SHADER_TYPE shader, int slot) = 0;
 		virtual void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz, 
 			IPlatformTexture* src, UINT srcSubresource, Box3D* pBox) = 0;
 
@@ -146,6 +156,7 @@ namespace fb{
 		virtual void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) = 0;		
 		virtual void Clear(Real r, Real g, Real b, Real a, Real z, unsigned char stencil) = 0;
 		virtual void Clear(Real r, Real g, Real b, Real a) = 0;
+		virtual void ClearDepthStencil(Real z, UINT8 stencil) = 0;
 		virtual void ClearState() = 0;		
 		virtual void Present() = 0;
 

@@ -351,7 +351,7 @@ namespace fb
 	}
 
 	bool LuaUtils::ExecuteLua(lua_State* L, const char* chunk){
-		if (!ValidCStringLength(chunk))
+		if (!ValidCString(chunk))
 			return false;
 		if (!L){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid param.");
@@ -369,7 +369,7 @@ namespace fb
 	}
 
 	bool LuaUtils::DoFile(const char* filepath){
-		if (sLuaState){
+		if (sLuaState){			
 			return DoFile(sLuaState, filepath);
 		}
 		Logger::Log(FB_ERROR_LOG_ARG, "Main lua state is not prepared.");
@@ -377,7 +377,8 @@ namespace fb
 	}
 
 	bool LuaUtils::DoFile(lua_State* L, const char* filepath){
-		bool error = luaL_dofile(L, filepath);
+		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
+		bool error = luaL_dofile(L, resourcePath.c_str());
 		if (error)
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Running script(%s) is failed", filepath).c_str());			

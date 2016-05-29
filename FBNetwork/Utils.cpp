@@ -6,6 +6,18 @@
 
 //CURLM *multi_handle;
 namespace fb {
+	void initializeCURL() {
+		auto error = curl_global_init(CURL_GLOBAL_DEFAULT);
+		if (error) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Failed to initialize curl.");
+		}
+		else {
+			Logger::Log(FB_DEFAULT_LOG_ARG, "(INFO) CURL initialized.");
+		}
+	}
+	void uninitializeCURL() {
+		curl_global_cleanup();
+	}
 	URL_FILE *url_fopen(const char *url, const char *operation)
 	{
 		/* this code could check for URLs or types in the 'url' and
@@ -131,6 +143,7 @@ namespace fb {
 			if (want > file->buffer_len - file->buffer_pos) {
 				want = file->buffer_len - file->buffer_pos;
 			}
+			// buffer is not zero terminated.
 			memcpy(ptr, file->buffer + file->buffer_pos, want);
 			file->buffer_pos += want;
 			return want;

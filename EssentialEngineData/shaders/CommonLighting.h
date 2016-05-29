@@ -32,18 +32,19 @@ Texture2D gShadowMap : register(t8);
 Texture2D gGGXMap : register(t9);
 
 void BlinnPhongShading(float3 lightColor, float3 normal, float3 toLight,
-    float3 toView, float3 specularT, out float3 diffuse, out float3 specular)
-{
-    float3 h = normalize(toView + toLight);
-    float ldn= max(dot(toLight, normal), 1e-8);
-	diffuse = lightColor * ldn;
+    float3 toView, float shininess, out float3 diffuse, out float3 specular)
+{ 
+    float ldn= dot(toLight, normal);
+	diffuse = lightColor * saturate(ldn);
+	specular = float3(0, 0, 0);
 	
-    float ndh = max(dot(normal,h), 1e-8);
-    float specularPow = exp2(specularT*11.0 + 2.0);
-    float specularNorm = (specularPow+8.0) / 8.0;    
-    specular = lightColor * (specularNorm * pow(ndh, specularPow) * 0.04 * ldn);
+	float3 h = normalize(toView + toLight);
+	float ndh = dot(normal,h);
+	float specularTerm = pow(saturate(ndh), shininess);
+	//float specularPow = exp2(specularT*11.0 + 2.0);
+	//float specularNorm = (specularPow+8.0) / 8.0;    
+	specular = lightColor * specularTerm;	
 }
-
 
 // Specular F
 // referenct :  http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
@@ -84,19 +85,20 @@ float NewVisibility(float ldh, float alpha){
 	float k = alpha * 0.5;
 	float k2 = k*k;
 	float invK2 = 1.0f - k2;
-	return 0, rcp(ldh*ldh*invK2 + k2);
+	float vis = rcp(ldh*ldh*invK2 + k2);
+	return vis;
 }
 
 float Pow4(float v){
 	return v*v*v*v;
 }
 // Cook-Torrance microfacet specular shading model
-float3 CookTorrance(float vdh, float ndh, float3 Ks, float roughness)
+float3 CookTorrance(float vdh, float ndh, float ndl, float3 Ks, float roughness)
 {	
 	float D = gGGXMap.Sample(gLinearSampler, float2(Pow4(ndh), roughness)).x;
 	float2 fvHelper = gGGXMap.Sample(gLinearSampler, float2(vdh, roughness)).yz;
 	float3 FV = Ks*fvHelper.x + (1.0 - Ks)*fvHelper.y;
-	float3 specular = D * FV * 0.25;
+	float3 specular = D * FV * ndl * 0.2;
 	return specular;
 	
 // reference : http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
@@ -128,7 +130,8 @@ vec3 ImportanceSampleLambert(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal)
 {
 	float cosT = sqrt(hamOffset.y);
 	float sinT = sqrt(1.0 - hamOffset.y);
-	float phi = 2.0*PI*hamOffset.x;
+	float phi = TWO_PI * hamOffset.x;	
+
 	return (sinT*cos(phi)) * tan + (sinT*sin(phi)) * bi + cosT * normal;
 }
 
@@ -167,7 +170,7 @@ float ProbabilityGGX(float ndh, float vdh, float Roughness)
 
 float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float3 diffColor, float3 specColor)
 {
-	float3 envContrib = {0, 0, 0};
+	float3 envContrib = {0, 0, 0};	
 #ifdef ENV_TEXTURE
 	vec3 Tp = normalize(tangent	- normal*dot(tangent, normal)); // local tangent
 	vec3 Bp = normalize(cross(tangent, normal));
@@ -175,7 +178,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 	static float2 hammersley[16] = (float2[16])gHammersley;
 	for(int i=0; i<ENV_SAMPLES; ++i)
 	{
-		vec2 Xi = hammersley[i];
+		vec2 Xi = hammersley[i];		
 		vec3 Sd = ImportanceSampleLambert(Xi,Tp,Bp,normal);
 		float pdfD = ProbabilityLambert(Sd, normal);
 		float lodD = ComputeLOD(Sd, pdfD);	
@@ -197,7 +200,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 		float vdh = saturate(dot(toViewDir, Hn));
 		float ndh = saturate(dot(normal, Hn));
 		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln, ProbabilityGGX(ndh, vdh, roughness));
-		envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
+		//envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
 	}
 
 	envContrib /= ENV_SAMPLES;

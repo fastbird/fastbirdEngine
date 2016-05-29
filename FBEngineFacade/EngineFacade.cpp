@@ -45,7 +45,8 @@
 #include "FBSceneManager/DirectionalLight.h"
 #include "FBSceneObjectFactory/SceneObjectFactory.h"
 #include "FBSceneObjectFactory/SkySphere.h"
-#include "FBThreadLib/TaskScheduler.h"
+#include "FBThread/TaskScheduler.h"
+#include "FBThread/Invoker.h"
 #include "FBConsole/Console.h"
 #include "FBInputManager/InputManager.h"
 #include "FBFileMonitor/FileMonitor.h"
@@ -71,6 +72,7 @@ public:
 	// Engine Objects
 	ConsolePtr mConsole;
 	TaskSchedulerPtr mTaskSchedular;
+	InvokerPtr mInvoker;
 	InputManagerPtr mInputManager;
 	RendererPtr mRenderer;
 	SceneManagerPtr mSceneManager;
@@ -106,10 +108,24 @@ public:
 		FileSystem::BackupFile("_Global.log", 5, "Backup_Log");
 		Logger::InitGlobalLog("_Global.log");
 		mL = LuaUtils::OpenLuaState();
-		InitEngineLua();
+		auto durDir = FileSystem::GetCurrentDir();
+		InitEngineLua();		
+		LuaObject resourcePaths(mL, "resourcePath");
+		if (resourcePaths.IsValid()) {
+			auto it = resourcePaths.GetSequenceIterator();
+			LuaObject path;
+			while (it.GetNext(path)) {
+				auto strPath = path.GetString();
+				if (!strPath.empty()) {
+					FileSystem::AddResourceFolder(strPath.c_str());
+				}
+			}
+		}
+		LuaUtils::DoFile("EssentialEngineData/scripts/ConstKeys.lua");
 		mInputManager = InputManager::Create();
 		mConsole = Console::Create();
 		mTaskSchedular = TaskScheduler::Create(6);
+		mInvoker = Invoker::Create();
 		
 		mSceneManager = SceneManager::Create();
 		if (!mSceneManager){
@@ -158,6 +174,18 @@ public:
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mParticleSystem);
 		mFileMonitor->StartMonitor(".");
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mSelfPtr.lock());
+
+		LuaObject resourcePaths(mL, "resourcePath");
+		if (resourcePaths.IsValid()) {
+			auto it = resourcePaths.GetSequenceIterator();
+			LuaObject path;
+			while (it.GetNext(path)) {
+				auto strPath = path.GetString();
+				if (!strPath.empty()) {
+					mFileMonitor->StartMonitor(strPath.c_str());						
+				}
+			}
+		}
 	}
 
 	HWindowId CreateEngineWindow(int x, int y, int width, int height, const char* wndClass, 
@@ -374,7 +402,8 @@ public:
 		mInputManager->Update();
 	}
 
-	void Update(TIME_PRECISION dt){		
+	void Update(TIME_PRECISION dt){	
+		mInvoker->Start();
 		mConsole->Update();
 		mSceneManager->Update(dt);
 		mSceneObjectFactory->Update(dt);
@@ -386,6 +415,7 @@ public:
 		}
 		mMusicPlayer->Update(dt);
 		mAudioManager->Update(dt);
+		mInvoker->End();
 	}
 
 	void EndInput(){
@@ -431,7 +461,7 @@ public:
 	}
 
 	void GetFractureMeshObjects(const char* daeFilePath, std::vector<MeshFacadePtr>& objects){
-		if (!ValidCStringLength(daeFilePath))
+		if (!ValidCString(daeFilePath))
 			return;
 
 		objects.clear();
@@ -494,6 +524,15 @@ public:
 		}
 		auto light = mMainScene->GetDirectionalLight(idx);
 		return light->GetDirection();
+	}
+
+	void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir) {
+		if (!mMainScene) {
+			Logger::Log(FB_ERROR_LOG_ARG, "No main scene found");
+			return;
+		}
+		auto light = mMainScene->GetDirectionalLight(idx);
+		return light->SetDirection(dir);
 	}
 
 	const Vec3& GetLightDiffuse(DirectionalLightIndex::Enum idx){
@@ -684,6 +723,14 @@ void EngineFacade::OnBeforeRenderingOpaques(IScene* scene, const RenderParam& re
 
 }
 
+void EngineFacade::OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {
+
+}
+
+void EngineFacade::OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {
+
+}
+
 void EngineFacade::OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut){
 	mImpl->mGeometryRenderer->Render(renderParam, renderParamOut);
 }
@@ -821,6 +868,10 @@ const Vec3& EngineFacade::GetLightDirection(DirectionalLightIndex::Enum idx){
 	return mImpl->GetLightDirection(idx);
 }
 
+void EngineFacade::SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir) {
+	mImpl->SetLightDirection(idx, dir);
+}
+
 const Vec3& EngineFacade::GetLightDiffuse(DirectionalLightIndex::Enum idx){
 	return mImpl->GetLightDiffuse(idx);
 }
@@ -870,12 +921,12 @@ void EngineFacade::DrawProfileResult(wchar_t* buf, const char* posVarName, int t
 	Renderer::GetInstance().QueueDrawText(pos, buf, Color::White);
 }
 
-void* EngineFacade::MapMaterialParameterBuffer(){
-	return Renderer::GetInstance().MapMaterialParameterBuffer();
+void* EngineFacade::MapShaderConstantsBuffer(){
+	return Renderer::GetInstance().MapShaderConstantsBuffer();
 }
 
-void EngineFacade::UnmapMaterialParameterBuffer(){
-	Renderer::GetInstance().UnmapMaterialParameterBuffer();
+void EngineFacade::UnmapShaderConstantsBuffer(){
+	Renderer::GetInstance().UnmapShaderConstantsBuffer();
 }
 
 void* EngineFacade::MapBigBuffer(){
@@ -912,7 +963,7 @@ void EngineFacade::SetFontTextureAtlas(const char* path){
 
 void EngineFacade::SetEnvironmentMap(const char* path){
 	auto& renderer = Renderer::GetInstance();
-	auto texture = renderer.CreateTexture(path);
+	auto texture = renderer.CreateTexture(path, {});
 	Renderer::GetInstance().SetEnvironmentTexture(texture);
 }
 
@@ -1073,6 +1124,10 @@ void EngineFacade::AddRendererObserver(int rendererObserverType, IRendererObserv
 	Renderer::GetInstance().AddObserver(rendererObserverType, observer);
 }
 
+void EngineFacade::RemoveRendererObserver(int rendererObserverType, IRendererObserverPtr observer) {
+	Renderer::GetInstance().RemoveObserver(rendererObserverType, observer);
+}
+
 void EngineFacade::AddFileChangeObserver(int fileChangeObserverType, IFileChangeObserverPtr observer){
 	FileMonitor::GetInstance().AddObserver(fileChangeObserverType, observer);
 }
@@ -1195,7 +1250,7 @@ RenderTargetPtr EngineFacade::CreateRenderTarget(const RenderTargetParamEx& para
 			scene->SetRttScene(true);
 		}
 		if (!param.mEnvironmentTexture.empty()){
-			rt->SetEnvTexture(Renderer::GetInstance().CreateTexture(param.mEnvironmentTexture.c_str()));
+			rt->SetEnvTexture(Renderer::GetInstance().CreateTexture(param.mEnvironmentTexture.c_str(), {}));
 		}
 		return rt;
 	}
@@ -1242,12 +1297,29 @@ void EngineFacade::IgnoreMonitoringDirectory(const char* dir)
 	mImpl->mFileMonitor->IgnoreDirectory(dir);
 }
 
-void EngineFacade::StopAllParticles(){
-	mImpl->mParticleSystem->StopParticles();
+const TaskSchedulerPtr& EngineFacade::GetTaskSchedular() const
+{
+	return mImpl->mTaskSchedular;
 }
 
-void EngineFacade::AddTask(TaskPtr NewTask){
+const InvokerPtr& EngineFacade::GetInvoker() const
+{
+	return mImpl->mInvoker;
+}
+
+void EngineFacade::AddTask(TaskPtr NewTask) {
 	mImpl->mTaskSchedular->AddTask(NewTask);
+}
+
+void EngineFacade::PrepareQuit() {
+	mImpl->mTaskSchedular->PrepareQuit();
+	mImpl->mInvoker->PrepareQuit();
+	FileSystem::_PrepareQuit();
+	mImpl->mRenderer->PrepareQuit();
+}
+
+void EngineFacade::StopAllParticles(){
+	mImpl->mParticleSystem->StopParticles();
 }
 
 AudioId EngineFacade::PlayAudio(const char* filepath){

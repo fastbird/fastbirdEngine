@@ -860,7 +860,7 @@ public:
 	}
 
 	CVarPtr GetVariable(const char* name) const{
-		if (!ValidCStringLength(name)){
+		if (!ValidCString(name)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid param.");
 			return 0;
 		}

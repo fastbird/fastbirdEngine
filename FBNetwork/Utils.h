@@ -25,6 +25,8 @@ namespace fb {
 
 	typedef struct fcurl_data URL_FILE;
 
+	void initializeCURL();
+	void uninitializeCURL();
 	URL_FILE *url_fopen(const char *url, const char *operation);
 	void url_fclose(URL_FILE *file);
 	size_t header_callback(char *buffer, size_t size,

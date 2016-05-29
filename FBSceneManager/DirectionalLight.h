@@ -63,7 +63,7 @@ namespace fb
 
 		void PrepareInterpolation(Real destTheta, Real destPhi, Real destIntensity, const Vec3& destDiffuse, Real time);
 		void AddInterpolTime(Real time);
-		const Vec3& GetInterpolDir(unsigned target) const;
+		Vec3 GetInterpolDir(unsigned target) const;
 		Real GetInterpolIntensity(unsigned target) const;
 		const Vec3& GetInterpolDiffuse(unsigned target) const;
 		Real GetTheta() const;

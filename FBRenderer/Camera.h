@@ -52,10 +52,12 @@ namespace fb
 		};
 
 		static CameraPtr Create();
+
 		Camera(const Camera& other);
 		~Camera();
 		Camera& operator= (const Camera& other);
 
+		CameraPtr Clone();
 		void SetMainCamera(bool main);
 		bool IsMainCamera() const;
 		//-------------------------------------------------------------------------
@@ -75,12 +77,12 @@ namespace fb
 		const Mat44& GetMatrix(MatrixType type);
 		
 		// vertical field of view, in radians.
-		void SetFOV(Real fov);
-		Real GetFOV() const;
+		void SetFOV(Real fov) OVERRIDE;
+		Real GetFOV() const OVERRIDE;
+		Real GetAspectRatio() const OVERRIDE;
 		Real GetTanHalfFOV() const;
 		// width / height
-		void SetAspectRatio(Real ar);
-		Real GetAspectRatio() const;
+		void SetAspectRatio(Real ar);		
 		// near/far view-plane
 		void SetNearFar(Real nearPlane, Real farPlane);
 		void GetNearFar(Real& nearPlane, Real& farPlane) const;
@@ -96,11 +98,13 @@ namespace fb
 		void SetOrthogonalData(float left, float top, float right, float bottom);
 		void SetName(const char* name);
 		const char* GetName() const;
-		void Update();
+		void RefreshTransform();
+		void Update(float dt);
+
 		bool IsCulled(BoundingVolume* pBV) const;
 		Ray ScreenPosToRay(long x, long y);
 		Vec3 ScreenToNDC(const Vec2I& screenPos);
-		Vec2I WorldToScreen(const Vec3& worldPos) const;
+		Vec2I WorldToScreen(const Vec3& worldPos);
 		void SetYZSwap(bool enable);
 		void SetDistanceFromTarget(Real dist);
 		void SetTarget(ISpatialObjectPtr pObj);
@@ -112,6 +116,8 @@ namespace fb
 		void SetEnalbeInput(bool enable);
 		void SetInitialDistToTarget(Real dist);
 		void SetMaxDistToTarget(Real dist);
+		void SetMinDistToTarget(Real dist);
+		void SetProportionalMove(bool enable);
 		void ProcessInputData();
 		const Frustum& GetFrustum();
 		const Frustum& GetFrustumLocal();
@@ -119,6 +125,9 @@ namespace fb
 		void SetOverridingCamera(CameraPtr cam);
 		CameraPtr GetOverridingCamera() const;
 		Real ComputePixelSizeAtDistance(Real distance);
+		void SetRenderFrustum(bool renderFrustum);
+		bool GetRenderFrustum() const;
+		void RenderFrustum();		
 
 		//-------------------------------------------------------------------
 		// InputConsumer From Renderer

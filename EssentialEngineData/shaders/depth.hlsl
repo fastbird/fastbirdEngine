@@ -40,7 +40,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p depth_VertexShader( in a2v IN )
+v2p Depth_VertexShader( in a2v IN )
 {
     v2p OUT;
 
@@ -63,7 +63,7 @@ v2p depth_VertexShader( in a2v IN )
 	return OUT;
 };
 
-float4 depth_PixelShader( in v2p IN ) : SV_Target
+float4 Depth_PixelShader( in v2p IN ) : SV_Target
 {
 	float depth = (IN.viewPos.y- gNearFar.x) /(gNearFar.y - gNearFar.x) ; // before y-z swapping. so y is depth.
 

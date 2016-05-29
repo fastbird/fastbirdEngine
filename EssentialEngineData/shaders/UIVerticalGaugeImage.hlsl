@@ -54,7 +54,7 @@ struct v2p
 	float2 uvNotFilled		: TEXCOORD1;
 };
 
-v2p uiverticalgaugeimage_VertexShader( in a2v INPUT )
+v2p UIVerticalGaugeImage_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 	OUTPUT.Position = INPUT.Position;
@@ -67,13 +67,13 @@ v2p uiverticalgaugeimage_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 uiverticalgaugeimage_PixelShader( in v2p INPUT ) : SV_Target
+float4 UIVerticalGaugeImage_PixelShader( in v2p INPUT ) : SV_Target
 {	
-	float minY = gMaterialParam[2].x;
-	float maxY = gMaterialParam[2].y;
+	float minY = gShaderParams[2].x;
+	float maxY = gShaderParams[2].y;
 	// 0~1 range.
 	float curY = 1 - (INPUT.uvFilled.y - minY) / (maxY - minY);
-	float percent = gMaterialParam[1].x / gMaterialParam[1].y;
+	float percent = gShaderParams[1].x / gShaderParams[1].y;
 	
 	if (curY > percent)
 	{	

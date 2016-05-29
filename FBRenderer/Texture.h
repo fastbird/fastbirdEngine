@@ -29,6 +29,7 @@
 #include "RendererEnums.h"
 #include "RendererStructs.h"
 namespace fb{
+	class ColorRamp;
 	FB_DECLARE_SMART_PTR(IPlatformTexture);
 	FB_DECLARE_SMART_PTR(Texture);
 	/** Texture.
@@ -72,8 +73,8 @@ namespace fb{
 		size_t GetTextureID() const;
 		const char* GetFilePath() const;		
 		void SetFilePath(const char* path);
-		void SetType(TEXTURE_TYPE type);
-		TEXTURE_TYPE GetType() const;
+		void SetType(int texture_type);
+		int GetType() const;
 		int GetWidth() const;
 		int GetHeight() const;
 		Vec2I GetSize();
@@ -81,15 +82,19 @@ namespace fb{
 		void SetDebugName(const char* name);
 
 		bool IsReady() const;
-		void Bind(BINDING_SHADER shader, int slot);
+		void Bind(SHADER_TYPE shader, int slot);
 		void Unbind();
 		MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag);
 		void Unmap(UINT subResource);
+		TexturePtr CopyToStaging();
 		void CopyToStaging(TexturePtr dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ,
 			UINT srcSubresource, Box3D* srcBox);
 		void SaveToFile(const char* filename);
 		void GenerateMips();
 		void SetPlatformTexture(IPlatformTexturePtr platformTexture);
 		IPlatformTexturePtr GetPlatformTexture() const;
+		bool GetMipGenerated() const;
+		size_t GetSizeInBytes() const;
+		bool UpdateColorRamp(ColorRamp& data, float noiseStrength);
 	};
 }

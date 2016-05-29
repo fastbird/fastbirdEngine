@@ -56,7 +56,7 @@ struct g2p
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2g billboardquad_VertexShader(in a2v INPUT)
+v2g BillboardQuad_VertexShader(in a2v INPUT)
 {
 	v2g OUTPUT;
 	OUTPUT.ViewPosition = mul(gView, float4(INPUT.Position, 1));
@@ -85,7 +85,7 @@ float2x2 GetMatRot(float rot)
 	return float2x2(c, -s, s, c);
 }
 [maxvertexcount(4)]
-void billboardquad_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
+void BillboardQuad_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 {
 	g2p OUTPUT;
 	for (int i=0; i<4; i++)
@@ -112,7 +112,7 @@ void billboardquad_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> 
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 Texture2D gDiffuseTexture : register(t0);
-float4 billboardquad_PixelShader(in g2p INPUT) : SV_Target
+float4 BillboardQuad_PixelShader(in g2p INPUT) : SV_Target
 {
 	return float4(1, 1, 1, 1);
 }

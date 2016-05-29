@@ -39,7 +39,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p depthonly_VertexShader( in a2v IN )
+v2p DepthOnly_VertexShader( in a2v IN )
 {
     v2p OUT;
 
@@ -48,7 +48,7 @@ v2p depthonly_VertexShader( in a2v IN )
 	return OUT;
 };
 
-float4 depthonly_PixelShader( in v2p IN ) : SV_Target
+float4 DepthOnly_PixelShader( in v2p IN ) : SV_Target
 {
 	return float4(0, 0, 0, 0);
 }

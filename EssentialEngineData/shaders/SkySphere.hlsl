@@ -26,7 +26,7 @@
 */
 
 //----------------------------------------------------------------------------
-// File: skySphere.hlsl
+// File: SkySphere.hlsl
 //----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ struct v2p
 //----------------------------------------------------------------------------
 // VertexShader
 //----------------------------------------------------------------------------
-v2p skysphere_VertexShader(in a2v INPUT)
+v2p SkySphere_VertexShader(in a2v INPUT)
 {
 	v2p OUTPUT;
 	float4 pos = float4(INPUT.Position, 1.0);
@@ -87,7 +87,7 @@ float2 SphericalCoord2(float3 dir)
 //----------------------------------------------------------------------------
 // PIXEL shader
 //----------------------------------------------------------------------------
-float4 skysphere_PixelShader(in v2p INPUT) : SV_Target
+float4 SkySphere_PixelShader(in v2p INPUT) : SV_Target
 {
 	float3 dir =normalize(INPUT.WorldDir);
 	float3 starColor = {0, 0, 0};

@@ -105,8 +105,8 @@
     <ProjectReference Include="..\FBStringLib\FBStringLib.vcxproj">
       <Project>{97920097-3e86-410d-8d98-a2ecad02a35f}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\FBThreadLib\FBThread.vcxproj">
-      <Project>{e75ca1ab-a39c-4f51-9e89-625fc6cb6913}</Project>
+    <ProjectReference Include="..\FBThread\FBThread.vcxproj">
+      <Project>{1582ac48-8338-476d-82f9-673ed6ef0f2e}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -26,7 +26,7 @@
 */
 
 //--------------------------------------------------------------------------------------
-// File: ui.hlsl
+// File: UI.hlsl
 //--------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------
@@ -67,14 +67,14 @@ struct v2p
 #endif
 };
 
-v2p ui_VertexShader( in a2v INPUT )
+v2p UI_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
 	OUTPUT.Position = INPUT.Position;
 #if defined(DIFFUSE_TEXTURE) || defined(_ALPHA_TEXTURE)
 	#ifdef _UV_ROT
-		float2 center = gMaterialParam[0].xy;
+		float2 center = gShaderParams[0].xy;
 		float theta = gTime;
 		float c = cos(theta);
 		float s = sin(theta);
@@ -96,14 +96,14 @@ v2p ui_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 ui_PixelShader( in v2p INPUT ) : SV_Target
+float4 UI_PixelShader( in v2p INPUT ) : SV_Target
 {	
 #ifdef DIFFUSE_TEXTURE
 	#ifdef _USE_LINEAR_SAMPLER
 	float4 color = gDiffuseTexture.Sample(gLinearBlackBorderSampler, INPUT.UV);
 	#else
 	float4 color = gDiffuseTexture.Sample(gPointBlackBorderSampler, INPUT.UV);
-	#endif	
+	#endif
 	
 	#if defined(_SEPERATED_BACKGROUND)
 	color.rgb = lerp(gDiffuseColor.rgb, color.rgb, color.a);
@@ -125,7 +125,7 @@ float4 ui_PixelShader( in v2p INPUT ) : SV_Target
 
 	color.rgb += gAmbientColor.xyz;
 	color.rgb *= gSpecularColor.xyz;
-	color.a *= gMaterialParam[4].w;
+	color.a *= gShaderParams[4].w;
 	
 #if defined(_ALPHA_TEXTURE)
 #if defined(_ALPHA_TEXTURE_SEPERATED_UV)

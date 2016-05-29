@@ -44,6 +44,11 @@ std::string File::Absolute() const {
 	return ret;
 }
 
+bool File::IsAbsolute() const
+{
+	return mImpl->mPath.is_absolute();
+}
+
 bool File::IsDir() const {
 	return boost::filesystem::is_directory(mImpl->mPath);
 }
@@ -101,25 +106,6 @@ time_t File::LastModified() const {
 	return boost::filesystem::last_write_time(mImpl->mPath);
 }
 
-std::unique_ptr<char[]> File::LoadBinary(size_t& size) const {
-	if (!Exists())
-		return{};
-
-	FileSystem::Open file(mImpl->mStrPath.c_str(), "rb");	
-	auto err = file.Error();
-	if (err) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Cannot read(%s)", mImpl->mStrPath.c_str());
-		return{};
-	}
-	fseek(file, 0, SEEK_END);
-	auto lSize = ftell(file);
-	size = lSize;
-	rewind(file);
-	std::unique_ptr<char[]> buffer(new char[lSize]);
-	auto result = fread(buffer.get(), 1, lSize, file);
-	if (result != lSize) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Wrong bytes.");		
-		return{};
-	}	
-	return buffer;
+ByteArray File::ReadBinary() const {
+	return FileSystem::ReadBinaryFile(mImpl->mStrPath.c_str());
 }

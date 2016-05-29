@@ -29,5 +29,6 @@
 #include "IUnknownDeleter.h"
 using namespace fb;
 void IUnknownDeleter::operator()(IUnknown* p){
-	p->Release();
+	if (p)
+		p->Release();
 }

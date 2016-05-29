@@ -42,6 +42,7 @@ Plugin: \b FBRendererD3D11
 #define FB_DLL_LUA __declspec(dllimport)
 #define FB_DLL_SCENEMANAGER __declspec(dllimport)
 #define FB_DLL_CONSOLE __declspec(dllimport)
+#define FB_DLL_THREAD __declspec(dllimport)
 #else
 #define FB_DLL_TIMER
 #endif
@@ -60,6 +61,8 @@ Plugin: \b FBRendererD3D11
 #include <cstdarg>
 #include <mutex>
 #include <regex>
+#include <array>
+#include <unordered_map>
 
 #include "FBMemoryManagerLib/MemoryManager.h"
 #include "FBDebugLib/Logger.h"

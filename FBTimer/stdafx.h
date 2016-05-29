@@ -31,3 +31,5 @@
 #else
 #define FB_DLL_TIMER
 #endif
+
+#include <atomic>

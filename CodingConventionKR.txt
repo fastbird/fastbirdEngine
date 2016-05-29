@@ -1,0 +1,59 @@
+fastbird engine 코딩 규칙
+
+1.
+클래스의 멤버변수 이름에는 m을 붙인다.
+멤버변수에 m을 붙이는 이유는 멤버함수 내에서 지역변수와 멤버변수의 혼동을 막기 위함.
+클래스의 멤버변수는 멤버함수들보다 위에 선언한다. 어떤 함수(동작)들이 있는지를 아는 것보다 어떤 데이터(변수)들이 있는지 아는 것이 코드를 분석하는데 유리하기 때문이다.
+class A{
+	int mIntVar; // m을 붙인다. 액세스 지정자가 없으면 기본 private이다.(구조체는 public)
+	
+public:
+	void DoSometing();	// 함수를 변수보다 아래에 선언한다.
+}
+
+멤버함수가 없는 클래스나 구조체의 멤버변수 이름에는 m을 생략한다. 
+멤버변수에 m을 붙이는 이유가 멤버함수 내에서 지역변수와 멤버변수의 혼동을 막기 위함인데 멤버함수가 없다면 굳이 m을 붙일 필요가 없다.
+struct CreateTextureOption {
+	bool async; // 이름에 m을 생략한다.
+	bool generateMip;
+}
+
+2. 
+글로벌 변수 이름에는 g나 s를 붙인다.
+g는 현재 트랜슬레이션 유닛(.cpp 파일) 이외의 장소에서도 참조되는 글로벌 변수에 붙인다.
+s는 현재 트랜슬레이션 유닛 내에서만 사용되는 변수에 붙인다.
+
+timer.h
+extern TimerPtr gTimer;
+
+renderer.cpp
+TimerPtr gTimer; // 다른 .cpp파일에서도 사용되는 글로벌 변수
+std::vector<TextureWeakPtr> sTextures; // 현재 .cpp 파일에서만 사용되는 변수.
+
+3.
+보통의 경우 중괄호는 같은 라인에 쓴다.
+class A { //중괄호를 같은 라인에 쓴다.
+public:
+	void DoSomething() { //중괄호를 같은 라인에 쓴다.
+		bool cond = true;
+		if(cond) { //중괄호를 같은 라인에 쓴다.
+			std::cout << "hello";
+		}
+	}	
+}
+
+하지만 함수 정의 구문이 길어서 여러 줄에 작성될 경우와 생성자의 초기화 리스트 다음에는 중괄호를 내려 쓴다.
+void SomeLongNameFunction(unsigned int a, unsigned long long b,
+	SomeClass C, bool k)
+{ // 중괄호를 내려서 쓴다.	
+}
+
+Texture::Texture()
+	: mWidth(0)
+	, mHeight(0)
+	, mFormat(PIXEL_FORMAT_R8G8B8A8)
+{ // 중괄호를 내려서 쓴다.
+}
+
+
+

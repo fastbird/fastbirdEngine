@@ -144,10 +144,10 @@ public:
 		return 0;
 	}
 
-	void SetMaterialParameter(unsigned idx, const Vec4& value){
+	void SetShaderParameter(unsigned idx, const Vec4& value){
 		auto material = GetMaterial();
 		if (material){
-			material->SetMaterialParameter(idx, value);
+			material->SetShaderParameter(idx, value);
 		}
 	}
 
@@ -814,8 +814,8 @@ MaterialPtr MeshFacade::GetMaterial() const {
 	return mImpl->GetMaterial();
 }
 
-void MeshFacade::SetMaterialParameter(unsigned idx, const Vec4& value){
-	return mImpl->SetMaterialParameter(idx, value);
+void MeshFacade::SetShaderParameter(unsigned idx, const Vec4& value){
+	return mImpl->SetShaderParameter(idx, value);
 }
 
 void MeshFacade::SetMaterial(MaterialPtr material) {

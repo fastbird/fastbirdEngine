@@ -43,7 +43,7 @@ struct QuadVS_Output
 //---------------------------------------------------------------------------
 // PS
 //---------------------------------------------------------------------------
-float4 copyps_PixelShader(QuadVS_Output Input
+float4 CopyPS_PixelShader(QuadVS_Output Input
 #ifdef _MULTI_SAMPLE
 ,uint sampleIndex : SV_SampleIndex
 #endif

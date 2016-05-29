@@ -31,6 +31,7 @@
 #include <Windows.h>
 #define FB_DLL_FILEMONITOR __declspec(dllexport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
+#define FB_DLL_THREAD __declspec(dllimport)
 #else
 #endif
 
@@ -39,7 +40,7 @@
 #include <algorithm>
 
 #include "FBCommonHeaders/Types.h"
-#include "FBThreadLib/threads.h"
+#include "FBThread/threads.h"
 #include "FBDebugLib/DebugLib.h"
 #include "FBStringLib/StringLib.h"
 #include "FBFileSystem/FileSystem.h"

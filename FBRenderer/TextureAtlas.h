@@ -63,6 +63,8 @@ namespace fb{
 
 		TextureAtlasRegionPtr AddRegion(const char* name);
 		TextureAtlasRegionPtr GetRegion(const char* name);
+		TextureAtlasRegionPtr GetRegion(size_t index);
+		size_t GetNumRegions() const;
 		void SetTexture(TexturePtr texture);
 		TexturePtr GetTexture() const;
 		void SetPath(const char* path);		

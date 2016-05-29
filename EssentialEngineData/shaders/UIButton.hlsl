@@ -54,7 +54,7 @@ struct v2p
 	float2 UV		: TEXCOORD;
 };
 
-v2p uibutton_VertexShader( in a2v INPUT )
+v2p UIButton_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -67,23 +67,23 @@ v2p uibutton_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 uibutton_PixelShader( in v2p INPUT ) : SV_Target
+float4 UIButton_PixelShader( in v2p INPUT ) : SV_Target
 {
-	float ratio = gMaterialParam[0].x;
-	float width = gMaterialParam[0].y;
-	float height = gMaterialParam[0].z;
+	float ratio = gShaderParams[0].x;
+	float width = gShaderParams[0].y;
+	float height = gShaderParams[0].z;
 	
 	float2 uv = abs(INPUT.UV*2.0-1.0);
 	
-	// gMaterialParam[1] is edge color
+	// gShaderParams[1] is edge color
 #ifdef BUTTON_EDGE
 	if (uv.x > 1.0-(2.0/width)){
 		return float4(1, 1, 1, 1);
-		return gMaterialParam[1];
+		return gShaderParams[1];
 	}
 	if (uv.y> 1.0-(2.0/height)){
 		return float4(1, 1, 1, 1);
-		return gMaterialParam[1];
+		return gShaderParams[1];
 	}
 #endif		
 

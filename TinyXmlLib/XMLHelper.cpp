@@ -106,7 +106,7 @@ namespace fb {
 		auto e = elem;
 		for (auto s : sp) {
 			auto ce = e->GetDocument()->NewElement(s.c_str());
-			e->InsertFirstChild(ce);
+			e->InsertEndChild(ce);
 			e = ce;
 		}
 		return e;

@@ -45,17 +45,17 @@ static const float  NUM_SAMPLES = 16.0;
 //---------------------------------------------------------------------------
 // PS
 //---------------------------------------------------------------------------
-float4 godrayps_PixelShader(QuadVS_Output Input
+float4 GodRayPS_PixelShader(QuadVS_Output Input
 #ifdef _MULTI_SAMPLE
 	, uint sampleIndex : SV_SampleIndex
 #endif
 	) : SV_TARGET
 {
-	float2 screenlightPos = gMaterialParam[0].xy;
-	float Density = gMaterialParam[0].z;
-	float Decay = gMaterialParam[0].w;
-	float Weight = gMaterialParam[1].x;
-	float Exposure = gMaterialParam[1].y;
+	float2 screenlightPos = gShaderParams[0].xy;
+	float Density = gShaderParams[0].z;
+	float Decay = gShaderParams[0].w;
+	float Weight = gShaderParams[1].x;
+	float Exposure = gShaderParams[1].y;
 	float2 texCoord = Input.Tex;
 	// Calculate vector from pixel to light source in screen space.  
 	float2 deltaTexCoord = (texCoord - screenlightPos);

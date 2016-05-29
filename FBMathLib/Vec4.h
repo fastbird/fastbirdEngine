@@ -76,6 +76,8 @@ namespace fb
 		Vec3 ToVec3() const;
 	};
 
+	void write(std::ostream& stream, const Vec4& data);
+	void read(std::istream& stream, Vec4& data);
 #if defined(FB_DOUBLE_PRECISION)
 	class Vec4f{
 	public:

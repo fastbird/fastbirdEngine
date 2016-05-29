@@ -21,7 +21,8 @@ public:
 
 		std::vector<AudioManager::AudioDebugData> list;
 		am.GetAudioList(list);
-		auto texture = renderer.CreateTexture("EssentialEngineData/textures/audio.png", false);
+		auto texture = renderer.CreateTexture("EssentialEngineData/textures/audio.png", 
+			TextureCreationOption{false, false});
 		unsigned numWaiting = 0;
 		unsigned numPlaying = 0;
 		unsigned numDropping = 0;

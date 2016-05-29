@@ -29,11 +29,15 @@
 #include "Texture.h"
 #include "Renderer.h"
 #include "IPlatformTexture.h"
+#include "FBThread/AsyncObjects.h"
+#include "FBMathLib/ColorRamp.h"
 #include "FBCommonHeaders/VectorMap.h"
 
 namespace fb{
 static std::vector<TextureWeakPtr> sAllTextures;
+FB_READ_WRITE_CS sAllTexturesLock;
 TexturePtr GetTextureFromExistings(IPlatformTexturePtr platformShader) {
+	READ_LOCK lock(sAllTexturesLock);
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end(); /**/){
 		IteratingWeakContainer(sAllTextures, it, texture);
 		if (texture->GetPlatformTexture() == platformShader){
@@ -44,8 +48,8 @@ TexturePtr GetTextureFromExistings(IPlatformTexturePtr platformShader) {
 }
 
 size_t Texture::sNextTextureID = 0;
-static VectorMap< BINDING_SHADER, VectorMap<int, TextureWeakPtr> > sBindedTextures;
-void SetBindedTexture(BINDING_SHADER shader, int startSlot, TexturePtr pTextures[], int num){
+static VectorMap< SHADER_TYPE, VectorMap<int, TextureWeakPtr> > sBindedTextures;
+void SetBindedTexture(SHADER_TYPE shader, int startSlot, TexturePtr pTextures[], int num){
 	auto& shaderCategory = sBindedTextures[shader];
 	int count = 0;
 	for (int i = startSlot; i < startSlot + num; ++i){
@@ -53,21 +57,21 @@ void SetBindedTexture(BINDING_SHADER shader, int startSlot, TexturePtr pTextures
 	}
 }
 
-std::vector< std::pair<BINDING_SHADER, int> > FindSlotInfo(TexturePtr texture){
-	std::vector< std::pair<BINDING_SHADER, int> > result;
+std::vector< std::pair<SHADER_TYPE, int> > FindSlotInfo(TexturePtr texture){
+	std::vector< std::pair<SHADER_TYPE, int> > result;
 	static int bindingShaders[] = {
-		BINDING_SHADER_VS,
-		BINDING_SHADER_HS,
-		BINDING_SHADER_DS,
-		BINDING_SHADER_GS,
-		BINDING_SHADER_PS,
-		BINDING_SHADER_CS
+		SHADER_TYPE_VS,
+		SHADER_TYPE_HS,
+		SHADER_TYPE_DS,
+		SHADER_TYPE_GS,
+		SHADER_TYPE_PS,
+		SHADER_TYPE_CS
 	};
 	for (int shader = 0; shader < ARRAYCOUNT(bindingShaders); ++shader){
-		auto& shaderCategory = sBindedTextures[(BINDING_SHADER)bindingShaders[shader]];
+		auto& shaderCategory = sBindedTextures[(SHADER_TYPE)bindingShaders[shader]];
 		for (auto it = shaderCategory.begin(); it != shaderCategory.end(); ++it){
 			if (it->second.lock() == texture){
-				result.push_back(std::make_pair((BINDING_SHADER)bindingShaders[shader], it->first));
+				result.push_back(std::make_pair((SHADER_TYPE)bindingShaders[shader], it->first));
 			}
 		}
 	}
@@ -80,7 +84,7 @@ public:
 	unsigned mTextureID;
 	IPlatformTexturePtr mPlatformTexture;	
 	std::string mFilePath;
-	TEXTURE_TYPE mType;
+	int mType;
 	//---------------------------------------------------------------------------
 	Impl()
 		: mTextureID(sNextTextureID++)
@@ -99,11 +103,11 @@ public:
 			mFilePath.clear();
 	}
 
-	void SetType(TEXTURE_TYPE type){
-		mType = type;
+	void SetType(int texture_type){
+		mType = texture_type;
 	}
 
-	TEXTURE_TYPE GetType() const{
+	int GetType() const{
 		return mType;
 	}
 
@@ -131,7 +135,7 @@ public:
 		return mPlatformTexture->IsReady();
 	}
 
-	void Bind(BINDING_SHADER shader, int slot) const{
+	void Bind(SHADER_TYPE shader, int slot) const{
 		sBindedTextures[shader][slot] = mSelf.lock();
 		mPlatformTexture->Bind(shader, slot);
 	}
@@ -149,6 +153,15 @@ public:
 
 	void Unmap(UINT subResource) const{
 		return mPlatformTexture->Unmap(subResource);
+	}
+
+	TexturePtr CopyToStaging() {
+		auto staging = Renderer::GetInstance().CreateTexture(0, GetWidth(), GetHeight(), GetFormat(),
+			1, BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+		if (!staging)
+			return nullptr;
+		mPlatformTexture->CopyToStaging(staging->GetPlatformTexture().get());
+		return staging;
 	}
 
 	void CopyToStaging(TexturePtr dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ, 
@@ -172,18 +185,48 @@ public:
 	IPlatformTexturePtr GetPlatformTexture() const{
 		return mPlatformTexture;
 	}
+
+	size_t GetSizeInBytes() const {
+		return mPlatformTexture->GetSizeInBytes();
+	}
+
+	bool UpdateColorRamp(ColorRamp& data, float noiseStrength) {
+		if (!(mType & TEXTURE_TYPE_COLOR_RAMP)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "This texture is not a color ramp texture.");
+			return false;
+		}
+		MapData dest= Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (dest.pData)
+		{
+			auto width = GetWidth();
+			// bar position is already updated. generate ramp texture data.
+			data.GenerateColorRampTextureData(width, noiseStrength);
+			unsigned int *pixels = (unsigned int*)dest.pData;
+			for (int x = 0; x < width; x++)
+			{
+				pixels[x] = data[x].Get4Byte();
+			}
+			Unmap(0);
+		}		
+		return true;
+	}
 };
 
 //---------------------------------------------------------------------------
 TexturePtr Texture::Create(){
 	auto p = TexturePtr(FB_NEW(Texture), [](Texture* obj){ FB_DELETE(obj); });
-	sAllTextures.push_back(p);
+	
+	{
+		WRITE_LOCK lock(sAllTexturesLock);
+		sAllTextures.push_back(p);
+	}
 	p->mImpl->mSelf = p;
 	return p;
 }
 
 void Texture::ReloadTexture(const char* file){
 	auto& renderer = Renderer::GetInstance();
+	WRITE_LOCK lock(sAllTexturesLock);
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end(); /**/){
 		IteratingWeakContainer(sAllTextures, it, texture);
 		if (strcmp(texture->GetFilePath(), file)==0){
@@ -197,6 +240,7 @@ Texture::Texture()
 }
 
 Texture::~Texture(){
+	WRITE_LOCK lock(sAllTexturesLock);
 	auto itEnd = sAllTextures.end();
 	for (auto it = sAllTextures.begin(); it != itEnd; it++){
 		if (it->expired()){
@@ -223,12 +267,12 @@ void Texture::SetFilePath(const char* filepath){
 	mImpl->SetFilePath(filepath);
 }
 
-void Texture::SetType(TEXTURE_TYPE type)
+void Texture::SetType(int texture_type)
 {
-	mImpl->SetType(type);
+	mImpl->SetType(texture_type);
 }
 
-TEXTURE_TYPE Texture::GetType() const{
+int Texture::GetType() const{
 	return mImpl->GetType();
 }
 
@@ -256,7 +300,7 @@ bool Texture::IsReady() const{
 	return mImpl->IsReady();
 }
 
-void Texture::Bind(BINDING_SHADER shader, int slot){
+void Texture::Bind(SHADER_TYPE shader, int slot){
 	mImpl->Bind(shader, slot);
 }
 
@@ -271,6 +315,10 @@ MapData Texture::Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag)
 void Texture::Unmap(UINT subResource)
 {
 	mImpl->Unmap(subResource);
+}
+
+TexturePtr Texture::CopyToStaging() {
+	return mImpl->CopyToStaging();
 }
 
 void Texture::CopyToStaging(TexturePtr dst, UINT dstSubresource, UINT dstX, UINT dstY, UINT dstZ,
@@ -292,6 +340,18 @@ void Texture::SetPlatformTexture(IPlatformTexturePtr platformTexture){
 
 IPlatformTexturePtr Texture::GetPlatformTexture() const{
 	return mImpl->GetPlatformTexture();
+}
+
+bool Texture::GetMipGenerated() const {
+	return mImpl->mPlatformTexture->GetMipGenerated();
+}
+
+size_t Texture::GetSizeInBytes() const {
+	return mImpl->GetSizeInBytes();
+}
+
+bool Texture::UpdateColorRamp(ColorRamp& data, float noiseStrength) {
+	return mImpl->UpdateColorRamp(data, noiseStrength);
 }
 
 }

@@ -17,5 +17,7 @@
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Iterator.h" />
     <ClInclude Include="GenericNotifier.h" />
+    <ClInclude Include="QuadNode.h" />
+    <ClInclude Include="LockQueue.h" />
   </ItemGroup>
 </Project>

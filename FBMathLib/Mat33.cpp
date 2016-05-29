@@ -214,18 +214,23 @@ void Mat33::SetColumn(int index, const Vec3& v)
 	m[2][index] = v.z;
 }
 
-void Mat33::write(std::ostream& stream) const{
-	for (int row = 0; row < 3; ++row){
-		for (int col = 0; col < 3; ++col){
-			stream.write((char*)&m[row][col], sizeof(Real));
-		}
-	}
+bool Mat33::IsSymmetric() const {
+	return m[0][1] == m[1][0] && m[0][2] == m[2][0] && m[1][2] == m[2][1];
 }
 
-void Mat33::read(std::istream& stream){
-	for (int row = 0; row < 3; ++row){
-		for (int col = 0; col < 3; ++col){
-			stream.read((char*)&m[row][col], sizeof(Real));
+namespace fb {
+	void write(std::ostream& stream, const Mat33& data) {
+		for (int row = 0; row < 3; ++row) {
+			for (int col = 0; col < 3; ++col) {
+				stream.write((char*)&data.m[row][col], sizeof(Real));
+			}
+		}
+	}
+	void read(std::istream& stream, Mat33& data) {
+		for (int row = 0; row < 3; ++row) {
+			for (int col = 0; col < 3; ++col) {
+				stream.read((char*)&data.m[row][col], sizeof(Real));
+			}
 		}
 	}
 }

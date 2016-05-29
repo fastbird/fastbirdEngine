@@ -57,7 +57,7 @@ struct v2p
 #endif
 };
 
-v2p mesh_VertexShader( in a2v INPUT )
+v2p Mesh_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -74,7 +74,7 @@ v2p mesh_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 mesh_PixelShader( in v2p INPUT ) : SV_Target
+float4 Mesh_PixelShader( in v2p INPUT ) : SV_Target
 {	
 	// Diffuse Light
 	float3 diffuse = 0;

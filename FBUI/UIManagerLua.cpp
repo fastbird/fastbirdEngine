@@ -167,6 +167,7 @@ namespace fb
 	int SetCheckRadioBox(lua_State* L);
 	
 	int GetComponentFinalPos(lua_State* L);
+	int SetEnableUIRenderTarget(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -174,6 +175,7 @@ namespace fb
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetEnableUIRenderTarget);
 		LUA_SETCFUNCTION(mL, GetComponentFinalPos);
 		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
 		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
@@ -2122,6 +2124,17 @@ namespace fb
 			luaU_push<Vec2ITuple>(L, winbase->GetFinalPos().ToTuple());
 			return 1;
 		}
+		return 0;
+	}
+
+	int SetEnableUIRenderTarget(lua_State* L) {
+		auto ui = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		auto img = std::dynamic_pointer_cast<ImageBox>(UIManager::GetInstance().FindComp(ui, comp));
+		if (img) {
+			bool enable = LuaUtils::toboolean(L, 3);
+			img->SetEnableRenderTarget(enable);				
+		}		
 		return 0;
 	}
 }

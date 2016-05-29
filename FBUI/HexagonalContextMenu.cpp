@@ -190,7 +190,7 @@ namespace fb
 				wnSize.x, wnSize.y);
 			param[2] = Vec4(wnPos.x, wnPos.y, 0.0f, 0.0f);
 			for (int i = 1; i < 4; ++i)
-				mat->SetMaterialParameter(i, param[i-1]);
+				mat->SetShaderParameter(i, param[i-1]);
 		}
 	}
 

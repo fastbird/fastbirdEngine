@@ -25,9 +25,10 @@
  -----------------------------------------------------------------------------
 */
 
-#include "EssentialEngineData/shaders/ShaderCommon.h"
 #ifndef __SHADER_CONSTANTS_H_
 #define __SHADER_CONSTANTS_H_
+#include "EssentialEngineData/shaders/ShaderCommon.h"
+
 #ifdef CPP
 #pragma once
 namespace fb {
@@ -63,14 +64,26 @@ cbuffer MATERIAL_CONSTANTS
 	float4 gDiffuseColor;
 	float4 gSpecularColor;
 	float4 gEmissiveColor;
+
+#ifdef CPP
+	bool operator != (const MATERIAL_CONSTANTS& other) const {
+		return gAmbientColor != other.gAmbientColor ||
+			gDiffuseColor != other.gDiffuseColor ||
+			gSpecularColor != other.gSpecularColor ||
+			gEmissiveColor != other.gEmissiveColor;
+	}
+	bool operator == (const MATERIAL_CONSTANTS& other) const {
+		return !operator!=(other);
+	}
+#endif
 };
 
-cbuffer MATERIAL_PARAMETERS
+cbuffer SHADER_CONSTANTS
 #ifndef CPP
 	: register (b3)
 #endif
 {
-	float4 gMaterialParam[5];
+	float4 gShaderParams[5];
 };
 
 cbuffer RARE_CONSTANTS
@@ -93,7 +106,7 @@ cbuffer BIG_BUFFER
 	float4 gSampleWeights[16];
 };
 
-cbuffer IMMUTABLE_CONSTANTS
+cbuffer RAD_CONSTANTS
 #ifndef CPP
 	: register (b6)
 #endif
@@ -175,6 +188,17 @@ cbuffer SHADOW_CONSTANTS
 	float4 gCascadeScale[8];
 };
 	
+#define TABSIZE 256
+#define TABMASK (TABSIZE-1)
+
+cbuffer IMMUTABLE_CONSTANTS
+#ifndef CPP
+	: register (b12)
+#endif
+{
+	float4 gEmpty;	
+};
+
 #ifdef CPP
 } // namespace
 #endif

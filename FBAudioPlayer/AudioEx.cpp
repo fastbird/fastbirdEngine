@@ -98,7 +98,7 @@ public:
 	}
 	
 	void SetAudioExFile(const char* audioEx){
-		if (!ValidCStringLength(audioEx)){
+		if (!ValidCString(audioEx)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}

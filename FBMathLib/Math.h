@@ -45,6 +45,7 @@
 #include "Rect.h"
 #include "Mat44.h"
 #include "Color.h"
+#include "Length.h"
 
 namespace fb
 {
@@ -110,6 +111,8 @@ namespace fb
 		return a * (1.0f-lp) + b * lp;
 	}
 
+	Color Saturate(const Color& a);
+	Color Saturate(const Color& a);
 	Color Lerp(const Color& a, const Color& b, Real lp);
 
 	Quat Slerp(Quat qa, Quat qb, Real t);
@@ -193,6 +196,10 @@ namespace fb
 	void CalcRatio(int src[], float dest[], int num);
 	void CalcRatio(const std::vector<float>& src, std::vector<float>& dest);
 	std::vector<Vec3> ComputePrincipalAxes(const Real* coordinates, int numElem, int stride);
+	Vec3 ComputeAveragePoint(const Real* coordinates, int numElem, int stride);
+	Mat33 ComputeCovarianceOfVertices(const Real* coordinates, int numElem, int stride);
+	void ComputeEigenSystemFromSymmetricMatrix(const Mat33& matrix, double outEigenvalues[3],
+		Vec3d outEigenvectors[3]);
 	/**
 	* Calculates a discriminant.  b squared minus 4ac
 	* < 0 : no roots
@@ -202,4 +209,6 @@ namespace fb
 	Real Discriminant(Real a, Real b, Real c);
 	std::pair<Vec3, Vec3> ComputeExtrema(const Vec3* points, int numElem);
 	std::pair<Vec3, Vec3> ComputeExtrema(const Real* points, int numElem);
+
+	bool MultipliesOfFour(int val);
 }

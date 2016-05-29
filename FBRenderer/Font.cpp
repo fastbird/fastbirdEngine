@@ -176,7 +176,7 @@ public:
 	}
 
 	int Init(const char *fontFile) {
-		if (!ValidCStringLength(fontFile))
+		if (!ValidCString(fontFile))
 			return -1;
 		if (mInitialized)
 			return 0;
@@ -213,8 +213,8 @@ public:
 		assert(mVertexBuffer);
 
 		// init shader
-		mShader = renderer.CreateShader("EssentialEngineData/shaders/font.hlsl", 
-			BINDING_SHADER_VS | BINDING_SHADER_PS, SHADER_DEFINES());
+		mShader = renderer.CreateShader("EssentialEngineData/shaders/Font.hlsl", 
+			SHADER_TYPE_VS | SHADER_TYPE_PS, SHADER_DEFINES());
 		mInputLayout = renderer.GetInputLayout(
 			DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD_BLENDINDICES, mShader);		
 
@@ -568,7 +568,7 @@ public:
 			return;
 
 		auto& renderer = Renderer::GetInstance();
-		mPages[page]->Bind(BINDING_SHADER_PS, 0);
+		mPages[page]->Bind(SHADER_TYPE_PS, 0);
 		MapData data = mVertexBuffer->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
 		FontVertex* pDest = (FontVertex*)data.pData;
 		memcpy(pDest + mVertexLocation, pVertices + mVertexLocation,
@@ -814,7 +814,7 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		renderer.GetResourceProvider()->BindBlendState(ResourceTypes::BlendStates::AlphaBlend);
 		//renderer.GetResourceProvider()->BindRasterizerState(ResourceTypes::RasterizerStates::Default);
-		mShader->Bind();		
+		mShader->Bind(true);		
 		mInputLayout->Bind();
 	}
 
@@ -1200,7 +1200,7 @@ void FontLoader::LoadPage(int id, const char *pageFile, const std::string& fontF
 	// Load the font textures
 	str += pageFile;
 	auto& renderer = Renderer::GetInstance();
-	font->mImpl->mPages[id] = renderer.CreateTexture(str.c_str(), true);
+	font->mImpl->mPages[id] = renderer.CreateTexture(str.c_str(), TextureCreationOption{});
 	if (font->mImpl->mPages[id] == 0)
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load font page '%s'", str.c_str()).c_str());
 }

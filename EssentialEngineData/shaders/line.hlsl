@@ -51,7 +51,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p line_VertexShader( in a2v IN )
+v2p Line_VertexShader( in a2v IN )
 {
     v2p OUT;
 
@@ -64,7 +64,7 @@ v2p line_VertexShader( in a2v IN )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 line_PixelShader( in v2p IN ) : SV_Target
+float4 Line_PixelShader( in v2p IN ) : SV_Target
 {
 	return IN.color;
 }

@@ -94,9 +94,18 @@ namespace fb{
 		}
 		else
 		{
-			Logger::Log(FB_DEFAULT_LOG_ARG, "region name(%s) is not found", name);
+			Logger::Log(FB_DEFAULT_LOG_ARG, 
+				FormatString("region name(%s) is not found", name).c_str());
 			return 0;
 		}
+	}
+
+	TextureAtlasRegionPtr TextureAtlas::GetRegion(size_t index) {
+		return (mRegions.begin() + index)->second;
+	}
+
+	size_t TextureAtlas::GetNumRegions() const {
+		return mRegions.size();
 	}
 	
 	void TextureAtlas::SetTexture(TexturePtr texture){
@@ -108,7 +117,7 @@ namespace fb{
 	}
 
 	void TextureAtlas::SetPath(const char* path){
-		if (!ValidCStringLength(path)){
+		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
@@ -141,7 +150,9 @@ namespace fb{
 		const char* szBuffer = pRoot->Attribute("file");
 		TexturePtr texture;
 		if (szBuffer) {
-			mTexture = renderer.CreateTexture(szBuffer, true);
+			TextureCreationOption option;
+			option.generateMip = false;
+			mTexture = renderer.CreateTexture(szBuffer, option);
 			if (!mTexture)
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Texture %s not found.", szBuffer).c_str());

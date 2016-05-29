@@ -36,7 +36,11 @@ namespace fb{
 				GGX,
 				ToneMap,
 				LuminanceMap,
-				Last = LuminanceMap,
+				Permutation_256_Extended,
+				Gradiants_256_Extended,
+				ValueNoise,
+				
+				Last = ValueNoise,
 			};
 		}
 
@@ -50,6 +54,9 @@ namespace fb{
 				DepthWriteVSPS,
 				DepthOnlyVSPS,
 				CloudDepthWriteVSPS,
+
+				LineVSPS,
+				PointVSGSPS,
 				
 				SampleLumInitialPS,
 				SampleLumIterativePS,
@@ -85,8 +92,9 @@ namespace fb{
 				Quad,
 				QuadTextured,
 				BillboardQuad,
+				Frustum,
 
-				Last = BillboardQuad,
+				Last = Frustum,
 			};
 		}
 
@@ -94,11 +102,12 @@ namespace fb{
 			enum Enum{
 				Default,
 				CullFrontFace,
+				NoCull,
 				OneBiased,
 				WireFrame,		
 				ShadowMapRS,
 
-				Last = WireFrame,
+				Last = ShadowMapRS,
 			};
 		}
 
@@ -129,11 +138,13 @@ namespace fb{
 				NoDepthStencil,
 				NoDepthWrite_LessEqual,
 				LessEqual,
+				Greater,
+				IncrementalStencilOpaqueIf,
 			};
 		}
 
 		namespace SamplerStates{
-			enum Enum{
+			enum Enum {
 				Point,
 				Linear,
 				Anisotropic,
@@ -147,5 +158,11 @@ namespace fb{
 				Num = Last + 1,
 			};
 		}
+
+		enum class IndexBuffer {
+			Frustum,
+			
+			Last = Frustum,
+		};
 	}
 }

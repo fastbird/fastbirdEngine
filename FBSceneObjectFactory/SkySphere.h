@@ -29,6 +29,7 @@
 #include "FBCommonHeaders/platform.h"
 #include "FBSceneManager/SceneObject.h"
 namespace fb{
+	FB_DECLARE_SMART_PTR(ISceneObserver);
 	FB_DECLARE_SMART_PTR(Material);
 	FB_DECLARE_SMART_PTR(SkySphere);
 	class FB_DLL_SCENEOBJECTFACTORY SkySphere : public SceneObject{
@@ -53,6 +54,7 @@ namespace fb{
 		void SetGeometry(const char* path);
 		MaterialPtr GetMaterial(int pass = 0) const;
 		void UpdateEnvironmentMap(const Vec3& origin);
+		void SetEnvironmentUpdaterListener(ISceneObserverPtr observer);
 		void SetInterpolationData(unsigned index, const Vec4& data);
 		void StartInterpolation(float time);
 		void PrepareInterpolation(float time, SkySpherePtr startFrom);

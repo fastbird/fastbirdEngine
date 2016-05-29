@@ -54,12 +54,12 @@ namespace fb
 		mGaugeColor = Color(1, 1, 1, 1);
 		mBlinkColor = Color(1, 1, 0, 1);
 		mGaugeBorderColor = Color(0.5f, 0.5f, 0.5f, 0.5f);
-		mat->SetMaterialParameter(1, mGaugeColor.GetVec4());
-		mat->SetMaterialParameter(2, mBlinkColor.GetVec4());
+		mat->SetShaderParameter(1, mGaugeColor.GetVec4());
+		mat->SetShaderParameter(2, mBlinkColor.GetVec4());
 		mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
 
 		// x is lerp.
-		mat->SetMaterialParameter(3, Vec4(0, 0, 0, 0));
+		mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
 		Vec2 texcoords[4] = {
 			Vec2(0.f, 1.f),
 			Vec2(0.f, 0.f),
@@ -67,7 +67,7 @@ namespace fb
 			Vec2(1.f, 0.f)
 		};
 		mUIObject->SetTexCoord(texcoords, 4);
-		mat->SetMaterialParameter(4, Vec4(mPercentage, mMaximum, 0, 0));
+		mat->SetShaderParameter(4, Vec4(mPercentage, mMaximum, 0, 0));
 	}
 
 	HorizontalGauge::~HorizontalGauge()
@@ -85,7 +85,7 @@ namespace fb
 		if (mBlink && mBlinkTime > 0)
 		{
 			auto mat = mUIObject->GetMaterial();
-			mat->SetMaterialParameter(3, Vec4(sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+			mat->SetShaderParameter(3, Vec4(sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
 			mBlinkTime -= elapsedTime;
 			if (mBlinkTime <= 0){
 				Blink(false);
@@ -104,13 +104,13 @@ namespace fb
 		Vec4 val = mat->GetMaterialParameter(4);
 		val.x = p;
 		val.y = mMaximum;
-		mat->SetMaterialParameter(4, val);
+		mat->SetShaderParameter(4, val);
 
 		if (mGaugeColorEmptySet)
 		{
 			auto mat = mUIObject->GetMaterial();
 			Color c= Lerp(mGaugeColorEmpty, mGaugeColor, p);
-			mat->SetMaterialParameter(1, c.GetVec4());
+			mat->SetShaderParameter(1, c.GetVec4());
 		}
 	}
 
@@ -121,7 +121,7 @@ namespace fb
 		
 		Vec4 val = mat->GetMaterialParameter(4);
 		val.y = mMaximum;
-		mat->SetMaterialParameter(4, val);
+		mat->SetShaderParameter(4, val);
 	}
 
 	void HorizontalGauge::Blink(bool blink)
@@ -132,7 +132,7 @@ namespace fb
 		mBlink = blink;
 		if (!blink){
 			auto mat = mUIObject->GetMaterial();
-			mat->SetMaterialParameter(3, Vec4(0, 0, 0, 0));
+			mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
 			mBlinkTime = 0;
 		}
 		else{
@@ -151,7 +151,7 @@ namespace fb
 		if (!blink)
 		{
 			auto mat = mUIObject->GetMaterial();
-			mat->SetMaterialParameter(3, Vec4(0, 0, 0, 0));
+			mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
 			mBlinkTime = 0;
 		}
 
@@ -161,7 +161,7 @@ namespace fb
 	{
 		mGaugeColor = color;
 		auto mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameter(1, color.GetVec4());
+		mat->SetShaderParameter(1, color.GetVec4());
 	}
 
 	const Color& HorizontalGauge::GetGaugeColor() const
@@ -179,7 +179,7 @@ namespace fb
 	{
 		mBlinkColor = color;
 		auto mat = mUIObject->GetMaterial();
-		mat->SetMaterialParameter(2, color.GetVec4());
+		mat->SetShaderParameter(2, color.GetVec4());
 	}
 
 	const Color& HorizontalGauge::GetBlinkColor() const

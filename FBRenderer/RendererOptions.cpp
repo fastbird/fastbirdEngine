@@ -32,6 +32,7 @@
 #include "ResourceProvider.h"
 #include "RenderTarget.h"
 #include "FBStringLib/StringConverter.h"
+#include "Camera.h"
 using namespace fb;
 
 RendererOptionsPtr RendererOptions::Create(){
@@ -173,6 +174,9 @@ RendererOptions::RendererOptions(){
 	r_debugDraw = Console::GetInstance().GetIntVariable("r_debugDraw", 1);
 	FB_REGISTER_CVAR(r_debugDraw, r_debugDraw, CVAR_CATEGORY_CLIENT, "Debug draw");
 
+	r_debugCam = Console::GetInstance().GetIntVariable("r_debugCam", 0);
+	FB_REGISTER_CVAR(r_debugCam, r_debugCam, CVAR_CATEGORY_CLIENT, "r_debugCam");
+
 	r_gameId = Console::GetInstance().GetIntVariable("r_gameId", 0);
 	FB_REGISTER_CVAR(r_gameId, r_gameId, CVAR_CATEGORY_CLIENT, "Draw game id");
 
@@ -184,6 +188,12 @@ RendererOptions::RendererOptions(){
 
 	r_noText = Console::GetInstance().GetIntVariable("r_noText", 0);
 	FB_REGISTER_CVAR(r_noText, r_noText, CVAR_CATEGORY_CLIENT, "r_noText");
+
+	r_renderFrustum = Console::GetInstance().GetIntVariable("r_renderFrustum", 0);
+	FB_REGISTER_CVAR(r_renderFrustum, r_renderFrustum, CVAR_CATEGORY_CLIENT, "r_renderFrustum");
+
+	r_renderAxis = Console::GetInstance().GetIntVariable("r_renderAxis", 0);
+	FB_REGISTER_CVAR(r_renderAxis, r_renderAxis, CVAR_CATEGORY_CLIENT, "r_renderAxis");
 }
 
 RendererOptions::~RendererOptions(){
@@ -247,6 +257,21 @@ bool RendererOptions::OnChangeCVar(CVarPtr pCVar){
 	else if (strcmp(pCVar->mName.c_str(), "r_fullscreen") == 0){
 		auto fullscreen = pCVar->GetInt();
 		Renderer::GetInstance().ChangeFullscreenMode(fullscreen);
+	}
+	else if (strcmp(pCVar->mName.c_str(), "r_renderfrustum") == 0) {
+		auto renderFrustum = pCVar->GetInt();
+		auto& renderer = Renderer::GetInstance();
+		auto cam = renderer.GetMainCamera();
+		if (renderFrustum) {			
+			auto overriding = cam->Clone();
+			cam->SetOverridingCamera(overriding);
+			cam->SetRenderFrustum(true);
+			overriding->SetFar(cam->GetFar() * 1.2f);
+		}
+		else {
+			cam->SetOverridingCamera(nullptr);
+			cam->SetRenderFrustum(false);
+		}
 	}
 
 	return false;

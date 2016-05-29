@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "Math.h"
+#include "Vec3d.h"
 
 namespace fb
 {
@@ -389,6 +390,13 @@ namespace fb
 	Vec2I GetNextMultipleOfFour(const Vec2I value)
 	{
 		return Vec2I(GetNextMultipleOfFour(value.x), GetNextMultipleOfFour(value.y));
+	}
+	Real Saturate(Real v) {
+		return ClampRet(v, 0.f, 1.f);
+	}
+
+	Color Saturate(const Color& a) {
+		return Color(Saturate(a.r()), Saturate(a.g()), Saturate(a.b()), Saturate(a.a()));
 	}
 
 	Color Lerp(const Color& a, const Color& b, Real lp) {
@@ -980,18 +988,18 @@ namespace fb
 			return ret;
 		}
 		
-		auto covariance = Mat44::FromCovarianceOfVertices(coordinates, numelem, stride);
+		auto covariance = ComputeCovarianceOfVertices(coordinates, numelem, stride);
 
 		// Compute the eigenvalues and eigenvectors of the covariance matrix. Since the covariance matrix is symmetric
 		// by definition, we can safely use the method Matrix.computeEigensystemFromSymmetricMatrix3().
-		Real eigenValues[3];
-		Vec3 eigenVectors[3];
-		Mat44::ComputeEigensystemFromSymmetricMatrix3(covariance, eigenValues, eigenVectors);
+		double eigenValues[3];
+		Vec3d eigenVectors[3];
+		ComputeEigenSystemFromSymmetricMatrix(covariance, eigenValues, eigenVectors);
 
 		// Compute an index array who's entries define the order in which the eigenValues array can be sorted in
 		// ascending order.
 		int indexArray[] = { 0, 1, 2 };
-		std::sort(indexArray, indexArray + 2, [&eigenValues](int a, int b) {
+		std::sort(indexArray, indexArray+3, [&eigenValues](int a, int b) {
 			return eigenValues[a] < eigenValues[b];
 		});
 
@@ -1001,10 +1009,213 @@ namespace fb
 		// the least prominent.		
 		return 
 		{
-			eigenVectors[indexArray[2]].NormalizeCopy(),
-			eigenVectors[indexArray[1]].NormalizeCopy(),
-			eigenVectors[indexArray[0]].NormalizeCopy()
+			Vec3(eigenVectors[indexArray[2]].NormalizeCopy()),
+			Vec3(eigenVectors[indexArray[1]].NormalizeCopy()),
+			Vec3(eigenVectors[indexArray[0]].NormalizeCopy())
 		};
+	}
+
+	Vec3 ComputeAveragePoint(const Real* coordinates, int numElem, int stride)
+	{
+		if (stride < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return Vec3::ZERO;
+		}
+
+		int count = 0;
+		double x = 0;
+		double y = 0;
+		double z = 0;
+		for (int i = 0; i < numElem; i += stride)
+		{
+			count++;
+			x += coordinates[i];
+			y += coordinates[i + 1];
+			z += coordinates[i + 2];
+		}
+
+		if (count == 0)
+			return Vec3::ZERO;
+		double invCount = 1. / count;
+		return Vec3(Real(x * invCount), Real(y * invCount), Real(z * invCount));
+	}
+
+	/**
+	* Computes a symmetric covariance Matrix from the x, y, z coordinates.
+	* layout:
+	* C(x, x)  C(x, y)  C(x, z)
+	* C(x, y)  C(y, y)  C(y, z)
+	* C(x, z)  C(y, z)  C(z, z)
+	*
+	*/
+	Mat33 ComputeCovarianceOfVertices(const Real* coordinates, int numElem, int stride)
+	{
+		if (stride < 3)
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return Mat33::IDENTITY;
+		}
+
+		Vec3 mean = ComputeAveragePoint(coordinates, numElem, stride);
+
+		int count = 0;
+		double c11 = 0;
+		double c22 = 0;
+		double c33 = 0;
+		double c12 = 0;
+		double c13 = 0;
+		double c23 = 0;
+		// dyad product
+		for (int i = 0; i < numElem ; i += stride)
+		{
+			Vec3d p{ coordinates[i], coordinates[i + 1], coordinates[i + 2] };
+			auto diff = p - mean;
+			c11 += diff.x * diff.x;
+			c12 += diff.x * diff.y; // c12 = c21
+			c13 += diff.x * diff.z; // c13 = c31
+
+			c22 += diff.y * diff.y;
+			c23 += diff.y * diff.z; // c23 = c32
+
+			c33 += diff.z * diff.z;
+
+			count++;
+		}
+
+		if (count == 0)
+			return Mat33::IDENTITY;
+
+		double invCount = 1. / count;
+		return Mat33(
+			Real(c11 *invCount), Real(c12 *invCount), Real(c13 *invCount),
+			Real(c12 *invCount), Real(c22 *invCount), Real(c23 *invCount),
+			Real(c13 *invCount), Real(c23 *invCount), Real(c33 *invCount));
+	}
+
+	void ComputeEigenSystemFromSymmetricMatrix(const Mat33& matrix, double outEigenvalues[3],
+		Vec3d outEigenvectors[3])
+	{
+		if (!matrix.IsSymmetric())
+		{
+			Logger::Log(FB_ERROR_LOG_ARG, "Matrix is not symmetric.");
+			return;
+		}
+
+		// Take from "Mathematics for 3D Game Programming and Computer Graphics, Second Edition" by Eric Lengyel,
+		// Listing 14.6 (pages 441-444).
+		const double EPSILON = 1.0e-10;
+		const int MAX_SWEEPS = 32;
+
+		// Since the Matrix is symmetric, m12=m21, m13=m31, and m23=m32. Therefore we can ignore the values m21, m31,
+		// and m32.
+		double m11 = matrix.m[0][0];
+		double m12 = matrix.m[0][1];
+		double m13 = matrix.m[0][2];
+		double m22 = matrix.m[1][1];
+		double m23 = matrix.m[1][2];
+		double m33 = matrix.m[2][2];
+
+		double r[3][3] = {};
+		r[0][0] = r[1][1] = r[2][2] = 1;
+		for (int a = 0; a < MAX_SWEEPS; a++)
+		{
+			// Exit if off-diagonal entries small enough
+			if ((std::abs(m12) < EPSILON) && (std::abs(m13) < EPSILON) && (std::abs(m23) < EPSILON))
+				break;
+
+			// Annihilate (1,2) entry
+			if (m12 != 0.)
+			{
+				double u = (m22 - m11) * 0.5 / m12;
+				double u2 = u * u;
+				double u2p1 = u2 + 1.0;
+				double t = (u2p1 != u2) ?
+					((u < 0.) ? -1.0 : 1.0) * (sqrt(u2p1) - std::abs(u))
+					: 0.5 / u;
+				double c = 1. / sqrt(t * t + 1.0);
+				double s = c * t;
+
+				m11 -= t * m12;
+				m22 += t * m12;
+				m12 = 0.;
+
+				double temp = c * m13 - s * m23;
+				m23 = s * m13 + c * m23;
+				m13 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][0] - s * r[i][1];
+					r[i][1] = s * r[i][0] + c * r[i][1];
+					r[i][0] = temp;
+				}
+			}
+
+			// Annihilate (1,3) entry
+			if (m13 != 0.)
+			{
+				double u = (m33 - m11) * 0.5 / m13;
+				double u2 = u * u;
+				double u2p1 = u2 + 1.0;
+				double t = (u2p1 != u2) ?
+					((u < 0.0) ? -1.0 : 1.0) * (sqrt(u2p1) - std::abs(u))
+					: 0.5 / u;
+				double c = 1. / sqrt(t * t + 1.);
+				double s = c * t;
+
+				m11 -= t * m13;
+				m33 += t * m13;
+				m13 = 0.;
+
+				double temp = c * m12 - s * m23;
+				m23 = s * m12 + c * m23;
+				m12 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][0] - s * r[i][2];
+					r[i][2] = s * r[i][0] + c * r[i][2];
+					r[i][0] = temp;
+				}
+			}
+
+			// Annihilate (2,3) entry
+			if (m23 != 0.)
+			{
+				double u = (m33 - m22) * 0.5 / m23;
+				double u2 = u * u;
+				double u2p1 = u2 + 1.;
+				double t = (u2p1 != u2) ?
+					((u < 0.) ? -1. : 1.) * (sqrt(u2p1) - std::abs(u))
+					: 0.5 / u;
+				double c = 1. / sqrt(t * t + 1.);
+				double s = c * t;
+
+				m22 -= t * m23;
+				m33 += t * m23;
+				m23 = 0.;
+
+				double temp = c * m12 - s * m13;
+				m13 = s * m12 + c * m13;
+				m12 = temp;
+
+				for (int i = 0; i < 3; i++)
+				{
+					temp = c * r[i][1] - s * r[i][2];
+					r[i][2] = s * r[i][1] + c * r[i][2];
+					r[i][1] = temp;
+				}
+			}
+		}
+
+		outEigenvalues[0] = m11;
+		outEigenvalues[1] = m22;
+		outEigenvalues[2] = m33;
+
+		outEigenvectors[0] = { r[0][0], r[1][0], r[2][0] };
+		outEigenvectors[1] = { r[0][1], r[1][1], r[2][1] };
+		outEigenvectors[2] = { r[0][2], r[1][2], r[2][2] };
 	}
 
 	Real Discriminant(Real a, Real b, Real c)
@@ -1108,6 +1319,10 @@ namespace fb
 		}
 
 		return { Vec3(xmin, ymin, zmin), Vec3(xmax, ymax, zmax) };
+	}
+
+	bool MultipliesOfFour(int val) {
+		return val % 4 == 0;
 	}
 
 } // namespace fb

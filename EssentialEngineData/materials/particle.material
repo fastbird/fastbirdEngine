@@ -1,7 +1,7 @@
 <Material>
 	<BlendDesc BlendEnalbe="true" BlendOp="BLEND_OP_ADD" SrcBlend="BLEND_SRC_ALPHA" DestBlend="BLEND_INV_SRC_ALPHA"/>
 	<DepthStencilDesc DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
-	<ShaderFile>EssentialEngineData/shaders/particle.hlsl</ShaderFile>
+	<ShaderFile>EssentialEngineData/shaders/Particle.hlsl</ShaderFile>
 	<Shaders>VS|GS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>1, 1, 1, 1</AmbientColor>
@@ -11,9 +11,9 @@
 	</MaterialConstants>
 	<Textures>
 	</Textures>
-	<MaterialParameters>
+	<ShaderConstants>
 		<param comment="Glow, 0, 0, 0">1.0, 0, 0, 0</param>
-	</MaterialParameters>
+	</ShaderConstants>
 	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"/>
 		<input semantic="TEXCOORD" index="0" format="FLOAT4" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"/>

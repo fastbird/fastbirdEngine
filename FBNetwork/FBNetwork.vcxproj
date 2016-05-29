@@ -99,6 +99,7 @@
       <AdditionalIncludeDirectories>..;$(CURL_DIR)\include;$(CPPNETLIB_HOME);$(BOOST_HOME)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

@@ -35,13 +35,13 @@ struct QuadVS_Output
 //---------------------------------------------------------------------------
 // VS
 //---------------------------------------------------------------------------
-QuadVS_Output fullscreenquadvs_VertexShader(uint id : SV_VertexID)
+QuadVS_Output FullScreenQuadVS_VertexShader(uint id : SV_VertexID)
 {
 	QuadVS_Output Output;
 	Output.Pos.x = (float)(id/2) * 4.0 - 1.0;
 	Output.Pos.y = (float)(id%2) * 4.0 - 1.0;
 #ifdef _FAR_SIDE_QUAD
-	Output.Pos.z = 1.0;
+	Output.Pos.z = 0.999;
 #else
 	Output.Pos.z = 0.0;
 #endif

@@ -59,10 +59,12 @@ namespace fb{
 		};
 
 		void InsertBar(float pos, const Color& color);
+		void Clear();
 		unsigned NumBars() const;
 		Bar& GetBar(int idx);
-		void GenerateColorRampTextureData(int textureWidth);
+		void GenerateColorRampTextureData(int textureWidth, float noiseStrength);
 		void UpperAlign(float gap = 0.01f);
 		void LowerAlign(float gap = 0.01f);
+		void Align(float gap = 0.01f);
 	};
 }

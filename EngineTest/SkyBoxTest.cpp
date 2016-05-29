@@ -33,8 +33,7 @@ class SkyBoxTest::Impl{
 public:
 	SkyFacadePtr mSky;
 
-	Impl(){
-		//mSky = SkyFacade::Create()->CreateSkyBox("data/skybox.material");
+	Impl(){		
 		mSky = SkyFacade::Create()->CreateSkySphere();		
 		mSky->SetMaterial("Data/skysphere_equirectangular.material", RENDER_PASS::PASS_NORMAL);
 

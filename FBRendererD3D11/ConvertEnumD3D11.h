@@ -149,30 +149,6 @@ namespace fb
 		}
 	}
 
-	inline int PixelFormat2Bytes(PIXEL_FORMAT format)
-	{
-		if (format>=PIXEL_FORMAT_R32G32B32A32_TYPELESS && format <= PIXEL_FORMAT_R32G32B32A32_SINT)
-			return 16;
-		else if (format>=PIXEL_FORMAT_R32G32B32_TYPELESS && format <= PIXEL_FORMAT_R32G32B32_SINT)
-			return 12;
-		else if (format>=PIXEL_FORMAT_R16G16B16A16_TYPELESS && format <= PIXEL_FORMAT_X32_TYPELESS_G8X24_UINT)
-			return 8;
-		else if (format>=PIXEL_FORMAT_R10G10B10A2_TYPELESS && format <= PIXEL_FORMAT_X24_TYPELESS_G8_UINT)
-			return 4;
-		else if (format >= PIXEL_FORMAT_R8G8_TYPELESS && format <= PIXEL_FORMAT_R16_SINT)
-			return 2;
-		else if (format >= PIXEL_FORMAT_R8_TYPELESS && format <= PIXEL_FORMAT_A8_UNORM)
-			return 1;
-		else if (format >=PIXEL_FORMAT_R9G9B9E5_SHAREDEXP && format <= DXGI_FORMAT_G8R8_G8B8_UNORM )
-			return 4;
-		else if (format >=PIXEL_FORMAT_B5G6R5_UNORM  && format <= PIXEL_FORMAT_B5G5R5A1_UNORM)
-			return 2;
-		else if (format >= PIXEL_FORMAT_B8G8R8A8_UNORM && format <= PIXEL_FORMAT_B8G8R8X8_UNORM_SRGB)
-			return 4;
-		assert(0 && "Unknown bytes.");
-		return 0;
-	}
-
 	inline D3D11_PRIMITIVE_TOPOLOGY ConvertEnumD3D11(PRIMITIVE_TOPOLOGY topology){
 		switch (topology){
 		case PRIMITIVE_TOPOLOGY_POINTLIST:

@@ -30,6 +30,7 @@
 #include "Vec3I.h"
 #include "Mat33.h"
 #include "Math.h"
+#include "Vec3d.h"
 
 namespace fb
 {
@@ -99,6 +100,14 @@ namespace fb
 		, z(std::get<2>(t))
 	{
 	}
+
+	Vec3::Vec3(const Vec3d& v)
+		: x((Real)v.x)
+		, y((Real)v.y)
+		, z((Real)v.z)
+	{
+	}
+
 
 	//-------------------------------------------------------------------
 
@@ -400,20 +409,28 @@ namespace fb
 		return std::max(std::max(x, y), z);
 	}
 
-	void Vec3::write(std::ostream& stream) const{
-		stream.write((char*)&x, sizeof(x));
-		stream.write((char*)&y, sizeof(y));
-		stream.write((char*)&z, sizeof(z));
+	void write(std::ostream& stream, const Vec3& data) {
+		stream.write((char*)&data.x, sizeof(data.x));
+		stream.write((char*)&data.y, sizeof(data.y));
+		stream.write((char*)&data.z, sizeof(data.z));
 	}
 
-	void Vec3::read(std::istream& stream){
-		stream.read((char*)&x, sizeof(x));
-		stream.read((char*)&y, sizeof(y));
-		stream.read((char*)&z, sizeof(z));
+	void read(std::istream& stream, Vec3& data){
+		stream.read((char*)&data.x, sizeof(data.x));
+		stream.read((char*)&data.y, sizeof(data.y));
+		stream.read((char*)&data.z, sizeof(data.z));
 	}
 
 	std::string Vec3::ToString() const {
 		return FormatString("%f %f %f", x, y, z);
+	}
+
+	Vec2 Vec3::GetXY() const {
+		return Vec2(x, y);
+	}
+
+	Vec3 Vec3::GetInv() const {
+		return Vec3(1.f / x, 1.f / y, 1.f / z);
 	}
 
 	//--------------------------------------------------------------------------
@@ -425,7 +442,7 @@ namespace fb
 	bool IsEqual(const Vec3& l, const Vec3& r, Real ep/* = EPSILON*/)
 	{
 		Vec3 t = l - r;
-		if (abs(t.x) >= ep || abs(t.y) >= ep || abs(t.z) >= ep)
+		if (abs(t.x) > ep || abs(t.y) > ep || abs(t.z) > ep)
 			return false;
 
 		return true;
@@ -434,7 +451,7 @@ namespace fb
 	bool IsEqual(const Vec2& l, const Vec2& r, Real ep/* = EPSILON*/)
 	{
 		Vec2 t = l - r;
-		if (abs(t.x) >= ep || abs(t.y) >= ep)
+		if (abs(t.x) > ep || abs(t.y) > ep)
 			return false;
 
 		return true;

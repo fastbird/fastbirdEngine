@@ -33,6 +33,7 @@ namespace fb
 	class Mat33;
 	class Vec3I;
 	class Vec3;
+	class Vec3d;
 	typedef std::vector<Vec3> Vec3s;
 	class Vec3
 	{
@@ -55,6 +56,7 @@ namespace fb
 		explicit Vec3(Real s);		
 		explicit Vec3(const Vec3I& v);
 		explicit Vec3(const char* s);
+		explicit Vec3(const Vec3d& v);
 		Vec3(const Vec3Tuple& t);
 
 		bool IsInitialized() const;
@@ -107,11 +109,12 @@ namespace fb
 
 		Real GetMax() const;
 
-		void write(std::ostream& stream) const;
-		void read(std::istream& stream);
-
 		std::string ToString() const;
+		Vec2 GetXY() const;
+		Vec3 GetInv() const;
 	};
+	void write(std::ostream& stream, const Vec3& data);
+	void read(std::istream& stream, Vec3& data);
 
 	Vec3 operator* (Real l, const Vec3& r);
 	bool IsEqual(const Vec3& l, const Vec3& r, Real ep = EPSILON);

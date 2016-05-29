@@ -25,7 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
-#include "CommonDefines.h"
+#include "EssentialEngineData/shaders/CommonDefines.h"
 
 // using same slot : 5
 Texture2D gShadowMap : register(t8);
@@ -84,7 +84,7 @@ float NewVisibility(float ldh, float alpha){
 	float k = alpha * 0.5;
 	float k2 = k*k;
 	float invK2 = 1.0f - k2;
-	return rcp(ldh*ldh*invK2 + k2);
+	return 0, rcp(ldh*ldh*invK2 + k2);
 }
 
 float Pow4(float v){
@@ -96,7 +96,7 @@ float3 CookTorrance(float vdh, float ndh, float3 Ks, float roughness)
 	float D = gGGXMap.Sample(gLinearSampler, float2(Pow4(ndh), roughness)).x;
 	float2 fvHelper = gGGXMap.Sample(gLinearSampler, float2(vdh, roughness)).yz;
 	float3 FV = Ks*fvHelper.x + (1.0 - Ks)*fvHelper.y;
-	float3 specular = D*FV*0.25;		
+	float3 specular = D * FV * 0.25;
 	return specular;
 	
 // reference : http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
@@ -118,13 +118,10 @@ float3 CookTorranceContrib(
 	float3 Ks,
 	float roughness)
 {
-	
 // This is the contribution when using importance sampling with the GGX based
 // sample distribution. This means ct_contrib = ct_brdf / ggx_probability
 	float alpha = roughness*roughness;
 	return Fresnel(vdh,Ks) * (NewVisibility(vdh,alpha) * vdh * ndl / ndh ) * 0.25;
-	
-	
 }
 
 vec3 ImportanceSampleLambert(vec2 hamOffset, vec3 tan, vec3 bi, vec3 normal)
@@ -165,6 +162,70 @@ float ProbabilityGGX(float ndh, float vdh, float Roughness)
 {
 	return NormalDistrib(ndh, Roughness) * ndh / (4.0*vdh);
 }
+
+
+
+float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float3 diffColor, float3 specColor)
+{
+	float3 envContrib = {0, 0, 0};
+#ifdef ENV_TEXTURE
+	vec3 Tp = normalize(tangent	- normal*dot(tangent, normal)); // local tangent
+	vec3 Bp = normalize(cross(tangent, normal));
+	float alpha = roughness * roughness;
+	static float2 hammersley[16] = (float2[16])gHammersley;
+	for(int i=0; i<ENV_SAMPLES; ++i)
+	{
+		vec2 Xi = hammersley[i];
+		vec3 Sd = ImportanceSampleLambert(Xi,Tp,Bp,normal);
+		float pdfD = ProbabilityLambert(Sd, normal);
+		float lodD = ComputeLOD(Sd, pdfD);	
+		
+		envContrib +=	SampleEnvironmentMap(Sd, lodD) * diffColor;
+		vec3 Hn = ImportanceSampleGGX(Xi,Tp,Bp,normal,alpha);
+		
+		float3 Ln = -reflect(toViewDir, Hn);
+		Ln.yz = Ln.zy;
+
+		float ndl = dot(normal, Ln);
+
+		// Horizon fading trick from http://marmosetco.tumblr.com/post/81245981087
+		const float horizonFade = 1.3;
+		float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
+		horiz *= horiz;
+		ndl = saturate(ndl);
+
+		float vdh = saturate(dot(toViewDir, Hn));
+		float ndh = saturate(dot(normal, Hn));
+		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln, ProbabilityGGX(ndh, vdh, roughness));
+		envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
+	}
+
+	envContrib /= ENV_SAMPLES;
+	return envContrib;
+#else
+	return envContrib;
+#endif
+}
+
+float3 CalcPointLights(float3 worldPos, float3 normal)
+{
+	float3 result={0, 0, 0};
+	int count = (int)gPointLightColor[0].w;
+	count = min(3, count);
+	for(int i=0; i<count; i++)
+	{
+		
+		float lightReach = gPointLightPos[i].w;
+		float3 toLight = gPointLightPos[i].xyz - worldPos;
+		float dist = length(toLight);
+		toLight = toLight / dist;
+		float atten = clamp(1.0 - dist/lightReach, 0, 1);
+		atten *= atten;
+		float d = max(0, dot(toLight, normal));
+		result += (atten * d) * gPointLightColor[i].xyz;
+	}
+	return result;
+}
 #define _CASCADE_COUNT_FLAG 3
 
 //--------------------------------------------------------------------------------------
@@ -180,11 +241,12 @@ void CalculateBlendAmountForInterval ( in int iCurrentCascadeIndex,
     // We need to calculate the band of the current shadow map where it will
 	// fade into the next cascade. We can then early out of the expensive PCF 
 	// for loop.
-    float fBlendInterval = gCascadeFrustumsEyeSpaceDepthsFloat[iCurrentCascadeIndex];
+	static float cascadeFrustumsEyeSpaceDepthsFloat[8] = (float[8])gCascadeFrustumsEyeSpaceDepthsFloat;
+    float fBlendInterval = cascadeFrustumsEyeSpaceDepthsFloat[iCurrentCascadeIndex];
     //if( iNextCascadeIndex > 1 ) 
     int fBlendIntervalbelowIndex = min(0, iCurrentCascadeIndex-1);
-    fPixelDepth -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
-    fBlendInterval -= gCascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    fPixelDepth -= cascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
+    fBlendInterval -= cascadeFrustumsEyeSpaceDepthsFloat[ fBlendIntervalbelowIndex ];
     
     // The current pixel's blend band location will be used to determine when 
 	// we need to blend and by how much.
@@ -199,7 +261,7 @@ void ComputeCoordinatesTransform( in int iCascadeIndex,
                                    in out float4 vShadowTexCoordViewSpace ) 
 {
     // Now that we know the correct map, we can transform the world space 
-	// position of the current fragment                
+	// position of the current fragment                	
     vShadowTexCoord = vShadowTexCoordViewSpace * gCascadeScale[iCascadeIndex];
     vShadowTexCoord += gCascadeOffset[iCascadeIndex];
           
@@ -239,8 +301,8 @@ void CalculatePCFPercentLit ( in float4 vShadowTexCoord,
             // Compare the transformed pixel depth to the depth read from the map.
             fPercentLit += gShadowMap.SampleCmpLevelZero( gShadowSampler, 
                 float2( 
-                    vShadowTexCoord.x + ( ( (float) x ) * m_fNativeTexelSizeInX ) , 
-                    vShadowTexCoord.y + ( ( (float) y ) * m_fTexelSize ) 
+                    vShadowTexCoord.x + ( ( (float) x ) * gShadowTexelSizeX ) , 
+                    vShadowTexCoord.y + ( ( (float) y ) * gShadowTexelSize ) 
                     ), 
                 depthcompare );
         }
@@ -314,20 +376,21 @@ float GetShadow(float4 vShadowMapTextureCoordViewSpace, float fCurrentPixelDepth
 	// swap y, z
 	vShadowMapTextureCoordViewSpace = vShadowMapTextureCoordViewSpace.xzyw;
 	int iCurrentCascadeIndex = 0;
+	static float cascadeFrustumsEyeSpaceDepthsFloat[8] = (float[8])gCascadeFrustumsEyeSpaceDepthsFloat;
 	if ( _CASCADE_COUNT_FLAG > 1 ) 
 	{
 		float4 vCurrentPixelDepth = fCurrentPixelDepth;
 		float4 fComparison = ( vCurrentPixelDepth > 
-			float4(gCascadeFrustumsEyeSpaceDepthsFloat[0],
-					gCascadeFrustumsEyeSpaceDepthsFloat[1],
-					gCascadeFrustumsEyeSpaceDepthsFloat[2],
-					gCascadeFrustumsEyeSpaceDepthsFloat[3]));
+			float4(cascadeFrustumsEyeSpaceDepthsFloat[0],
+					cascadeFrustumsEyeSpaceDepthsFloat[1],
+					cascadeFrustumsEyeSpaceDepthsFloat[2],
+					cascadeFrustumsEyeSpaceDepthsFloat[3]));
 					
 		float4 fComparison2 = ( vCurrentPixelDepth > 
-			float4(gCascadeFrustumsEyeSpaceDepthsFloat[4],
-					gCascadeFrustumsEyeSpaceDepthsFloat[5],
-					gCascadeFrustumsEyeSpaceDepthsFloat[6],
-					gCascadeFrustumsEyeSpaceDepthsFloat[7]));
+			float4(cascadeFrustumsEyeSpaceDepthsFloat[4],
+					cascadeFrustumsEyeSpaceDepthsFloat[5],
+					cascadeFrustumsEyeSpaceDepthsFloat[6],
+					cascadeFrustumsEyeSpaceDepthsFloat[7]));
 		float fIndex = dot( 
 						float4( _CASCADE_COUNT_FLAG > 0,
 								_CASCADE_COUNT_FLAG > 1, 
@@ -397,7 +460,7 @@ float GetShadow(float4 vShadowMapTextureCoordViewSpace, float fCurrentPixelDepth
             ComputeCoordinatesTransform( iNextCascadeIndex,
                                              vShadowMapTextureCoord_blend, 
 										     vShadowMapTextureCoordViewSpace );        
-			
+			float fPercentLit_blend = 0.0f;
 			float fUpTextDepthWeight_blend=0;
 			float fRightTextDepthWeight_blend=0;
 			CalculatePCFPercentLit( vShadowMapTextureCoord_blend, fRightTextDepthWeight_blend, 
@@ -441,66 +504,4 @@ float3 GetIrrad(float4 vNormal)
 	// x3 = gIrradConstsnts[6].rgb * vC;
 	
 	// return x1+x2+x3;
-}
-
-float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roughness, float3 toViewDir, float3 diffColor, float3 specColor)
-{
-	float3 envContrib = {0, 0, 0};
-#ifdef ENV_TEXTURE
-	vec3 Tp = normalize(tangent	- normal*dot(tangent, normal)); // local tangent
-	vec3 Bp = normalize(cross(tangent, normal));
-	float alpha = roughness * roughness;
-	static float2 hammersley[16] = (float2[16])gHammersley;
-	for(int i=0; i<ENV_SAMPLES; ++i)
-	{
-		vec2 Xi = hammersley[i];
-		vec3 Sd = ImportanceSampleLambert(Xi,Tp,Bp,normal);
-		float pdfD = ProbabilityLambert(Sd, normal);
-		float lodD = ComputeLOD(Sd, pdfD);	
-		
-		envContrib +=	SampleEnvironmentMap(Sd, lodD) * diffColor;
-		vec3 Hn = ImportanceSampleGGX(Xi,Tp,Bp,normal,alpha);
-		
-		float3 Ln = -reflect(toViewDir, Hn);
-		Ln.yz = Ln.zy;
-
-		float ndl = dot(normal, Ln);
-
-		// Horizon fading trick from http://marmosetco.tumblr.com/post/81245981087
-		const float horizonFade = 1.3;
-		float horiz = clamp( 1.0 + horizonFade * ndl, 0.0, 1.0 );
-		horiz *= horiz;
-		ndl = max( 0.05, abs(ndl) );
-
-		float vdh = max( 1e-8, dot(toViewDir, Hn) );
-		float ndh = max( 1e-8, dot(normal, Hn) );
-		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln, ProbabilityGGX(ndh, vdh, roughness));
-		envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
-	}
-
-	envContrib /= ENV_SAMPLES;
-	return envContrib;
-#else
-	return envContrib;
-#endif
-}
-
-float3 CalcPointLights(float3 worldPos, float3 normal)
-{
-	float3 result={0, 0, 0};
-	int count = (int)gPointLightColor[0].w;
-	count = min(3, count);
-	for(int i=0; i<count; i++)
-	{
-		
-		float lightReach = gPointLightPos[i].w;
-		float3 toLight = gPointLightPos[i].xyz - worldPos;
-		float dist = length(toLight);
-		toLight = toLight / dist;
-		float atten = clamp(1.0 - dist/lightReach, 0, 1);
-		atten *= atten;
-		float d = max(0, dot(toLight, normal));
-		result += (atten * d) * gPointLightColor[i].xyz;
-	}
-	return result;
 }

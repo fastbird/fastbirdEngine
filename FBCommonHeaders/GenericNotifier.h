@@ -5,7 +5,9 @@ template <class T>
 class GenericListener {
 public:
 	virtual ~GenericListener() {
-		for (auto n : mNotifiers) {
+		std::vector<T*> v;
+		v.swap(mNotifiers);
+		for (auto n : v) {
 			n->RemoveListenerFromListener((T::TypeRawPtr)this);
 		}
 	}
@@ -46,6 +48,10 @@ public:
 			mListeners.push_back(l);
 			l->AddNotifier(this);
 		}
+	}
+	
+	virtual void OnListenerAdded(TypeRawPtr l) {
+
 	}
 
 	virtual void RemoveListener(TypeRawPtr l)

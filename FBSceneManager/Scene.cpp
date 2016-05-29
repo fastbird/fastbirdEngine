@@ -143,6 +143,10 @@ public:
 		mSelf->AddObserver(ISceneObserverEnum, observer);
 	}
 
+	void RemoveSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) {
+		mSelf->RemoveObserver(ISceneObserverEnum, observer);
+	}
+
 	const Vec3& GetMainLightDirection(){
 		return mDirectionalLight[0]->GetDirection();
 	}
@@ -347,10 +351,32 @@ public:
 					++it;
 					observer->OnBeforeRenderingOpaques(mSelf, param, paramOut);
 				}
+				for (auto it = observers.begin(); it != observers.end(); /**/) {
+					auto observer = it->lock();
+					if (!observer) {
+						it = observers.erase(it);
+						continue;
+					}
+					++it;
+					observer->OnBeforeRenderingOpaquesRenderStates(mSelf, param, paramOut);
+				}
 
+				//---------------------------------------------------------------------------
+				// Opaque Rendering
+				//---------------------------------------------------------------------------
 				for (auto& obj : mVisibleObjectsMain[cam])
 				{
 					obj->Render(param, paramOut);
+				}
+
+				for (auto it = observers.begin(); it != observers.end(); /**/) {
+					auto observer = it->lock();
+					if (!observer) {
+						it = observers.erase(it);
+						continue;
+					}
+					++it;
+					observer->OnAfterRenderingOpaquesRenderStates(mSelf, param, paramOut);
 				}
 			}
 		}
@@ -654,6 +680,9 @@ public:
 				}
 			}
 			mSceneAABBLastFrame = gpTimer->GetFrame();
+			if (!mSceneAABB.IsValid()) {
+				mSceneAABB.Merge(Vec3::ZERO);
+			}
 		}
 		return mSceneAABB;
 	}
@@ -661,7 +690,7 @@ public:
 
 //---------------------------------------------------------------------------
 ScenePtr Scene::Create(const char* name){
-	if (!ValidCStringLength(name)){
+	if (!ValidCString(name)){
 		Logger::Log(FB_ERROR_LOG_ARG, "Scene should have a valid name.");
 		return 0;
 	}
@@ -690,6 +719,10 @@ void Scene::Update(TIME_PRECISION dt){
 
 void Scene::AddSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer){
 	mImpl->AddSceneObserver(ISceneObserverEnum, observer);
+}
+
+void Scene::RemoveSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) {
+	mImpl->RemoveSceneObserver(ISceneObserverEnum, observer);
 }
 
 const Vec3& Scene::GetMainLightDirection(){

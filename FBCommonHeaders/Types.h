@@ -59,8 +59,7 @@ namespace fb{
 	typedef __int64 HWindowId;
 	static const HWindowId INVALID_HWND_ID = (HWindowId)-1;
 	typedef std::vector<std::string> StringVector;
-	typedef std::vector<std::wstring> WStringVector;
-	typedef std::shared_ptr < char > BinaryData;
+	typedef std::vector<std::wstring> WStringVector;	
 	// unsigned int : safe for 828 'days' at 60 frames/sec
 	// unsigned long long : safe for 9749040289 'years' at 60 frames/sec
 	typedef unsigned int FRAME_PRECISION;
@@ -159,3 +158,12 @@ private:\
 	className##Ptr className##::Create(){\
 		return className##Ptr(new className, [](className* obj){delete obj;});\
 	}
+
+#define FB_IMPLEMENT_STATIC_CREATE_SELF_PTR(className)\
+	className##Ptr className##::Create(){\
+		auto p = className##Ptr(new className, [](className* obj){delete obj;});\
+		p->mImpl->mSelfPtr = p;\
+		return p;\
+	}
+
+#define OVERRIDE override

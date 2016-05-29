@@ -381,7 +381,7 @@ public:
 	}
 
 	void SetSound(UISounds::Enum type, const char* path){
-		if (!ValidCStringLength(path))
+		if (!ValidCString(path))
 			return;
 
 		while ((int)mSounds.size() <= type){
@@ -1137,7 +1137,7 @@ public:
 	}
 
 	bool CacheUIComponent(const char* uiname, const char* compname) {
-		if (!ValidCStringLength(uiname) || !ValidCStringLength(compname)) {
+		if (!ValidCString(uiname) || !ValidCString(compname)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
 			return false;
 		}
@@ -2097,7 +2097,8 @@ mPopup->SetVisible(true);
 		GetCurrentDirectory(MAX_PATH, buf);
 		mStyle = style;
 		tinyxml2::XMLDocument doc;
-		int err = doc.LoadFile("EssentialEngineData/ui/style.xml");
+		auto resourcePath = FileSystem::GetResourcePath("EssentialEngineData/ui/style.xml");
+		int err = doc.LoadFile(resourcePath.c_str());
 		if (err){
 			Error("parsing style file(EssentialEngineData/ui/style.xml) failed.");
 			if (doc.GetErrorStr1())
@@ -2248,10 +2249,8 @@ mPopup->SetVisible(true);
 				return 0;
 
 			const auto& atlasSize = atlas->GetTexture()->GetSize();
-			if (!mAtlasStaging){
-				mAtlasStaging = Renderer::GetInstance().CreateTexture(0, atlasSize.x, atlasSize.y, PIXEL_FORMAT_R8G8B8A8_UNORM,
-					BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
-				atlas->GetTexture()->CopyToStaging(mAtlasStaging, 0, 0, 0, 0, 0, 0);
+			if (!mAtlasStaging){				
+				mAtlasStaging = atlas->GetTexture()->CopyToStaging();				
 			}
 			if (!mAtlasStaging)
 				return 0;
@@ -2264,7 +2263,6 @@ mPopup->SetVisible(true);
 			unsigned* data = (unsigned*)malloc(4 * size.x * size.y);
 			memset(data, 0xffffffff, 4 * size.x * size.y);
 
-			unsigned pitchInPixel = mapData.RowPitch / 4;
 			// copy lt
 			auto ltRegion = atlas->GetRegion(GetBorderRegion("lt"));
 			if (ltRegion){
@@ -2272,7 +2270,7 @@ mPopup->SetVisible(true);
 				if (size.x > ltsize.x && size.y > ltsize.y){
 					for (int r = 0; r < ltsize.y; ++r){
 						memcpy(data + r * size.x,
-							atlasData + (alphaRegion->mStart.y + r) * pitchInPixel + alphaRegion->mStart.x,
+							atlasData + (alphaRegion->mStart.y + r) * atlasSize.x + alphaRegion->mStart.x,
 							ltsize.x * 4);
 					}
 				}
@@ -2283,7 +2281,7 @@ mPopup->SetVisible(true);
 				if (size.x > rtsize.x && size.y > rtsize.y){
 					for (int r = 0; r < rtsize.y; ++r){
 						memcpy(data + r * size.x + size.x - rtsize.x,
-							atlasData + (alphaRegion->mStart.y + r)*pitchInPixel + alphaRegion->mStart.x + alphaRegion->mSize.x - rtsize.x,
+							atlasData + (alphaRegion->mStart.y + r)*atlasSize.x + alphaRegion->mStart.x + alphaRegion->mSize.x - rtsize.x,
 							rtsize.x * 4);
 					}
 				}
@@ -2294,7 +2292,7 @@ mPopup->SetVisible(true);
 				if (size.x > lbsize.x && size.y > lbsize.y){
 					for (int r = 0; r < lbsize.y; ++r){
 						memcpy(data + (size.y - lbsize.y + r) * size.x,
-							atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - lbsize.y + r) * pitchInPixel + alphaRegion->mStart.x,
+							atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - lbsize.y + r) * atlasSize.x + alphaRegion->mStart.x,
 							lbsize.x * 4);
 					}
 				}
@@ -2306,14 +2304,15 @@ mPopup->SetVisible(true);
 				if (size.x > rbsize.x && size.y > rbsize.y){
 					for (int r = 0; r < rbsize.y; ++r){
 						memcpy(data + (size.y - rbsize.y + r) * size.x + size.x - rbsize.x,
-							atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - rbsize.y + r) * pitchInPixel
+							atlasData + (alphaRegion->mStart.y + alphaRegion->mSize.y - rbsize.y + r) * atlasSize.x
 							+ alphaRegion->mStart.x + alphaRegion->mSize.x - rbsize.x,
 							rbsize.x * 4);
 					}
 				}
 			}
 
-			auto texture = Renderer::GetInstance().CreateTexture(data, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
+			auto texture = Renderer::GetInstance().CreateTexture(data, size.x, size.y, PIXEL_FORMAT_R8G8B8A8_UNORM, 
+				1, BUFFER_USAGE_IMMUTABLE, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEFAULT);
 			mAlphaInfoTexture[size] = texture;
 			free(data);
 			mAtlasStaging->Unmap(0);

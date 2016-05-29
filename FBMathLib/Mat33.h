@@ -67,9 +67,10 @@ namespace fb
 		Mat33 ScaleAxis(const Vec3& scale) const;
 		Vec3 Column(int index) const;
 		void SetColumn(int index, const Vec3& v);
-
-		void write(std::ostream& stream) const;
-		void read(std::istream& stream);
+		bool IsSymmetric() const;
 	};
+
+	void write(std::ostream& stream, const Mat33& data);
+	void read(std::istream& stream, Mat33& data);
 }
 #endif //_Mat33_header_included_

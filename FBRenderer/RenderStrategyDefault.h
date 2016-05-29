@@ -28,11 +28,12 @@
 #pragma once
 #include "FBCommonHeaders/platform.h"
 #include "IRenderStrategy.h"
+#include "FBSceneManager/ISceneObserver.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(RenderTarget);
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(RenderStrategyDefault);
-	class RenderStrategyDefault : public IRenderStrategy{
+	class RenderStrategyDefault : public IRenderStrategy, public ISceneObserver{
 		FB_DECLARE_PIMPL_NON_COPYABLE(RenderStrategyDefault);
 		RenderStrategyDefault();
 
@@ -54,6 +55,13 @@ namespace fb{
 		void GlowRenderTarget(bool bind);
 		void DepthTexture(bool bind);
 		void OnRendererOptionChanged(RendererOptionsPtr options, const char* optionName);
-		void OnRenderTargetSizeChanged(const Vec2I& size);				
+		void OnRenderTargetSizeChanged(const Vec2I& size);			
+
+		//ISceneObserver
+		void OnAfterMakeVisibleSet(IScene* scene) OVERRIDE;
+		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
 	};
 }

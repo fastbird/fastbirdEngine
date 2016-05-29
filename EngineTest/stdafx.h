@@ -43,6 +43,8 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+#include <sstream>
+#include <numeric>
 
 
 // TODO: reference additional headers your program requires here
@@ -53,5 +55,9 @@
 #define FB_DLL_VIDEOPLAYER __declspec(dllimport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
 #define FB_DLL_LUA __declspec(dllimport)
+#define FB_DLL_RENDERER __declspec(dllimport)
+#define FB_DLL_THREAD __declspec(dllimport)
 #include "FBTimer/Timer.h"
 #include "FBMathLib/Math.h"
+#include "FBStringLib/StringLib.h"
+#include "FBDebugLib/DebugLib.h"

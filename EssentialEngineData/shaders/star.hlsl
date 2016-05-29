@@ -26,7 +26,7 @@
 */
 
 //--------------------------------------------------------------------------------------
-// File: star.hlsl
+// File: Star.hlsl
 //--------------------------------------------------------------------------------------
 // render as point list without geometry
 
@@ -54,7 +54,7 @@ struct v2p
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2p star_VertexShader( in a2v INPUT )
+v2p Star_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -67,7 +67,7 @@ v2p star_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 star_PixelShader( in v2p INPUT ) : SV_Target
+float4 Star_PixelShader( in v2p INPUT ) : SV_Target
 {	
     return INPUT.Color;    // Yellow, with Alpha = 1
 }

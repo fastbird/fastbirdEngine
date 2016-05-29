@@ -29,6 +29,7 @@
 #ifndef _fastbird_RenderStructs_header_included_
 #define _fastbird_RenderStructs_header_included_
 #include "RendererEnums.h"
+#include "FBCommonHeaders/Helpers.h"
 #include "FBMathLib/Color.h"
 #include "FBMathLib/Math.h"
 
@@ -59,6 +60,11 @@ namespace fb
 		bool operator==(const RASTERIZER_DESC& other) const
 		{
 			return memcmp(this, &other, sizeof(RASTERIZER_DESC)) == 0;
+		}
+
+		bool operator!=(const RASTERIZER_DESC& other) const
+		{
+			return !operator==(other);
 		}
 
 		FILL_MODE		FillMode;
@@ -166,6 +172,10 @@ namespace fb
 			return memcmp(this, &other, sizeof(BLEND_DESC)) == 0;
 		}
 
+		bool operator!=(const BLEND_DESC& other) const {
+			return !operator==(other);
+		}
+
 		bool						AlphaToCoverageEnable;
 		bool						IndependentBlendEnable;
 		char						padding[2];
@@ -183,7 +193,13 @@ namespace fb
 		{
 			
 		}
-
+		size_t ComputeHash() const {
+			size_t h = std::hash<int>()(StencilFailOp);
+			hash_combine(h, std::hash<int>()(StencilDepthFailOp));
+			hash_combine(h, std::hash<int>()(StencilPassOp));
+			hash_combine(h, std::hash<int>()(StencilFunc));
+			return h;
+		}
 		STENCIL_OP StencilFailOp;
 		STENCIL_OP StencilDepthFailOp;
 		STENCIL_OP StencilPassOp;
@@ -191,6 +207,9 @@ namespace fb
 	};
 
 	//------------------------------------------------------------------------
+	// Don't forget to call ComputeHash when you change any member variables.
+	// However when you pass DESC to the Renderer to create a DepthStencilSTate
+	// do not need to call ComputeHash(). The Renderer calls it.
 	struct DEPTH_STENCIL_DESC
 	{
 		DEPTH_STENCIL_DESC()
@@ -201,27 +220,47 @@ namespace fb
 			, StencilReadMask(0xff)
 			, StencilWriteMask(0xff)
 		{
+			ComputeHash();
 		}
 
 		bool operator<(const DEPTH_STENCIL_DESC& other) const
 		{
-			return memcmp(this, &other, sizeof(DEPTH_STENCIL_DESC)) < 0;
+			return mHash < other.mHash;			
 		}
 
 		bool operator==(const DEPTH_STENCIL_DESC& other) const
 		{
-			return memcmp(this, &other, sizeof(DEPTH_STENCIL_DESC)) == 0;
+			return mHash == other.mHash;			
+		}
+
+		bool operator!=(const DEPTH_STENCIL_DESC& other) const
+		{
+			return !operator==(other);
+		}
+
+		size_t ComputeHash() const {
+			size_t h = std::hash<int>()(DepthWriteMask);
+			hash_combine(h, std::hash<int>()(DepthFunc));
+			hash_combine(h, std::hash<int>()(DepthFunc));
+			hash_combine(h, FrontFace.ComputeHash());
+			hash_combine(h, BackFace.ComputeHash());
+			hash_combine(h, std::hash<unsigned char>()(StencilReadMask));
+			hash_combine(h, std::hash<unsigned char>()(StencilWriteMask));
+			hash_combine(h, std::hash<bool>()(DepthEnable));
+			hash_combine(h, std::hash<bool>()(StencilEnable));
+			mHash = h;
+			return h;
 		}
 
 		DEPTH_WRITE_MASK DepthWriteMask;
 		COMPARISON_FUNC DepthFunc;				
 		DEPTH_STENCILOP_DESC FrontFace;
 		DEPTH_STENCILOP_DESC BackFace;
-		bool DepthEnable;
-		bool StencilEnable;
 		unsigned char StencilReadMask;
 		unsigned char StencilWriteMask;
-		
+		bool DepthEnable;
+		bool StencilEnable;		
+		mutable size_t mHash;
 	};
 
 	struct RENDERER_FRAME_PROFILER
@@ -238,7 +277,7 @@ namespace fb
 			NumDrawCall = 0;
 			NumVertexCount = 0;
 
-			NumDrawIndexedCall = 0;
+			NumIndexedDrawCall = 0;
 			NumIndexCount = 0;
 			NumUpdateObjectConst = 0;
 		}
@@ -260,7 +299,7 @@ namespace fb
 		unsigned int NumDrawCall;
 		unsigned int NumVertexCount;
 		
-		unsigned int NumDrawIndexedCall;
+		unsigned int NumIndexedDrawCall;
 		unsigned int NumIndexCount;
 
 		Real FrameRate;
@@ -431,5 +470,25 @@ namespace fb
 
 
 	}
+
+	struct TextureCreationOption {
+		TextureCreationOption() 
+			: async(true)
+			, generateMip(true)
+		{
+		}
+
+		TextureCreationOption(bool async, bool generateMip)
+			: async(async)
+			, generateMip(generateMip)
+		{
+		}
+
+		bool async;
+		// if the texture source doesn't have mip data and this flag is true,
+		// mipmap will be generated.
+		// Textures for ui doesn't need to have mipmap.
+		bool generateMip;
+	};
 }
 #endif //_fastbird_RenderStructs_header_included_

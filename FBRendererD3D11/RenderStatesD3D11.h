@@ -106,7 +106,7 @@ namespace fb
 		//--------------------------------------------------------------------
 		// IPlatformDepthStencilState Interfacec
 		//--------------------------------------------------------------------
-		virtual void Bind(unsigned stencilRef);
+		virtual void Bind(int stencilRef);
 		virtual void SetDebugName(const char* name);
 
 		//--------------------------------------------------------------------
@@ -131,7 +131,7 @@ namespace fb
 		//--------------------------------------------------------------------
 		// IPlatformSamplerState Interfacec
 		//--------------------------------------------------------------------
-		void Bind(BINDING_SHADER shader, int slot);
+		void Bind(SHADER_TYPE shader, int slot);
 		void SetDebugName(const char* name);
 
 		//--------------------------------------------------------------------

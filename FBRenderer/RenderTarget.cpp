@@ -67,6 +67,7 @@ namespace fb
 		bool mWillCreateDepth;
 		TexturePtr mRenderTargetTexture;
 		TexturePtr mDepthStencilTexture;
+		TexturePtr mDepthStencilTextureOverride;
 		Color mClearColor;
 		Real mDepthClear;
 		UINT8 mStencilClear;
@@ -76,6 +77,10 @@ namespace fb
 		bool mDrawEventTriggered;
 		bool mMain;
 		bool mForceWireframe;
+		std::vector<TextureWeakPtr> mCurrentRTTextures;
+		std::vector<size_t> mCurrentViewIndices;
+		size_t mCurrentDepthViewIndex;
+		TextureWeakPtr mCurrentDSTexture;		
 
 		Impl()
 			: mClearColor(0, 0, 0, 1)
@@ -93,7 +98,7 @@ namespace fb
 			, mId(NextRenderTargetId++)
 			, mCamera(Camera::Create())
 			, mAssociatedWindowId(INVALID_HWND_ID)
-			, mMain(false)
+			, mMain(false)			
 		{
 			mStrategy = RenderStrategyDefault::Create();
 		}
@@ -176,7 +181,7 @@ namespace fb
 				type |= TEXTURE_TYPE_CUBE_MAP;
 			auto& renderer = Renderer::GetInstance();
 			mRenderTargetTexture = renderer.CreateTexture(0, width, height, format,
-				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+				miplevel ? 0 : 1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
 			if (!mRenderTargetTexture) {
 				Logger::Log(FB_ERROR_LOG_ARG, "Failed to create render target");
 			}
@@ -203,7 +208,7 @@ namespace fb
 				type |= TEXTURE_TYPE_CUBE_MAP;
 			auto& renderer = Renderer::GetInstance();
 			mDepthStencilTexture = renderer.CreateTexture(0, width, height, format,
-				BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);			
 			mWillCreateDepth = true;
 		}
 
@@ -283,6 +288,12 @@ namespace fb
 			auto& renderer = Renderer::GetInstance();
 			RenderEventMarker mark("RenderTarget");
 			mStrategy->Render(face);
+			
+			if (mCamera->GetRenderFrustum()) {
+				mCamera->RenderFrustum();
+			}
+			mCamera->Update(gpTimer->GetDeltaTime());
+
 			if (mEnvTexture)
 				renderer.SetEnvironmentTextureOverride(0);
 			return true;
@@ -436,6 +447,7 @@ namespace fb
 
 		void SetDepthTexture(TexturePtr texture) {
 			mDepthStencilTexture = texture;
+			mDepthStencilTextureOverride = nullptr;
 		}
 
 		void RemoveTextures() {
@@ -467,6 +479,48 @@ namespace fb
 						defaultR->Bind();
 				}
 			}*/
+		}
+
+		void OverrideDepthTarget(bool enable) {
+			auto& renderer = Renderer::GetInstance();
+			if (enable && !mDepthStencilTextureOverride && mDepthStencilTexture) {
+				auto width = mDepthStencilTexture->GetWidth();
+				auto height = mDepthStencilTexture->GetHeight();
+				auto format = mDepthStencilTexture->GetFormat();								
+				auto type = mDepthStencilTexture->GetType();
+				mDepthStencilTextureOverride = renderer.CreateTexture(0, width, height, format,
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+			}
+
+			if (enable) {
+				renderer.SetDepthTarget(mDepthStencilTextureOverride, mFace);
+			}
+			else {
+				renderer.SetDepthTarget(mDepthStencilTexture, mFace);
+			}
+		}
+
+		void UnbindColorTarget() {
+			auto& renderer = Renderer::GetInstance(); 
+			auto currentRTs = renderer._GetCurrentRTTextures();
+			mCurrentRTTextures.clear();
+			for (size_t i = 0; i < currentRTs.size(); ++i) {
+				mCurrentRTTextures.push_back(currentRTs[i]);
+			}
+			mCurrentViewIndices = renderer._GetCurrentViewIndices();
+			auto dsTexture = renderer._GetCurrentDSTexture();;
+			mCurrentDSTexture = dsTexture;
+			mCurrentDepthViewIndex = renderer._GetCurrentDSViewIndex();
+			renderer.SetRenderTarget(0, 0, 0, dsTexture, mCurrentDepthViewIndex);
+		}
+
+		void RebindColorTarget() {
+			std::vector<TexturePtr> textures(mCurrentRTTextures.size());
+			for (size_t i = 0; i < mCurrentRTTextures.size(); ++i) {
+				textures[i] = mCurrentRTTextures[i].lock();
+			}
+			Renderer::GetInstance().SetRenderTarget(&textures[0], &mCurrentViewIndices[0],
+				textures.size(), mCurrentDSTexture.lock(), mCurrentDepthViewIndex);
 		}
 
 	};
@@ -688,22 +742,31 @@ namespace fb
 		return mImpl->OnRendererOptionChanged(options, name);
 	}
 
-	int RenderTarget::GetDepthBits() const
-	{
+	int RenderTarget::GetDepthBits() const {
 		return mImpl->GetDepthBits();
 	}
-	void RenderTarget::ToggleForceWireframe()
-	{
+
+	void RenderTarget::ToggleForceWireframe() {
 		mImpl->ToggleForceWireframe();
 	}
 
-	void RenderTarget::SetForceWireframe(bool wireframe)
-	{
+	void RenderTarget::SetForceWireframe(bool wireframe) {
 		mImpl->SetForceWireframe(wireframe);
 	}
 
-	bool RenderTarget::GetForceWireframe() const
-	{
+	bool RenderTarget::GetForceWireframe() const {
 		return mImpl->mForceWireframe;
+	}
+
+	void RenderTarget::OverrideDepthTarget(bool enable) {
+		mImpl->OverrideDepthTarget(enable);
+	}
+
+	void RenderTarget::UnbindColorTarget() {
+		mImpl->UnbindColorTarget();
+	}
+
+	void RenderTarget::RebindColorTarget() {
+		mImpl->RebindColorTarget();
 	}
 }

@@ -54,6 +54,7 @@ namespace fb{
 		virtual Real ComputePixelSizeAtDistance(Real distance) = 0;		
 		virtual void SetFOV(Real radians) = 0;
 		virtual Real GetFOV() const = 0;
+		virtual Real GetAspectRatio() const = 0;
 		virtual Real GetTanHalfFOV() const = 0;
 		virtual const Frustum& GetFrustum() = 0;
 		virtual const Frustum& GetFrustumLocal() = 0;
@@ -71,6 +72,8 @@ namespace fb{
 		virtual ISpatialObjectPtr GetTarget() const = 0;
 		virtual void SetTargetPos(const Vec3& pos) = 0;
 		virtual void SetMaxDistToTarget(Real dist) = 0;
+		virtual void SetMinDistToTarget(Real dist) = 0;
+		virtual void SetProportionalMove(bool enable) = 0;
 		/*
 		virtual Vec2I WorldToScreen(const Vec3& pos) = 0;
 		

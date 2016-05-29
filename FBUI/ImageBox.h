@@ -63,6 +63,7 @@ public:
 	// image box will own the rt.
 	void SetRenderTargetTexture(RenderTargetPtr rt);
 	RenderTargetPtr GetRenderTargetTexture() const { return mRenderTarget; }
+	void SetEnableRenderTarget(bool enable);
 	void SetUseHighlight(bool use) { mUseHighlight = use; }
 	// or
 	const Vec2I& SetTextureAtlasRegion(const char* atlas, const char* region);

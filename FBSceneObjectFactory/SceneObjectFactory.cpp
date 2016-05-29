@@ -214,7 +214,7 @@ public:
 			}
 			MaterialPtr material;
 			if (!group.second.mMaterialPath.empty()){
-				if (FileSystem::Exists(group.second.mMaterialPath.c_str())){
+				if (FileSystem::ResourceExists(group.second.mMaterialPath.c_str())){
 					material = Renderer::GetInstance().CreateMaterial(group.second.mMaterialPath.c_str());
 				}
 				else{
@@ -269,7 +269,7 @@ public:
 	}
 
 	MeshObjectPtr CreateMeshObject(const char* daeFilePath, const MeshImportDesc& desc){
-		if (!ValidCStringLength(daeFilePath)) {
+		if (!ValidCString(daeFilePath)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
 		}
@@ -318,7 +318,7 @@ public:
 
 	std::vector<MeshObjectPtr> CreateMeshObjects(const char* daeFilePath, const MeshImportDesc& desc){
 		std::vector<MeshObjectPtr> ret;
-		if (!ValidCStringLength(daeFilePath)) {
+		if (!ValidCString(daeFilePath)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return ret;
 		}
@@ -364,7 +364,7 @@ public:
 	}
 
 	MeshObjectConstPtr GetMeshArcheType(const char* name){
-		if (!ValidCStringLength(name)){
+		if (!ValidCString(name)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid Arg");
 			return 0;
 		}
@@ -415,7 +415,7 @@ public:
 	}
 
 	MeshGroupPtr CreateMeshGroup(const char* daeFilePath, const MeshImportDesc& desc){
-		if (!ValidCStringLength(daeFilePath)) {
+		if (!ValidCString(daeFilePath)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
 		}

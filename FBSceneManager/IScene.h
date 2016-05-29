@@ -52,6 +52,7 @@ namespace fb{
 	class IScene{
 	public:
 		virtual void AddSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) = 0;
+		virtual void RemoveSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) = 0;
 		virtual void GetDirectionalLightInfo(DirectionalLightIndex::Enum idx, DirectionalLightInfo& data) = 0;
 		virtual const Vec3& GetMainLightDirection() = 0;
 		virtual void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir) = 0;

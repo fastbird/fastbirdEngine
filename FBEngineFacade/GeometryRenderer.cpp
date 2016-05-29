@@ -137,8 +137,7 @@ public:
 	DepthStencilStatePtr mDepthStencilState;
 	RasterizerStatePtr mRasterizerState;
 
-	MeshFacadePtr mSphereMesh;
-	MeshFacadePtr mBoxMesh;
+	MeshFacadePtr mSphereMesh;	
 
 	//---------------------------------------------------------------------------
 	Impl(){
@@ -147,7 +146,7 @@ public:
 		mObjectConstants_WorldLine.gWorldViewProj.MakeIdentity();
 		auto& renderer = Renderer::GetInstance();
 		mLineShader = renderer.CreateShader(
-			"EssentialEnginedata/shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS);
+			"EssentialEngineData/shaders/Line.hlsl", SHADER_TYPE_VS | SHADER_TYPE_PS);
 		mInputLayout = renderer.GetInputLayout(DEFAULT_INPUTS::POSITION_COLOR, mLineShader);
 		mThickLineMaterial = renderer.CreateMaterial("EssentialEngineData/materials/ThickLine.material");
 		mVertexBuffer = renderer.CreateVertexBuffer(0, LINE_STRIDE, MAX_LINE_VERTEX,
@@ -161,8 +160,7 @@ public:
 		mRasterizerState = renderer.CreateRasterizerState(desc);		
 		mThickLines.reserve(1000);
 
-		mSphereMesh = MeshFacade::Create()->LoadMeshObject("EssentialEngineData/objects/Sphere.dae");
-		mBoxMesh = MeshFacade::Create()->LoadMeshObject("EssentialEngineData/objects/DebugBox.dae");
+		mSphereMesh = MeshFacade::Create()->LoadMeshObject("EssentialEngineData/objects/Sphere.dae");		
 	}
 
 	//----------------------------------------------------------------------------
@@ -213,7 +211,7 @@ public:
 		{
 			line.mStrTexture = texture;
 			auto& renderer = Renderer::GetInstance();
-			line.mTexture = renderer.CreateTexture(texture, true);
+			line.mTexture = renderer.CreateTexture(texture, {});
 		}
 		line.mTextureFlow = textureFlow;
 
@@ -264,7 +262,7 @@ public:
 		if (lineCount > 0)
 		{
 			mInputLayout->Bind();
-			mLineShader->Bind();
+			mLineShader->Bind(true);
 			renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
 			renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
 			while (lineCount)
@@ -308,7 +306,7 @@ public:
 		auto provider = renderer.GetResourceProvider();
 		provider->BindBlendState(ResourceTypes::BlendStates::AlphaBlend);
 		mInputLayout->Bind();
-		mLineShader->Bind();
+		mLineShader->Bind(true);
 		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
 		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
 		unsigned lineCount = mWorldLines.size();
@@ -367,7 +365,7 @@ public:
 					const auto& curProcessingLine = mThickLines[processedLines];
 					std::string curTexture = curProcessingLine.mStrTexture;
 					bool curTextureFlow = curProcessingLine.mTextureFlow;
-					mThickLineMaterial->SetTexture(curProcessingLine.mTexture, BINDING_SHADER_PS, 0);
+					mThickLineMaterial->SetTexture(curProcessingLine.mTexture, SHADER_TYPE_PS, 0);
 					bool refreshDefines = false;
 					if (curProcessingLine.mTexture)
 					{
@@ -444,7 +442,7 @@ public:
 				mObjectConstants.gWorldView = renderer.GetCamera()->GetMatrix(ICamera::View) * mObjectConstants.gWorld;
 				mObjectConstants.gWorldViewProj = renderer.GetCamera()->GetMatrix(ICamera::Proj) * mObjectConstants.gWorldView;
 				renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
-				mSphereMesh->GetMaterial()->SetMaterialParameter(0, sphere.mColor.GetVec4());
+				mSphereMesh->GetMaterial()->SetShaderParameter(0, sphere.mColor.GetVec4());
 				mSphereMesh->GetMaterial()->Bind(true);
 				mSphereMesh->RenderSimple(true);
 			}

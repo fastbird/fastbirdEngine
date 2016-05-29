@@ -106,10 +106,10 @@ public:
 
 			for (int i = 0; i < 5; i++)
 			{
-				mMaterial->SetMaterialParameter(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
+				mMaterial->SetShaderParameter(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
 				if (mMaterialOCC)
 				{
-					mMaterialOCC->SetMaterialParameter(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
+					mMaterialOCC->SetShaderParameter(i, Lerp(mMaterialParamCur[i], mMaterialParamDest[i], normTime));
 				}
 			}
 		}
@@ -153,7 +153,7 @@ public:
 				renderer.GetResourceProvider()->BindBlendState(ResourceTypes::BlendStates::AlphaBlend);
 			}
 			if (mMesh) {
-				renderer.GetResourceProvider()->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthWrite_LessEqual);
+				renderer.GetResourceProvider()->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthWrite_LessEqual, 0);
 				mMesh->RenderSimple(false);
 			}
 			else {
@@ -245,12 +245,17 @@ public:
 		renderer.GetMainRenderTarget()->BindTargetOnly(false);
 
 		pTexture->GenerateMips();
-		//pTexture->SaveToFile("environment.dds");
+		pTexture->SaveToFile("environment.dds");
 		// for bight test.
 		//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 		
 		renderer.SetEnvironmentTexture(pTexture);
 		sRT->GetScene()->DetachSky();
+	}
+
+	void SetEnvironmentUpdaterListener(ISceneObserverPtr observer) {
+		// Duplication will be checked.
+		sRT->GetScene()->AddSceneObserver(ISceneObserver::Timing, observer);
 	}
 
 	void SetInterpolationData(unsigned index, const Vec4& data){
@@ -289,7 +294,7 @@ public:
 	void SetAlpha(float alpha){
 		Vec4 param = mMaterial->GetMaterialParameter(3);
 		mAlpha = param.w = alpha;
-		mMaterial->SetMaterialParameter(3, param);
+		mMaterial->SetShaderParameter(3, param);
 		mMaterialParamDest[3].w = alpha;
 		mMaterialParamDest[2].w = alpha;
 	}
@@ -323,10 +328,11 @@ void SkySphere::CreateSharedEnvRT(){
 		param.mShaderResourceView = true;
 		param.mMipmap = true;
 		param.mCubemap = true;
-		param.mWillCreateDepth = false;
+		param.mWillCreateDepth = true;		
 		param.mUsePool = true;
 		auto& renderer = Renderer::GetInstance();
 		sRT = renderer.CreateRenderTarget(param);
+		sRT->SetDepthStencilDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_D24_UNORM_S8_UINT, false, true);
 		sScene = Scene::Create("SkySphereScene");
 		sRT->RegisterScene(sScene);
 		sRenderStrategy = RenderStrategyMinimum::Create();
@@ -380,6 +386,10 @@ void SkySphere::PostRender(const RenderParam& param, RenderParamOut* paramOut) {
 
 void SkySphere::UpdateEnvironmentMap(const Vec3& origin) {
 	mImpl->UpdateEnvironmentMap(origin);
+}
+
+void SkySphere::SetEnvironmentUpdaterListener(ISceneObserverPtr observer) {
+	mImpl->SetEnvironmentUpdaterListener(observer);
 }
 
 void SkySphere::SetInterpolationData(unsigned index, const Vec4& data) {

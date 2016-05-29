@@ -40,6 +40,8 @@ namespace fb
 		};
 		virtual void OnAfterMakeVisibleSet(IScene* scene) = 0;
 		virtual void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) = 0;
+		virtual void OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) = 0;
+		virtual void OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) = 0;
 		virtual void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) = 0;
 	};
 }

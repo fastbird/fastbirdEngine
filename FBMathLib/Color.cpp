@@ -33,10 +33,10 @@
 
 namespace fb
 {
-const Color Color::White(1, 1, 1);
+const Color Color::White(1.f, 1.f, 1.f);
 const Color Color::Black(0, 0, 0);
 const Color Color::Red(1, 0, 0);
-const Color Color::BrightRed(1, 0.2f, 0.2f);
+const Color Color::BrightRed(1.f, 0.2f, 0.2f);
 const Color Color::DarkGray(0.15f, 0.15f, 0.15f);
 const Color Color::Gray(0.5f, 0.5f, 0.5f);
 const Color Color::Silver(0.8f, 0.8f, 0.8f);
@@ -181,6 +181,14 @@ void Color::SetColor(Real r, Real g, Real b, Real a){
 	mValue.y = g;
 	mValue.z = b;
 	mValue.w = a;
+}
+
+void Color::SetColorInt(int r, int g, int b, int a)
+{
+	mValue.x = r / 255.f;
+	mValue.y = g / 255.f;
+	mValue.z = b / 255.f;
+	mValue.w = a / 255.f;
 }
 
 Real Color::r() const {

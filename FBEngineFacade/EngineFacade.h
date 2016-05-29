@@ -46,6 +46,8 @@ namespace fb{
 	FB_DECLARE_SMART_PTR(MeshFacade);
 	FB_DECLARE_SMART_PTR(DirectionalLight);
 	FB_DECLARE_SMART_PTR(Task);
+	FB_DECLARE_SMART_PTR(Invoker);
+	FB_DECLARE_SMART_PTR(TaskScheduler);
 	FB_DECLARE_SMART_PTR(Voxelizer);
 	FB_DECLARE_SMART_PTR(Font);
 	FB_DECLARE_SMART_PTR(IVideoPlayer);
@@ -111,8 +113,12 @@ namespace fb{
 		// IFileChangeObserver
 		void OnChangeDetected();
 		bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension);
-		void IgnoreMonitoringDirectory(const char* dir);
-
+		void IgnoreMonitoringDirectory(const char* dir);		
+		const TaskSchedulerPtr& GetTaskSchedular() const;
+		const InvokerPtr& GetInvoker() const;
+		void AddTask(TaskPtr NewTask);
+		/// Wait for pending tasks finished and disable the task schedular
+		void PrepareQuit();
 		
 		//---------------------------------------------------------------------------
 		// IRendererObserver interfaces
@@ -127,9 +133,11 @@ namespace fb{
 		//---------------------------------------------------------------------------
 		// IScene Observer
 		//---------------------------------------------------------------------------
-		void OnAfterMakeVisibleSet(IScene* scene);
-		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
-		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
+		void OnAfterMakeVisibleSet(IScene* scene) OVERRIDE;
+		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) OVERRIDE;
 
 		//---------------------------------------------------------------------------
 		// Renderer Interfaces
@@ -141,6 +149,7 @@ namespace fb{
 		bool InitCanvas(HWindow hwnd);
 		void SetClearColor(const Color& color);
 		void AddRendererObserver(int rendererObserverType, IRendererObserverPtr observer);
+		void RemoveRendererObserver(int rendererObserverType, IRendererObserverPtr observer);
 		RenderTargetPtr GetMainRenderTarget() const;
 		const Vec2I& GetMainRenderTargetSize() const;
 		bool MainCameraExists() const;
@@ -188,8 +197,8 @@ namespace fb{
 		void DrawProfileResult(const ProfilerSimple& profiler, const char* posVarName, int tab);
 		void DrawProfileResult(wchar_t* buf, const char* posVarName);
 		void DrawProfileResult(wchar_t* buf, const char* posVarName, int tab);
-		void* MapMaterialParameterBuffer();
-		void UnmapMaterialParameterBuffer();
+		void* MapShaderConstantsBuffer();
+		void UnmapShaderConstantsBuffer();
 		void* MapBigBuffer();
 		void UnmapBigBuffer();
 		void SetEnable3DUIs(bool enable);
@@ -219,13 +228,14 @@ namespace fb{
 		void SetDrawClouds(bool draw);				
 		void AddDirectionalLightCoordinates(DirectionalLightIndex::Enum idx, Real phi, Real theta);
 		const Vec3& GetLightDirection(DirectionalLightIndex::Enum idx);
+		/// direction to the light.
+		void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir);
 		const Vec3& GetLightDiffuse(DirectionalLightIndex::Enum idx);
 		const Real GetLightIntensity(DirectionalLightIndex::Enum idx);
 		void SetLightIntensity(IScenePtr scene, DirectionalLightIndex::Enum idx, Real intensity);
 		DirectionalLightPtr GetMainSceneLight(DirectionalLightIndex::Enum idx);
 		void DetachBlendingSky(IScenePtr scene);
-		void StopAllParticles();
-		void AddTask(TaskPtr NewTask);
+		void StopAllParticles();		
 
 		//---------------------------------------------------------------------------
 		// Audio

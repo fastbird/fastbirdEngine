@@ -47,7 +47,7 @@ public:
 
 	}
 	ScenePtr CreateScene(const char* name){
-		if (!ValidCStringLength(name)){
+		if (!ValidCString(name)){
 			Logger::Log(FB_ERROR_LOG_ARG, "invalid arg");
 			return 0;
 		}

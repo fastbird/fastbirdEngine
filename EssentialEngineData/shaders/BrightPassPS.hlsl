@@ -49,7 +49,7 @@ static const float  BRIGHT_PASS_OFFSET     = 1.0f; // Offset for BrightPass filt
 //---------------------------------------------------------------------------
 // PS
 //---------------------------------------------------------------------------
-float4 brightpassps_PixelShader(QuadVS_Output Input
+float4 BrightPassPS_PixelShader(QuadVS_Output Input
 #ifdef _MULTI_SAMPLE
 	,uint sampleIndex : SV_SampleIndex
 #endif
@@ -59,7 +59,7 @@ float4 brightpassps_PixelShader(QuadVS_Output Input
 	float fLum = max(0.2, gLumTexture.Sample(gPointSampler, float2(0, 0)));
 	//float fLum = gLumTexture.Sample(gPointSampler, float2(0, 0));
 #ifdef _MULTI_SAMPLE
-	float2 textureSize = gMaterialParam[0].xy;
+	float2 textureSize = gShaderParams[0].xy;
 	vColor = gHDRTexture.Load(Input.Tex.xy*textureSize, sampleIndex).rgb;
 #else
 	vColor = gHDRTexture.Sample(gPointSampler, Input.Tex).rgb;

@@ -34,9 +34,9 @@ namespace fb{
 	BoundingVolumePtr BoundingVolume::Create(BVType type /*= BV_SPHERE*/)
 	{
 		if (type == BV_SPHERE)
-			return BoundingVolumePtr(new BVSphere);
+			return std::make_shared<BVSphere>();
 		else if (type == BV_AABB)
-			return BoundingVolumePtr(new BVaabb);
+			return std::make_shared<BVaabb>();
 
 		else
 		{

@@ -50,6 +50,13 @@ namespace fb
 		bool            valid;      // "valid" is set to true if an intersection was found
 	};
 
-	void CreateSphereMesh(Real radius, int nRings, int nSegments,
-		std::vector<Vec3>& pos, std::vector<unsigned short>& index, std::vector<Vec3>* normal, std::vector<Vec2>* uv);
+	class GeomUtils {
+	public:
+		/// Create sphere
+		/// \param nRings The number of divisions for latitude. delta angle is PI / nRings.
+		/// \param nSegments The number of divisions for latitude. delta angle is TWO_PI / nSegments
+		/// \param index for triangle strip
+		static void CreateSphere(Real radius, int nRings, int nSegments,
+			Vec3::Array& pos, std::vector<unsigned short>& index);
+	};
 }

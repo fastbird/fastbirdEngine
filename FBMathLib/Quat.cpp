@@ -362,18 +362,18 @@ bool Quat::IsNaN() const
 			fb::IsNaN(y) || fb::IsNaN(z);
 }
 
-void Quat::write(std::ostream& stream) const{
-	stream.write((char*)&w, sizeof(Real));
-	stream.write((char*)&x, sizeof(Real));
-	stream.write((char*)&y, sizeof(Real));
-	stream.write((char*)&z, sizeof(Real));
+void write(std::ostream& stream, const Quat& data){
+	stream.write((char*)&data.w, sizeof(Real));
+	stream.write((char*)&data.x, sizeof(Real));
+	stream.write((char*)&data.y, sizeof(Real));
+	stream.write((char*)&data.z, sizeof(Real));
 }
 
-void Quat::read(std::istream& stream){
-	stream.read((char*)&w, sizeof(Real));
-	stream.read((char*)&x, sizeof(Real));
-	stream.read((char*)&y, sizeof(Real));
-	stream.read((char*)&z, sizeof(Real));
+void read(std::istream& stream, Quat& data){
+	stream.read((char*)&data.w, sizeof(Real));
+	stream.read((char*)&data.x, sizeof(Real));
+	stream.read((char*)&data.y, sizeof(Real));
+	stream.read((char*)&data.z, sizeof(Real));
 }
 
 }

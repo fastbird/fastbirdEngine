@@ -35,7 +35,12 @@ namespace fb{
 			Noise,
 			ShadowMap,
 			GGXPrecalc,
-			LAST = GGXPrecalc,
+			Permutation,// NUM_PERM+NUM_PERM+2
+			Gradiants, // NUM_PERM+NUM_PERM+2
+			ValueNoise,
+			LAST = ValueNoise,
 		};
+
+		Enum ConvertToEnum(const char* str);
 	}
 }

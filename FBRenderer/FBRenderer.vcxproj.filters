@@ -69,11 +69,14 @@
       <Filter>Enum&amp;Structures</Filter>
     </ClInclude>
     <ClInclude Include="RenderableObject.h" />
-    <ClInclude Include="PrimitiveTopology.h" />
     <ClInclude Include="RenderStrategyNull.h" />
     <ClInclude Include="CascadedShadowsManager.h" />
     <ClInclude Include="LuaFunctions.h" />
     <ClInclude Include="TriangleType.h">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryBuffer.h" />
+    <ClInclude Include="PrimitiveTopology.h">
       <Filter>Enum&amp;Structures</Filter>
     </ClInclude>
   </ItemGroup>
@@ -116,10 +119,18 @@
     <ClCompile Include="RenderStrategyNull.cpp" />
     <ClCompile Include="CascadedShadowsManager.cpp" />
     <ClCompile Include="LuaFunctions.cpp" />
+    <ClCompile Include="GeometryBuffer.cpp" />
+    <ClCompile Include="PrimitiveTopology.cpp">
+      <Filter>Enum&amp;Structures</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemTextures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Enum&amp;Structures">
       <UniqueIdentifier>{da81eda7-6040-4597-b79b-0adcaa69480e}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RendererCache.inl" />
   </ItemGroup>
 </Project>

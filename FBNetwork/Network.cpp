@@ -108,8 +108,16 @@ namespace fb {
 
 	int Network::ErrorCode = 0;
 
+	void Network::Initialize() {
+		initializeCURL();
+	}
+
+	void Network::Uninitialize(){
+		uninitializeCURL();
+	}
+
 	std::string Network::MakeMimeTypeForSuffix(const char* suffix) {
-		if (!ValidCStringLength(suffix))
+		if (!ValidCString(suffix))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "invalid arg.");
 			return std::string();
@@ -137,7 +145,7 @@ namespace fb {
 	}
 
 	std::string Network::MakeSuffixForMimeType(const char* mimeType) {
-		if (!ValidCStringLength(mimeType))
+		if (!ValidCString(mimeType))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return std::string();
@@ -235,7 +243,7 @@ namespace fb {
 			: mTryAgainInterval(tryAgainInterval)
 			, mAttemptLimit(attemptLimit)
 		{
-			mLastLogTime = gpTimer->GetTickCount();
+			mLastLogTime = gpTimer->GetPosixTime();
 			mLogCount = 1;
 		}
 
@@ -246,7 +254,7 @@ namespace fb {
 
 		bool IsTimeToTryAgain()
 		{
-			return gpTimer->GetTickCount() - mLastLogTime >= mTryAgainInterval;
+			return gpTimer->GetPosixTime() - mLastLogTime >= mTryAgainInterval;
 		}
 
 		HostInfo& operator=(const HostInfo& other) {
@@ -260,7 +268,7 @@ namespace fb {
 
 	std::map<std::string, HostInfo> sHostMap;
 	bool Network::isHostAvailable(const char* host) {
-		if (!ValidCStringLength(host))
+		if (!ValidCString(host))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return false;
@@ -289,10 +297,10 @@ namespace fb {
 			if (hi.IsAvailable()) {
 				hi.mLogCount.fetch_add(1);
 			}
-			hi.mLastLogTime = gpTimer->GetTickCount();
+			hi.mLastLogTime = gpTimer->GetPosixTime();
 		}
 		else {
-			HostInfo hi(10, 2000);
+			HostInfo hi(10, 2);
 			sHostMap[hostName] = hi;
 		}
 	}

@@ -137,8 +137,8 @@ public:
 			int height = int(mSize.y);
 			if (!mDepthTarget)
 			{
-				mDepthTarget = renderer.CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, BUFFER_USAGE_DEFAULT,
-					BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
+				mDepthTarget = renderer.CreateTexture(0, width, height, PIXEL_FORMAT_R16_FLOAT, 1,
+					BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV);
 			}
 			TexturePtr rts[] = { mDepthTarget };
 			size_t rtViewIndex[] = { 0 };

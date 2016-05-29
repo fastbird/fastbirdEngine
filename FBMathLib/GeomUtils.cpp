@@ -27,63 +27,80 @@
 
 #include "stdafx.h"
 #include "GeomUtils.h"
-
 #include "MathDefines.h"
+#include "Math.h"
 namespace fb
 {
-void CreateSphereMesh(Real radius, int nRings, int nSegments,
-	std::vector<Vec3>& pos, std::vector<unsigned short>& index, std::vector<Vec3>* normal, std::vector<Vec2>* uv)
-{
-	size_t vertexCount = (nRings +1) * (nSegments+1);
-	size_t indexCount = 6 * nRings * (nSegments +1);
-	assert(indexCount <= std::numeric_limits<unsigned short>::max());
-	pos.reserve(vertexCount);
-	index.reserve(indexCount);
-	if (normal)
-		normal->reserve(vertexCount);
-	if (uv)
-		uv->reserve(vertexCount);
+	void GeomUtils::CreateSphere(Real radius, int nRings, int nSegments,
+		Vec3::Array& pos, std::vector<unsigned short>& index) 
+	{
+		int numVertices = nSegments * (nRings - 1) + 2;
+		pos.resize(numVertices);
 
-	Real fDeltaRingAngle = (PI / nRings);
-	Real fDeltaSegAngle = (2 * PI / nSegments);
-	unsigned short wVerticeIndex = 0 ;
+		float fSliceArc = TWO_PI / nSegments;
+		float fSectionArc = PI / nRings;
+		std::vector<float> fRingz(nRings + 1);
+		std::vector<float> fRingSize(nRings + 1);
+		std::vector<float> fRingx(nSegments + 1);
+		std::vector<float> fRingy(nSegments + 1);
+		for (int i = nRings; i >= 0; --i)
+		{
+			fRingz[i] = cosf(fSectionArc * i);
+			fRingSize[i] = sinf(fSectionArc * i);
+		}
+		for (int i = 0; i <= nSegments; i++)
+		{
+			fRingx[i] = cosf(fSliceArc * i);
+			fRingy[i] = sinf(fSliceArc * i);
+		}
 
-	// Generate the group of rings for the sphere
-	for( int ring = 0; ring <= nRings; ring++ ) {
-		Real r0 = radius * std::sin(ring * fDeltaRingAngle);
-		Real y0 = radius * std::sin(ring * fDeltaRingAngle);
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= nSegments; seg++) {
-			Real x0 = r0 * std::sin(seg * fDeltaSegAngle);
-			Real z0 = r0 * std::cos(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the sphere
-			pos.push_back(Vec3(x0, y0, z0));
-
-			if (normal)
+		int nIndex = 0;
+		pos[nIndex++] = Vec3(0, 0, -radius);
+		for (int j = nRings-1; j>=1; --j)
+		{
+			for (int i = 0; i<nSegments; i++)
 			{
-				normal->push_back(Vec3(x0, y0, z0).NormalizeCopy());
+				Vec3 v(fRingx[i] * fRingSize[j], fRingy[i] * fRingSize[j], fRingz[j]);
+				v *= radius / v.Length();
+				pos[nIndex++] = v;
 			}
-			if (uv)
-			{
-				uv->push_back(Vec2((Real) seg / (Real) nSegments, (Real) ring / (Real) nRings));
-			}
+		}
+		index.clear();
+		pos[nIndex++] = Vec3(0, 0, radius);
 
-			if (ring != nRings) 
-			{
-				// each vertex (except the last) has six indices pointing to it
-				
-				index.push_back(wVerticeIndex + nSegments + 1);
-				index.push_back(wVerticeIndex);
-				index.push_back(wVerticeIndex + nSegments);
-				index.push_back(wVerticeIndex + nSegments + 1);
-				index.push_back(wVerticeIndex + 1);
-				index.push_back(wVerticeIndex);
-				wVerticeIndex ++;
-			}
-		}; // end for seg
-	} // end for ring
+		unsigned short startIndex1 = 0;
+		unsigned short startIndex2 = 1;
+		unsigned short index1 = startIndex1;
+		unsigned short index2 = startIndex2;
+		for (int s = 0; s < nSegments; ++s) {
+			index.push_back(index1);			
+			index.push_back(index2++);
+		}
+		index.push_back(startIndex1);
+		index.push_back(startIndex2);
 
-}
+		index1 = 1;
+		index2 = index1 + nSegments;
+		for (int r = 1; r < nRings - 1; ++r) {
+			startIndex1 = index1;
+			startIndex2 = index2;
+			for (int s = 0; s < nSegments; ++s) {
+				index.push_back(index1++);
+				index.push_back(index2++);
+			}
+			index.push_back(startIndex1);
+			index.push_back(startIndex2);			
+		}
+
+		// last line
+		startIndex1 = index1;
+		startIndex2 = index2;
+		for (int s = 0; s < nSegments; ++s) {
+			index.push_back(index1++);
+			index.push_back(index2);
+		}
+		index.push_back(startIndex1);
+		index.push_back(startIndex2);
+		assert(index.back() == pos.size()-1);
+	}
 }

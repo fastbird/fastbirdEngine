@@ -32,29 +32,31 @@ Direct3D 11 renderer
 Required libraries: \b FBMemoryManager, \b FBDebugLib, \b FBMath
 */
 #pragma warning (disable : 4251)
-#pragma comment(lib, "dxguid.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3d11.lib")
-#ifdef _DEBUG
-#pragma comment(lib, "d3dx11d.lib")
-#else
-#pragma comment(lib, "d3dx11d.lib")
-#endif
-#pragma comment(lib, "d3d9.lib")
-#pragma comment(lib, "zdll.lib")
 
 #define FB_DLL_RENDERERD3D11 __declspec(dllexport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
+#define FB_DLL_THREAD __declspec(dllimport)
 
 #define NOMINMAX
 #include <memory>
 #include <iostream>
-#include <D3DX11.h>
+#include <fstream>
+#include <iterator>
+//#include <D3DX11.h>
+#include <initguid.h>
+#include <d3d11.h>
+#include <dxgidebug.h>
 #include <DXGI.h>
 #include <D3Dcompiler.h>
 #include <map>
+#include <unordered_map>
+#include <atomic>
+#include <cinttypes>
+#include <unordered_set>
 #include <d3d9.h>
 #include <assert.h>
+#include <DirectXTex/DirectXTex.h>
+#include <ScreenGrab/ScreenGrab.h>
 #include "zlib.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBMathLib/Math.h"

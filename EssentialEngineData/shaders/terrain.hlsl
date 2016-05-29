@@ -38,10 +38,10 @@ Texture2D  gDiffuseTexture : register(t0);
 Texture2D  gPatternTexture : register(t1);
 Texture2D  gRampTexture : register(t2);
 
-// dirtColor = gMaterialParam[0].rgb;
-// grassColor = gMaterialParam[1].rgb;
-// rockColor = gMaterialParam[2].rgb;
-// specularIntensity = gMaterialParam[0].w
+// dirtColor = gShaderParams[0].rgb;
+// grassColor = gShaderParams[1].rgb;
+// rockColor = gShaderParams[2].rgb;
+// specularIntensity = gShaderParams[0].w
 
 //--------------------------------------------------------------------------------------
 // Vertex Shader
@@ -62,7 +62,7 @@ struct v2p
 	float3 WorldPos : TEXCOORD2;
 };
 
-v2p terrain_VertexShader( in a2v INPUT )
+v2p Terrain_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 	float3 camPos = {gCamTransform[0][3], gCamTransform[1][3], gCamTransform[2][3]};
@@ -86,14 +86,14 @@ v2p terrain_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 terrain_PixelShader( in v2p INPUT ) : SV_Target
+float4 Terrain_PixelShader( in v2p INPUT ) : SV_Target
 {	
-	const float3 dirtColor = gMaterialParam[0].rgb;
-	const float3 grassColor = gMaterialParam[1].rgb;
-	const float3 rockColor = gMaterialParam[2].rgb;
+	const float3 dirtColor = gShaderParams[0].rgb;
+	const float3 grassColor = gShaderParams[1].rgb;
+	const float3 rockColor = gShaderParams[2].rgb;
 	
-	const float specularIntensity = gMaterialParam[0].w;
-	const float specularPower = gMaterialParam[1].w;
+	const float specularIntensity = gShaderParams[0].w;
+	const float specularPower = gShaderParams[1].w;
 
 	// Sample
 	float2 uv = INPUT.WorldPos.xy;

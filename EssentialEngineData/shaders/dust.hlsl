@@ -26,7 +26,7 @@
 */
 
 //--------------------------------------------------------------------------------------
-// File: dust.hlsl
+// File: Dust.hlsl
 //--------------------------------------------------------------------------------------
 // render as point sprite with geometry
 
@@ -70,7 +70,7 @@ cbuffer cbImmutable
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2g dust_VertexShader( in a2v INPUT )
+v2g Dust_VertexShader( in a2v INPUT )
 {
     v2g OUTPUT;
 
@@ -84,7 +84,7 @@ v2g dust_VertexShader( in a2v INPUT )
 // Geometry Shader
 //--------------------------------------------------------------------------------------
 [maxvertexcount(4)]
-void dust_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
+void Dust_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 {
 	g2p OUTPUT;
 	
@@ -125,7 +125,7 @@ void dust_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 dust_PixelShader( in g2p INPUT ) : SV_Target
+float4 Dust_PixelShader( in g2p INPUT ) : SV_Target
 {	
     return INPUT.Color;    // Yellow, with Alpha = 1
 }

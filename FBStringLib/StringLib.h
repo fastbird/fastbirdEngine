@@ -62,17 +62,18 @@ namespace fb{
 	@return 0 if two strings are same. 1 if \b lhs > \b rhs. -1 if \nlhs < \b rhs
 	*/
 	int StringCompareNoCase(const std::string& lhs, const std::string& rhs);
-	bool StringContainNoCase(const std::string& string, const std::string& find);
+	bool StringContainsNoCase(const std::string& string, const std::string& find);	
 	/** Check whether the \b str is start with the \b pattern.
 	@param lowerCase if true, the \b str will be lowered before checking.
 	*/
-	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase = true);
-	bool EndsWith(const std::string& str, const char* pattern);
+	bool StartsWith(const std::string& str, const std::string& pattern, bool ignoreCase = true);
+	bool EndsWith(const std::string& str, const char* pattern, bool ignoreCase = true);
 	
 	void ToLowerCase(std::string& str);
 	std::string ToLowerCase(const char* sz);
 	void ToLowerCaseFirst(std::string& str);
 	void ToUpperCase(std::string& str);
+	std::string ToUpperCase(const char* sz);
 	void ToUpperCase(std::wstring& str);
 	
 	bool IsNumeric(const char* str);
@@ -110,6 +111,8 @@ namespace fb{
 	/// return data is temporary data. save it to other memory if you need
 	WCHAR* AnsiToWide(const char* source, int size);
 	WCHAR* AnsiToWide(const char* source);
+	/// multi threaded version.
+	std::wstring AnsiToWideMT(const char* source);
 	WCHAR AnsiToWide(const char source);
 
 	// return data is temporary data. save it to other memory if you need

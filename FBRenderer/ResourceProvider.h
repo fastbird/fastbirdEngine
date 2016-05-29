@@ -30,6 +30,7 @@
 #include "ResourceTypes.h"
 
 namespace fb{
+	FB_DECLARE_SMART_PTR(IndexBuffer);
 	FB_DECLARE_SMART_PTR(SamplerState);
 	FB_DECLARE_SMART_PTR(DepthStencilState);
 	FB_DECLARE_SMART_PTR(BlendState);
@@ -52,15 +53,16 @@ namespace fb{
 		virtual TexturePtr GetTexture(int ResourceTypes_Textures, int index);
 		virtual void SwapTexture(int ResourceTypes_Textures, int one, int two);
 		virtual ShaderPtr GetShader(int ResourceTypes_Shaders);
-		virtual void BindShader(int ResourceTypes_Shaders);
+		virtual void BindShader(int ResourceTypes_Shaders, bool unbindEmptySlot);
 		virtual MaterialPtr GetMaterial(int ResourceTypes_Materials);
 		virtual RasterizerStatePtr GetRasterizerState(int ResourceTypes_RasterizerStates);
 		virtual BlendStatePtr GetBlendState(int ResourceTypes_BlendStates);
 		virtual DepthStencilStatePtr GetDepthStencilState(int ResourceTypes_DepthStencilStates);
 		virtual SamplerStatePtr GetSamplerState(int ResourceTypes_SamplerStates);
+		virtual IndexBufferPtr GetIndexBuffer(ResourceTypes::IndexBuffer type);
 		virtual void BindRasterizerState(int ResourceTypes_RasterizerStates);
 		virtual void BindBlendState(int ResourceTypes_BlendStates);
-		virtual void BindDepthStencilState(int ResourceTypes_DepthStencilStates);
+		virtual void BindDepthStencilState(int ResourceTypes_DepthStencilStates, int stencilRef);
 
 		virtual int GetNumToneMaps() const;
 		virtual int GetNumLuminanceMaps() const;

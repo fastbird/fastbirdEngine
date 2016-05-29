@@ -50,7 +50,7 @@ struct v2p
 	float2 UV		: TEXCOORD;
 };
 
-v2p uiverticalgauge_VertexShader( in a2v INPUT )
+v2p UIVerticalGauge_VertexShader( in a2v INPUT )
 {
     v2p OUTPUT;
 
@@ -63,7 +63,7 @@ v2p uiverticalgauge_VertexShader( in a2v INPUT )
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 uiverticalgauge_PixelShader( in v2p INPUT ) : SV_Target
+float4 UIVerticalGauge_PixelShader( in v2p INPUT ) : SV_Target
 {	
 	// signed nc
 	float2 snc = INPUT.UV * 2.0 - 1.0f;
@@ -82,14 +82,14 @@ float4 uiverticalgauge_PixelShader( in v2p INPUT ) : SV_Target
 		return float4(0.521568, 0.521568, 0.505882, 1.0);
 	}
 	
-	float percent = gMaterialParam[1].x * 2.0 - 1.0;
+	float percent = gShaderParams[1].x * 2.0 - 1.0;
 	
 	if (snc.y < percent)
 	{
-		return lerp(gMaterialParam[2], gMaterialParam[3], gMaterialParam[4].x);
+		return lerp(gShaderParams[2], gShaderParams[3], gShaderParams[4].x);
 	}
 	
-	float maximum = gMaterialParam[1].y * 2.0 - 1.0;
+	float maximum = gShaderParams[1].y * 2.0 - 1.0;
 	if (abs(snc.y-maximum)<0.01)
 	{
 		return float4(1, 1, 0, 1);

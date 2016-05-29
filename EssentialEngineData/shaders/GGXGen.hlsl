@@ -62,7 +62,7 @@ float2 GGX_FV(float dotLH, float roughness) {
 	
 }
 
-float4 ggxgen_PixelShader(QuadVS_Output Input) : SV_TARGET
+float4 GGXGenPS_PixelShader(QuadVS_Output Input) : SV_TARGET
 {
 	float4 output;
 	float dotNH = pow(Input.Tex.x, 0.25f);

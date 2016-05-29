@@ -26,7 +26,7 @@
 */
 
 //--------------------------------------------------------------------------------------
-// File: particle.hlsl
+// File: Particle.hlsl
 //--------------------------------------------------------------------------------------
 // render as point sprite with geometry
 
@@ -74,7 +74,7 @@ struct g2p
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2g particle_VertexShader(in a2v INPUT)
+v2g Particle_VertexShader(in a2v INPUT)
 {
 	v2g OUTPUT;
 #if _SCREEN_SPACE
@@ -112,7 +112,7 @@ float2x2 GetMatRot(float rot)
 	return float2x2(c, -s, s, c);
 }
 [maxvertexcount(4)]
-void particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
+void Particle_GeometryShader(point v2g INPUT[1], inout TriangleStream<g2p> stream)
 {
 	g2p OUTPUT;
 	for (int i=0; i<4; i++)
@@ -165,9 +165,9 @@ struct PS_OUT
 #endif
 
 #ifdef _NO_GLOW
-float4 particle_PixelShader(in g2p INPUT):SV_TARGET
+float4 Particle_PixelShader(in g2p INPUT):SV_TARGET
 #else
-PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
+PS_OUT Particle_PixelShader(in g2p INPUT):SV_TARGET
 #endif
 {
 	#ifdef _NO_GLOW
@@ -206,7 +206,7 @@ PS_OUT particle_PixelShader(in g2p INPUT):SV_TARGET
 	return float4(outColor.rgb, outColor.a * depthFade);	
 #else
 	output.color0 = float4(outColor.rgb, outColor.a*depthFade);	
-	float glowPower = gMaterialParam[0].x;
+	float glowPower = gShaderParams[0].x;
 	output.color1 = float4(outColor.xyz * glowPower, outColor.a*depthFade);
 	return output;
 #endif

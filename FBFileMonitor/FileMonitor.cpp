@@ -239,7 +239,7 @@ public:
 	}
 
 	void StartMonitor(const char* dirPath){		
-		if (!ValidCStringLength(dirPath))
+		if (!ValidCString(dirPath))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		}
@@ -295,8 +295,18 @@ public:
 			
 			for (auto it = mChangedFiles.begin(); it != mChangedFiles.end();)
 			{
-				std::string filepath = it->second;
+				std::string filepath = it->second;				
 				std::string filefullpath = it->first + it->second;
+				auto resourceFolder = FileSystem::IsResourceFolder(it->first.c_str());
+				if (resourceFolder) {
+					auto watchDir = FileSystem::UnifyFilepath(it->first.c_str());
+					if (watchDir.back() != '/') {
+						watchDir.push_back('/');
+					}
+					auto resourceKey = FileSystem::GetLastDirectory(watchDir.c_str());
+					filepath = resourceKey + "/" + filepath;
+				}
+
 				auto strs = Split(filepath, "~");
 				if (strs.size() >= 2)
 				{
@@ -374,7 +384,7 @@ public:
 		mIgnoreFileChanges.insert(filepath);
 	}
 	void IgnoreMonitoringOnFile(const char* filepath, float sec){
-		if (!ValidCStringLength(filepath))
+		if (!ValidCString(filepath))
 			return;
 		std::string filekey(filepath);
 		ToLowerCase(filekey);

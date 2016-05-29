@@ -66,10 +66,8 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		auto cmd = renderer.GetRendererOptions();
 
-		mShadowMap = renderer.CreateTexture(0,
-			cmd->r_ShadowMapSize * cmd->r_ShadowCascadeLevels, cmd->r_ShadowMapSize,
-			PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
-			BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
+		mShadowMap = renderer.CreateTexture(0, cmd->r_ShadowMapSize * cmd->r_ShadowCascadeLevels, cmd->r_ShadowMapSize,
+			PIXEL_FORMAT_D32_FLOAT, 1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL_SRV);
 		assert(mShadowMap);		
 		mShadowMap->SetDebugName(FormatString("rt%u_%u_%u_ShadowMap", mRenderTargetId,
 			cmd->r_ShadowMapSize* cmd->r_ShadowCascadeLevels, cmd->r_ShadowMapSize).c_str());
@@ -605,7 +603,7 @@ public:
 		size_t index[] = { 0 };
 		renderer.SetRenderTarget(rts, index, 1, mShadowMap, 0);
 		
-		provider->BindShader(ResourceTypes::Shaders::ShadowMapShader);		
+		provider->BindShader(ResourceTypes::Shaders::ShadowMapShader, true);				
 		//the full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
 		renderer.Clear(0, 0, 0, 0, 1.0f, 0);
 

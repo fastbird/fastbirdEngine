@@ -27,18 +27,29 @@
 
 #include "stdafx.h"
 #include "ShaderDefines.h"
+#include "FBCommonHeaders/Helpers.h"
 namespace fb{
-	ShaderDefine::ShaderDefine(){
+	ShaderDefine::ShaderDefine(const char* _name, const char* _value)
+		: mName(_name), mValue(_value)
+	{
+		mHash = std::hash<std::string>()(mName);
+		hash_combine(mHash, std::hash<std::string>()(mValue));
 	}
 
-	ShaderDefine::ShaderDefine(const char* _name, const char* _value)
-		: name(_name), value(_value)
-	{
+	size_t ShaderDefine::Hash() const {
+		return mHash;
+	}
 
+	const std::string& ShaderDefine::GetName() const {
+		return mName;
+	}
+
+	const std::string& ShaderDefine::GetValue() const {
+		return mValue;
 	}
 
 	bool ShaderDefine::operator == (const ShaderDefine& b) const{
-		if (name == b.name && value == b.value)
+		if (mName == b.mName && mValue == b.mValue)
 			return true;
 
 		return false;
@@ -49,11 +60,22 @@ namespace fb{
 	}
 
 	bool ShaderDefine::operator< (const ShaderDefine& b) const{
-		if (name < b.name)
+		if (mName < b.mName)
 			return true;
-		else if (name == b.name){
-			return value < b.value;
+		else if (mName == b.mName){
+			return mValue < b.mValue;
 		}
 		return false;
 	}
-}
+
+	size_t Hash(const SHADER_DEFINES& shaderDefines) {
+		size_t h = 0;
+		for (auto sd : shaderDefines) {
+			hash_combine(h, sd.Hash());
+		}
+		return h;
+	}
+
+} // namespace fb
+
+

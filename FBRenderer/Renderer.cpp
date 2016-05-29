@@ -50,7 +50,9 @@
 #include "StarDef.h"
 #include "CascadedShadowsManager.h"
 #include "LuaFunctions.h"
+#include "FBCommonHeaders/SpinLock.h"
 #include "FBMathLib/MurmurHash.h"
+#include "FBMathLib/Frustum.h"
 #include "FBConsole/Console.h"
 #include "EssentialEngineData/shaders/Constants.h"
 #include "EssentialEngineData/shaders/CommonDefines.h"
@@ -68,6 +70,7 @@
 #include "TinyXmlLib/tinyxml2.h"
 #include "FBTimer/Timer.h"
 #include "FBDebugLib/DebugLib.h"
+#include "FBThread/Invoker.h"
 #include <set>
 #undef DrawText
 #undef CreateDirectory
@@ -126,6 +129,7 @@ public:
 	TexturePtr mCurrentDSTexture;
 	size_t mCurrentDSViewIndex;
 	Vec2I mCurrentRTSize;
+	std::vector<Viewport> mCurrentViewports;
 	std::vector<RenderTargetPtr> mRenderTargetPool;
 	RenderTargets mRenderTargets;
 	RenderTargets mRenderTargetsEveryFrame;	
@@ -136,6 +140,8 @@ public:
 	CascadedShadowsManagerPtr mShadowManager;
 	VectorMap<std::string, TexturePtr> mTexturesReferenceKeeper;
 	Mat44 mScreenToNDCMatrix;
+	OBJECT_CONSTANTS mObjectConstants;
+	CameraPtr mAxisDrawingCamera;
 
 	struct InputInfo{
 		Vec2I mCurrentMousePos;
@@ -248,18 +254,27 @@ public:
 
 		gpTimer = Timer::GetMainTimer().get();
 		auto& envBindings = mSystemTextureBindings[SystemTextures::Environment];
-		envBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 4 });
+		envBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 4 });
 		auto& depthBindings = mSystemTextureBindings[SystemTextures::Depth];
-		depthBindings.push_back(TextureBinding{ BINDING_SHADER_GS, 5 });
-		depthBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 5 });
+		depthBindings.push_back(TextureBinding{ SHADER_TYPE_GS, 5 });
+		depthBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 5 });
 		auto& cloudBindings = mSystemTextureBindings[SystemTextures::CloudVolume];
-		cloudBindings.push_back(TextureBinding{BINDING_SHADER_PS, 6});
+		cloudBindings.push_back(TextureBinding{SHADER_TYPE_PS, 6});
 		auto& noiseBindings = mSystemTextureBindings[SystemTextures::Noise];
-		noiseBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 7 });
+		noiseBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 7 });
 		auto& shadowBindings = mSystemTextureBindings[SystemTextures::ShadowMap];
-		shadowBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 8 });
+		shadowBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 8 });
 		auto& ggxBindings = mSystemTextureBindings[SystemTextures::GGXPrecalc];
-		ggxBindings.push_back(TextureBinding{ BINDING_SHADER_PS, 9 });
+		ggxBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 9 });
+		auto& permBindings = mSystemTextureBindings[SystemTextures::Permutation];
+		permBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 10 });
+		permBindings.push_back(TextureBinding{ SHADER_TYPE_CS, 10 });
+		auto& gradiantsBindings = mSystemTextureBindings[SystemTextures::Gradiants];
+		gradiantsBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 11 });
+		gradiantsBindings.push_back(TextureBinding{ SHADER_TYPE_CS, 11 });
+		auto& permFloatBindings = mSystemTextureBindings[SystemTextures::ValueNoise];
+		permFloatBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 12 });
+		
 
 		if (Console::HasInstance()){
 			Console::GetInstance().AddObserver(ICVarObserver::Default, mRendererOptions);
@@ -313,6 +328,10 @@ public:
 		return false;
 	}
 
+	void PrepareQuit() {
+		GetPlatformRenderer().PrepareQuit();
+	}
+
 	IPlatformRenderer& GetPlatformRenderer() const {
 		if (!mPlatformRenderer)
 		{
@@ -349,8 +368,12 @@ public:
 			param.mSize = { width, height };
 			param.mWillCreateDepth = true;
 			auto rt = CreateRenderTarget(param);				
-			rt->SetColorTexture(CreateTexture(platformColorTexture));
-			rt->SetDepthTexture(CreateTexture(platformDepthTexture));
+			auto colorTexture = CreateTexture(platformColorTexture);
+			colorTexture->SetType(TEXTURE_TYPE_RENDER_TARGET);
+			rt->SetColorTexture(colorTexture);
+			auto depthTexture = CreateTexture(platformDepthTexture);
+			depthTexture->SetType(TEXTURE_TYPE_DEPTH_STENCIL);
+			rt->SetDepthTexture(depthTexture);
 			rt->SetAssociatedWindowId(id);
 			
 			mWindowRenderTargets[id] = rt;
@@ -563,10 +586,45 @@ public:
 		for (int i = 0; i <  ResourceTypes::SamplerStates::Num; ++i)
 		{
 			auto sampler = mResourceProvider->GetSamplerState(i);
-			SetSamplerState(i, BINDING_SHADER_PS, i);
+			SetSamplerState(i, SHADER_TYPE_PS, i);
 		}
 
 		UpdateRareConstantsBuffer();
+		UpdateImmutableConstantsBuffer();
+
+		auto permTexture = mResourceProvider->GetTexture(ResourceTypes::Textures::Permutation_256_Extended, 0);
+		if (permTexture) {
+			SetSystemTexture(SystemTextures::Permutation, permTexture);
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find permutation texture!");
+		}
+		auto permTextureForCS = mResourceProvider->GetTexture(ResourceTypes::Textures::Permutation_256_Extended, 1);
+		if (permTextureForCS) {
+			SetSystemTexture(SystemTextures::Permutation, permTextureForCS, SHADER_TYPE_CS);
+		}
+
+		auto gradTexture = mResourceProvider->GetTexture(ResourceTypes::Textures::Gradiants_256_Extended, 0);
+		if (gradTexture) {
+			SetSystemTexture(SystemTextures::Gradiants, gradTexture);
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find gradiants texture!");
+		}
+		auto gradTextureforCS = mResourceProvider->GetTexture(ResourceTypes::Textures::Gradiants_256_Extended, 1);
+		if (gradTextureforCS) {
+			SetSystemTexture(SystemTextures::Gradiants, gradTextureforCS, SHADER_TYPE_CS);
+		}
+
+		auto valueNoiseTexture = mResourceProvider->GetTexture(ResourceTypes::Textures::ValueNoise);
+		if (valueNoiseTexture) {
+			SetSystemTexture(SystemTextures::ValueNoise, valueNoiseTexture);
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, "Cannot create value noise texture!");
+		}
+
+		
 
 		const auto& rtSize = GetMainRenderTargetSize();
 		for (auto it : mFonts){
@@ -703,6 +761,7 @@ public:
 		auto mainRT = GetMainRenderTarget();
 		if (!mainRT)
 			return;
+
 		mFrameProfiler.Clear();
 		auto startTime = gpTimer->GetTickCount();		
 		UpdateFrameConstantsBuffer();
@@ -714,6 +773,13 @@ public:
 				rt->Render();
 		}
 
+		if (mRendererOptions->r_debugCam) {
+			auto mainCam = GetMainCamera();
+			auto& t = mainCam->GetTransformation();
+			auto& camPos = t.GetTranslation();
+			QueueDrawText(Vec2I(500, 20), FormatString("CamPos: %f, %f, %f", camPos.x, camPos.y, camPos.z).c_str(),
+				Color::White, 18.f);
+		}
 		Render3DUIsToTexture();
 		for (auto it : mWindowRenderTargets)
 		{
@@ -813,45 +879,58 @@ public:
 		}
 	}
 
-	VectorMap<std::string, IPlatformTextureWeakPtr> sPlatformTextures;
-	TexturePtr CreateTexture(const char* file, bool async){
-		if (!ValidCStringLength(file)){
+	SpinLockWaitSleep sPlatformTexturesLock;
+	using TextureCache = std::unordered_map<std::string, IPlatformTextureWeakPtr>;
+	TextureCache sPlatformTextures;
+
+	TexturePtr CreateTexture(const char* file, const TextureCreationOption& options){
+		if (!ValidCString(file)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
 		}
 		std::string loweredFilepath(file);
 		ToLowerCase(loweredFilepath);
-		auto it = sPlatformTextures.Find(loweredFilepath);
-		if (it != sPlatformTextures.end()){
-			auto platformTexture = it->second.lock();
-			if (platformTexture){
-				auto texture = GetTextureFromExistings(platformTexture);
-				if (texture){
-					return texture;
-				}
+		TextureCache::iterator it;
+		IPlatformTexturePtr cachedPlatformTexture;
+		{
+			EnterSpinLock<SpinLockWaitSleep> lock(sPlatformTexturesLock);
+			it = sPlatformTextures.find(loweredFilepath);
+			if (it != sPlatformTextures.end()) {
+				cachedPlatformTexture = it->second.lock();
 			}
 		}
+		if (cachedPlatformTexture) {
+			auto texture = GetTextureFromExistings(cachedPlatformTexture);
+			if (texture) {
+				return texture;
+			}
+		}		
 
-		IPlatformTexturePtr platformTexture = GetPlatformRenderer().CreateTexture(file, async);
+		IPlatformTexturePtr platformTexture = GetPlatformRenderer().CreateTexture(file, options);
 		if (!platformTexture){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Platform renderer failed to load a texture(%s)", file).c_str());
 			return 0;
 		}
-		sPlatformTextures[loweredFilepath] = platformTexture;
+		{
+			EnterSpinLock<SpinLockWaitSleep> lock(sPlatformTexturesLock);
+			sPlatformTextures[loweredFilepath] = platformTexture;
+		}
 		auto texture = CreateTexture(platformTexture);
 		texture->SetFilePath(file);
+		texture->SetType(TEXTURE_TYPE_DEFAULT);
 		return texture;
 	}
 
 	TexturePtr CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
-		BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type){
-		auto platformTexture = GetPlatformRenderer().CreateTexture(data, width, height, format, usage, buffer_cpu_access, texture_type);
+		int mipLevels, BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type){
+		auto platformTexture = GetPlatformRenderer().CreateTexture(data, width, height, format, mipLevels, usage, buffer_cpu_access, texture_type);
 		if (!platformTexture){
 			Logger::Log(FB_ERROR_LOG_ARG, "Failed to create a platform texture with data.");
 			return 0;
 		}
 		auto texture = Texture::Create();
 		texture->SetPlatformTexture(platformTexture);
+		texture->SetType(texture_type);
 		return texture;
 	}
 
@@ -862,14 +941,20 @@ public:
 	}
 
 	void ReloadTexture(TexturePtr texture, const char* filepath){
-		IPlatformTexturePtr platformTexture = GetPlatformRenderer().CreateTexture(filepath, true);
+		TextureCreationOption option;
+		option.async = true;
+		option.generateMip = texture->GetMipGenerated();		
+		IPlatformTexturePtr platformTexture = GetPlatformRenderer().CreateTexture(filepath, option);
 		if (!platformTexture){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Platform renderer failed to load a texture(%s)", filepath).c_str());
 			return;
 		}
 		std::string loweredFilepath(filepath);
 		ToLowerCase(loweredFilepath);
-		sPlatformTextures[loweredFilepath] = platformTexture;
+		{
+			EnterSpinLock<SpinLockWaitSleep> lock(sPlatformTexturesLock);
+			sPlatformTextures[loweredFilepath] = platformTexture;
+		}
 		texture->SetPlatformTexture(platformTexture);
 	}
 
@@ -906,102 +991,301 @@ public:
 		indexBuffer->SetPlatformBuffer(platformBuffer);
 		return indexBuffer;
 	}
+	
+	struct PlatformShaderKey {
+	private:
+		SHADER_TYPE mShader;
+		std::string mFilepath;
+		SHADER_DEFINES mDefines;
+		size_t mHash;
 
-	struct ShaderCreationInfo{
-		ShaderCreationInfo(const char* path, int shaders, const SHADER_DEFINES& defines)
+	public:
+		PlatformShaderKey(const char* path, SHADER_TYPE shader, const SHADER_DEFINES& defines)
 			: mFilepath(path)
-			, mShaders(shaders)
+			, mShader(shader)
 			, mDefines(defines)
 		{
-			ToLowerCase(mFilepath);
 			std::sort(mDefines.begin(), mDefines.end());
-		}
-		bool operator < (const ShaderCreationInfo& other) const{			
-			if (mShaders < other.mShaders)
-				return true;
-			else if (mShaders == other.mShaders){
-				if (mFilepath < other.mFilepath)
-					return true;
-				else if (mFilepath == other.mFilepath){
-					return mDefines < other.mDefines;
-				}
-			}
-			return false;
+			mHash = std::hash<SHADER_TYPE>()(mShader);
+			hash_combine(mHash, std::hash<std::string>()(mFilepath));
+			hash_combine(mHash, fb::Hash(mDefines));
 		}
 
-		bool operator == (const ShaderCreationInfo& other) const{
-			return mShaders == other.mShaders && mFilepath == other.mFilepath && mDefines == other.mDefines;
+		size_t Hash() {
+			return mHash;
 		}
 
-		int mShaders;
-		std::string mFilepath;		
-		SHADER_DEFINES mDefines;
+		SHADER_TYPE GetShaderType() const {
+			return mShader;
+		}
+		const char* GetFilePath() const {
+			return mFilepath.c_str();
+		}
+
+		const SHADER_DEFINES& GetShaderDefines() const {
+			return mDefines;
+		}
+
+		bool operator < (const PlatformShaderKey& other) const {
+			return mHash < other.mHash;
+		}
+
+		bool operator == (const PlatformShaderKey& other) const {
+			return mHash == other.mHash;
+		}
 	};
-	VectorMap<ShaderCreationInfo, IPlatformShaderWeakPtr> sPlatformShaders;
-	IPlatformShaderPtr FindPlatformShader(const ShaderCreationInfo& key){
+
+	struct ShaderKey {
+		int mShaderTypes;
+		std::string mFilepath;
+		SHADER_DEFINES mDefines;
+		size_t mHash;
+
+		ShaderKey(const char* path, int shaderTypes, const SHADER_DEFINES& defines)
+			: mFilepath(path)
+			, mShaderTypes(shaderTypes)
+			, mDefines(defines)
+		{
+			std::sort(mDefines.begin(), mDefines.end());
+
+			mHash = std::hash<int>()(mShaderTypes);
+			hash_combine(mHash, std::hash<std::string>()(mFilepath));
+			hash_combine(mHash, fb::Hash(mDefines));
+		}
+		bool operator < (const ShaderKey& other) const {
+			return mHash < other.mHash;
+		}
+
+		bool operator == (const ShaderKey& other) const {
+			return mHash == other.mHash;
+		}
+	};
+
+	VectorMap<PlatformShaderKey, IPlatformShaderWeakPtr> sPlatformShaders;
+	IPlatformShaderPtr FindPlatformShader(const PlatformShaderKey& key) {
 		auto it = sPlatformShaders.Find(key);
-		if (it != sPlatformShaders.end()){
+		if (it != sPlatformShaders.end()) {
 			auto platformShader = it->second.lock();
-			if (platformShader){
+			if (platformShader) {
 				return platformShader;
 			}
 		}
 		return 0;
 	}
+
+	VectorMap<ShaderKey, ShaderWeakPtr> sAllShaders;
+	ShaderPtr FindShader(const ShaderKey& key) {
+		auto it = sAllShaders.Find(key);
+		if (it != sAllShaders.end()) {
+			auto shader = it->second.lock();
+			if (shader) {
+				return shader;
+			}
+		}
+		return 0;
+	}
+
+	IPlatformShaderPtr CreatePlatformShader(const char* filepath, SHADER_TYPE shaderType,
+		const SHADER_DEFINES& defines, bool ignoreCache)
+	{
+		IPlatformShaderPtr p;
+		switch (shaderType) {
+		case SHADER_TYPE_VS:
+			p = GetPlatformRenderer().CreateVertexShader(filepath, defines, ignoreCache);
+			break;
+		case SHADER_TYPE_GS:
+			p = GetPlatformRenderer().CreateGeometryShader(filepath, defines, ignoreCache);
+			break;
+		case SHADER_TYPE_PS:
+			p = GetPlatformRenderer().CreatePixelShader(filepath, defines, ignoreCache);
+			break;
+		case SHADER_TYPE_CS:
+			p = GetPlatformRenderer().CreateComputeShader(filepath, defines, ignoreCache);
+			break;
+		default:
+			Logger::Log(FB_ERROR_LOG_ARG, "Unsupported.");
+		}
+		PlatformShaderKey key(filepath, shaderType, defines);
+		sPlatformShaders[key] = p;
+		return p;
+	}
+
 	ShaderPtr CreateShader(const char* filepath, int shaders) {
 		CreateShader(filepath, shaders, SHADER_DEFINES());
 	}
 	ShaderPtr CreateShader(const char* filepath, int shaders,
-		const SHADER_DEFINES& defines) {
-		if (!ValidCStringLength(filepath)){
+		const SHADER_DEFINES& defines) 
+	{
+		if (!ValidCString(filepath)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
+		}		
+
+		SHADER_DEFINES sortedDefines(defines);		
+		std::sort(sortedDefines.begin(), sortedDefines.end());
+		
+		auto key = ShaderKey(filepath, shaders, sortedDefines);
+		auto shader = FindShader(key);
+		if (shader){						
+			return shader;
+		}
+
+		IPlatformShaderPtr pvs;
+		IPlatformShaderPtr pgs;
+		IPlatformShaderPtr pps;
+		IPlatformShaderPtr pcs;
+		if (shaders & SHADER_TYPE_VS) {
+			pvs = CreatePlatformShader(filepath, SHADER_TYPE_VS, sortedDefines, false);
+		}
+		if (shaders & SHADER_TYPE_GS) {
+			pgs = CreatePlatformShader(filepath, SHADER_TYPE_GS, sortedDefines, false);
+		}
+		if (shaders & SHADER_TYPE_PS) {
+			pps = CreatePlatformShader(filepath, SHADER_TYPE_PS, sortedDefines, false);
+		}
+		if (shaders & SHADER_TYPE_CS) {
+			pcs = CreatePlatformShader(filepath, SHADER_TYPE_CS, sortedDefines, false);
+		}
+		if (pvs || pgs || pps || pcs) {
+			auto shader = Shader::Create();
+			shader->SetPlatformShader(pvs, SHADER_TYPE_VS);
+			shader->SetPlatformShader(pgs, SHADER_TYPE_GS);
+			shader->SetPlatformShader(pps, SHADER_TYPE_PS);
+			shader->SetPlatformShader(pcs, SHADER_TYPE_CS);			
+			ShaderKey shaderKey(filepath, shaders, sortedDefines);
+			sAllShaders[shaderKey] = shader;			
+			return shader;
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create a shader(%s)", filepath).c_str());
+			return 0;
+		}
+	}
+
+	ShaderPtr CreateShader(const StringVector& filepaths, const SHADER_DEFINES& defines) {
+		if (filepaths.size() != SHADER_TYPE_COUNT) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		}
 
 		SHADER_DEFINES sortedDefines(defines);
-		std::string loweredPath(filepath);		
 		std::sort(sortedDefines.begin(), sortedDefines.end());
-		auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);		
+
+		auto shader = Shader::Create();
+		for (int i = 0; i < SHADER_TYPE_COUNT; ++i) {
+			auto filepath = filepaths[i];
+			if (filepath.empty())
+				continue;
+
+			PlatformShaderKey key(filepath.c_str(), ShaderType(i), sortedDefines);
+			auto pshader = FindPlatformShader(key);
+			if (pshader) {
+				shader->SetPlatformShader(pshader, ShaderType(i));
+			}
+			else {
+				IPlatformShaderPtr pshader = CreatePlatformShader(filepath.c_str(), ShaderType(i), sortedDefines, false);
+				shader->SetPlatformShader(pshader, ShaderType(i));
+			}			
+		}
+		return shader;
+	}
+
+	bool CreateShader(const ShaderPtr& integratedShader, const char* filepath, SHADER_TYPE shader, const SHADER_DEFINES& defines) {
+		if (!ValidCString(filepath)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return 0;
+		}
+		SHADER_DEFINES sortedDefines(defines);
+		std::sort(sortedDefines.begin(), sortedDefines.end());
+		PlatformShaderKey key(filepath, shader, sortedDefines);
+		auto p = FindPlatformShader(key);
+		if (p) {
+			integratedShader->SetPlatformShader(p, shader);
+			return true;
+		}
+
+		p = CreatePlatformShader(filepath, shader, sortedDefines, false);
+		integratedShader->SetPlatformShader(p, shader);
+		return p!=nullptr;
+	}
+
+	ShaderPtr CompileComputeShader(const char* code, const char* entry, const SHADER_DEFINES& defines) {
+		auto platformShader = GetPlatformRenderer().CompileComputeShader(code, entry, defines);
+		if (platformShader) {
+			auto shader = Shader::Create();
+			shader->SetPlatformShader(platformShader, platformShader->GetShaderType());
+			return shader;
+		}
+		else {
+			return nullptr;
+		}
+	}
+
+	/*ShaderPtr CreateShader(const StringVector& filepaths, const SHADER_DEFINES& defines) {
+		if (filepaths.size() != SHADER_TYPE_COUNT) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return nullptr;
+		}
+		int shaders = 0;
+		bool valid = false;
+		int index = 0;
+		for (auto& path : filepaths) {
+			if (!path.empty()) {
+				valid = true;
+				shaders |= 1 << index;
+			}
+			++index;
+		}
+		if (!valid) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid filepaths.");
+			return nullptr;
+		}
+		SHADER_DEFINES sortedDefines(defines);
+		std::string combinedPath(FormatString("%s,%s,%s,%s,%s,%s",
+			filepaths[0].c_str(), filepaths[1].c_str(), filepaths[2].c_str(), 
+			filepaths[3].c_str(), filepaths[4].c_str(), filepaths[5].c_str()));
+		std::sort(sortedDefines.begin(), sortedDefines.end());
+		auto loweredPath = ToLowerCase(combinedPath.c_str());
+		auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);
 		auto platformShader = FindPlatformShader(key);
-		if (platformShader){
+		if (platformShader) {
 			auto shader = GetShaderFromExistings(platformShader);
-			if (shader){				
+			if (shader) {
 				assert(shader->GetShaderDefines() == sortedDefines);
 				return shader;
 			}
 		}
 		if (!platformShader)
-			platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines, false);
-		if (platformShader){
+			platformShader = GetPlatformRenderer().CreateShader(filepaths, shaders, sortedDefines, false);
+		if (platformShader) {
 			auto shader = Shader::Create();
 			shader->SetPlatformShader(platformShader);
 			shader->SetShaderDefines(sortedDefines);
-			shader->SetPath(filepath);
+			shader->SetPath(combinedPath.c_str());
 			shader->SetBindingShaders(shaders);
-			sPlatformShaders[key] = platformShader;			
+			sPlatformShaders[key] = platformShader;
 			return shader;
 		}
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create a shader(%s)", filepath).c_str());
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to create a shader(%s)", loweredPath.c_str()).c_str());
 		return 0;
-	}
 
-	void ReloadShader(ShaderPtr shader, const char* filepath){
-		auto sortedDefines = shader->GetShaderDefines();
-		std::sort(sortedDefines.begin(), sortedDefines.end());
-		auto shaders = shader->GetBindingShaders();
-		auto platformShader = GetPlatformRenderer().CreateShader(filepath, shaders, sortedDefines, true);
-		if (!platformShader->GetCompileFailed()){
-			auto loweredPath = std::string(filepath);
-			ToLowerCase(loweredPath);
-			auto key = ShaderCreationInfo(loweredPath.c_str(), shaders, sortedDefines);
-			shader->SetPlatformShader(platformShader);
-			sPlatformShaders[key] = platformShader;
-		}
+
+	}*/
+
+	void ReloadShader(const char* filepath){
+		for (auto it : sPlatformShaders) {
+			auto platformShader = it.second.lock();
+			if (platformShader && platformShader->IsRelatedFile(filepath)) {
+				auto shaderType = it.first.GetShaderType();
+				auto hlslPath = it.first.GetFilePath();
+				auto& defines = it.first.GetShaderDefines();
+				platformShader->Reload(defines);		
+			}
+		}		
 	}
 
 	VectorMap<std::string, MaterialWeakPtr> sLoadedMaterials;
 	MaterialPtr CreateMaterial(const char* file){
-		if (!ValidCStringLength(file)){
+		if (!ValidCString(file)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
 		}
@@ -1020,7 +1304,20 @@ public:
 
 		sLoadedMaterials[loweredPath] = material;
 		return material->Clone();
+	}
 
+	bool ReloadMaterial(const char* file) {
+		std::string loweredPath(file);
+		ToLowerCase(loweredPath);
+		auto it = sLoadedMaterials.Find(loweredPath);
+		if (it != sLoadedMaterials.end()) {
+			auto material = it->second.lock();
+			if (material) {
+				material->Reload();
+				return true;
+			}
+		}		
+		return false;
 	}
 	
 	VectorMap<unsigned, InputLayoutWeakPtr> sInputLayouts;
@@ -1034,14 +1331,14 @@ public:
 		void* data = shader->GetVSByteCode(size);
 		if (!data){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid shader");
-			return 0;
+			return nullptr;
 		}
 		auto descsSize = sizeof(INPUT_ELEMENT_DESCS) * descs.size();
 		auto totalSize = descsSize + size;
-		BinaryData temp(new char[totalSize], std::default_delete<char[]>());
-		memcpy(temp.get(), &descs[0], sizeof(descs));
-		memcpy(temp.get() + descsSize, data, size);
-		unsigned key = murmur3_32(temp.get(), totalSize, murmurSeed);
+		ByteArray temp(totalSize);
+		memcpy(&temp[0], &descs[0], sizeof(descs));
+		memcpy(&temp[0] + descsSize, data, size);
+		unsigned key = murmur3_32((const char*)&temp[0], totalSize, murmurSeed);
 		auto it = sInputLayouts.Find(key);
 		if (it != sInputLayouts.end()){
 			auto inputLayout = it->second.lock();
@@ -1049,6 +1346,8 @@ public:
 				return inputLayout;
 		}
 		auto platformInputLayout = GetPlatformRenderer().CreateInputLayout(descs, data, size);
+		if (!platformInputLayout)
+			return nullptr;
 		auto inputLayout = InputLayout::Create();
 		inputLayout->SetPlatformInputLayout(platformInputLayout);
 		sInputLayouts[key] = inputLayout;
@@ -1095,6 +1394,7 @@ public:
 
 	VectorMap<DEPTH_STENCIL_DESC, DepthStencilStateWeakPtr> sDepthStates;
 	DepthStencilStatePtr CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){
+		desc.ComputeHash();
 		auto it = sDepthStates.Find(desc);
 		if (it != sDepthStates.end()){
 			auto state = it->second.lock();
@@ -1127,21 +1427,20 @@ public:
 	}
 
 	// holding strong pointer
-	VectorMap<std::string, TextureAtlasPtr> sTextureAtlas;
-	TextureAtlasPtr GetTextureAtlas(const char* path){
-		std::string filepath(path);
-		ToLowerCase(filepath);
-		auto it = sTextureAtlas.Find(filepath);
+	std::unordered_map<std::string, TextureAtlasPtr> sTextureAtlas;
+	TextureAtlasPtr GetTextureAtlas(const char* path){		
+		auto it = sTextureAtlas.find(path);
 		if (it != sTextureAtlas.end()){
 			return it->second;
 		}
 
 		tinyxml2::XMLDocument doc;
-		doc.LoadFile(filepath.c_str());
+		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(path);
+		doc.LoadFile(resourcePath.c_str());
 		if (doc.Error())
 		{
 			const char* errMsg = doc.GetErrorStr1();
-			if (ValidCStringLength(errMsg)){
+			if (ValidCString(errMsg)){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s(%s)", errMsg, path));
 			}
 			else{
@@ -1153,7 +1452,6 @@ public:
 		tinyxml2::XMLElement* pRoot = doc.FirstChildElement("TextureAtlas");
 		if (!pRoot)
 		{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Invalid Texture Atlas(%s)", path).c_str());
 			return 0;
 		}
 
@@ -1162,9 +1460,12 @@ public:
 		if (szBuffer)
 		{			
 			pTextureAtlas = TextureAtlas::Create();
-			pTextureAtlas->SetPath(filepath.c_str());			
-			pTextureAtlas->SetTexture(CreateTexture(szBuffer, true));
-			sTextureAtlas[filepath] = pTextureAtlas;		
+			pTextureAtlas->SetPath(path);
+			TextureCreationOption option;
+			option.async = false;
+			option.generateMip = false;
+			pTextureAtlas->SetTexture(CreateTexture(szBuffer, option));
+			sTextureAtlas[path] = pTextureAtlas;
 			if (!pTextureAtlas->GetTexture())
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Texture for atlas(%s) is not found", szBuffer).c_str());
@@ -1177,36 +1478,71 @@ public:
 			return 0;
 		}
 
-		auto texture = pTextureAtlas->GetTexture();
-		Vec2I textureSize = texture->GetSize();
-		if (textureSize.x != 0 && textureSize.y != 0)
-		{
-			tinyxml2::XMLElement* pRegionElem = pRoot->FirstChildElement("region");
-			while (pRegionElem)
-			{
-				szBuffer = pRegionElem->Attribute("name");
-				if (!szBuffer)
-				{
-					Logger::Log(FB_DEFAULT_LOG_ARG, "No name for texture atlas region");
-					continue;
-				}
-
-				auto pRegion = pTextureAtlas->AddRegion(szBuffer);				
-				pRegion->mID = pRegionElem->UnsignedAttribute("id");
-				pRegion->mStart.x = pRegionElem->IntAttribute("x");
-				pRegion->mStart.y = pRegionElem->IntAttribute("y");
-				pRegion->mSize.x = pRegionElem->IntAttribute("width");
-				pRegion->mSize.y = pRegionElem->IntAttribute("height");
-				Vec2 start((Real)pRegion->mStart.x, (Real)pRegion->mStart.y);
-				Vec2 end(start.x + pRegion->mSize.x, start.y + pRegion->mSize.y);
-				pRegion->mUVStart = start / textureSize;
-				pRegion->mUVEnd = end / textureSize;
-				pRegionElem = pRegionElem->NextSiblingElement();
-			}
+		auto texture = pTextureAtlas->GetTexture();		
+		if (!texture) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Texture atlas doesn't have the platform texture.");
+			return nullptr;
 		}
-		else
+
+		Vec2I textureSize = texture->GetSize();
+		bool divideUVLater = false;
+		if (textureSize.x == 0 || textureSize.y == 0) {
+			textureSize.x = 1;
+			textureSize.y = 1;
+			divideUVLater = true;
+		}
+		tinyxml2::XMLElement* pRegionElem = pRoot->FirstChildElement("region");
+		while (pRegionElem)
 		{
-			Logger::Log(FB_ERROR_LOG_ARG, "Texture size is 0, 0.");
+			szBuffer = pRegionElem->Attribute("name");
+			if (!szBuffer)
+			{
+				Logger::Log(FB_DEFAULT_LOG_ARG, "No name for texture atlas region");
+				continue;
+			}
+
+			auto pRegion = pTextureAtlas->AddRegion(szBuffer);				
+			pRegion->mID = pRegionElem->UnsignedAttribute("id");
+			pRegion->mStart.x = pRegionElem->IntAttribute("x");
+			pRegion->mStart.y = pRegionElem->IntAttribute("y");
+			pRegion->mSize.x = pRegionElem->IntAttribute("width");
+			pRegion->mSize.y = pRegionElem->IntAttribute("height");
+			Vec2 start((Real)pRegion->mStart.x, (Real)pRegion->mStart.y);
+			Vec2 end(start.x + pRegion->mSize.x, start.y + pRegion->mSize.y);
+			pRegion->mUVStart = start / textureSize;
+			pRegion->mUVEnd = end / textureSize;
+			pRegionElem = pRegionElem->NextSiblingElement();			
+		}
+
+		struct Divider {
+			TextureAtlasPtr mTextureAtlas;
+			Divider(TextureAtlasPtr& textureAtlas)
+				: mTextureAtlas(textureAtlas) 
+			{
+			}
+			
+			void operator()() {
+				auto t = mTextureAtlas->GetTexture();
+				if (!t->IsReady()) {
+					Invoker::GetInstance().InvokeAtEnd(Divider(mTextureAtlas));
+					return;
+				}
+				Vec2 textureSize((Real)t->GetWidth(), (Real)t->GetHeight());
+				if (textureSize.x == 0.f || textureSize.y == 0.f) {
+					Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+						"TextureAtlas(%s) has size 0,0.", mTextureAtlas->GetPath()).c_str());
+				}
+				auto numRegions = mTextureAtlas->GetNumRegions();
+				for (size_t i = 0; i < numRegions; ++i) {
+					auto region = mTextureAtlas->GetRegion(i);
+					assert(region);
+					region->mUVStart = region->mUVStart / textureSize;
+					region->mUVEnd = region->mUVEnd / textureSize;
+				}
+			}
+		};
+		if (divideUVLater) {
+			Invoker::GetInstance().InvokeAtEnd(Divider(pTextureAtlas));
 		}
 
 		return pTextureAtlas;
@@ -1227,7 +1563,7 @@ public:
 		auto it = mTempDepthBuffers.Find(depthkey);
 		if (it == mTempDepthBuffers.end())
 		{
-			auto depthBuffer = CreateTexture(0, size.x, size.y, PIXEL_FORMAT_D32_FLOAT, BUFFER_USAGE_DEFAULT,
+			auto depthBuffer = CreateTexture(0, size.x, size.y, PIXEL_FORMAT_D32_FLOAT, 1, BUFFER_USAGE_DEFAULT,
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
 			mTempDepthBuffers.Insert(std::make_pair(depthkey, depthBuffer));
 			return depthBuffer;
@@ -1258,7 +1594,7 @@ public:
 		if (mCurrentDSTexture == pDepthStencil && mCurrentDSViewIndex == dsViewIndex){
 			if (mCurrentRTTextures.size() == num && mCurrentViewIndices.size() == num){
 				bool same = true;
-				for (int i = 0; i < num; ++i){
+				for (int i = 0; i < num && same; ++i){
 					if (mCurrentRTTextures[i] != pRenderTargets[i] || 
 						mCurrentViewIndices[i] != rtViewIndex[i]){
 						same = false;
@@ -1290,15 +1626,8 @@ public:
 		mCurrentDSTexture = pDepthStencil;
 		mCurrentDSViewIndex = dsViewIndex;
 		IPlatformTexturePtr platformRTs[4] = { 0 };
-		//mSelf->mCurrentRenderTargetTextureIds.clear();
 		for (int i = 0; i < num; ++i){
-			platformRTs[i] = pRenderTargets[i] ? pRenderTargets[i]->GetPlatformTexture() : 0;			
-			/*while (mSelf->mCurrentRenderTargetTextureIds.size() <= (unsigned)i){
-				mSelf->mCurrentRenderTargetTextureIds.push_back(-1);
-			}
-			mSelf->mCurrentRenderTargetTextureIds[i] = pRenderTargets[i] ? 
-				pRenderTargets[i]->GetTextureID()
-				: -1;*/
+			platformRTs[i] = pRenderTargets[i] ? pRenderTargets[i]->GetPlatformTexture() : 0;					
 		}
 
 		GetPlatformRenderer().SetRenderTarget(platformRTs, rtViewIndex, num,
@@ -1345,7 +1674,34 @@ public:
 		}
 	}
 
+	void SetRenderTargetAtSlot(TexturePtr pRenderTarget, size_t viewIndex, size_t slot) {
+		auto rtTextures = mCurrentRTTextures;
+		auto viewIndices = mCurrentViewIndices;
+		assert(rtTextures.size() == viewIndices.size());
+		while (rtTextures.size() <= slot) {
+			rtTextures.push_back(0);
+			viewIndices.push_back(0);
+		}
+		rtTextures[slot] = pRenderTarget;
+		viewIndices[slot] = viewIndex;
+
+		SetRenderTarget(&rtTextures[0], &viewIndices[0], rtTextures.size(), mCurrentDSTexture, mCurrentDSViewIndex);
+	}
+
+	void SetDepthTarget(const TexturePtr& pDepthStencil, size_t dsViewIndex) {
+		if (mCurrentDSTexture == pDepthStencil && mCurrentDSViewIndex == dsViewIndex)
+			return;
+		mCurrentDSTexture = pDepthStencil;
+		mCurrentDSViewIndex = dsViewIndex;
+		GetPlatformRenderer().SetDepthTarget(pDepthStencil ? pDepthStencil->GetPlatformTexture() : 0, dsViewIndex);
+	}
+
+	const std::vector<Viewport>& GetViewports() {
+		return mCurrentViewports;
+	}
 	void SetViewports(const Viewport viewports[], int num){
+		mCurrentViewports.resize(num);
+		memcpy(&mCurrentViewports[0], viewports, num * sizeof(Viewport));
 		GetPlatformRenderer().SetViewports(viewports, num);
 	}
 
@@ -1371,28 +1727,44 @@ public:
 		mCurrentTopology = pt;
 	}
 
-	void SetTextures(TexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot){
+	void SetTextures(TexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot){
 		for (int i = 0; i < num; ++i){
 			if (pTextures[i])
 				pTextures[i]->Bind(shaderType, startSlot + i);
 		}
 	}
 
-	void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture){
+	std::unordered_map<SystemTextures::Enum, TextureWeakPtr> sSystemTextures;
+	void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture, int shader_type_mask = ~SHADER_TYPE_CS){
 		auto it = mSystemTextureBindings.Find(type);
 		if (it == mSystemTextureBindings.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find the binding information for the system texture(%d)", type).c_str());
 			return;
 		}
 		if (texture){
+			bool binded = false;
 			for (const auto& binding : it->second){
-				texture->Bind(binding.mShader, binding.mSlot);
+				if (shader_type_mask & binding.mShader) {
+					texture->Bind(binding.mShader, binding.mSlot);
+					binded = true;
+				}
 			}
+			if (binded && shader_type_mask != SHADER_TYPE_CS)
+				sSystemTextures[type] = texture;
 		}
 		else{
 			for (const auto& binding : it->second){
 				UnbindTexture(binding.mShader, binding.mSlot);				
 			}
+		}
+	}
+
+	void BindSystemTexture(SystemTextures::Enum systemTexture) {
+		auto it = sSystemTextures.find(systemTexture);
+		if (it != sSystemTextures.end()) {
+			auto t = it->second.lock();
+			if (t)
+				SetSystemTexture(systemTexture, it->second.lock());
 		}
 	}
 	
@@ -1407,7 +1779,7 @@ public:
 		auto depthWriteShader = mResourceProvider->GetShader(ResourceTypes::Shaders::DepthWriteVSPS);
 		if (depthWriteShader){
 			SetPositionInputLayout();
-			depthWriteShader->Bind();
+			depthWriteShader->Bind(true);
 		}
 	}
 
@@ -1415,7 +1787,7 @@ public:
 		auto cloudDepthWriteShader = mResourceProvider->GetShader(ResourceTypes::Shaders::CloudDepthWriteVSPS);
 		if (cloudDepthWriteShader){
 			SetPositionInputLayout();
-			cloudDepthWriteShader->Bind();
+			cloudDepthWriteShader->Bind(true);
 		}
 	}
 
@@ -1435,7 +1807,7 @@ public:
 		else{
 			mPositionInputLayout->Bind();
 		}
-	}
+	}	
 
 	void SetSystemTextureBindings(SystemTextures::Enum type, const TextureBindings& bindings){
 		mSystemTextureBindings[type] = bindings;
@@ -1478,7 +1850,7 @@ public:
 	}
 
 	// sampler
-	void SetSamplerState(int ResourceTypes_SamplerStates, BINDING_SHADER shader, int slot){
+	void SetSamplerState(int ResourceTypes_SamplerStates, SHADER_TYPE shader, int slot){
 		auto sampler = mResourceProvider->GetSamplerState(ResourceTypes_SamplerStates);
 		if (!sampler){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find sampler (%d)", ResourceTypes_SamplerStates).c_str());
@@ -1496,7 +1868,7 @@ public:
 			return;
 		if (record)
 			mFrameProfiler.NumUpdateObjectConst += 1;
-
+		mObjectConstants = *(OBJECT_CONSTANTS*)pData;
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Object, pData, sizeof(OBJECT_CONSTANTS));
 	}
 
@@ -1539,6 +1911,10 @@ public:
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Camera, &mCameraConstants, sizeof(CAMERA_CONSTANTS));
 	}
 
+	void UpdateCameraConstantsBuffer(const void* manualData) {
+		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Camera, manualData, sizeof(CAMERA_CONSTANTS));
+	}
+
 	void UpdateRenderTargetConstantsBuffer(){
 		mRenderTargetConstants.gScreenSize.x = (float)mCurrentRTSize.x;
 		mRenderTargetConstants.gScreenSize.y = (float)mCurrentRTSize.y;
@@ -1579,13 +1955,19 @@ public:
 
 	}
 	void UpdateRadConstantsBuffer(const void* pData){
-		IMMUTABLE_CONSTANTS constants;
+		RAD_CONSTANTS constants;
 		memcpy(constants.gIrradConstsnts, pData, sizeof(Vec4f) * 9);
 		std::vector<Vec2> hammersley;
 		GenerateHammersley(ENV_SAMPLES, hammersley);
 		memcpy(constants.gHammersley, &hammersley[0], sizeof(Vec2f)* ENV_SAMPLES);
 		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Radiance, 
-			&constants, sizeof(IMMUTABLE_CONSTANTS));
+			&constants, sizeof(RAD_CONSTANTS));
+	}
+
+	void UpdateImmutableConstantsBuffer() {
+		IMMUTABLE_CONSTANTS buffer;
+		GetPlatformRenderer().UpdateShaderConstants(ShaderConstants::Immutable,
+			&buffer, sizeof(IMMUTABLE_CONSTANTS));
 	}
 
 	void UpdateShadowConstantsBuffer(const void* pData){
@@ -1594,12 +1976,12 @@ public:
 			pData, sizeof(SHADOW_CONSTANTS));
 	}
 
-	void* MapMaterialParameterBuffer(){
-		return GetPlatformRenderer().MapMaterialParameterBuffer();
+	void* MapShaderConstantsBuffer(){
+		return GetPlatformRenderer().MapShaderConstantsBuffer();
 	}
 
-	void UnmapMaterialParameterBuffer(){
-		GetPlatformRenderer().UnmapMaterialParameterBuffer();
+	void UnmapShaderConstantsBuffer(){
+		GetPlatformRenderer().UnmapShaderConstantsBuffer();
 	}
 	void* MapBigBuffer(){
 		return GetPlatformRenderer().MapBigBuffer();
@@ -1617,7 +1999,7 @@ public:
 			a++;
 		}*/
 		GetPlatformRenderer().DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
-		mFrameProfiler.NumDrawIndexedCall++;
+		mFrameProfiler.NumIndexedDrawCall++;
 		mFrameProfiler.NumIndexCount += indexCount;
 	}
 
@@ -1642,17 +2024,16 @@ public:
 			shader = mResourceProvider->GetShader(ResourceTypes::Shaders::FullscreenQuadNearVS);
 
 		if (shader){
-			shader->Bind();
+			shader->Bind(true);
 		}
 		else{
 			return;
 		}
 
 		if (pixelShader)
-			pixelShader->BindPS();
+			pixelShader->Bind(false);
 
-		UnbindInputLayout();
-		UnbindShader(BINDING_SHADER_GS);
+		UnbindInputLayout();		
 		// draw
 		// using full screen triangle : http://blog.naver.com/jungwan82/220108100698
 		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1670,7 +2051,7 @@ public:
 		pVB->Unmap(0);
 		pVB->Bind();
 		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		mat->SetMaterialParameter(0, color);
+		mat->SetShaderParameter(0, color);
 		mat->Bind(true);
 		Draw(3, 0);
 	}
@@ -1683,16 +2064,16 @@ public:
 			0, 0, 1.f, 0.f,
 			0, 0, 0, 1.f);
 
-		MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
 		DEFAULT_INPUTS::V_PC data[4] = {
 			DEFAULT_INPUTS::V_PC(Vec3((float)pos.x, (float)pos.y, 0.f), color.Get4Byte()),
 			DEFAULT_INPUTS::V_PC(Vec3((float)pos.x + size.x, (float)pos.y, 0.f), color.Get4Byte()),
 			DEFAULT_INPUTS::V_PC(Vec3((float)pos.x, (float)pos.y + size.y, 0.f), color.Get4Byte()),
 			DEFAULT_INPUTS::V_PC(Vec3((float)pos.x + size.x, (float)pos.y + size.y, 0.f), color.Get4Byte()),
-		};
+		};		
 		for (int i = 0; i < 4; i++){
 			data[i].p = (screenToProj * Vec4(data[i].p, 1.0)).GetXYZ();
 		}
+		MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
 		if (mapped.pData)
 		{
 			memcpy(mapped.pData, data, sizeof(data));
@@ -1714,6 +2095,87 @@ public:
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Bind();
 		// draw
 		Draw(4, 0);
+	}
+
+	void DrawFrustum(const Frustum& frustum)
+	{
+		auto points  = frustum.ToPoints();
+		assert(points.size() == 8);
+		DEFAULT_INPUTS::V_PC data[8];
+		for (int i = 0; i < 8; ++i) {
+			data[i].p = points[i];
+			if (i<4)
+				data[i].color = Color::Green.Get4Byte();
+			else
+				data[i].color = Color::Blue.Get4Byte();
+		}		
+		MapData mapped = mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapped.pData)
+		{
+			memcpy(mapped.pData, data, sizeof(data));
+			mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Unmap(0);
+		}
+
+		auto indexBuffer = mResourceProvider->GetIndexBuffer(ResourceTypes::IndexBuffer::Frustum);
+		if (!indexBuffer) {
+			Logger::Log(FB_ERROR_LOG_ARG, "IndexBuffer is null.");
+			return;
+		}
+		indexBuffer->Bind(0);
+		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR]->Bind();		
+		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		auto quadMateiral = mResourceProvider->GetMaterial(ResourceTypes::Materials::Frustum);
+		if (quadMateiral) {
+			quadMateiral->Bind(true);
+		}
+		DrawIndexed(indexBuffer->GetNumIndices(), 0, 0);		
+
+		/// near (left, bottom), (left, top), (right, bottom), (right, top)
+		/// far (left, bottom), (left, top), (right, bottom), (right, top)
+		DrawLine(points[0], points[1], Color::Green, Color::Green);
+		DrawLine(points[0], points[2], Color::Green, Color::Green);
+		DrawLine(points[3], points[1], Color::Green, Color::Green);
+		DrawLine(points[3], points[2], Color::Green, Color::Green);
+
+		DrawLine(points[4], points[5], Color::Blue, Color::Blue);
+		DrawLine(points[4], points[6], Color::Blue, Color::Blue);
+		DrawLine(points[7], points[5], Color::Blue, Color::Blue);
+		DrawLine(points[7], points[6], Color::Blue, Color::Blue);
+
+		DrawLine(points[0], points[4], Color::Green, Color::Blue);
+		DrawLine(points[1], points[5], Color::Green, Color::Blue);
+		DrawLine(points[2], points[6], Color::Green, Color::Blue);
+		DrawLine(points[3], points[7], Color::Green, Color::Blue);
+	}
+
+	void DrawLine(const Vec3& start, const Vec3& end,
+		const Color& color0, const Color& color1)
+	{
+		mDebugHud->DrawLineNow(start, end, color0, color1);
+	}
+
+	void DrawBox(const std::vector<Vec3>& corners, const Color& color)
+	{
+		/// bottom:ll lr ur ul, top:ll lr ur ul
+		DrawLine(corners[0], corners[1], color, color);
+		DrawLine(corners[0], corners[3], color, color);
+		DrawLine(corners[2], corners[1], color, color);
+		DrawLine(corners[2], corners[3], color, color);
+
+		DrawLine(corners[4], corners[5], color, color);
+		DrawLine(corners[4], corners[7], color, color);
+		DrawLine(corners[6], corners[5], color, color);
+		DrawLine(corners[6], corners[7], color, color);
+
+		DrawLine(corners[0], corners[4], color, color);
+		DrawLine(corners[1], corners[5], color, color);
+		DrawLine(corners[2], corners[6], color, color);
+		DrawLine(corners[3], corners[7], color, color);
+	}
+
+	void DrawPoints(const std::vector<Vec3>& points, const Color& color)
+	{
+		mDebugHud->DrawPointsNow(points, color);		
 	}
 
 	void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, TexturePtr texture, MaterialPtr materialOverride = 0){
@@ -1756,7 +2218,7 @@ public:
 			}
 		}
 			
-		texture->Bind(BINDING_SHADER_PS, 0);
+		texture->Bind(SHADER_TYPE_PS, 0);
 		mDynVBs[DEFAULT_INPUTS::POSITION_COLOR_TEXCOORD]->Bind();
 		Draw(4, 0);
 	}
@@ -1775,6 +2237,46 @@ public:
 		SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
 		pMat->Bind(true);
 		Draw(1, 0);
+	}
+
+	void DrawCurrentAxis() {
+		if (!mAxisDrawingCamera) {
+			mAxisDrawingCamera = Camera::Create();			
+			mAxisDrawingCamera->SetOrthogonal(true);
+			mAxisDrawingCamera->SetOrthogonalData(-1.5f, 1.5f, 1.5f, -1.5f);
+			mAxisDrawingCamera->SetNearFar(-1.5f, 1.5f);
+		}
+		auto prevCamera = SetCamera(mAxisDrawingCamera);
+		auto rtSize = GetCurrentRenderTargetSize();
+		float width = 60;
+		float gap = 20;
+		auto vpBackup = mCurrentViewports;
+		Viewport vp = { gap, rtSize.y - gap - width, width, width, 0.f, 1.f };		
+		SetViewports(&vp, 1);
+		auto camT = prevCamera->GetTransformation();
+		struct DrawData {
+			Vec3 dir;
+			Color color;
+		};
+		DrawData dd[] = {
+			{camT.GetRight(), Color::Red},
+			{camT.GetForward(), Color::Green},
+			{camT.GetUp(), Color::Blue} };
+		std::sort(dd, dd + 3, [](const DrawData& a, const DrawData&b) {
+			return a.dir.y > b.dir.y;
+		});
+		for (int i = 0; i < 3; ++i) {
+			DrawLine(Vec3::ZERO, dd[i].dir, dd[i].color, dd[i].color);
+		}
+		
+		SetViewports(&vpBackup[0], vpBackup.size());
+		SetCamera(prevCamera);		
+	}
+
+	void Draw3DTextNow(const Vec3& worldpos, const char* text, const Color& color, Real size) {
+		if (mDebugHud) {
+			mDebugHud->Draw3DTextNow(worldpos, AnsiToWide(text), color, size);
+		}
 	}
 
 	void QueueDrawText(const Vec2I& pos, WCHAR* text, const Color& color, Real size){
@@ -1882,6 +2384,11 @@ public:
 		if (!mDebugHud)
 			return;
 		RenderEventMarker devent("RenderDebugHud");
+
+		if (mRendererOptions->r_renderAxis) {
+			DrawCurrentAxis();
+		}
+
 		RestoreRenderStates();
 		RenderParam param;
 		param.mRenderPass = PASS_NORMAL;
@@ -1917,6 +2424,10 @@ public:
 
 	void Clear(Real r, Real g, Real b, Real a){
 		GetPlatformRenderer().Clear(r, g, b, a);
+	}
+
+	void ClearDepthStencil(Real z, UINT8 stencil) {
+		GetPlatformRenderer().ClearDepthStencil(z, stencil);
 	}
 
 	// Avoid to use
@@ -1992,7 +2503,7 @@ public:
 		ChangeResolution(window, resol);
 	}
 
-	void UnbindTexture(BINDING_SHADER shader, int slot){
+	void UnbindTexture(SHADER_TYPE shader, int slot){
 		GetPlatformRenderer().UnbindTexture(shader, slot);
 	}
 
@@ -2004,7 +2515,7 @@ public:
 		GetPlatformRenderer().SetVertexBuffers(0, 0, 0, 0, 0);
 	}
 	
-	void UnbindShader(BINDING_SHADER shader){
+	void UnbindShader(SHADER_TYPE shader){
 		GetPlatformRenderer().UnbindShader(shader);
 	}
 
@@ -2168,6 +2679,14 @@ public:
 		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 		y += yStep;
 
+		swprintf_s(msg, 255, L"Num indexed draw calls = %d", profiler.NumIndexedDrawCall);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
+		swprintf_s(msg, 255, L"Num index count = %d", profiler.NumIndexCount);
+		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
+		y += yStep;
+
 		swprintf_s(msg, 255, L"Num UpdateObjectConstantsBuffer = %u", profiler.NumUpdateObjectConst);
 		mSelf->QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 		y += yStep * 2;		
@@ -2305,7 +2824,7 @@ public:
 		float halfWidth = width / 2.f;
 		auto& renderer = Renderer::GetInstance();
 		TexturePtr pStaging = renderer.CreateTexture(0, width, width, PIXEL_FORMAT_R8G8B8A8_UNORM,
-			BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_CUBE_MAP);
+			1, BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_CUBE_MAP);
 		for (int i = 0; i < 6; i++)
 		{
 			unsigned subResource = i * (maxLod + 1) + usingLod;
@@ -2495,7 +3014,7 @@ public:
 		return g;
 	}
 
-	void GetSampleOffsets_GaussBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier){
+	void GetSampleOffsets_GaussianBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier){
 		assert(avTexCoordOffset && avSampleWeight);
 		auto it = mGauss5x5.Find(std::make_pair(texWidth, texHeight));
 		if (it == mGauss5x5.end())
@@ -2584,7 +3103,7 @@ public:
 	}
 
 	void SetFontTextureAtlas(const char* path){
-		if (!ValidCStringLength(path)){
+		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
@@ -2605,7 +3124,7 @@ public:
 		}
 	}
 
-	void UpdateLightFrustum(){
+	void UpdateLightFrustum(){		
 		auto scene = mCurrentScene.lock();
 		if (scene){
 			mShadowManager->UpdateFrame(mCamera, scene->GetMainLightDirection(), scene->GetSceneAABB());
@@ -2624,8 +3143,8 @@ public:
 		mShadowManager->CreateViewports();
 	}
 
-	void KeepTextureReference(const char* filepath){
-		if (!ValidCStringLength(filepath)){
+	void KeepTextureReference(const char* filepath, const TextureCreationOption& option){
+		if (!ValidCString(filepath)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
@@ -2634,10 +3153,29 @@ public:
 		auto it = mTexturesReferenceKeeper.Find(filepathKey);
 		if (it != mTexturesReferenceKeeper.end())
 			return;
-		auto texture = CreateTexture(filepath, true);
+		auto texture = CreateTexture(filepath, option);
 		if (texture){
 			mTexturesReferenceKeeper.Insert(std::make_pair(filepathKey, texture));
 		}
+	}
+
+	std::stack<RenderStatesPtr> mRenderStateSnapshots;
+	void PushRenderStates() {
+		auto p = RenderStates::Create(
+			RasterizerState::GetCurrentState(),
+			BlendState::GetCurrentState(),
+			DepthStencilState::GetCurrentState());
+		mRenderStateSnapshots.push(p);		
+	}
+
+	void PopRenderStates()
+	{
+		mRenderStateSnapshots.top()->Bind();
+		mRenderStateSnapshots.pop();
+	}
+
+	void BindIncrementalStencilState(int stencilRef) {
+		mResourceProvider->BindDepthStencilState(ResourceTypes::DepthStencilStates::IncrementalStencilOpaqueIf, stencilRef);
 	}
 
 	void SetBindShadowTarget(bool bind){
@@ -2652,7 +3190,7 @@ public:
 		}
 	}
 
-	void RenderShadows(){
+	void RenderShadows(){		
 		RenderEventMarker marker("Shadow Pass");						
 		SetBindShadowMap(false);
 		SetBindShadowTarget(true);
@@ -2703,7 +3241,8 @@ public:
 	}
 
 
-	void SetCamera(CameraPtr pCamera){
+	CameraPtr SetCamera(CameraPtr pCamera){
+		auto prev = mCamera;
 		if (mCamera)
 			mCamera->SetCurrent(false);
 		mCamera = pCamera;
@@ -2711,6 +3250,7 @@ public:
 			mCamera->SetCurrent(true);
 			UpdateCameraConstantsBuffer();
 		}
+		return prev;
 	}
 	CameraPtr GetCamera() const{
 		return mCamera;		
@@ -2866,15 +3406,18 @@ public:
 		bool font = extension == ".fnt";
 
 		if (shader){
-			Shader::ReloadShader(file);
+			ReloadShader(file);
 			return true;
 		}
 		else if (texture){
 			Texture::ReloadTexture(file);
 			return true;
 		}
-		else if (xml){
-			Logger::Log(FB_DEFAULT_LOG_ARG, "(info) checking texture atlas.");
+		else if (material) {
+			ReloadMaterial(file);
+			return true;
+		}
+		else if (xml){			
 			auto atlas = GetTextureAtlas(file);
 			if (atlas){
 				atlas->ReloadTextureAtlas();
@@ -2944,6 +3487,10 @@ bool Renderer::PrepareRenderEngine(const char* rendererPlugInName) {
 	return mImpl->PrepareRenderEngine(rendererPlugInName);
 }
 
+void Renderer::PrepareQuit() {
+	mImpl->PrepareQuit();
+}
+
 //-------------------------------------------------------------------
 // Canvas & System
 //-------------------------------------------------------------------
@@ -2970,16 +3517,12 @@ void Renderer::KeepRenderTargetInPool(RenderTargetPtr rt) {
 	mImpl->KeepRenderTargetInPool(rt);
 }
 
-TexturePtr Renderer::CreateTexture(const char* file){
-	return mImpl->CreateTexture(file, true);
+TexturePtr Renderer::CreateTexture(const char* file, const TextureCreationOption& options) {
+	return mImpl->CreateTexture(file, options);
 }
 
-TexturePtr Renderer::CreateTexture(const char* file, bool async) {
-	return mImpl->CreateTexture(file, async);
-}
-
-TexturePtr Renderer::CreateTexture(void* data, int width, int height, PIXEL_FORMAT format, BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) {
-	return mImpl->CreateTexture(data, width, height, format, usage, buffer_cpu_access, texture_type);
+TexturePtr Renderer::CreateTexture(void* data, int width, int height, PIXEL_FORMAT format, int mipLevels, BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type) {
+	return mImpl->CreateTexture(data, width, height, format, mipLevels, usage, buffer_cpu_access, texture_type);
 }
 
 void Renderer::ReloadTexture(TexturePtr texture, const char* filepath){
@@ -3002,8 +3545,20 @@ ShaderPtr Renderer::CreateShader(const char* filepath, int shaders, const SHADER
 	return mImpl->CreateShader(filepath, shaders, defines);
 }
 
-void Renderer::ReloadShader(ShaderPtr shader, const char* filepath){
-	return mImpl->ReloadShader(shader, filepath);
+ShaderPtr Renderer::CreateShader(const StringVector& filepaths, const SHADER_DEFINES& defines) {
+	return mImpl->CreateShader(filepaths, defines);
+}
+
+bool Renderer::CreateShader(const ShaderPtr& integratedShader, const char* filepath, SHADER_TYPE shader) {
+	return mImpl->CreateShader(integratedShader, filepath, shader, SHADER_DEFINES());
+}
+
+bool Renderer::CreateShader(const ShaderPtr& integratedShader, const char* filepath, SHADER_TYPE shader, const SHADER_DEFINES& defines) {
+	return mImpl->CreateShader(integratedShader, filepath, shader, defines);
+}
+
+ShaderPtr Renderer::CompileComputeShader(const char* code, const char* entry, const SHADER_DEFINES& defines) {
+	return mImpl->CompileComputeShader(code, entry, defines);
 }
 
 MaterialPtr Renderer::CreateMaterial(const char* file) {
@@ -3073,6 +3628,30 @@ void Renderer::UnbindRenderTarget(TexturePtr renderTargetTexture) {
 	mImpl->UnbindRenderTarget(renderTargetTexture);
 }
 
+void Renderer::SetRenderTargetAtSlot(TexturePtr pRenderTarget, size_t viewIndex, size_t slot) {
+	mImpl->SetRenderTargetAtSlot(pRenderTarget, viewIndex, slot);
+}
+
+void Renderer::SetDepthTarget(TexturePtr pDepthStencil, size_t dsViewIndex) {
+	mImpl->SetDepthTarget(pDepthStencil, dsViewIndex);
+}
+
+const std::vector<TexturePtr>& Renderer::_GetCurrentRTTextures() const {
+	return mImpl->mCurrentRTTextures;
+}
+
+const std::vector<size_t>& Renderer::_GetCurrentViewIndices() const {
+	return mImpl->mCurrentViewIndices;
+}
+
+TexturePtr Renderer::_GetCurrentDSTexture() const {
+	return mImpl->mCurrentDSTexture;
+}
+
+size_t Renderer::_GetCurrentDSViewIndex() const {
+	return mImpl->mCurrentDSViewIndex;
+}
+
 void Renderer::SetViewports(const Viewport viewports[], int num) {
 	mImpl->SetViewports(viewports, num);
 }
@@ -3089,19 +3668,23 @@ void Renderer::SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) {
 	mImpl->SetPrimitiveTopology(pt);
 }
 
-void Renderer::SetTextures(TexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot) {
+void Renderer::SetTextures(TexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot) {
 	mImpl->SetTextures(pTextures, num, shaderType, startSlot);
 }
 
 void Renderer::SetSystemTexture(SystemTextures::Enum type, TexturePtr texture) {
-	mImpl->SetSystemTexture(type, texture);
+	mImpl->SetSystemTexture(type, texture, ~SHADER_TYPE_CS);
 }
 
-void Renderer::UnbindTexture(BINDING_SHADER shader, int slot) {
+void Renderer::SetSystemTexture(SystemTextures::Enum type, TexturePtr texture, int shader_type_mask) {
+	mImpl->SetSystemTexture(type, texture, shader_type_mask);
+}
+
+void Renderer::UnbindTexture(SHADER_TYPE shader, int slot) {
 	mImpl->UnbindTexture(shader, slot);
 }
 
-void Renderer::UnbindShader(BINDING_SHADER shader){
+void Renderer::UnbindShader(SHADER_TYPE shader){
 	mImpl->UnbindShader(shader);
 }
 
@@ -3128,6 +3711,10 @@ void Renderer::SetDepthWriteShaderCloud() {
 
 void Renderer::SetPositionInputLayout() {
 	mImpl->SetPositionInputLayout();
+}
+
+void Renderer::BindSystemTexture(SystemTextures::Enum systemTexture) {
+	mImpl->BindSystemTexture(systemTexture);
 }
 
 void Renderer::SetSystemTextureBindings(SystemTextures::Enum type, const TextureBindings& bindings) {
@@ -3162,7 +3749,7 @@ void Renderer::RestoreDepthStencilState() {
 }
 
 // sampler
-void Renderer::SetSamplerState(int ResourceTypes_SamplerStates, BINDING_SHADER shader, int slot) {
+void Renderer::SetSamplerState(int ResourceTypes_SamplerStates, SHADER_TYPE shader, int slot) {
 	mImpl->SetSamplerState(ResourceTypes_SamplerStates, shader, slot);
 }
 
@@ -3175,6 +3762,10 @@ void Renderer::UpdateObjectConstantsBuffer(const void* pData){
 
 void Renderer::UpdateObjectConstantsBuffer(const void* pData, bool record) {
 	mImpl->UpdateObjectConstantsBuffer(pData, record);
+}
+
+const OBJECT_CONSTANTS* Renderer::GetObjectConstants() const {
+	return &mImpl->mObjectConstants;
 }
 
 void Renderer::UpdatePointLightConstantsBuffer(const void* pData) {
@@ -3191,6 +3782,10 @@ void Renderer::UpdateMaterialConstantsBuffer(const void* pData) {
 
 void Renderer::UpdateCameraConstantsBuffer() {
 	mImpl->UpdateCameraConstantsBuffer();
+}
+
+void Renderer::UpdateCameraConstantsBuffer(const void* manualData) {
+	mImpl->UpdateCameraConstantsBuffer(manualData);
 }
 
 void Renderer::UpdateRenderTargetConstantsBuffer() {
@@ -3213,12 +3808,12 @@ void Renderer::UpdateShadowConstantsBuffer(const void* pData){
 	mImpl->UpdateShadowConstantsBuffer(pData);
 }
 
-void* Renderer::MapMaterialParameterBuffer() {
-	return mImpl->MapMaterialParameterBuffer();
+void* Renderer::MapShaderConstantsBuffer() {
+	return mImpl->MapShaderConstantsBuffer();
 }
 
-void Renderer::UnmapMaterialParameterBuffer() {
-	mImpl->UnmapMaterialParameterBuffer();
+void Renderer::UnmapShaderConstantsBuffer() {
+	mImpl->UnmapShaderConstantsBuffer();
 }
 
 void* Renderer::MapBigBuffer() {
@@ -3246,6 +3841,10 @@ void Renderer::Clear(Real r, Real g, Real b, Real a, Real z, UINT8 stencil) {
 
 void Renderer::Clear(Real r, Real g, Real b, Real a) {
 	mImpl->Clear(r, g, b, a);
+}
+
+void Renderer::ClearDepthStencil(Real z, UINT8 stencil) {
+	mImpl->ClearDepthStencil(z, stencil);
 }
 
 // Avoid to use
@@ -3391,8 +3990,8 @@ bool Renderer::GetSampleOffsets_Bloom(DWORD dwTexSize,
 	return mImpl->GetSampleOffsets_Bloom(dwTexSize, afTexCoordOffset, avColorWeight, fDeviation, fMultiplier);
 }
 
-void Renderer::GetSampleOffsets_GaussBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier) {
-	mImpl->GetSampleOffsets_GaussBlur5x5(texWidth, texHeight, avTexCoordOffset, avSampleWeight, fMultiplier);
+void Renderer::GetSampleOffsets_GaussianBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier) {
+	mImpl->GetSampleOffsets_GaussianBlur5x5(texWidth, texHeight, avTexCoordOffset, avSampleWeight, fMultiplier);
 }
 
 void Renderer::GetSampleOffsets_DownScale2x2(DWORD texWidth, DWORD texHeight, Vec4f* avSampleOffsets) {
@@ -3435,8 +4034,21 @@ void Renderer::OnShadowOptionChanged(){
 	mImpl->OnShadowOptionChanged();
 }
 
-void Renderer::KeepTextureReference(const char* filepath){
-	mImpl->KeepTextureReference(filepath);
+void Renderer::KeepTextureReference(const char* filepath, const TextureCreationOption& option){
+	mImpl->KeepTextureReference(filepath, option);
+}
+
+void Renderer::PushRenderStates()
+{
+	mImpl->PushRenderStates();
+}
+void Renderer::PopRenderStates()
+{
+	mImpl->PopRenderStates();
+}
+
+void Renderer::BindIncrementalStencilState(int stencilRef) {
+	mImpl->BindIncrementalStencilState(stencilRef);
 }
 
 //-------------------------------------------------------------------
@@ -3466,8 +4078,8 @@ RenderTargetPtr Renderer::GetRenderTarget(HWindowId id) const {
 	return mImpl->GetRenderTarget(id);
 }
 
-void Renderer::SetCamera(CameraPtr pCamera) {
-	mImpl->SetCamera(pCamera);
+CameraPtr Renderer::SetCamera(CameraPtr pCamera) {
+	return mImpl->SetCamera(pCamera);
 }
 
 CameraPtr Renderer::GetCamera() const {
@@ -3560,6 +4172,24 @@ void Renderer::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color,
 	mImpl->DrawQuad(pos, size, color, updateRs);
 }
 
+void Renderer::DrawFrustum(const Frustum& frustum) {
+	mImpl->DrawFrustum(frustum);
+}
+
+void Renderer::DrawLine(const Vec3& start, const Vec3& end,
+	const Color& color0, const Color& color1)
+{
+	mImpl->DrawLine(start, end, color0, color1);
+}
+
+void Renderer::DrawBox(const Vec3::Array& corners, const Color& color) {
+	mImpl->DrawBox(corners, color);
+}
+
+void Renderer::DrawPoints(const Vec3::Array& points, const Color& color){
+	mImpl->DrawPoints(points, color);
+}
+
 void Renderer::DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, TexturePtr texture, MaterialPtr materialOverride) {
 	mImpl->DrawQuadWithTexture(pos, size, color, texture, materialOverride);
 }
@@ -3570,6 +4200,14 @@ void Renderer::DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const 
 
 void Renderer::DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset, DWORD color, MaterialPtr pMat) {
 	mImpl->DrawBillboardWorldQuad(pos, size, offset, color, pMat);
+}
+
+void Renderer::DrawCurrentAxis() {
+	mImpl->DrawCurrentAxis();
+}
+
+void Renderer::Draw3DTextNow(const Vec3& worldpos, const char* text, const Color& color, Real size) {
+	mImpl->Draw3DTextNow(worldpos, text, color, size);
 }
 
 void Renderer::QueueDrawText(const Vec2I& pos, WCHAR* text, const Color& color){
@@ -3665,6 +4303,13 @@ void Renderer::OnAfterMakeVisibleSet(IScene* scene) {
 
 void Renderer::OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {
 	mImpl->OnBeforeRenderingOpaques(scene, renderParam, renderParamOut);
+}
+
+void Renderer::OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {
+
+}
+void Renderer::OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {
+
 }
 
 void Renderer::OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut) {

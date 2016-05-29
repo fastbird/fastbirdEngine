@@ -44,14 +44,14 @@ Texture2D  gDiffuseTexture : register(t0);
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2p mark_VertexShader(in a2v INPUT)
+v2p Mark_VertexShader(in a2v INPUT)
 {
 	v2p OUTPUT;
 	float3 center = {gWorld[0][3], gWorld[1][3], gWorld[2][3]};
 	float4x4 vp = mul(gProj,gView);
 	float3 camUp = {gCamTransform[0][2], gCamTransform[1][2], gCamTransform[2][2]};
-	float radius = gMaterialParam[1].x;
-	float scale = gMaterialParam[1].y;
+	float radius = gShaderParams[1].x;
+	float scale = gShaderParams[1].y;
 	
 	// up
 	float3 barPos = center + camUp * radius;
@@ -71,11 +71,11 @@ v2p mark_VertexShader(in a2v INPUT)
 // PIXEL SHADER
 //---------------------------------------------------------------------------
 
-float4 mark_PixelShader(in v2p INPUT) : SV_Target
+float4 Mark_PixelShader(in v2p INPUT) : SV_Target
 {
 #if DIFFUSE_TEXTURE
 	return gDiffuseTexture.Sample(gLinearSampler, 
-		gMaterialParam[0].xy + INPUT.UV*gMaterialParam[0].zw);
+		gShaderParams[0].xy + INPUT.UV*gShaderParams[0].zw);
 #else
 	float3 color = gDiffuseColor;
 	float alpha = gDiffuseColor.w;

@@ -29,12 +29,14 @@
 #include "FileSystem.h"
 #include "DirectoryIterator.h"
 #include "File.h"
+#include "FBCommonHeaders/SpinLock.h"
 using namespace fb;
 
 static bool gLogginStarted = false;
 static bool gSecurityCheck = true;
 static boost::filesystem::path gWorkingPath;
 std::string gApplicationName;
+static std::unordered_map<std::string, std::string> sResourceFolders;
 void FileSystem::StartLoggingIfNot(){
 	if (gLogginStarted)
 		return;
@@ -56,15 +58,42 @@ void FileSystem::SetSecurityCheck(bool enable) {
 }
 
 bool FileSystem::Exists(const char* path){
-	return boost::filesystem::exists(path);
+	boost::system::error_code err;
+	return boost::filesystem::exists(path, err);
+}
+
+bool FileSystem::ResourceExists(const char* path, std::string* outResoucePath) {
+	boost::system::error_code err;
+	bool ex = boost::filesystem::exists(path, err);
+	if (ex) {
+		if (outResoucePath)
+			*outResoucePath = path;
+		return ex;
+	}
+	else{
+		auto resourcePath = GetResourcePath(path);
+		boost::system::error_code err;
+		ex = boost::filesystem::exists(resourcePath, err);
+		if (ex) {
+			if (outResoucePath)
+				*outResoucePath = resourcePath;
+			return ex;
+		}
+	}
+	return ex;
 }
 
 bool FileSystem::IsDirectory(const char* path){
 	return boost::filesystem::is_directory(path);
 }
 
-unsigned FileSystem::GetFileSize(const char* path){
-	return (unsigned)boost::filesystem::file_size(path);
+size_t FileSystem::GetFileSize(const char* path) {
+	if (Exists(path))
+		return (unsigned)boost::filesystem::file_size(path);
+	else {
+		auto resourcePath = GetResourcePath(path);
+		return (unsigned)boost::filesystem::file_size(resourcePath);
+	}
 }
 
 int FileSystem::Rename(const char* path, const char* newpath){
@@ -119,7 +148,7 @@ int FileSystem::CopyFile(const char* src, const char* dest, bool overwrite, bool
 	return FB_NO_ERROR;
 }
 
-bool FileSystem::Remove(const char* path){	
+bool FileSystem::Remove(const char* path){
 	bool ret = true;
 	try{
 		ret = boost::filesystem::remove(path);
@@ -127,6 +156,17 @@ bool FileSystem::Remove(const char* path){
 	catch (boost::filesystem::filesystem_error& err){
 		Logger::Log(FB_ERROR_LOG_ARG, err.what());
 	}	
+	return ret;
+}
+
+size_t FileSystem::RemoveAll(const char* path) {
+	size_t ret = true;
+	try {
+		ret = (size_t)boost::filesystem::remove_all(path);
+	}
+	catch (boost::filesystem::filesystem_error& err) {
+		Logger::Log(FB_ERROR_LOG_ARG, err.what());
+	}
 	return ret;
 }
 
@@ -175,7 +215,7 @@ const char* FileSystem::GetExtensionWithOutDot(const char* path){
 }
 
 bool FileSystem::HasExtension(const char* filepath, const char* extension) {
-	if (!ValidCStringLength(extension) || !ValidCStringLength(filepath))
+	if (!ValidCString(extension) || !ValidCString(filepath))
 		return false;
 	if (extension[0] == '.') {
 		return _stricmp(GetExtension(filepath), extension) == 0;
@@ -207,11 +247,40 @@ std::string FileSystem::GetLastDirectory(const char* path){
 		return parent.substr(found + 1);
 	}
 	return parent;
+}
 
+std::string FileSystem::GetFirstDirectory(const char* path) {
+	if (!ValidCString(path)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return{};
+	}
+	auto strPath = boost::filesystem::path(path).generic_string();
+	auto found = strPath.find_first_of("/");
+	if (found != std::string::npos) {
+		return strPath.substr(0, found);
+	}
+	return{};
 }
 
 std::string FileSystem::ConcatPath(const char* path1, const char* path2){
-	return boost::filesystem::path(path1).concat(path2).generic_string();
+	if (!ValidCString(path1))
+	{
+		if (ValidCString(path2))
+			return path2;
+		else
+			return{};
+	}
+	else {
+		if (!ValidCString(path2))
+			return path1;
+		else {
+			auto unifiedpath1 = boost::filesystem::path(path1).generic_string();
+			auto unifiedpath2 = boost::filesystem::path(path2).generic_string();
+			if (unifiedpath1.back() != '/' && unifiedpath2[0] != '/')
+				unifiedpath1.push_back('/');
+			return unifiedpath1 + unifiedpath2;
+		}
+	}
 }
 
 std::string FileSystem::UnifyFilepath(const char* path){
@@ -226,7 +295,7 @@ std::string FileSystem::Absolute(const char* path){
 }
 
 std::string FileSystem::MakrEndingSlashIfNot(const char* directory){
-	if (!ValidCStringLength(directory))
+	if (!ValidCString(directory))
 		return std::string();
 	std::string ret = boost::filesystem::path(directory).generic_string();
 	if (ret.back() != '/')
@@ -278,9 +347,6 @@ void FileSystem::BackupFile(const char* filepath, unsigned numKeeping, const cha
 int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
 	if (!Exists(file1) || !Exists(file2))
 		return FILE_NO_EXISTS;	
-	if (!SecurityOK(file1) || !SecurityOK(file2))
-		return SECURITY_NOT_OK;
-
 	try{
 		auto time1 = boost::filesystem::last_write_time(file1);
 		auto time2 = boost::filesystem::last_write_time(file2);
@@ -298,6 +364,11 @@ int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
 	return 0;
 }
 
+int FileSystem::CompareResourceFileModifiedTime(const char* resourceFile, const char* file) {
+	auto resourcePath = GetResourcePathIfPathNotExists(resourceFile);
+	return CompareFileModifiedTime(resourcePath.c_str(), file);
+}
+
 bool FileSystem::SecurityOK(const char* filepath){
 	if (!gSecurityCheck)
 		return true;
@@ -310,47 +381,72 @@ bool FileSystem::SecurityOK(const char* filepath){
 	return false;
 }
 
-BinaryData FileSystem::ReadBinaryFile(const char* path, std::streamoff& outLength){
-	std::ifstream is(path, std::ios_base::binary);
-	if (is)
-	{
-		is.seekg(0, is.end);
-		outLength = is.tellg();
-		is.seekg(0, is.beg);
-
-		BinaryData buffer = BinaryData(new char[(unsigned int)outLength], [](char* obj){ delete[] obj; });
-		is.read(buffer.get(), outLength);
-		if (!is)
-		{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Only %u could be read for the file (%s)", is.gcount(), path).c_str());
-		}
-		is.close();
-		return buffer;
+ByteArray FileSystem::ReadBinaryFile(const char* path){
+	FileSystem::Open file(path, "rb", SharingMode::ReadAllow, ErrorMode::PrintErrorMsg);
+	auto err = file.Error();
+	if (err) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Cannot read(%s)", path);
+		return{};
 	}
-	else
-		return 0;
+	fseek(file, 0, SEEK_END);
+	auto lSize = ftell(file);
+	rewind(file);
+	ByteArray buffer(lSize);
+	auto result = fread(&buffer[0], 1, lSize, file);
+	if (result != lSize) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Wrong bytes.");
+		return{};
+	}
+	return buffer;	
 }
 
-void FileSystem::WriteBinaryFile(const char* path, const char* data, size_t length){
+bool FileSystem::WriteBinaryFile(const char* path, const char* data, size_t length){
 	if (!data || length == 0 || path == 0)
-		return;
+		return false;
 
 	if (!SecurityOK(path))
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: SaveBinaryFile to %s has security violation.", path).c_str());
-		return;
+		return false;
 	}
 
 	std::ofstream ofs(path, std::ios_base::binary | std::ios_base::trunc);
 	if (!ofs)
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: Cannot open a file(%s) for writing.", path).c_str());
-		return;
+		return false;
 	}
 	ofs.write(data, length);
+	return true;
+}
+
+bool FileSystem::WriteBinaryFile(const char* path, const ByteArray& data)
+{
+	return WriteBinaryFile(path, (const char*)&data[0], data.size());
+}
+
+bool FileSystem::WriteTextFile(const char* path, const char* data, size_t length){
+	if (!data || length == 0 || path == 0)
+		return false;
+
+	if (!SecurityOK(path))
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: SaveBinaryFile to %s has security violation.", path).c_str());
+		return false;
+	}
+
+	std::ofstream ofs(path, std::ios_base::trunc);
+	if (!ofs)
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: Cannot open a file(%s) for writing.", path).c_str());
+		return false;
+	}
+	ofs.write(data, length);
+	return true;
 }
 
 namespace fb {
+	static SpinLock<true, true> sDeleteOnExitGuard;
 	static std::vector<std::string> sDeleteOnExit;
 	class DeleteOnExit {
 	public:
@@ -371,11 +467,16 @@ namespace fb {
 static DeleteOnExit DeleteOnExitInst;
 
 void FileSystem::DeleteOnExit(const char* path) {
+	EnterSpinLock<SpinLock<true, true>> lock(sDeleteOnExitGuard);
 	sDeleteOnExit.push_back(path);
 }
 
+void FileSystem::_PrepareQuit(){
+	sDeleteOnExit.clear();
+}
+
 bool FileSystem::IsFileOutOfDate(const char* path, time_t expiryTime) {
-	if (!ValidCStringLength(path)) {
+	if (!ValidCString(path)) {
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		return false;
 	}
@@ -386,7 +487,7 @@ bool FileSystem::IsFileOutOfDate(const char* path, time_t expiryTime) {
 }
 
 bool FileSystem::IsOpaqueURI(const char* uri) {
-	if (!ValidCStringLength(uri)) {
+	if (!ValidCString(uri)) {
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		return false;
 	}
@@ -400,7 +501,7 @@ bool FileSystem::IsOpaqueURI(const char* uri) {
 }
 
 bool FileSystem::IsFileOutOfDate(const char* url, size_t expiryTime) {
-	if (!ValidCStringLength(url))
+	if (!ValidCString(url))
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, "URLIsNull");
 		return false;
@@ -435,7 +536,13 @@ DirectoryIteratorPtr FileSystem::GetDirectoryIterator(const char* filepath, bool
 bool FileSystem::CreateDirectory(const char* filepath){
 	bool ret = false;
 	try{
-		ret = boost::filesystem::create_directories(filepath);
+		if (FindLastIndexOf(filepath, '.') != -1) {
+			auto parentPath = GetParentPath(filepath);
+			ret = boost::filesystem::create_directories(parentPath.c_str());
+		}
+		else {
+			ret = boost::filesystem::create_directories(filepath);
+		}
 	}
 	catch (boost::filesystem::filesystem_error& err){
 		Logger::Log(FB_ERROR_LOG_ARG, err.what());
@@ -480,13 +587,13 @@ std::string FileSystem::TempFileName(const char* prefix, const char* suffix) {
 	auto cwd = ConcatPath(GetCurrentDir().c_str(), "/tmp/");
 	char buffer[L_tmpnam];
 	
-	if (ValidCStringLength(prefix))
+	if (ValidCString(prefix))
 		cwd += prefix;
 
 	tmpnam_s(buffer);
 	cwd += buffer;
 
-	if (ValidCStringLength(suffix))
+	if (ValidCString(suffix))
 		cwd += suffix;
 	return cwd;
 }
@@ -550,6 +657,86 @@ std::string FileSystem::FormPath(int n, ...) {
 	return ret;
 }
 
+void FileSystem::AddResourceFolder(const char* absFolderPath) {
+	if (!ValidCString(absFolderPath))
+	{
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return;
+	}
+
+	if (!Exists(absFolderPath)) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Path(%s) does not exist.", absFolderPath).c_str());
+		return;
+	}
+
+	std::string path = boost::filesystem::path(absFolderPath).generic_string();
+	if (path.back() != '/') {
+		path.push_back('/');
+	}
+	auto key = GetLastDirectory(path.c_str());
+	sResourceFolders[key] = path;
+}
+void FileSystem::RemoveResourceFolder(const char* absFolderPath) {
+	if (!ValidCString(absFolderPath)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
+		return;
+	}
+	auto key = GetLastDirectory(absFolderPath);
+	sResourceFolders.erase(key);
+}
+
+const char* FileSystem::GetResourceFolder(const char* key) {
+	auto it = sResourceFolders.find(key);
+	if (it != sResourceFolders.end())
+		return it->second.c_str();
+
+	return "";
+}
+
+bool FileSystem::IsResourceFolder(const char* path) {
+	auto strPath = boost::filesystem::path(path).generic_string();
+	if (strPath.back() != '/') {
+		strPath.push_back('/');
+	}
+	auto dir = GetLastDirectory(strPath.c_str());
+	return ValidCString(GetResourceFolder(dir.c_str()));
+}
+
+std::string FileSystem::GetResourcePath(const char* path) {
+	auto key = GetFirstDirectory(path);
+	if (key.empty())
+		return{};
+	auto it = sResourceFolders.find(key);
+	if (it == sResourceFolders.end())
+		return{};
+	
+	std::string newPath = it->second;
+	newPath += boost::filesystem::path(path).generic_string().substr(key.size() + 1);
+	return newPath;	
+}
+
+std::string FileSystem::GetResourcePathIfPathNotExists(const char* path) {
+	if (Exists(path))
+		return path;
+	auto resourcePath = GetResourcePath(path);
+	if (resourcePath.empty())
+		return path;
+	else
+		return resourcePath;
+}
+
+errno_t FileSystem::OpenResourceFile(FILE** f, const char* path, const char* mode) {
+	auto err = fopen_s(f, path, mode);
+	if (err) {
+		auto resourcePath = GetResourcePath(path);
+		if (!resourcePath.empty()) {
+			err = fopen_s(f, resourcePath.c_str(), mode);			
+		}
+	}
+	return err;
+}
+
 FileSystem::Open::Open()
 	: mFile(0)
 	, mErr(0)
@@ -585,6 +772,20 @@ FileSystem::Open::Open(Open&& other) _NOEXCEPT
 FileSystem::Open::~Open()
 {
 	Close();
+}
+
+errno_t FileSystem::Open::Reset(const char* path, const char* mode) {
+	Close();
+	return operator()(path, mode, PrintErrorMsg);	
+}
+
+errno_t FileSystem::Open::Reset(const char* path, const char* mode, ErrorMode errorMsgMode) {
+	Close();
+	return operator()(path, mode, errorMsgMode);
+}
+errno_t FileSystem::Open::Reset(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode) {
+	Close();
+	return operator()(path, mode, share, errorMsgMode);
 }
 
 void FileSystem::Open::Close()
@@ -630,12 +831,18 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 		}
 		mFile = _fsopen(path, mode, smode);
 		if (!mFile) {
-			mErr = errno;
+			auto resourcePath = GetResourcePath(path);
+			if (!resourcePath.empty()) {
+				mFile = _fsopen(resourcePath.c_str(), mode, smode);
+			}
+			if (!mFile) {
+				mErr = errno;
+			}
 		}
 	}
 	else {
-		mErr = fopen_s(&mFile, path, mode);
-	}
+		mErr = OpenResourceFile(&mFile, path, mode);
+	}	
 
 	if (mErr && errorMsgMode == PrintErrorMsg) {
 		char errString[512] = {};

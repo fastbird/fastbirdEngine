@@ -48,7 +48,7 @@ namespace fb{
 
 	std::string RemoveNewLine(const char* szstr)
 	{
-		if (!ValidCStringLength(szstr))
+		if (!ValidCString(szstr))
 			return{};
 		std::string str(szstr);
 		for (auto rit = str.rbegin(); rit != str.rend(); ) {
@@ -167,13 +167,17 @@ namespace fb{
 		// Use STL methods 
 		size_t start, pos;
 		start = 0;
+		char lastDelim = 0;
 		do
 		{
 			pos = str.find_first_of(delims, start);
 			if (pos == start)
 			{
-				// Do nothing
-				ret.push_back(std::string());
+				// If the the same delims is presented continously, push empty string.
+				// eg) 1,,2 -> StringVector{"1", "", "2"}
+				if (lastDelim == str[pos] || lastDelim == 0)
+					ret.push_back(std::string());
+
 				if (pos != std::string::npos)
 					start = pos + 1;
 			}
@@ -187,7 +191,7 @@ namespace fb{
 			{
 				// Copy up to delimiter
 				ret.push_back(str.substr(start, pos - start));
-
+				lastDelim = str[pos];
 				if (preserveDelims)
 				{
 					// Sometimes there could be more than one delimiter in a row.
@@ -206,9 +210,7 @@ namespace fb{
 				}
 
 				start = pos + 1;
-			}
-			// parse up to next float data
-			start = str.find_first_not_of(delims, start);
+			}			
 			++numSplits;
 
 		} while (pos != std::string::npos);
@@ -235,7 +237,7 @@ namespace fb{
 
 	}
 
-	bool StringContainNoCase(const std::string& string, const std::string& find) {
+	bool StringContainsNoCase(const std::string& string, const std::string& find) {
 		auto stringSize = (int)string.size();
 		auto findSize = (int)find.size();
 		if (findSize > stringSize)
@@ -255,29 +257,35 @@ namespace fb{
 		return false;
 	}
 
-	bool StartsWith(const std::string& str, const std::string& pattern, bool lowerCase){
+	bool StartsWith(const std::string& str, const std::string& pattern, bool ignoreCase){
 		auto thisLen = str.length();
 		auto patternLen = pattern.length();
 		std::string transformedPatten = pattern;
-		if (lowerCase) {
+		if (ignoreCase) {
 			ToLowerCase(transformedPatten);
 		}
 		if (thisLen < patternLen || patternLen == 0)
 			return false;
 
 		std::string startOfThis = str.substr(0, patternLen);
-		if (lowerCase)
+		if (ignoreCase)
 			ToLowerCase(startOfThis);
 
 		return (startOfThis == transformedPatten);
 	}
 	
-	bool EndsWith(const std::string& str, const char* pattern) {		
-		auto it = str.find_last_of(pattern);
-		if (it == str.size() - strlen(pattern))
-			return true;
-
-		return false;
+	bool EndsWith(const std::string& str, const char* pattern, bool ignoreCase) {
+		if (!ignoreCase) {
+			auto it = str.find_last_of(pattern);
+			if (it == str.size() - strlen(pattern))
+				return true;
+			return false;
+		}
+		else {
+			auto strLowered = ToLowerCase(str.c_str());
+			auto patternLowered = ToLowerCase(pattern);
+			return EndsWith(strLowered, patternLowered.c_str(), false);
+		}
 	}
 
 	void ToLowerCase(std::string& str){
@@ -311,6 +319,14 @@ namespace fb{
 			str.end(),
 			str.begin(),
 			toupper);
+	}
+
+	std::string ToUpperCase(const char* sz) {
+		if (!sz)
+			return{};
+		std::string uppered(sz);
+		std::_Transform(uppered.begin(), uppered.end(), uppered.begin(), toupper);
+		return uppered;
 	}
 
 	void ToUpperCase(std::wstring& str){
@@ -354,14 +370,14 @@ namespace fb{
 	}
 
 	size_t FindLastIndexOf(const char* sz, char c) {
-		if (!ValidCStringLength(sz))
+		if (!ValidCString(sz))
 			return -1;
 		auto len = strlen(sz);
 		return FindLastIndexOf(sz, c, len - 1);
 	}
 
 	size_t FindLastIndexOf(const char* sz, char c, size_t startIndex) {
-		if (!ValidCStringLength(sz))
+		if (!ValidCString(sz))
 			return -1;
 		auto len = strlen(sz);
 		if (startIndex >= len)
@@ -376,7 +392,7 @@ namespace fb{
 	}
 
 	std::string SubString(const char* sz, size_t s, size_t e) {
-		if (!ValidCStringLength(sz))
+		if (!ValidCString(sz))
 			return std::string();
 
 		auto len = strlen(sz);
@@ -390,7 +406,7 @@ namespace fb{
 	}
 
 	std::string GetFileSuffix(const char* filePath) {
-		if (!ValidCStringLength(filePath))
+		if (!ValidCString(filePath))
 		{
 			return std::string();
 		}
@@ -662,6 +678,30 @@ namespace fb{
 	{
 		return AnsiToWide(source, (int)strlen(source));
 	}
+
+	std::wstring AnsiToWideMT(const char* source) {
+		auto len = strlen(source);
+		WCHAR wideBuffer[4096] = {0};
+		bool err = false;
+#if defined(_PLATFORM_WINDOWS_)
+		int ret = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, source, -1, wideBuffer, 2048);
+		err = ret == 0;
+#else
+		std::setlocale(LC_ALL, "");
+
+		std::mbstate_t mbState = std::mbstate_t();
+		auto ret = std::mbsrtowcs(wideBuffer, &source, 4096, &mbState);
+		err = ret == -1;
+
+		std::setlocale(LC_ALL, localeBackup.c_str());
+#endif
+		if (err) {
+			std::cerr << "AnsiToWide MultiByteToWideChar Failed!";
+		}
+		return wideBuffer;
+
+	}
+
 	WCHAR AnsiToWide(const char source)
 	{
 		char buf[] = { source, 0 };

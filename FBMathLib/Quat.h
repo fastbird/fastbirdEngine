@@ -48,7 +48,7 @@ namespace fb
 		static void Intermediate(const Quat& qRot0, const Quat& qRot1, const Quat& qRot2, Quat& qRotA, Quat& qRotB);
 		static Quat Squad(Real fT, const Quat& qRotP, const Quat& qRotA,
 			const Quat& qRotB, const Quat& qRotQ, bool shortestPath = false);
-		static Quat nlerp(Real fT, const Quat& qRotP, const Quat& qRotQ, bool shortestPath = false);
+		static Quat nlerp(Real fT, const Quat& qRotP, const Quat& qRotQ, bool shortestPath = false);		
 
 		//-------------------------------------------------------------------
 		Quat();
@@ -94,10 +94,10 @@ namespace fb
 		Real GetYaw(bool reprojectAxis = true) const;
 		bool Equals(const Quat& rhs, const Real toleranceRadian) const;
 		bool IsNaN() const;	
-
-		void write(std::ostream& stream) const;
-		void read(std::istream& stream);
 	};
+
+	void write(std::ostream& stream, const Quat& data);
+	void read(std::istream& stream, Quat& data);
 }
 
 //-----------------------------------------------------------------------

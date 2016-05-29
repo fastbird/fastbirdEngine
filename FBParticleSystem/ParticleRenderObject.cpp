@@ -199,7 +199,7 @@ public:
 	void SetTexture(const char* texturePath){
 		mTextureName = texturePath;
 		if (mMaterial)
-			mMaterial->SetTexture(texturePath, BINDING_SHADER_PS, 0);
+			mMaterial->SetTexture(texturePath, SHADER_TYPE_PS, 0);
 	}
 
 	void SetScreenspace(int set) {

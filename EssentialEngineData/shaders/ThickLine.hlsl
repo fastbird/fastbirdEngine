@@ -56,7 +56,7 @@ struct v2p
 };
 
 //----------------------------------------------------------------------------
-v2p thickline_VertexShader( in a2v IN )
+v2p ThickLine_VertexShader( in a2v IN )
 {
     v2p OUT;
 
@@ -92,7 +92,7 @@ struct PS_OUT
 	float4 color1 : SV_Target1;
 };
 
-PS_OUT thickline_PixelShader(in v2p IN) : SV_Target
+PS_OUT ThickLine_PixelShader(in v2p IN) : SV_Target
 {
 	float4 outColor = IN.color;
 #ifdef DIFFUSE_TEXTURE

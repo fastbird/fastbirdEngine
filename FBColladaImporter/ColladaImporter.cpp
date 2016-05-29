@@ -94,7 +94,8 @@ public:
 			// different file.
 			mFilepath = filepath;
 			COLLADASaxFWL::Loader loader;
-			successful = loader.loadDocument(filepath, this);
+			auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
+			successful = loader.loadDocument(resourcePath.c_str(), this);
 			if (!successful)
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Importing dae(%s) is failed!", filepath).c_str());

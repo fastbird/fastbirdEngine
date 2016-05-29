@@ -37,57 +37,100 @@ namespace fb
 	class ShaderD3D11 : public IPlatformShader
 	{
 		FB_DECLARE_PIMPL_NON_COPYABLE(ShaderD3D11);
+	protected:
 		ShaderD3D11();
 
 	public:
-		typedef std::set<std::string> INCLUDE_FILES;
-
-		static ShaderD3D11Ptr Create();		
-
 		//---------------------------------------------------------------------------
 		// IPlatformShader
-		//---------------------------------------------------------------------------
-		/**Bind all type of platform shaders
-		Empty shader will be removed from the pipeline.
-		*/
-		void Bind();
-		/** Bind vertex shader only.*/
-		void BindVS();
-		/** Bind hull shader only.*/
-		void BindHS();
-		/** Bind domain shader only.*/
-		void BindDS();
-		/** Bind geometry shader only.*/
-		void BindGS();
-		/** Bind pixel shader only.	*/
-		void BindPS();		
-		
-		bool GetCompileFailed() const;
-		void* GetVSByteCode(unsigned& size) const;				
-		void SetDebugName(const char* name);
-		/** Returns true if \a inc is a related header file.
-		*/
-		bool CheckIncludes(const char* inc);
+		//---------------------------------------------------------------------------		
+		bool GetCompileFailed() const OVERRIDE;
+		virtual void* GetVSByteCode(unsigned& size) const OVERRIDE;		
+		virtual bool RunComputeShader(void* constants, size_t size,
+			int x, int y, int z, ByteArray& output, size_t outputSize) OVERRIDE;
+		virtual bool QueueRunComputeShader(void* constants, size_t size,
+			int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&&) OVERRIDE;
+		bool IsRelatedFile(const char* file) OVERRIDE;		
+		bool Reload(const SHADER_DEFINES& defines) OVERRIDE;
 		
 		//---------------------------------------------------------------------------
 		// Own
 		//---------------------------------------------------------------------------
-		void SetVertexShader(ID3D11VertexShader* pVertexShader);
-		void SetVertexShaderBytecode(ID3DBlob* pVertexShaderBytecode);
-		void SetVertexShaderBytecode(void* bytecode, size_t size);
-		void SetGeometryShader(ID3D11GeometryShader* pGeometryShader);
-		void SetHullShader(ID3D11HullShader* pHullShader);
-		void SetDomainShader(ID3D11DomainShader* pDomainShader);
-		void SetPixelShader(ID3D11PixelShader* pPixelShader);		
+		// the first is the main hlsl file and others are include files.
+		void SetRelatedFiles(const StringVector& files);
+		void SetCompileFailed(bool failed);	
+		const StringVector& GetRelatedFiles() const;
+	};
 
+	//---------------------------------------------------------------------------
+	FB_DECLARE_SMART_PTR(VertexShaderD3D11);
+	class VertexShaderD3D11 : public ShaderD3D11 {
+		FB_DECLARE_PIMPL_NON_COPYABLE(VertexShaderD3D11);
+		VertexShaderD3D11();
+
+	public:		
+		static VertexShaderD3D11Ptr Create();		
+		void Bind() OVERRIDE;		
+		void SetDebugName(const char* name) OVERRIDE;
+		SHADER_TYPE GetShaderType() const OVERRIDE;
+		void* GetVSByteCode(unsigned& size) const OVERRIDE;		
+
+		void SetVertexShader(ID3D11VertexShader* pVertexShader);
+		void SetVertexShaderBytecode(ByteArray&& bytecode);
+		void SetVertexShaderBytecode(void* bytecode, size_t size);
 		ID3D11VertexShader* GetVertexShader() const;
+	};
+
+	//---------------------------------------------------------------------------
+	FB_DECLARE_SMART_PTR(GeometryShaderD3D11);
+	class GeometryShaderD3D11 : public ShaderD3D11 {
+		FB_DECLARE_PIMPL_NON_COPYABLE(GeometryShaderD3D11);
+		GeometryShaderD3D11();
+
+	public:
+		static GeometryShaderD3D11Ptr Create();
+		void Bind() OVERRIDE;
+		void SetDebugName(const char* name) OVERRIDE;		
+		SHADER_TYPE GetShaderType() const OVERRIDE;
+
+		void SetGeometryShader(ID3D11GeometryShader* pGeometryShader);
 		ID3D11GeometryShader* GetGeometryShader() const;
-		ID3D11HullShader* GetHullShader() const;
-		ID3D11DomainShader* GetDomainShader() const;
+	};
+
+	//---------------------------------------------------------------------------
+	FB_DECLARE_SMART_PTR(PixelShaderD3D11);
+	class PixelShaderD3D11 : public ShaderD3D11 {
+		FB_DECLARE_PIMPL_NON_COPYABLE(PixelShaderD3D11);
+		PixelShaderD3D11();
+
+	public:
+		static PixelShaderD3D11Ptr Create();
+		void Bind() OVERRIDE;
+		void SetDebugName(const char* name) OVERRIDE;		
+		SHADER_TYPE GetShaderType() const OVERRIDE;
+
+		void SetPixelShader(ID3D11PixelShader* pPixelShader);
 		ID3D11PixelShader* GetPixelShader() const;
-	
-		void SetIncludeFiles(const INCLUDE_FILES& ifs);
-		void SetCompileFailed(bool failed);
+	};
+
+	//---------------------------------------------------------------------------
+	FB_DECLARE_SMART_PTR(ComputeShaderD3D11);
+	class ComputeShaderD3D11 : public ShaderD3D11 {
+		FB_DECLARE_PIMPL_NON_COPYABLE(ComputeShaderD3D11);
+		ComputeShaderD3D11();
+
+	public:
+		static ComputeShaderD3D11Ptr Create();
+		void Bind() OVERRIDE;
+		void SetDebugName(const char* name) OVERRIDE;
+		SHADER_TYPE GetShaderType() const OVERRIDE;
+		bool RunComputeShader(void* constants, size_t size,
+			int x, int y, int z, ByteArray& output, size_t outputSize) OVERRIDE;
+		bool QueueRunComputeShader(void* constants, size_t size,
+			int x, int y, int z, std::shared_ptr<ByteArray> output, size_t outputSize, std::function<void()>&& callback) OVERRIDE;
+
+		void SetComputeShader(ID3D11ComputeShader* pComputeShader);
+		ID3D11ComputeShader* GetComputeShader() const;
 	};
 }
 

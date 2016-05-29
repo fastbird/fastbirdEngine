@@ -27,8 +27,10 @@
 
 #include "stdafx.h"
 #include "Camera.h"
+#include "Renderer.h"
 #include "FBMathLib/BoundingVolume.h"
 #include "FBMathLib/Frustum.h"
+#include "FBMathLib/InterpolateWrap.h"
 #include "FBInputManager/IInputInjector.h"
 #include "FBInputManager/KeyCodes.h"
 #include "FBSceneManager/ISpatialObject.h"
@@ -93,10 +95,13 @@ public:
 	ISpatialObjectWeakPtr mTarget;
 	Vec3 mTargetPos; /// used when mTarget is nullptr
 	Real mMaxDistToTarget;
+	Real mMinDistToTarget;
 	size_t mCamIndex;
 	bool mYZSwap;
 	bool mCurrentCamera;
 	bool mProcessInput;
+	bool mRenderFrustum;
+	bool mProportionalMove;
 	Vec3 mPrevTargetPos;
 	std::mutex mMutex;
 	Frustum mFrustum;
@@ -104,6 +109,8 @@ public:
 	size_t mFrustumInCameraSpaceCalcFrame = -1;
 	CameraPtr mOverridingCamera;
 	VectorMap<Vec2I, Ray> mRayCache;
+	InterpolateWrapManager<Real> mInterpolManReal;
+	FRAME_PRECISION mLastUpdateFrame;
 
 	Impl(Camera* self) 
 		: mSelf(self)
@@ -118,6 +125,10 @@ public:
 		, mPrevTargetPos(0, 0, 0)
 		, mTargetPos(0, 0, 0)
 		, mMaxDistToTarget(FLT_MAX)
+		, mMinDistToTarget(0)
+		, mProportionalMove(false)
+		, mRenderFrustum(false)
+		, mLastUpdateFrame(-1)
 	{
 		// proj properties
 		SetFOV(Radian(45));
@@ -150,6 +161,13 @@ public:
 		mProcessInput = other.mProcessInput;
 		mPrevTargetPos = other.mPrevTargetPos;		
 		mFrustum = other.mFrustum;
+		mFrustumInCameraSpace = other.mFrustumInCameraSpace;
+		mFrustumInCameraSpaceCalcFrame = other.mFrustumInCameraSpaceCalcFrame;
+		mRayCache = other.mRayCache;
+		mInternalParams = other.mInternalParams;
+		mMaxDistToTarget = other.mMaxDistToTarget;
+		mMinDistToTarget = other.mMinDistToTarget;
+		mProportionalMove = other.mProportionalMove;
 		return *this;
 	}
 
@@ -161,6 +179,7 @@ public:
 			return;
 		}
 		mOrthogonal = ortho;
+		mFrustum.SetOrthogonal(ortho);
 		mProjPropertyChanged = true;
 	}
 
@@ -333,10 +352,21 @@ public:
 		return (float)(mOrthogonalData.top - mOrthogonalData.bottom);
 	}
 
+	struct AngleClamper {
+		void operator()(Real& value) {
+			if (value > fb::TWO_PI) {
+				value -= fb::TWO_PI;
+			}
+			else if (value < -fb::TWO_PI) {
+				value += fb::TWO_PI;
+			}
+		}
+	};
 	//----------------------------------------------------------------------------
 	void ProcessInputData()
 	{
-		if (mOverridingCamera){
+		static AngleClamper clamper;
+		if (mOverridingCamera) {
 			mOverridingCamera->ProcessInputData();
 			return;
 		}
@@ -344,32 +374,32 @@ public:
 		auto& targetPos = target ? target->GetPosition() : mTargetPos;
 		if (!mProcessInput || !mCurrentCamera)
 			return;
+		static const float ReachTime = 0.2f;
 		if (mUserParams.Changed() || mPrevTargetPos != targetPos)
-		{
-			mInternalParams.dist += mUserParams.dDist;
-			mInternalParams.dist = std::max((Real)2.0f, (Real)mInternalParams.dist);
-			if (mInternalParams.dist > mMaxDistToTarget)
-				mInternalParams.dist = mMaxDistToTarget;
+		{			
+			auto destDist = ClampRet(std::max((Real)2.0f, (Real)(mInterpolManReal.GetDestValue(&mInternalParams.dist) + mUserParams.dDist)),
+				mMinDistToTarget, mMaxDistToTarget);
+			mInterpolManReal.RegisterInterpolator(&mInternalParams.dist, destDist, ReachTime*2.0f);
 
-			mInternalParams.pitch += mUserParams.dPitch;
-			if (mInternalParams.pitch > fb::HALF_PI - fb::Radian(5))
-			{
-				mInternalParams.pitch = fb::HALF_PI - fb::Radian(5);
-			}
-			else if (mInternalParams.pitch <  -fb::HALF_PI + fb::Radian(5))
-			{
-				mInternalParams.pitch = -fb::HALF_PI + fb::Radian(5);
-			}
+			auto destPitch = ClampRet(mInterpolManReal.GetDestValue(&mInternalParams.pitch) + mUserParams.dPitch,
+				-fb::HALF_PI + fb::Radian(5), fb::HALF_PI - fb::Radian(5));
+			mInterpolManReal.RegisterInterpolator(&mInternalParams.pitch, destPitch, ReachTime);
 
-			mInternalParams.yaw += mUserParams.dYaw;
-			if (mInternalParams.yaw > fb::TWO_PI)
-			{
-				mInternalParams.yaw -= fb::TWO_PI;
-			}
-			else if (mInternalParams.yaw < -fb::TWO_PI)
-			{
-				mInternalParams.yaw += fb::TWO_PI;
-			}
+			auto destYaw = mInterpolManReal.GetDestValue(&mInternalParams.yaw) + mUserParams.dYaw;			
+			mInterpolManReal.RegisterInterpolator(&mInternalParams.yaw, destYaw, ReachTime, clamper);
+			mUserParams.Clear();
+		}		
+	}
+
+	void Update(float dt) {		
+		if (mLastUpdateFrame == gpTimer->GetFrame())
+			return;
+		mLastUpdateFrame = gpTimer->GetFrame();
+		if (!mInterpolManReal.IsEmpty()) {
+			
+			auto target = mTarget.lock();
+			auto& targetPos = target ? target->GetPosition() : mTargetPos;
+			mInterpolManReal.Update(gpTimer->GetDeltaTime());
 
 			Vec3 defaultDir = -Vec3::UNIT_Y;
 			Quat qPitch(mInternalParams.pitch, Vec3::UNIT_X);
@@ -387,16 +417,14 @@ public:
 				right.z, forward.z, up.z);
 			Vec3 pos = targetPos + toCam * mInternalParams.dist;
 			SetTransformation(pos, Quat(rot));
-			mUserParams.Clear();
 			mPrevTargetPos = targetPos;
 		}
 	}
-
 	//----------------------------------------------------------------------------
-	void Update()
+	void RefreshTransform()
 	{
 		if (mOverridingCamera){
-			mOverridingCamera->Update();
+			mOverridingCamera->RefreshTransform();
 		}
 		// world coordinates (Blender style)
 		// x: right
@@ -443,7 +471,8 @@ public:
 				mMatrices[Proj] = mMatrices[Proj] * swapMat;
 			}
 			mMatrices[InverseProj] = mMatrices[Proj].Inverse();	
-			mFrustum.SetData(mNear, mFar, mFov, mAspectRatio);
+			// if Orthogonal, fov is ignored.
+			mFrustum.SetData(mNear, mFar, mFov, mAspectRatio, mOrthogonal);
 		}
 
 		if (projChanged || viewChanged)
@@ -498,7 +527,7 @@ public:
 		}
 
 		if (mViewPropertyChanged || mProjPropertyChanged)
-			Update();
+			RefreshTransform();
 		return mMatrices[type];
 	}
 	
@@ -511,7 +540,7 @@ public:
 	//----------------------------------------------------------------------------
 	Ray ScreenPosToRay(long x, long y)
 	{
-		Update();
+		RefreshTransform();
 		auto it = mRayCache.Find(Vec2I(x, y));
 		if (it != mRayCache.end()){
 			return it->second;
@@ -538,8 +567,9 @@ public:
 		return Vec3((Real)fx, (Real)fy, 0.5f);		
 	}
 
-	Vec2I WorldToScreen(const Vec3& worldPos) const
+	Vec2I WorldToScreen(const Vec3& worldPos)
 	{
+		RefreshTransform();
 		auto projPos = mMatrices[ViewProj] * Vec4(worldPos, 1);
 		Real x = projPos.x / projPos.w;
 		Real y = projPos.y / projPos.w;
@@ -584,10 +614,18 @@ public:
 		auto& targetPos = target ? target->GetPosition() : mTargetPos;
 		if (!mProcessInput)
 			return;
-		if (injector->IsValid(InputDevice::Mouse) && !injector->IsKeyDown(VK_CONTROL)){
-			const Vec3 camPos = GetPosition();
-			Vec3 toCam = camPos - targetPos;
-			const Real distToTarget = toCam.Normalize();
+		float proportional = 1.f;
+		long wheel = injector->GetWheel();
+		if (mProportionalMove) {
+			proportional = (mInternalParams.dist - mMinDistToTarget) / (mMaxDistToTarget - mMinDistToTarget);				
+			if (!injector->IsKeyDown(VK_SHIFT))
+				proportional *= 2;
+			else
+				proportional *= 4;
+			Clamp(proportional, 0.0012f, 1.0f);
+			
+		}
+		if (injector->IsValid(InputDevice::Mouse) && !injector->IsKeyDown(VK_CONTROL)){			
 			long dx, dy;
 			injector->GetDeltaXY(dx, dy);
 
@@ -596,12 +634,12 @@ public:
 				Real mouseSens = injector->GetSensitivity();
 				if (dx != 0)
 				{
-					mUserParams.dYaw = dx * mouseSens;
+					mUserParams.dYaw = dx * mouseSens * proportional;
 				}
 
 				if (dy != 0)
 				{
-					mUserParams.dPitch = -dy * mouseSens;
+					mUserParams.dPitch = -dy * mouseSens * proportional;
 				}
 
 				injector->LockMousePos(true, this);
@@ -612,24 +650,24 @@ public:
 				//pMouse->LockMousePos(false, this);
 			}
 
-			long wheel = injector->GetWheel();
+			
 			if (wheel)
 			{
 				injector->PopWheel();
 				Real shift = 1.0f;
-				if (injector->IsKeyDown(VK_SHIFT))
+				if (!mProportionalMove && injector->IsKeyDown(VK_SHIFT))
 					shift = 0.1f;
 				Real wheelSens = injector->GetWheelSensitivity();
 				Real numLinesSens = wheelSens * (Real)injector->GetNumLinesWheelScroll();
 				numLinesSens *= std::max((Real)1.0f, (Real)(mInternalParams.dist * 0.05f));
-				mUserParams.dDist += -wheel * numLinesSens * shift;
+				mUserParams.dDist += -wheel * numLinesSens * shift  * proportional;
 				injector->Invalidate(InputDevice::Mouse);
 			}
 		}
 	}
 
 	const Frustum& GetFrustum(){
-		Update();		
+		RefreshTransform();
 		return mFrustum;
 	}
 
@@ -684,6 +722,14 @@ public:
 		mMaxDistToTarget = dist;
 	}
 
+	void SetMinDistToTarget(Real dist) {
+		mMinDistToTarget = dist;
+	}
+
+	void SetProportionalMove(bool enable) {
+		mProportionalMove = enable;
+	}
+
 	void SetFOV(Real fov)
 	{
 		if (mOverridingCamera){
@@ -691,7 +737,7 @@ public:
 			return;
 		}
 		mFov = fov;
-		mTanHalfFOV = tan(mFov*.5f);
+		mTanHalfFOV = tan(mFov*.5f);		
 		mProjPropertyChanged = true;
 	}
 
@@ -734,6 +780,11 @@ public:
 		mOrthogonalData.bottom = bottom;
 		mProjPropertyChanged = true;
 	}
+
+	void RenderFrustum()
+	{
+		Renderer::GetInstance().DrawFrustum(mFrustum);
+	}
 };
 
 //----------------------------------------------------------------------------
@@ -747,7 +798,7 @@ Camera::Camera()
 Camera::Camera(const Camera& other)
 	: mImpl(new Impl(this))
 {
-	*mImpl = *other.mImpl;
+	*mImpl = *other.mImpl;	
 }
 
 Camera::~Camera(){	
@@ -757,6 +808,11 @@ Camera& Camera::operator= (const Camera& other)
 {
 	*mImpl = *other.mImpl;
 	return *this;
+}
+
+CameraPtr Camera::Clone()
+{
+	return CameraPtr(new Camera(*this), [](Camera* obj) {delete obj; });	
 }
 
 void Camera::SetMainCamera(bool main){
@@ -855,9 +911,13 @@ void Camera::ProcessInputData(){
 	mImpl->ProcessInputData();
 }
 
+void Camera::Update(float dt) {
+	mImpl->Update(dt);
+}
+
 //----------------------------------------------------------------------------
-void Camera::Update(){
-	mImpl->Update();
+void Camera::RefreshTransform(){
+	mImpl->RefreshTransform();
 }
 
 //----------------------------------------------------------------------------
@@ -885,7 +945,7 @@ Vec3 Camera::ScreenToNDC(const Vec2I& screenPos)
 	return mImpl->ScreenToNDC(screenPos);
 }
 
-Vec2I Camera::WorldToScreen(const Vec3& worldPos) const{
+Vec2I Camera::WorldToScreen(const Vec3& worldPos){
 	return mImpl->WorldToScreen(worldPos);
 }
 
@@ -902,6 +962,14 @@ void Camera::SetMaxDistToTarget(Real dist)
 	mImpl->SetMaxDistToTarget(dist);
 }
 
+void Camera::SetMinDistToTarget(Real dist) {
+	mImpl->SetMinDistToTarget(dist);
+}
+
+void Camera::SetProportionalMove(bool enable) {
+	mImpl->SetProportionalMove(enable);
+}
+
 void Camera::SetFOV(Real fov)
 {
 	mImpl->SetFOV(fov);
@@ -911,16 +979,16 @@ Real Camera::GetFOV() const {
 	return mImpl->mFov; 
 }
 
+Real Camera::GetAspectRatio() const {
+	return mImpl->mAspectRatio;
+}
+
 Real Camera::GetTanHalfFOV() const { 
 	return mImpl->mTanHalfFOV; 
 }
 
 void Camera::SetAspectRatio(Real ar) { 
 	mImpl->SetAspectRatio(ar);
-}
-
-Real Camera::GetAspectRatio() const { 
-	return mImpl->mAspectRatio; 
 }
 
 // width and height of the view volume at the near view-plane
@@ -1007,4 +1075,20 @@ Real Camera::ComputePixelSizeAtDistance(Real distance) {
 
 void Camera::SetTargetPos(const Vec3& pos) {
 	mImpl->mTargetPos = pos;
+	mImpl->mTarget.reset();
+}
+
+void Camera::SetRenderFrustum(bool renderFrustum)
+{
+	mImpl->mRenderFrustum = renderFrustum;
+}
+
+bool Camera::GetRenderFrustum() const
+{
+	return mImpl->mRenderFrustum;
+}
+
+void Camera::RenderFrustum()
+{
+	mImpl->RenderFrustum();
 }

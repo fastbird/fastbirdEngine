@@ -127,7 +127,7 @@ public:
 		TexturePtr pColorTexture = pDepthRT->GetRenderTargetTexture();
 		assert(pDepthTexture);
 		TexturePtr pStaging = Renderer::GetInstance().CreateTexture(0, mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT,
-			BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
+			1, BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
 
 		pCam->SetDirection(Vec3(-radius, 0, 0).NormalizeCopy());
 		pDepthRT->Render();

@@ -47,23 +47,31 @@ namespace fb
 		PIXEL_FORMAT GetPixelFormat() const;
 		void SetPixelFormat(DXGI_FORMAT format);
 		bool IsReady() const;
-		void Bind(BINDING_SHADER shader, int slot) const;		
+		void Bind(SHADER_TYPE shader, int slot) const;		
 		MapData Map(UINT subResource, MAP_TYPE type, MAP_FLAG flag) const;
 		void Unmap(UINT subResource) const;
 		void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource,
 			UINT dstX, UINT dstY, UINT dstZ, UINT srcSubresource, Box3D* srcBox) const;
+		void CopyToStaging(IPlatformTexture* dst) const;
 		void SaveToFile(const char* filename) const;
+		/// If the base resource wasn't created with 
+		/// D3D11_BIND_RENDER_TARGET, 
+		/// D3D11_BIND_SHADER_RESOURCE, and 
+		/// D3D11_RESOURCE_MISC_GENERATE_MIPS, 
+		/// the call to GenerateMips has no effect.
 		void GenerateMips();
 		void SetDebugName(const char* name);
+		bool GetMipGenerated() const OVERRIDE;
+		size_t GetSizeInBytes() const OVERRIDE;		
 		
 		//--------------------------------------------------------------------
 		// Own
-		//--------------------------------------------------------------------		
-		ID3D11Texture2D* GetHardwareTexture() const;
+		//--------------------------------------------------------------------				
+		ID3D11Resource* GetHardwareTexture() const;
 		ID3D11ShaderResourceView* GetHardwareResourceView();
 		// pTexture will be owned by this instance.
 		// DO NOT pass a pointer you get from shared_ptr.
-		void SetHardwareTexture(ID3D11Texture2D* pTexture);
+		void SetHardwareTexture(ID3D11Resource* pTexture);
 		// pResourceView will be owned by this instance.
 		// DO NOT pass a pointer you get from shared_ptr.
 		void SetHardwareResourceView(ID3D11ShaderResourceView* pResourceView);
@@ -79,14 +87,13 @@ namespace fb
 		void ClearDepthStencilViews();
 		ID3D11DepthStencilView* GetDepthStencilView(int idx) const;
 		size_t NumDSViews() const;
-		void SetSize(const Vec2I& size);
-		void SetLoadInfoTextureFormat(DXGI_FORMAT format);
-		D3DX11_IMAGE_LOAD_INFO* GetLoadInfoPtr();
+		void SetSize(const Vec2I& size);		
 		ID3D11ShaderResourceView** GetSRViewSyncPtr();
-		HRESULT* GetHRPtr();
-		unsigned GetTextureId() const;
+		UINT64 GetTextureId() const;
 		void SetPath(const char* path);
-		const char* GetPath() const;
-		ID3D11Texture2D* GetHardwareTexture();
+		const char* GetPath() const;		
+		void SetMipGenerated(bool requested);
+		size_t Hash() const;		
+		void SetSizeInBytes(size_t bytes);
 	};
 }

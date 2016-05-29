@@ -50,8 +50,7 @@ namespace fb{
 	int FBConsole(lua_State* L);
 
 	void InitEngineLua(){
-		LuaUtils::LoadConfig("configEngine.lua");
-		LuaUtils::DoFile("EssentialEngineData/scripts/ConstKeys.lua");
+		LuaUtils::LoadConfig("configEngine.lua");		
 		auto L = LuaUtils::GetLuaState();
 		LUA_SETCFUNCTION(L, FBConsole);
 		LUA_SETCFUNCTION(L, LoadMesh);

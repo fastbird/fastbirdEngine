@@ -12,6 +12,11 @@ namespace fb {
 			CannotConnect,
 			InvalidURL,
 		};
+		// curl_global_init
+		// should call these initialize function in application side.
+		static void Initialize();
+		static void Uninitialize();
+
 		static std::string MakeMimeTypeForSuffix(const char* suffix);
 		/// . is included
 		static std::string MakeSuffixForMimeType(const char* mimeType);
@@ -32,6 +37,6 @@ namespace fb {
 		static void GetURIHostPath(const std::string& url,
 			std::string& host, std::string& path);
 		static void GetURIAuthorityPath(const std::string& url,
-			std::string& authority, std::string& path);
+			std::string& authority, std::string& path);		
 	};
 }

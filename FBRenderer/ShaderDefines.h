@@ -30,13 +30,22 @@
 namespace fb{
 	struct ShaderDefine
 	{
-		ShaderDefine();
+		// This object should be constant after created.
+		// It is forbidden to modify these variables directly.		
+		std::string mName;
+		std::string mValue;
+		size_t mHash;
+	
 		ShaderDefine(const char* _name, const char* _value);
+		const std::string& GetName() const;
+		const std::string& GetValue() const;
+
+		size_t Hash() const;
 		bool operator==(const ShaderDefine& b) const;
 		bool operator!=(const ShaderDefine& b) const;
-		bool operator< (const ShaderDefine& b) const;
-		std::string name;
-		std::string value;
+		bool operator< (const ShaderDefine& b) const;	
 	};
 	typedef std::vector<ShaderDefine> SHADER_DEFINES;
+
+	size_t Hash(const SHADER_DEFINES& shaderDefines);
 }

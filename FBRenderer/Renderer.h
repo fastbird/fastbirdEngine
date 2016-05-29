@@ -46,6 +46,7 @@
 #include "FBMathLib/Math.h"
 struct lua_State;
 namespace fb{	
+	struct OBJECT_CONSTANTS;
 	struct POINT_LIGHT_CONSTANTS;	
 	typedef unsigned RenderTargetId;
 	FB_DECLARE_SMART_PTR(ResourceProvider);
@@ -116,7 +117,7 @@ namespace fb{
 		 because the Renderer you got already have the render engine plugged in.
 		*/
 		bool PrepareRenderEngine(const char* rendererPlugInName);
-
+		void PrepareQuit();
 		//-------------------------------------------------------------------
 		// Canvas & System
 		//-------------------------------------------------------------------
@@ -132,19 +133,23 @@ namespace fb{
 		If you need to get it again use Renderer::CreateRenderTarget() again with
 		setting mUsePool in param as true.*/
 		void KeepRenderTargetInPool(RenderTargetPtr rt);
-		/** Load texture file asynchronously */
-		TexturePtr CreateTexture(const char* file);
-		TexturePtr CreateTexture(const char* file, bool async);		
+		/** Load texture file asynchronously */		
+		TexturePtr CreateTexture(const char* file, const TextureCreationOption& option);		
 		TexturePtr CreateTexture(void* data, int width, int height, PIXEL_FORMAT format,
-			BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type);
+			int mipLevels, BUFFER_USAGE usage, int  buffer_cpu_access, int texture_type);
 		void ReloadTexture(TexturePtr texture, const char* filepath);
 		VertexBufferPtr CreateVertexBuffer(void* data, unsigned stride,
 			unsigned numVertices, BUFFER_USAGE usage, BUFFER_CPU_ACCESS_FLAG accessFlag);
 		IndexBufferPtr CreateIndexBuffer(void* data, unsigned int numIndices,
 			INDEXBUFFER_FORMAT format);
-		ShaderPtr CreateShader(const char* filepath, int shaders);
-		ShaderPtr CreateShader(const char* filepath, int shaders, const SHADER_DEFINES& defines);		
-		void ReloadShader(ShaderPtr shader, const char* filepath);
+		ShaderPtr CreateShader(const char* filepath, int shader_types);
+		ShaderPtr CreateShader(const char* filepath, int shader_types, const SHADER_DEFINES& defines);		
+		ShaderPtr CreateShader(const StringVector& filepaths, const SHADER_DEFINES& defines);
+		bool CreateShader(const ShaderPtr& integratedShader, const char* filepath, SHADER_TYPE shader_type);
+		bool CreateShader(const ShaderPtr& integratedShader, const char* filepath, SHADER_TYPE shader_type, const SHADER_DEFINES& defines);
+		/// Shader created from this function is not cached.
+		/// Reloading is also not supported.
+		ShaderPtr CompileComputeShader(const char* code, const char* entry, const SHADER_DEFINES& defines);
 		MaterialPtr CreateMaterial(const char* file);		
 		// use this if you are sure there is instance of the descs.
 		InputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs, ShaderPtr shader);
@@ -170,25 +175,33 @@ namespace fb{
 		void SetRenderTarget(TexturePtr pRenderTargets[], size_t rtViewIndex[], int num,
 			TexturePtr pDepthStencil, size_t dsViewIndex);		
 		void UnbindRenderTarget(TexturePtr renderTargetTexture);
+		void SetRenderTargetAtSlot(TexturePtr pRenderTarget, size_t viewIndex, size_t slot);
+		void SetDepthTarget(TexturePtr pDepthStencil, size_t dsViewIndex);
+		const std::vector<TexturePtr>& _GetCurrentRTTextures() const;
+		const std::vector<size_t>& _GetCurrentViewIndices() const;
+		TexturePtr _GetCurrentDSTexture() const;
+		size_t _GetCurrentDSViewIndex() const;
 		void SetViewports(const Viewport viewports[], int num);
 		void SetScissorRects(Rect rects[], int num);
 		void SetVertexBuffers(unsigned int startSlot, unsigned int numBuffers,
 			VertexBufferPtr pVertexBuffers[], unsigned int strides[], unsigned int offsets[]);
 		void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt);		
 		/** Bind serveral texture at once.
-		The texture order apears in the shader(BINDING_SHADER) should be sequential.
+		The texture order apears in the shader(SHADER_TYPE) should be sequential.
 		*/
-		void SetTextures(TexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot);
-		void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture);
-		void UnbindTexture(BINDING_SHADER shader, int slot);
+		void SetTextures(TexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot);		
+		void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture);		
+		void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture, int shader_type_mask);
+		void UnbindTexture(SHADER_TYPE shader, int slot);
 		void UnbindInputLayout();
 		void UnbindVertexBuffers();
-		void UnbindShader(BINDING_SHADER shader);
+		void UnbindShader(SHADER_TYPE shader);
 		// pre defined
 		void BindDepthTexture(bool set);		
 		void SetDepthWriteShader();
 		void SetDepthWriteShaderCloud();		
 		void SetPositionInputLayout();
+		void BindSystemTexture(SystemTextures::Enum systemTexture);
 
 		void SetSystemTextureBindings(SystemTextures::Enum type, const TextureBindings& bindings);
 		const TextureBindings& GetSystemTextureBindings(SystemTextures::Enum type) const;				
@@ -202,7 +215,7 @@ namespace fb{
 		void RestoreBlendState();
 		void RestoreDepthStencilState();				
 		// sampler
-		void SetSamplerState(int ResourceTypes_SamplerStates, BINDING_SHADER shader, int slot);
+		void SetSamplerState(int ResourceTypes_SamplerStates, SHADER_TYPE shader, int slot);
 
 		//-------------------------------------------------------------------
 		// GPU constants
@@ -210,17 +223,20 @@ namespace fb{
 		/// record == false
 		void UpdateObjectConstantsBuffer(const void* pData);
 		void UpdateObjectConstantsBuffer(const void* pData, bool record);
+		/// just for reading
+		const OBJECT_CONSTANTS* GetObjectConstants() const;
 		void UpdatePointLightConstantsBuffer(const void* pData);
 		void UpdateFrameConstantsBuffer();
 		void UpdateMaterialConstantsBuffer(const void* pData);
 		void UpdateCameraConstantsBuffer();
+		void UpdateCameraConstantsBuffer(const void* manualData);
 		void UpdateRenderTargetConstantsBuffer();
 		void UpdateSceneConstantsBuffer();
 		void UpdateRareConstantsBuffer();
 		void UpdateRadConstantsBuffer(const void* pData);
 		void UpdateShadowConstantsBuffer(const void* pData);
-		void* MapMaterialParameterBuffer();
-		void UnmapMaterialParameterBuffer();
+		void* MapShaderConstantsBuffer();
+		void UnmapShaderConstantsBuffer();
 		void* MapBigBuffer();
 		void UnmapBigBuffer();
 
@@ -231,6 +247,7 @@ namespace fb{
 		void SetClearDepthStencil(HWindowId id, Real z, UINT8 stencil);
 		void Clear(Real r, Real g, Real b, Real a, Real z, UINT8 stencil);
 		void Clear(Real r, Real g, Real b, Real a);
+		void ClearDepthStencil(Real z, UINT8 stencil);
 		// Avoid to use
 		void ClearState();
 		void BeginEvent(const char* name);
@@ -276,7 +293,7 @@ namespace fb{
 			float afTexCoordOffset[15],
 			Vec4* avColorWeight,
 			float fDeviation, float fMultiplier);
-		void GetSampleOffsets_GaussBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier);
+		void GetSampleOffsets_GaussianBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier);
 		void GetSampleOffsets_DownScale2x2(DWORD texWidth, DWORD texHeight, Vec4f* avSampleOffsets);
 		bool IsLuminanceOnCpu() const;
 		void SetLockDepthStencilState(bool lock);
@@ -287,7 +304,14 @@ namespace fb{
 		void RenderShadows();
 		void SetBindShadowMap(bool bind);
 		void OnShadowOptionChanged();
-		void KeepTextureReference(const char* filepath);
+		void KeepTextureReference(const char* filepath, const TextureCreationOption& option);
+		/// Make a snapshot of the current render states(Rasterizer, Blend, DepthStencil)
+		/// Work like a stack.
+		/// The call should be match PopRenderStates()
+		/// remark: The states can be captured only when the current states pointers are valid.
+		void PushRenderStates();
+		void PopRenderStates();
+		void BindIncrementalStencilState(int stencilRef);
 		
 
 		//-------------------------------------------------------------------
@@ -299,7 +323,8 @@ namespace fb{
 		bool GetLuminanaceOnCPU() const;
 		void SetLuminanaceOnCPU(bool oncpu);
 		RenderTargetPtr GetRenderTarget(HWindowId id) const;
-		void SetCamera(CameraPtr pCamera);
+		/// returning prevCamera
+		CameraPtr SetCamera(CameraPtr pCamera);
 		CameraPtr GetCamera() const; // this is for current carmera.
 		CameraPtr GetMainCamera() const;
 		ICameraPtr GetICamera() const;
@@ -326,11 +351,19 @@ namespace fb{
 		void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Vec4& color, MaterialPtr mat);
 		void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
 		void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs);
+		void DrawFrustum(const Frustum& frustum);		
+		void DrawLine(const Vec3& start, const Vec3& end,
+			const Color& color0, const Color& color1);
+		/// bottom:ll lr ur ul, top:ll lr ur ul
+		void DrawBox(const Vec3::Array& corners, const Color& color);
+		void DrawPoints(const Vec3::Array& points, const Color& color);
 		void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, TexturePtr texture, MaterialPtr materialOverride = 0);
 		void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,
 			const Color& color, TexturePtr texture, MaterialPtr materialOverride = 0);
 		void DrawBillboardWorldQuad(const Vec3& pos, const Vec2& size, const Vec2& offset,
 			DWORD color, MaterialPtr pMat);
+		void DrawCurrentAxis();
+		void Draw3DTextNow(const Vec3& worldpos, const char* text, const Color& color, Real size);
 		void QueueDrawText(const Vec2I& pos, WCHAR* text, const Color& color);
 		void QueueDrawText(const Vec2I& pos, WCHAR* text, const Color& color, Real size);
 		void QueueDrawText(const Vec2I& pos, const char* text, const Color& color);
@@ -363,9 +396,11 @@ namespace fb{
 		//-------------------------------------------------------------------
 		// ISceneObserver
 		//-------------------------------------------------------------------
-		void OnAfterMakeVisibleSet(IScene* scene);
-		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
-		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut);
+		void OnAfterMakeVisibleSet(IScene* scene) OVERRIDE;
+		void OnBeforeRenderingOpaques(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut)  OVERRIDE;
+		void OnBeforeRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut)  OVERRIDE;
+		void OnAfterRenderingOpaquesRenderStates(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut)  OVERRIDE;
+		void OnBeforeRenderingTransparents(IScene* scene, const RenderParam& renderParam, RenderParamOut* renderParamOut)  OVERRIDE;
 
 		//-------------------------------------------------------------------
 		// IInputConsumer

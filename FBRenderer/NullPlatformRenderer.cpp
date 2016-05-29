@@ -38,6 +38,9 @@ NullPlatformRenderer::~NullPlatformRenderer(){
 
 }
 
+void NullPlatformRenderer::PrepareQuit() {
+}
+
 Vec2ITuple NullPlatformRenderer::FindClosestSize(HWindowId id, const Vec2ITuple& input) {
 	return Vec2ITuple(0, 0);
 }
@@ -71,11 +74,12 @@ void NullPlatformRenderer::SetShaderCacheOption(bool useShaderCache, bool genera
 	
 }
 
-IPlatformTexturePtr NullPlatformRenderer::CreateTexture(const char* path, bool async) {
+IPlatformTexturePtr NullPlatformRenderer::CreateTexture(const char* path, const TextureCreationOption& option) {
 	return 0;
 }
 
-IPlatformTexturePtr NullPlatformRenderer::CreateTexture(void* data, int width, int height,PIXEL_FORMAT format, BUFFER_USAGE usage, int  buffer_cpu_access,int texture_type) {
+IPlatformTexturePtr NullPlatformRenderer::CreateTexture(void* data, int width, int height,PIXEL_FORMAT format, 
+	int mipLevels, BUFFER_USAGE usage, int  buffer_cpu_access,int texture_type) {
 	return 0;
 }
 
@@ -87,7 +91,28 @@ IPlatformIndexBufferPtr NullPlatformRenderer::CreateIndexBuffer(void* data, unsi
 	return 0;
 }
 
-IPlatformShaderPtr NullPlatformRenderer::CreateShader(const char* path, int shaders, const SHADER_DEFINES& defines, bool ignoreCache) {
+IPlatformShaderPtr NullPlatformRenderer::CreateVertexShader(const char* path,
+	const SHADER_DEFINES& defines, bool ignoreCache) {
+	return 0;
+}
+
+IPlatformShaderPtr NullPlatformRenderer::CreateGeometryShader(const char* path,
+	const SHADER_DEFINES& defines, bool ignoreCache) {
+	return 0;
+}
+
+IPlatformShaderPtr NullPlatformRenderer::CreatePixelShader(const char* path,
+	const SHADER_DEFINES& defines, bool ignoreCache) {
+	return 0;
+}
+
+IPlatformShaderPtr NullPlatformRenderer::CreateComputeShader(const char* path,
+	const SHADER_DEFINES& defines, bool ignoreCache) {
+	return 0;
+}
+
+IPlatformShaderPtr NullPlatformRenderer::CompileComputeShader(const char* code, const char* entry,
+	const SHADER_DEFINES& defines) {
 	return 0;
 }
 
@@ -119,6 +144,10 @@ void NullPlatformRenderer::SetRenderTarget(IPlatformTexturePtr pRenderTargets[],
 	
 }
 
+void NullPlatformRenderer::SetDepthTarget(IPlatformTexturePtr pDepthStencil, size_t dsViewIndex) {
+
+}
+
 void NullPlatformRenderer::SetViewports(const Viewport viewports[], int num) {
 	
 }
@@ -135,7 +164,7 @@ void NullPlatformRenderer::SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt) {
 	
 }
 
-void NullPlatformRenderer::SetTextures(IPlatformTexturePtr pTextures[], int num, BINDING_SHADER shaderType, int startSlot) {
+void NullPlatformRenderer::SetTextures(IPlatformTexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot) {
 	
 }
 
@@ -143,11 +172,11 @@ void NullPlatformRenderer::UpdateShaderConstants(ShaderConstants::Enum type, con
 	
 }
 
-void* NullPlatformRenderer::MapMaterialParameterBuffer() const{
+void* NullPlatformRenderer::MapShaderConstantsBuffer() const{
 	return 0;
 }
 
-void NullPlatformRenderer::UnmapMaterialParameterBuffer() const{
+void NullPlatformRenderer::UnmapShaderConstantsBuffer() const{
 
 }
 
@@ -163,11 +192,11 @@ void NullPlatformRenderer::UnbindInputLayout() {
 	
 }
 
-void NullPlatformRenderer::UnbindShader(BINDING_SHADER shader) {
+void NullPlatformRenderer::UnbindShader(SHADER_TYPE shader) {
 	
 }
 
-void NullPlatformRenderer::UnbindTexture(BINDING_SHADER shader, int slot) {
+void NullPlatformRenderer::UnbindTexture(SHADER_TYPE shader, int slot) {
 	
 }
 
@@ -189,6 +218,10 @@ void NullPlatformRenderer::Clear(Real r, Real g, Real b, Real a, Real z, unsigne
 
 void NullPlatformRenderer::Clear(Real r, Real g, Real b, Real a) {
 	
+}
+
+void NullPlatformRenderer::ClearDepthStencil(Real z, UINT8 stencil) {
+
 }
 
 void NullPlatformRenderer::ClearState() {

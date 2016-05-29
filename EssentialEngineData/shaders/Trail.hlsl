@@ -57,7 +57,7 @@ struct g2p
 };
 
 //----------------------------------------------------------------------------
-v2g trail_VertexShader( in a2v IN )
+v2g Trail_VertexShader( in a2v IN )
 {
     v2g OUT;
 	OUT.pos = IN.pos;
@@ -69,7 +69,7 @@ v2g trail_VertexShader( in a2v IN )
 // Geometry Shader
 //--------------------------------------------------------------------------------------
 [maxvertexcount(4)]
-void trail_GeometryShader(lineadj v2g In[4], inout TriangleStream<g2p> streamObj)
+void Trail_GeometryShader(lineadj v2g In[4], inout TriangleStream<g2p> streamObj)
 {
 	float3 camPos = {gCamTransform[0][3], gCamTransform[1][3], gCamTransform[2][3]};
 	float3 toCam = normalize(camPos - In[1].pos.xyz);
@@ -82,7 +82,7 @@ void trail_GeometryShader(lineadj v2g In[4], inout TriangleStream<g2p> streamObj
 	// 1    3
 	//
 	// 0    2
-	float width = gMaterialParam[0].x;
+	float width = gShaderParams[0].x;
 	
 	g2p OUTPUT;
 	OUTPUT.pos = mul(gViewProj, float4(In[1].pos.xyz - up0 * width, 1));
@@ -116,7 +116,7 @@ struct PS_OUT
 	float4 color1 : SV_Target1;
 };
 
-PS_OUT trail_PixelShader(in g2p IN) : SV_Target
+PS_OUT Trail_PixelShader(in g2p IN) : SV_Target
 {
 	float4 outColor = gDiffuseColor;
 	outColor.a = IN.uv.z;

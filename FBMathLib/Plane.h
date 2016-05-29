@@ -47,7 +47,8 @@ namespace fb
 		Plane(const Plane& other);
 		Plane(const Vec3& normal, Real c);
 		Plane(const Vec3& normal, const Vec3& p);
-		Plane(Real x, Real y, Real z, Real c);
+		// ax + by + cz + d = 0
+		Plane(Real a, Real b, Real c, Real d);
 		Plane(const Vec3& p0, const Vec3& p1, const Vec3& p2);
 		/// mNormal = v.xyz
 		/// mConstantc = -v.w
@@ -80,6 +81,7 @@ namespace fb
 		/// line intersect
 		Vec3 Intersect(const Vec3& pa, const Vec3& pb);
 		Real IntersectDistance(const Vec3& pa, const Vec3& pb);
+		Vec3 ProjectPoint(const Vec3& p) const;
 	};
 }
 

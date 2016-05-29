@@ -53,7 +53,7 @@ struct v2p
 	float2 UV		: TEXCOORD;
 };
 
-v2p uihexagonal_VertexShader(in a2v INPUT)
+v2p UIHexagonal_VertexShader(in a2v INPUT)
 {
 	v2p OUTPUT;
 
@@ -80,7 +80,7 @@ cbuffer cbImmutable
 }
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 uihexagonal_PixelShader(in v2p INPUT) : SV_Target
+float4 UIHexagonal_PixelShader(in v2p INPUT) : SV_Target
 {
 	float3 diffuse = gDiffuseTexture.Sample(gLinearSampler, INPUT.UV);
 	float gEnables[6];
@@ -89,24 +89,24 @@ float4 uihexagonal_PixelShader(in v2p INPUT) : SV_Target
 	// param2 : HexaEnable for indices 4, 5, UI World Normalized Size.xy
 	// param3 : World Normalized pos.xy
 	
-	gEnables[0] = gMaterialParam[1].x;
-	gEnables[1] = gMaterialParam[1].y;
-	gEnables[2] = gMaterialParam[1].z;
-	gEnables[3] = gMaterialParam[1].w;
-	gEnables[4] = gMaterialParam[2].x;
-	gEnables[5] = gMaterialParam[2].y;
+	gEnables[0] = gShaderParams[1].x;
+	gEnables[1] = gShaderParams[1].y;
+	gEnables[2] = gShaderParams[1].z;
+	gEnables[3] = gShaderParams[1].w;
+	gEnables[4] = gShaderParams[2].x;
+	gEnables[5] = gShaderParams[2].y;
 
 	vec2 uv = INPUT.UV;
 	uv = uv*2.0 - 1.0;
 	uv.y = -uv.y;
 
 	vec2 mouse = gMousePos.xy / gScreenSize.xy;
-	mouse = (mouse - gMaterialParam[3].xy) / gMaterialParam[2].zw ;
+	mouse = (mouse - gShaderParams[3].xy) / gShaderParams[2].zw ;
 	mouse = mouse*2.0 - 1.0;
 	mouse.y = -mouse.y;
 	
 	vec2 mouse2 = gMousePos.zw / gScreenSize.xy;
-	mouse2 = (mouse2 - gMaterialParam[3].xy) / gMaterialParam[2].zw ;
+	mouse2 = (mouse2 - gShaderParams[3].xy) / gShaderParams[2].zw ;
 	mouse2 = mouse2*2.0 - 1.0;
 	mouse2.y = -mouse2.y;
 	

@@ -1,5 +1,5 @@
 <Material transparent="true">
-	<ShaderFile>Code/Engine/Renderer/Shaders/particle.hlsl</ShaderFile>
+	<ShaderFile>Code/Engine/Renderer/Shaders/Particle.hlsl</ShaderFile>
 	<Shaders>VS|GS|PS</Shaders>
 	<MaterialConstants>
 		<AmbientColor>1, 1, 1, 1</AmbientColor>
@@ -9,9 +9,9 @@
 	</MaterialConstants>
 	<Textures>
 	</Textures>
-	<MaterialParameters>
+	<ShaderConstants>
 		<param comment="glowpower, depthFade, , ">1, 5000, 0, 0</param>
-	</MaterialParameters>
+	</ShaderConstants>
 	<ShaderDefines>
 		<define name="GLOW_PASS" val="1"/>
 	</ShaderDefines>

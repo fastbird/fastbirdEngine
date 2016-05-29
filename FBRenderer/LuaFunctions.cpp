@@ -12,7 +12,9 @@ namespace fb{
 
 	int KeepTextureReference(lua_State* L){
 		auto textureFile = LuaUtils::checkstring(L, 1);
-		Renderer::GetInstance().KeepTextureReference(textureFile);		
+		auto async = LuaUtils::toboolean(L, 2);
+		auto generateMip = LuaUtils::toboolean(L, 3);
+		Renderer::GetInstance().KeepTextureReference(textureFile, TextureCreationOption{ async, generateMip });
 		return 0;
 	}
 }

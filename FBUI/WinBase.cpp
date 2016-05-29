@@ -283,6 +283,10 @@ void WinBase::ChangeNSizeY(float y){
 //---------------------------------------------------------------------------
 void WinBase::OnSizeChanged()
 {
+	if (mName == "hpBar") {
+		int a = 0;
+		a++;
+	}
 	if (mAnimScale != Vec2::ONE){
 		mScaledSize = Round(mSize * mAnimScale);
 	}
@@ -2321,6 +2325,10 @@ int WinBase::GetPropertyAsInt(UIProperty::Enum prop, int defaultVal)
 
 void WinBase::SetUseBorder(bool use)
 {
+	if (mName == "hpBar") {
+		int a = 0;
+		a++;
+	}
 	if (use && mBorders.empty())
 	{
 		RecreateBorders();
@@ -2533,6 +2541,10 @@ void WinBase::RefreshBorder()
 }
 
 void WinBase::UpdateAlphaTexture(){
+	if (mName == "hpBar") {
+		int a = 0;
+		a++;
+	}
 	mUpdateAlphaTexture = false;
 
 	const Vec2I& finalSize = GetFinalSize();
@@ -2541,7 +2553,7 @@ void WinBase::UpdateAlphaTexture(){
 		bool callmeLater = false;
 		auto texture = UIManager::GetInstance().GetBorderAlphaInfoTexture(finalSize, callmeLater);
 		if (texture && mat){
-			mat->SetTexture(texture, BINDING_SHADER_PS, 1);
+			mat->SetTexture(texture, SHADER_TYPE_PS, 1);
 			mat->AddShaderDefine("_ALPHA_TEXTURE", "1");
 				//mat->ApplyShaderDefines();
 
@@ -2556,7 +2568,8 @@ void WinBase::UpdateAlphaTexture(){
 				INPUT_ELEMENT_DESCS descs;
 				descs.push_back(INPUT_ELEMENT_DESC("POSITION", 0, INPUT_ELEMENT_FORMAT_FLOAT3, 0, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
 				descs.push_back(INPUT_ELEMENT_DESC("COLOR", 0, INPUT_ELEMENT_FORMAT_UBYTE4, 1, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
-				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));
+				descs.push_back(INPUT_ELEMENT_DESC("TEXCOORD", 0, INPUT_ELEMENT_FORMAT_FLOAT2, 2, 0, INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0));				
+				mat->RemoveShaderDefine("_ALPHA_TEXTURE_SEPERATED_UV");
 				mat->SetInputLayout(descs);
 			}
 			else{

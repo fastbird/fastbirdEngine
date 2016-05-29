@@ -89,4 +89,18 @@ namespace fb
 			mLockSem = 0;
 		}
 	};
+	using SpinLockWaitSleep = SpinLock<true, true>;
+
+	template <class T>
+	struct EnterSpinLock {
+		T& spinlock;
+		EnterSpinLock(T& spinlock)
+			: spinlock(spinlock)
+		{
+			spinlock.Lock();
+		}
+		~EnterSpinLock() {
+			spinlock.Unlock();
+		}
+	};
 }

@@ -82,7 +82,7 @@ public:
 	}
 
 	void AddParticleSearchDirectory(const char* directory){
-		if (!ValidCStringLength(directory) || !FileSystem::Exists(directory)){
+		if (!ValidCString(directory) || !FileSystem::Exists(directory)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
@@ -190,7 +190,7 @@ public:
 	}
 
 	ParticleEmitterPtr GetParticleEmitter(IScenePtr scene, const char* file){
-		if (!ValidCStringLength(file)) {
+		if (!ValidCString(file)) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return 0;
 		}
@@ -231,7 +231,7 @@ public:
 	}
 
 	void ReloadParticle(const char* file){
-		if (!ValidCStringLength(file))
+		if (!ValidCString(file))
 			return;
 		auto fileKey = ToLowerCase(file);		
 		for (auto& p : mParticleEmittersByName)

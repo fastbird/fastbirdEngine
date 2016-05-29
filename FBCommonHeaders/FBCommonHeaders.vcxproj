@@ -20,7 +20,9 @@
     <ClInclude Include="Iterator.h" />
     <ClInclude Include="IteratorWrapper.h" />
     <ClInclude Include="LockFreeQueue.h" />
+    <ClInclude Include="LockQueue.h" />
     <ClInclude Include="Observable.h" />
+    <ClInclude Include="QuadNode.h" />
     <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="SpinLock.h" />
     <ClInclude Include="String.h" />

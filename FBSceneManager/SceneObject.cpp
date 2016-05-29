@@ -115,7 +115,7 @@ void SceneObject::ModifyObjFlag(unsigned flag, bool enable) {
 	}
 	else
 	{
-		mObjFlag = mObjFlag  & ~flag;
+		mObjFlag &= ~flag;
 	}
 }
 

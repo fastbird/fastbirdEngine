@@ -153,7 +153,7 @@ public:
 	void SetWidth(float width){
 		mWidth = width;
 		if (mMaterial){
-			mMaterial->SetMaterialParameter(0, Vec4(mWidth, 0, 0, 0));
+			mMaterial->SetShaderParameter(0, Vec4(mWidth, 0, 0, 0));
 		}
 	}
 

@@ -1586,7 +1586,6 @@ namespace tinyxml2
 		return errorID;
 	}
 
-
 	int XMLDocument::LoadFile( FILE* fp )
 	{
 		DeleteChildren();

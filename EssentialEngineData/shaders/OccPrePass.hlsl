@@ -42,7 +42,7 @@ struct v2p
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-v2p occprepass_VertexShader(in a2v INPUT)
+v2p OccPrePass_VertexShader(in a2v INPUT)
 {
 	v2p OUTPUT;
 
@@ -54,7 +54,7 @@ v2p occprepass_VertexShader(in a2v INPUT)
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 occprepass_PixelShader(in v2p INPUT) : SV_Target
+float4 OccPrePass_PixelShader(in v2p INPUT) : SV_Target
 {
 	return float4(0, 0, 0, 1.0);
 }

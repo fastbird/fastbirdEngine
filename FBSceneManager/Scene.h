@@ -57,7 +57,8 @@ namespace fb{
 		//---------------------------------------------------------------------------
 		// IScene interface
 		//---------------------------------------------------------------------------
-		void AddSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer);
+		void AddSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) OVERRIDE;
+		void RemoveSceneObserver(int ISceneObserverEnum, ISceneObserverPtr observer) OVERRIDE;
 		void GetDirectionalLightInfo(DirectionalLightIndex::Enum index, DirectionalLightInfo& data);
 		const Vec3& GetMainLightDirection();
 		void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir);

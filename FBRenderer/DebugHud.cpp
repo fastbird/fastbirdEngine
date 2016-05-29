@@ -37,6 +37,7 @@
 #include "VertexBuffer.h"
 #include "Material.h"
 #include "Camera.h"
+#include "ResourceProvider.h"
 #include "FBSceneManager/IScene.h"
 #include "EssentialEngineData/shaders/Constants.h"
 #undef DrawText
@@ -129,9 +130,11 @@ public:
 	std::vector<Triangle> mTriangles;
 
 	ShaderPtr mLineShader;
+	ShaderPtr mPointShader;
 	InputLayoutPtr mInputLayout;
 	/*SmartPtr<IInputLayout> mHdrInputLayout;*/
 	VertexBufferPtr mVertexBuffer;
+	VertexBufferPtr mVertexBufferSmall;
 	/*SmartPtr<IVertexBuffer> mHdrVertexBuffer;*/
 	MaterialPtr mTriMaterial;
 
@@ -147,11 +150,12 @@ public:
 		mObjectConstants_WorldLine.gWorld.MakeIdentity();
 		mObjectConstants_WorldLine.gWorldViewProj.MakeIdentity();
 		auto& renderer = Renderer::GetInstance();
-		mLineShader = renderer.CreateShader(
-			"EssentialEnginedata/shaders/Line.hlsl", BINDING_SHADER_VS | BINDING_SHADER_PS, SHADER_DEFINES());
-
+		mLineShader = renderer.GetResourceProvider()->GetShader(ResourceTypes::Shaders::LineVSPS);
 		mInputLayout = renderer.GetInputLayout(DEFAULT_INPUTS::POSITION_COLOR, mLineShader);
+		mPointShader = renderer.GetResourceProvider()->GetShader(ResourceTypes::Shaders::PointVSGSPS);
 		mVertexBuffer = renderer.CreateVertexBuffer(0, LINE_STRIDE, MAX_LINE_VERTEX,
+			BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
+		mVertexBufferSmall = renderer.CreateVertexBuffer(0, LINE_STRIDE, 20,
 			BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 
 		DEPTH_STENCIL_DESC ddesc;
@@ -209,6 +213,20 @@ public:
 		}
 	}
 
+	void Draw3DTextNow(const Vec3& pos, WCHAR* text, const Color& color, Real size) {
+		auto& renderer = Renderer::GetInstance();		
+		auto cam = renderer.GetCamera();
+		if (cam)
+		{
+			auto pFont = renderer.GetFontWithHeight(size);
+			pFont->PrepareRenderResources();
+			pFont->SetRenderStates(false, false);
+			Vec2I spos = cam->WorldToScreen(pos);
+			pFont->Write((Real)spos.x, (Real)spos.y, 0.5f, color.Get4Byte(),
+				(const char*)text, -1, Font::FONT_ALIGN_LEFT);			
+		}
+	}
+
 	//----------------------------------------------------------------------------
 	void DrawLine(const Vec3& start, const Vec3& end,
 		const Color& color0, const Color& color1)
@@ -221,6 +239,36 @@ public:
 		line.mColore = color1.Get4Byte();
 
 		mWorldLines.push_back(line);
+	}
+
+	void DrawLineNow(const Vec3& start, const Vec3& end, const Color& color0,
+		const Color& color1)
+	{
+		auto& renderer = Renderer::GetInstance();
+		mObjectConstants_WorldLine.gWorldViewProj =
+			renderer.GetCamera()->GetMatrix(Camera::ViewProj);
+		
+		mInputLayout->Bind();
+		mLineShader->Bind(true);
+		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
+		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
+
+		Line line;
+		line.mStart = start;
+		line.mColor = color0.Get4Byte();
+
+		line.mEnd = end;
+		line.mColore = color1.Get4Byte();
+
+		MapData mapped = mVertexBufferSmall->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapped.pData)
+		{
+			memcpy((char*)mapped.pData, &line, LINE_STRIDE * 2);			
+			mVertexBufferSmall->Unmap(0);
+
+			mVertexBufferSmall->Bind();
+			renderer.Draw(2, 0);			
+		}
 	}
 
 	void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color){
@@ -266,6 +314,66 @@ public:
 		s.mRadius = radius;
 		s.mColor = color;
 	}
+
+	void DrawPointNow(const Vec3& pos, Real radius, const Color& color)
+	{
+		auto& renderer = Renderer::GetInstance();
+		mObjectConstants_WorldLine.gWorldViewProj =
+			renderer.GetCamera()->GetMatrix(Camera::ViewProj);
+
+		mInputLayout->Bind();
+		mPointShader->Bind(true);
+		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
+		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);		
+		MapData mapped = mVertexBufferSmall->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapped.pData)
+		{
+			struct VERT {
+				Vec3 pos;
+				unsigned color;
+			};
+			VERT v{ pos, color.Get4Byte() };
+			memcpy((char*)mapped.pData, &v, 16);
+			mVertexBufferSmall->Unmap(0);
+
+			mVertexBufferSmall->Bind();
+			renderer.Draw(1, 0);
+		}
+	}
+
+	void DrawPointsNow(const Vec3::Array& pos, const Color& color)
+	{
+		auto& renderer = Renderer::GetInstance();
+		mObjectConstants_WorldLine.gWorldViewProj =
+			renderer.GetCamera()->GetMatrix(Camera::ViewProj);
+
+		mInputLayout->Bind();
+		mPointShader->Bind(true);
+		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_POINTLIST);
+		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
+		struct VERT {
+			Vec3 pos;
+			unsigned color;
+		};
+		std::vector<VERT> verts(pos.size());
+		auto icolor = color.Get4Byte();
+		int numVerts = (int)pos.size();
+		for (int i = 0; i < numVerts; ++i) {
+			verts[i] = VERT{ pos[i], icolor };
+		}		
+
+		MapData mapped = mVertexBufferSmall->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapped.pData)
+		{
+			
+			memcpy((char*)mapped.pData, &verts[0], 16* numVerts);
+			mVertexBufferSmall->Unmap(0);
+
+			mVertexBufferSmall->Bind();
+			renderer.Draw(pos.size(), 0);
+		}
+	}
+
 	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha)
 	{
 		mBoxes.push_back(Box());
@@ -304,7 +412,7 @@ public:
 		// object constant buffer
 		mRenderStates->Bind();
 		mInputLayout->Bind();
-		mLineShader->Bind();
+		mLineShader->Bind(true);
 		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
 		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
 		unsigned lineCount = mWorldLines.size();
@@ -369,7 +477,7 @@ public:
 		}
 		mQuads.clear();
 
-		auto pFont = renderer.GetFont(20);
+		auto pFont = renderer.GetFontWithHeight(20);
 		Real curFontSize = 20.f;
 
 		pFont->PrepareRenderResources();
@@ -378,7 +486,7 @@ public:
 		{
 			const TextData& textData = mTexts.front();
 			if (curFontSize != textData.mSize){
-				pFont = renderer.GetFont((int)textData.mSize);
+				pFont = renderer.GetFontWithHeight(textData.mSize);
 				curFontSize = textData.mSize;
 			}
 			pFont->Write((Real)textData.mPos.x, (Real)textData.mPos.y, 0.5f, textData.mColor.Get4Byte(),
@@ -459,7 +567,7 @@ public:
 		//		//mObjectConstants.gWorldView = renderer.GetCamera()->GetViewMat() * mObjectConstants.gWorld;
 		//		//mObjectConstants.gWorldViewProj = renderer.GetCamera()->GetProjMat() * mObjectConstants.gWorldView;
 		//		renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
-		//		mSphereMesh->GetMaterial()->SetMaterialParameter(0, sphere.mColor.GetVec4());
+		//		mSphereMesh->GetMaterial()->SetShaderParameter(0, sphere.mColor.GetVec4());
 		//		mSphereMesh->GetMaterial()->Bind(true);
 		//		mSphereMesh->RenderSimple();
 		//	}
@@ -481,7 +589,7 @@ public:
 				renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
 				Vec4 color = box.mColor.GetVec4();
 				color.w = box.mAlpha;
-				mBoxMesh->GetMaterial()->SetMaterialParameter(0, color);
+				mBoxMesh->GetMaterial()->SetShaderParameter(0, color);
 				mBoxMesh->GetMaterial()->Bind(true);
 				mBoxMesh->RenderSimple();
 			}
@@ -515,7 +623,7 @@ public:
 		auto& renderer = Renderer::GetInstance();
 		// object constant buffer
 		mInputLayout->Bind();
-		mLineShader->Bind();
+		mLineShader->Bind(true);
 		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);
 		renderer.UpdateObjectConstantsBuffer(&mObjectConstants_WorldLine);
 		if (lineCount > 0)
@@ -584,11 +692,21 @@ void DebugHud::Draw3DText(const Vec3& pos, WCHAR* text, const Color& color, Real
 	mImpl->Draw3DText(pos, text, color, size);
 }
 
+void DebugHud::Draw3DTextNow(const Vec3& pos, WCHAR* text, const Color& color, Real size) {
+	mImpl->Draw3DTextNow(pos, text, color, size);
+}
+
 //----------------------------------------------------------------------------
 void DebugHud::DrawLine(const Vec3& start, const Vec3& end, 
 	const Color& color0, const Color& color1)
 {
 	mImpl->DrawLine(start, end, color0, color1);
+}
+
+void DebugHud::DrawLineNow(const Vec3& start, const Vec3& end, const Color& color0,
+	const Color& color1)
+{
+	mImpl->DrawLineNow(start, end, color0, color1);
 }
 
 void DebugHud::DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color){
@@ -611,6 +729,17 @@ void DebugHud::DrawSphere(const Vec3& pos, Real radius, const Color& color)
 {
 	mImpl->DrawSphere(pos, radius, color);
 }
+
+void DebugHud::DrawPointNow(const Vec3& pos, Real radius, const Color& color)
+{
+	mImpl->DrawPointNow(pos, radius, color);
+}
+
+void DebugHud::DrawPointsNow(const Vec3::Array& pos, const Color& color)
+{
+	mImpl->DrawPointsNow(pos, color);
+}
+
 void DebugHud::DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha)
 {
 	mImpl->DrawBox(boxMin, boxMax, color, alpha);

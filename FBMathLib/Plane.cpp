@@ -56,11 +56,11 @@ Plane::Plane(const Vec3& normal, const Vec3& p)
 
 }
 
-Plane::Plane(Real x, Real y, Real z, Real c) 
-	: mNormal(Vec3(x, y, z))
-	, mConstant(c)
+// ax + by + cz + d = 0
+Plane::Plane(Real a, Real b, Real c, Real d) 
+	: mNormal(Vec3(a, b, c))
+	, mConstant(-d) // ax + by + cz = -d
 {
-
 }
 
 Plane::Plane(const Vec3& p0, const Vec3& p1, const Vec3& p2)
@@ -198,6 +198,12 @@ Real Plane::IntersectDistance(const Vec3& pa, const Vec3& pb) {
 	}
 
 	return -Dot(Vec4(pa)) / ldotv; // ldots / ldotv
+}
+
+Vec3 Plane::ProjectPoint(const Vec3& p) const
+{
+	auto d = DistanceTo(p);
+	return p - mNormal * p;
 }
 
 }

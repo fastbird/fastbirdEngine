@@ -13,8 +13,8 @@
 		<!-- 4 is used as environment map-->
 		
 	</Textures>
-	<MaterialParameters>		
-	</MaterialParameters>
+	<ShaderConstants>		
+	</ShaderConstants>
 	<ShaderDefines>		
 	</ShaderDefines>
 	<InputLayout>

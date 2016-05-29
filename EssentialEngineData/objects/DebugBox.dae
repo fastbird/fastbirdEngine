@@ -103,7 +103,7 @@
   </library_lights>
   <library_images/>
   <library_effects>
-    <effect id="es_materials_DebugGeom_material-effect">
+    <effect id="EssentialEngineData_materials_DebugGeom_material-effect">
       <profile_COMMON>
         <technique sid="common">
           <phong>
@@ -131,8 +131,8 @@
     </effect>
   </library_effects>
   <library_materials>
-    <material id="es_materials_DebugGeom_material-material" name="es_materials_DebugGeom_material">
-      <instance_effect url="#es_materials_DebugGeom_material-effect"/>
+    <material id="EssentialEngineData_materials_DebugGeom_material-material" name="EssentialEngineData_materials_DebugGeom_material">
+      <instance_effect url="#EssentialEngineData_materials_DebugGeom_material-effect"/>
     </material>
   </library_materials>
   <library_geometries>
@@ -161,7 +161,7 @@
         <vertices id="Cube_001-mesh-vertices">
           <input semantic="POSITION" source="#Cube_001-mesh-positions"/>
         </vertices>
-        <polylist material="es_materials_DebugGeom_material-material" count="12">
+        <polylist material="EssentialEngineData_materials_DebugGeom_material-material" count="12">
           <input semantic="VERTEX" source="#Cube_001-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Cube_001-mesh-normals" offset="1"/>
           <vcount>3 3 3 3 3 3 3 3 3 3 3 3 </vcount>
@@ -186,7 +186,7 @@
         <instance_geometry url="#Cube_001-mesh">
           <bind_material>
             <technique_common>
-              <instance_material symbol="es_materials_DebugGeom_material-material" target="#es_materials_DebugGeom_material-material"/>
+              <instance_material symbol="EssentialEngineData_materials_DebugGeom_material-material" target="#EssentialEngineData_materials_DebugGeom_material-material"/>
             </technique_common>
           </bind_material>
         </instance_geometry>

@@ -45,28 +45,23 @@
 
 
 using namespace fb;
-extern BinaryData tempData;
-extern unsigned tempSize;
 class Material::Impl{
 public:
 	struct TextureSignature
 	{
-		TextureSignature(TEXTURE_TYPE type, const char* filepath, const ColorRamp* cr)
-			:mType(type), mColorRamp(cr)
+		TextureSignature(int texture_type, const char* filepath, const ColorRamp* cr)
+			: mTextureType(texture_type), mColorRamp(cr)
 		{
 			if (filepath){
 				mFilepath = filepath;
 				ToLowerCase(mFilepath);
 			}
 		}
-		TEXTURE_TYPE mType;
+		int mTextureType;
 		std::string mFilepath;
 		const ColorRamp* mColorRamp;
 	};
-	typedef std::map<TexturePtr, ColorRamp> ColorRampsByTexture;
-
-	std::mutex mMutex;	
-
+	
 	//---------------------------------------------------------------------------
 	// Data - Copy On Write.
 	//---------------------------------------------------------------------------
@@ -77,18 +72,27 @@ public:
 		}
 		std::string mName;		
 		std::vector<MaterialPtr> mSubMaterials;
-		RENDER_PASS mRenderPass;
-		
+		RENDER_PASS mRenderPass;		
 	};
 
+	typedef std::map<TexturePtr, ColorRamp> ColorRampsByTexture;
 	struct MaterialData{
 		MaterialData() {
 			memset(&mMaterialConstants, 0, sizeof(mMaterialConstants));
 		}
+		bool operator != (const MaterialData& other) const {
+			return mMaterialConstants != other.mMaterialConstants ||
+				mShaderConstants != other.mShaderConstants ||
+				mTextures != other.mTextures ||
+				mTextureByBinding != other.mTextureByBinding ||
+				mColorRampMap != other.mColorRampMap ||
+				mSystemTextures != other.mSystemTextures;
+		}
 		MATERIAL_CONSTANTS mMaterialConstants;
-		Parameters mMaterialParameters;
+		Parameters mShaderConstants;
 		Textures mTextures;
 		TextureByBinding mTextureByBinding;
+		std::vector<SystemTextures::Enum> mSystemTextures;
 		ColorRampsByTexture mColorRampMap;		
 	};
 
@@ -98,17 +102,41 @@ public:
 			, mTransparent(false)
 			, mGlow(false)
 			, mNoShadowCast(false), mDoubleSided(false)
+			, mPrimitiveTopology(PRIMITIVE_TOPOLOGY_UNKNOWN)
+			, mResetRasterizer(false)
+			, mResetDepthStencil(false)
+			, mResetBlend(false)
+			, mResetPrimitiveTopology(false)			
 		{
 		}
+
+		bool operator != (const RenderStatesData& other) const {
+			return mTransparent != other.mTransparent ||
+				mGlow != other.mGlow ||
+				mNoShadowCast != other.mNoShadowCast ||
+				mDoubleSided != other.mDoubleSided ||
+				*mRenderStates.const_get() != *other.mRenderStates.const_get() ||
+				mPrimitiveTopology != other.mPrimitiveTopology ||
+				mResetRasterizer != other.mResetRasterizer ||
+				mResetDepthStencil != other.mResetDepthStencil ||
+				mResetBlend != other.mResetBlend ||
+				mResetPrimitiveTopology != other.mResetPrimitiveTopology;
+		}
+
 		CowPtr<RenderStates> mRenderStates;
+		PRIMITIVE_TOPOLOGY mPrimitiveTopology;		
 		bool mTransparent;
 		bool mGlow;
 		bool mNoShadowCast;
 		bool mDoubleSided;
+		bool mResetRasterizer;
+		bool mResetDepthStencil;
+		bool mResetBlend;
+		bool mResetPrimitiveTopology;
 	};
 
 	struct ShaderData{
-		ShaderData() : mShaders(0)
+		ShaderData() : mShaders(0), mShaderDefinesChanged(true), mInputDescChanged(true)
 		{
 		}
 		ShaderData(const ShaderData& other)
@@ -116,14 +144,33 @@ public:
 			, mShaders(other.mShaders)
 			, mShaderFile(other.mShaderFile)
 			, mShaderDefines(other.mShaderDefines)
+			, mShader(other.mShader)
+			, mShaderDefinesChanged(other.mShaderDefinesChanged)
+			, mInputLayout(other.mInputLayout)
+			, mInputDescChanged(other.mInputDescChanged)
 		{
 		}
+
+		bool operator != (const ShaderData& other) const {
+			return mInputElementDescs != other.mInputElementDescs ||
+				mInputLayout != other.mInputLayout ||
+				mShaders != other.mShaders ||
+				mShaderFile != other.mShaderFile ||
+				mShaderDefines != other.mShaderDefines ||
+				mShader != other.mShader ||
+				mShaderDefinesChanged != other.mShaderDefinesChanged ||
+				mInputDescChanged != other.mInputDescChanged;
+		}
+
 		INPUT_ELEMENT_DESCS mInputElementDescs;
 		InputLayoutPtr mInputLayout;
-		int mShaders; // combination of enum BINDING_SHADER;
-		std::string mShaderFile;
+		int mShaders; // combination of enum SHADER_TYPE;
+		// INTEGRATED_SHADER,SHADER_TYPE_VS,SHADER_TYPE_HS,SHADER_TYPE_DS,SHADER_TYPE_GS,SHADER_TYPE_PS,SHADER_TYPE_CS		
+		std::string mShaderFile;		
 		SHADER_DEFINES mShaderDefines;
 		ShaderPtr mShader;
+		bool mShaderDefinesChanged;
+		bool mInputDescChanged;
 	};
 
 	// shared all across the cloned materials but its unique. 
@@ -132,8 +179,8 @@ public:
 	CowPtr<MaterialData> mMaterialData;
 	CowPtr<RenderStatesData> mRenderStatesData;
 	CowPtr<ShaderData> mShaderData;
-	bool mShaderDefinesChanged;
-	bool mInputDescChanged;
+	std::vector<MaterialWeakPtr> mClonedMaterials;	
+	
 	bool mCloned;
 	//bool mMarkNoShaderDefineChanges;
 
@@ -142,9 +189,7 @@ public:
 		: mUniqueData(new SharedData)
 		, mMaterialData(new MaterialData)
 		, mRenderStatesData(new RenderStatesData)
-		, mShaderData(new ShaderData)
-		, mShaderDefinesChanged(false)
-		, mInputDescChanged(false)
+		, mShaderData(new ShaderData)				
 		, mCloned(false)
 		//, mMarkNoShaderDefineChanges(false)
 	{
@@ -154,12 +199,17 @@ public:
 		: mUniqueData(other.mUniqueData)
 		, mMaterialData(other.mMaterialData)
 		, mRenderStatesData(other.mRenderStatesData)
-		, mShaderData(other.mShaderData)
-		, mShaderDefinesChanged(other.mShaderDefinesChanged)
-		, mInputDescChanged(other.mInputDescChanged)
+		, mShaderData(other.mShaderData)		
 		, mCloned(true)
 		//, mMarkNoShaderDefineChanges(false)
 	{
+	}
+
+	bool operator==(const Impl& other) const {
+		return !(mUniqueData != other.mUniqueData ||
+			mMaterialData.const_get() != other.mMaterialData.const_get() ||
+			mRenderStatesData.const_get() != other.mRenderStatesData.const_get() ||
+			mShaderData.const_get() != other.mShaderData.const_get() );
 	}
 
 	bool LoadFromFile(const char* filepath)
@@ -168,7 +218,8 @@ public:
 			return false;
 		mUniqueData->mName = filepath;
 		tinyxml2::XMLDocument doc;
-		doc.LoadFile(filepath);
+		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
+		doc.LoadFile(resourcePath.c_str());
 		if (doc.Error())
 		{			
 			if (doc.ErrorID() == tinyxml2::XML_ERROR_FILE_NOT_FOUND)
@@ -179,12 +230,13 @@ public:
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load a Material(%s)", filepath).c_str());
 				const char* errMsg = doc.GetErrorStr1();
 				if (errMsg)
-					Logger::Log("\t%s", errMsg);
+					Logger::Log("\t%s\n", errMsg);
 				errMsg = doc.GetErrorStr2();
 				if (errMsg)
-					Logger::Log("\t%s", errMsg);
+					Logger::Log("\t%s\n", errMsg);
 			}			
-			doc.LoadFile("EssentialEngineData/materials/missing.material");
+			doc.LoadFile(FileSystem::GetResourcePathIfPathNotExists(
+				"EssentialEngineData/materials/missing.material").c_str());
 			if (doc.Error())
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, "Loading the fallback material is also failed.");
@@ -199,33 +251,68 @@ public:
 			return false;
 		}
 
-		return LoadFromXml(pRoot);
+		return LoadFromXml(pRoot, filepath);
 	}
 
-	bool LoadFromXml(tinyxml2::XMLElement* pRoot)
+	void ParseDepthStencilFace(tinyxml2::XMLElement* elem, DEPTH_STENCILOP_DESC& desc) {
+		const char* sz;
+		sz = elem->Attribute("StencilPassOp");
+		if (sz){
+			desc.StencilPassOp = StencilOpFromString(sz);
+		}
+		sz = elem->Attribute("StencilFailOp");
+		if (sz){
+			desc.StencilFailOp = StencilOpFromString(sz);
+		}
+
+		sz = elem->Attribute("StencilDepthFailOp");
+		if (sz) {
+			desc.StencilDepthFailOp = StencilOpFromString(sz);
+		}
+
+		sz = elem->Attribute("StencilFunc");
+		if (sz){
+			desc.StencilFunc = ComparisonFuncFromString(sz);
+		}
+	}
+
+	bool LoadFromXml(tinyxml2::XMLElement* pRoot, const char* filepath)
 	{
 		const char* sz = pRoot->Attribute("transparent");
+		auto renderStatesData = const_cast<RenderStatesData*>(mRenderStatesData.const_get());
 		if (sz)
 		{
-			mRenderStatesData->mTransparent = StringConverter::ParseBool(sz);
+			renderStatesData->mTransparent = StringConverter::ParseBool(sz);
 		}
 
 		sz = pRoot->Attribute("glow");
 		if (sz)
 		{
-			mRenderStatesData->mGlow = StringConverter::ParseBool(sz);
+			renderStatesData->mGlow = StringConverter::ParseBool(sz);
 		}
 
 		sz = pRoot->Attribute("noShadowCast");
 		if (sz)
 		{
-			mRenderStatesData->mNoShadowCast = StringConverter::ParseBool(sz);
+			renderStatesData->mNoShadowCast = StringConverter::ParseBool(sz);
 		}
 
 		sz = pRoot->Attribute("doubleSided");
 		if (sz)
 		{
-			mRenderStatesData->mDoubleSided = StringConverter::ParseBool(sz);
+			renderStatesData->mDoubleSided = StringConverter::ParseBool(sz);
+		}
+
+		auto ptElem = pRoot->FirstChildElement("PrimitiveTopology");
+		if (ptElem) {
+			sz = ptElem->GetText();
+			if (sz) {
+				renderStatesData->mPrimitiveTopology = PrimitiveTopologyFromString(sz);
+			}
+			auto sz = ptElem->Attribute("ResetAtUnbind");
+			if (sz) {
+				renderStatesData->mResetPrimitiveTopology = StringConverter::ParseBool(sz);
+			}
 		}
 
 		//-----------------------------------------------------------------------------
@@ -240,14 +327,17 @@ public:
 				bdesc.RenderTarget[0].BlendEnable = StringConverter::ParseBool(sz);
 			if (bdesc.RenderTarget[0].BlendEnable)
 			{
-				mRenderStatesData->mTransparent = true;
+				renderStatesData->mTransparent = true;
 			}
+
 			sz = blendDescElem->Attribute("BlendOp");
 			if (sz)
 				bdesc.RenderTarget[0].BlendOp = BlendOpFromString(sz);
+
 			sz = blendDescElem->Attribute("SrcBlend");
 			if (sz)
 				bdesc.RenderTarget[0].SrcBlend = BlendFromString(sz);
+
 			sz = blendDescElem->Attribute("DestBlend");
 			if (sz)
 				bdesc.RenderTarget[0].DestBlend = BlendFromString(sz);
@@ -266,10 +356,15 @@ public:
 				}
 				bdesc.RenderTarget[0].RenderTargetWriteMask = mask;
 			}
+
+			sz = blendDescElem->Attribute("ResetAtUnbind");
+			if (sz) {
+				renderStatesData->mResetBlend= StringConverter::ParseBool(sz);
+			}
 		}
 		else
 		{
-			if (mRenderStatesData->mTransparent)
+			if (renderStatesData->mTransparent)
 			{
 				bdesc.RenderTarget[0].BlendEnable = true;
 				bdesc.RenderTarget[0].BlendOp = BLEND_OP_ADD;
@@ -277,7 +372,8 @@ public:
 				bdesc.RenderTarget[0].DestBlend = BLEND_INV_SRC_ALPHA;
 			}
 		}
-		SetBlendState(bdesc);
+		auto renderStates = const_cast<RenderStates*>(renderStatesData->mRenderStates.const_get());
+		renderStates->CreateBlendState(bdesc);
 		//-----------------------------------------------------------------------------
 		// DepthStencilDesc
 		//-----------------------------------------------------------------------------
@@ -288,18 +384,48 @@ public:
 			sz = depthDescElem->Attribute("DepthEnable");
 			if (sz)
 				ddesc.DepthEnable = StringConverter::ParseBool(sz);
+
 			sz = depthDescElem->Attribute("DepthWriteMask");
 			if (sz)
 				ddesc.DepthWriteMask = DepthWriteMaskFromString(sz);
+
 			sz = depthDescElem->Attribute("DepthFunc");
 			if (sz)
 				ddesc.DepthFunc = ComparisonFuncFromString(sz);
+
+			sz = depthDescElem->Attribute("ResetAtUnbind");
+			if (sz) {
+				renderStatesData->mResetDepthStencil = StringConverter::ParseBool(sz);
+			}
+
+			sz = depthDescElem->Attribute("StencilEnable");
+			if (sz) {
+				ddesc.StencilEnable = StringConverter::ParseBool(sz);
+			}
+
+			sz = depthDescElem->Attribute("StencilReadMask");
+			if (sz) {
+				ddesc.StencilReadMask = StringConverter::ParseInt(sz);
+			}
+
+			sz = depthDescElem->Attribute("StencilWriteMask");
+			if (sz) {
+				ddesc.StencilWriteMask = StringConverter::ParseInt(sz);
+			}
+			auto frontFaceElem = depthDescElem->FirstChildElement("FrontFace");
+			if (frontFaceElem) {
+				ParseDepthStencilFace(frontFaceElem, ddesc.FrontFace);
+			}
+			auto backFaceElem = depthDescElem->FirstChildElement("BackFace");
+			if (backFaceElem) {
+				ParseDepthStencilFace(backFaceElem, ddesc.BackFace);
+			}			
 		}
 		else
 		{
-			ddesc.DepthWriteMask = mRenderStatesData->mTransparent ? DEPTH_WRITE_MASK_ZERO : DEPTH_WRITE_MASK_ALL;
+			ddesc.DepthWriteMask = renderStatesData->mTransparent ? DEPTH_WRITE_MASK_ZERO : DEPTH_WRITE_MASK_ALL;
 		}
-		SetDepthStencilState(ddesc);
+		renderStates->CreateDepthStencilState(ddesc);
 
 		//-----------------------------------------------------------------------------
 		// RasterizerDesc
@@ -311,27 +437,43 @@ public:
 			sz = rasterizerDescElem->Attribute("FillMode");
 			if (sz)
 				rdesc.FillMode = FillModeFromString(sz);
+
 			sz = rasterizerDescElem->Attribute("CullMode");
 			if (sz)
 				rdesc.CullMode = CullModeFromString(sz);
+
 			sz = rasterizerDescElem->Attribute("ScissorEnable");
 			if (sz)
 				rdesc.ScissorEnable = StringConverter::ParseBool(sz);
+
 			sz = rasterizerDescElem->Attribute("DepthBias");
 			if (sz)
 				rdesc.DepthBias = StringConverter::ParseInt(sz);
+
+			sz = rasterizerDescElem->Attribute("SlopeScaledDepthBias");
+			if (sz)
+				rdesc.SlopeScaledDepthBias = StringConverter::ParseReal(sz);
+
+			sz = rasterizerDescElem->Attribute("FrontCounterClockwise");
+			if (sz)
+				rdesc.FrontCounterClockwise = StringConverter::ParseBool(sz);
+
+			sz = rasterizerDescElem->Attribute("ResetAtUnbind");
+			if (sz) {
+				renderStatesData->mResetRasterizer = StringConverter::ParseBool(sz);
+			}
 		}
 		else
 		{
-			rdesc.CullMode = mRenderStatesData->mDoubleSided ? CULL_MODE_NONE : CULL_MODE_BACK;
+			rdesc.CullMode = renderStatesData->mDoubleSided ? CULL_MODE_NONE : CULL_MODE_BACK;
 		}
-		SetRasterizerState(rdesc);
-
+		renderStates->CreateRasterizerState(rdesc);
 
 		sz = pRoot->Attribute("pass");
 		if (sz)
 			mUniqueData->mRenderPass = (RENDER_PASS)RenderPassFromString(sz);
 
+		auto materialData = const_cast<MaterialData*>(mMaterialData.const_get());
 		tinyxml2::XMLElement* pMaterialConstants = pRoot->FirstChildElement("MaterialConstants");
 		if (pMaterialConstants)
 		{
@@ -340,36 +482,36 @@ public:
 			{
 				const char* szAmbient = pAmbientElem->GetText();
 				Vec4 ambient(szAmbient);
-				SetAmbientColor(ambient);
+				materialData->mMaterialConstants.gAmbientColor = ambient;
 			}
 			tinyxml2::XMLElement* pDiffuseElem = pMaterialConstants->FirstChildElement("DiffuseColor_Alpha");
 			if (pDiffuseElem)
 			{
 				const char* szDiffuse = pDiffuseElem->GetText();
 				Vec4 diffuse(szDiffuse);
-				SetDiffuseColor(diffuse);
+				materialData->mMaterialConstants.gDiffuseColor = diffuse;
 			}
 			tinyxml2::XMLElement* pSpecularElem = pMaterialConstants->FirstChildElement("SpecularColor_Shine");
 			if (pSpecularElem)
 			{
 				const char* szSpecular = pSpecularElem->GetText();
 				Vec4 specular(szSpecular);
-				SetSpecularColor(specular);
+				materialData->mMaterialConstants.gSpecularColor = specular;				
 			}
 			tinyxml2::XMLElement* pEmissiveElem = pMaterialConstants->FirstChildElement("EmissiveColor_Strength");
 			if (pEmissiveElem)
 			{
 				const char* szEmissive = pEmissiveElem->GetText();
 				Vec4 emissive(szEmissive);
-				SetEmissiveColor(emissive);
+				materialData->mMaterialConstants.gEmissiveColor = emissive;				
 			}
 		}
 
-		tinyxml2::XMLElement* pMaterialParameters = pRoot->FirstChildElement("MaterialParameters");
-		mMaterialData->mMaterialParameters.clear();
-		if (pMaterialParameters)
+		tinyxml2::XMLElement* pShaderConstants = pRoot->FirstChildElement("ShaderConstants");		
+		if (pShaderConstants)
 		{
-			tinyxml2::XMLElement* pElem = pMaterialParameters->FirstChildElement();
+			materialData->mShaderConstants.clear();
+			tinyxml2::XMLElement* pElem = pShaderConstants->FirstChildElement();
 			int i = 0;
 			while (pElem)
 			{
@@ -377,123 +519,134 @@ public:
 				if (szVector)
 				{
 					Vec4 v(szVector);
-					mMaterialData->mMaterialParameters.Insert(Parameters::value_type(i++, v));
+					materialData->mShaderConstants.Insert(Parameters::value_type(i++, v));
 				}
 				pElem = pElem->NextSiblingElement();
 			}
 		}
 
-		mShaderDefinesChanged = true;
 		tinyxml2::XMLElement* pDefines = pRoot->FirstChildElement("ShaderDefines");		
-		mShaderData->mShaderDefines.clear();
+		auto shaderData = const_cast<ShaderData*>(mShaderData.const_get());		
 		if (pDefines)
 		{
+			shaderData->mShaderDefines.clear();
+			shaderData->mShaderDefinesChanged = true;
 			tinyxml2::XMLElement* pElem = pDefines->FirstChildElement();
 			int i = 0;
 			while (pElem)
 			{
-				mShaderData->mShaderDefines.push_back(ShaderDefine());
+				std::string strName, strValue;
 				const char* pname = pElem->Attribute("name");
 				if (pname)
-					mShaderData->mShaderDefines.back().name = pname;
+					strName = pname;
 				const char* pval = pElem->Attribute("val");
 				if (pval)
-					mShaderData->mShaderDefines.back().value = pval;
-
+					strValue = pval;
+				
+				shaderData->mShaderDefines.push_back(ShaderDefine(strName.c_str(), strValue.c_str()));
 				pElem = pElem->NextSiblingElement();
 			}
 		}
 
 		tinyxml2::XMLElement* pTexturesElem = pRoot->FirstChildElement("Textures");
+		materialData->mSystemTextures.clear();
 		if (pTexturesElem)
 		{
 			tinyxml2::XMLElement* pTexElem = pTexturesElem->FirstChildElement("Texture");
 			while (pTexElem)
 			{
-				auto sz = pTexElem->GetText();
-				std::string filepath = sz ? sz : "";
-				int slot = 0;
-				BINDING_SHADER shader = BINDING_SHADER_PS;
-				SAMPLER_DESC samplerDesc;
-				pTexElem->QueryIntAttribute("slot", &slot);
-				const char* szShader = pTexElem->Attribute("shader");
-				shader = BindingShaderFromString(szShader);
-				const char* szAddressU = pTexElem->Attribute("AddressU");
-				samplerDesc.AddressU = AddressModeFromString(szAddressU);
-				const char* szAddressV = pTexElem->Attribute("AddressV");
-				samplerDesc.AddressV = AddressModeFromString(szAddressV);
-				const char* szFilter = pTexElem->Attribute("Filter");
-				samplerDesc.Filter = FilterFromString(szFilter);
-				TexturePtr pTextureInTheSlot;
-				const char* szType = pTexElem->Attribute("type");
-				TEXTURE_TYPE type = TextureTypeFromString(szType);
-				ColorRamp cr;
-				if (type == TEXTURE_TYPE_COLOR_RAMP)
-				{
-					tinyxml2::XMLElement* barElem = pTexElem->FirstChildElement("Bar");
-					while (barElem)
-					{
-						float pos = barElem->FloatAttribute("pos");
-						const char* szColor = barElem->GetText();
-						Vec4 color(szColor);
-						cr.InsertBar(pos, color);
-						barElem = barElem->NextSiblingElement();
-					}
-					SetColorRampTexture(cr, shader, slot, samplerDesc);
+				auto sz = pTexElem->Attribute("SystemTexture");
+				if (sz) {
+					auto systemTexture = SystemTextures::ConvertToEnum(sz);
+					if (!ValueExistsInVector(materialData->mSystemTextures, systemTexture))
+						materialData->mSystemTextures.push_back(systemTexture);
 				}
-				else
-				{
-					if (!filepath.empty() && !FileSystem::Exists(filepath.c_str())){
-						auto textureFileName = FileSystem::GetFileName(filepath.c_str());
-						std::string materialParentPath = FileSystem::GetParentPath(mUniqueData->mName.c_str());
-						bool stripped = true;
-						while (stripped && filepath != textureFileName){
-							filepath = FileSystem::StripFirstDirectoryPath(filepath.c_str(), &stripped);
-							std::string alternativePath = materialParentPath + "/" + filepath;
-							if (FileSystem::Exists(alternativePath.c_str())){
-								filepath = alternativePath;
-								break;
-							}
-							
+				else {
+					sz = pTexElem->GetText();
+					std::string filepath = sz ? sz : "";
+					int slot = 0;
+					SHADER_TYPE shader = SHADER_TYPE_PS;
+					SAMPLER_DESC samplerDesc;
+					pTexElem->QueryIntAttribute("slot", &slot);
+					const char* szShader = pTexElem->Attribute("shader");
+					shader = BindingShaderFromString(szShader);
+					const char* szAddressU = pTexElem->Attribute("AddressU");
+					samplerDesc.AddressU = AddressModeFromString(szAddressU);
+					const char* szAddressV = pTexElem->Attribute("AddressV");
+					samplerDesc.AddressV = AddressModeFromString(szAddressV);
+					const char* szFilter = pTexElem->Attribute("Filter");
+					samplerDesc.Filter = FilterFromString(szFilter);
+					TexturePtr pTextureInTheSlot;
+					const char* szType = pTexElem->Attribute("type");
+					TEXTURE_TYPE type = TextureTypeFromString(szType);
+					ColorRamp cr;
+					if (type & TEXTURE_TYPE_COLOR_RAMP)
+					{
+						tinyxml2::XMLElement* barElem = pTexElem->FirstChildElement("Bar");
+						while (barElem)
+						{
+							float pos = barElem->FloatAttribute("pos");
+							const char* szColor = barElem->GetText();
+							Vec4 color(szColor);
+							cr.InsertBar(pos, color);
+							barElem = barElem->NextSiblingElement();
 						}
-
+						SetColorRampTexture(cr, shader, slot, samplerDesc, true);
 					}
-					SetTexture(filepath.c_str(), shader, slot, samplerDesc);
+					else
+					{
+						if (!filepath.empty() && !FileSystem::ResourceExists(filepath.c_str())) {
+							auto textureFileName = FileSystem::GetFileName(filepath.c_str());
+							std::string materialParentPath = FileSystem::GetParentPath(mUniqueData->mName.c_str());
+							bool stripped = true;
+							while (stripped && filepath != textureFileName) {
+								filepath = FileSystem::StripFirstDirectoryPath(filepath.c_str(), &stripped);
+								std::string alternativePath = materialParentPath + "/" + filepath;
+								if (FileSystem::ResourceExists(alternativePath.c_str())) {
+									filepath = alternativePath;
+									break;
+								}
+
+							}
+
+						}
+						SetTexture(filepath.c_str(), shader, slot, samplerDesc, true);
+					}
 				}
 				pTexElem = pTexElem->NextSiblingElement("Texture");
 			}
 		}
 
-		mShaderData->mShaders = BINDING_SHADER_VS | BINDING_SHADER_PS;
+		shaderData->mShaders = SHADER_TYPE_VS | SHADER_TYPE_PS;
 		tinyxml2::XMLElement* pShaders = pRoot->FirstChildElement("Shaders");
 		if (pShaders)
 		{
 			const char* szShaders = pShaders->GetText();
 			if (szShaders)
 			{
-				auto& shaders = mShaderData->mShaders;
+				auto& shaders = shaderData->mShaders;
 				shaders = 0;
 				std::string strShaders = szShaders;
 				ToLowerCase(strShaders);
 				if (strShaders.find("vs") != std::string::npos)
 				{
-					shaders |= BINDING_SHADER_VS;
+					shaders |= SHADER_TYPE_VS;
 				}
 				if (strShaders.find("hs") != std::string::npos)
 				{
-					shaders |= BINDING_SHADER_HS;
+					shaders |= SHADER_TYPE_HS;
 				}
 				if (strShaders.find("ds") != std::string::npos)
 				{
-					shaders |= BINDING_SHADER_DS;
+					shaders |= SHADER_TYPE_DS;
 				}
 				if (strShaders.find("gs") != std::string::npos)
 				{
-					shaders |= BINDING_SHADER_GS;
+					shaders |= SHADER_TYPE_GS;
 				}
 				if (strShaders.find("ps") != std::string::npos)
 				{
-					shaders |= BINDING_SHADER_PS;
+					shaders |= SHADER_TYPE_PS;
 				}
 			}
 		}
@@ -505,15 +658,78 @@ public:
 			const char* shaderFile = pShaderFileElem->GetText();
 			if (shaderFile)
 			{
-				mShaderData->mShaderFile = shaderFile;				
+				// INTEGRATED_SHADER,SHADER_TYPE_VS,SHADER_TYPE_HS,SHADER_TYPE_DS,SHADER_TYPE_GS,SHADER_TYPE_PS,SHADER_TYPE_CS		
+				shaderData->mShaderFile = shaderFile;
+				shaderData->mShaderFile += ",,,,,,";
 			}
 		}
+		else {
+			auto& shaders = shaderData->mShaders;
+			shaders = 0;
+			std::string vs, hs, ds, gs, ps, cs;
+			auto shaderFilesElem = pRoot->FirstChildElement("SeperatedShaderFiles");
+			if (shaderFilesElem) {
+				auto elem = shaderFilesElem->FirstChildElement("VSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						vs = sz;
+						shaders |= SHADER_TYPE_VS;
+					}
+				}
+				elem = shaderFilesElem->FirstChildElement("HSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						hs = sz;
+						shaders |= SHADER_TYPE_HS;
+					}
+				}
+				elem = shaderFilesElem->FirstChildElement("DSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						ds = sz;
+						shaders |= SHADER_TYPE_DS;
+					}
+				}
+				elem = shaderFilesElem->FirstChildElement("GSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						gs = sz;
+						shaders |= SHADER_TYPE_GS;
+					}
+				}
+				elem = shaderFilesElem->FirstChildElement("PSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						ps = sz;
+						shaders |= SHADER_TYPE_PS;
+					}
+				}
+				elem = shaderFilesElem->FirstChildElement("CSFile");
+				if (elem) {
+					sz = elem->GetText();
+					if (sz) {
+						cs = sz;
+						shaders |= SHADER_TYPE_CS;
+					}
+				}
+				shaderData->mShaderFile = FormatString("%s,%s,%s,%s,%s,%s,%s",
+					"",
+					vs.c_str(), hs.c_str(), ds.c_str(),
+					gs.c_str(), ps.c_str(), cs.c_str());
+			}
+		}		
 
 		tinyxml2::XMLElement* pInputLayoutElem = pRoot->FirstChildElement("InputLayout");
-		auto& inputElementDesc = mShaderData->mInputElementDescs;		
-		mInputDescChanged = true;
+		auto& inputElementDesc = shaderData->mInputElementDescs;
+		inputElementDesc.clear();		
 		if (pInputLayoutElem)
 		{
+			shaderData->mInputDescChanged = true;
 			tinyxml2::XMLElement* pElem = pInputLayoutElem->FirstChildElement();
 			int i = 0;
 			while (pElem)
@@ -547,6 +763,7 @@ public:
 
 		tinyxml2::XMLElement* subMat = pRoot->FirstChildElement("Material");
 		auto& subMaterials = mUniqueData->mSubMaterials;
+		subMaterials.clear();
 		while (subMat)
 		{
 			MaterialPtr pMat = Material::Create();
@@ -557,6 +774,11 @@ public:
 		}
 
 		return true;
+	}
+
+	void Reload() {
+		// cloned materials same with its parent also be affected because of the CowPtr.
+		LoadFromFile(mUniqueData->mName.c_str());
 	}
 
 	const char* GetName() const { 
@@ -611,9 +833,15 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	void SetTexture(const char* filepath, BINDING_SHADER shader, int slot,
-		const SAMPLER_DESC& samplerDesc)
+	void SetTexture(const char* filepath, SHADER_TYPE shader, int slot,
+		const SAMPLER_DESC& samplerDesc, bool loading)
 	{
+		MaterialData* materialData;
+		if (loading) // loading or reloading
+			materialData = const_cast<MaterialData*>(mMaterialData.const_get());
+		else
+			materialData = mMaterialData.get();
+
 		TexturePtr pTexture;
 		TextureSignature signature(TEXTURE_TYPE_DEFAULT, filepath, 0);
 		bool same = FindTextureIn(shader, slot, pTexture, &signature);
@@ -625,19 +853,24 @@ public:
 		}
 
 		auto& renderer = Renderer::GetInstance();
-		pTexture = renderer.CreateTexture(filepath, true);
+		pTexture = renderer.CreateTexture(filepath, TextureCreationOption());
 		if (pTexture)
-		{
-			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
-			mMaterialData->mTextures.push_back(pTexture);
+		{			
+			materialData->mTextures.push_back(pTexture);
 			TextureBinding binding = { shader, slot };
-			mMaterialData->mTextureByBinding[binding] = pTexture;
+			materialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
-	void SetTexture(TexturePtr pTexture, BINDING_SHADER shader, int slot,
-		const SAMPLER_DESC& samplerDesc)
+	void SetTexture(TexturePtr pTexture, SHADER_TYPE shader, int slot,
+		const SAMPLER_DESC& samplerDesc, bool loading)
 	{
+		MaterialData* materialData;
+		if (loading) // loading or reloading
+			materialData = const_cast<MaterialData*>(mMaterialData.const_get());
+		else
+			materialData = mMaterialData.get();
+
 		TexturePtr pTextureInSlot;
 		bool same = FindTextureIn(shader, slot, pTextureInSlot);
 		if (pTextureInSlot && pTextureInSlot != pTexture)
@@ -646,15 +879,14 @@ public:
 		}
 
 		if (pTexture)
-		{
-			pTexture->SetType(TEXTURE_TYPE_DEFAULT);
-			mMaterialData->mTextures.push_back(pTexture);
+		{			
+			materialData->mTextures.push_back(pTexture);
 			TextureBinding binding = { shader, slot };
-			mMaterialData->mTextureByBinding[binding] = pTexture;
+			materialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
-	TexturePtr GetTexture(BINDING_SHADER shader, int slot) const
+	TexturePtr GetTexture(SHADER_TYPE shader, int slot) const
 	{
 		TextureBinding binding{ shader, slot };
 		auto it = mMaterialData->mTextureByBinding.Find(binding);
@@ -664,47 +896,52 @@ public:
 		return 0;
 	}
 
-	void SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slot,
-		const SAMPLER_DESC& samplerDesc)
+	void SetColorRampTexture(ColorRamp& cr, SHADER_TYPE shader, int slot,
+		const SAMPLER_DESC& samplerDesc, bool loading)
 	{
+		MaterialData* materialData;
+		if (loading) // loading or reloading
+			materialData = const_cast<MaterialData*>(mMaterialData.const_get());
+		else
+			materialData = mMaterialData.get();
+
 		TexturePtr pTexture = 0;
-		TextureSignature signature(TEXTURE_TYPE_COLOR_RAMP, 0, &cr);
+		TextureSignature signature(TEXTURE_TYPE_COLOR_RAMP & TEXTURE_TYPE_1D, 0, &cr);
 		bool same = FindTextureIn(shader, slot, pTexture, &signature);
 
 		if (same)
 		{
 			assert(pTexture);
-			mMaterialData->mColorRampMap[pTexture] = cr;
+			materialData->mColorRampMap[pTexture] = cr;
 			RefreshColorRampTexture(slot, shader);
 		}
 
 		if (!pTexture)
 		{
 			pTexture = CreateColorRampTexture(cr);
-			TextureBinding binding{ shader, slot };			
-			pTexture->SetType(TEXTURE_TYPE_COLOR_RAMP);
-			mMaterialData->mTextures.push_back(pTexture);
-			mMaterialData->mTextureByBinding[binding] = pTexture;
+			TextureBinding binding{ shader, slot };						
+			materialData->mTextures.push_back(pTexture);
+			materialData->mTextureByBinding[binding] = pTexture;
 		}
 	}
 
 	//----------------------------------------------------------------------------
-	ColorRamp& GetColorRamp(int slot, BINDING_SHADER shader)
+	ColorRamp& GetColorRamp(int slot, SHADER_TYPE shader)
 	{
 		TexturePtr texture = 0;
-		TextureSignature signature(TEXTURE_TYPE_COLOR_RAMP, 0, 0);
+		TextureSignature signature(TEXTURE_TYPE_COLOR_RAMP | TEXTURE_TYPE_1D, 0, 0);
 		FindTextureIn(shader, slot, texture, &signature);
-		assert(texture->GetType() == TEXTURE_TYPE_COLOR_RAMP);
+		assert(texture->GetType() & TEXTURE_TYPE_COLOR_RAMP);
 
 		return mMaterialData->mColorRampMap[texture];
 	}
 
 	//----------------------------------------------------------------------------
-	void RefreshColorRampTexture(int slot, BINDING_SHADER shader)
+	void RefreshColorRampTexture(int slot, SHADER_TYPE shader)
 	{
 		TexturePtr pTexture;
 		FindTextureIn(shader, slot, pTexture);
-		assert(pTexture != 0 && pTexture->GetType() == TEXTURE_TYPE_COLOR_RAMP);
+		assert(pTexture != 0 && pTexture->GetType() & TEXTURE_TYPE_COLOR_RAMP);
 
 		ColorRamp cr = mMaterialData->mColorRampMap[pTexture];
 
@@ -712,7 +949,7 @@ public:
 		if (data.pData)
 		{
 			// bar position is already updated. generate ramp texture data.
-			cr.GenerateColorRampTextureData(128);
+			cr.GenerateColorRampTextureData(128, 0.f);
 
 			unsigned int *pixels = (unsigned int*)data.pData;
 			for (unsigned x = 0; x < 128; x++)
@@ -744,7 +981,7 @@ public:
 		}		
 	}
 
-	void RemoveTexture(BINDING_SHADER shader, int slot)
+	void RemoveTexture(SHADER_TYPE shader, int slot)
 	{
 		auto it = mMaterialData->mTextureByBinding.Find({ shader, slot });
 		if (it != mMaterialData->mTextureByBinding.end()){
@@ -759,36 +996,27 @@ public:
 
 	bool AddShaderDefine(const char* name, const char* val)
 	{
-		/*if (mMarkNoShaderDefineChanges){
-			int a = 0;
-			a++;
-			FBDebugBreak();
-		}*/
 		if (name == 0 || val == 0)
 			return false;
-		// check
+		
 		{
-			auto& shaderDefines = mShaderData.const_get()->mShaderDefines;
+			auto& shaderDefines = mShaderData->mShaderDefines;
 			auto it = std::find_if(shaderDefines.cbegin(), shaderDefines.cend(), [&](const ShaderDefine& sd){
-				return sd.name == name;
+				return sd.GetName() == name;
 			});
 			if (it != shaderDefines.end()){
-				if (it->value == val){
+				if (it->GetValue() == val){
 					return false; // already exists
 				}
 				else{
-					mShaderDefinesChanged = true;
-					return true;
-				}
-				
-			}
-			
+					shaderDefines.erase(it);					
+				}				
+			}			
 		}
+
 		auto& shaderDefines = mShaderData->mShaderDefines;
-		shaderDefines.push_back(ShaderDefine());
-		shaderDefines.back().name = name;
-		shaderDefines.back().value = val;
-		mShaderDefinesChanged = true;
+		shaderDefines.push_back(ShaderDefine(name, val));
+		mShaderData->mShaderDefinesChanged = true;
 		return true;
 	}
 
@@ -800,43 +1028,62 @@ public:
 		{
 			const auto& currentDefines = mShaderData.const_get()->mShaderDefines;
 			auto found = std::find_if(currentDefines.cbegin(), currentDefines.cend(), [&def](const ShaderDefine& define){
-				return define.name == def;
+				return define.GetName() == def;
 			});
 			if (found == currentDefines.end())
 				return false;
 		}
+		// clone here.
 		auto& shaderDefines = mShaderData->mShaderDefines;
-
 		shaderDefines.erase(
 			std::remove_if(shaderDefines.begin(), shaderDefines.end(), [&def](ShaderDefine& define){
-			return define.name == def;			
-		}), shaderDefines.end());
-		mShaderDefinesChanged = true;
+			return define.GetName() == def;			
+		}), shaderDefines.end());		
+		mShaderData->mShaderDefinesChanged = true;
+
 		return true;
+	}
+
+	bool HasShaderDefines(const char* def) {
+		const auto& currentDefines = mShaderData.const_get()->mShaderDefines;
+		auto found = std::find_if(currentDefines.cbegin(), currentDefines.cend(), [&def](const ShaderDefine& define) {
+			return define.GetName() == def;
+		});
+		return found == currentDefines.end();
 	}
 
 	void ApplyShaderDefines()
 	{
-		/*if (mMarkNoShaderDefineChanges){
-			int a = 0;
-			a++;
-			FBDebugBreak();
-		}*/
-		if (mShaderDefinesChanged){
-			mShaderDefinesChanged = false;
-			auto& renderer = Renderer::GetInstance();
-			std::sort(mShaderData->mShaderDefines.begin(), mShaderData->mShaderDefines.end());
-			mShaderData->mShader = renderer.CreateShader(
-				mShaderData->mShaderFile.c_str(), mShaderData->mShaders, mShaderData->mShaderDefines);
-			if (!mShaderData->mInputLayout){
-				mInputDescChanged = true;
+		auto shaderData = const_cast<ShaderData*>(mShaderData.const_get());
+		if (shaderData->mShaderDefinesChanged){
+			// Retrieveing with out cloning.
+			// When mShaderDefinesChanged is changed it is already cloned.			
+			shaderData->mShaderDefinesChanged = false;
+			auto& renderer = Renderer::GetInstance();			
+			std::sort(shaderData->mShaderDefines.begin(), shaderData->mShaderDefines.end());
+			auto shaderFiles = Split(shaderData->mShaderFile.c_str());
+			if (!shaderFiles.empty()) {
+				if (!shaderFiles[0].empty()) {
+					shaderData->mShader = renderer.CreateShader(
+						shaderFiles[0].c_str(), shaderData->mShaders, shaderData->mShaderDefines);
+				}
+				else {
+					shaderFiles.erase(shaderFiles.begin());
+					shaderData->mShader = renderer.CreateShader(shaderFiles, shaderData->mShaderDefines);
+				}
+				if (!shaderData->mInputLayout) {
+					shaderData->mInputDescChanged = true;
+				}
+			}
+			else {
+				Logger::Log(FB_ERROR_LOG_ARG, "No shader file.");
 			}
 		}
-		if (mInputDescChanged){
-			mInputDescChanged = false;
+		if (shaderData->mInputDescChanged){	
+			shaderData->mInputDescChanged = false;
 			auto& renderer = Renderer::GetInstance();
-			if (!mShaderData->mInputElementDescs.empty())
-				mShaderData->mInputLayout = renderer.CreateInputLayout(mShaderData->mInputElementDescs, mShaderData->mShader);
+			if (!shaderData->mInputElementDescs.empty())
+				mShaderData->mInputLayout = renderer.CreateInputLayout(shaderData->mInputElementDescs, shaderData->mShader);
 		}
 	}
 
@@ -852,7 +1099,7 @@ public:
 	void DebugPrintShaderDefines() const{
 		Logger::Log(FormatString("(info) DebugPrintShaderDefines for %s\n", mUniqueData->mName.c_str()).c_str());
 		for (auto& it : mShaderData.const_get()->mShaderDefines){
-			Logger::Log(FormatString("%s : %s\n", it.name.c_str(), it.value.c_str()).c_str());
+			Logger::Log(FormatString("%s : %s\n", it.GetName().c_str(), it.GetValue().c_str()).c_str());
 		}
 		Logger::Log("---- End ----\n");
 	}
@@ -908,14 +1155,14 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	void SetMaterialParameter(unsigned index, const Vec4& value)
+	void SetShaderParameter(unsigned index, const Vec4& value)
 	{
-		mMaterialData->mMaterialParameters[index] = value;
+		mMaterialData->mShaderConstants[index] = value;
 	}
 
 	const Vec4f& GetMaterialParameter(unsigned index) const
 	{
-		auto& params = mMaterialData->mMaterialParameters;
+		auto& params = mMaterialData->mShaderConstants;
 		auto it = params.Find(index);
 		if (it == params.end())
 		{
@@ -926,7 +1173,7 @@ public:
 
 	const Parameters& GetMaterialParameters() const
 	{
-		return mMaterialData->mMaterialParameters;		
+		return mMaterialData->mShaderConstants;		
 	}
 
 	const MATERIAL_CONSTANTS& GetMaterialConstants() const {
@@ -942,18 +1189,16 @@ public:
 	}
 
 	bool IsUsingMaterialParameter(unsigned index) const{
-		auto it = mMaterialData->mMaterialParameters.Find(index);
-		return it != mMaterialData->mMaterialParameters.end();
+		auto it = mMaterialData->mShaderConstants.Find(index);
+		return it != mMaterialData->mShaderConstants.end();
 	}
 
 	//----------------------------------------------------------------------------
 	bool IsRelatedShader(const char* shaderFile) const
 	{
 		auto shader = mShaderData->mShader;
-		if (shader)
-		{
-			if (strcmp(shaderFile, shader->GetPath()) == 0 || shader->CheckIncludes(shaderFile))
-			{
+		if (shader) {
+			if (shader->IsRelatedFile(shaderFile)) {
 				return true;
 			}
 		}
@@ -961,10 +1206,10 @@ public:
 	}
 
 	//----------------------------------------------------------------------------
-	bool Bind(bool inputLayout, unsigned stencilRef)
+	bool Bind(bool inputLayout, int stencilRef)
 	{
 		auto shaderData = mShaderData.const_get();
-		if (!shaderData->mShader || mShaderDefinesChanged || mInputDescChanged ||
+		if (!shaderData->mShader || shaderData->mShaderDefinesChanged || shaderData->mInputDescChanged ||
 			(inputLayout && !shaderData->mInputLayout))
 		{
 			ApplyShaderDefines();
@@ -972,14 +1217,18 @@ public:
 
 		auto renderStatesData = mRenderStatesData.const_get();
 		renderStatesData->mRenderStates->Bind(stencilRef);
+		
+		auto& renderer = Renderer::GetInstance();
+		if (renderStatesData->mPrimitiveTopology != PRIMITIVE_TOPOLOGY_UNKNOWN) {
+			renderer.SetPrimitiveTopology(renderStatesData->mPrimitiveTopology);
+		}
 
-		auto& renderer = Renderer::GetInstance();				
 		if (shaderData->mShader)
 		{
 			if (shaderData->mShader->GetCompileFailed())
 				return false;
 
-			shaderData->mShader->Bind();
+			shaderData->mShader->Bind(true);
 		}
 
 		if (shaderData->mInputLayout && inputLayout)
@@ -989,12 +1238,16 @@ public:
 		auto materialData = mMaterialData.const_get();
 		renderer.UpdateMaterialConstantsBuffer(&materialData->mMaterialConstants);
 
-		BindMaterialParams();
+		BindShaderConstants();
 
 		auto& textures = materialData->mTextureByBinding;
 		for (auto it : textures){
 			it.second->Bind(it.first.mShader, it.first.mSlot);
 		}		
+
+		for (auto it : materialData->mSystemTextures) {
+			renderer.BindSystemTexture(it);
+		}
 
 		
 		if (renderStatesData->mGlow)
@@ -1008,13 +1261,29 @@ public:
 
 	void Unbind()
 	{
+		auto& renderer = Renderer::GetInstance();
 		auto renderStatesData = mRenderStatesData.const_get();
 		if (renderStatesData->mGlow)
-		{
-			auto& renderer = Renderer::GetInstance();
+		{			
 			auto rt = renderer.GetCurrentRenderTarget();
 			if (rt->IsGlowSupported())
 				rt->GlowRenderTarget(false);
+		}
+
+		if (renderStatesData->mResetBlend) {
+			renderer.RestoreBlendState();
+		}
+
+		if (renderStatesData->mResetDepthStencil) {
+			renderer.RestoreDepthStencilState();
+		}
+
+		if (renderStatesData->mResetRasterizer) {
+			renderer.RestoreRasterizerState();
+		}
+
+		if (renderStatesData->mResetPrimitiveTopology) {
+			renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		}
 	}
 
@@ -1034,20 +1303,20 @@ public:
 		auto pmat = GetSubPassMaterial(p);
 		if (pmat){
 			pmat->Bind(includeInputLayout);
-			BindMaterialParams(); // use parent material param
+			BindShaderConstants(); // use parent material param
 			return true;
 		}
 
 		return false;
 	}
 
-	void BindMaterialParams() const
+	void BindShaderConstants() const
 	{
-		const auto& materialParams = mMaterialData->mMaterialParameters;
+		const auto& materialParams = mMaterialData->mShaderConstants;
 		if (!materialParams.empty())
 		{
 			auto& renderer = Renderer::GetInstance();
-			Vec4f* pDest = (Vec4f*)renderer.MapMaterialParameterBuffer();
+			Vec4f* pDest = (Vec4f*)renderer.MapShaderConstantsBuffer();
 			if (pDest)
 			{
 				auto it = materialParams.begin(), itEnd = materialParams.end();
@@ -1057,7 +1326,7 @@ public:
 					const auto& src = it->second;
 					*pCurDest = src;
 				}
-				renderer.UnmapMaterialParameterBuffer();
+				renderer.UnmapShaderConstantsBuffer();
 			}
 		}
 	}
@@ -1076,6 +1345,10 @@ public:
 
 	void SetGlow(bool glow) { 
 		mRenderStatesData->mGlow = glow; 
+	}
+
+	void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY to) {
+		mRenderStatesData->mPrimitiveTopology = to;
 	}
 
 	bool IsTransparent() const { 
@@ -1098,7 +1371,7 @@ public:
 	}
 
 	void CopyMaterialParamFrom(MaterialConstPtr src) {
-		mMaterialData->mMaterialParameters = src->GetMaterialParameters();
+		mMaterialData->mShaderConstants = src->GetMaterialParameters();
 	}
 
 	void CopyMaterialConstFrom(MaterialConstPtr src) {
@@ -1112,7 +1385,7 @@ public:
 
 	void CopyShaderDefinesFrom(const MaterialConstPtr src) {
 		mShaderData->mShaderDefines = src->GetShaderDefines();
-		mShaderDefinesChanged = true;
+		mShaderData->mShaderDefinesChanged = true;
 	}
 
 	void SetRasterizerState(const RASTERIZER_DESC& desc)
@@ -1159,7 +1432,14 @@ public:
 		}
 
 		mShaderData->mInputElementDescs = desc;
-		mInputDescChanged = true;
+		mShaderData->mInputDescChanged = true;
+	}
+
+	void BindInputLayoutOnly() {
+		auto inputLayout = mShaderData.const_get()->mInputLayout;
+		if (inputLayout) {
+			inputLayout->Bind();
+		}
 	}
 
 	unsigned IGetMaxMaterialParameter(){
@@ -1167,7 +1447,7 @@ public:
 	}
 
 	TexturePtr CreateColorRampTexture(ColorRamp& cr){
-		cr.GenerateColorRampTextureData(128);
+		cr.GenerateColorRampTextureData(128, 0.f);
 		unsigned imgBuf[128];
 		unsigned *pixels = (unsigned int *)imgBuf;
 		for (unsigned x = 0; x < 128; x++)
@@ -1176,14 +1456,14 @@ public:
 		}
 		auto& renderer = Renderer::GetInstance();
 		TexturePtr pTexture = renderer.CreateTexture(pixels, 128, 1, PIXEL_FORMAT_R8G8B8A8_UNORM,
-			BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE, TEXTURE_TYPE_DEFAULT); // default is right.
+			1, BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE, TEXTURE_TYPE_COLOR_RAMP | TEXTURE_TYPE_1D);
 		mMaterialData->mColorRampMap.insert(ColorRampsByTexture::value_type(pTexture, cr));
 		return pTexture;
 	}
 
 	
 
-	bool FindTextureIn(BINDING_SHADER shader, int slot, TexturePtr& outTextureInTheSlot,
+	bool FindTextureIn(SHADER_TYPE shader, int slot, TexturePtr& outTextureInTheSlot,
 		// additional parameters. if match this function returns true.
 		TextureSignature* pSignature = 0) const{
 		if (outTextureInTheSlot){
@@ -1200,8 +1480,8 @@ public:
 
 		if (pSignature)
 		{
-			if (pSignature->mType != TEXTURE_TYPE_COUNT &&
-				pSignature->mType != outTextureInTheSlot->GetType())
+			if (pSignature->mTextureType != TEXTURE_TYPE_COUNT &&
+				pSignature->mTextureType != outTextureInTheSlot->GetType())
 				return false;
 
 			std::string targetPath = outTextureInTheSlot->GetFilePath();
@@ -1225,12 +1505,6 @@ public:
 };
 
 //----------------------------------------------------------------------------
-void ReloadMaterial(const char* name)
-{
-	// Reloading shaders and textures are supported.
-	assert(0 && "Not implemented");
-}
-
 MaterialPtr Material::Create(){
 	auto p = MaterialPtr(FB_NEW(Material), [](Material* obj){ FB_DELETE(obj); });
 	return p;
@@ -1256,6 +1530,7 @@ Material::Material(const Material& other)
 
 MaterialPtr Material::Clone() const{
 	auto material = Material::Create(*this);
+	mImpl->mClonedMaterials.push_back(material);
 	return material;
 }
 
@@ -1264,7 +1539,7 @@ bool Material::LoadFromFile(const char* filepath) {
 }
 
 bool Material::LoadFromXml(tinyxml2::XMLElement* pRoot) {
-	return mImpl->LoadFromXml(pRoot);
+	return mImpl->LoadFromXml(pRoot, "");
 }
 
 const char* Material::GetName() const {
@@ -1303,35 +1578,35 @@ void Material::SetEmissiveColor(const Vec4& emissive) {
 	mImpl->SetEmissiveColor(emissive);
 }
 
-void Material::SetTexture(const char* filepath, BINDING_SHADER shader, int slot, const SAMPLER_DESC& samplerDesc) {
-	mImpl->SetTexture(filepath, shader, slot, samplerDesc);
+void Material::SetTexture(const char* filepath, SHADER_TYPE shader, int slot, const SAMPLER_DESC& samplerDesc) {
+	mImpl->SetTexture(filepath, shader, slot, samplerDesc, false);
 }
 
-void Material::SetTexture(TexturePtr pTexture, BINDING_SHADER shader, int slot, const SAMPLER_DESC& samplerDesc) {
-	mImpl->SetTexture(pTexture, shader, slot, samplerDesc);
+void Material::SetTexture(TexturePtr pTexture, SHADER_TYPE shader, int slot, const SAMPLER_DESC& samplerDesc) {
+	mImpl->SetTexture(pTexture, shader, slot, samplerDesc, false);
 }
 
-TexturePtr Material::GetTexture(BINDING_SHADER shader, int slot) {
+TexturePtr Material::GetTexture(SHADER_TYPE shader, int slot) {
 	return mImpl->GetTexture(shader, slot);
 }
 
-void Material::SetColorRampTexture(ColorRamp& cr, BINDING_SHADER shader, int slot, const SAMPLER_DESC& samplerDesc) {
-	mImpl->SetColorRampTexture(cr, shader, slot, samplerDesc);
+void Material::SetColorRampTexture(ColorRamp& cr, SHADER_TYPE shader, int slot, const SAMPLER_DESC& samplerDesc) {
+	mImpl->SetColorRampTexture(cr, shader, slot, samplerDesc, false);
 }
 
 void Material::RemoveTexture(TexturePtr pTexture) {
 	mImpl->RemoveTexture(pTexture);
 }
 
-void Material::RemoveTexture(BINDING_SHADER shader, int slot) {
+void Material::RemoveTexture(SHADER_TYPE shader, int slot) {
 	mImpl->RemoveTexture(shader, slot);
 }
 
-ColorRamp& Material::GetColorRamp(int slot, BINDING_SHADER shader) {
+ColorRamp& Material::GetColorRamp(int slot, SHADER_TYPE shader) {
 	return mImpl->GetColorRamp(slot, shader);
 }
 
-void Material::RefreshColorRampTexture(int slot, BINDING_SHADER shader) {
+void Material::RefreshColorRampTexture(int slot, SHADER_TYPE shader) {
 	mImpl->RefreshColorRampTexture(slot, shader);
 }
 
@@ -1343,12 +1618,16 @@ bool Material::RemoveShaderDefine(const char* def) {
 	return mImpl->RemoveShaderDefine(def);
 }
 
+bool Material::HasShaderDefines(const char* def) {
+	return mImpl->HasShaderDefines(def);
+}
+
 //void Material::ApplyShaderDefines() {
 //	mImpl->ApplyShaderDefines();
 //}
 
-void Material::SetMaterialParameter(unsigned index, const Vec4& value) {
-	mImpl->SetMaterialParameter(index, value);
+void Material::SetShaderParameter(unsigned index, const Vec4& value) {
+	mImpl->SetShaderParameter(index, value);
 }
 
 const SHADER_DEFINES& Material::GetShaderDefines() const {
@@ -1427,8 +1706,12 @@ bool Material::Bind(bool inputLayout){
 	return mImpl->Bind(inputLayout, 0);
 }
 
-bool Material::Bind(bool inputLayout, unsigned stencilRef) {
+bool Material::Bind(bool inputLayout, int stencilRef) {
 	return mImpl->Bind(inputLayout, stencilRef);
+}
+
+bool Material::Bind(int stencilRef) {
+	return mImpl->Bind(true, stencilRef);
 }
 
 void Material::Unbind() {
@@ -1443,8 +1726,8 @@ bool Material::BindSubPass(RENDER_PASS p, bool includeInputLayout) {
 	return mImpl->BindSubPass(p, includeInputLayout);
 }
 
-void Material::BindMaterialParams() {
-	mImpl->BindMaterialParams();
+void Material::BindShaderConstants() {
+	mImpl->BindShaderConstants();
 }
 
 void Material::SetTransparent(bool trans) {
@@ -1453,6 +1736,10 @@ void Material::SetTransparent(bool trans) {
 
 void Material::SetGlow(bool glow) {
 	mImpl->SetGlow(glow);
+}
+
+void Material::SetPrimitiveTopology(PRIMITIVE_TOPOLOGY topology) {
+	mImpl->SetPrimitiveTopology(topology);
 }
 
 bool Material::IsTransparent() const {
@@ -1527,7 +1814,14 @@ void Material::SetInputLayout(const INPUT_ELEMENT_DESCS& desc) {
 	mImpl->SetInputLayout(desc);
 }
 
-void* Material::GetParameterAddress(){
-	return &mImpl->mMaterialData->mMaterialParameters;
+void Material::BindInputLayoutOnly() {
+	mImpl->BindInputLayoutOnly();
 }
 
+void* Material::GetParameterAddress(){
+	return &mImpl->mMaterialData->mShaderConstants;
+}
+
+void Material::Reload() {
+	mImpl->Reload();
+}

@@ -13,7 +13,9 @@ namespace fb {
 		void SetConnectTimeout(time_t t);
 		void SetReadTimeout(time_t t);
 		size_t GetContentLength();
-		const ByteArray& GetBuffer() ;
+		const ByteArray& GetBuffer();
+		// append 0 at the end if not presented.
+		const ByteArray& GetStringBuffer();
 		std::string getHeaderField(const char* header) const;
 		int getResponseCode() const;
 		std::string getResponseMessage() const;

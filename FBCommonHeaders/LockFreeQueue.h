@@ -29,10 +29,12 @@
 #include <atomic>
 namespace fb
 {
-	//
-	// A fixed-size, lockfree queue.
-	//
 	//---------------------------------------------------------------------------
+	// type must have
+	//   1. a copy constructor 
+	//   2. a trivial assignment operator 
+	//   3. a trivial destructor 
+	// std::shared_ptr cannot be the 'type'
 	template<class type>
 	class LockFreeQueue
 	{
@@ -52,49 +54,59 @@ namespace fb
 
 		std::atomic<Node*> mHead;
 		std::atomic<Node*> mTail;
+		std::atomic<int> mCount = 0;
 
 		LockFreeQueue()
 		{
 			mHead = new Node(type());
-			mTail = mHead.load();
+			mTail = mHead.load();			
 		}
 
 		~LockFreeQueue()
 		{
+			Clear();
+			delete mHead.load();
+		}
+
+		void Clear() {
 			while (mHead.load())
 			{
-				Node* first = mHead.load();
-				mHead = first->mNext.load();
-				delete first;
+				auto first = mHead.load();
+				auto next = first->mNext.load();
+				if (mHead.compare_exchange_strong(first, next))
+					delete first;
 			}
+			mHead = new Node(type());
+			mTail = mHead.load();
 		}
 
 		void Enq(type value)
 		{
-			Node* node = new Node(value);
+			Node* node = new Node(value);			
 			while (true)
 			{
-				Node* last = mTail.load();
-				Node* next = last->mNext.load();
+				Node* last = mTail.load(std::memory_order_relaxed);
+				Node* next = last->mNext.load(std::memory_order_relaxed);
 				// Testing shared varialbes one more is helpful to mitigate bus contention.
 				// This technique is called test-and-test-and-set, TTAS.
 				if (last == mTail)
 				{
 					if (next == nullptr)
 					{
-						if (last->mNext.compare_exchange_strong(next, node))
+						if (last->mNext.compare_exchange_strong(next, node, std::memory_order_relaxed))
 						{
 							// from prior senctence to this, it is not atomic.
 							// every other method call must be prepared to encounter a half-finiched enq() call,
 							// and to finish the job.
 							// This is called "helping" technique.
-							mTail.compare_exchange_weak(last, node);
+							mTail.compare_exchange_weak(last, node, std::memory_order_relaxed);
+							++mCount;
 							return;
 						}
 					}
 					else
 					{
-						mTail.compare_exchange_weak(last, next);
+						mTail.compare_exchange_weak(last, next, std::memory_order_relaxed);
 					}
 				}
 			}
@@ -104,9 +116,9 @@ namespace fb
 		{
 			while (true)
 			{
-				Node* first = mHead.load();
-				Node* last = mTail.load();
-				Node* next = first->mNext.load();
+				Node* first = mHead.load(std::memory_order_relaxed);
+				Node* last = mTail.load(std::memory_order_relaxed);
+				Node* next = first->mNext.load(std::memory_order_relaxed);
 				if (first == mHead)
 				{
 					if (first == last)
@@ -114,14 +126,15 @@ namespace fb
 						if (next == nullptr)
 							return nullptr; // empty
 
-						mTail.compare_exchange_weak(last, next);
+						mTail.compare_exchange_weak(last, next, std::memory_order_relaxed);
 					}
 					else
-					{
+					{						
 						type value = next->mValue;
-						if (mHead.compare_exchange_strong(first, next))
-						{
-							delete first;
+						if (mHead.compare_exchange_strong(first, next, std::memory_order_relaxed))
+						{							
+							--mCount;
+							delete first;							
 							return value;
 						}
 					}
@@ -129,37 +142,13 @@ namespace fb
 			}
 		}
 
-		bool TryDeq(type& outData)
-		{
-			Node* first = mHead.load();
-			Node* last = mTail.load();
-			Node* next = first->mNext.load();
-			if (first == mHead)
-			{
-				if (first == last)
-				{
-					if (next == nullptr)
-						return false;
-
-					mTail.compare_exchange_weak(last, next);
-				}
-				else
-				{
-					type value = next->mValue;
-					if (mHead.compare_exchange_strong(first, next))
-					{
-						delete first;
-						outData = value;
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
 		type SeeCur()
 		{
 			return mHead.load()->mNext->mValue;
+		}
+
+		int GetCount() const {
+			return mCount;
 		}
 	};
 }

@@ -1,6 +1,6 @@
 <Material>
 	<DepthStencilDesc DepthWriteMask="DEPTH_WRITE_MASK_ZERO"/>
-	<ShaderFile>EssentialEngineData/shaders/skybox.hlsl</ShaderFile>
+	<ShaderFile>EssentialEngineData/shaders/SkyBox.hlsl</ShaderFile>
 	<MaterialConstants>
 		<AmbientColor>1, 1, 1, 1</AmbientColor>
 		<DiffuseColor_Alpha>1, 1, 1, 1</DiffuseColor_Alpha>
@@ -10,8 +10,8 @@
 	<Textures>
 		<Texture slot="0" shader="ps" AddressU="Wrap" AddressV="Wrap">data/textures/skybox.dds</Texture>
 	</Textures>
-	<MaterialParameters>		
-	</MaterialParameters>
+	<ShaderConstants>		
+	</ShaderConstants>
 	<InputLayout>
 		<input semantic="POSITION" index="0" format="FLOAT3" slot="0" alignedByteOffset="0" inputSlotClass="VERTEX" stepRate="0"></input>
 		<input semantic="TEXCOORD" index="0" format="FLOAT3" slot="0" alignedByteOffset="12" inputSlotClass="VERTEX" stepRate="0"></input>

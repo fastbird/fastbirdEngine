@@ -11,6 +11,7 @@
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="RenderStatesD3D11.cpp" />
     <ClCompile Include="IUnknownDeleter.cpp" />
+    <ClCompile Include="LIbraries.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RendererD3D11.h" />

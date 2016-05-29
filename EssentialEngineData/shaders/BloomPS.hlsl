@@ -44,7 +44,7 @@ struct QuadVS_Output
 //---------------------------------------------------------------------------
 // PS
 //---------------------------------------------------------------------------
-float4 bloomps_PixelShader(QuadVS_Output Input
+float4 BloomPS_PixelShader(QuadVS_Output Input
 #ifdef _MULTI_SAMPLE
 ,uint sampleIndex : SV_SampleIndex
 #endif
@@ -53,7 +53,7 @@ float4 bloomps_PixelShader(QuadVS_Output Input
 {
 	float4 vSample = 0.0f;
 	float4 vColor = 0.0f;
-	float2 textureSize = gMaterialParam[0].xy;
+	float2 textureSize = gShaderParams[0].xy;
 	for (int iSample = 0; iSample < 15; iSample++)
 	{
 		// Sample from adjacent points

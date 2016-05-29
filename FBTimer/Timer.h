@@ -62,7 +62,10 @@ namespace fb
 		*/
 		void SetDeltaTime(TIME_PRECISION deltaTime);
 		FRAME_PRECISION GetFrame() const;
+		/// milliseconds
 		INT64 GetTickCount() const;
+		/// seconds from epoch 00:00:00 UTC, Thursday, 1, January, 1970
+		time_t GetPosixTime() const;
 		INT64 GetFrequency() const;
 
 		void Pause();

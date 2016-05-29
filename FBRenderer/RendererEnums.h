@@ -76,18 +76,45 @@ namespace fb
 
 	
 
-	enum BINDING_SHADER
+	enum SHADER_TYPE : char
 	{
-		BINDING_SHADER_VS = 0x1,
-		BINDING_SHADER_HS = 0x2,
-		BINDING_SHADER_DS = 0x4,		
-		BINDING_SHADER_GS = 0x8,
-		BINDING_SHADER_PS = 0x10,
-		BINDING_SHADER_CS = 0x20,
-		BINDING_SHADER_COUNT
+		SHADER_TYPE_VS = 0x1,
+		SHADER_TYPE_HS = 0x2,
+		SHADER_TYPE_DS = 0x4,		
+		SHADER_TYPE_GS = 0x8,
+		SHADER_TYPE_PS = 0x10,
+		SHADER_TYPE_CS = 0x20,
+		SHADER_TYPE_COUNT = 6,
 	};
 
-	BINDING_SHADER BindingShaderFromString(const char* szShader);
+	inline int ShaderIndex(SHADER_TYPE type) {
+		switch (type) {
+		case SHADER_TYPE_VS:
+			return 0;
+		case SHADER_TYPE_HS:
+			return 1;
+		case SHADER_TYPE_DS:
+			return 2;
+		case SHADER_TYPE_GS:
+			return 3;
+		case SHADER_TYPE_PS:
+			return 4;
+		case SHADER_TYPE_CS:
+			return 5;
+		}
+		assert(0);
+		return 0;
+	}
+
+	inline SHADER_TYPE ShaderType(int i) {
+		if (i < 0 || i >= SHADER_TYPE_COUNT) {
+			assert(0);
+			return SHADER_TYPE_VS;
+		}
+		return (SHADER_TYPE)(1 << i);
+	}
+
+	SHADER_TYPE BindingShaderFromString(const char* szShader);
 
 	enum FILL_MODE
 	{
@@ -106,15 +133,17 @@ namespace fb
 
 	enum TEXTURE_TYPE
 	{
-		TEXTURE_TYPE_DEFAULT=0x1,
-		TEXTURE_TYPE_COLOR_RAMP=0x2,
-		TEXTURE_TYPE_RENDER_TARGET=0x4,
-		TEXTURE_TYPE_RENDER_TARGET_SRV=0x8,
-		TEXTURE_TYPE_DEPTH_STENCIL=0x10,
-		TEXTURE_TYPE_DEPTH_STENCIL_SRV=0x20, //DXGI_FORMAT_R32_TYPELESS
-		TEXTURE_TYPE_CUBE_MAP=0x40,
-		TEXTURE_TYPE_MULTISAMPLE = 0x80,
-		TEXTURE_TYPE_MIPS = 0x100,
+		TEXTURE_TYPE_DEFAULT=0x0,
+		TEXTURE_TYPE_COLOR_RAMP=0x1,
+		TEXTURE_TYPE_RENDER_TARGET=0x2,
+		TEXTURE_TYPE_RENDER_TARGET_SRV=0x4,
+		TEXTURE_TYPE_DEPTH_STENCIL=0x8,
+		TEXTURE_TYPE_DEPTH_STENCIL_SRV=0x10, //DXGI_FORMAT_R32_TYPELESS
+		TEXTURE_TYPE_CUBE_MAP=0x20,
+		TEXTURE_TYPE_MULTISAMPLE = 0x40,
+		TEXTURE_TYPE_MIPS = 0x80, // for rendertarget && shader resource
+		TEXTURE_TYPE_1D = 0x100,
+		TEXTURE_TYPE_SECOND_DEVICE = 0x200, // for texture binding to ComputeShader.
 		TEXTURE_TYPE_COUNT
 	};
 
@@ -155,7 +184,7 @@ namespace fb
 
 	TEXTURE_ADDRESS_MODE AddressModeFromString(const char* sz);
 
-	enum COMPARISON_FUNC
+	enum COMPARISON_FUNC : int
 	{
 		COMPARISON_NEVER			= 1,
 		COMPARISON_LESS				= 2,
@@ -260,7 +289,7 @@ namespace fb
 
 	COLOR_WRITE_MASK ColorWriteMaskFromString(const char* str);
 
-	enum DEPTH_WRITE_MASK
+	enum DEPTH_WRITE_MASK : int
 	{
 		DEPTH_WRITE_MASK_ZERO 	=0,
 		DEPTH_WRITE_MASK_ALL  	=1,		
@@ -268,7 +297,7 @@ namespace fb
 
 	DEPTH_WRITE_MASK DepthWriteMaskFromString(const char* str);
 
-	enum STENCIL_OP
+	enum STENCIL_OP : int
     {	
 		STENCIL_OP_KEEP			= 1,
 		STENCIL_OP_ZERO			= 2,

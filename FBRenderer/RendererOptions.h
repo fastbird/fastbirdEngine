@@ -76,9 +76,12 @@ namespace fb{
 		int r_numRenderTargets;
 		int r_numParticleEmitters;
 		int r_debugDraw;
+		int r_debugCam;
 		int r_gameId;
 		Vec2I r_resolution;
 		int r_fullscreen; // 0 : window, 1 : full-screen, 2 : fake full-screen
 		int r_noText;
+		int r_renderFrustum;
+		int r_renderAxis;
 	};
 }

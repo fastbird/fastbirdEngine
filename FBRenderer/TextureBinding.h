@@ -32,7 +32,8 @@ namespace fb{
 	struct TextureBinding{
 		bool operator==(const TextureBinding& other) const;
 		bool operator<(const TextureBinding& other) const;
-		BINDING_SHADER mShader;
+		size_t ComputeHash() const;
+		SHADER_TYPE mShader;
 		int mSlot;
 	};
 

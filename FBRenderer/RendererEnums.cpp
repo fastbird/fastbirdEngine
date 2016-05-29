@@ -30,37 +30,37 @@
 #include "FBStringLib/StringLib.h"
 namespace fb
 {
-	BINDING_SHADER BindingShaderFromString(const char* szShader)
+	SHADER_TYPE BindingShaderFromString(const char* szShader)
 	{
 		if (!szShader)
-			return BINDING_SHADER_PS;
+			return SHADER_TYPE_PS;
 		if (_stricmp(szShader, "vs") == 0)
 		{
-			return BINDING_SHADER_VS;
+			return SHADER_TYPE_VS;
 		}
 		if (_stricmp(szShader, "ps") == 0)
 		{
-			return BINDING_SHADER_PS;
+			return SHADER_TYPE_PS;
 		}
 		if (_stricmp(szShader, "ds") == 0)
 		{
-			return BINDING_SHADER_DS;
+			return SHADER_TYPE_DS;
 		}
 		if (_stricmp(szShader, "hs") == 0)
 		{
-			return BINDING_SHADER_HS;
+			return SHADER_TYPE_HS;
 		}
 		if (_stricmp(szShader, "gs") == 0)
 		{
-			return BINDING_SHADER_GS;
+			return SHADER_TYPE_GS;
 		}
 		if (_stricmp(szShader, "cs") == 0)
 		{
-			return BINDING_SHADER_CS;
+			return SHADER_TYPE_CS;
 		}
 
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s is not valid BINDING_SHADER", szShader).c_str());
-		return BINDING_SHADER_PS;
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s is not valid SHADER_TYPE", szShader).c_str());
+		return SHADER_TYPE_PS;
 	}
 
 	FILL_MODE FillModeFromString(const char* str)

@@ -150,7 +150,7 @@ public:
 	}
 
 	void SetMaterial(const char* path){
-		if (ValidCStringLength(path))
+		if (ValidCString(path))
 			mMaterial = Renderer::GetInstance().CreateMaterial(path);
 	}
 };

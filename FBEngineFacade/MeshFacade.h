@@ -74,7 +74,7 @@ namespace fb{
 		void ModifyObjFlag(unsigned flag, bool enable);		
 		void SetEnableHighlight(bool enable);
 		MaterialPtr GetMaterial() const;
-		void SetMaterialParameter(unsigned idx, const Vec4& value);
+		void SetShaderParameter(unsigned idx, const Vec4& value);
 		void SetMaterial(MaterialPtr material);
 		void SetMaterial(const char* path);
 		void SetVisible(bool visible);

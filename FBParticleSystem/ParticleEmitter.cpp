@@ -1408,7 +1408,7 @@ public:
 				{
 					material->AddShaderDefine("_NO_DEPTH_FADE", "1");
 				}				
-				material->SetMaterialParameter(0, Vec4(pt.mGlow, 0, 0, 0));
+				material->SetShaderParameter(0, Vec4(pt.mGlow, 0, 0, 0));
 			}
 		}
 	}

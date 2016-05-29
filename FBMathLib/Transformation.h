@@ -34,6 +34,7 @@
 
 namespace fb
 {
+	class Frustum;
 	class Plane;
 	class Mat44;
 	typedef std::tuple <
@@ -72,6 +73,11 @@ namespace fb
 		Transformation(const Mat33& t);
 		Transformation(const TransformationTuple& t);
 		
+		static Transformation FromScale(float x, float y, float z);
+		static Transformation FromScale(const Vec3& scale);
+		static Transformation FromRotation(const Quat& rot);
+		static Transformation FromTranslation(float x, float y, float z);
+		static Transformation FromTranslation(const Vec3& translation);
 
 		void MakeIdentity ();
 		void MakeUnitScale ();
@@ -109,12 +115,15 @@ namespace fb
 		Plane ApplyForward(const Plane& p) const;
 		AABB ApplyForward(const AABB& aabb) const;
 		Ray ApplyForward(const Ray& r, bool scaleLength) const;
+		Frustum ApplyForward(const Frustum& f) const;
 
 		// X = M^{-1}*(Y-T) where Y is the input and X is the output.
 		Vec3 ApplyInverse (const Vec3& p) const;
 		Vec3 ApplyInverseDir(const Vec3& dir) const;
 		void ApplyInverse (int iQuantity, const Vec3* points, Vec3* output) const;
-		Ray ApplyInverse(const Ray& r, bool scaleLength) const;
+		Ray ApplyInverse(const Ray& r, bool scaleLength) const;		
+		Plane ApplyInverse(const Plane& p) const;
+		Frustum ApplyInverse(const Frustum& f) const;
 
 		Vec3 InvertVector (const Vec3& v) const;
 
@@ -146,9 +155,11 @@ namespace fb
 		bool _GetRSSeperated() { return mRSSeperated; }
 		bool _GetUniformScale() { return mUniformScale; }
 
-		void write(std::ostream& stream) const;
-		void read(std::istream& stream);
+		friend void write(std::ostream& stream, const Transformation& data);
+		friend void read(std::istream& stream, Transformation& data);
 	};
+	void write(std::ostream& stream, const Transformation& data);
+	void read(std::istream& stream, Transformation& data);
 }
 
 //// luawapper util

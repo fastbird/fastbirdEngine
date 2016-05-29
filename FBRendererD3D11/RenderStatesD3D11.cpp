@@ -103,7 +103,7 @@ DepthStencilStateD3D11::DepthStencilStateD3D11(ID3D11DepthStencilState* depthSte
 {
 }
 
-void DepthStencilStateD3D11::Bind(unsigned stencilRef) {
+void DepthStencilStateD3D11::Bind(int stencilRef) {
 	RendererD3D11::GetInstance().SetDepthStencilState(this, stencilRef);
 }
 
@@ -130,7 +130,7 @@ SamplerStateD3D11::SamplerStateD3D11(ID3D11SamplerState* samplerState)
 {
 }
 
-void SamplerStateD3D11::Bind(BINDING_SHADER shader, int slot) {
+void SamplerStateD3D11::Bind(SHADER_TYPE shader, int slot) {
 	RendererD3D11::GetInstance().SetSamplerState(this, shader, slot);
 }
 

@@ -62,7 +62,7 @@ namespace fb
 		Color(const Vec3& color);
 		Color(const Vec4& color);
 		Color(Real r, Real g, Real b, Real a);
-		Color(Real r, Real g, Real b);
+		Color(Real r, Real g, Real b);		
 		Color(LPCTSTR str);
 		explicit Color(unsigned int c);
 		explicit Color(const Vec4Tuple& t);
@@ -82,6 +82,8 @@ namespace fb
 		bool operator!= (const Color& other) const;
 		operator Vec4Tuple() const;
 		void SetColor(Real r, Real g, Real b, Real a = 1.f);
+		// 0~255
+		void SetColorInt(int r, int g, int b, int a=255);
 		Real r() const;
 		Real g() const;
 		Real b() const;

@@ -27,11 +27,16 @@
 
 #include "stdafx.h"
 #include "TextureBinding.h"
+#include "FBCommonHeaders/Helpers.h"
 using namespace fb;
 
+size_t TextureBinding::ComputeHash() const {
+	return hash_combine_ret(std::hash<char>()(mShader), std::hash<int>()(mSlot));
+}
+
 bool TextureBinding::operator==(const TextureBinding& other) const{
-	return memcmp(this, &other, sizeof(TextureBinding)) == 0;
+	return ComputeHash() == other.ComputeHash();
 }
 bool TextureBinding::operator<(const TextureBinding& other) const{
-	return memcmp(this, &other, sizeof(TextureBinding)) < 0;
+	return ComputeHash() < other.ComputeHash();
 }
