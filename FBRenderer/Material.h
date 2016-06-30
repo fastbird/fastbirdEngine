@@ -80,7 +80,7 @@ namespace fb{
 		void SetSpecularColor(const Vec4& specular);
 		void SetEmissiveColor(float r, float g, float b, float strength);
 		void SetEmissiveColor(const Vec4& emissive);
-		void SetTexture(const char* filepath, SHADER_TYPE shader, int slot,
+		void SetTexture(const char* filepath, SHADER_TYPE shader, int slot, int texture_type,
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
 		void SetTexture(TexturePtr pTexture, SHADER_TYPE shader, int slot,
 			const SAMPLER_DESC& samplerDesc = SAMPLER_DESC());
@@ -107,8 +107,8 @@ namespace fb{
 		const Vec4f& GetEmissiveColor() const;
 		const char* GetShaderFile() const;
 		void* GetShaderByteCode(unsigned& size) const;
-		const Vec4f& GetMaterialParameter(unsigned index) const;
-		const Parameters& GetMaterialParameters() const;
+		const Vec4f& GetShaderParameter(unsigned index) const;
+		const Parameters& GetShaderParameters() const;
 		const MATERIAL_CONSTANTS& GetMaterialConstants() const;
 		const Textures& GetTextures() const;
 		const TextureByBinding& GetTextureByBinding() const;

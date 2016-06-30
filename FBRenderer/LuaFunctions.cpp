@@ -4,10 +4,12 @@
 #include "FBLua/LuaUtils.h"
 namespace fb{
 	int KeepTextureReference(lua_State* L);
+	int ClearDisplayedMessages(lua_State* L);
 
 	void RegisterRendererLuaFunctions(){
 		auto L = LuaUtils::GetLuaState();
 		LUA_SETCFUNCTION(L, KeepTextureReference);
+		LUA_SETCFUNCTION(L, ClearDisplayedMessages);
 	}
 
 	int KeepTextureReference(lua_State* L){
@@ -15,6 +17,11 @@ namespace fb{
 		auto async = LuaUtils::toboolean(L, 2);
 		auto generateMip = LuaUtils::toboolean(L, 3);
 		Renderer::GetInstance().KeepTextureReference(textureFile, TextureCreationOption{ async, generateMip });
+		return 0;
+	}
+
+	int ClearDisplayedMessages(lua_State* L) {
+		Renderer::GetInstance().ClearDurationTexts();
 		return 0;
 	}
 }

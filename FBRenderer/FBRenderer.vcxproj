@@ -150,9 +150,6 @@
       <Project>{23117a44-391e-4542-968f-c99c1bac52c0}</Project>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="RendererCache.inl" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FD658A50-2D36-4BB4-8EDA-635BF71B4CDB}</ProjectGuid>
     <RootNamespace>FBRenderer</RootNamespace>

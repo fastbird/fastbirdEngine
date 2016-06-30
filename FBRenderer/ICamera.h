@@ -52,6 +52,7 @@ namespace fb{
 		virtual const Vec3& GetPosition() const = 0;
 		virtual const Vec3 GetDirection() const = 0;
 		virtual Real ComputePixelSizeAtDistance(Real distance) = 0;		
+		/// Vertical fov
 		virtual void SetFOV(Real radians) = 0;
 		virtual Real GetFOV() const = 0;
 		virtual Real GetAspectRatio() const = 0;
@@ -74,6 +75,7 @@ namespace fb{
 		virtual void SetMaxDistToTarget(Real dist) = 0;
 		virtual void SetMinDistToTarget(Real dist) = 0;
 		virtual void SetProportionalMove(bool enable) = 0;
+		virtual size_t ComputeHash() const = 0;
 		/*
 		virtual Vec2I WorldToScreen(const Vec3& pos) = 0;
 		

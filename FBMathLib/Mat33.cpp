@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "Mat33.h"
+#include "MurmurHash.h"
 
 using namespace fb;
 
@@ -216,6 +217,10 @@ void Mat33::SetColumn(int index, const Vec3& v)
 
 bool Mat33::IsSymmetric() const {
 	return m[0][1] == m[1][0] && m[0][2] == m[2][0] && m[1][2] == m[2][1];
+}
+
+size_t Mat33::ComputeHash() const {
+	return (size_t)murmur3_32((const char*)this, sizeof(Mat33));
 }
 
 namespace fb {

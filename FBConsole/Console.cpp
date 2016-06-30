@@ -498,7 +498,7 @@ public:
 
 		mInputStringw = AnsiToWide(mInputString.c_str(), mInputString.size());
 
-		injector->Invalidate(InputDevice::AllMask);		
+		injector->Invalidate(InputDevice::Keyboard);		
 	}
 
 	void EnableInputListener(bool enable)
@@ -593,8 +593,11 @@ public:
 		if (mLuaMode)
 		{
 			std::string newstring = std::string("  ") + command;
-			Log(newstring.c_str());			
-			processed =  LuaUtils::ExecuteLua(command);
+			Log(newstring.c_str());
+			if (command[0]=='%')
+				processed =  LuaUtils::ExecuteLua(command+1);
+			else
+				processed = LuaUtils::ExecuteLua(command);
 			if (history){
 				if (pushed)
 					mValidHistory.push_back(processed);

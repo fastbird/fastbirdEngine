@@ -113,11 +113,12 @@ public:
 		LuaObject resourcePaths(mL, "resourcePath");
 		if (resourcePaths.IsValid()) {
 			auto it = resourcePaths.GetSequenceIterator();
-			LuaObject path;
-			while (it.GetNext(path)) {
-				auto strPath = path.GetString();
-				if (!strPath.empty()) {
-					FileSystem::AddResourceFolder(strPath.c_str());
+			LuaObject path_res;
+			while (it.GetNext(path_res)) {
+				auto path = path_res.GetStringAt(1);
+				auto res = path_res.GetStringAt(2);				
+				if (ValidCString(path) && ValidCString(res)) {
+					FileSystem::AddResourceFolder(path, res);
 				}
 			}
 		}
@@ -178,11 +179,12 @@ public:
 		LuaObject resourcePaths(mL, "resourcePath");
 		if (resourcePaths.IsValid()) {
 			auto it = resourcePaths.GetSequenceIterator();
-			LuaObject path;
-			while (it.GetNext(path)) {
-				auto strPath = path.GetString();
-				if (!strPath.empty()) {
-					mFileMonitor->StartMonitor(strPath.c_str());						
+			LuaObject path_res;
+			while (it.GetNext(path_res)) {
+				auto path = path_res.GetStringAt(1);
+				auto res = path_res.GetStringAt(2);
+				if (ValidCString(path) && ValidCString(res)) {
+					mFileMonitor->StartMonitor(res);
 				}
 			}
 		}
@@ -1025,6 +1027,9 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 	{
 		if (wp == VK_SNAPSHOT)
 			mImpl->mRenderer->TakeScreenshot();
+		else if (wp == VK_SCROLL)
+			mImpl->mRenderer->TakeScreenshot(3840, 2160);
+
 	}
 	return 0;
 
@@ -1288,7 +1293,7 @@ void EngineFacade::OnChangeDetected(){
 
 }
 
-bool EngineFacade::OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension){
+bool EngineFacade::OnFileChanged(const char* watchDir, const char* filepath, const char* combinedPath, const char* loweredExtension){
 	return false;
 }
 

@@ -82,7 +82,7 @@ namespace fb
 		void PlaySound(UISounds::Enum type);
 		// IFileChangeListeners
 		void OnChangeDetected();
-		bool OnFileChanged(const char* watchDir, const char* file, const char* loweredExt);
+		bool OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* loweredExt);
 
 		// IRendererObserver
 		void BeforeUIRendering(HWindowId hwndId, HWindow hwnd);
@@ -198,6 +198,8 @@ namespace fb
 		void RemoveAlwaysMouseOverCheck(WinBasePtr comp);		
 
 		bool GetRenderUIOption() const;
+
+		void SetLockUIVisibility(const char* ui, bool lock);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

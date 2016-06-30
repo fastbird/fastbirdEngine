@@ -99,6 +99,9 @@ namespace fb
 	int SetDropDownIndex(lua_State* L);
 	int GetDropDownIndex(lua_State* L);
 	int GetDropDownString(lua_State* L);
+	int ClearDropDownItem(lua_State* L);
+	int AddDropDownItem(lua_State* L);
+	int GetDropDownKey(lua_State* L);
 	int SetVisibleLuaUIWithoutFocusing(lua_State* L);
 	int GetColorRampUIValues(lua_State* L);
 	int SetColorRampUIValues(lua_State* L);
@@ -142,6 +145,7 @@ namespace fb
 	int GetListBoxNumericKey(lua_State* L);
 	int GetListBoxStringKeyCached(lua_State* L);
 	int GetListBoxNumericKeyCached(lua_State* L);
+	int GetListBoxRowIndex(lua_State* L);
 	int GetListBoxRowIndexCached(lua_State* L);
 	int SelectListBoxItem(lua_State* L);
 	int SelectListBoxItems(lua_State* L);	
@@ -160,6 +164,7 @@ namespace fb
 	int MoveUpListBoxItems(lua_State* L);
 	int MoveDownListBoxItems(lua_State* L);
 	int RemoveListBoxItems(lua_State* L);
+	int RemoveListBoxItemWithRowIndex(lua_State* L);
 
 	// etc
 	int SetTooltipString(lua_State* L);
@@ -168,6 +173,7 @@ namespace fb
 	
 	int GetComponentFinalPos(lua_State* L);
 	int SetEnableUIRenderTarget(lua_State* L);
+	int SetLockUIVisibility(lua_State* L);
 
 	void RegisterLuaEnums(lua_State* mL){
 		ListItemDataType::RegisterToLua(mL);
@@ -175,8 +181,10 @@ namespace fb
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, SetLockUIVisibility);
 		LUA_SETCFUNCTION(mL, SetEnableUIRenderTarget);
 		LUA_SETCFUNCTION(mL, GetComponentFinalPos);
+		LUA_SETCFUNCTION(mL, RemoveListBoxItemWithRowIndex);
 		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
 		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
 		LUA_SETCFUNCTION(mL, MoveUpListBoxItems);
@@ -213,6 +221,7 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SelectListBoxItemsById);
 		LUA_SETCFUNCTION(mL, SelectListBoxItems);
 		LUA_SETCFUNCTION(mL, SelectListBoxItem);		
+		LUA_SETCFUNCTION(mL, GetListBoxRowIndex);
 		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
 		LUA_SETCFUNCTION(mL, GetListBoxNumericKey);
 		LUA_SETCFUNCTION(mL, GetListBoxStringKey);
@@ -248,6 +257,9 @@ namespace fb
 		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
 		LUA_SETCFUNCTION(mL, GetDropDownIndex);
 		LUA_SETCFUNCTION(mL, GetDropDownString);
+		LUA_SETCFUNCTION(mL, ClearDropDownItem);
+		LUA_SETCFUNCTION(mL, AddDropDownItem);
+		LUA_SETCFUNCTION(mL, GetDropDownKey);		
 		LUA_SETCFUNCTION(mL, SetDropDownIndex);
 		LUA_SETCFUNCTION(mL, MoveUIToBottom);
 		LUA_SETCFUNCTION(mL, MoveUIToTop);
@@ -474,10 +486,6 @@ namespace fb
 			{
 				Error(FB_ERROR_LOG_ARG, "Cannot remove root component.");
 			}
-		}
-		else {
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
-				"Comp(%s) is not found", compName).c_str());
 		}
 		return 0;
 	}
@@ -1078,6 +1086,60 @@ namespace fb
 		return 0;
 	}
 
+	int ClearDropDownItem(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto dropdown = std::dynamic_pointer_cast<DropDown>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (!dropdown) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Dropdown(%s, %s) component is not found.", uiname, compname).c_str());
+			return 0;
+		}
+		dropdown->ClearDropDownItems();
+		return 0;
+	}
+
+	int AddDropDownItem(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto dropdown = std::dynamic_pointer_cast<DropDown>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (!dropdown) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Dropdown(%s, %s) component is not found.", uiname, compname).c_str());
+			return 0;
+		}
+
+		if (LuaUtils::isstring(L, 3)) {
+			size_t rowIndex = -1;
+			auto szItem = LuaUtils::checkstring(L, 3);
+			if (LuaUtils::isnumber(L, 4)) {
+				auto key = LuaUtils::checkunsigned(L, 4);
+				rowIndex = dropdown->AddDropDownItem(key, AnsiToWide(szItem));
+			}
+			else {
+				rowIndex = dropdown->AddDropDownItem(AnsiToWide(szItem));
+			}
+			LuaUtils::pushunsigned(L, rowIndex);
+			return 1;
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, "Only string is supported for now.");
+		}
+		return 0;
+	}
+
+	int GetDropDownKey(lua_State* L) {
+		auto uiname = LuaUtils::checkstring(L, 1);
+		auto compname = LuaUtils::checkstring(L, 2);
+		auto dropdown = std::dynamic_pointer_cast<DropDown>(UIManager::GetInstance().FindComp(uiname, compname));
+		if (!dropdown) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Dropdown(%s, %s) component is not found.", uiname, compname).c_str());
+			return 0;
+		}
+		unsigned index = LuaUtils::checkunsigned(L, 3);
+		auto key = dropdown->GetKey(index);
+		LuaUtils::pushunsigned(L, key);
+		return 1;
+	}
+
 	int SetVisibleLuaUIWithoutFocusing(lua_State* L)
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);
@@ -1282,7 +1344,7 @@ namespace fb
 	int ModifyDropDownItem(lua_State* L){
 		auto uiname = LuaUtils::checkstring(L, 1);
 		auto compname = LuaUtils::checkstring(L, 2);
-		unsigned index = LuaUtils::checkunsigned(L, 3);
+		unsigned index = LuaUtils::checkunsigned(L, 3) - 1;
 		auto prop = UIProperty::ConvertToEnum(LuaUtils::checkstring(L, 4));
 		auto str = LuaUtils::checkstring(L, 5);
 		auto comp = UIManager::GetInstance().FindComp(uiname, compname).get();
@@ -1365,15 +1427,15 @@ namespace fb
 		if (LuaUtils::isnumber(L, 1))
 		{
 			unsigned key = LuaUtils::checkunsigned(L, 1);
-			unsigned index = listbox->InsertItem(key);
-			LuaUtils::pushunsigned(L, index);
+			unsigned row = listbox->InsertItem(key);
+			LuaUtils::pushunsigned(L, row);
 			return 1;
 		}
 		else if (LuaUtils::isstring(L, 1))
 		{
 			const char* key = LuaUtils::checkstring(L, 1);
-			unsigned index = listbox->InsertItem(AnsiToWide(key));
-			LuaUtils::pushunsigned(L, index);
+			unsigned row = listbox->InsertItem(AnsiToWide(key));
+			LuaUtils::pushunsigned(L, row);
 			return 1;
 		}
 		return 0;
@@ -1586,19 +1648,43 @@ namespace fb
 	}
 
 	//-----------------------------------------------------------------------
+	int GetListBoxRowIndex(lua_State* L) {
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compName = LuaUtils::checkstring(L, 2);
+		auto listBox =std::dynamic_pointer_cast<ListBox>(UIManager::GetInstance().FindComp(uiname, compName));			
+		if (listBox)
+		{
+			if (LuaUtils::isnumber(L, 3)) {
+				LuaUtils::pushnumber(L, listBox->FindRowIndex(
+					LuaUtils::checkunsigned(L, 3)));
+				return 1;
+			}
+			else {
+
+				LuaUtils::pushnumber(L, listBox->FindRowIndex(
+					AnsiToWide(LuaUtils::checkstring(L, 3))
+					));
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	//-----------------------------------------------------------------------
 	int GetListBoxRowIndexCached(lua_State* L){
 		auto listBox = UIManager::GetInstance().GetCachedListBox();
 		if (listBox)
 		{
-			if (LuaUtils::isstring(L, 1)){
+			if (LuaUtils::isnumber(L, 1)){
 				LuaUtils::pushnumber(L, listBox->FindRowIndex(
-					AnsiToWide(LuaUtils::checkstring(L, 1))
-					));
+					LuaUtils::checkunsigned(L, 1)));
 				return 1;
 			}
 			else{
+
 				LuaUtils::pushnumber(L, listBox->FindRowIndex(
-					LuaUtils::checkunsigned(L, 1)));
+					AnsiToWide(LuaUtils::checkstring(L, 1))
+					));
 				return 1;
 			}
 		}
@@ -2116,6 +2202,20 @@ namespace fb
 		return 0;
 	}
 
+	int RemoveListBoxItemWithRowIndex(lua_State* L) {
+		auto ui = LuaUtils::checkstring(L, 1);
+		auto comp = LuaUtils::checkstring(L, 2);
+		auto listbox = std::dynamic_pointer_cast<ListBox>(UIManager::GetInstance().FindComp(ui, comp));
+		if (!listbox) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Listbox(%s:%s) is not found", ui, comp).c_str());
+			return 0;
+		}
+		auto rowIndex = LuaUtils::checkunsigned(L, 3);
+		listbox->RemoveDataWithRowIndex(rowIndex);
+		return 0;
+	}
+
 	int GetComponentFinalPos(lua_State* L) {
 		auto ui = LuaUtils::checkstring(L, 1);
 		auto comp = LuaUtils::checkstring(L, 2);
@@ -2135,6 +2235,13 @@ namespace fb
 			bool enable = LuaUtils::toboolean(L, 3);
 			img->SetEnableRenderTarget(enable);				
 		}		
+		return 0;
+	}
+
+	int SetLockUIVisibility(lua_State* L) {
+		auto ui = LuaUtils::checkstring(L, 1);
+		bool b = LuaUtils::toboolean(L, 2);
+		UIManager::GetInstance().SetLockUIVisibility(ui, b);
 		return 0;
 	}
 }

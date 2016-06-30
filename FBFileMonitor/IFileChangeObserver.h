@@ -43,7 +43,7 @@ namespace fb
 		virtual void OnChangeDetected()=0;
 		/// extension contains "." ex).xml
 		/// returns 'processed'
-		virtual bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension) = 0;
+		virtual bool OnFileChanged(const char* watchDir, const char* filepath, const char* combinedPath, const char* loweredExtension) = 0;
 		
 	};
 }

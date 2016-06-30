@@ -283,10 +283,6 @@ void WinBase::ChangeNSizeY(float y){
 //---------------------------------------------------------------------------
 void WinBase::OnSizeChanged()
 {
-	if (mName == "hpBar") {
-		int a = 0;
-		a++;
-	}
 	if (mAnimScale != Vec2::ONE){
 		mScaledSize = Round(mSize * mAnimScale);
 	}
@@ -1548,7 +1544,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::TEXT:
 	{
 		assert(val);
-		if (mTextBeforeTranslated == val){
+		if (mTextBeforeTranslated == val && strlen(val) > 0){
 			if (mUIObject)
 				mUIObject->SetTextSize(mTextSize);
 			return true;
@@ -2325,10 +2321,6 @@ int WinBase::GetPropertyAsInt(UIProperty::Enum prop, int defaultVal)
 
 void WinBase::SetUseBorder(bool use)
 {
-	if (mName == "hpBar") {
-		int a = 0;
-		a++;
-	}
 	if (use && mBorders.empty())
 	{
 		RecreateBorders();
@@ -2541,10 +2533,6 @@ void WinBase::RefreshBorder()
 }
 
 void WinBase::UpdateAlphaTexture(){
-	if (mName == "hpBar") {
-		int a = 0;
-		a++;
-	}
 	mUpdateAlphaTexture = false;
 
 	const Vec2I& finalSize = GetFinalSize();

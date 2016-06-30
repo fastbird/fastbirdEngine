@@ -130,6 +130,7 @@ namespace fb{
 		void PlayAction(const char* action, bool immediate, bool reverse);
 		bool IsPlayingAction() const;		
 		bool IsActionDone(const char* action) const;
+		void StopAnimation();
 
 		unsigned GetNumMeshes() const;
 		const Vec3& GetMeshOffset(unsigned idx) const;
@@ -151,5 +152,7 @@ namespace fb{
 		void OnMainCameraTargeted();
 		void RenderSimple(bool bindPosOnly);
 		void SetDebug(bool debug);
+
+		void CopyMeshDataFrom(MeshFacade* src);
 	};
 }

@@ -126,8 +126,12 @@ public:
 	RenderTargetPtr mCurrentRenderTarget;
 	std::vector<TexturePtr> mCurrentRTTextures;
 	std::vector<size_t> mCurrentViewIndices;
+	std::vector<TexturePtr> mKeptCurrentRTTextures;
+	std::vector<size_t> mKeptCurrentViewIndices;
 	TexturePtr mCurrentDSTexture;
 	size_t mCurrentDSViewIndex;
+	std::map<TextureWeakPtr, TexturePtr, std::owner_less<TextureWeakPtr>> mDepthStencilTextureOverride;
+	std::stack<TextureWeakPtr> mDepthTextureStack; // backup for original depth texture before overriding;
 	Vec2I mCurrentRTSize;
 	std::vector<Viewport> mCurrentViewports;
 	std::vector<RenderTargetPtr> mRenderTargetPool;
@@ -286,6 +290,7 @@ public:
 	}
 
 	~Impl(){
+		ClearLoadedMaterials();
 		StarDef::FinalizeStatic();
 		Logger::Release();
 	}	
@@ -917,7 +922,7 @@ public:
 		}
 		auto texture = CreateTexture(platformTexture);
 		texture->SetFilePath(file);
-		texture->SetType(TEXTURE_TYPE_DEFAULT);
+		texture->SetType(options.textureType);
 		return texture;
 	}
 
@@ -1283,7 +1288,27 @@ public:
 		}		
 	}
 
-	VectorMap<std::string, MaterialWeakPtr> sLoadedMaterials;
+	std::unordered_map<std::string, MaterialPtr> sLoadedMaterials;
+	std::unordered_map<std::string, MaterialWeakPtr> sLoadedMaterialsWeak;
+	void ClearLoadedMaterials() {
+		sLoadedMaterials.clear();
+		sLoadedMaterialsWeak.clear();
+	}
+
+	void CleanUnusingMaterials() {
+		sLoadedMaterials.clear();
+		for (auto it = sLoadedMaterialsWeak.begin(); it != sLoadedMaterialsWeak.end(); /**/) {
+			auto mat = it->second.lock();
+			if (mat) {
+				sLoadedMaterials[it->first] = mat;
+				++it;
+			}
+			else {
+				auto curIt = it++;				
+				sLoadedMaterialsWeak.erase(curIt);
+			}
+		}
+	}
 	MaterialPtr CreateMaterial(const char* file){
 		if (!ValidCString(file)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
@@ -1291,9 +1316,9 @@ public:
 		}
 		std::string loweredPath(file);
 		ToLowerCase(loweredPath);		
-		auto it = sLoadedMaterials.Find(loweredPath);
+		auto it = sLoadedMaterials.find(loweredPath);
 		if (it != sLoadedMaterials.end()){
-			auto material = it->second.lock();
+			auto material = it->second;
 			if (material){
 				return material->Clone();
 			}
@@ -1303,15 +1328,16 @@ public:
 			return 0;
 
 		sLoadedMaterials[loweredPath] = material;
+		sLoadedMaterialsWeak[loweredPath] = material;
 		return material->Clone();
 	}
 
 	bool ReloadMaterial(const char* file) {
 		std::string loweredPath(file);
 		ToLowerCase(loweredPath);
-		auto it = sLoadedMaterials.Find(loweredPath);
+		auto it = sLoadedMaterials.find(loweredPath);
 		if (it != sLoadedMaterials.end()) {
-			auto material = it->second.lock();
+			auto material = it->second;
 			if (material) {
 				material->Reload();
 				return true;
@@ -1694,6 +1720,67 @@ public:
 		mCurrentDSTexture = pDepthStencil;
 		mCurrentDSViewIndex = dsViewIndex;
 		GetPlatformRenderer().SetDepthTarget(pDepthStencil ? pDepthStencil->GetPlatformTexture() : 0, dsViewIndex);
+	}
+
+	void OverrideDepthTarget(bool enable) {
+		if (enable && !mCurrentDSTexture) {
+			Logger::Log(FB_ERROR_LOG_ARG, "No ds texture bound.");
+			return;
+		}
+
+		TexturePtr overridingDSTexture;
+		if (enable) {
+			auto it = mDepthStencilTextureOverride.find(mCurrentDSTexture);
+			if (it == mDepthStencilTextureOverride.end()) {
+				auto width = mCurrentDSTexture->GetWidth();
+				auto height = mCurrentDSTexture->GetHeight();
+				auto format = mCurrentDSTexture->GetFormat();
+				auto type = mCurrentDSTexture->GetType();
+				overridingDSTexture = CreateTexture(0, width, height, format,
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
+				mDepthStencilTextureOverride[mCurrentDSTexture] = overridingDSTexture;
+			}
+			else {
+				overridingDSTexture = it->second;
+			}
+		}
+
+		if (enable) {
+			mDepthTextureStack.push(mCurrentDSTexture);
+			SetDepthTarget(overridingDSTexture, mCurrentDSViewIndex);
+		}
+		else {
+			if (mDepthTextureStack.empty()) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Invalid depth stack!");
+				return;
+			}
+			auto originalDST = mDepthTextureStack.top().lock();
+			mDepthTextureStack.pop();
+			SetDepthTarget(originalDST, mCurrentDSViewIndex);
+		}
+	}
+
+	void UnbindColorTargetAndKeep() {
+		mKeptCurrentRTTextures = mCurrentRTTextures;
+		mKeptCurrentViewIndices = mCurrentViewIndices;
+		mCurrentRTTextures.clear();
+		mCurrentViewIndices.clear();
+		
+		GetPlatformRenderer().SetRenderTarget(0, 0, 0,
+			mCurrentDSTexture ? mCurrentDSTexture->GetPlatformTexture() : 0, mCurrentDSViewIndex);
+	}
+
+	void RebindKeptColorTarget() {
+		if (!mKeptCurrentViewIndices.empty()) {
+			SetRenderTarget(&mKeptCurrentRTTextures[0], &mKeptCurrentViewIndices[0], mKeptCurrentViewIndices.size(),
+				mCurrentDSTexture, mCurrentDSViewIndex);
+			mKeptCurrentRTTextures.clear();
+			mKeptCurrentViewIndices.clear();
+		}
+		else {
+			SetRenderTarget(0, 0, 0, mCurrentDSTexture, mCurrentDSViewIndex);
+			Logger::Log(FB_ERROR_LOG_ARG, "No kept RenderTarget found");
+		}
 	}
 
 	const std::vector<Viewport>& GetViewports() {
@@ -2448,6 +2535,29 @@ public:
 		GetPlatformRenderer().TakeScreenshot(filepath.c_str());
 	}
 
+	void TakeScreenshot(int width, int height) {
+		auto filepath = GetNextScreenshotFile();
+		RenderTargetParam rparam;
+		rparam.mEveryFrame = false;
+		rparam.mSize = Vec2I(width, height);
+		rparam.mWillCreateDepth = true;
+		auto& renderer = Renderer::GetInstance();
+		auto rt = renderer.CreateRenderTarget(rparam);
+		rt->SetDepthStencilDesc(width, height, PIXEL_FORMAT_D24_UNORM_S8_UINT, false, false);
+		auto mainRT = renderer.GetMainRenderTarget();
+		auto cam = mainRT->GetCamera()->Clone();
+		cam->SetWidth((Real)width);
+		cam->SetHeight((Real)height);
+		auto aspectRatio = width / (float)height;
+		cam->SetAspectRatio(aspectRatio);
+		cam->SetFOV(Radian(45) / aspectRatio);
+		rt->SetCamera(cam);
+		rt->RegisterScene(mainRT->GetScene());
+		rt->Render(0);
+		rt->SaveToFile(filepath.c_str());
+		
+	}
+
 	void ChangeFullscreenMode(int mode){
 		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Changing fullscreen mode: %d", mode).c_str());
 		GetPlatformRenderer().ChangeFullscreenMode(mMainWindowId, mWindowHandles[mMainWindowId], mode);
@@ -2474,7 +2584,7 @@ public:
 
 		auto handleId = GetWindowHandleId(window);
 		auto rt = GetRenderTarget(handleId);
-		if (rt->GetRenderTargetTexture()->GetSize() == resol)
+		if (!rt->GetRenderTargetTexture() || rt->GetRenderTargetTexture()->GetSize() == resol)
 			return;		
 		rt->RemoveTextures();
 		mCurrentRTTextures.clear();
@@ -2782,26 +2892,26 @@ public:
 			n.y = w - halfWidth;
 			n.z = halfWidth - h;
 			break;
-		case 2: // up
-			n.x = w - halfWidth;
-			n.y = h - halfWidth;
-			n.z = halfWidth;
-			break;
-		case 3: // down
-			n.x = w - halfWidth;
-			n.y = halfWidth - h;
-			n.z = -halfWidth;
-			break;
-		case 4: // front
+		case 2: // front
 			n.x = w - halfWidth;
 			n.y = halfWidth;
 			n.z = halfWidth - h;
 			break;
-		case 5: // back
+		case 3: // back
 			n.x = halfWidth - w;
 			n.y = -halfWidth;
 			n.z = halfWidth - h;
 			break;
+		case 4: // up
+			n.x = w - halfWidth;
+			n.y = h - halfWidth;
+			n.z = halfWidth;
+			break;
+		case 5: // down
+			n.x = w - halfWidth;
+			n.y = halfWidth - h;
+			n.z = -halfWidth;
+			break;		
 		}
 		return n.NormalizeCopy();
 	}
@@ -3397,14 +3507,13 @@ public:
 	//-------------------------------------------------------------------
 	// ISceneObserver
 	//-------------------------------------------------------------------
-	bool OnFileChanged(const char* watchDir, const char* file, const char* ext){
+	bool OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* ext){
 		auto extension = std::string(ext);		
 		bool shader = extension == ".hlsl" || extension ==  ".h";
 		bool material = extension == ".material";
 		bool texture = extension == ".png" || extension == ".dds";
 		bool xml = extension == ".xml";
-		bool font = extension == ".fnt";
-
+		bool font = extension == ".fnt";		
 		if (shader){
 			ReloadShader(file);
 			return true;
@@ -3636,6 +3745,18 @@ void Renderer::SetDepthTarget(TexturePtr pDepthStencil, size_t dsViewIndex) {
 	mImpl->SetDepthTarget(pDepthStencil, dsViewIndex);
 }
 
+void Renderer::OverrideDepthTarget(bool override) {
+	mImpl->OverrideDepthTarget(override);
+}
+
+void Renderer::UnbindColorTargetAndKeep() {
+	mImpl->UnbindColorTargetAndKeep();
+}
+
+void Renderer::RebindKeptColorTarget() {
+	mImpl->RebindKeptColorTarget();
+}
+
 const std::vector<TexturePtr>& Renderer::_GetCurrentRTTextures() const {
 	return mImpl->mCurrentRTTextures;
 }
@@ -3862,6 +3983,10 @@ void Renderer::EndEvent() {
 
 void Renderer::TakeScreenshot() {
 	mImpl->TakeScreenshot();
+}
+
+void Renderer::TakeScreenshot(int width, int height) {
+	mImpl->TakeScreenshot(width, height);
 }
 
 void Renderer::ChangeFullscreenMode(int mode){
@@ -4327,6 +4452,6 @@ void Renderer::OnChangeDetected(){
 
 }
 
-bool Renderer::OnFileChanged(const char* watchDir, const char* file, const char* ext){
-	return mImpl->OnFileChanged(watchDir, file, ext);
+bool Renderer::OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* ext){
+	return mImpl->OnFileChanged(watchDir, file, combinedPath, ext);
 }

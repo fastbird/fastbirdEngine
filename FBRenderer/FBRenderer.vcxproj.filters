@@ -130,7 +130,4 @@
       <UniqueIdentifier>{da81eda7-6040-4597-b79b-0adcaa69480e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="RendererCache.inl" />
-  </ItemGroup>
 </Project>

@@ -475,6 +475,7 @@ namespace fb
 		TextureCreationOption() 
 			: async(true)
 			, generateMip(true)
+			, textureType(TEXTURE_TYPE_DEFAULT)
 		{
 		}
 
@@ -484,11 +485,19 @@ namespace fb
 		{
 		}
 
+		TextureCreationOption(bool async, bool generateMip, int textureType)
+			: async(async)
+			, generateMip(generateMip)
+			, textureType(textureType)
+		{
+		}
+
 		bool async;
 		// if the texture source doesn't have mip data and this flag is true,
 		// mipmap will be generated.
 		// Textures for ui doesn't need to have mipmap.
 		bool generateMip;
+		int textureType;
 	};
 }
 #endif //_fastbird_RenderStructs_header_included_

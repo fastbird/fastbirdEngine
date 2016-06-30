@@ -41,7 +41,7 @@ e_Profile = 0
 r_renderAxis = 1
 
 resourcePath={
-	"D:/Projects/fastbird-engine/EssentialEngineData",
+	{"EssentialEngineData/", "D:/Projects/fastbird-engine/EssentialEngineData/"},
 }
 
 -- profiles

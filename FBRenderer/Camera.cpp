@@ -36,6 +36,7 @@
 #include "FBSceneManager/ISpatialObject.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBTimer/Timer.h"
+#include "FBMathLib/MurmurHash.h"
 
 using namespace fb;
 
@@ -785,6 +786,18 @@ public:
 	{
 		Renderer::GetInstance().DrawFrustum(mFrustum);
 	}
+
+	size_t ComputeHash() const {
+		size_t h = mTransformation.ComputeHash();
+		hash_combine(h, std::hash<float>()(mFov));
+		hash_combine(h, std::hash<float>()(mNear));
+		hash_combine(h, std::hash<float>()(mFar));
+		hash_combine(h, std::hash<float>()(mAspectRatio));
+		if (mOrthogonal) {
+			hash_combine(h, (size_t)murmur3_32((const char*)&mOrthogonalData, sizeof(mOrthogonalData)));
+		}		
+		return h;
+	}
 };
 
 //----------------------------------------------------------------------------
@@ -1091,4 +1104,8 @@ bool Camera::GetRenderFrustum() const
 void Camera::RenderFrustum()
 {
 	mImpl->RenderFrustum();
+}
+
+size_t Camera::ComputeHash() const {
+	return mImpl->ComputeHash();
 }

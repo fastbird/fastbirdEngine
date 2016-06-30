@@ -26,12 +26,11 @@
 */
 
 #pragma once
-#include "WinBase.h"
-
+#include "Container.h"
 namespace fb
 {
 	FB_DECLARE_SMART_PTR(HorizontalGauge);
-	class FB_DLL_UI HorizontalGauge : public WinBase
+	class FB_DLL_UI HorizontalGauge : public Container
 	{
 	protected:
 		HorizontalGauge();
@@ -43,31 +42,47 @@ namespace fb
 
 		// IWinBase
 		ComponentType::Enum GetType() const { return ComponentType::HorizontalGauge; }
-		void GatherVisit(std::vector<UIObject*>& v);
-		void OnStartUpdate(float elapsedTime);
+		virtual void GatherVisit(std::vector<UIObject*>& v);
+		virtual void OnStartUpdate(float elapsedTime);
 
-		void SetPercentage(float p);
-		float GetPercentage() const { return mPercentage; }
-		void SetMaximum(float m);
-		float GetMaximum() const { return mMaximum; }
+		virtual void SetPercentage(float p);
+		virtual void SetMaximum(float m);		
+
+		virtual void SetGaugeColor(const Color& color);
+		virtual void SetGaugeColorEmpty(const Color& color);
+
+		void SetBlinkColor(const Color& color);		
 		void Blink(bool blink);
 		void Blink(bool blink, float time);
-		void SetGaugeColor(const Color& color);
-		const Color& GetGaugeColor() const;
-		void SetGaugeColorEmpty(const Color& color);
-		void SetBlinkColor(const Color& color);
-		const Color& GetBlinkColor() const;
+		float GetPercentage() const { return mPercentage; }		
+		float GetMaximum() const { return mMaximum; }		
+		const Color& GetGaugeColor() const;		
+		const Color& GetBlinkColor() const;		
 
-		bool SetProperty(UIProperty::Enum prop, const char* val);
-		bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
+		virtual bool SetProperty(UIProperty::Enum prop, const char* val) OVERRIDE;
+		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly) OVERRIDE;
 
-	private:
+	protected:		
+		void SetTextureAtlasRegion(UIProperty::Enum prop, const char* region);
+		void ChangeMaterial(const char* materialPath);
+		bool UsingEmptyColor();
+
 		float mPercentage;
 		float mMaximum;
 		Color mGaugeColor;
 		Color mGaugeColorEmpty;
 		Color mGaugeBorderColor;
-		bool mGaugeColorEmptySet;
+		bool mVertical;
+		bool mHorizontalFlip;
+		bool mMaterialUsingImage;
+		
+		std::string mTextureAtlasFile;
+		TextureAtlasPtr mTextureAtlas;
+		TextureAtlasRegionPtr mAtlasRegions[2];
+		TexturePtr mTextures[2];
+
+		std::string mRegionFilled;
+		std::string mRegionNotFilled;
 		Color mBlinkColor;
 		bool mBlink;
 		float mBlinkSpeed;

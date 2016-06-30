@@ -129,6 +129,8 @@ namespace fb
 		bool GetRenderFrustum() const;
 		void RenderFrustum();		
 
+		size_t ComputeHash() const OVERRIDE;
+
 		//-------------------------------------------------------------------
 		// InputConsumer From Renderer
 		//-------------------------------------------------------------------

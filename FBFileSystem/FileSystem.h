@@ -193,13 +193,18 @@ namespace fb{
 			e.g The request 'EssentialEngineData/shaders/myshader.hlsl' will be redirected
 			to D:/projects/fastbird-engine/EssentialEngineData/shaders/myshader.hlsl'
 		*/
-		static void AddResourceFolder(const char* absFolderPath);
-		static void RemoveResourceFolder(const char* absFolderPath);
-		static const char* GetResourceFolder(const char* key);
-		static bool IsResourceFolder(const char* path);
+		static void AddResourceFolder(const char* startingPath, const char* res);
+		static void RemoveResourceFolder(const char* startingPath);
+		static const char* GetResourceFolder(const char* startingPath);
+		/// {"EssentialEngineData/", "D:/Projects/fastbird-engine/EssentialEngineData/"},
+		/// key = EssentialEngineData/
+		/// val = D:/Projects/fastbird-engine/EssentialEngineData/
+		static bool IsResourceFolderByKey(const char* startingPath);
+		static bool IsResourceFolderByVal(const char* resourcePath);
 		/** Returns a altenative path considering the resource folders.*/
 		static std::string GetResourcePath(const char* originalPath);
-		static std::string GetResourcePathIfPathNotExists(const char* originalPath);
+		static std::string GetResourcePathIfPathNotExists(const char* originalPath);		
+		static std::string GetResourceKeyFromVal(const char* val);
 
 		/** Opens a file considering resource folder.
 		if file exists in 'path' resource folder will not be considered.
@@ -236,6 +241,7 @@ namespace fb{
 			errno_t Reset(const char* path, const char* mode, ErrorMode errorMsgMode);
 			errno_t Reset(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode);
 
+			bool IsOpen();
 			void Close();
 			FILE* Release();
 			errno_t operator()(const char* path, const char* mode);

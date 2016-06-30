@@ -49,7 +49,7 @@ namespace fb
 			Hexagonal,
 			CardScroller,
 			CardItem,
-			VerticalGauge,
+			//VerticalGauge,
 			HorizontalGauge,
 			NumericUpDown,
 			DropDown,
@@ -58,6 +58,7 @@ namespace fb
 			NamedPortrait,
 			PropertyList,
 			TabWindow,
+			DiscretedGauge,
 
 			NUM
 		};
@@ -79,7 +80,7 @@ namespace fb
 			"Hexagonal",
 			"CardScroller",
 			"CardItem",
-			"VerticalGauge",
+			//"VerticalGauge",
 			"HorizontalGauge",
 			"NumericUpDown",
 			"DropDown",
@@ -88,6 +89,7 @@ namespace fb
 			"NamedPortrait",
 			"PropertyList",
 			"TabWindow",
+			"DiscretedGauge",
 
 			"NUM",
 		};

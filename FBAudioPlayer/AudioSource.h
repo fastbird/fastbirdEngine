@@ -45,5 +45,7 @@ namespace fb{
 		bool GetLoop() const;
 		void SetMaxGain(float maxGain);
 		float GetMaxGain() const;
+		size_t GetNumSimultaneous() const;
+		float GetSimultaneousCheckRange() const;
 	};
 }

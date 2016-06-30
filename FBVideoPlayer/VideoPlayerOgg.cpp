@@ -34,6 +34,7 @@
 #include "FBRenderer/ResourceProvider.h"
 #include "FBRenderer/Texture.h"
 #include "FBTimer/Timer.h"
+#include "FBFileSystem/FileSystem.h"
 
 using namespace fb;
 
@@ -56,7 +57,7 @@ public:
 	th_dec_ctx* mTheoraDecoderCtx;
 	th_ycbcr_buffer mYCbCr;
 
-	FILE* mFile;
+	FileSystem::Open mFile;
 
 	std::string mFilepath;
 
@@ -80,8 +81,7 @@ public:
 	//---------------------------------------------------------------------------
 	Impl()
 		:mTheoraSetup(0)
-		, mTheoraDecoderCtx(0)
-		, mFile(0)
+		, mTheoraDecoderCtx(0)		
 		, mVideoBufTime(0)
 		, mGranulePos(-1)
 		, mDurationAfterFinish(0)
@@ -96,11 +96,7 @@ public:
 	}
 
 	~Impl(){
-		Clear();
-		if (mFile) {
-			fclose(mFile);
-			mFile = 0;
-		}
+		Clear();		
 	}
 
 	void Clear()
@@ -138,8 +134,8 @@ public:
 			return false;
 		}
 
-		auto error = fopen_s(&mFile, path, "rb");
-		if (error){
+		auto err = mFile.Reset(path, "rb");		
+		if (err){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open the file %s", path).c_str());
 			return false;
 		}
@@ -167,8 +163,7 @@ public:
 			/* nothing to do*/
 		}
 		if (mFile) {
-			fclose(mFile);
-			mFile = 0;
+			mFile.Close();
 		}
 
 		ogg_page page;
@@ -244,9 +239,8 @@ public:
 		return true;
 	}
 
-	int buffer_data(){
-		assert(mFile);
-		if (!mFile)
+	int buffer_data(){		
+		if (!mFile.IsOpen())
 			return 0;
 
 		char *buffer = ogg_sync_buffer(&mSyncState, 4096);

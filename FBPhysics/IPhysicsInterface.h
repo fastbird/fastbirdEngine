@@ -63,16 +63,42 @@ namespace fb
 		// Events Handler
 		struct CollisionContactInfo
 		{
-			CollisionContactInfo(RigidBody* a,RigidBody* b, const fb::Vec3& worldpos, const fb::Vec3& worldNormal, float impulse, int idxA, int idxB)
-			:mA(a), mB(b), mWorldPos(worldpos), mWorldNormal(worldNormal), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
+			CollisionContactInfo(RigidBody* a,RigidBody* b, 
+				const fb::Vec3& localPointA, 
+				const fb::Vec3& localPointB, 
+				const fb::Vec3& positionWorldOnA,
+				const fb::Vec3& positionWorldOnB,
+				const fb::Vec3& normalWorldOnB,
+				Real distance,
+				Real impulse, 
+				int idxA, int idxB)
+			: mA(a), mB(b)
+			, mLocalPointA(localPointA), mLocalPointB(localPointB)
+			, mPositionWorldOnA(positionWorldOnA), mPositionWorldOnB(positionWorldOnB)
+			, mDistance(distance), mImpulse(impulse), mIdxA(idxA), mIdxB(idxB)
+				, mNormalWorldOnB(normalWorldOnB)
 			{
 
 			}
+
+			void SwapAB() {
+				std::swap(mA, mB);
+				std::swap(mPositionWorldOnA, mPositionWorldOnB);
+				std::swap(mIdxA, mIdxB);
+				mNormalWorldOnB = -mNormalWorldOnB;				
+			}
+
 			RigidBody* mA;
 			RigidBody* mB;
-			Vec3 mWorldPos;
-			const Vec3 mWorldNormal;
-			float mImpulse;
+
+			Vec3 mLocalPointA;
+			Vec3 mLocalPointB;
+			Vec3 mPositionWorldOnA;
+			Vec3 mPositionWorldOnB;	
+			Vec3 mNormalWorldOnB;
+			Real mDistance;
+			Real mImpulse;
+
 			int mIdxA;
 			int mIdxB;
 		};
@@ -83,5 +109,6 @@ namespace fb
 		virtual bool ForceCompound() const { return false; }
 		/// not using
 		virtual bool UseSymmetricInertia() const { return false; }
+		virtual void OnAABBOverflow() {}
 	};
 }

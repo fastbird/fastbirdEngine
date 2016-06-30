@@ -112,7 +112,7 @@ namespace fb{
 		void QueueProcessConsoleCommand(const char* command, bool history = true);
 		// IFileChangeObserver
 		void OnChangeDetected();
-		bool OnFileChanged(const char* watchDir, const char* filepath, const char* loweredExtension);
+		bool OnFileChanged(const char* watchDir, const char* filepath, const char* combinedPath, const char* loweredExtension);
 		void IgnoreMonitoringDirectory(const char* dir);		
 		const TaskSchedulerPtr& GetTaskSchedular() const;
 		const InvokerPtr& GetInvoker() const;

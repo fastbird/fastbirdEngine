@@ -68,7 +68,7 @@ namespace fb
 		void SetVelocity(const Vec3& vel);
 		void Activate();
 		void EnableDeactivation(bool enable);
-		Vec3 GetDestDir() const;
+		Vec3 GetDestDir() const;		
 
 		void SetMass(float mass);
 
@@ -80,8 +80,8 @@ namespace fb
 		void* GetGamePtr() const;
 		void SetRotationalForce(float force);
 
-		void SetCollisionFilter(unsigned group);
-		void RemoveCollisionFilter(unsigned flag);
+		void SetCollisionFilterGroup(unsigned group);
+		void RemoveCollisionFilterGroup(unsigned flag);
 		void AddCollisionFilter(unsigned flag);
 		void SetColMask(unsigned mask);
 		unsigned GetColMask() const;
@@ -92,9 +92,10 @@ namespace fb
 
 		unsigned HasContact(void* gamePtrs[], int limit);
 
-		void RemoveRigidBodyFromWorld();
+		void RemoveFromWorld() OVERRIDE;
 		// make sure mColProvider is valid.
-		void ReAddRigidBodyFromWorld();
+		void AddToWorld() OVERRIDE;
+		void ReaddToWorld() OVERRIDE;
 		void ModifyCollisionFlag(int flag, bool enable);
 		void SetCCDMotionThreshold(float threshold);
 		void SetCCDSweptSphereRadius(float radius);
@@ -123,5 +124,7 @@ namespace fb
 		bool CheckCollideWith(RigidBodyPtr other);
 		float GetTimeToStopRotation(const Vec3& torque, float& currentAngularSpeed) const;
 		virtual Mat33 GetInertiaTensor() const;
+		virtual void SetGravity(const Vec3& gravity) OVERRIDE;
+		virtual void OnAABBOverflow() OVERRIDE;
 	};
 }

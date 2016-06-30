@@ -73,7 +73,7 @@ public:
 		ClearParticleRenderObjects();
 	}
 
-	bool OnFileChanged(const char* watchDir, const char* file, const char* ext){
+	bool OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* ext){
 		if (strcmp(ext, ".particle")==0){
 			ReloadParticle(file);
 			return true;
@@ -388,8 +388,8 @@ void ParticleSystem::Update(float elapsedTime, const Vec3& mainCamPos) {
 	mImpl->Update(elapsedTime, mainCamPos);
 }
 
-bool ParticleSystem::OnFileChanged(const char* watchDir, const char* file, const char* ext){
-	return mImpl->OnFileChanged(watchDir, file, ext);
+bool ParticleSystem::OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* ext){
+	return mImpl->OnFileChanged(watchDir, file, combinedPath, ext);
 }
 
 void ParticleSystem::OnChangeDetected(){

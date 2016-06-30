@@ -325,3 +325,11 @@ void AudioSource::SetMaxGain(float maxGain){
 float AudioSource::GetMaxGain() const{
 	return mImpl->mProperty.mMaxGain;
 }
+
+size_t AudioSource::GetNumSimultaneous() const {
+	return mImpl->mProperty.mNumSimultaneous;
+}
+
+float AudioSource::GetSimultaneousCheckRange() const {
+	return mImpl->mProperty.mSimultaneousCheckRange;
+}

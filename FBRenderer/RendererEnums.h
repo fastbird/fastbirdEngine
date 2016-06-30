@@ -147,7 +147,7 @@ namespace fb
 		TEXTURE_TYPE_COUNT
 	};
 
-	TEXTURE_TYPE TextureTypeFromString(const char* str);
+	int TextureTypeFromString(const char* str);
 	
 	enum TEXTURE_FILTER
 	{

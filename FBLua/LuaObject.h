@@ -176,6 +176,15 @@ namespace fb
 		bool GetBoolWithDef() const;
 		bool GetBoolWithDef(bool def) const;
 
+		template <class T>
+		T* GetUserdata() const {
+			LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+			PushToStack();
+			auto userdata = luaW_check<T>(mL, -1);
+			LuaUtils::pop(mL, 1);
+			return userdata;
+		}
+
 		Vec3Tuple GetVec3() const;
 		Vec3Tuple GetVec3(const Vec3Tuple& def) const;
 		Vec4Tuple GetVec4() const;

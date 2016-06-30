@@ -35,6 +35,7 @@
 #include "FBTimer/Timer.h"
 #include "FBAnimation/Animation.h"
 #include "FBRenderer/RenderParam.h"
+#include "FBRenderer/Material.h"
 #include "FBStringLib/StringLib.h"
 #include <map>
 using namespace fb;
@@ -158,14 +159,29 @@ public:
 		if (mMeshObjects.empty())
 			return;
 
-		return mMeshObjects[0].first->SetMaterial(mat, pass);
+		for (auto& it : mMeshObjects) {
+			it.first->SetMaterial(mat, pass);
+		}	
+		CheckMaterialOptions(mat);		
 	}
 
 	void SetMaterial(const char* path, RENDER_PASS pass){
 		if (mMeshObjects.empty())
 			return;
 
-		return mMeshObjects[0].first->SetMaterial(path, pass);
+		MaterialPtr mat;
+		for (auto& it : mMeshObjects) {
+			it.first->SetMaterial(path, pass);
+			if (!mat) {
+				mat = it.first->GetMaterial(pass);
+			}
+		}		
+		CheckMaterialOptions(mat);
+	}
+
+	void CheckMaterialOptions(MaterialPtr mat) {
+		if (mat)
+			mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, mat->IsTransparent());
 	}
 
 	//---------------------------------------------------------------------------

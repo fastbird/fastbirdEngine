@@ -223,6 +223,10 @@ Real& Color::a(){
 	return mValue.w; 
 }
 
+std::string Color::ToString() const {
+	return mValue.ToString();
+}
+
 unsigned Color::FixColorByteOrder(unsigned c)
 {
 	RGBA color;
@@ -248,5 +252,4 @@ Color Random(const Color& min, const Color& max)
 	return Color(Random(min.r(), max.r()), Random(min.g(), max.g()),
 		Random(min.b(), max.b()));
 }
-
 }

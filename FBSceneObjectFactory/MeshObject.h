@@ -67,6 +67,7 @@ namespace fb{
 		//---------------------------------------------------------------------------		
 
 		MeshObjectPtr Clone() const;
+		void CopyMeshDataFrom(MeshObject* src);
 		void SetMaterial(const char* filepath);
 		void SetMaterial(const char* filepath, int pass);
 		void SetMaterial(MaterialPtr pMat, int pass);

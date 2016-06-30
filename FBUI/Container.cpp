@@ -823,9 +823,11 @@ void Container::ParseXMLChildren(tinyxml2::XMLElement* pelem){
 		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
 		WinBasePtr p = AddChild(type);
 		assert(p);
-		p->SetRender3D(mRender3D, GetRenderTargetSize());
+		p->SetRender3D(mRender3D, GetRenderTargetSize());		
+		if (dropdown) {
+			p->SetProperty(UIProperty::TEXT_LEFT_GAP, "4");
+		}
 		p->ParseXML(pchild);
-
 		if (dropdown)
 		{
 			DropDown* dd = (DropDown*)this;

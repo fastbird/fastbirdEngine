@@ -121,8 +121,7 @@ public:
 	}
 
 	void Invalidate(InputDevice::Enum type, bool includeButtonClicks){
-		if (mValid & type)
-			mValid -= mValid & type;
+		mValid &= ~type;		
 		if (type & InputDevice::Keyboard){
 			if (mKeyboard){
 				mKeyboard->Invalidate(includeButtonClicks);

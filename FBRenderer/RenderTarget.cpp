@@ -67,7 +67,6 @@ namespace fb
 		bool mWillCreateDepth;
 		TexturePtr mRenderTargetTexture;
 		TexturePtr mDepthStencilTexture;
-		TexturePtr mDepthStencilTextureOverride;
 		Color mClearColor;
 		Real mDepthClear;
 		UINT8 mStencilClear;
@@ -446,8 +445,7 @@ namespace fb
 		}
 
 		void SetDepthTexture(TexturePtr texture) {
-			mDepthStencilTexture = texture;
-			mDepthStencilTextureOverride = nullptr;
+			mDepthStencilTexture = texture;			
 		}
 
 		void RemoveTextures() {
@@ -481,48 +479,11 @@ namespace fb
 			}*/
 		}
 
-		void OverrideDepthTarget(bool enable) {
-			auto& renderer = Renderer::GetInstance();
-			if (enable && !mDepthStencilTextureOverride && mDepthStencilTexture) {
-				auto width = mDepthStencilTexture->GetWidth();
-				auto height = mDepthStencilTexture->GetHeight();
-				auto format = mDepthStencilTexture->GetFormat();								
-				auto type = mDepthStencilTexture->GetType();
-				mDepthStencilTextureOverride = renderer.CreateTexture(0, width, height, format,
-					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, type);
-			}
-
-			if (enable) {
-				renderer.SetDepthTarget(mDepthStencilTextureOverride, mFace);
-			}
-			else {
-				renderer.SetDepthTarget(mDepthStencilTexture, mFace);
+		void SaveToFile(const char* filepath) {
+			if (mRenderTargetTexture) {
+				mRenderTargetTexture->SaveToFile(filepath);
 			}
 		}
-
-		void UnbindColorTarget() {
-			auto& renderer = Renderer::GetInstance(); 
-			auto currentRTs = renderer._GetCurrentRTTextures();
-			mCurrentRTTextures.clear();
-			for (size_t i = 0; i < currentRTs.size(); ++i) {
-				mCurrentRTTextures.push_back(currentRTs[i]);
-			}
-			mCurrentViewIndices = renderer._GetCurrentViewIndices();
-			auto dsTexture = renderer._GetCurrentDSTexture();;
-			mCurrentDSTexture = dsTexture;
-			mCurrentDepthViewIndex = renderer._GetCurrentDSViewIndex();
-			renderer.SetRenderTarget(0, 0, 0, dsTexture, mCurrentDepthViewIndex);
-		}
-
-		void RebindColorTarget() {
-			std::vector<TexturePtr> textures(mCurrentRTTextures.size());
-			for (size_t i = 0; i < mCurrentRTTextures.size(); ++i) {
-				textures[i] = mCurrentRTTextures[i].lock();
-			}
-			Renderer::GetInstance().SetRenderTarget(&textures[0], &mCurrentViewIndices[0],
-				textures.size(), mCurrentDSTexture.lock(), mCurrentDepthViewIndex);
-		}
-
 	};
 
 	//-------------------------------------------------------------------
@@ -758,15 +719,7 @@ namespace fb
 		return mImpl->mForceWireframe;
 	}
 
-	void RenderTarget::OverrideDepthTarget(bool enable) {
-		mImpl->OverrideDepthTarget(enable);
-	}
-
-	void RenderTarget::UnbindColorTarget() {
-		mImpl->UnbindColorTarget();
-	}
-
-	void RenderTarget::RebindColorTarget() {
-		mImpl->RebindColorTarget();
+	void RenderTarget::SaveToFile(const char* filepath) {
+		mImpl->SaveToFile(filepath);
 	}
 }

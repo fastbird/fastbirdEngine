@@ -39,6 +39,7 @@ using namespace fb;
 
 AudioId NextAudioId = 1;
 AudioManager* sAudioManagerRaw = 0;
+std::atomic<bool> sDeinitialized = false;
 namespace fb{
 	static void eos_callback(void *userData, ALuint source);
 	void CheckALError(){
@@ -215,9 +216,12 @@ public:
 	void Deinit(){
 		mAudioExs.clear();
 		std::vector<AudioId> audioIds;
-		audioIds.reserve(mAudioSources.size());
-		for (auto& it : mAudioSources){
-			audioIds.push_back(it.first);
+		{
+			ENTER_CRITICAL_SECTION l(mAudioMutex);
+			audioIds.reserve(mAudioSources.size());
+			for (auto& it : mAudioSources) {
+				audioIds.push_back(it.first);
+			}
 		}
 		for (auto audioId : audioIds){
 			if (audioId != -1){
@@ -520,6 +524,18 @@ public:
 		sz = root->Attribute("referenceDistance");
 		if (sz){
 			ret.mProperty.mReferenceDistance = StringConverter::ParseReal(sz, ret.mProperty.mReferenceDistance);
+		}
+
+		sz = root->Attribute("numberOfSimultaneous");
+		if (sz) {
+			ret.mProperty.mNumSimultaneous = StringConverter::ParseUnsignedInt(sz,
+				ret.mProperty.mNumSimultaneous);
+		}
+
+		sz = root->Attribute("simultaneousCheckRange");
+		if (sz) {
+			ret.mProperty.mSimultaneousCheckRange = StringConverter::ParseReal(sz,
+				ret.mProperty.mSimultaneousCheckRange);
 		}
 
 		sz = root->Attribute("loop");
@@ -832,10 +848,50 @@ public:
 		return sourceIt != mAudioSources.end();
 	}
 
-	bool AudioThreadFunc(float dt){
-		if (!sAudioManagerRaw)
-			return false;
+	void CheckSimultaneous(const std::string& path, const AudioSourcePtr& audioSource) {
+		if (audioSource->GetNumSimultaneous() == 0)
+			return;
 
+		auto numSimul = audioSource->GetNumSimultaneous();
+		std::vector<AudioSourcePtr> audioSources;		
+		if (audioSource->GetRelative()) {			
+			for (auto& it : mAudioSources) {
+				if (it.second->GetAudioBuffer()->mFilepath == path) {
+					audioSources.push_back(it.second);
+				}
+			}
+			if (audioSources.size() < numSimul)
+				return;
+			std::sort(audioSources.begin(), audioSources.end(), [](const AudioSourcePtr& a, const AudioSourcePtr& b) {
+				return a->GetLeftTime() > b->GetLeftTime();
+			});
+			for (size_t i = numSimul - 1; i < audioSources.size(); ++i) {
+				StopAudioInAudioThread(audioSources[i]->GetAudioId());
+			}
+		}
+		else {
+			auto rangeSQ = audioSource->GetSimultaneousCheckRange();
+			rangeSQ *= rangeSQ;
+			VectorMap<float, AudioSourcePtr> audioSources;
+			float preventSame = 0.001f;
+			for (auto& it : mAudioSources) {
+				if (it.second->GetAudioBuffer()->mFilepath == path) {
+					auto distSQ = GetDistanceSQBetween(it.second->GetPosition(), audioSource->GetPosition());
+					if (distSQ <= rangeSQ) {
+						audioSources.Insert(std::make_pair(distSQ + preventSame, it.second));
+						preventSame += 0.001f;
+					}
+				}
+			}
+			if (audioSources.size() < numSimul)
+				return;
+			for (size_t i = numSimul - 1; i < audioSources.size(); ++i) {
+				StopAudioInAudioThread((audioSources.begin() + i)->second->GetAudioId());
+			}			
+		}
+	}
+
+	bool AudioThreadFunc(float dt){
 		PlayDataVector playQueue;		
 		SettingDataVector setttingDataQueue;
 		setttingDataQueue.reserve(100);
@@ -864,7 +920,7 @@ public:
 			if (!audioBuffer){
 				continue;
 			}
-
+			CheckSimultaneous(it.second.mFilePath, it.second.mSource);
 			PlayAudioBuffer(audioBuffer, it.second.mSource);
 		}
 		
@@ -1059,6 +1115,10 @@ public:
 				}
 			}
 		}
+
+		if (sDeinitialized)
+			return false;
+
 		return true;
 	}
 
@@ -1547,13 +1607,17 @@ AudioManager::AudioManager()
 	: mImpl(new Impl)
 {
 }
+
 AudioManager::~AudioManager()
 {
-	Logger::Log(FB_ERROR_LOG_ARG, "Deleting Audio Manager.");
-	sAudioManagerRaw = 0;
+	using namespace std::chrono_literals;
+	Logger::Log(FB_ERROR_LOG_ARG, "Deleting Audio Manager.");	
 	mImpl->Deinit();
-	mImpl->JoinThread();	
-	mImpl = 0;	
+	std::this_thread::sleep_for(200ms);
+	sDeinitialized = true;
+	sAudioManagerRaw = 0;
+	mImpl->JoinThread();
+	mImpl = 0;
 	Logger::Log(FB_ERROR_LOG_ARG, "Audio Manager deleted.");
 }
 

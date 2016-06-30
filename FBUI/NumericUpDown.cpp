@@ -164,7 +164,7 @@ namespace fb
 			else{
 				SetNumber(mValue - mStep);
 			}
-			
+			InputManager::GetInstance().GetInputInjector()->InvalidateClickTime();
 			OnEvent(UIEvents::EVENT_NUMERIC_DOWN);
 		}
 	}
@@ -180,6 +180,7 @@ namespace fb
 			else{
 				SetNumber(mValue + mStep);
 			}
+			InputManager::GetInstance().GetInputInjector()->InvalidateClickTime();
 			OnEvent(UIEvents::EVENT_NUMERIC_UP);
 		}
 	}

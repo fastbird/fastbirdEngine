@@ -86,12 +86,12 @@ float4 ToneMappingPS_PixelShader(QuadVS_Output Input
 	float3 vStar = gStarGlareTexture.Sample(gLinearSampler, Input.Tex).rgb;
 
 #ifdef _FILMIC_TONEMAP
-	float3 CurrentColor = FilmicTonemap( vColor.rgb*2.0 );
-    float3 WhiteScale = FilmicTonemap( 2.0 );
+	float3 CurrentColor = FilmicTonemap( vColor.rgb * 2.0f);
+    float3 WhiteScale = FilmicTonemap( 1.5 );
 	vColor.rgb = (CurrentColor) / WhiteScale;
 	vColor.rgb += gStarPower * vStar;
 	vColor.rgb += gBloomPower * vBloom;
-	return vColor; 
+	return vColor;
 #else
 	
 	

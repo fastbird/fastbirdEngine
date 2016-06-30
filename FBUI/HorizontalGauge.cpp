@@ -28,6 +28,7 @@
 #include "StdAfx.h"
 #include "HorizontalGauge.h"
 #include "UIObject.h"
+#include "FBRenderer/TextureAtlas.h"
 
 namespace fb
 {
@@ -41,9 +42,11 @@ namespace fb
 	HorizontalGauge::HorizontalGauge()
 		:mPercentage(0), mMaximum(1.f)
 		, mBlink(false)
-		, mBlinkSpeed(3.f)
-		, mGaugeColorEmptySet(false)
+		, mBlinkSpeed(3.f)		
 		, mBlinkTime(0)
+		, mVertical(false)
+		, mHorizontalFlip(false)
+		, mMaterialUsingImage(false)
 	{
 		mUIObject = UIObject::Create(GetRenderTargetSize());
 		mUIObject->SetMaterial("EssentialEngineData/materials/UIHorizontalGauge.material");
@@ -58,16 +61,14 @@ namespace fb
 		mat->SetShaderParameter(2, mBlinkColor.GetVec4());
 		mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
 
-		// x is lerp.
-		mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
+		// x is lerp.		
 		Vec2 texcoords[4] = {
 			Vec2(0.f, 1.f),
 			Vec2(0.f, 0.f),
 			Vec2(1.f, 1.f),
 			Vec2(1.f, 0.f)
 		};
-		mUIObject->SetTexCoord(texcoords, 4);
-		mat->SetShaderParameter(4, Vec4(mPercentage, mMaximum, 0, 0));
+		mUIObject->SetTexCoord(texcoords, 4);		
 	}
 
 	HorizontalGauge::~HorizontalGauge()
@@ -85,32 +86,38 @@ namespace fb
 		if (mBlink && mBlinkTime > 0)
 		{
 			auto mat = mUIObject->GetMaterial();
-			mat->SetShaderParameter(3, Vec4(sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f, 0, 0, 0));
+			auto v = mat->GetShaderParameter(3);
+			v.y = sin(gpTimer->GetTime()*mBlinkSpeed)*.5f + .5f;
+			mat->SetShaderParameter(3, v);
 			mBlinkTime -= elapsedTime;
 			if (mBlinkTime <= 0){
-				Blink(false);
-				
+				Blink(false);				
 			}
 		}
+	}
+
+	bool HorizontalGauge::UsingEmptyColor() {
+		return mGaugeColorEmpty.r() + mGaugeColorEmpty.g() + mGaugeColorEmpty.b() + mGaugeColorEmpty.a() != 0.f;
 	}
 
 	void HorizontalGauge::SetPercentage(float p)
 	{
 		mPercentage = p;
 		auto mat = mUIObject->GetMaterial();
-		// x : ratio
-		// y : percent
-		// z : maximum
-		Vec4 val = mat->GetMaterialParameter(4);
-		val.x = p;
-		val.y = mMaximum;
-		mat->SetShaderParameter(4, val);
+		// x : percent		
+		// y : sin
+		// z : ratio
+		Vec4 val = mat->GetShaderParameter(3);
+		val.x = mPercentage / mMaximum;				
+		mat->SetShaderParameter(3, val);
 
-		if (mGaugeColorEmptySet)
+		if (UsingEmptyColor())
 		{
-			auto mat = mUIObject->GetMaterial();
 			Color c= Lerp(mGaugeColorEmpty, mGaugeColor, p);
 			mat->SetShaderParameter(1, c.GetVec4());
+		}
+		else {			
+			mat->SetShaderParameter(1, mGaugeColor.GetVec4());
 		}
 	}
 
@@ -119,9 +126,9 @@ namespace fb
 		mMaximum = m;
 		auto mat = mUIObject->GetMaterial();
 		
-		Vec4 val = mat->GetMaterialParameter(4);
-		val.y = mMaximum;
-		mat->SetShaderParameter(4, val);
+		Vec4 val = mat->GetShaderParameter(3);
+		val.x = mPercentage / mMaximum;		
+		mat->SetShaderParameter(3, val);
 	}
 
 	void HorizontalGauge::Blink(bool blink)
@@ -132,7 +139,7 @@ namespace fb
 		mBlink = blink;
 		if (!blink){
 			auto mat = mUIObject->GetMaterial();
-			mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
+			mat->SetShaderParameter(2, Vec4(0, 0, 0, 0));
 			mBlinkTime = 0;
 		}
 		else{
@@ -151,7 +158,7 @@ namespace fb
 		if (!blink)
 		{
 			auto mat = mUIObject->GetMaterial();
-			mat->SetShaderParameter(3, Vec4(0, 0, 0, 0));
+			mat->SetShaderParameter(2, Vec4(0, 0, 0, 0));
 			mBlinkTime = 0;
 		}
 
@@ -160,8 +167,7 @@ namespace fb
 	void HorizontalGauge::SetGaugeColor(const Color& color)
 	{
 		mGaugeColor = color;
-		auto mat = mUIObject->GetMaterial();
-		mat->SetShaderParameter(1, color.GetVec4());
+		SetPercentage(mPercentage);
 	}
 
 	const Color& HorizontalGauge::GetGaugeColor() const
@@ -172,7 +178,7 @@ namespace fb
 	void HorizontalGauge::SetGaugeColorEmpty(const Color& color)
 	{
 		mGaugeColorEmpty = color;
-		mGaugeColorEmptySet = true;
+		SetPercentage(mPercentage);
 	}
 
 	void HorizontalGauge::SetBlinkColor(const Color& color)
@@ -204,13 +210,13 @@ namespace fb
 		}
 		case UIProperty::GAUGE_COLOR:
 		{
-										SetGaugeColor(StringMathConverter::ParseColor(val));
-										return true;
+			SetGaugeColor(StringMathConverter::ParseColor(val));
+			return true;
 		}
 		case UIProperty::GAUGE_COLOR_EMPTY:
 		{
-											  SetGaugeColorEmpty(StringMathConverter::ParseColor(val));
-											  return true;
+			SetGaugeColorEmpty(StringMathConverter::ParseColor(val));			
+			return true;
 		}
 
 		case UIProperty::GAUGE_BLINK_COLOR:
@@ -237,6 +243,42 @@ namespace fb
 												   }
 											   }
 											   return true;
+		}
+
+		case UIProperty::REGION_FILLED:
+		{
+			mRegionFilled = val;
+			SetTextureAtlasRegion(prop, val);
+			return true;
+		}
+		case UIProperty::REGION_NOT_FILLED:
+		{
+			mRegionNotFilled = val;
+			SetTextureAtlasRegion(prop, val);
+			return true;
+		}
+
+		case UIProperty::IMAGE_HFLIP:
+		{
+			mHorizontalFlip = StringConverter::ParseBool(val);
+			return true;
+		}
+
+		case UIProperty::TEXTUREATLAS:
+		{
+			mTextureAtlasFile = val;
+			return true;
+		}
+		break;
+
+		case UIProperty::GAUGE_VERTICAL:
+		{
+			mVertical = StringConverter::ParseBool(val);
+			if (mVertical)
+				mUIObject->GetMaterial()->AddShaderDefine("_VERTICAL", "1");
+			else
+				mUIObject->GetMaterial()->RemoveShaderDefine("_VERTICAL");
+			return true;
 		}
 		}
 
@@ -283,13 +325,14 @@ namespace fb
 		}
 		case UIProperty::GAUGE_COLOR_EMPTY:
 		{
-			if (mGaugeColorEmptySet)
+			if (UsingEmptyColor())
 			{
 				auto data = StringMathConverter::ToString(mGaugeColorEmpty);
 				strcpy_s(val, bufsize, data.c_str());
 				return true;
-			}
-			return false;
+			}	
+			strcpy_s(val, bufsize, "0 0 0 0");
+			return true;
 		}
 
 		case UIProperty::GAUGE_BLINK_COLOR:
@@ -327,11 +370,152 @@ namespace fb
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
+		case UIProperty::GAUGE_VERTICAL:
+		{
+			if (notDefaultOnly)
+			{
+				if (mVertical == UIProperty::GetDefaultValueBool(prop))
+					return false;
+			}
+			auto data = StringConverter::ToString(mVertical);
+			strcpy_s(val, bufsize, data.c_str());
+			return true;
+		}
+
+		case UIProperty::TEXTUREATLAS:
+		{
+			if (notDefaultOnly)
+			{
+				if (mTextureAtlasFile.empty())
+					return false;
+			}
+			strcpy_s(val, bufsize, mTextureAtlasFile.c_str());
+			return true;
+		}
+		break;
+
+		case UIProperty::REGION_FILLED:
+		{
+			if (notDefaultOnly)
+			{
+				if (mRegionFilled.empty())
+					return false;
+			}
+			strcpy_s(val, bufsize, mRegionFilled.c_str());
+			return true;
+		}
+		case UIProperty::REGION_NOT_FILLED:
+		{
+			if (notDefaultOnly)
+			{
+				if (mRegionNotFilled.empty())
+					return false;
+			}
+			strcpy_s(val, bufsize, mRegionNotFilled.c_str());
+			return true;
+		}
+		break;
+
+		case UIProperty::IMAGE_HFLIP:
+		{
+			if (notDefaultOnly)
+			{
+				if (mHorizontalFlip == UIProperty::GetDefaultValueBool(prop))
+					return false;
+			}
+			auto data = StringConverter::ToString(mHorizontalFlip);
+			strcpy_s(val, bufsize, data.c_str());
+			return true;
+		}
+
 		}
 
 		return __super::GetProperty(prop, val, bufsize, notDefaultOnly);
 	}
 
+	void HorizontalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* region)
+	{
+		if (mTextureAtlasFile.empty())
+		{
+			mTextureAtlasFile = "Data/textures/gameui.xml";
+		}
+		int index = 0;
+		if (prop == UIProperty::REGION_FILLED)
+		{
+			index = 0;
+		}
+		else if (prop == UIProperty::REGION_NOT_FILLED)
+		{
+			index = 1;
+		}
+		else
+		{
+			assert(0);
+		}
+		if (index == 0 && strlen(region) == 0 && mMaterialUsingImage) {
+			mMaterialUsingImage = false;
+			ChangeMaterial("EssentialEngineData/materials/UIHorizontalGauge.material");			
+			mRegionFilled.clear();
+			mRegionNotFilled.clear();
+			return;
+		}
 
-	
+		mTextureAtlas = Renderer::GetInstance().GetTextureAtlas(mTextureAtlasFile.c_str());
+		if (mTextureAtlas)
+		{
+			if (!mMaterialUsingImage)
+			{
+				mMaterialUsingImage = true;
+				ChangeMaterial("EssentialEngineData/materials/UIGaugeImage.material");				
+			}
+			mTextures[index] = mTextureAtlas->GetTexture();
+			mAtlasRegions[index] = mTextureAtlas->GetRegion(region);
+			if (!mAtlasRegions[index])
+			{
+				Error("Cannot find the region %s in the atlas %s", region, mTextureAtlasFile.c_str());
+			}
+			SAMPLER_DESC sdesc;
+			sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;			
+			auto mat = mUIObject->GetMaterial();
+			mat->SetTexture(mTextures[index], SHADER_TYPE_PS, index, sdesc);
+			if (mAtlasRegions[index])
+			{
+				Vec2 texcoords[4];
+				mAtlasRegions[index]->GetQuadUV(texcoords);
+				if (mHorizontalFlip)
+				{
+					std::swap(texcoords[0], texcoords[2]);
+					std::swap(texcoords[1], texcoords[3]);
+				}
+				if (index == 0)
+					mUIObject->SetTexCoord(texcoords, 4);
+				else if (index == 1)
+					mUIObject->SetTexCoord(texcoords, 4, 1);
+				float minY = texcoords[1].y;
+				float maxY = texcoords[2].y;
+				auto v = mat->GetShaderParameter(3);
+				v.z = minY;
+				v.w = maxY;
+				mat->SetShaderParameter(3, v);
+				DWORD colors[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff };
+				mUIObject->SetColors(colors, 4);				
+			}
+		}
+	}
+
+	void HorizontalGauge::ChangeMaterial(const char* materialPath) {
+		if (!mUIObject || !mUIObject->GetMaterial()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid timing.");
+			return;
+		}
+
+		Material::Parameters parameters = mUIObject->GetMaterial()->GetShaderParameters();
+		mUIObject->SetMaterial(materialPath);
+		auto newMat = mUIObject->GetMaterial();
+		if (newMat) {
+			for (auto& it : parameters) {
+				newMat->SetShaderParameter(it.first, it.second);
+			}
+		}
+	}
 }

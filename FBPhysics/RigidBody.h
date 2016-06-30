@@ -74,8 +74,8 @@ namespace fb
 
 		virtual void SetRotationalForce(float force) = 0;
 
-		virtual void SetCollisionFilter(unsigned group) = 0;
-		virtual void RemoveCollisionFilter(unsigned flag) = 0;
+		virtual void SetCollisionFilterGroup(unsigned group) = 0;
+		virtual void RemoveCollisionFilterGroup(unsigned flag) = 0;
 		virtual void AddCollisionFilter(unsigned flag)=0;
 		virtual void SetColMask(unsigned mask) = 0;
 		virtual unsigned GetColMask() const = 0;
@@ -85,9 +85,10 @@ namespace fb
 		virtual void SetDamping(float linear, float angular) = 0;
 		virtual unsigned HasContact(void* gamePtrs[], int limit) = 0;
 
-		virtual void RemoveRigidBodyFromWorld() = 0;
+		virtual void RemoveFromWorld() = 0;
 		// make sure mColProvider is valid.
-		virtual void ReAddRigidBodyFromWorld() = 0;
+		virtual void AddToWorld() = 0;
+		virtual void ReaddToWorld() = 0;
 		virtual void ModifyCollisionFlag(int flag, bool enable) = 0;
 
 		virtual void SetCCDMotionThreshold(float threshold) = 0;
@@ -115,5 +116,7 @@ namespace fb
 		virtual float GetTimeToStopRotation(
 			const Vec3& torque, float& currentAngularSpeed) const = 0;
 		virtual Mat33 GetInertiaTensor() const = 0;
+
+		virtual void SetGravity(const Vec3& gravity) = 0;
 	};
 }

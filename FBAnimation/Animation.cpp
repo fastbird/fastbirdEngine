@@ -141,6 +141,10 @@ public:
 		return false;
 	}
 
+	void StopAnimation() {
+		mCurPlayingAction = 0;
+	}
+
 	void Update(TIME_PRECISION dt){
 		if (mCurPlayingAction)
 		{
@@ -291,6 +295,10 @@ bool Animation::IsActionDone(const char* action) const{
 
 bool Animation::IsPlaying() const{
 	return mImpl->IsPlaying();
+}
+
+void Animation::StopAnimation() {
+	mImpl->StopAnimation();
 }
 
 void Animation::Update(TIME_PRECISION dt){

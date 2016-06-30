@@ -99,7 +99,7 @@ namespace fb
 		return CULL_MODE_BACK;
 	}
 
-	TEXTURE_TYPE TextureTypeFromString(const char* str)
+	int TextureTypeFromString(const char* str)
 	{
 		if (!str)
 			return TEXTURE_TYPE_DEFAULT;
@@ -111,6 +111,9 @@ namespace fb
 			return TEXTURE_TYPE_RENDER_TARGET;
 		if (_stricmp(str, "DepthStencil") == 0)
 			return TEXTURE_TYPE_DEPTH_STENCIL;
+		if (_stricmp(str, "1D") == 0) {
+			return TEXTURE_TYPE_DEFAULT | TEXTURE_TYPE_1D;
+		}
 
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s is not vaild TEXTURE_TYPE", str).c_str());
 		return TEXTURE_TYPE_DEFAULT;

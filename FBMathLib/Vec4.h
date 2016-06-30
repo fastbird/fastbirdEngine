@@ -74,6 +74,7 @@ namespace fb
 		void SetXYZ(const Vec3& v);
 		Vec3 GetXYZ() const;
 		Vec3 ToVec3() const;
+		std::string ToString() const;
 	};
 
 	void write(std::ostream& stream, const Vec4& data);

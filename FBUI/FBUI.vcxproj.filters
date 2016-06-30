@@ -23,7 +23,6 @@
     <ClCompile Include="EventHandler.cpp" />
     <ClCompile Include="FileSelector.cpp" />
     <ClCompile Include="HexagonalContextMenu.cpp" />
-    <ClCompile Include="HorizontalGauge.cpp" />
     <ClCompile Include="ImageBox.cpp" />
     <ClCompile Include="KeyboardCursor.cpp" />
     <ClCompile Include="KeyValueDataSet.cpp" />
@@ -40,6 +39,8 @@
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="UIObject.cpp" />
     <ClCompile Include="ImageDisplay.cpp" />
+    <ClCompile Include="DiscretedGauge.cpp" />
+    <ClCompile Include="HorizontalGauge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TabWindow.h" />
@@ -70,7 +71,6 @@
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileSelector.h" />
     <ClInclude Include="HexagonalContextMenu.h" />
-    <ClInclude Include="HorizontalGauge.h" />
     <ClInclude Include="ImageBox.h" />
     <ClInclude Include="IUIEditor.h" />
     <ClInclude Include="KeyboardCursor.h" />
@@ -93,5 +93,7 @@
     <ClInclude Include="UIObject.h" />
     <ClInclude Include="UISounds.h" />
     <ClInclude Include="ImageDisplay.h" />
+    <ClInclude Include="DiscretedGauge.h" />
+    <ClInclude Include="HorizontalGauge.h" />
   </ItemGroup>
 </Project>

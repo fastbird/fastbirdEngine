@@ -82,6 +82,7 @@ namespace fb{
 		void PlayAction(const char* name, bool immediate, bool reverse);			
 		bool IsPlayingAction() const;		
 		bool IsActionDone(const char* action) const;
+		void StopAnimation();
 		void NotifyTransformChanged();		
 
 	protected:

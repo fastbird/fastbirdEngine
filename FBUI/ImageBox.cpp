@@ -666,7 +666,6 @@ bool ImageBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 		auto data = ImageDisplay::ConvertToString(mImageDisplay);
 		strcpy_s(val, bufsize, data);
 		return true;
-		return true;
 	}
 	
 	case UIProperty::FRAME_IMAGE:

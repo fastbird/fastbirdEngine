@@ -29,6 +29,7 @@
 #include "Quat.h"
 #include "Vec3.h"
 #include "Math.h"
+#include "MurmurHash.h"
 
 namespace fb
 {
@@ -360,6 +361,10 @@ bool Quat::IsNaN() const
 {
 		return fb::IsNaN(w) || fb::IsNaN(x) ||
 			fb::IsNaN(y) || fb::IsNaN(z);
+}
+
+size_t Quat::ComputeHash() const {
+	return murmur3_32((const char*)this, sizeof(Quat));
 }
 
 void write(std::ostream& stream, const Quat& data){

@@ -46,6 +46,7 @@ namespace fb{
 		void PlayAction(const std::string& name, bool immediate, bool reverse);
 		bool IsActionDone(const char* action) const;
 		bool IsPlaying() const;
+		void StopAnimation();
 		void Update(TIME_PRECISION dt);
 		const Transformation& GetResult() const;
 		bool Changed() const;

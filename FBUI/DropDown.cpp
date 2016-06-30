@@ -74,6 +74,10 @@ void DropDown::OnCreated()
 	mButton = button;
 	button->ChangeSize(Vec2I(ITEM_HEIGHT, ITEM_HEIGHT));
 	button->SetProperty(UIProperty::ALIGNH, "right");
+	char buf[512] = { 0 };
+	if (GetProperty(UIProperty::BACK_COLOR, buf, 512, true)) {
+		button->SetProperty(UIProperty::BACK_COLOR, buf);
+	}
 	button->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&DropDown::OnMouseClick, this, std::placeholders::_1));
 
@@ -83,6 +87,12 @@ void DropDown::OnCreated()
 	button->SetProperty(UIProperty::HOVER_IMAGE, "dropdown_hover");
 	button->SetRuntimeChild(true);
 
+	CreateHolder();
+}
+
+void DropDown::CreateHolder() {
+	if (!mHolder.expired())
+		return;
 	auto holder = std::static_pointer_cast<Wnd>(AddChild(0.f, 0.f, 1.f, 1.f, ComponentType::Window));
 	mHolder = holder;
 	holder->SetInitialOffset(Vec2I(0, mSize.y));
@@ -91,7 +101,7 @@ void DropDown::OnCreated()
 	holder->SetProperty(UIProperty::SCROLLERV, "true");
 	holder->SetProperty(UIProperty::USE_SCISSOR, "false");
 	holder->SetProperty(UIProperty::SPECIAL_ORDER, "3");
-	holder->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");	
+	holder->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 	holder->ChangeSizeY(ITEM_HEIGHT);
 }
 
@@ -133,6 +143,18 @@ bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 		return true;
 	}
+
+	case UIProperty::DROPDOWN_ITEMS:
+	{
+		ClearDropDownItems();
+		mDropDownItemsString = val;
+		auto v = Split(val, ",");
+		for (auto& str : v) {
+			if (!str.empty())
+				AddDropDownItem(AnsiToWide(str.c_str()));
+		}
+		return true;
+	}
 	}
 
 
@@ -160,6 +182,20 @@ bool DropDown::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, 
 	case UIProperty::DROPDOWN_MAX_HEIGHT:
 	{
 		strcpy_s(val, bufsize, StringConverter::ToString(mMaxHeight).c_str());
+		return true;
+	}
+
+	case UIProperty::DROPDOWN_ITEMS:
+	{
+		if (notDefaultOnly && mDropDownItems.empty()) {
+			return false;			
+		}
+
+		if (mDropDownItemsString.empty()) {
+			val[0] = 0;
+			return true;
+		}		
+		sprintf_s(val, bufsize, "%s", mDropDownItemsString.c_str());
 		return true;
 	}
 
@@ -256,16 +292,11 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 	auto item = std::dynamic_pointer_cast<Button>(
 		mHolder.lock()->AddChild(0.0f, 0.0f, 1.0f, 1.0f, ComponentType::Button)
 		);
-	mDropDownItems.push_back(item);
-	auto pDropDownItem = mDropDownItems.back();
-	// dropdown need to be saved.
-//	pDropDownItem->SetRuntimeChild(true);
+	mDropDownItems.push_back(item);	
+	item->SetRuntimeChild(true);
 	item->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
-	item->SetText(szString);
-	for (auto it = mDropDownItems.begin(); it != mDropDownItems.end(); /**/){
-		IteratingWeakContainer(mDropDownItems, it, item);
-	}
-
+	item->SetProperty(UIProperty::TEXT_LEFT_GAP, "4");
+	item->SetText(szString);	
 	// This index currently asumming as immutable.
 	// If need to change the index in runtime, More code needed.
 	size_t index = mDropDownItems.size()-1;
@@ -277,6 +308,12 @@ size_t DropDown::AddDropDownItem(WCHAR* szString)
 		mTriggerEvent = true;
 	}	
 
+	return index;
+}
+
+size_t DropDown::AddDropDownItem(unsigned key, WCHAR* szString) {
+	auto index = AddDropDownItem(szString);
+	mIndexKeyMap[index] = key;
 	return index;
 }
 
@@ -292,7 +329,7 @@ size_t DropDown::AddDropDownItem(WinBasePtr winbase)
 	if (holder){
 		holder->AddChild(item);
 	}
-	mDropDownItems.push_back(item);
+	mDropDownItems.push_back(item);	
 	item->SetProperty(UIProperty::INHERIT_VISIBLE_TRUE, "false");
 	item->SetNSizeX(1.0f);
 	item->ChangeSizeY(ITEM_HEIGHT);
@@ -320,6 +357,9 @@ void DropDown::ClearDropDownItems(){
 		holder->RemoveAllChildren();
 	}	
 	mDropDownItems.clear();
+	mIndexKeyMap.clear();
+	SetProperty(UIProperty::TEXT, "");
+	CreateHolder();
 }
 
 void DropDown::SetCommonProperty(WinBasePtr item, size_t index)
@@ -395,7 +435,11 @@ void DropDown::OnParentVisibleChanged(bool show)
 }
 
 void DropDown::ModifyItem(unsigned index, UIProperty::Enum prop, const char* szString){
-	assert(index < mDropDownItems.size());
+	if (index >= mDropDownItems.size()) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"out of index(%u)", index).c_str());
+		return;
+	}
 	mDropDownItems[index].lock()->SetProperty(prop, szString);
 	if (mCurIdx == index){
 		SetProperty(prop, szString);
@@ -410,6 +454,14 @@ const wchar_t* DropDown::GetItemString(unsigned index){
 		Error("DropDown::GetItemString : invalid index(%u)", index);
 	}
 	return L"";
+}
+
+unsigned DropDown::GetKey(unsigned index) const{
+	auto it = mIndexKeyMap.find(index);
+	if (it != mIndexKeyMap.end())
+		return it->second;
+
+	return -1;
 }
 
 }

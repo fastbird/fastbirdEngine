@@ -314,12 +314,12 @@ public:
 	}
 
 
-	void SetCollisionFilter(unsigned group){
-		if (mSelf->getBroadphaseHandle())
-			mSelf->getBroadphaseHandle()->m_collisionFilterGroup = group;
+	void SetCollisionFilterGroup(unsigned group){
+		mWorld->removeRigidBody(mSelf);
+		mWorld->addRigidBody(mSelf, group, mColProvider->GetCollisionMask());
 	}
 
-	void RemoveCollisionFilter(unsigned flag){
+	void RemoveCollisionFilterGroup(unsigned flag){
 		if (mSelf->getBroadphaseHandle())
 			mSelf->getBroadphaseHandle()->m_collisionFilterGroup = mSelf->getBroadphaseHandle()->m_collisionFilterGroup & ~flag;
 	}
@@ -420,13 +420,18 @@ public:
 	}
 
 
-	void RemoveRigidBodyFromWorld(){
-		mSelf->forceActivationState(WANTS_DEACTIVATION);
+	void RemoveFromWorld(){
+		mWorld->removeRigidBody(mSelf);
 	}
 
 	// make sure mColProvider is valid.
-	void ReAddRigidBodyFromWorld(){
-		mSelf->forceActivationState(ACTIVE_TAG);
+	void AddToWorld(){
+		mWorld->removeRigidBody(mSelf);
+		mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());		
+	}
+
+	void ReaddToWorld() {
+		AddToWorld();
 	}
 
 	void ModifyCollisionFlag(int flag, bool enable){
@@ -733,12 +738,12 @@ void RigidBodyImpl::SetRotationalForce(float force) {
 	mImpl->SetRotationalForce(force);
 }
 
-void RigidBodyImpl::SetCollisionFilter(unsigned group) {
-	mImpl->SetCollisionFilter(group);
+void RigidBodyImpl::SetCollisionFilterGroup(unsigned group) {
+	mImpl->SetCollisionFilterGroup(group);
 }
 
-void RigidBodyImpl::RemoveCollisionFilter(unsigned flag) {
-	mImpl->RemoveCollisionFilter(flag);
+void RigidBodyImpl::RemoveCollisionFilterGroup(unsigned flag) {
+	mImpl->RemoveCollisionFilterGroup(flag);
 }
 
 void RigidBodyImpl::AddCollisionFilter(unsigned flag) {
@@ -769,12 +774,16 @@ unsigned RigidBodyImpl::HasContact(void* gamePtrs[], int limit) {
 	return mImpl->HasContact(gamePtrs, limit);
 }
 
-void RigidBodyImpl::RemoveRigidBodyFromWorld() {
-	mImpl->RemoveRigidBodyFromWorld();
+void RigidBodyImpl::RemoveFromWorld() {
+	mImpl->RemoveFromWorld();
 }
 
-void RigidBodyImpl::ReAddRigidBodyFromWorld() {
-	mImpl->ReAddRigidBodyFromWorld();
+void RigidBodyImpl::AddToWorld() {
+	mImpl->AddToWorld();
+}
+
+void RigidBodyImpl::ReaddToWorld() {
+	mImpl->ReaddToWorld();
 }
 
 void RigidBodyImpl::ModifyCollisionFlag(int flag, bool enable) {
@@ -866,4 +875,17 @@ float RigidBodyImpl::GetTimeToStopRotation(const Vec3& torque, float& currentAng
 
 Mat33 RigidBodyImpl::GetInertiaTensor() const{
 	return Mat33();
+}
+
+void RigidBodyImpl::SetGravity(const Vec3& gravity) {
+	auto btGravity = FBToBullet(gravity);
+	setGravity(btGravity);
+}
+
+void RigidBodyImpl::OnAABBOverflow() {
+	__super::OnAABBOverflow();
+
+	if (mImpl->mColProvider) {
+		mImpl->mColProvider->OnAABBOverflow();
+	}
 }

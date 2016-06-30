@@ -66,8 +66,9 @@ namespace fb{
 	/** Check whether the \b str is start with the \b pattern.
 	@param lowerCase if true, the \b str will be lowered before checking.
 	*/
-	bool StartsWith(const std::string& str, const std::string& pattern, bool ignoreCase = true);
-	bool EndsWith(const std::string& str, const char* pattern, bool ignoreCase = true);
+	bool StartsWith(const char* str, const char* findingStr, bool ignoreCase = true);
+	bool StartsWith(const std::string& str, const std::string& findingStr, bool ignoreCase = true);
+	bool EndsWith(const std::string& str, const char* findingStr, bool ignoreCase = true);
 	
 	void ToLowerCase(std::string& str);
 	std::string ToLowerCase(const char* sz);

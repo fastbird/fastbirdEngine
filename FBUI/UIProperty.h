@@ -77,10 +77,10 @@ namespace fb
 			TEXTUREATLAS,
 			TEXTURE_FILE,
 			KEEP_UI_RATIO,
-			UI_RATIO,
-			IMAGE_DISPLAY,
+			UI_RATIO,			
 			REGION,
 			REGIONS,
+			IMAGE_DISPLAY,
 			FPS,
 			HOVER_IMAGE,
 			BACKGROUND_IMAGE,
@@ -98,6 +98,9 @@ namespace fb
 			BUTTON_ACTIVATED,
 			BUTTON_ICON_TEXT,
 			TOOLTIP,
+			GAUGE_VERTICAL,
+			REGION_FILLED, // for vertical gauges for now.
+			REGION_NOT_FILLED,
 			PROGRESSBAR,
 			GAUGE_COLOR,
 			GAUGE_COLOR_EMPTY,
@@ -105,7 +108,10 @@ namespace fb
 			GAUGE_BLINK_SPEED,
 			GAUGE_MAX,
 			GAUGE_CUR,
-			GAUGE_BORDER_COLOR,
+			GAUGE_BORDER_COLOR,			
+			DISCRETED_GAUGE_STEPS,			
+			DISCRETED_GAUGE_REGION,
+			DISCRETED_GAUGE_MARK_SIZE,
 			NO_MOUSE_EVENT,
 			NO_MOUSE_EVENT_ALONE,
 			VISUAL_ONLY_UI, // no mouse & keyboard and region test.
@@ -127,6 +133,7 @@ namespace fb
 			LISTBOX_NO_HIGHLIGHT,
 			LISTBOX_NO_SEARCH,
 			LISTBOX_HAND,
+			LISTBOX_HIGHLIGHT_ON_HOVER,
 			EDGE_COLOR,
 			EDGE_COLOR_OVER,
 			USE_WND_FRAME,
@@ -152,9 +159,7 @@ namespace fb
 			NUMERIC_UPDOWN_MINMAX,
 			NUMERIC_UPDOWN_NUMBER,
 			NUMERIC_UPDOWN_SHIFT_STEP,
-			NUMERIC_UPDOWN_STEP,
-			REGION_FILLED, // for vertical gauges for now.
-			REGION_NOT_FILLED,
+			NUMERIC_UPDOWN_STEP,			
 			ALWAYS_ON_TOP,
 			CLOSE_BY_ESC,
 			DROPDOWN_INDEX,
@@ -191,6 +196,8 @@ namespace fb
 			OPEN_SOUND,
 			CLOSE_SOUND,
 			USER_DATA_INT,
+
+			DROPDOWN_ITEMS,
 
 			COUNT
 		};
@@ -238,9 +245,9 @@ namespace fb
 			"TEXTURE_FILE",
 			"KEEP_UI_RATIO",
 			"UI_RATIO",
-			"IMAGE_DISPLAY",
 			"REGION",
 			"REGIONS",
+			"IMAGE_DISPLAY",
 			"FPS",
 			"HOVER_IMAGE",
 			"BACKGROUND_IMAGE",
@@ -258,6 +265,9 @@ namespace fb
 			"BUTTON_ACTIVATED",
 			"BUTTON_ICON_TEXT",
 			"TOOLTIP",
+			"GAUGE_VERTICAL",
+			"REGION_FILLED",
+			"REGION_NOT_FILLED",
 			"PROGRESSBAR",
 			"GAUGE_COLOR",
 			"GAUGE_COLOR_EMPTY",
@@ -265,7 +275,10 @@ namespace fb
 			"GAUGE_BLINK_SPEED",
 			"GAUGE_MAX",
 			"GAUGE_CUR",
-			"GAUGE_BORDER_COLOR",
+			"GAUGE_BORDER_COLOR",			
+			"DISCRETED_GAUGE_STEPS",
+			"DISCRETED_GAUGE_REGION",
+			"DISCRETED_GAUGE_MARK_SIZE",
 			"NO_MOUSE_EVENT",
 			"NO_MOUSE_EVENT_ALONE", // not inherited to children
 			"VISUAL_ONLY_UI",
@@ -287,6 +300,7 @@ namespace fb
 			"LISTBOX_NO_HIGHLIGHT",
 			"LISTBOX_NO_SEARCH",
 			"LISTBOX_HAND",
+			"LISTBOX_HIGHLIGHT_ON_HOVER",
 			"EDGE_COLOR",
 			"EDGE_COLOR_OVER",
 			"USE_WND_FRAME", // with title bar
@@ -311,9 +325,7 @@ namespace fb
 			"NUMERIC_UPDOWN_MINMAX",
 			"NUMERIC_UPDOWN_NUMBER",
 			"NUMERIC_UPDOWN_SHIFT_STEP",
-			"NUMERIC_UPDOWN_STEP",
-			"REGION_FILLED",
-			"REGION_NOT_FILLED",
+			"NUMERIC_UPDOWN_STEP",			
 			"ALWAYS_ON_TOP",
 			"CLOSE_BY_ESC",
 			"DROPDOWN_INDEX",
@@ -353,6 +365,8 @@ namespace fb
 			"CLOSE_SOUND",
 			
 			"USER_DATA_INT",
+
+			"DROPDOWN_ITEMS",
 
 			"COUNT"
 		};
@@ -476,6 +490,8 @@ namespace fb
 				return 3.f;
 			case UI_RATIO:
 				return 1.f;
+			case DISCRETED_GAUGE_MARK_SIZE:
+				return 0.9f;
 			}
 			
 			if (invalidType) {
@@ -568,6 +584,8 @@ namespace fb
 				return false;
 			case LISTBOX_HAND:
 				return false;
+			case LISTBOX_HIGHLIGHT_ON_HOVER:
+				return false;
 			case MOUSE_CURSOR_HAND:
 				return false;
 			case NO_FOCUS_BY_CLICK:
@@ -638,6 +656,8 @@ namespace fb
 				return -1;
 			case TABWND_CURRENT_INDEX:
 				return 0;
+			case DISCRETED_GAUGE_STEPS:
+				return 5;
 			}
 			
 			if (invalidType) {
@@ -654,7 +674,9 @@ namespace fb
 			switch (prop)
 			{
 			case HIGHLIGHT_COLOR:
-				return "0.1, 0.3, 0.3, 0.7";			
+				return "0.1, 0.3, 0.3, 0.7";		
+			case DISCRETED_GAUGE_REGION:
+				return "CircleMark";
 			}			
 			if (invalidType) {
 				*invalidType = true;

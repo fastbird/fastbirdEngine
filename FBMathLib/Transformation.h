@@ -157,6 +157,8 @@ namespace fb
 
 		friend void write(std::ostream& stream, const Transformation& data);
 		friend void read(std::istream& stream, Transformation& data);
+
+		size_t ComputeHash() const;
 	};
 	void write(std::ostream& stream, const Transformation& data);
 	void read(std::istream& stream, Transformation& data);

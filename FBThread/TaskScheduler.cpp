@@ -75,12 +75,7 @@ public:
 	LockQueue<TaskPtr> mReadyTasksQueue;
 	LockFreeQueue<WorkerThread*> mIdleThreadsQueue;
 
-	//FB_CRITICAL_SECTION mQueueCS;
 	bool mExiting = false;
-
-	// Used to maintain the number of scheduling slices requested
-	volatile long mNumTask;
-
 
 	//---------------------------------------------------------------------------
 	Impl(TaskScheduler* self, int numThread)
@@ -115,8 +110,7 @@ public:
 		}
 	}
 
-	void Init(){
-		mNumTask = 0;
+	void Init(){		
 		for (int i = 0; i<ARRAYCOUNT(mActiveTasksMap); i++)
 		{
 			mActiveTasksMap[i] = NULL;
@@ -140,8 +134,7 @@ public:
 	//---------------------------------------------------------------------------
 	void AddTask(TaskPtr NewTask){
 		if (sFinalize || mExiting)
-			return;
-		mNumTask++;
+			return;		
 		assert(NewTask);
 		TaskPtr* Dependencies = NULL;
 		int NumDependencies = NewTask->GetDependencies(Dependencies);
@@ -176,11 +169,15 @@ public:
 
 	bool IsFull() const
 	{
-		return mNumTask > MAX_NUM_TASK;
+		return mPendingTasksQueue.GetCount() + mReadyTasksQueue.GetCount() > MAX_NUM_TASK;
 	}
 
 	bool IsHalfFull() const {
-		return mNumTask > MAX_NUM_TASK / 2;
+		return mPendingTasksQueue.GetCount() + mReadyTasksQueue.GetCount() > MAX_NUM_TASK / 2;
+	}
+
+	size_t GetNumTasks() const {
+		return mPendingTasksQueue.GetCount() + mReadyTasksQueue.GetCount();
 	}
 
 	void PrepareQuit() {
@@ -211,16 +208,13 @@ public:
 	//---------------------------------------------------------------------------
 	void AddIdleWorker(WorkerThread* w){
 		if (sFinalize || mExiting)
-			return;
-		//ENTER_CRITICAL_SECTION lock(mQueueCS);
+			return;		
 		mIdleThreadsQueue.Enq(w);
 	}
 
 	void AddPendingTask(TaskPtr t){
 		if (sFinalize || mExiting)
-			return;
-		mNumTask++;
-		//ENTER_CRITICAL_SECTION lock(mQueueCS);
+			return;		
 		mPendingTasksQueue.Enq(t);
 	}
 
@@ -359,12 +353,8 @@ public:
 
 	TaskPtr GetNextReadyTask(WorkerThread* Thread){
 		if (sFinalize || mExiting)
-			return 0;
-		//ENTER_CRITICAL_SECTION lock(mQueueCS);
+			return 0;		
 		auto nextReadyTask = mReadyTasksQueue.Deq();
-		if (nextReadyTask) {
-			--mNumTask;
-		}
 		return nextReadyTask;
 	}
 
@@ -373,8 +363,7 @@ public:
 	//---------------------------------------------------------------------------
 	WorkerThread* GetNextIdleThread(TaskPtr t){
 		if (sFinalize || mExiting)
-			return 0;
-		//ENTER_CRITICAL_SECTION lock(mQueueCS);
+			return 0;		
 
 		return mIdleThreadsQueue.Deq();
 	}
@@ -382,7 +371,7 @@ public:
 	void AddReadyTask(TaskPtr t){
 		if (sFinalize || mExiting)
 			return;
-		//ENTER_CRITICAL_SECTION lock(mQueueCS);
+		
 		mReadyTasksQueue.Enq(t);
 	}
 
@@ -393,7 +382,6 @@ public:
 		WorkerThread* WorkerThread = GetNextIdleThread(t);
 		if (WorkerThread)
 		{
-			--mNumTask;
 			WorkerThread->SetTask(t);			
 		}
 		else
@@ -446,6 +434,10 @@ bool TaskScheduler::IsFull() const
 
 bool TaskScheduler::IsHalfFull() const {
 	return mImpl->IsHalfFull();
+}
+
+size_t TaskScheduler::GetNumTasks() const {
+	return mImpl->GetNumTasks();
 }
 
 void TaskScheduler::PrepareQuit()

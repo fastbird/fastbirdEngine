@@ -5,6 +5,8 @@
 # Doxygen
 doc/
 
+WorkLog/
+
 *.ffs_db
 *.VC.opendb
 FBTerrain

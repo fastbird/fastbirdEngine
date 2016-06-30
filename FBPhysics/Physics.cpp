@@ -1151,19 +1151,26 @@ public:
 
 				btVector3 ptA = pt.getPositionWorldOnA();
 				btVector3 ptB = pt.getPositionWorldOnB();
-				btVector3 normal = ptA - ptB;
-				normal.safeNormalize();
+				//btVector3 normal = ptA - ptB;
+				//normal.safeNormalize();
 				float impulse = pt.getAppliedImpulse();
 				if (impulse > 0)
 				{
-					IPhysicsInterface::CollisionContactInfo contactInfo((RigidBody*)obA, (RigidBody*)obB, BulletToFB(ptB), BulletToFB(normal),
-						impulse, pt.m_index0, pt.m_index1);
+					IPhysicsInterface::CollisionContactInfo contactInfo((RigidBody*)obA, (RigidBody*)obB, 
+						BulletToFB(pt.m_localPointA),
+						BulletToFB(pt.m_localPointB),
+						BulletToFB(pt.m_positionWorldOnA),
+						BulletToFB(pt.m_positionWorldOnB),
+						BulletToFB(pt.m_normalWorldOnB),
+						pt.m_distance1,
+						impulse, 
+						pt.m_index0, 
+						pt.m_index1);
 
 					bool processed = a->OnCollision(contactInfo);
 					if (!processed)
 					{
-						IPhysicsInterface::CollisionContactInfo contactInfo((RigidBody*)obB, (RigidBody*)obA, BulletToFB(ptA), BulletToFB(-normal),
-							impulse, pt.m_index1, pt.m_index0);
+						contactInfo.SwapAB();						
 						b->OnCollision(contactInfo);
 					}
 					break;

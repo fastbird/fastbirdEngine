@@ -43,7 +43,7 @@
 #include "RadioBox.h"
 #include "HexagonalContextMenu.h"
 #include "CardScroller.h"
-#include "VerticalGauge.h"
+//#include "VerticalGauge.h"
 #include "HorizontalGauge.h"
 #include "NumericUpDown.h"
 #include "DropDown.h"
@@ -55,6 +55,7 @@
 #include "PropertyList.h"
 #include "TabWindow.h"
 #include "UIObject.h"
+#include "DiscretedGauge.h"
 #include "FBRenderer/TextureAtlas.h"
 #include "FBRenderer/Texture.h"
 #include "FBAudioPlayer/AudioManager.h"
@@ -76,8 +77,8 @@ public:
 	typedef std::list<WinBasePtr> WINDOWS;
 	typedef std::list<WinBaseWeakPtr> WINDOWSWeak;
 	VectorMap<HWindowId, WINDOWS> mWindows;
-	std::map<std::string, WinBases> mLuaUIs;
-	std::map<std::string, WinBases> mCppUIs;
+	mutable std::map<std::string, WinBases> mLuaUIs;
+	mutable std::map<std::string, WinBases> mCppUIs;
 
 	std::map<HWindowId, std::vector<UIObject*>> mRenderUIs;
 	WinBaseWeakPtr mFocusWnd;
@@ -147,6 +148,7 @@ public:
 
 	KeyboardCursorPtr mKeyboardCursor;
 	std::vector<std::string> mSounds;	
+	std::vector<std::string> mLockedVisibilityUIs;
 
 	//---------------------------------------------------------------------------
 	Impl(UIManager* self)
@@ -255,9 +257,9 @@ public:
 		case ComponentType::CardScroller:
 			pWnd = CardScroller::Create();
 			break;
-		case ComponentType::VerticalGauge:
+		/*case ComponentType::VerticalGauge:
 			pWnd = VerticalGauge::Create();
-			break;
+			break;*/
 		case ComponentType::HorizontalGauge:
 			pWnd = HorizontalGauge::Create();
 			break;
@@ -282,6 +284,9 @@ public:
 		case ComponentType::TabWindow:
 			pWnd = TabWindow::Create();
 			break;
+		case ComponentType::DiscretedGauge:
+			pWnd = DiscretedGauge::Create();
+			break;
 		default:
 			assert(0 && "Unknown component");
 		}
@@ -302,13 +307,41 @@ public:
 		mPopupCallback(this);
 	}
 
+	std::map<std::string, WinBases>::iterator FindLuaUI(const char* uiName) const {
+		auto it = mLuaUIs.find(uiName);
+		if (it != mLuaUIs.end())
+			return it;
+
+		for (auto it = mLuaUIs.begin(); it != mLuaUIs.end(); ++it) {
+			if (_stricmp(it->first.c_str(), uiName) == 0) {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Lua UIName(%s) case mismatch", uiName).c_str());
+				break;				
+			}
+		}
+		return mLuaUIs.end();
+	}
+
+	std::map<std::string, WinBases>::iterator FindCppUI(const char* uiName) const {
+		auto it = mCppUIs.find(uiName);
+		if (it != mCppUIs.end())
+			return it;
+
+		for (auto it = mCppUIs.begin(); it != mCppUIs.end(); ++it) {
+			if (_stricmp(it->first.c_str(), uiName) == 0) {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cpp UIName(%s) case mismatch", uiName).c_str());
+				return it;
+			}
+		}
+		return mCppUIs.end();
+	}
+
 	const char* FindUIFilenameWithLua(const char* luafilepath){
 		for (const auto& it : mLuaUIs)
 		{
 			const auto& wins = it.second;
 			for (const auto& win : wins)
 			{
-				if (strcmp(win->GetScriptPath(), luafilepath) == 0)
+				if (_stricmp(win->GetScriptPath(), luafilepath) == 0)
 				{
 					return win->GetUIFilePath();
 				}
@@ -402,30 +435,28 @@ public:
 	}
 
 	// IFileChangeListeners
-	bool OnFileChanged(const char* watchDir, const char* file, const char* loweredExtension){
-		assert(file);
-		std::string lower(file);
-		ToLowerCase(lower);
+	bool OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* loweredExtension){
+		if (!ValidCString(file)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return false;
+		}
 
-		std::string extension(loweredExtension);
-		std::string uiname;
-		std::string filepath = lower;
-		if (extension==".lua")
+		std::string uiName;
+		std::string originalFilepath;
+		if (strcmp(loweredExtension,".lua")== 0)
 		{
-			uiname = FindUINameWithLua(lower.c_str());
-			filepath = FindUIFilenameWithLua(lower.c_str());
-
-			if (mUIEditor && !uiname.empty()){
-				auto itFind = mLuaUIs.find(uiname);
+			uiName = FindUINameWithLua(file);
+			originalFilepath = FindUIFilenameWithLua(file);
+			if (mUIEditor && !uiName.empty()){
+				auto itFind = FindLuaUI(uiName.c_str());
 				if (itFind != mLuaUIs.end())
 				{
 					// Platform dependent.
 					if (MessageBox((HWND)Renderer::GetInstance().GetMainWindowHandle(), "Lua script has changed. Do you want save the current .ui and apply the script?",
 						"Warning", MB_YESNO) == IDNO)
 						return false;
-
 					tinyxml2::XMLDocument doc;
-					SaveUI(uiname.c_str(), doc);
+					SaveUI(uiName.c_str(), doc);
 					if (!itFind->second.empty()){
 						/*FileMonitor::GetInstance().IgnoreMonitoringOnFile(
 							itFind->second[0]->GetUIFilePath(), 1.0f);*/
@@ -435,27 +466,29 @@ public:
 			}
 
 		}
-		else if (extension==".ui")
+		else if (strcmp(loweredExtension, ".ui") == 0)
 		{
-			uiname = FileSystem::GetName(lower.c_str());
+			uiName = FileSystem::GetName(file);
+			originalFilepath = file;
 		}
 		else
 			return false;
 
-		if (uiname.empty())
+		if (uiName.empty())
 		{
 			LuaObject loadUIFunc;
 			loadUIFunc.FindFunction(mL, "LoadLuaUI");
 			loadUIFunc.PushToStack();
 			auto uiFilePath = FileSystem::ReplaceExtension(file, "ui");
+			uiFilePath = FileSystem::GetResourcePathIfPathNotExists(uiFilePath.c_str());
 			if (FileSystem::Exists(uiFilePath.c_str()))
 			{
 				LuaUtils::pushstring(uiFilePath.c_str());
 				loadUIFunc.CallWithManualArgs(1, 0);
-				uiname = FileSystem::GetName(uiFilePath.c_str());
-				SetVisible(uiname.c_str(), true);
+				uiName = FileSystem::GetName(uiFilePath.c_str());
+				SetVisible(uiName.c_str(), true);
 			}
-			else if (extension==".lua")
+			else if (strcmp(loweredExtension, ".lua") == 0)
 			{
 				std::string lowered(file);
 				ToLowerCase(lowered);
@@ -476,12 +509,12 @@ public:
 		}
 
 		HWindowId hwndId = -1;
-		auto itFind = mLuaUIs.find(uiname);
+		auto itFind = FindLuaUI(uiName.c_str());
 		if (itFind != mLuaUIs.end())
 		{
-			if (GetVisible(uiname.c_str()))
+			if (GetVisible(uiName.c_str()))
 			{
-				SetVisible(uiname.c_str(), false);
+				SetVisible(uiName.c_str(), false);
 			}
 
 			auto& windows = itFind->second;
@@ -497,10 +530,10 @@ public:
 		}
 		std::vector<WinBasePtr> temp;
 		std::string name;
-		ParseUI(filepath.c_str(), temp, name, hwndId, true);
-		mLuaUIs[uiname] = temp;
-		SetVisible(uiname.c_str(), false);
-		SetVisible(uiname.c_str(), true); // for OnVisible UI Event.
+		ParseUI(originalFilepath.c_str(), temp, name, hwndId, true);
+		mLuaUIs[uiName] = temp;
+		SetVisible(uiName.c_str(), false);
+		SetVisible(uiName.c_str(), true); // for OnVisible UI Event.
 		return true;
 	}
 
@@ -700,7 +733,8 @@ public:
 			hwndId = Renderer::GetInstance().GetMainWindowHandleId();
 		}
 		tinyxml2::XMLDocument doc;
-		int err = doc.LoadFile(filepath);
+		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
+		int err = doc.LoadFile(resourcePath.c_str());
 		char buf[MAX_PATH];
 		GetCurrentDirectory(MAX_PATH, buf);
 		if (err)
@@ -721,17 +755,14 @@ public:
 		}
 
 		if (pRoot->Attribute("name"))
-			uiname = pRoot->Attribute("name");
+			uiname = pRoot->Attribute("name");		
 
-		std::string lowerUIname = uiname;
-		ToLowerCase(lowerUIname);
-
-		auto itFind = mLuaUIs.find(lowerUIname);
+		auto itFind = FindLuaUI(uiname.c_str());
 		if (itFind != mLuaUIs.end())
 		{
-			if (GetVisible(lowerUIname.c_str()))
+			if (GetVisible(uiname.c_str()))
 			{
-				SetVisible(lowerUIname.c_str(), false);
+				SetVisible(uiname.c_str(), false);
 			}
 
 			for (const auto& ui : itFind->second)
@@ -749,8 +780,7 @@ public:
 			{
 				return false;				
 			}
-			scriptPath = sz;
-			ToLowerCase(scriptPath);
+			scriptPath = sz;			
 		}
 
 		bool render3d = false;
@@ -765,7 +795,10 @@ public:
 		{
 			renderTargetSize = StringMathConverter::ParseVec2I(sz);
 		}
-
+		if (luaUI && !uiname.empty())
+			mLuaUIs[uiname].clear();
+		else if (!uiname.empty())
+			mCppUIs[uiname].clear();
 		tinyxml2::XMLElement* pComp = pRoot->FirstChildElement("component");
 		while (pComp)
 		{
@@ -793,6 +826,13 @@ public:
 					scriptPath.clear();
 				}
 				windows.push_back(p);
+				if (luaUI && !uiname.empty())
+				{					
+					mLuaUIs[uiname].push_back(p);					
+				}
+				else if(!uiname.empty()) {
+					mCppUIs[uiname].push_back(p);
+				}
 				p->ParseXML(pComp);
 			}
 
@@ -817,22 +857,6 @@ public:
 		}
 
 		assert(!uiname.empty());
-		if (luaUI && !uiname.empty())
-		{
-			mLuaUIs[lowerUIname].clear();
-			for (const auto& topWindow : windows)
-			{
-				mLuaUIs[lowerUIname].push_back(topWindow);
-			}
-		}
-		else{
-			mCppUIs[lowerUIname].clear();
-			for (const auto& topWindow : windows)
-			{
-				mCppUIs[lowerUIname].push_back(topWindow);
-			}
-		}
-
 		for (const auto& topWindow : windows)
 		{
 			auto eventHandler = std::dynamic_pointer_cast<EventHandler>(topWindow);
@@ -843,16 +867,14 @@ public:
 		return true;
 	}
 
-	bool SaveUI(const char* uiname, tinyxml2::XMLDocument& doc){
-		std::string lower = uiname;
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower);
+	bool SaveUI(const char* uiname, tinyxml2::XMLDocument& doc){		
+		auto it = FindLuaUI(uiname);
 		WinBases* topWindows = 0;
 		if (it != mLuaUIs.end()) {
 			topWindows = &it->second;
 		}
 		else{
-			auto it = mCppUIs.find(lower);
+			auto it = FindCppUI(uiname);
 			if (it != mCppUIs.end())
 				topWindows = &it->second;
 		}
@@ -894,9 +916,7 @@ public:
 		{
 			hwndId = Renderer::GetInstance().GetMainWindowHandleId();
 		}
-		std::string lower = uiName;
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower.c_str());
+		auto it = FindLuaUI(uiName);
 		if (it != mLuaUIs.end())
 		{
 			Error("Already registered!");
@@ -909,7 +929,7 @@ public:
 		assert(p);
 		p->ParseLua(data);
 
-		mLuaUIs[lower].push_back(p);
+		mLuaUIs[uiName].push_back(p);
 		return p != 0;
 	}
 
@@ -918,9 +938,7 @@ public:
 		{
 			mDeleteLuaUIPending.push_back(uiName);
 		}
-		std::string lower = uiName;
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower);
+		auto it = FindLuaUI(uiName);
 		if (it != mLuaUIs.end())
 		{
 			for (auto& win : it->second)
@@ -935,13 +953,10 @@ public:
 		}
 	}
 
-	bool IsLoadedUI(const char* uiName){
-		std::string lower = uiName;
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower);
+	bool IsLoadedUI(const char* uiName){		
+		auto it = FindLuaUI(uiName);
 		return it != mLuaUIs.end();
 	}
-
 
 	WinBasePtr AddWindow(int posX, int posY, int width, int height, ComponentType::Enum type, HWindowId hwndId = INVALID_HWND_ID){
 		assert(hwndId != 0);
@@ -1049,6 +1064,13 @@ public:
 	void SetFocusUI(WinBasePtr ui){
 		if (mLockFocus)
 			return;
+
+		if (ui) {
+			auto rootUI = ui->GetRootWnd();
+			if (rootUI && rootUI->GetNoFocusByClick())
+				return;
+		}
+
 		if (mKeyboardFocus == ui)
 			return;
 		for (auto& reservedUI : mSetFocusReserved)
@@ -1098,10 +1120,8 @@ public:
 
 	void SetFocusUI(const char* uiName){
 		if (!uiName)
-			return;
-		std::string lower(uiName);
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower);
+			return;		
+		auto it = FindLuaUI(uiName);
 		if (it == mLuaUIs.end())
 		{
 			Error("Cannot find ui with a name, %s", uiName);
@@ -1573,11 +1593,9 @@ mPopup->SetVisible(true);
 		return mL;
 	}
 
-	WinBasePtr FindComp(const char* uiname, const char* compName) const{
-		assert(uiname);
-		std::string lower(uiname);
-		ToLowerCase(lower);
-		auto itFind = mLuaUIs.find(lower);
+	WinBasePtr FindComp(const char* uiname, const char* compName) const {
+		assert(uiname);		
+		auto itFind = FindLuaUI(uiname);
 		if (itFind == mLuaUIs.end())
 			return 0;
 
@@ -1601,11 +1619,9 @@ mPopup->SetVisible(true);
 		return 0;
 	}
 
-	void FindUIWnds(const char* uiname, WinBases& outV) const{
-		assert(uiname);
-		std::string lower(uiname);
-		ToLowerCase(lower);
-		auto itFind = mLuaUIs.find(lower);
+	void FindUIWnds(const char* uiname, WinBases& outV) const {
+		assert(uiname);		
+		auto itFind = FindLuaUI(uiname);
 		if (itFind == mLuaUIs.end())
 			return;
 
@@ -1636,17 +1652,21 @@ mPopup->SetVisible(true);
 	}
 
 	void SetVisible(const char* uiname, bool visible){
-		assert(uiname);
-		std::string lower(uiname);
-		ToLowerCase(lower);
-		auto itFind = mLuaUIs.find(lower);
+		if (!ValidCString(uiname))
+			return;
+
+		if (ValueExistsInVector(mLockedVisibilityUIs, uiname)) {
+			return;
+		}
+		assert(uiname);		
+		auto itFind = FindLuaUI(uiname);
 		WinBases* windows = 0;
 		if (itFind != mLuaUIs.end())
 		{
 			windows = &itFind->second;
 		}
 		else{
-			auto itFind = mCppUIs.find(lower);
+			auto itFind = FindCppUI(uiname);
 			if (itFind != mCppUIs.end()){
 				windows = &itFind->second;
 			}
@@ -1705,11 +1725,9 @@ mPopup->SetVisible(true);
 		mLockFocus = lock;
 	}
 
-	bool GetVisible(const char* uiname) const{
-		assert(uiname);
-		std::string lower(uiname);
-		ToLowerCase(lower);
-		auto itFind = mLuaUIs.find(lower.c_str());
+	bool GetVisible(const char* uiname) const {
+		assert(uiname);		
+		auto itFind = FindLuaUI(uiname);
 		if (itFind == mLuaUIs.end())
 		{
 			return false;
@@ -1735,19 +1753,15 @@ mPopup->SetVisible(true);
 
 	void CloneUI(const char* uiname, const char* newUIname){
 		assert(uiname);
-		assert(newUIname);
-		std::string lower = uiname;
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower);
+		assert(newUIname);		
+		auto it = FindLuaUI(uiname);
 		if (it == mLuaUIs.end())
 		{
 			assert(0);
 			return;
 		}
-
-		std::string strNewUIName = newUIname;
-		ToLowerCase(strNewUIName);
-		auto newIt = mLuaUIs.find(strNewUIName);
+		std::string strNewUIName = newUIname;		
+		auto newIt = FindLuaUI(newUIname);
 		if (newIt != mLuaUIs.end())
 		{
 			assert(0 && "already have the ui with the new name");
@@ -2052,11 +2066,9 @@ mPopup->SetVisible(true);
 		return mTextManipulator.get(); 
 	}
 
-	const char* GetUIPath(const char* uiname) const{
-		std::string lower = FileSystem::GetName(uiname);
-		ToLowerCase(lower);
-
-		auto it = mLuaUIs.find(lower.c_str());
+	const char* GetUIPath(const char* uiname) const {
+		std::string nameOnly = FileSystem::GetName(uiname);		
+		auto it = FindLuaUI(nameOnly.c_str());
 		if (it == mLuaUIs.end())
 		{
 			Error(FB_ERROR_LOG_ARG, FormatString("cannot find the ui %s", uiname));
@@ -2068,10 +2080,8 @@ mPopup->SetVisible(true);
 		return windows[0]->GetUIFilePath();
 	}
 
-	const char* GetUIScriptPath(const char* uiname) const{
-		std::string lower(uiname);
-		ToLowerCase(lower);
-		auto it = mLuaUIs.find(lower.c_str());
+	const char* GetUIScriptPath(const char* uiname) const {		
+		auto it = FindLuaUI(uiname);
 		if (it == mLuaUIs.end())
 			return "";
 		auto& windows = it->second;
@@ -2336,6 +2346,20 @@ mPopup->SetVisible(true);
 		return mUICommands->r_UI ? true : false;
 	}
 
+	void SetLockUIVisibility(const char* ui, bool lock) {
+		if (!ValidCString(ui))
+			return;
+
+		if (lock) {
+			if (!ValueExistsInVector(mLockedVisibilityUIs, ui)) {
+				mLockedVisibilityUIs.push_back(ui);
+			}
+		}
+		else {
+			DeleteValuesInVector(mLockedVisibilityUIs, ui);
+		}
+	}
+
 	//-------------------------------------------------------------------
 	// For UI Editing
 	//-------------------------------------------------------------------	
@@ -2357,7 +2381,7 @@ mPopup->SetVisible(true);
 
 	void ChangeFilepath(WinBasePtr root, const char* newfile){
 		auto name = FileSystem::GetName(root->GetUIFilePath());
-		auto it = mLuaUIs.find(name);
+		auto it = FindLuaUI(name.c_str());
 		if (it == mLuaUIs.end())
 		{
 			Error(FB_ERROR_LOG_ARG, FormatString("Cannot find the ui %s", name.c_str()));
@@ -2365,13 +2389,11 @@ mPopup->SetVisible(true);
 		}
 		auto newName = FileSystem::GetName(newfile);
 		if (name != newName)
-		{
-			std::string lowerNewName(newName);
-			ToLowerCase(lowerNewName);
-			auto newIt = mLuaUIs.find(lowerNewName);
+		{			
+			auto newIt = FindLuaUI(newName.c_str());
 			if (newIt != mLuaUIs.end())
 			{
-				Error(FB_ERROR_LOG_ARG, FormatString("The new name %s is already used.", lowerNewName.c_str()));
+				Error(FB_ERROR_LOG_ARG, FormatString("The new name %s is already used.", newName.c_str()));
 				return;
 			}
 			if (FileSystem::Exists(newfile))
@@ -2383,7 +2405,7 @@ mPopup->SetVisible(true);
 			FileMonitor::GetInstance().IgnoreMonitoringOnFile(oldFilepath, 1.0f);
 			FileMonitor::GetInstance().IgnoreMonitoringOnFile(newfile, 1.0f);
 			FileSystem::Rename(oldFilepath, newfile);			
-			mLuaUIs[lowerNewName].swap(it->second);
+			mLuaUIs[newName].swap(it->second);
 			mLuaUIs.erase(it);
 			root->SetUIFilePath(newfile);
 			root->SetName(newName.c_str());			
@@ -2513,8 +2535,7 @@ mPopup->SetVisible(true);
 		}
 		else
 		{
-			std::string uiname = GetUniqueUIName();
-			ToLowerCase(uiname);
+			std::string uiname = GetUniqueUIName();			
 			win = AddWindow(start, size, mLocatingComp);
 			win->SetName(uiname.c_str());
 			mLuaUIs[uiname].push_back(win);
@@ -2546,10 +2567,8 @@ mPopup->SetVisible(true);
 	std::string GetUniqueUIName() const{
 		std::string candi = "UI1";
 		unsigned index = 1;
-		do{
-			std::string lower(candi);
-			ToLowerCase(lower);
-			auto itFind = mLuaUIs.find(lower);
+		do{			
+			auto itFind = FindLuaUI(candi.c_str());
 			if (itFind == mLuaUIs.end()){
 				if (!FileSystem::Exists(
 					FormatString("%s/%s.ui", mUIFolder.c_str(), candi.c_str()).c_str())){
@@ -2799,8 +2818,8 @@ void UIManager::OnChangeDetected(){
 
 }
 
-bool UIManager::OnFileChanged(const char* watchDir, const char* file, const char* loweredExt) {
-	return mImpl->OnFileChanged(watchDir, file, loweredExt);
+bool UIManager::OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* loweredExt) {
+	return mImpl->OnFileChanged(watchDir, file, combinedPath, loweredExt);
 }
 
 void UIManager::BeforeUIRendering(HWindowId hwndId, HWindow hwnd) {
@@ -2836,6 +2855,9 @@ void UIManager::GatherRenderList() {
 
 bool UIManager::ParseUI(const char* filepath, WinBases& windows, std::string& uiname, HWindowId hwndId, bool luaUI) {
 	auto unifiedString = FileSystem::UnifyFilepath(filepath);
+	if (StartsWith(unifiedString.c_str(), "./")) {
+		unifiedString = unifiedString.substr(2);
+	}
 	return mImpl->ParseUI(unifiedString.c_str(), windows, uiname, hwndId, luaUI);
 }
 
@@ -3153,6 +3175,10 @@ void UIManager::RemoveAlwaysMouseOverCheck(WinBasePtr comp) {
 
 bool UIManager::GetRenderUIOption() const{
 	return mImpl->GetRenderUIOption();
+}
+
+void UIManager::SetLockUIVisibility(const char* ui, bool lock) {
+	mImpl->SetLockUIVisibility(ui, lock);
 }
 
 void UIManager::SetUIEditor(IUIEditor* editor) {

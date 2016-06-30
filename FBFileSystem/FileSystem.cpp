@@ -37,6 +37,7 @@ static bool gSecurityCheck = true;
 static boost::filesystem::path gWorkingPath;
 std::string gApplicationName;
 static std::unordered_map<std::string, std::string> sResourceFolders;
+#define FBRExt "fbr"
 void FileSystem::StartLoggingIfNot(){
 	if (gLogginStarted)
 		return;
@@ -657,63 +658,75 @@ std::string FileSystem::FormPath(int n, ...) {
 	return ret;
 }
 
-void FileSystem::AddResourceFolder(const char* absFolderPath) {
-	if (!ValidCString(absFolderPath))
+void FileSystem::AddResourceFolder(const char* startingPath, const char* res) {
+	if (!ValidCString(startingPath) || !ValidCString(res))
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		return;
 	}
 
-	if (!Exists(absFolderPath)) {
+	if (!Exists(res)) {
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
-			"Path(%s) does not exist.", absFolderPath).c_str());
+			"Resource(%s) does not exist.", res).c_str());
 		return;
 	}
-
-	std::string path = boost::filesystem::path(absFolderPath).generic_string();
-	if (path.back() != '/') {
-		path.push_back('/');
-	}
-	auto key = GetLastDirectory(path.c_str());
-	sResourceFolders[key] = path;
+	sResourceFolders[startingPath] = res;
 }
-void FileSystem::RemoveResourceFolder(const char* absFolderPath) {
-	if (!ValidCString(absFolderPath)) {
+
+void FileSystem::RemoveResourceFolder(const char* startingPath) {
+	if (!ValidCString(startingPath)) {
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
 		return;
 	}
-	auto key = GetLastDirectory(absFolderPath);
-	sResourceFolders.erase(key);
+	sResourceFolders.erase(startingPath);
 }
 
-const char* FileSystem::GetResourceFolder(const char* key) {
-	auto it = sResourceFolders.find(key);
-	if (it != sResourceFolders.end())
-		return it->second.c_str();
+const char* FileSystem::GetResourceFolder(const char* startingPath) {
+	if (!ValidCString(startingPath)) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+		return "";
+	}
+	auto it = sResourceFolders.find(startingPath);
+	if (it != sResourceFolders.end()) {
+		if (strcmp(GetExtensionWithOutDot(it->second.c_str()), FBRExt) == 0) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s is not a folder. It is a fbr.", startingPath).c_str());
+			return "";
+		}
+		else {
+			return it->second.c_str();
+		}
+	}
 
 	return "";
 }
 
-bool FileSystem::IsResourceFolder(const char* path) {
-	auto strPath = boost::filesystem::path(path).generic_string();
+bool FileSystem::IsResourceFolderByKey(const char* startingPath) {
+	auto strPath = boost::filesystem::path(startingPath).generic_string();
 	if (strPath.back() != '/') {
 		strPath.push_back('/');
 	}
-	auto dir = GetLastDirectory(strPath.c_str());
-	return ValidCString(GetResourceFolder(dir.c_str()));
+
+	return ValidCString(GetResourceFolder(strPath.c_str()));
+}
+
+bool FileSystem::IsResourceFolderByVal(const char* resourcePath) {
+	for (auto& it : sResourceFolders) {
+		if (strcmp(it.second.c_str(), resourcePath)==0) {
+			return true;
+		}
+	}
+	return false;
 }
 
 std::string FileSystem::GetResourcePath(const char* path) {
-	auto key = GetFirstDirectory(path);
-	if (key.empty())
-		return{};
-	auto it = sResourceFolders.find(key);
-	if (it == sResourceFolders.end())
-		return{};
-	
-	std::string newPath = it->second;
-	newPath += boost::filesystem::path(path).generic_string().substr(key.size() + 1);
-	return newPath;	
+	for (auto& it : sResourceFolders) {
+		if (StartsWith(path, it.first.c_str())) {
+			std::string newPath = it.second;
+			newPath += boost::filesystem::path(path).generic_string().substr(it.first.size());
+			return newPath;
+		}
+	}
+	return{};
 }
 
 std::string FileSystem::GetResourcePathIfPathNotExists(const char* path) {
@@ -724,6 +737,15 @@ std::string FileSystem::GetResourcePathIfPathNotExists(const char* path) {
 		return path;
 	else
 		return resourcePath;
+}
+
+std::string FileSystem::GetResourceKeyFromVal(const char* val) {
+	for (auto& it : sResourceFolders) {
+		if (strcmp(it.second.c_str(), val) == 0) {
+			return it.first;
+		}
+	}
+	return{};
 }
 
 errno_t FileSystem::OpenResourceFile(FILE** f, const char* path, const char* mode) {
@@ -786,6 +808,10 @@ errno_t FileSystem::Open::Reset(const char* path, const char* mode, ErrorMode er
 errno_t FileSystem::Open::Reset(const char* path, const char* mode, SharingMode share, ErrorMode errorMsgMode) {
 	Close();
 	return operator()(path, mode, share, errorMsgMode);
+}
+
+bool FileSystem::Open::IsOpen() {
+	return mFile != 0;
 }
 
 void FileSystem::Open::Close()

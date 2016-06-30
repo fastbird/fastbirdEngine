@@ -30,14 +30,14 @@ namespace fb {
 		StringVector path = Split(key, "/");
 		XMLElement* curElem = fb::FindElem(elem, path);
 		if (!curElem) {
-			Logger::Log(FB_ERROR_LOG_ARG,
-				FormatString("Cannot find elem(%s)", key).c_str());
+			/*Logger::Log(FB_ERROR_LOG_ARG,
+				FormatString("Cannot find elem(%s)", key).c_str());*/
 			return{};
 		}
 		auto sz = curElem->Attribute(path.back().c_str() + 1);
 		if (!sz) {
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find int att(%s)",
-				path.back().c_str() + 1).c_str());
+			/*Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find int att(%s)",
+				path.back().c_str() + 1).c_str());*/
 		}
 		else {
 			found = true;

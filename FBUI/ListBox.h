@@ -84,6 +84,7 @@ protected:
 	bool mNoHighlight;
 	bool mNoSearch;
 	bool mHand;
+	bool mHighlightOnHover;
 
 	Vec2I mLastChangedItem; // for numeric updown
 
@@ -204,11 +205,15 @@ public:
 	void MoveUpListBoxItems(const std::vector<unsigned>& ids);
 	void MoveDownListBoxItems(const std::vector<unsigned>& ids);
 	void RemoveDataWithKeys(const std::vector<unsigned>& ids);
+	void RemoveDataWithRowIndex(size_t rowIndex);
 
 	virtual void OnParentSizeChanged();
 
-protected:
+	bool GetHand() const;
+	bool GetHighlighOnHover() const;
 
+protected:
+	friend class ListItem;
 	ListItemPtr CreateNewItem(int row, int col);
 	void SetHighlightRow(size_t row, bool highlight);
 	void SetHighlightRowCol(unsigned row, unsigned col, bool highlight);

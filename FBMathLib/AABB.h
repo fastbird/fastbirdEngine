@@ -56,5 +56,6 @@ namespace fb
 		// far 4
 		//  right top, left top, right bottom, left bottom
 		void GetPoints(Vec3 points[8]) const;
+		std::string ToString() const;
 	};
 }

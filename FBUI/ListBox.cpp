@@ -59,7 +59,7 @@ ListBox::ListBox()
 	, mData(0)
 	, mStartIndex(0)
 	, mEndIndex(10)
-	, mLastChangedItem(-1, -1), mNoSearch(false)
+	, mLastChangedItem(-1, -1), mNoSearch(false)	
 {
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -68,6 +68,8 @@ ListBox::ListBox()
 	SetProperty(UIProperty::SCROLLERV, "true");
 	mMultiSelection = GetDefaultValueBool(UIProperty::LISTBOX_MULTI_SELECTION);
 	mNoHighlight = GetDefaultValueBool(UIProperty::LISTBOX_NO_HIGHLIGHT);
+	mHighlightOnHover = GetDefaultValueBool(UIProperty::LISTBOX_HIGHLIGHT_ON_HOVER);
+	mHand = GetDefaultValueBool(UIProperty::LISTBOX_HAND);
 	SetProperty(UIProperty::BACK_COLOR, UIManager::GetInstance().GetStyleString(Styles::ListBoxBack));
 }
 
@@ -120,9 +122,8 @@ ListItemPtr ListBox::CreateNewItem(int row, int col)
 	item->SetVisible(mVisibility.IsVisible());
 	item->SetRowIndex(row);
 	item->SetColIndex(col);
-	if (mHand){
-		item->RegisterMouseHoverEvent();
-	}
+	item->RegisterMouseHoverEvent();
+
 	return item;
 }
 
@@ -175,32 +176,56 @@ unsigned ListBox::InsertEmptyData(){
 }
 
 bool ListBox::ModifyKey(unsigned row, unsigned key){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return false;
+	}
 	assert(row < mData->Size());
 	return mData->ModifyKey(row, key);
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataType::Enum type){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return;
+	}
 	mData->SetData(rowcol, string, type);
 	VisualizeData(rowcol.x);
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, bool checked){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return;
+	}
 	mData->SetData(rowcol, checked);
 	VisualizeData(rowcol.x);
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, TexturePtr texture){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return;
+	}
 	mData->SetData(rowcol, texture);
 	VisualizeData(rowcol.x);
 }
 
 // numeric updown
 void ListBox::SetItem(const Vec2I& rowcol, int number){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return;
+	}
 	mData->SetData(rowcol, number);
 	VisualizeData(rowcol.x);
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, float number){
+	if (!mData) {
+		Logger::Log(FB_ERROR_LOG_ARG, "No data prepared.");
+		return;
+	}
 	mData->SetData(rowcol, number);
 	VisualizeData(rowcol.x);
 }
@@ -424,6 +449,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 			mColSizes.push_back(colsize);
 			mColSizesInt.push_back(Round(colsize * xsize));
+			mColAlignes.push_back("center");
 		}
 		if (mData){
 			Clear();
@@ -479,8 +505,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::LISTBOX_COL_ALIGNH:
 		{
-			mStrColAlignH = val;
-			assert(mNumCols != 1);
+			mStrColAlignH = val;			
 			mColAlignes.clear();
 			mColAlignes.reserve(mNumCols);
 			StringVector strs = Split(val);
@@ -619,10 +644,12 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		mHand = StringConverter::ParseBool(val);
 		return true;
 	}
-
+	case UIProperty::LISTBOX_HIGHLIGHT_ON_HOVER:
+	{
+		mHighlightOnHover = StringConverter::ParseBool(val);
+		return true;
 	}
-
-	
+	}
 
 	return __super::SetProperty(prop, val);
 }
@@ -771,6 +798,28 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		}
 
 		strcpy_s(val, bufsize, StringConverter::ToString(mNoSearch).c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_HAND:
+	{
+		if (notDefaultOnly) {
+			if (mHand == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::ToString(mHand).c_str());
+		return true;
+	}
+
+	case UIProperty::LISTBOX_HIGHLIGHT_ON_HOVER:
+	{
+		if (notDefaultOnly) {
+			if (mHighlightOnHover == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::ToString(mHighlightOnHover).c_str());
 		return true;
 	}
 	}
@@ -2335,6 +2384,11 @@ void ListBox::RemoveDataWithKeys(const std::vector<unsigned>& ids) {
 	RefreshVisual();
 }
 
+void ListBox::RemoveDataWithRowIndex(size_t rowIndex) {
+	mData->DelDataWithIndex(rowIndex);
+	RefreshVisual();
+}
+
 void ListBox::RefreshVisual() {
 	// remove deleted items
 	int dataSize = mData->Size();
@@ -2376,6 +2430,14 @@ void ListBox::OnParentSizeChanged() {
 	for (auto nsize : mColSizes) {
 		mColSizesInt.push_back(Round(nsize * parentX));
 	}
+}
+
+bool ListBox::GetHand() const {
+	return mHand;
+}
+
+bool ListBox::GetHighlighOnHover() const {
+	return mHighlightOnHover;
 }
 
 }

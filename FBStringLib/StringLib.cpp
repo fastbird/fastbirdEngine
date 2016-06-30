@@ -257,6 +257,31 @@ namespace fb{
 		return false;
 	}
 
+	bool StartsWith(const char* str, const char* findingStr, bool ignoreCase) {
+		if (!ValidCString(str) || !ValidCString(findingStr)) {
+			return false;
+		}
+		auto findingLen = strlen(findingStr);
+		auto srcLen = strlen(str);
+		if (findingLen > srcLen)
+			return false;
+
+		if (ignoreCase)
+		{
+			std::string loweredSrc(str, str + findingLen), loweredFinding(findingStr, findingStr + findingLen);
+			std::transform(str, str + findingLen, loweredSrc.begin(), tolower);
+			std::transform(findingStr, findingStr + findingLen, loweredFinding.begin(), tolower);
+			return loweredSrc == loweredFinding;			
+		}
+		else {
+			for (size_t i = 0; i < findingLen; ++i) {
+				if (str[i] != findingStr[1])
+					return false;
+			}
+			return true;
+		}
+	}
+
 	bool StartsWith(const std::string& str, const std::string& pattern, bool ignoreCase){
 		auto thisLen = str.length();
 		auto patternLen = pattern.length();

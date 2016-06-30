@@ -233,8 +233,8 @@ public:
 		sRT->GetCamera()->SetAspectRatio(1.0f);
 		Vec3 dirs[] = {
 			Vec3(1, 0, 0), Vec3(-1, 0, 0),
-			Vec3(0, 0, 1), Vec3(0, 0, -1),
 			Vec3(0, 1, 0), Vec3(0, -1, 0),
+			Vec3(0, 0, 1), Vec3(0, 0, -1),			
 		};
 		for (int i = 0; i < 6; i++)
 		{
@@ -245,7 +245,7 @@ public:
 		renderer.GetMainRenderTarget()->BindTargetOnly(false);
 
 		pTexture->GenerateMips();
-		pTexture->SaveToFile("environment.dds");
+		//pTexture->SaveToFile("environment.dds");
 		// for bight test.
 		//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
 		
@@ -279,7 +279,7 @@ public:
 			srcMaterial = startFrom->GetMaterial();
 		for (int i = 0; i < 5; i++)
 		{
-			mMaterialParamCur[i] = srcMaterial->GetMaterialParameter(i);
+			mMaterialParamCur[i] = srcMaterial->GetShaderParameter(i);
 		}
 
 		mInterpolationTime = time;
@@ -292,7 +292,7 @@ public:
 	}
 
 	void SetAlpha(float alpha){
-		Vec4 param = mMaterial->GetMaterialParameter(3);
+		Vec4 param = mMaterial->GetShaderParameter(3);
 		mAlpha = param.w = alpha;
 		mMaterial->SetShaderParameter(3, param);
 		mMaterialParamDest[3].w = alpha;
@@ -331,7 +331,7 @@ void SkySphere::CreateSharedEnvRT(){
 		param.mWillCreateDepth = true;		
 		param.mUsePool = true;
 		auto& renderer = Renderer::GetInstance();
-		sRT = renderer.CreateRenderTarget(param);
+		sRT = renderer.CreateRenderTarget(param);		
 		sRT->SetDepthStencilDesc(ENV_SIZE, ENV_SIZE, PIXEL_FORMAT_D24_UNORM_S8_UINT, false, true);
 		sScene = Scene::Create("SkySphereScene");
 		sRT->RegisterScene(sScene);

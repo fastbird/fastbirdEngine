@@ -145,6 +145,40 @@ public:
 			group.mVBTangent = it.mVBTangent;
 			group.mIndexBuffer = it.mIndexBuffer;
 			group.mPositions = it.mPositions;
+			group.mNormals = it.mNormals;
+			group.mUVs = it.mUVs;
+			group.mTriangles = it.mTriangles;
+			group.mColors = it.mColors;
+			group.mTangents = it.mTangents;
+			++idx;
+		}
+	}
+
+	void CopyMeshDataFrom(MeshObject* src) {		
+		if (!src) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+		auto& other = *src->mImpl;
+		unsigned idx = 0;
+		for (auto& it : other.mMaterialGroups) {
+			auto& group = GetMaterialGroupFor(idx);
+			if (!group.mMaterial)
+				group.mMaterial = it.mMaterial->Clone();
+
+			group.mVBPos = it.mVBPos;
+			group.mVBNormal = it.mVBNormal;
+			group.mVBUV = it.mVBUV;
+			group.mVBColor = it.mVBColor;
+			group.mVBTangent = it.mVBTangent;
+			group.mIndexBuffer = it.mIndexBuffer;
+			group.mPositions = it.mPositions;
+			group.mNormals = it.mNormals;
+			group.mUVs = it.mUVs;
+			group.mTriangles = it.mTriangles;
+			group.mColors = it.mColors;
+			group.mTangents = it.mTangents;
+			++idx;
 		}
 	}
 
@@ -401,8 +435,8 @@ public:
 	}
 
 	void CheckMaterialOptions(MaterialPtr mat){
-		if (mat && mat->IsTransparent())
-			mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, true);
+		if (mat)
+			mSelf->ModifyObjFlag(SceneObjectFlag::Transparent, mat->IsTransparent());
 	}
 
 	void SetMaterial(const char* filepath, int pass){
@@ -645,8 +679,7 @@ public:
 				it.mVBPos = 0;
 			}
 			if (!it.mNormals.empty())
-			{
-				assert(it.mPositions.size() == it.mNormals.size());
+			{				
 				it.mVBNormal = renderer.CreateVertexBuffer(
 					&it.mNormals[0], sizeof(Vec3f), it.mNormals.size(),
 					mUseDynamicVB[MeshVertexBufferType::Normal] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
@@ -658,7 +691,6 @@ public:
 			}
 			if (!it.mUVs.empty())
 			{
-				assert(it.mPositions.size() == it.mUVs.size());
 				it.mVBUV = renderer.CreateVertexBuffer(
 					&it.mUVs[0], sizeof(Vec2f), it.mUVs.size(),
 					mUseDynamicVB[MeshVertexBufferType::UV] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
@@ -671,7 +703,6 @@ public:
 
 			if (!it.mColors.empty())
 			{
-				assert(it.mPositions.size() == it.mColors.size());
 				it.mVBColor = renderer.CreateVertexBuffer(
 					&it.mColors[0], sizeof(DWORD), it.mColors.size(),
 					mUseDynamicVB[MeshVertexBufferType::Color] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
@@ -684,7 +715,6 @@ public:
 
 			if (!it.mTangents.empty())
 			{
-				assert(it.mPositions.size() == it.mTangents.size());
 				it.mVBTangent = renderer.CreateVertexBuffer(
 					&it.mTangents[0], sizeof(Vec3f), it.mTangents.size(),
 					mUseDynamicVB[MeshVertexBufferType::Tangent] ? BUFFER_USAGE_DYNAMIC : BUFFER_USAGE_IMMUTABLE,
@@ -1223,6 +1253,10 @@ MeshObject::~MeshObject(){
 
 MeshObjectPtr MeshObject::Clone() const{
 	return mImpl->Clone();
+}
+
+void MeshObject::CopyMeshDataFrom(MeshObject* src) {
+	mImpl->CopyMeshDataFrom(src);
 }
 
 void MeshObject::SetMaterial(const char* filepath){

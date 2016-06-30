@@ -52,6 +52,7 @@ namespace fb
 		bool SetProperty(UIProperty::Enum prop, const char* val);
 		bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 		size_t AddDropDownItem(WCHAR* szString);
+		size_t AddDropDownItem(unsigned key, WCHAR* szString);
 		// alread added as a child
 		size_t AddDropDownItem(WinBasePtr item);
 		void ClearDropDownItems();
@@ -63,6 +64,7 @@ namespace fb
 		void OnParentVisibleChanged(bool show);		
 		void ModifyItem(unsigned index, UIProperty::Enum, const char* szString);
 		const wchar_t* GetItemString(unsigned index);
+		unsigned GetKey(unsigned index) const;
 
 	protected:
 		void SetCommonProperty(WinBasePtr item, size_t index);
@@ -74,18 +76,21 @@ namespace fb
 
 		void CloseOptions();
 		void SetVisibleDropDownItems(bool visible);
+		void CreateHolder();
 
 	private:
 		int mCursorPos;
 		bool mPasswd;
 		ButtonWeakPtr mButton;
 		std::vector<ButtonWeakPtr> mDropDownItems;
+		std::string mDropDownItemsString;
 		size_t mCurIdx;
 		size_t mReservedIdx;
 		WndWeakPtr mHolder;
 		int mMaxHeight;
 		bool mTriggerEvent;
-
+		std::map<unsigned, unsigned> mIndexKeyMap;
+		
 		static DropDownWeakPtr sCurrentDropDown;
 		friend class UIManager;
 	};

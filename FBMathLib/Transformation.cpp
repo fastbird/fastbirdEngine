@@ -29,6 +29,8 @@
 #include "Transformation.h"
 #include "Math.h"
 #include "Frustum.h"
+#include "MurmurHash.h"
+#include "FBCommonHeaders/Helpers.h"
 
 namespace fb
 {
@@ -890,6 +892,17 @@ namespace fb
 			mT.x, mT.y, mT.z,
 			mS.x, mS.y, mS.y,
 			mIdentity, mRSSeperated, mUniformScale);
+	}
+
+	size_t Transformation::ComputeHash() const {
+		size_t h = mMat.ComputeHash();
+		hash_combine(h, mR.ComputeHash());
+		hash_combine(h, mT.ComputeHash());
+		hash_combine(h, mS.ComputeHash());
+		hash_combine(h, std::hash<bool>()(mIdentity));
+		hash_combine(h, std::hash<bool>()(mRSSeperated));
+		hash_combine(h, std::hash<bool>()(mUniformScale));
+		return h;
 	}
 
 	void write(std::ostream& stream, const Transformation& data) {

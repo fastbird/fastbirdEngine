@@ -63,6 +63,12 @@ ListItem::~ListItem()
 void ListItem::RegisterMouseHoverEvent(){
 	RegisterEventFunc(UIEvents::EVENT_MOUSE_HOVER,
 		std::bind(&ListItem::OnMouseHover, this, std::placeholders::_1));
+
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_IN,
+		std::bind(&ListItem::OnMouseIn, this, std::placeholders::_1));
+
+	RegisterEventFunc(UIEvents::EVENT_MOUSE_OUT,
+		std::bind(&ListItem::OnMouseOut, this, std::placeholders::_1));
 }
 
 void ListItem::SetRowIndex(size_t index)
@@ -100,8 +106,7 @@ void ListItem::SetNoBackground(bool noBackground)
 	mNoBackground = noBackground;
 }
 
-void ListItem::OnFocusGain()
-{
+void ListItem::OnFocusGain() {
 	auto parent = GetParent();
 	if (parent && parent->GetType() == ComponentType::PropertyList)
 	{
@@ -112,8 +117,7 @@ void ListItem::OnFocusGain()
 	TriggerRedraw();
 }
 
-void ListItem::OnFocusLost()
-{
+void ListItem::OnFocusLost() {
 	//SetProperty(UIProperty::NO_BACKGROUND, "true");
 	auto parent = GetParent();
 	if (parent && parent->GetType() == ComponentType::PropertyList)
@@ -123,9 +127,24 @@ void ListItem::OnFocusLost()
 	TriggerRedraw();
 }
 
-void ListItem::OnMouseHover(void* arg)
-{
-	SetCursor(WinBase::sCursorOver);
+void ListItem::OnMouseHover(void* arg) {
+	auto listbox = std::dynamic_pointer_cast<ListBox>(GetParent());
+	if (listbox && listbox->GetHand())
+		SetCursor(WinBase::sCursorOver);
+}
+
+void ListItem::OnMouseIn(void* arg) {
+	auto listbox = std::dynamic_pointer_cast<ListBox>(GetParent());
+	if (listbox && listbox->GetHighlighOnHover()) {
+		listbox->SetHighlightRow(mRowIndex, true);
+	}	
+}
+
+void ListItem::OnMouseOut(void* arg) {
+	auto listbox = std::dynamic_pointer_cast<ListBox>(GetParent());
+	if (listbox && listbox->GetHighlighOnHover()) {
+		listbox->SetHighlightRow(mRowIndex, false);
+	}
 }
 
 //bool ListItem::OnInputFromHandler(IInputInjectorPtr injector)

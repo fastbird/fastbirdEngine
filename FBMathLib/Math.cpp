@@ -911,12 +911,12 @@ namespace fb
 		return size - size % 8;
 	}
 
-	Real ShortestYaw(Real from, Real to){
+	void MakeShortestYaw(Real& from, Real& to){
 		while (to > TWO_PI)
 		{
 			to -= TWO_PI;
 		}
-		while (to < 0)
+		while (to < -TWO_PI)
 		{
 			to += TWO_PI;
 		}
@@ -933,16 +933,24 @@ namespace fb
 		backwardLength = ((from + TWO_PI) - to);
 
 		if (!swaped){
-			if (forwardLength <= backwardLength)
-				return from + forwardLength;
-			else
-				return from - backwardLength;
+			if (forwardLength <= backwardLength) {
+				to = from + forwardLength;
+				from = to - forwardLength;
+			}
+			else {
+				to = from - backwardLength;
+				from = to + backwardLength;
+			}
 		}
 		else{
-			if (forwardLength <= backwardLength)
-				return from - forwardLength;
-			else
-				return from + backwardLength;
+			if (forwardLength <= backwardLength) {
+				to = from - forwardLength;
+				from = to + forwardLength;
+			}
+			else {
+				to = from + backwardLength;
+				from = to - backwardLength;				
+			}
 		}
 	}
 

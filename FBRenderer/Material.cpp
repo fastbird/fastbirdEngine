@@ -578,9 +578,15 @@ public:
 					samplerDesc.Filter = FilterFromString(szFilter);
 					TexturePtr pTextureInTheSlot;
 					const char* szType = pTexElem->Attribute("type");
-					TEXTURE_TYPE type = TextureTypeFromString(szType);
+					int texture_type = TEXTURE_TYPE_DEFAULT;
+					if (szType)
+						texture_type = TextureTypeFromString(szType);
 					ColorRamp cr;
-					if (type & TEXTURE_TYPE_COLOR_RAMP)
+					if (strstr(filepath.c_str(), "Fire.dds")) {
+						int a = 0;
+						++a;
+					}
+					if (texture_type & TEXTURE_TYPE_COLOR_RAMP)
 					{
 						tinyxml2::XMLElement* barElem = pTexElem->FirstChildElement("Bar");
 						while (barElem)
@@ -610,7 +616,7 @@ public:
 							}
 
 						}
-						SetTexture(filepath.c_str(), shader, slot, samplerDesc, true);
+						SetTexture(filepath.c_str(), shader, slot, samplerDesc, texture_type, true);
 					}
 				}
 				pTexElem = pTexElem->NextSiblingElement("Texture");
@@ -834,7 +840,7 @@ public:
 
 	//----------------------------------------------------------------------------
 	void SetTexture(const char* filepath, SHADER_TYPE shader, int slot,
-		const SAMPLER_DESC& samplerDesc, bool loading)
+		const SAMPLER_DESC& samplerDesc, int texture_type, bool loading)
 	{
 		MaterialData* materialData;
 		if (loading) // loading or reloading
@@ -853,7 +859,9 @@ public:
 		}
 
 		auto& renderer = Renderer::GetInstance();
-		pTexture = renderer.CreateTexture(filepath, TextureCreationOption());
+		TextureCreationOption option;
+		option.textureType = texture_type;
+		pTexture = renderer.CreateTexture(filepath, option);
 		if (pTexture)
 		{			
 			materialData->mTextures.push_back(pTexture);
@@ -1160,7 +1168,7 @@ public:
 		mMaterialData->mShaderConstants[index] = value;
 	}
 
-	const Vec4f& GetMaterialParameter(unsigned index) const
+	const Vec4f& GetShaderParameter(unsigned index) const
 	{
 		auto& params = mMaterialData->mShaderConstants;
 		auto it = params.Find(index);
@@ -1171,7 +1179,7 @@ public:
 		return it->second;
 	}
 
-	const Parameters& GetMaterialParameters() const
+	const Parameters& GetShaderParameters() const
 	{
 		return mMaterialData->mShaderConstants;		
 	}
@@ -1371,7 +1379,7 @@ public:
 	}
 
 	void CopyMaterialParamFrom(MaterialConstPtr src) {
-		mMaterialData->mShaderConstants = src->GetMaterialParameters();
+		mMaterialData->mShaderConstants = src->GetShaderParameters();
 	}
 
 	void CopyMaterialConstFrom(MaterialConstPtr src) {
@@ -1578,8 +1586,8 @@ void Material::SetEmissiveColor(const Vec4& emissive) {
 	mImpl->SetEmissiveColor(emissive);
 }
 
-void Material::SetTexture(const char* filepath, SHADER_TYPE shader, int slot, const SAMPLER_DESC& samplerDesc) {
-	mImpl->SetTexture(filepath, shader, slot, samplerDesc, false);
+void Material::SetTexture(const char* filepath, SHADER_TYPE shader, int slot, int texture_type, const SAMPLER_DESC& samplerDesc) {
+	mImpl->SetTexture(filepath, shader, slot, samplerDesc, texture_type, false);
 }
 
 void Material::SetTexture(TexturePtr pTexture, SHADER_TYPE shader, int slot, const SAMPLER_DESC& samplerDesc) {
@@ -1670,12 +1678,12 @@ void* Material::GetShaderByteCode(unsigned& size) const {
 	return mImpl->GetShaderByteCode(size);
 }
 
-const Vec4f& Material::GetMaterialParameter(unsigned index) const {
-	return mImpl->GetMaterialParameter(index);
+const Vec4f& Material::GetShaderParameter(unsigned index) const {
+	return mImpl->GetShaderParameter(index);
 }
 
-const Material::Parameters& Material::GetMaterialParameters() const {
-	return mImpl->GetMaterialParameters();
+const Material::Parameters& Material::GetShaderParameters() const {
+	return mImpl->GetShaderParameters();
 }
 
 const MATERIAL_CONSTANTS& Material::GetMaterialConstants() const {

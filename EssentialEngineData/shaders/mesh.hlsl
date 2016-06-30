@@ -90,8 +90,7 @@ float4 Mesh_PixelShader( in v2p INPUT ) : SV_Target
 
 #ifdef DIFFUSE_TEXTURE
 	diffuse *= gDiffuseTexture.Sample(gLinearSampler, INPUT.UV).xyz;
-#endif
-	
+#endif	
 	// Specular Light
     return float4( diffuse, 1.0f );    // Yellow, with Alpha = 1
 }

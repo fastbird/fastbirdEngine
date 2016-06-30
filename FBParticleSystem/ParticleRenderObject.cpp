@@ -160,7 +160,7 @@ public:
 		{
 			mMaxVertices *= 2;
 			mVertexBuffer = 0;
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Particle Vertex Buffer(%s) resized to : %u", mTextureName.c_str(), mMaxVertices).c_str());			
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Particle Vertex Buffer(%s) resized to : %u", mTextureName.c_str(), mMaxVertices).c_str());
 		}
 		mLastFrameNumVertices = 0;
 	}
@@ -199,7 +199,7 @@ public:
 	void SetTexture(const char* texturePath){
 		mTextureName = texturePath;
 		if (mMaterial)
-			mMaterial->SetTexture(texturePath, SHADER_TYPE_PS, 0);
+			mMaterial->SetTexture(texturePath, SHADER_TYPE_PS, 0, TEXTURE_TYPE_DEFAULT);
 	}
 
 	void SetScreenspace(int set) {

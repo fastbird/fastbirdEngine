@@ -279,7 +279,7 @@ public:
 
 		if (mMaterial)
 		{
-			const Vec4& prev = mMaterial->GetMaterialParameter(4);
+			const Vec4& prev = mMaterial->GetShaderParameter(4);
 			mMaterial->SetShaderParameter(4, Vec4(prev.x, prev.y, prev.z, mAlpha));
 		}
 	}

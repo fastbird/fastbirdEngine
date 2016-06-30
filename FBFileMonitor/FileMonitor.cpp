@@ -297,14 +297,13 @@ public:
 			{
 				std::string filepath = it->second;				
 				std::string filefullpath = it->first + it->second;
-				auto resourceFolder = FileSystem::IsResourceFolder(it->first.c_str());
+				auto resourceFolder = FileSystem::IsResourceFolderByVal(it->first.c_str());
 				if (resourceFolder) {
 					auto watchDir = FileSystem::UnifyFilepath(it->first.c_str());
 					if (watchDir.back() != '/') {
 						watchDir.push_back('/');
-					}
-					auto resourceKey = FileSystem::GetLastDirectory(watchDir.c_str());
-					filepath = resourceKey + "/" + filepath;
+					}					
+					filepath = FileSystem::GetResourceKeyFromVal(watchDir.c_str()) + filepath;
 				}
 
 				auto strs = Split(filepath, "~");
@@ -360,8 +359,9 @@ public:
 							}
 							++oit;
 							std::string loweredStr(FileSystem::GetExtension(filepath.c_str()));
-							ToLowerCase(loweredStr);
-							bool processed = observer->OnFileChanged(it->first.c_str(), filepath.c_str(), loweredStr.c_str());
+							ToLowerCase(loweredStr);							
+							
+							bool processed = observer->OnFileChanged(it->first.c_str(), filepath.c_str(), filefullpath.c_str(), loweredStr.c_str());
 							if (processed)
 								break;
 						}

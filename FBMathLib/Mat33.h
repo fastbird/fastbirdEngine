@@ -68,6 +68,8 @@ namespace fb
 		Vec3 Column(int index) const;
 		void SetColumn(int index, const Vec3& v);
 		bool IsSymmetric() const;
+
+		size_t ComputeHash() const;
 	};
 
 	void write(std::ostream& stream, const Mat33& data);

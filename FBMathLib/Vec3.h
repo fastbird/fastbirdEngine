@@ -112,6 +112,8 @@ namespace fb
 		std::string ToString() const;
 		Vec2 GetXY() const;
 		Vec3 GetInv() const;
+
+		size_t ComputeHash() const;
 	};
 	void write(std::ostream& stream, const Vec3& data);
 	void read(std::istream& stream, Vec3& data);

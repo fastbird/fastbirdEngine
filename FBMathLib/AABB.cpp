@@ -100,3 +100,7 @@ void AABB::GetPoints(Vec3 points[8]) const{
 	points[6] = Vec3(mMax.x, mMax.y, mMin.z);
 	points[7] = Vec3(mMin.x, mMax.y, mMin.z);
 }
+
+std::string AABB::ToString() const {
+	return FormatString("AABB Min: %s, Max: %s", mMin.ToString().c_str(), mMax.ToString().c_str());
+}

@@ -94,6 +94,8 @@ namespace fb
 		Real& b();
 		Real& a();
 
+		std::string ToString() const;
+
 	private:
 		Vec4 mValue;
 	};

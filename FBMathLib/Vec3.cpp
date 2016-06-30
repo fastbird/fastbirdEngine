@@ -31,6 +31,7 @@
 #include "Mat33.h"
 #include "Math.h"
 #include "Vec3d.h"
+#include "MurmurHash.h"
 
 namespace fb
 {
@@ -431,6 +432,10 @@ namespace fb
 
 	Vec3 Vec3::GetInv() const {
 		return Vec3(1.f / x, 1.f / y, 1.f / z);
+	}
+
+	size_t Vec3::ComputeHash() const {
+		return murmur3_32((const char*)this, sizeof(Vec3));
 	}
 
 	//--------------------------------------------------------------------------

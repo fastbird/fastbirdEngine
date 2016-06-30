@@ -679,6 +679,13 @@ public:
 		return true;
 	}
 
+	void StopAnimation() {
+		if (mMeshObject)
+			return mMeshObject->StopAnimation();
+		else if (mMeshGroup)
+			return mMeshGroup->StopAnimation();
+	}
+
 	unsigned GetNumMeshes() const{
 		if (mMeshObject)
 			return 1;
@@ -708,6 +715,20 @@ public:
 		else if (mMeshGroup)
 			return std::dynamic_pointer_cast<SpatialObject>(mMeshGroup);
 		return 0;
+	}
+
+	void CopyMeshDataFrom(MeshFacade* src) {
+		if (src->mImpl->mMeshObject) {
+			if (!mMeshObject) {
+				mMeshObject = src->mImpl->mMeshObject->Clone();
+			}
+			else {
+				mMeshObject->CopyMeshDataFrom(src->mImpl->mMeshObject.get());
+			}
+		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, "Not implemented.");
+		}
 	}
 
 };
@@ -983,6 +1004,10 @@ bool MeshFacade::IsActionDone(const char* action) const{
 	return mImpl->IsActionDone(action);
 }
 
+void MeshFacade::StopAnimation() {
+	mImpl->StopAnimation();
+}
+
 unsigned MeshFacade::GetNumMeshes() const{
 	return mImpl->GetNumMeshes();
 }
@@ -1091,4 +1116,8 @@ void MeshFacade::SetDebug(bool debug){
 	else if (mImpl->mMeshGroup){
 		mImpl->mMeshGroup->mDebug = debug;
 	}
+}
+
+void MeshFacade::CopyMeshDataFrom(MeshFacade* src) {
+	mImpl->CopyMeshDataFrom(src);
 }

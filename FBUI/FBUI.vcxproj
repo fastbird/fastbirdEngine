@@ -81,6 +81,7 @@
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="ColorRampComp.cpp" />
     <ClCompile Include="Container.cpp" />
+    <ClCompile Include="DiscretedGauge.cpp" />
     <ClCompile Include="DragBox.cpp" />
     <ClCompile Include="DropDown.cpp" />
     <ClCompile Include="EventHandler.cpp" />
@@ -113,7 +114,9 @@
     <ClCompile Include="UIManager.cpp" />
     <ClCompile Include="UIManagerLua.cpp" />
     <ClCompile Include="UIObject.cpp" />
-    <ClCompile Include="VerticalGauge.cpp" />
+    <ClCompile Include="VerticalGauge.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="VisibleStatus.cpp" />
     <ClCompile Include="WinBase.cpp" />
     <ClCompile Include="Wnd.cpp" />
@@ -128,6 +131,7 @@
     <ClInclude Include="ColorRampComp.h" />
     <ClInclude Include="ComponentType.h" />
     <ClInclude Include="Container.h" />
+    <ClInclude Include="DiscretedGauge.h" />
     <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />
     <ClInclude Include="EventHandler.h" />

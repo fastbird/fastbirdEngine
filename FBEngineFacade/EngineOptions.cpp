@@ -28,7 +28,9 @@
 #include "stdafx.h"
 #include "EngineOptions.h"
 #include "FBConsole/Console.h"
+#include "FBThread/TaskScheduler.h"
 using namespace fb;
+void NumTasks(StringVector& args);
 
 FB_IMPLEMENT_STATIC_CREATE(EngineOptions);
 EngineOptions::EngineOptions(){
@@ -51,8 +53,16 @@ EngineOptions::EngineOptions(){
 
 	AudioDebug = Console::GetInstance().GetIntVariable("AudioDebug", 0);
 	FB_REGISTER_CVAR(AudioDebug, AudioDebug, CVAR_CATEGORY_CLIENT, "Audio debug");
+	
+	FB_REGISTER_CC(NumTasks, "NumTasks");
 }
 
 EngineOptions::~EngineOptions(){
 
+}
+
+void NumTasks(StringVector& args) {
+	auto str = FormatString("Num taks = %u", TaskScheduler::GetInstance().GetNumTasks());
+	Logger::Log(FB_DEFAULT_LOG_ARG, str.c_str());
+	Console::GetInstance().Log(str.c_str());
 }

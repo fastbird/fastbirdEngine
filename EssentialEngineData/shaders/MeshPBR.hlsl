@@ -147,28 +147,25 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	float vdh = saturate( dot(toViewDir, h) );
 	//INPUT.WorldPos.w == current pixel depth
 	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
-	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, ndl, specColor, roughness));
-	shadedColor +=  ndl2 * lightColor2 * max(float3(0.2f, 0.2f, 0.2f), diffColor);
-	float3 irrad = GetIrrad(float4(normal, 1.0f));
-	shadedColor+=irrad;	
+	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, ndl, specColor, roughness));	
+	float3 colorFromInversedLight =  ndl2 * lightColor2 * baseColor;
 	
-	float3 envContrib = {0, 0, 0};
-	
-	// need to work further.
+	float3 envContrib = {0, 0, 0};		
 #ifdef ENV_TEXTURE
 	envContrib = CalcEnvContrib(normal, INPUT.Tangent, INPUT.Binormal, roughness, toViewDir, diffColor, specColor);
 #endif
-
-	float3 pointLightResult = CalcPointLights(INPUT.WorldPos.xyz, normal) * baseColor;
-	float2 screenUV = GetScreenUV(INPUT.Position.xy);
-	float3 foggedColor = GetFoggedColor(screenUV, shadedColor + envContrib + pointLightResult, normalize(INPUT.WorldPos));
+	float3 irrad = GetIrrad(float4(normal, 1));	
+	float3 pointLightResult = CalcPointLights(INPUT.WorldPos.xyz, normal) * baseColor;	
+	float2 screenUV = GetScreenUV(INPUT.Position.xy);	
+	float3 emissiveColor = baseColor * emissive;
+	float3 foggedColor = GetFoggedColor(screenUV, shadedColor, normalize(INPUT.WorldPos));	
+	
 #if Glow
 	PS_OUT psout;
-	psout.color0 = float4(foggedColor * invShadow + baseColor * emissive + gAmbientColor.rgb, gDiffuseColor.a);
-	//psout.color0 = float4(1, 1, 1, 1);
+	psout.color0 = float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);		
 	psout.color1 = psout.color0 * emissive;
 	return psout;
 #else
-	return float4(foggedColor * invShadow + baseColor * emissive + gAmbientColor.rgb, gDiffuseColor.a);
+	return float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);	
 #endif
 }

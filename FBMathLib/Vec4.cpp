@@ -179,6 +179,10 @@ Vec3 Vec4::ToVec3() const
 	return Vec3(x, y, z);
 }
 
+std::string Vec4::ToString() const {
+	return FormatString("%.2f, %.2f, %.2f, %.2f", x, y, z, w);
+}
+
 void write(std::ostream& stream, const Vec4& data) {
 	stream.write((char*)&data.x, sizeof(data.x));
 	stream.write((char*)&data.y, sizeof(data.y));

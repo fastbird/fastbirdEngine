@@ -234,6 +234,11 @@ bool SpatialObject::IsActionDone(const char* action) const{
 	return mAnim->IsActionDone(action);
 }
 
+void SpatialObject::StopAnimation() {
+	if (mAnim)
+		mAnim->StopAnimation();
+}
+
 void SpatialObject::NotifyTransformChanged(){
 	mTransformChanged = true;
 }

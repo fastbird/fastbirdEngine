@@ -177,6 +177,10 @@ namespace fb{
 		void UnbindRenderTarget(TexturePtr renderTargetTexture);
 		void SetRenderTargetAtSlot(TexturePtr pRenderTarget, size_t viewIndex, size_t slot);
 		void SetDepthTarget(TexturePtr pDepthStencil, size_t dsViewIndex);
+		void OverrideDepthTarget(bool override);
+		/// Useful when you don't want to output to the color target. ex) Depth rendering
+		void UnbindColorTargetAndKeep();
+		void RebindKeptColorTarget();
 		const std::vector<TexturePtr>& _GetCurrentRTTextures() const;
 		const std::vector<size_t>& _GetCurrentViewIndices() const;
 		TexturePtr _GetCurrentDSTexture() const;
@@ -253,6 +257,7 @@ namespace fb{
 		void BeginEvent(const char* name);
 		void EndEvent();
 		void TakeScreenshot();
+		void TakeScreenshot(int width, int height);
 		void ChangeFullscreenMode(int mode);
 		void OnWindowSizeChanged(HWindow window, const Vec2I& clientSize);
 		void ChangeResolution(const Vec2I& resol);
@@ -411,7 +416,7 @@ namespace fb{
 		// IFileChangeObserver
 		//-------------------------------------------------------------------
 		void OnChangeDetected();
-		bool OnFileChanged(const char* watchDir, const char* file, const char* ext);
+		bool OnFileChanged(const char* watchDir, const char* file, const char* combinedPath, const char* ext);
 
 		//-------------------------------------------------------------------
 		// Debug
