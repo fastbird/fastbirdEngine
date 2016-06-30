@@ -638,7 +638,7 @@ public:
 		if (!FileSystem::ResourceExists(filepath.c_str(), &filepath))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
-				"File(%s) is not found.", path).c_str());			
+				"File(%s) is not found.", path).c_str());
 			return 0;
 		}		
 
@@ -668,7 +668,7 @@ public:
 					
 					auto texture = mTexture.lock();
 					if (texture) {
-						auto path = texture->GetPath();
+						auto path = texture->GetPath();						
 						DirectX::TexMetadata metadata;
 						auto scratchTexture = LoadScratchImage(path, mOptions.generateMip, metadata);
 						if (!scratchTexture) {
@@ -682,7 +682,7 @@ public:
 						texture->SetSize(Vec2I(metadata.width, metadata.height));
 						texture->SetSizeInBytes(scratchTexture->GetPixelsSize());
 						// 'with loaded data create hardware texture and set to the texture.'						
-						unsigned int type = TEXTURE_TYPE_DEFAULT;
+						unsigned int type = mOptions.textureType;
 						auto pimpl = mImpl;						
 						// delay invoke
 						Invoker::GetInstance().InvokeAtEnd([pimpl, texture, scratchTexture, type]() {
@@ -723,7 +723,7 @@ public:
 			texture->SetSize(Vec2I(metadata.width, metadata.height));
 			texture->SetSizeInBytes(scratchTexture->GetPixelsSize());
 			// 'with loaded data create hardware texture and set to the texture.'			
-			unsigned int type = TEXTURE_TYPE_DEFAULT;			
+			unsigned int type = options.textureType;			
 			CreateHardwareTextureFor(texture, scratchTexture,
 				BUFFER_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE, BUFFER_CPU_ACCESS_NONE, type);
 		}
