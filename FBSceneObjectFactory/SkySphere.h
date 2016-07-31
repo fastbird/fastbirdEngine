@@ -28,11 +28,12 @@
 #pragma once
 #include "FBCommonHeaders/platform.h"
 #include "FBSceneManager/SceneObject.h"
+#include "ISkySphereListener.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(ISceneObserver);
 	FB_DECLARE_SMART_PTR(Material);
 	FB_DECLARE_SMART_PTR(SkySphere);
-	class FB_DLL_SCENEOBJECTFACTORY SkySphere : public SceneObject{
+	class FB_DLL_SCENEOBJECTFACTORY SkySphere : public SceneObject, public GenericNotifier<ISkySphereListener> {
 		FB_DECLARE_PIMPL_NON_COPYABLE(SkySphere);
 		SkySphere();
 		~SkySphere();
@@ -64,5 +65,7 @@ namespace fb{
 		void AttachBlendingSky(SkySpherePtr sky);
 		void DetachBlendingSky();
 		SkySpherePtr GetBlendingSky();
+
+		
 	};
 }

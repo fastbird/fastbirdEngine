@@ -58,7 +58,7 @@ ImageBox::ImageBox()
 	, mImageDisplay(ImageDisplay::FreeScaleImageMatchAll)
 	, mSeperatedBackground(false)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->SetMaterial("EssentialEngineData/materials/UIImageBox.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -294,7 +294,12 @@ const Vec2I ImageBox::GetTextureSize(bool *outIsAtlas, Vec2 quadUV[4]) const{
 		if (outIsAtlas)
 			*outIsAtlas = true;
 		if (quadUV){
-			mAtlasRegions[mCurFrame]->GetQuadUV(quadUV);
+			if (mAtlasRegions[mCurFrame]) {
+				mAtlasRegions[mCurFrame]->GetQuadUV(quadUV);
+			}
+			else {
+				return{ 0, 0 };
+			}
 		}
 		return mTextureAtlas->GetTexture()->GetSize();
 	}
@@ -342,7 +347,8 @@ const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* regi
 			mTexture = 0;
 			mUIObject->GetMaterial()->SetTexture(TexturePtr(), SHADER_TYPE_PS, 0, sdesc);
 			mUIObject->ClearTexCoord();
-			Error("Cannot find the region %s in the atlas %s", region, atlas);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find the region %s in the atlas %s", region, atlas).c_str());
 			return Vec2I::ZERO;
 		}
 		// need to set to material. matarial will hold its reference counter
@@ -796,7 +802,10 @@ void ImageBox::MatchUISizeToImageCenteredAt(const Vec2I& wpos)
 	}
 	else if (!mAtlasRegions.empty())
 	{
-		isize = mAtlasRegions[mCurFrame]->GetSize();
+		if (mAtlasRegions[mCurFrame])
+			isize = mAtlasRegions[mCurFrame]->GetSize();
+		else 
+			isize = { 0, 0 };
 	}
 	else if (mTexture)
 	{
@@ -804,7 +813,9 @@ void ImageBox::MatchUISizeToImageCenteredAt(const Vec2I& wpos)
 	}
 	else
 	{
-		Log("ImageBox %s : MatchUISizeToImageCenteredAt, you didn't set the texture", mName.c_str());
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+			"ImageBox %s : MatchUISizeToImageCenteredAt, you didn't set the texture", 
+			mName.c_str()).c_str());
 		return;
 	}
 	ChangeSize(isize);
@@ -832,7 +843,10 @@ void ImageBox::MatchUISizeToImage()
 	}
 	else if (!mAtlasRegions.empty())
 	{
-		isize = mAtlasRegions[0]->GetSize();
+		if (mAtlasRegions[0])
+			isize = mAtlasRegions[0]->GetSize();
+		else
+			isize = { 0, 0 };
 	}
 	else if (mTexture)
 	{

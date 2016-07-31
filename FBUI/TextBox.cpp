@@ -49,7 +49,7 @@ namespace fb
 		, mPasswd(false)		
 		, mMatchHeight(false)
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mUIObject->SetTextColor(mTextColor);
@@ -95,7 +95,6 @@ namespace fb
 		__super::OnSizeChanged();
 		if (mImage)
 			mImage->SetSize(GetFinalSize());
-
 	}
 
 	void TextBox::SetText(const wchar_t* szText)

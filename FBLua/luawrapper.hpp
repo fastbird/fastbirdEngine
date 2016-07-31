@@ -1,5 +1,4 @@
 #pragma once
-
 /*
  * Copyright (c) 2010-2013 Alexander Ames
  * Alexander.Ames@gmail.com
@@ -614,7 +613,8 @@ void luaW_setfuncs(lua_State* L, const char* classname, const luaL_Reg* table, c
     int result = LuaUtils::Lnewmetatable(L, classname); // ... T mt
 	if (!result)
 	{
-		fb::Log("Metatable %s already exists.", classname);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Metatable %s already exists.", classname).c_str());
 	}
     LuaUtils::newtable(L); // ... T mt {}
     LuaUtils::setfield(L, -2, LUAW_EXTENDS_KEY); // ... T mt

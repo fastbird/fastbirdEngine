@@ -84,8 +84,9 @@ namespace fb{
 		HWindowId GetMainWindowHandleId() const;
 		HWindow GetMainWindowHandle() const;
 		HWindow GetWindowHandleById(HWindowId hwndId) const;
+		void SetWindowPos(HWindowId hwndId, int x, int y);
 		/// for windows;
-		intptr_t WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp);
+		intptr_t WinProc(HWindow window, unsigned msg, uintptr_t wp, uintptr_t lp);		
 		EngineOptionsPtr GetEngineOptions() const;
 		void UpdateFileMonitor();
 		void UpdateInput();
@@ -102,6 +103,7 @@ namespace fb{
 		priority at IInputConsumer::Priority
 		*/
 		void RegisterInputConsumer(IInputConsumerPtr consumer, int priority);
+		void RegisterThreadIdConsideredMainThread(std::thread::id threadId);
 		void AddFileChangeObserver(int fileChangeObserverType, IFileChangeObserverPtr observer);
 		IVideoPlayerPtr CreateVideoPlayer(VideoPlayerType::Enum type);
 		VoxelizerPtr CreateVoxelizer();
@@ -153,6 +155,7 @@ namespace fb{
 		RenderTargetPtr GetMainRenderTarget() const;
 		const Vec2I& GetMainRenderTargetSize() const;
 		bool MainCameraExists() const;
+		void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color, bool updateRs = true);
 		void QueueDrawTextForDuration(float secs, const Vec2I& pos, const char* text, const Color& color);
 		void QueueDrawTextForDuration(float secs, const Vec2I& pos, const char* text, const Color& color, float size);
 		void QueueDrawText(const Vec2I& pos, WCHAR* text, const Color& color);
@@ -250,7 +253,7 @@ namespace fb{
 		/// looping music
 		void PlayMusic(const char* path, float fadeOutOld);
 		void PlayMusic(const char* path, float fadeOutOld, bool loop);
-		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
+		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop);
 		void StopMusic(float fadeOut);
 		bool IsMusicPlaying() const;
 

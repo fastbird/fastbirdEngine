@@ -257,5 +257,11 @@ namespace fb{
 		static FILE* OpenFileByMode(const char* path, const char* mode, errno_t* errorNo = 0);
 		static void CloseFile(FILE* &file);
 
+		struct FB_DLL_FILESYSTEM Lock {
+		public:
+			Lock();
+			~Lock();
+		};
+
 	};
 }

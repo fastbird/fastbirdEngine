@@ -56,8 +56,12 @@ namespace fb{
 	std::string StripBoth(const char* s);		
 	const char* FindLastOf(const char* s, char ch);
 	void StepToDigit(char** ppch);
-	StringVector Split(const std::string& str, const std::string& delims = "\t\n, ",
-		unsigned int maxSplits = 0, bool preserveDelims = false);
+	StringVector Split(const std::string& str, 
+		const std::string& delims = "\t\n, ", unsigned int maxSplits = 0, 
+		bool preserveDelims = false);
+	WStringVector Split(const std::wstring& str,
+		const std::wstring& delims = L"\t\n, ", unsigned int maxSplits = 0,
+		bool preserveDelims = false);
 	/** Compare two strings. This function ignores the case.
 	@return 0 if two strings are same. 1 if \b lhs > \b rhs. -1 if \nlhs < \b rhs
 	*/
@@ -122,7 +126,6 @@ namespace fb{
 	const char* WideToAnsi(const WCHAR* source);
 	size_t Length(std::stringstream& s);
 	///@}
-
 
 	class HashedString
 	{

@@ -41,7 +41,7 @@ ColorRampCompPtr ColorRampComp::Create(){
 
 ColorRampComp::ColorRampComp()
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }
@@ -96,7 +96,9 @@ void ColorRampComp::SetColorRampValues(const char* values)
 	auto strs = Split(values, ", ");
 	if (strs.size() < 2)
 	{
-		Log("void ColorRampComp::SetColorRampValues(const char* values) : 'values' should have at least two values.");
+		Logger::Log(FB_ERROR_LOG_ARG,
+			"void ColorRampComp::SetColorRampValues(const char* values) : "
+			"'values' should have at least two values.");
 		assert(0);
 		return;
 	}

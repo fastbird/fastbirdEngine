@@ -127,8 +127,7 @@ namespace fb
 		virtual void ReservePendingDelete(bool pendingDelete);
 		void RemoveGapChildren();
 		void GetChildrenNames(LuaObject& t);
-
-
+		bool GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps) OVERRIDE;
 
 	private:
 		friend class WinBase;

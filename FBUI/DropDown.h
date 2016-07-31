@@ -81,14 +81,14 @@ namespace fb
 	private:
 		int mCursorPos;
 		bool mPasswd;
+		bool mTriggerEvent;
 		ButtonWeakPtr mButton;
 		std::vector<ButtonWeakPtr> mDropDownItems;
 		std::string mDropDownItemsString;
 		size_t mCurIdx;
 		size_t mReservedIdx;
 		WndWeakPtr mHolder;
-		int mMaxHeight;
-		bool mTriggerEvent;
+		int mMaxHeight;		
 		std::map<unsigned, unsigned> mIndexKeyMap;
 		
 		static DropDownWeakPtr sCurrentDropDown;

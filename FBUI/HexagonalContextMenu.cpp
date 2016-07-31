@@ -43,7 +43,7 @@ namespace fb
 		: mUpdateMaterialParams(true)
 		, mMouseInHexaIdx(-1)
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->SetMaterial("EssentialEngineData/materials/UIHexagonal.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());

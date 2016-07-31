@@ -79,6 +79,7 @@
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="DustRenderer.h" />
     <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="ISkySphereLIstener.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="MeshAuxiliary.h" />
     <ClInclude Include="MeshCamera.h" />

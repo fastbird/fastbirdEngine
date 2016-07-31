@@ -61,7 +61,9 @@ namespace fb
 		virtual void ClearBuffer();
 		virtual void ClearKeydown();
 
-		virtual void OnKillFocus();
+		void OnKillFocus() OVERRIDE;
+		void OnGetFocus() OVERRIDE;
+
 		
 	};
 }

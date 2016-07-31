@@ -232,15 +232,15 @@ void ListBox::SetItem(const Vec2I& rowcol, float number){
 
 bool ListBox::GetCheckBox(const Vec2I& indexRowCol) const{
 	if (!mData){
-		Log(FB_ERROR_LOG_ARG, "No data");
+		Logger::Log(FB_ERROR_LOG_ARG, "No data");		
 		return false;
 	}
 	if ((unsigned)indexRowCol.x >= mData->Size()){
-		Log(FB_ERROR_LOG_ARG, "Invalid row index");
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid row index");
 		return false;
 	}
 	if ((unsigned)indexRowCol.y >= mNumCols){
-		Log(FB_ERROR_LOG_ARG, "Invalid col index");
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid col index");
 		return false;
 	}
 
@@ -298,7 +298,7 @@ bool ListBox::RemoveRowWithIndex(unsigned index){
 		return false;
 	if (index >= mItems.size())
 	{
-		Log(FB_ERROR_LOG_ARG, "Out of index.");
+		Logger::Log(FB_ERROR_LOG_ARG, "Out of index.");
 		return false;
 	}
 	unsigned deletedIndex = mData->DelDataWithIndex(index);
@@ -444,7 +444,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		float colsize = 1.0f / (float)mNumCols;
 		mColSizes.clear();
 		mColSizesInt.clear();
-		auto xsize = GetParentSize().x;
+		auto xsize = GetFinalSize().x;
 		for (unsigned i = 0; i < mNumCols; ++i)
 		{
 			mColSizes.push_back(colsize);
@@ -457,6 +457,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		}
 		mData = FB_NEW( ListBoxDataSet(mNumCols) );
 		UIManager::GetInstance().DirtyRenderList(GetHwndId());
+		UpdateColSizes();		
 		return true;
 	}
 	case UIProperty::LISTBOX_ROW_HEIGHT:
@@ -474,7 +475,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 			// set UIProperty::LISTBOX_COL first
 			// don't need to set this property if the num of col is 1.
-			mStrColSizes = val;
+			mStrColSizes = val;			
 			assert(mNumCols != 1);
 			mColSizes.clear();
 			mColSizesInt.clear();
@@ -544,7 +545,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 			mStrHeaders = val;
 			StringVector strs = Split(val, ",");
-			assert(strs.size() == mNumCols);			
+			auto numCols = std::min(strs.size(), mNumCols);
 			const auto& finalSize = GetFinalSize();
 			auto contentWndBackup = mWndContentUI.lock();
 			mWndContentUI.reset();
@@ -554,7 +555,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 			mHeaders.clear();
 			const char* headerBack = UIManager::GetInstance().GetStyleString(Styles::ListBoxHeaderBack);
 			assert(headerBack);
-			for (unsigned i = 0; i < mNumCols; ++i)
+			for (unsigned i = 0; i < numCols; ++i)
 			{
 				int posX = 0;
 				if (i >= 1)
@@ -647,6 +648,21 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::LISTBOX_HIGHLIGHT_ON_HOVER:
 	{
 		mHighlightOnHover = StringConverter::ParseBool(val);
+		return true;
+	}
+	case UIProperty::SCROLLERV_OFFSET:
+	{
+		auto contentWnd = mWndContentUI.lock();
+		if (contentWnd) {
+			return contentWnd->SetProperty(prop, val);
+		}
+		auto scrollerV = mScrollerV.lock();
+		if (scrollerV)
+		{
+			auto offset = scrollerV->GetOffset();
+			offset.y = StringConverter::ParseReal(val);
+			scrollerV->SetOffset(offset);
+		}
 		return true;
 	}
 	}
@@ -821,6 +837,27 @@ bool ListBox::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 
 		strcpy_s(val, bufsize, StringConverter::ToString(mHighlightOnHover).c_str());
 		return true;
+	}
+
+	case UIProperty::SCROLLERV_OFFSET:
+	{
+		if (notDefaultOnly)
+			return false;
+		auto contentWnd = mWndContentUI.lock();
+		if (contentWnd) {
+			return contentWnd->GetProperty(prop, val, bufsize, notDefaultOnly);
+		}
+		auto scrollerV = mScrollerV.lock();
+		if (scrollerV)
+		{
+			sprintf_s(val, 256, "%.4f", scrollerV->GetOffset().y);
+			return true;
+		}
+		else
+		{
+			sprintf_s(val, 256, "%.4f", 0.f);
+			return true;
+		}
 	}
 	}
 
@@ -1394,10 +1431,7 @@ void ListBox::GetSelectedUniqueIdsUnsigned(std::vector<unsigned>& ids) const{
 
 
 void ListBox::VisualizeData(unsigned index){
-	if (!mData)
-		return;
-
-	if (mItems.empty())
+	if (!GetVisible() || !mData || mItems.empty())
 		return;
 
 	if (index >= mItems.size()) {
@@ -1763,6 +1797,7 @@ void ListBox::MoveToRecycle(unsigned row){
 	{
 		if (!mItems[row][0].expired())
 		{
+			SetHighlightRow(row, false);
 			for (unsigned c = 0; c < mNumCols; ++c){
 				if (mItems[row][c].lock()->IsKeyboardFocused())
 					return;
@@ -1821,8 +1856,15 @@ void ListBox::OnSizeChanged()
 {
 	if (mNSize.x == NotDefined || mNSize.y == NotDefined)
 		return;
-
 	__super::OnSizeChanged();
+
+	mColSizesInt.clear();
+	auto parentX = GetFinalSize().x;
+	for (auto nsize : mColSizes) {
+		mColSizesInt.push_back(Round(nsize * parentX));
+	}
+
+	UpdateColSizes();	
 	Scrolled();
 }
 
@@ -1879,15 +1921,13 @@ void ListBox::Scrolled()
 	//to visual
 	while (prevStart > mStartIndex)
 	{
-		--prevStart;
-		unsigned visualIndex = prevStart;
+		unsigned visualIndex = --prevStart;
 		VisualizeData(visualIndex);
 	}
 
-	while (prevEnd < mEndIndex)
+	while (prevEnd <= mEndIndex)
 	{
-		++prevEnd;
-		unsigned visualIndex = prevEnd;
+		unsigned visualIndex = prevEnd++;
 		VisualizeData(visualIndex);
 	}
 
@@ -1909,7 +1949,7 @@ void ListBox::Sort()
 	mData->Sort(0);
 
 	if (mStartIndex != -1 && mEndIndex != -1) {
-		for (unsigned i = mStartIndex; i <= mEndIndex; i++) {
+		for (unsigned i = mStartIndex; i < mEndIndex; i++) {
 			VisualizeData(i);
 		}
 	}
@@ -2151,6 +2191,8 @@ void ListBox::NoVirtualizingItem(unsigned rowIndex){
 }
 
 void ListBox::UpdateColSizes(){	
+	if (mColSizes.empty())
+		return;
 	float totalSize = 0.f;
 	for (auto size : mColSizes)	{
 		totalSize += size;
@@ -2181,14 +2223,31 @@ void ListBox::UpdateColSizes(){
 		int pos = 0;
 		for (auto itemIt : row){
 			auto item = itemIt.lock();
-			assert(item);
-			if (item->GetMerged())
-				break;
-			if (col >= mColSizes.size())
-				break;
-			item->ChangePosX(pos);
-			item->ChangeSizeX(mColSizesInt[col]);
-			pos += mColSizesInt[col++];
+			if (item) {
+				if (item->GetMerged())
+					break;
+				if (col >= mColSizes.size())
+					break;
+				item->ChangePosX(pos);
+				item->ChangeSizeX(mColSizesInt[col]);
+				pos += mColSizesInt[col++];
+			}
+		}
+	}
+
+	for (auto row : mRecycleBin) {
+		unsigned col = 0;
+		int pos = 0;
+		for (auto item : row) {			
+			if (item) {
+				if (item->GetMerged())
+					break;
+				if (col >= mColSizes.size())
+					break;
+				item->ChangePosX(pos);
+				item->ChangeSizeX(mColSizesInt[col]);
+				pos += mColSizesInt[col++];
+			}
 		}
 	}
 }
@@ -2426,10 +2485,11 @@ void ListBox::RefreshVisual() {
 void ListBox::OnParentSizeChanged() {
 	__super::OnParentSizeChanged();
 	mColSizesInt.clear();
-	auto parentX = GetParentSize().x;
+	auto parentX = GetFinalSize().x;
 	for (auto nsize : mColSizes) {
 		mColSizesInt.push_back(Round(nsize * parentX));
 	}
+	UpdateColSizes();
 }
 
 bool ListBox::GetHand() const {
@@ -2440,5 +2500,12 @@ bool ListBox::GetHighlighOnHover() const {
 	return mHighlightOnHover;
 }
 
+void ListBox::SetVisibleInternal(bool visible) {
+	__super::SetVisibleInternal(visible);
+	if (visible) {
+		for (unsigned i = mStartIndex; i <= mEndIndex; ++i) {
+			VisualizeData(i);
+		}
+	}		
 }
-
+}

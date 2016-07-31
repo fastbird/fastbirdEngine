@@ -39,6 +39,7 @@
 #include "FBRenderer/Camera.h"
 #include "SceneObjectFactory.h"
 #include "MeshObject.h"
+#include "ISkySphereLIstener.h"
 
 using namespace fb;
 static RenderTargetPtr sRT;
@@ -100,7 +101,14 @@ public:
 				mInterpolating = false;
 				if (!mUseAlphaBlend)
 				{
-					SceneObjectFactory::GetInstance().UpdateEnvMapInNextFrame(mSelfPtr.lock());
+					bool listenerFound = false;
+					for (auto l : mSelf->mListeners) {
+						l->OnInterpolationFinished(mSelf);
+						listenerFound = true;
+					}
+					if (!listenerFound) {
+						SceneObjectFactory::GetInstance().UpdateEnvMapInNextFrame(mSelfPtr.lock());
+					}
 				}
 			}
 
@@ -261,7 +269,7 @@ public:
 	void SetInterpolationData(unsigned index, const Vec4& data){
 		assert(index < 5);
 		mMaterialParamDest[index] = data;
-		if (index == 2)
+		if (index == 3)
 		{
 			mMaterialParamDest[index].w = mAlpha;
 		}

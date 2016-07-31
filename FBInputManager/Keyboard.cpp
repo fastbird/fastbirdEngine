@@ -276,4 +276,8 @@ public:
 	{
 		mImpl->PopChar();
 	}
+
+	void Keyboard::OnGetFocus() {
+		mImpl->ClearKeydown();
+	}
 }

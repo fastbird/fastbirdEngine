@@ -69,6 +69,7 @@ namespace fb{
 	*/
 	class IPlatformRenderer{
 	public:		
+		virtual void RegisterThreadIdConsideredMainThread(std::thread::id threadId) = 0;
 		virtual void PrepareQuit() = 0;
 		//-------------------------------------------------------------------
 		// Device features

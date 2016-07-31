@@ -58,8 +58,10 @@ namespace fb
 		Camera& operator= (const Camera& other);
 
 		CameraPtr Clone();
+		void CloneTo(const ICameraPtr& cam) OVERRIDE;
 		void SetMainCamera(bool main);
 		bool IsMainCamera() const;
+		ICameraPtr GetSelfPtr() OVERRIDE;
 		//-------------------------------------------------------------------------
 		void SetOrthogonal(bool ortho);
 		void SetPosition(const Vec3& pos);

@@ -35,7 +35,8 @@ namespace fb
 	{
 	public:
 		typedef std::vector<WinBasePtr> Comps;
-		virtual void OnComponentSelected(WinBasePtr comp) {}
+		virtual void OnComponentSelected(WinBasePtr comp, bool add) {}
+		virtual void OnComponentsSelected(const Comps& comp) {}
 		virtual void OnComponentDeselected(WinBasePtr comp) {}
 		virtual void OnComponentDeleted(WinBasePtr comp){}
 		virtual WinBasePtr GetCurSelected() const { return 0; }

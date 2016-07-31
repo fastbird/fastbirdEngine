@@ -150,9 +150,8 @@ namespace fb
 		}
 
 		void TakeOwnershipScene(IScenePtr scene) {
-			mScene = scene;
 			mSceneOwnerShip = scene;
-			mStrategy->SetScene(scene);
+			RegisterScene(scene);
 		}
 
 		void SetCamera(CameraPtr cam) {
@@ -499,8 +498,13 @@ namespace fb
 	{
 	}
 
+	RenderTargetPtr RenderTarget::GetSelfPtr() {
+		return mImpl->mSelfPtr.lock();
+	}
+
 	RenderTarget::~RenderTarget()
 	{
+
 	}
 
 	//-------------------------------------------------------------------

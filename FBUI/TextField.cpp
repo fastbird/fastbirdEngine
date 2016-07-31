@@ -53,7 +53,7 @@ TextField::TextField()
 	, mPasswd(false)
 	, mCursorOffset(0)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->SetMaterial("EssentialEngineData/materials/UITextField.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());

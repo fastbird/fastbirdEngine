@@ -32,6 +32,7 @@
 #include "FBSceneObjectFactory/SkyBox.h"
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBSceneManager/Scene.h"
+#include "ISkyFacadeListener.h"
 using namespace fb;
 class SkyFacade::Impl{
 public:
@@ -129,7 +130,6 @@ public:
 		if (mSkySphere)
 			mSkySphere->StartInterpolation(time);
 	}
-
 };
 
 //---------------------------------------------------------------------------
@@ -229,4 +229,35 @@ void SkyFacade::SetInterpolationData(unsigned index, const Vec4& data){
 
 void SkyFacade::StartInterpolation(float time){
 	mImpl->StartInterpolation(time);
+}
+
+
+void SkyFacade::AddListener(ISkyFacadeListener* listener) {
+	if (mImpl->mSkySphere) {
+		mImpl->mSkySphere->AddListener(this);
+		__super::AddListener(listener);
+	}
+	else {
+		Logger::Log(FB_ERROR_LOG_ARG, "No skysphere ready!");
+	}	
+}
+
+void SkyFacade::RemoveListener(ISkyFacadeListener* listener) {
+	if (mImpl->mSkySphere) {
+		mImpl->mSkySphere->RemoveListener(this);
+		__super::RemoveListener(listener);
+	}
+	else {
+		Logger::Log(FB_ERROR_LOG_ARG, "No skysphere ready!");
+	}	
+}
+
+void SkyFacade::OnInterpolationFinished(SkySphere* sky) {
+	if (mImpl->mSkySphere.get()!= sky) {
+		Logger::Log(FB_ERROR_LOG_ARG, "Invalid listener link.");
+		return;
+	}
+	for (auto l : mListeners) {
+		l->OnInterpolationFinished(mImpl->mSelfPtr.lock());
+	}
 }

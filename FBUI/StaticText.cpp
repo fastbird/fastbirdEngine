@@ -45,7 +45,7 @@ StaticText::StaticText()
 	, mCursorPos(0)
 	, mPasswd(false)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);

@@ -45,7 +45,7 @@ namespace fb{
 		: mCurTabIndex(0)
 	{
 		mNumTabs = GetDefaultValueInt(UIProperty::TABWND_NUM_TABS);
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	}

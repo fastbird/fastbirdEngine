@@ -59,6 +59,7 @@ namespace fb
 
 	public:
 		static RenderTargetPtr Create();
+		RenderTargetPtr GetSelfPtr();
 		~RenderTarget();
 
 		//-------------------------------------------------------------------

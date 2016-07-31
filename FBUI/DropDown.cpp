@@ -53,7 +53,7 @@ DropDown::DropDown()
 	, mMaxHeight(200)
 	, mTriggerEvent(true)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetTextColor(mTextColor);
@@ -150,8 +150,10 @@ bool DropDown::SetProperty(UIProperty::Enum prop, const char* val)
 		mDropDownItemsString = val;
 		auto v = Split(val, ",");
 		for (auto& str : v) {
-			if (!str.empty())
-				AddDropDownItem(AnsiToWide(str.c_str()));
+			if (!str.empty()) {				
+				std::string translated = TranslateText(str.c_str());
+				AddDropDownItem(AnsiToWide(translated.c_str()));
+			}
 		}
 		return true;
 	}
@@ -339,7 +341,9 @@ size_t DropDown::AddDropDownItem(WinBasePtr winbase)
 	SetCommonProperty(item, index);
 	if (mDropDownItems.size() == 1)
 	{
+		mTriggerEvent = false;
 		OnItemSelected(item.get());
+		mTriggerEvent = true;
 	}
 	if (mReservedIdx != -1 && mReservedIdx < mDropDownItems.size())
 	{
@@ -400,6 +404,7 @@ void DropDown::SetSelectedIndex(size_t index)
 	auto item = mDropDownItems[index].lock();
 	assert(item);
 	SetText(item->GetText());
+	mReservedIdx = -1;
 }
 
 void DropDown::SetReservedIndex(size_t index)
@@ -451,7 +456,8 @@ const wchar_t* DropDown::GetItemString(unsigned index){
 		return mDropDownItems[index].lock()->GetText();
 	}
 	else{
-		Error("DropDown::GetItemString : invalid index(%u)", index);
+		Logger::Log(FB_ERROR_LOG_ARG, 
+			FormatString("DropDown::GetItemString : invalid index(%u)", index).c_str());
 	}
 	return L"";
 }

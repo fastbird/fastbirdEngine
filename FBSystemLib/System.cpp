@@ -86,6 +86,24 @@ namespace fb{
 #endif
 	}
 
+	void SetWindowPos(HWindow handle, Vec2ITuple pos) {
+#if defined(_PLATFORM_WINDOWS_)
+		RECT originalRect;
+		HWND hwnd = (HWND)handle;
+		GetWindowRect(hwnd, &originalRect);
+		auto resolX = originalRect.right - originalRect.left;
+		auto resolY = originalRect.bottom - originalRect.top;
+		RECT rect;
+		rect.left = std::get<0>(pos);
+		rect.top = std::get<1>(pos);
+		rect.right = rect.left + resolX;
+		rect.bottom = rect.top + resolY;		
+		SetWindowPos(hwnd, 0, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, 0);
+#else
+		assert(0 && "Not implemented");
+#endif
+	}
+
 	Vec2ITuple GetWindowClientSize(HWindow handle){
 #if defined(_PLATFORM_WINDOWS_)
 		RECT rect;

@@ -67,6 +67,8 @@ namespace fb
 		Vec4& operator/=(Real scalar);
 		bool operator== (const Vec4& other) const;
 		bool operator!= (const Vec4& other) const;
+		Real operator[] (const size_t i) const;
+		Real& operator[] (const size_t i);
 		operator Vec4Tuple() const;
 		
 		//-------------------------------------------------------------------------

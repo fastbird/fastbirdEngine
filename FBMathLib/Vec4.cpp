@@ -153,6 +153,18 @@ bool Vec4::operator!= (const Vec4& other) const{
 	return !operator==(other);
 }
 
+Real Vec4::operator[] (const size_t i) const {
+	assert(i < 4);
+
+	return *(&x + i);
+}
+
+Real& Vec4::operator[] (const size_t i) {
+	assert(i < 4);
+
+	return *(&x + i);
+}
+
 Vec4::operator Vec4Tuple() const{
 	return std::make_tuple(x, y, z, w);
 }

@@ -50,7 +50,7 @@ ListItem::ListItem()
 	, mBackColor("0.1, 0.3, 0.3, 0.7")
 	, mMerged(false)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }

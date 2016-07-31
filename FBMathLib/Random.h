@@ -64,6 +64,8 @@ namespace fb
 		return Random(Vec3(-1, -1, -1), Vec3(1, 1, 1)).NormalizeCopy();
 	}
 
+	Vec3 RandomDirectionCone(const Vec3& axis, Real theta);
+
 	inline Vec2 Random(const Vec2& min, const Vec2& max) 
 	{
 		return Vec2(Random(min.x, max.x),

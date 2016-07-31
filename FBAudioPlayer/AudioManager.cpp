@@ -35,6 +35,7 @@
 #include "AudioSource.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/Helpers.h"
+#include "FBCommonHeaders/ProfilerSimple.h"
 using namespace fb;
 
 AudioId NextAudioId = 1;
@@ -208,7 +209,7 @@ public:
 				mALSources.push(src);
 			}
 		}
-		Log("OpenAL initialized!");
+		Logger::Log(FB_DEFAULT_LOG_ARG, "OpenAL initialized!");
 		mAudioThread.CreateThread(1024, "AudioThread");
 		return true;
 	}
@@ -331,12 +332,10 @@ public:
 	}
 
 	void Update(TIME_PRECISION dt){		
-		
-
 	}
 	
 	// AudioThreadFunc
-	bool PlayAudioBuffer(AudioBufferPtr buffer, AudioSourcePtr audioSource){
+	bool PlayAudioBuffer(AudioBufferPtr buffer, AudioSourcePtr audioSource){		
 		if (!buffer || buffer->mBuffer == -1){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg");
 			return false;
@@ -415,14 +414,23 @@ public:
 		using namespace std::chrono;
 		auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();		
 		std::pair<AudioId, ALuint> audioIdSrcId;
-		ENTER_CRITICAL_SECTION l(mAudioMutex);
+		mAudioMutex.Lock();
 		auto it = mAudioBuffers.Find(loweredPath);
 		if (it != mAudioBuffers.end()){
 			it->second->mLastAccessed = curTick;
+			mAudioMutex.Unlock();
 			return it->second;
 		}
 		else{
-			auto buffer = alureCreateBufferFromFile(path.c_str());
+			mAudioMutex.Unlock();
+			ALuint buffer = 0;
+			try {
+				buffer = alureCreateBufferFromFile(path.c_str());
+			}
+			catch (...) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Exception occurred.");
+				return 0;
+			}
 			CheckALError();
 			if (!buffer){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot create audio buffer for(%s)", path.c_str()).c_str());
@@ -438,7 +446,9 @@ public:
 			alGetBufferi(buffer, AL_CHANNELS, &channels);
 			alGetBufferi(buffer, AL_BITS, &bit);
 			audioBuffer->mLength = GetDuration(bufferSize, frequency, channels, bit);
+			mAudioMutex.Lock();
 			mAudioBuffers[loweredPath] = audioBuffer;
+			mAudioMutex.Unlock();
 			return audioBuffer;
 		}
 	}
@@ -670,7 +680,7 @@ public:
 		}
 	}
 
-	TIME_PRECISION GetAudioLength(const char* path){
+	TIME_PRECISION GetAudioLength(const char* path){		
 		std::string audioPath;
 		if (_stricmp(FileSystem::GetExtension(path), ".fbaudio") == 0){
 			audioPath = ParseFBAudioForAudio(path);
@@ -688,7 +698,7 @@ public:
 		return buffer->mLength;
 	}
 
-	TIME_PRECISION GetAudioLength(AudioId id) {
+	TIME_PRECISION GetAudioLength(AudioId id) {		
 		if (mInvalidatedAudioIds.find(id) != mInvalidatedAudioIds.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Canno get a length for invalid audio(%u)", id).c_str());
 			return 0.f;
@@ -913,16 +923,19 @@ public:
 			std::get<1>(mListenerPos), std::get<2>(mListenerPos));
 
 		// execute play
-		for (auto& it : playQueue){
-			std::string pathKey(it.second.mFilePath);
-			ToLowerCase(pathKey);
-			auto audioBuffer = GetAudioBuffer(it.second.mFilePath, pathKey);
-			if (!audioBuffer){
-				continue;
+		{
+			for (auto& it : playQueue) {
+				std::string pathKey(it.second.mFilePath);
+				ToLowerCase(pathKey);
+				auto audioBuffer = GetAudioBuffer(it.second.mFilePath, pathKey);
+				if (!audioBuffer) {
+					continue;
+				}
+				CheckSimultaneous(it.second.mFilePath, it.second.mSource);
+				PlayAudioBuffer(audioBuffer, it.second.mSource);
 			}
-			CheckSimultaneous(it.second.mFilePath, it.second.mSource);
-			PlayAudioBuffer(audioBuffer, it.second.mSource);
 		}
+
 		
 		// execute settings
 		for (auto& it : setttingDataQueue){
@@ -1011,8 +1024,9 @@ public:
 							fadeOutE->SetDuration(leftTime);
 						}
 						else{							
-							auto fadeOut = SmoothGain::Create(it.mAudioId, 1.0f / std::min(leftTime, it.mSec),
-								itSource->second->GetGain(), 0.f);
+							float curGain = itSource->second->GetGain();
+							auto fadeOut = SmoothGain::Create(it.mAudioId, curGain / std::min(leftTime, it.mSec),
+								curGain, 0.f);
 							ENTER_CRITICAL_SECTION l(mAudioMutex);
 							mAudioManipulators[it.mAudioId].push_back(fadeOut);
 						}

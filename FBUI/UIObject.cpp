@@ -73,6 +73,8 @@ public:
 	Vec2I mRenderTargetSize;
 	unsigned mLastPreRendered;
 
+	WinBase* mUIComopnent;
+
 	//---------------------------------------------------------------------------
 	Impl(UIObject* self)
 		: mSelf(self)
@@ -98,6 +100,7 @@ public:
 		, mNeedToUpdatePosVB(true)
 		, mNeedToUpdateColorVB(false)
 		, mNeedToUpdateTexcoordVB(false)
+		, mUIComopnent(0)
 	{
 		SetMaterial("EssentialEngineData/materials/UI.material");
 		
@@ -463,7 +466,8 @@ public:
 
 		if (!mMaterial)
 		{
-			Error(FB_DEFAULT_LOG_ARG, "Doesn't have material. Cannot change scissor mode.");
+			Logger::Log(FB_DEFAULT_LOG_ARG, 
+				"Doesn't have material. Cannot change scissor mode.");
 			return;
 		}
 
@@ -532,12 +536,13 @@ public:
 	}
 };
 
-UIObjectPtr UIObject::Create(const Vec2I& renderTargetSize)
+UIObjectPtr UIObject::Create(const Vec2I& renderTargetSize, WinBase* uicomponent)
 {
 	static unsigned uinum = 0;
 	UIObjectPtr p(new UIObject, [](UIObject* obj){ delete obj; });	
 	p->SetRenderTargetSize(renderTargetSize);
 	//p->SetDebugNumber(uinum++);
+	p->SetUIComponent(uicomponent);
 	return p;
 }
 
@@ -694,4 +699,12 @@ void UIObject::SetSeperatedBackground(bool seperated){
 
 void UIObject::SetUseSeperatedUVForAlpha(bool seperatedUV){
 	mImpl->SetUseSeperatedUVForAlpha(seperatedUV);
+}
+
+void UIObject::SetUIComponent(WinBase* comp) {
+	mImpl->mUIComopnent = comp;
+}
+
+WinBase* UIObject::GetUIComponent() const {
+	return mImpl->mUIComopnent;
 }

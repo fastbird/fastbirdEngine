@@ -53,7 +53,7 @@ CardScroller::CardScroller()
 , mStartIndex(0)
 , mEndIndex(10)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUseScrollerV = true;
@@ -448,7 +448,7 @@ void CardScroller::RefreshProps(unsigned index){
 			comp->SetProperty(p.prop, p.val.c_str());
 		}
 		else{
-			Error("No component found in CardScroller.");
+			Logger::Log(FB_ERROR_LOG_ARG, "No component found in CardScroller.");
 		}
 		
 	}
@@ -477,7 +477,8 @@ void CardScroller::SetItemProperty(unsigned key, const char* comp, const char* p
 			if (c)
 				c->SetProperty(p, val);
 			else
-				Error("Cannot find a component in CardScroller.");
+				Logger::Log(FB_ERROR_LOG_ARG, 
+					"Cannot find a component in CardScroller.");
 		}
 	}
 }

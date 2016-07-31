@@ -117,18 +117,19 @@ namespace fb{
 		 because the Renderer you got already have the render engine plugged in.
 		*/
 		bool PrepareRenderEngine(const char* rendererPlugInName);
+		void RegisterThreadIdConsideredMainThread(std::thread::id threadId);
 		void PrepareQuit();
 		//-------------------------------------------------------------------
 		// Canvas & System
 		//-------------------------------------------------------------------
 		bool InitCanvas(HWindowId id, HWindow window, int width, int height);
-		void DeinitCanvas(HWindowId id);
-		void Render();		
+		void DeinitCanvas(HWindowId id);		
+		void Render();				
 
 		//-------------------------------------------------------------------
 		// Resource Creation
 		//-------------------------------------------------------------------
-		RenderTargetPtr CreateRenderTarget(const RenderTargetParam& param);
+		RenderTargetPtr CreateRenderTarget(const RenderTargetParam& param);		
 		/** After the render target is kept in pool, you should stop using it.
 		If you need to get it again use Renderer::CreateRenderTarget() again with
 		setting mUsePool in param as true.*/
@@ -309,7 +310,7 @@ namespace fb{
 		void RenderShadows();
 		void SetBindShadowMap(bool bind);
 		void OnShadowOptionChanged();
-		void KeepTextureReference(const char* filepath, const TextureCreationOption& option);
+		TexturePtr KeepTextureReference(const char* filepath, const TextureCreationOption& option);
 		/// Make a snapshot of the current render states(Rasterizer, Blend, DepthStencil)
 		/// Work like a stack.
 		/// The call should be match PopRenderStates()

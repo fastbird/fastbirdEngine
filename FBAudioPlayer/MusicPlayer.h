@@ -13,7 +13,7 @@ namespace fb{
 		/// Play looping
 		void PlayMusic(const char* path, float fadeOutOld);
 		void PlayMusic(const char* path, float fadeOutOld, bool loop);
-		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter);
+		void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop);
 		void StopMusic(float fadeOut);
 		void Update(float dt);
 		bool IsPlaying();

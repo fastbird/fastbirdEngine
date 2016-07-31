@@ -46,13 +46,20 @@ namespace fb
 	
 
 	static void DebugOutput(const char* format, ...){
+		static const size_t BufferSize = 2048;
+		std::vector<char> buffer(BufferSize, 0);
 		va_list args;
 		va_start(args, format);
-		char buffer[2048];
-		vsprintf_s(buffer, format, args);
+		auto len = (size_t)_vscprintf(format, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), format, args);
 		va_end(args);
+
 #if defined(_PLATFORM_WINDOWS_)
-		OutputDebugString(buffer);
+		OutputDebugString(&buffer[0]);
 #else
 		assert(0 && "Not implemented");
 #endif
@@ -121,31 +128,6 @@ namespace fb
 	}
 
 	void Profiler::Reset(){
-		mStartTick = gpTimer->GetTickCount();
-	}
-
-	//-----------------------------------------------------------------------
-	// Profile simple
-	ProfilerSimple::ProfilerSimple(const char* name)
-		:mName(name)
-	{
-		mStartTick = gpTimer->GetTickCount();
-	}
-
-	TIME_PRECISION ProfilerSimple::GetDT() const
-	{
-		TIME_PRECISION dt = (gpTimer->GetTickCount() - mStartTick) / (TIME_PRECISION)std::milli::den;
-		mPrevDT = (dt + mPrevDT) * .5f;
-		return mPrevDT;
-	}
-
-	const char* ProfilerSimple::GetName() const
-	{
-		return mName;
-	}
-
-	void ProfilerSimple::Reset()
-	{
 		mStartTick = gpTimer->GetTickCount();
 	}
 }

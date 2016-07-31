@@ -28,11 +28,15 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 #include "FBRenderer/RenderPass.h"
+#include "FBCommonHeaders/GenericNotifier.h"
+#include "FBSceneObjectFactory/ISkySphereLIstener.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(Material);
 	FB_DECLARE_SMART_PTR(SkyFacade);
-	class FB_DLL_ENGINEFACADE SkyFacade{
+	class SkySphere;
+	class ISkyFacadeListener;	
+	class FB_DLL_ENGINEFACADE SkyFacade : public GenericNotifier<ISkyFacadeListener>, public ISkySphereListener{
 		FB_DECLARE_PIMPL_NON_COPYABLE(SkyFacade);
 		SkyFacade();
 		~SkyFacade();
@@ -58,5 +62,11 @@ namespace fb{
 		void AttachBlendingSky(SkyFacadePtr blending);
 		void SetInterpolationData(unsigned index, const Vec4& data);
 		void StartInterpolation(float time);
+
+		// GenericNotifier
+		void AddListener(ISkyFacadeListener* listener) OVERRIDE;
+		void RemoveListener(ISkyFacadeListener* listener) OVERRIDE;
+		// ISkySphereListener
+		void OnInterpolationFinished(SkySphere* sky);
 	};
 }

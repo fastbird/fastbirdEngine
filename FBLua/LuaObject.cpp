@@ -366,6 +366,14 @@ LuaObject LuaObject::SetFieldTable(const char* fieldName) const
 	return ret;
 }
 
+void LuaObject::SetFieldTable(const char* fieldName, LuaObject& tableObj) const {
+	LUA_STACK_WATCHER w(mL, __FUNCTION__);
+	PushToStack();
+	tableObj.PushToStack();
+	lua_setfield(mL, -2, fieldName);
+	lua_pop(mL, 1);
+}
+
 void LuaObject::SetField(const char* fieldName, double num) const
 {
 	assert(fieldName);
@@ -627,6 +635,14 @@ void LuaObject::SetSeq(int n, LuaObject& value) const{
 	else{
 		assert(0);
 	}
+}
+
+void LuaObject::SetSeqNil(int n) const {
+	LUA_STACK_WATCHER w(mL, __FUNCTION__);
+	PushToStack();
+	lua_pushnil(mL);	
+	lua_rawseti(mL, -2, n);
+	lua_pop(mL, 1);
 }
 
 
@@ -1183,6 +1199,9 @@ void LuaObject::Clear()
 		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
 
 	FB_SAFE_DELETE(mSelf);
+
+	mType = LUA_TNONE;
+	mRef = LUA_NOREF;
 }
 
 unsigned LuaObject::GetLen() const

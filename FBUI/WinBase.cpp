@@ -927,12 +927,12 @@ void WinBase::OnMouseIn(IInputInjectorPtr injector, bool propergated){
 	}
 }
 void WinBase::OnMouseOut(IInputInjectorPtr injector, bool propergated){
+	mMouseIn = false;
 	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
 		return;
 	}
-	assert(injector);
-	mMouseIn = false;
+	assert(injector);	
 	auto npos = injector->GetMouseNPos();
 	ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
 	auto parent = mParent.lock();
@@ -1543,7 +1543,7 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 	}
 	case UIProperty::TEXT:
 	{
-		assert(val);
+		assert(val);		
 		if (mTextBeforeTranslated == val && strlen(val) > 0){
 			if (mUIObject)
 				mUIObject->SetTextSize(mTextSize);
@@ -1736,8 +1736,10 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			return true;
 		}
 	}
-	if (!sSuppressPropertyWarning)
-		Error(FB_ERROR_LOG_ARG, FormatString("Not processed property(%s) found", UIProperty::ConvertToString(prop)));
+	if (!sSuppressPropertyWarning) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Not processed property(%s) found", UIProperty::ConvertToString(prop)));
+	}
 	return false;
 }
 
@@ -2024,19 +2026,25 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 	}
 	case UIProperty::TEXT:
 	{
-		if (notDefaultOnly) {
-			if (mTextw.empty() && mTextBeforeTranslated.empty())
-				return false;
-		}
+		if (mTextBeforeTranslated.size() < bufsize - 1) {
+			if (notDefaultOnly) {
+				if (mTextw.empty() && mTextBeforeTranslated.empty())
+					return false;
+			}
 
-		if (!mTextBeforeTranslated.empty()){
-			strcpy_s(val, bufsize, mTextBeforeTranslated.c_str());
+			if (!mTextBeforeTranslated.empty()) {
+				strcpy_s(val, bufsize, mTextBeforeTranslated.c_str());
+			}
+			else
+			{
+				strcpy_s(val, bufsize, WideToAnsi(mTextw.c_str()));
+			}
+			return true;
 		}
-		else
-		{
-			strcpy_s(val, bufsize, WideToAnsi(mTextw.c_str()));
+		else {
+			return false;
 		}
-		return true;
+		
 	}
 
 	case UIProperty::KEEP_UI_RATIO:
@@ -3870,6 +3878,20 @@ void WinBase::ReservePendingDelete(bool pendingDelete) {
 
 bool WinBase::IsPendingDeleteReserved() const {
 	return mPendingDelete;
+}
+
+bool WinBase::GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps) {
+	if (!GetVisible())
+		return false;
+	auto pos = GetFinalPos();
+	auto posEnd = pos + GetFinalSize();
+	Rect uiR = { pos.x, pos.y, posEnd.x, posEnd.y };	
+	if (IsContained(r, uiR)) {
+		comps.push_back(mSelfPtr.lock());
+		return true;
+	}
+
+	return false;
 }
 
 void SetDefaultPropertyForUI(WinBasePtr winbase, UIProperty::Enum prop) {

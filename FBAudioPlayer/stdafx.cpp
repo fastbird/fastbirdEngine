@@ -29,20 +29,34 @@
 
 namespace fb{
 	void Error(const char* szFmt, ...){
-		char buf[2048];
+		static const size_t BufferSize = 2048;
+		std::vector<char> buffer(BufferSize, 0);
 		va_list args;
 		va_start(args, szFmt);
-		vsprintf_s(buf, 2048, szFmt, args);
+		auto len = (size_t)_vscprintf(szFmt, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), szFmt, args);
 		va_end(args);
-		Logger::Log(FB_ERROR_LOG_ARG, buf);
+
+		Logger::Log(FB_ERROR_LOG_ARG, &buffer[0]);
 	}
 
 	void Log(const char* szFmt, ...){
-		char buf[2048];
+		static const size_t BufferSize = 2048;
+		std::vector<char> buffer(BufferSize, 0);
 		va_list args;
 		va_start(args, szFmt);
-		vsprintf_s(buf, 2048, szFmt, args);
+		auto len = (size_t)_vscprintf(szFmt, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), szFmt, args);
 		va_end(args);
-		Logger::Log(FB_DEFAULT_LOG_ARG, buf);
+
+		Logger::Log(FB_DEFAULT_LOG_ARG, &buffer[0]);
 	}
 }

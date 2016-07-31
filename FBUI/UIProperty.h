@@ -162,6 +162,7 @@ namespace fb
 			NUMERIC_UPDOWN_STEP,			
 			ALWAYS_ON_TOP,
 			CLOSE_BY_ESC,
+			CLOSE_BY_BACKGROUND_CLICK,
 			DROPDOWN_INDEX,
 			DROPDOWN_MAX_HEIGHT,
 			COLOR_RAMP_VALUES,
@@ -328,6 +329,7 @@ namespace fb
 			"NUMERIC_UPDOWN_STEP",			
 			"ALWAYS_ON_TOP",
 			"CLOSE_BY_ESC",
+			"CLOSE_BY_BACKGROUND_CLICK",
 			"DROPDOWN_INDEX",
 			"DROPDOWN_MAX_HEIGHT",
 			"COLOR_RAMP_VALUES",
@@ -565,6 +567,8 @@ namespace fb
 			case ALWAYS_ON_TOP:
 				return false;
 			case CLOSE_BY_ESC:
+				return false;
+			case CLOSE_BY_BACKGROUND_CLICK:
 				return false;
 			case SYNC_WINDOW_POS:
 				return false;

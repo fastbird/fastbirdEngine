@@ -48,33 +48,48 @@
 #include <set>
 
 #define _RENDERER_FRAME_PROFILER_
+//#define MAIN_THREAD_CHECK if (!IsMainThread()) {__debugbreak();}
+#define MAIN_THREAD_CHECK
 using namespace fb;
 
 #define SEPERATED_THREAD_FOR_COMPUTE_SHADER 1
 
 static void Error(const char* szFmt, ...){
-	char buf[2048];
+	static const size_t BufferSize = 2048;
+	std::vector<char> buffer(BufferSize, 0);
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	auto len = (size_t)_vscprintf(szFmt, args) + 1;
+	if (len > BufferSize) {
+		buffer.resize(len, 0);
+	}
+	auto s = buffer.size();
+	vsprintf_s((char*)&buffer[0], buffer.size(), szFmt, args);
 	va_end(args);
-	Logger::Log(FB_ERROR_LOG_ARG, buf);
+
+	Logger::Log(FB_ERROR_LOG_ARG, &buffer[0]);
 }
 
 static void Log(const char* szFmt, ...){
-	char buf[2048];
+	static const size_t BufferSize = 2048;
+	std::vector<char> buffer(BufferSize, 0);
 	va_list args;
 	va_start(args, szFmt);
-	vsprintf_s(buf, 2048, szFmt, args);
+	auto len = (size_t)_vscprintf(szFmt, args) + 1;
+	if (len > BufferSize) {
+		buffer.resize(len, 0);
+	}
+	auto s = buffer.size();
+	vsprintf_s((char*)&buffer[0], buffer.size(), szFmt, args);
 	va_end(args);
-	Logger::Log(FB_DEFAULT_LOG_ARG, buf);
+
+	Logger::Log(FB_DEFAULT_LOG_ARG, &buffer[0]);
 }
 
 using ScratchImagePtr = std::shared_ptr<DirectX::ScratchImage>;
 static DirectX::TexMetadata GetMetadata(const char* path);
 static ScratchImagePtr LoadScratchImage(const char* path, bool generateMip, DirectX::TexMetadata& metadata);
 static ScratchImagePtr ConvertScratchImage(const ScratchImagePtr& srcImage);
-
 //----------------------------------------------------------------------------
 class RendererD3D11::Impl
 {
@@ -119,6 +134,7 @@ public:
 	/// The main thread is the thread in which the device is created.
 	/// Currently we are assuming the device is always created in the game update thread.
 	std::thread::id mMainThreadId;
+	std::thread::id mMainThreadId2;
 
 	// only for debugging.
 	ShaderD3D11* mCurrentShaders[SHADER_TYPE_COUNT];
@@ -134,6 +150,7 @@ public:
 		, mComputeShaderResultSize(0)
 	{
 		mMainThreadId = std::this_thread::get_id();
+		mMainThreadId2 = mMainThreadId;
 		IDXGIFactory1* dxgiFactory;
 		HRESULT hr;
 		try
@@ -619,8 +636,9 @@ public:
 		return 1;
 	}
 
-	bool IsMainThread() {
-		return std::this_thread::get_id() == mMainThreadId;
+	bool IsMainThread() const {
+		auto threadId = std::this_thread::get_id();
+		return threadId == mMainThreadId;// || threadId == mMainThreadId2;
 	}
 	// Resource creation
 	void SetShaderCacheOption(bool useShaderCache, bool generateCache){
@@ -634,7 +652,7 @@ public:
 			return 0;
 		}
 		
-		std::string filepath(path);
+		std::string filepath(path);		
 		if (!FileSystem::ResourceExists(filepath.c_str(), &filepath))
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
@@ -1866,6 +1884,7 @@ public:
 	}
 	
 	void SetDepthTarget(const IPlatformTexturePtr& pDepthStencil, size_t dsViewIndex) {
+		MAIN_THREAD_CHECK
 		mCurrentDSView = 0;
 		if (pDepthStencil)
 		{
@@ -1877,6 +1896,7 @@ public:
 	}
 
 	void SetViewports(const Viewport viewports[], int num){
+		MAIN_THREAD_CHECK
 		assert(num > 0);
 		std::vector<D3D11_VIEWPORT> d3d11_viewports;
 		for (int i = 0; i<num; i++)
@@ -1893,6 +1913,7 @@ public:
 
 	void SetVertexBuffers(unsigned int startSlot, unsigned int numBuffers,
 		IPlatformVertexBuffer const * pVertexBuffers[], unsigned int const strides[], unsigned int offsets[]){
+		MAIN_THREAD_CHECK
 		if (numBuffers == 0 && pVertexBuffers == 0)
 		{
 			ID3D11Buffer* pHardwareBuffers[1] = { 0 };
@@ -1914,11 +1935,13 @@ public:
 	}
 
 	void SetPrimitiveTopology(PRIMITIVE_TOPOLOGY pt){
+		MAIN_THREAD_CHECK
 		D3D11_PRIMITIVE_TOPOLOGY d3d11PT = ConvertEnumD3D11(pt);
 		mImmediateContext->IASetPrimitiveTopology(d3d11PT);
 	}
 
 	void SetTextures(IPlatformTexturePtr pTextures[], int num, SHADER_TYPE shaderType, int startSlot){
+		MAIN_THREAD_CHECK
 		std::vector<ID3D11ShaderResourceView*> rvs;
 		rvs.reserve(num);
 		for (int i = 0; i < num; i++)
@@ -1954,12 +1977,15 @@ public:
 		}
 	}
 
-	void BindConstants(){
-		mImmediateContext->VSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
-		mImmediateContext->GSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
-		mImmediateContext->PSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);		
+	void BindConstants() {
+		if (IsMainThread()) {
+			mImmediateContext->VSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
+			mImmediateContext->GSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
+			mImmediateContext->PSSetConstantBuffers(0, ShaderConstants::Num, mShaderConstants);
+		}
+
 #if SEPERATED_THREAD_FOR_COMPUTE_SHADER
-		mImmediateContext2->CSSetConstantBuffers(3, 1, &mComputeShaderConstants);
+		mImmediateContext2->CSSetConstantBuffers(3, 1, &mComputeShaderConstants);		
 #else
 		mImmediateContext->CSSetConstantBuffers(3, 1, &mShaderConstants[ShaderConstants::MaterialParam]);
 #endif
@@ -1967,6 +1993,7 @@ public:
 
 	// Data
 	void UpdateShaderConstants(ShaderConstants::Enum type, const void* data, int size){
+		MAIN_THREAD_CHECK
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		auto buffer = mShaderConstants[type];
 		mImmediateContext->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -1991,30 +2018,36 @@ public:
 	}
 
 	void* MapShaderConstantsBuffer() const{
+		MAIN_THREAD_CHECK
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		mImmediateContext->Map(mShaderConstants[ShaderConstants::MaterialParam], 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 		return mappedResource.pData;
 	}
 
 	void UnmapShaderConstantsBuffer() const{
+		MAIN_THREAD_CHECK
 		mImmediateContext->Unmap(mShaderConstants[ShaderConstants::MaterialParam], 0);
 	}
 
 	void* MapBigBuffer() const{
+		MAIN_THREAD_CHECK
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		mImmediateContext->Map(mShaderConstants[ShaderConstants::BigData], 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 		return mappedResource.pData;
 	}
 
 	void UnmapBigBuffer() const{
+		MAIN_THREAD_CHECK
 		mImmediateContext->Unmap(mShaderConstants[ShaderConstants::BigData], 0);
 	}
 
 	void UnbindInputLayout(){
+		MAIN_THREAD_CHECK
 		mImmediateContext->IASetInputLayout(0);
 	}
 
 	void UnbindShader(SHADER_TYPE shader){
+		MAIN_THREAD_CHECK
 		switch (shader){
 		case SHADER_TYPE_VS:
 			mImmediateContext->VSSetShader(0, 0, 0);
@@ -2040,6 +2073,7 @@ public:
 	}
 
 	void UnbindTexture(SHADER_TYPE shader, int slot){
+		MAIN_THREAD_CHECK
 		ID3D11ShaderResourceView* srv = 0;
 		switch (shader){
 		case SHADER_TYPE_VS:
@@ -2062,6 +2096,7 @@ public:
 
 	void CopyToStaging(IPlatformTexture* dst, UINT dstSubresource, UINT dstx, UINT dsty, UINT dstz,
 		IPlatformTexture* src, UINT srcSubresource, Box3D* pBox) {
+		MAIN_THREAD_CHECK
 		assert(dst && src && dst != src);
 		TextureD3D11* pDstD3D11 = static_cast<TextureD3D11*>(dst);
 		TextureD3D11* pSrcD3D11 = static_cast<TextureD3D11*>(src);
@@ -2077,6 +2112,7 @@ public:
 	}
 
 	void CopyResource(IPlatformTexture* dst, IPlatformTexture* src) {
+		MAIN_THREAD_CHECK
 		assert(dst && src && dst != src);
 		TextureD3D11* pDstD3D11 = static_cast<TextureD3D11*>(dst);
 		TextureD3D11* pSrcD3D11 = static_cast<TextureD3D11*>(src);
@@ -2092,20 +2128,24 @@ public:
 
 	// Drawing
 	void Draw(unsigned int vertexCount, unsigned int startVertexLocation) {
+		MAIN_THREAD_CHECK
 		mImmediateContext->Draw(vertexCount, startVertexLocation);
 	}
 
 	void DrawIndexed(unsigned indexCount, unsigned startIndexLocation, unsigned startVertexLocation) {
+		MAIN_THREAD_CHECK
 		mImmediateContext->DrawIndexed(indexCount, startIndexLocation, startVertexLocation);
 	}
 
 	void Clear(Real r, Real g, Real b, Real a, Real z, unsigned char stencil) {
-		Clear(r, g, b, a);		
+		MAIN_THREAD_CHECK
+		Clear(r, g, b, a);
 		if (mCurrentDSView)
 			mImmediateContext->ClearDepthStencilView(mCurrentDSView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, (float)z, stencil);
 	}
 
 	void Clear(Real r, Real g, Real b, Real a) {
+		MAIN_THREAD_CHECK
 		float ClearColor[4] = { (float)r, (float)g, (float)b, (float)a }; // red,green,blue,alpha
 		for (size_t i = 0; i<mCurrentRTViews.size(); i++)
 		{
@@ -2115,11 +2155,13 @@ public:
 	}
 
 	void ClearDepthStencil(Real z, UINT8 stencil) {
+		MAIN_THREAD_CHECK
 		if (mCurrentDSView)
 			mImmediateContext->ClearDepthStencilView(mCurrentDSView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, (float)z, stencil);
 	}
 
 	void ClearState() {
+		MAIN_THREAD_CHECK
 		mImmediateContext->ClearState();		
 	}
 
@@ -2235,6 +2277,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg3.");
 			return false;
 		}
+		MAIN_THREAD_CHECK
 		mImmediateContext->UpdateSubresource(pResource, 0,
 			0, data, bytes, 0);
 		return true;
@@ -2265,6 +2308,7 @@ public:
 
 	void SaveTextureToFile(TextureD3D11* texture, const char* filename)
 	{
+		MAIN_THREAD_CHECK
 		using namespace DirectX;
 		TextureD3D11* pTextureD3D11 = static_cast<TextureD3D11*>(texture);
 		if (pTextureD3D11)
@@ -2314,7 +2358,7 @@ public:
 						for (int m = 0; m < (int)desc.MipLevels; ++m) {														
 							auto map = stagingTexture->Map(subResource, MAP_TYPE_READ, MAP_FLAG_NONE);
 							if (map.pData) {
-								auto image = scratchImage.GetImage(m, a, 0);
+								auto image = scratchImage.GetImage(m, a, 0);								
 								memcpy(image->pixels, map.pData, image->slicePitch);								
 								stagingTexture->Unmap(subResource);
 							}							
@@ -2334,6 +2378,7 @@ public:
 	}
 
 	void GenerateMips(TextureD3D11* pTexture){		
+		MAIN_THREAD_CHECK
 		ID3D11ShaderResourceView* pSRV = pTexture->GetHardwareResourceView();
 		if (pSRV){
 			mImmediateContext->GenerateMips(pSRV);
@@ -2345,23 +2390,27 @@ public:
 
 	// Resource Bindings
 	void SetIndexBuffer(IndexBufferD3D11* pIndexBuffer, unsigned offset){		
+		MAIN_THREAD_CHECK
 		ID3D11Buffer* pHardwareBuffer = pIndexBuffer->GetHardwareBuffer();
 		mImmediateContext->IASetIndexBuffer(pHardwareBuffer, pIndexBuffer->GetFormatD3D11(), offset);
 	}
 
 	void SetTexture(TextureD3D11* pTexture, SHADER_TYPE shaderType, unsigned int slot){
-		ID3D11ShaderResourceView* const pSRV = pTexture ? pTexture->GetHardwareResourceView() : 0;
+		ID3D11ShaderResourceView* const pSRV = pTexture ? pTexture->GetHardwareResourceView() : 0;		
 		try
 		{
 			switch (shaderType)
 			{
 			case SHADER_TYPE_VS:
+				MAIN_THREAD_CHECK
 				mImmediateContext->VSSetShaderResources(slot, 1, &pSRV);
 				break;
 			case SHADER_TYPE_GS:
+				MAIN_THREAD_CHECK
 				mImmediateContext->GSSetShaderResources(slot, 1, &pSRV);
 				break;
 			case SHADER_TYPE_PS:
+				MAIN_THREAD_CHECK
 				mImmediateContext->PSSetShaderResources(slot, 1, &pSRV);
 				break;
 			case SHADER_TYPE_CS: {
@@ -2386,6 +2435,7 @@ public:
 	}
 
 	void SetShader(VertexShaderD3D11* pShader){
+		MAIN_THREAD_CHECK
 		if (pShader == 0 || pShader->GetCompileFailed())
 		{
 			mCurrentShaders[ShaderIndex(SHADER_TYPE_VS)] = 0;
@@ -2433,6 +2483,7 @@ public:
 	}*/
 
 	void SetShader(GeometryShaderD3D11* pShader){
+		MAIN_THREAD_CHECK
 		if (pShader == 0 || pShader->GetCompileFailed())
 		{
 			mImmediateContext->GSSetShader(0, 0, 0);
@@ -2446,6 +2497,7 @@ public:
 	}
 
 	void SetShader(PixelShaderD3D11* pShader){
+		MAIN_THREAD_CHECK
 		if (pShader == 0 || pShader->GetCompileFailed())
 		{
 			mImmediateContext->PSSetShader(0, 0, 0);
@@ -2668,26 +2720,31 @@ public:
 	}
 
 	void SetInputLayout(InputLayoutD3D11* pInputLayout){
+		MAIN_THREAD_CHECK
 		ID3D11InputLayout* pLayout = pInputLayout->GetHardwareInputLayout();
 		assert(pLayout);
 		mImmediateContext->IASetInputLayout(pLayout);
 	}
 
 	void SetRasterizerState(RasterizerStateD3D11* pRasterizerState){
+		MAIN_THREAD_CHECK
 		mImmediateContext->RSSetState(pRasterizerState->GetHardwareRasterizerState());
 	}
 
 	void SetBlendState(BlendStateD3D11* pBlendState){		
+		MAIN_THREAD_CHECK
 		mImmediateContext->OMSetBlendState(pBlendState->GetHardwareBlendState(),
 			pBlendState->GetBlendFactor(), pBlendState->GetSampleMask());
 	}
 
 	void SetDepthStencilState(DepthStencilStateD3D11* pDepthStencilState, int stencilRef){
+		MAIN_THREAD_CHECK
 		mImmediateContext->OMSetDepthStencilState(pDepthStencilState->GetHardwareDSState(),
 			(unsigned)stencilRef);
 	}
 
 	void SetSamplerState(SamplerStateD3D11* pSamplerState, SHADER_TYPE shader, int slot){
+		MAIN_THREAD_CHECK
 		ID3D11SamplerState* pSS = pSamplerState->GetHardwareSamplerState();
 		switch (shader)
 		{
@@ -2795,6 +2852,7 @@ public:
 	}
 
 	bool ResizeSwapChain(HWindowId hwndId, const Vec2I& resol, TextureD3D11Ptr& outColor, TextureD3D11Ptr& outDepth){
+		MAIN_THREAD_CHECK
 		mImmediateContext->OMSetRenderTargets(0, 0, 0);
 		mCurrentRTViews.clear();
 		mCurrentDSView = 0;
@@ -2891,6 +2949,10 @@ RendererD3D11::~RendererD3D11(){
 		pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_DETAIL);
 		SAFE_RELEASE(pDebug);
 	}
+}
+
+void RendererD3D11::RegisterThreadIdConsideredMainThread(std::thread::id threadId) {
+	mImpl->mMainThreadId2 = threadId;
 }
 
 void RendererD3D11::PrepareQuit() {
@@ -3217,7 +3279,11 @@ static DirectX::TexMetadata GetMetadata(const char* path) {
 
 static ScratchImagePtr LoadScratchImage(const char* path, bool generateMip, DirectX::TexMetadata& metadata) {
 	using namespace DirectX;
-	auto image = FileSystem::ReadBinaryFile(path);	
+	ByteArray image;
+	{
+		FileSystem::Lock l;
+		image = FileSystem::ReadBinaryFile(path);
+	}
 	if (image.empty()) {
 		return nullptr;
 	}

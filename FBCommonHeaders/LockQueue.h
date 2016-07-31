@@ -14,9 +14,14 @@ namespace fb {
 				mQueue.pop();
 		}
 
-		void Enq(type value) {
+		void Enq(type& value) {
 			EnterSpinLock<SpinLockWaitSleep> lock(mSpinLock);
 			mQueue.push(value);
+		}
+
+		void Enq(type&& value) {
+			EnterSpinLock<SpinLockWaitSleep> lock(mSpinLock);
+			mQueue.push(std::move(value));
 		}
 
 		type Deq() {

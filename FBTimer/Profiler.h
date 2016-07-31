@@ -28,6 +28,7 @@
 #pragma once
 #include <stack>
 #include "FBCommonHeaders/platform.h"
+#include "FBCommonHeaders/ProfilerSimple.h"
 #include "Timer.h"
 namespace fb
 {
@@ -45,18 +46,5 @@ namespace fb
 		void SetAccumulator(TIME_PRECISION* p);
 		TIME_PRECISION GetDt() const;
 		void Reset();	
-	};
-
-	class FB_DLL_TIMER ProfilerSimple
-	{
-		const char* mName;
-		INT64 mStartTick;
-		mutable TIME_PRECISION mPrevDT;
-
-	public:
-		ProfilerSimple(const char* name);
-		TIME_PRECISION GetDT() const;
-		const char* GetName() const;
-		void Reset();		
 	};
 }

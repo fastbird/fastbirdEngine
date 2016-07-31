@@ -56,6 +56,7 @@ namespace fb
 		virtual void ClearKeydown() = 0;
 
 		virtual void OnKillFocus() = 0;		
+		virtual void OnGetFocus() = 0;
 	};
 }
 

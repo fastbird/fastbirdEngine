@@ -46,7 +46,7 @@ namespace fb
 	class RecursiveSpinLock
 	{
 	protected:
-		SpinLock<Wait, Sleep> mGuard;
+		SpinLock<true, false> mGuard;
 		long mLockLevel;
 		std::thread::id mThreadId;
 
@@ -60,37 +60,25 @@ namespace fb
 		{
 			do
 			{
-				if (!mGuard.Lock())
-					return false;
-
-				// Atomically swap the lock variable with 1 if it's currently equal to 0
-				long expected = 0;
-				//on certain machines, and for certain algorithms that check this in a loop, 
-				// compare_exchange_weak may lead to significantly better performance than compare_exchange_strong				
-				if (mLockLevel==0)
 				{
-					mLockLevel = 1;
-					mThreadId = std::this_thread::get_id();
-					// We successfully acquired the lock
-					mGuard.Unlock();
-					return true;
+					EnterSpinLock<SpinLock<true, false>> lock(mGuard);
+					if (mLockLevel == 0)
+					{
+						mLockLevel = 1;
+						mThreadId = std::this_thread::get_id();						
+						return true;
+					}
+					if (mThreadId == std::this_thread::get_id()) {
+						++mLockLevel;
+						return true;
+					}
 				}
-				if (mThreadId == std::this_thread::get_id()){
-					++mLockLevel;
-					mGuard.Unlock();
-					return true;
-				}
-				mGuard.Unlock();
 
-				// To reduce inter-CPU bus traffic, when the lock is not acquired, 
-				// loop reading without trying to write anything, until 
-				// the value changes. This optimization should be effective on 
-				// all CPU architectures that have a cache per CPU.
 				while (Wait && mLockLevel)
 				{
 					if (Sleep)
 					{
-						std::this_thread::yield(); // SwitchThread
+						std::this_thread::yield();
 					}
 				}
 			} while (Wait);
@@ -99,17 +87,9 @@ namespace fb
 		}
 
 		void Unlock()
-		{
+		{	
+			EnterSpinLock<SpinLock<true, false>> lock(mGuard);
 			--mLockLevel;
-			assert(mLockLevel >= 0);
-			//long expected = mLockLevel.load();
-			//long desired = expected - 1;
-			//while (!mLockLevel.compare_exchange_weak(expected, desired))
-			//	/*nothing to do*/;
-
-			//if (std::this_thread::get_id() == mDebugThread){
-			//	--mDebugLockCounter;
-			//}
 		}
 	};
 }

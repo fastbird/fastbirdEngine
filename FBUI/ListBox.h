@@ -211,6 +211,7 @@ public:
 
 	bool GetHand() const;
 	bool GetHighlighOnHover() const;
+	void SetVisibleInternal(bool visible) OVERRIDE;
 
 protected:
 	friend class ListItem;

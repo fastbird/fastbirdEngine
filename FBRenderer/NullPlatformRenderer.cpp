@@ -38,6 +38,10 @@ NullPlatformRenderer::~NullPlatformRenderer(){
 
 }
 
+void NullPlatformRenderer::RegisterThreadIdConsideredMainThread(std::thread::id threadId) {
+
+}
+
 void NullPlatformRenderer::PrepareQuit() {
 }
 

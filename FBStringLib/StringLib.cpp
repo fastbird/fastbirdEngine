@@ -218,6 +218,67 @@ namespace fb{
 		return ret;
 	}
 
+	WStringVector Split(const std::wstring& str,
+		const std::wstring& delims, unsigned int maxSplits,
+		bool preserveDelims) 
+	{
+		WStringVector ret;
+		ret.reserve(maxSplits ? maxSplits + 1 : 10);
+		unsigned int numSplits = 0;
+		// Use STL methods 
+		size_t start, pos;
+		start = 0;
+		wchar_t lastDelim = 0;
+		do
+		{
+			pos = str.find_first_of(delims, start);
+			if (pos == start)
+			{
+				// If the the same delims is presented continously, push empty string.
+				// eg) 1,,2 -> StringVector{"1", "", "2"}
+				if (lastDelim == str[pos] || lastDelim == 0)
+					ret.push_back(std::wstring());
+
+				if (pos != std::wstring::npos)
+					start = pos + 1;
+			}
+			else if (pos == std::wstring::npos || (maxSplits && numSplits == maxSplits))
+			{
+				// Copy the rest of the string
+				ret.push_back(str.substr(start));
+				break;
+			}
+			else
+			{
+				// Copy up to delimiter
+				ret.push_back(str.substr(start, pos - start));
+				lastDelim = str[pos];
+				if (preserveDelims)
+				{
+					// Sometimes there could be more than one delimiter in a row.
+					// Loop until we don't find any more delims
+					size_t delimStart = pos, delimPos;
+					delimPos = str.find_first_not_of(delims, delimStart);
+					if (delimPos == std::wstring::npos)
+					{
+						// Copy the rest of the string
+						ret.push_back(str.substr(delimStart));
+					}
+					else
+					{
+						ret.push_back(str.substr(delimStart, delimPos - delimStart));
+					}
+				}
+
+				start = pos + 1;
+			}
+			++numSplits;
+
+		} while (pos != std::string::npos);
+
+		return ret;
+	}
+
 	int StringCompareNoCase(const std::string& lhs, const std::string& rhs){
 		auto size = lhs.size();
 		auto size2 = rhs.size();
@@ -384,14 +445,19 @@ namespace fb{
 	}
 
 	std::string FormatString(const char* str, ...){
-		char buf[2048];
+		static const size_t BufferSize = 2048;
+		std::string buffer(BufferSize, 0);
 		va_list args;
-
 		va_start(args, str);
-		vsprintf_s(buf, str, args);
+		auto len = (size_t)_vscprintf(str, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), str, args);
 		va_end(args);
 
-		return std::string(buf);
+		return std::string(&buffer[0]);
 	}
 
 	size_t FindLastIndexOf(const char* sz, char c) {
@@ -675,13 +741,17 @@ namespace fb{
 	{
 		if (size == 0)
 			size = (int)strlen(source);
-		static WCHAR wideBuffer[4096];
+
+		static std::vector<WCHAR> wideBuffer;
+		if (wideBuffer.size() < size+1) {
+			wideBuffer.resize(size + 1);
+		}
         
-		memset(wideBuffer, 0, 4096 * sizeof(WCHAR));
+		memset(&wideBuffer[0], 0, wideBuffer.size() * sizeof(WCHAR));
 
 		bool err = false;
 #if defined(_PLATFORM_WINDOWS_)
-		int ret = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, source, -1, wideBuffer, 2048);
+		int ret = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, source, -1, &wideBuffer[0], wideBuffer.size());
 		err = ret == 0;		
 #else
 		std::string localeBackup = std::setlocale(LC_ALL, NULL);
@@ -696,7 +766,7 @@ namespace fb{
 		if (err){
 			std::cerr << "AnsiToWide MultiByteToWideChar Failed!";
 		}
-		return wideBuffer;
+		return &wideBuffer[0];
 	}
 
 	WCHAR* AnsiToWide(const char* source)

@@ -62,6 +62,8 @@ namespace fb{
 		void GetDirectionalLightInfo(DirectionalLightIndex::Enum index, DirectionalLightInfo& data);
 		const Vec3& GetMainLightDirection();
 		void SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir);
+		void SetLightDiffuse(DirectionalLightIndex::Enum idx, const Vec3& color);
+		void SetLightIntensity(DirectionalLightIndex::Enum idx, float intensity);
 		void PreRender(const RenderParam& prarm, RenderParamOut* paramOut);
 		void Render(const RenderParam& prarm, RenderParamOut* paramOut);		
 		void PreRenderCloudVolumes(const RenderParam& prarm, RenderParamOut* paramOut);

@@ -30,6 +30,7 @@
 #include "DirectoryIterator.h"
 #include "File.h"
 #include "FBCommonHeaders/SpinLock.h"
+#include "FBCommonHeaders/RecursiveSpinLock.h"
 using namespace fb;
 
 static bool gLogginStarted = false;
@@ -38,6 +39,7 @@ static boost::filesystem::path gWorkingPath;
 std::string gApplicationName;
 static std::unordered_map<std::string, std::string> sResourceFolders;
 #define FBRExt "fbr"
+static RecursiveSpinLock<true, true> sGuard;
 void FileSystem::StartLoggingIfNot(){
 	if (gLogginStarted)
 		return;
@@ -59,11 +61,13 @@ void FileSystem::SetSecurityCheck(bool enable) {
 }
 
 bool FileSystem::Exists(const char* path){
+	//FileSystem::Lock l;
 	boost::system::error_code err;
 	return boost::filesystem::exists(path, err);
 }
 
 bool FileSystem::ResourceExists(const char* path, std::string* outResoucePath) {
+	//FileSystem::Lock l;
 	boost::system::error_code err;
 	bool ex = boost::filesystem::exists(path, err);
 	if (ex) {
@@ -161,6 +165,7 @@ bool FileSystem::Remove(const char* path){
 }
 
 size_t FileSystem::RemoveAll(const char* path) {
+	Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) removing all files in %s", path).c_str());
 	size_t ret = true;
 	try {
 		ret = (size_t)boost::filesystem::remove_all(path);
@@ -386,7 +391,7 @@ ByteArray FileSystem::ReadBinaryFile(const char* path){
 	FileSystem::Open file(path, "rb", SharingMode::ReadAllow, ErrorMode::PrintErrorMsg);
 	auto err = file.Error();
 	if (err) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Cannot read(%s)", path);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot read(%s)", path).c_str());
 		return{};
 	}
 	fseek(file, 0, SEEK_END);
@@ -952,4 +957,11 @@ FILE* FileSystem::OpenFileByMode(const char* path, const char* mode, errno_t* er
 	else {
 		return FileSystem::OpenFile(path, mode, errorNo);
 	}
+}
+
+FileSystem::Lock::Lock() {
+	sGuard.Lock();
+}
+FileSystem::Lock::~Lock() {
+	sGuard.Unlock();
 }

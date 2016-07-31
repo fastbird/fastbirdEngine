@@ -817,7 +817,7 @@ void Container::ParseXMLChildren(tinyxml2::XMLElement* pelem){
 		const char* sz = pchild->Attribute("type");
 		if (!sz)
 		{
-			Error("component doesn't have the type attribute.");
+			Logger::Log(FB_ERROR_LOG_ARG, "component doesn't have the type attribute.");
 			break;
 		}
 		ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
@@ -878,7 +878,7 @@ bool Container::ParseLua(const fb::LuaObject& compTable)
 			std::string type = child.GetField("type_").GetString();
 			if (type.empty())
 			{
-				Error("Component should have type_ attribute.");
+				Logger::Log(FB_ERROR_LOG_ARG, "Component should have type_ attribute.");				
 				assert(0);
 				continue;
 			}
@@ -951,6 +951,7 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 			offset.y = StringConverter::ParseReal(val);
 			scrollerV->SetOffset(offset);
 		}
+		return true;
 	}
 	case UIProperty::SCROLLERH:
 	{
@@ -996,6 +997,11 @@ bool Container::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize,
 		if (notDefaultOnly)
 			return false;
 		
+		auto contentWnd = mWndContentUI.lock();
+		if (contentWnd) {
+			return contentWnd->GetProperty(prop, val, bufsize, notDefaultOnly);
+		}
+
 		auto scrollerV = mScrollerV.lock();
 		if (scrollerV)
 		{
@@ -1069,6 +1075,11 @@ void Container::RemoveAllEvents(bool includeChildren)
 
 const Vec2& Container::GetScrollOffset() const
 {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI)
+	{
+		return contentUI->GetScrollOffset();		
+	}
 	auto scrollerV = mScrollerV.lock();
 	if (!scrollerV)
 		return Vec2::ZERO;
@@ -1077,7 +1088,17 @@ const Vec2& Container::GetScrollOffset() const
 }
 
 void Container::SetScrollOffset(const Vec2& offset){
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI)
+	{
+		contentUI->SetScrollOffset(offset);
+		return;
+	}
 	auto scrollerV = mScrollerV.lock();
+	if (!scrollerV) {
+		RefreshVScrollbar();
+		scrollerV = mScrollerV.lock();
+	}
 	if (scrollerV){
 		scrollerV->SetOffset(offset);
 	}
@@ -1451,6 +1472,19 @@ void Container::GetChildrenNames(LuaObject& t) {
 		if (!ValueExistsInVector(mPendingDelete, c))
 			t.SetSeq(n++, c->GetName());
 	}
+}
+
+bool Container::GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps) {
+	if (!GetVisible())
+		return false;
+
+	auto found = __super::GetComponentsInRegion(r, comps);
+	if (!found) {
+		for (auto c : mChildren) {
+			c->GetComponentsInRegion(r, comps);
+		}
+	}
+	return false;
 }
 
 }

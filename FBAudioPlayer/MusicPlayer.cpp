@@ -10,6 +10,7 @@ public:
 	float mStartNewAfter;
 	float mMaxGain;
 	float mGain;
+	bool mLoop;
 
 	//---------------------------------------------------------------------------
 	Impl()
@@ -17,13 +18,16 @@ public:
 		, mStartNewAfter(0)
 		, mMaxGain(1)
 		, mGain(1)
+		, mLoop(true)
 	{
 
 	}
 
-	void PlayMusic(const char* path, float fadeOutOld){
+	void PlayMusic(const char* path, float fadeOutOld){	
 		if (!ValidCString(path))
 			return;
+		/*using namespace std::chrono;
+		auto tick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();*/
 
 		auto& am = AudioManager::GetInstance();		
 		if (mCurrentAudioId != INVALID_AUDIO_ID){
@@ -42,14 +46,19 @@ public:
 		mCurrentAudioPath = path;
 		AudioManager::GetInstance().SetLoop(mCurrentAudioId, true);
 		AudioManager::GetInstance().SetGain(mCurrentAudioId, mGain * mMaxGain, true);
+		mStartNewAfter = 0.f;
+
+		/*auto elapsed = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() - tick;
+		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+			"(info) PlayMusic(%s) takes %u", path, elapsed).c_str());*/
 	}
 
 	void PlayMusic(const char* path, float fadeOutOld, bool loop){		
 		PlayMusic(path, fadeOutOld);
-		AudioManager::GetInstance().SetLoop(mCurrentAudioId, loop);
+		AudioManager::GetInstance().SetLoop(mCurrentAudioId, loop);		
 	}
 
-	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
+	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop){
 		if (!ValidCString(path))
 			return;
 		startNewAfter = std::max(0.f, startNewAfter);
@@ -59,11 +68,12 @@ public:
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
 		}
 		if (startNewAfter == 0.f){
-			PlayMusic(path, fadeOutOld);			
+			PlayMusic(path, fadeOutOld, loop);
 		}
 		else{
 			mStartNewAfter = startNewAfter;
 			mCurrentAudioPath = path;
+			mLoop = loop;
 		}
 	}
 
@@ -84,7 +94,7 @@ public:
 		if (mStartNewAfter > 0.f){
 			mStartNewAfter -= dt;
 			if (mStartNewAfter <= 0.f){
-				PlayMusic(mCurrentAudioPath.c_str(), 0.f);				
+				PlayMusic(mCurrentAudioPath.c_str(), 0.5f, mLoop);
 			}
 		}
 	}
@@ -151,8 +161,8 @@ void MusicPlayer::PlayMusic(const char* path, float fadeOutOld, bool loop){
 	mImpl->PlayMusic(path, fadeOutOld, loop);
 }
 
-void MusicPlayer::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
-	mImpl->ChangeMusic(path, fadeOutOld, startNewAfter);
+void MusicPlayer::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop){
+	mImpl->ChangeMusic(path, fadeOutOld, startNewAfter, loop);
 }
 
 void MusicPlayer::StopMusic(float fadeOut){

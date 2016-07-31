@@ -17,6 +17,7 @@
     <ClInclude Include="AudioExFacade.h" />
     <ClInclude Include="GeometryRenderer.h" />
     <ClInclude Include="AudioOptions.h" />
+    <ClInclude Include="ISkyFacadeListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

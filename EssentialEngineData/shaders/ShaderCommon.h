@@ -62,6 +62,8 @@ SamplerState gLinearBlackBorderSampler : register(s6);
 SamplerState gPointBlackBorderSampler : register(s7);
 SamplerState gLinearMirror : register(s8);
 
+const float3 dielectricColor = {0.1, 0.1, 0.1};
+
 #endif // !CPP
 
 #define MAX_POINT_LIGHT 3

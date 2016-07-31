@@ -230,23 +230,31 @@ public:
 	//--------------------------------------------------------------------------
 	void Log(const char* szFmt, ...)
 	{
-		MutexLock lock(mMutex);		
-		char buf[4096];
+		MutexLock lock(mMutex);				
 		auto oldHandler = _set_invalid_parameter_handler(InvalidParamHandler);
+
+		static const size_t BufferSize = 2048;
+		std::vector<char> buffer(BufferSize, 0);
 		va_list args;
 		va_start(args, szFmt);
-		vsprintf_s(buf, 4096, szFmt, args);
+		auto len = (size_t)_vscprintf(szFmt, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), szFmt, args);
 		va_end(args);
+
 		if (gConsoleInvalidParam){
-			strcpy_s(buf, szFmt);
+			strcpy_s(&buffer[0], buffer.size(), szFmt);
 			gConsoleInvalidParam = false;
 		}
 		_set_invalid_parameter_handler(oldHandler);
 
 
-		std::cerr << buf << std::endl;
+		std::cerr << &buffer[0] << std::endl;
 
-		std::wstring strw = AnsiToWide(buf, strlen(buf));
+		std::wstring strw = AnsiToWide(&buffer[0], strlen(&buffer[0]));
 
 		if (mConsoleRenderer)
 		{
@@ -268,7 +276,7 @@ public:
 					int textWidth = (int)mConsoleRenderer->GetTextWidth(&strw[start], (end - start) * 2);
 					if (textWidth>consoleWidth)
 					{
-						mBuffer.push_back(std::string(buf + start, end - start));
+						mBuffer.push_back(std::string(&buffer[0] + start, end - start));
 						start = end;
 						end += 1;
 					}
@@ -277,17 +285,17 @@ public:
 						end++;
 					}
 				}
-				mBuffer.push_back(std::string(buf + start));
+				mBuffer.push_back(std::string(&buffer[0] + start));
 			}
 			else
 			{
-				mBuffer.push_back(buf);
+				mBuffer.push_back(&buffer[0]);
 			}
 		}
 		else
 		{
 			// no renderer
-			mBuffer.push_back(buf);
+			mBuffer.push_back(&buffer[0]);
 		}
 
 		mBufferw.clear();

@@ -196,7 +196,7 @@ void FileSelector::ListFiles(const char* folder, const char* filter)
 		ToLowerCase(mFilter);
 	}	
 	if (!FileSystem::Exists(folder)){
-		Error("Iterating dir is failed!");
+		Logger::Log(FB_ERROR_LOG_ARG, "Iterating dir is failed!");
 		UIManager::GetInstance().DisplayMsg("Cannot open the directory.");
 		mFolder = folderBackup;
 		return;

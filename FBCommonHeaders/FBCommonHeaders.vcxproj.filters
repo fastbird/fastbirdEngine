@@ -19,5 +19,6 @@
     <ClInclude Include="GenericNotifier.h" />
     <ClInclude Include="QuadNode.h" />
     <ClInclude Include="LockQueue.h" />
+    <ClInclude Include="ProfilerSimple.h" />
   </ItemGroup>
 </Project>

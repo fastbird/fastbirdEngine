@@ -48,7 +48,7 @@ namespace fb
 		, mHorizontalFlip(false)
 		, mMaterialUsingImage(false)
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->SetMaterial("EssentialEngineData/materials/UIHorizontalGauge.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -69,6 +69,7 @@ namespace fb
 			Vec2(1.f, 0.f)
 		};
 		mUIObject->SetTexCoord(texcoords, 4);		
+		SetPercentage(0);
 	}
 
 	HorizontalGauge::~HorizontalGauge()
@@ -200,13 +201,13 @@ namespace fb
 		{
 		case UIProperty::GAUGE_MAX:
 		{
-									  SetMaximum(StringConverter::ParseReal(val));
-									  return true;
+			SetMaximum(StringConverter::ParseReal(val));
+			return true;
 		}
 		case UIProperty::GAUGE_CUR:
 		{
-									  SetPercentage(StringConverter::ParseReal(val));
-									  return true;
+			SetPercentage(StringConverter::ParseReal(val));
+			return true;
 		}
 		case UIProperty::GAUGE_COLOR:
 		{
@@ -221,28 +222,28 @@ namespace fb
 
 		case UIProperty::GAUGE_BLINK_COLOR:
 		{
-											  SetBlinkColor(StringMathConverter::ParseColor(val));
-											  return true;
+			SetBlinkColor(StringMathConverter::ParseColor(val));
+			return true;
 		}
 
 		case UIProperty::GAUGE_BLINK_SPEED:
 		{
-											  mBlinkSpeed = StringConverter::ParseReal(val);
-											  return true;
+			mBlinkSpeed = StringConverter::ParseReal(val);
+			return true;
 		}
 
 		case UIProperty::GAUGE_BORDER_COLOR:
 		{
-											   mGaugeBorderColor = StringMathConverter::ParseColor(val);
-											   if (mUIObject)
-											   {
-												   auto mat = mUIObject->GetMaterial();
-												   if (mat)
-												   {
-													   mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
-												   }
-											   }
-											   return true;
+			mGaugeBorderColor = StringMathConverter::ParseColor(val);
+			if (mUIObject)
+			{
+				auto mat = mUIObject->GetMaterial();
+				if (mat)
+				{
+					mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
+				}
+			}
+			return true;
 		}
 
 		case UIProperty::REGION_FILLED:
@@ -472,7 +473,9 @@ namespace fb
 			mAtlasRegions[index] = mTextureAtlas->GetRegion(region);
 			if (!mAtlasRegions[index])
 			{
-				Error("Cannot find the region %s in the atlas %s", region, mTextureAtlasFile.c_str());
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"Cannot find the region %s in the atlas %s", 
+					region, mTextureAtlasFile.c_str()).c_str());
 			}
 			SAMPLER_DESC sdesc;
 			sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;			

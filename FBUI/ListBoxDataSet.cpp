@@ -164,9 +164,10 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG, 
-				FormatString("Cannot find the data set with the key %s", WideToAnsi(uniqueKey.c_str()))
-				);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find the data set with the key %s", 
+				WideToAnsi(uniqueKey.c_str())));
+				
 			return;
 		}
 		auto cols = mData[row];
@@ -182,9 +183,9 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG, 
-				FormatString("Cannot find the data set with the key %s", WideToAnsi(uniqueKey.c_str()))
-				);
+			Logger::Log(FB_ERROR_LOG_ARG, 
+				FormatString("Cannot find the data set with the key %s", 
+					WideToAnsi(uniqueKey.c_str())));
 			return;
 		}
 		auto cols = mData[row];
@@ -199,9 +200,9 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG,
-				FormatString("Cannot find the data set with the key %s", WideToAnsi(uniqueKey.c_str()))
-				);
+			Logger::Log(FB_ERROR_LOG_ARG,
+				FormatString("Cannot find the data set with the key %s", 
+					WideToAnsi(uniqueKey.c_str())));
 			return;
 		}
 		auto cols = mData[row];
@@ -217,9 +218,8 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG, 
-				FormatString("Cannot find the data set with the key %u", uniqueKey)
-				);
+			Logger::Log(FB_ERROR_LOG_ARG, 
+				FormatString("Cannot find the data set with the key %u", uniqueKey));
 			return;
 		}
 		auto cols = mData[row];
@@ -236,9 +236,8 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG,
-				FormatString("Cannot find the data set with the key %u", uniqueKey)
-				);
+			Logger::Log(FB_ERROR_LOG_ARG,
+				FormatString("Cannot find the data set with the key %u", uniqueKey));
 			return;
 		}
 		auto cols = mData[row];
@@ -253,9 +252,8 @@ namespace fb
 		unsigned row = FindRowIndexWithKey(uniqueKey);
 		if (row == -1)
 		{
-			Error(FB_ERROR_LOG_ARG,
-				FormatString("Cannot find the data set with the key %u", uniqueKey)
-				);
+			Logger::Log(FB_ERROR_LOG_ARG,
+				FormatString("Cannot find the data set with the key %u", uniqueKey));
 			return;
 		}
 		auto cols = mData[row];
@@ -338,7 +336,8 @@ namespace fb
 			return it->second;
 		}
 		else {
-			Error(FB_ERROR_LOG_ARG, FormatString("Data is not found with key %s", uniqueKey.c_str()));
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Data is not found with key %s", uniqueKey.c_str()));
 			return dummy;
 		}
 	}
@@ -385,7 +384,7 @@ namespace fb
 	{
 		if (index >= mData.size())
 		{
-			Error(FB_ERROR_LOG_ARG, "Out of index");
+			Logger::Log(FB_ERROR_LOG_ARG, "Out of index");
 			return -1;
 		}
 		auto it = mData.begin() + index;

@@ -601,10 +601,10 @@ public:
 		mMusicPlayer->PlayMusic(path, fadeOutOld, loop);
 	}
 
-	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
+	void ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop){
 		if (mAudioOptions->a_MusicGain == 0)
 			return;
-		mMusicPlayer->ChangeMusic(path, fadeOutOld, startNewAfter);
+		mMusicPlayer->ChangeMusic(path, fadeOutOld, startNewAfter, loop);
 	}
 
 	void StopMusic(float fadeOut){
@@ -691,6 +691,10 @@ HWindow EngineFacade::GetMainWindowHandle() const{
 
 HWindow EngineFacade::GetWindowHandleById(HWindowId hwndId) const{
 	return mImpl->GetWindowHandleById(hwndId);
+}
+
+void EngineFacade::SetWindowPos(HWindowId hwndId, int x, int y) {
+	fb::SetWindowPos(GetWindowHandleById(hwndId), Vec2ITuple{ x, y });
 }
 
 void EngineFacade::BeforeUIRendering(HWindowId hwndId, HWindow hwnd){
@@ -816,6 +820,11 @@ EngineOptionsPtr EngineFacade::GetEngineOptions() const{
 
 bool EngineFacade::MainCameraExists() const{
 	return mImpl->mMainCamera != 0;
+}
+
+void EngineFacade::DrawQuad(const Vec2I& pos, const Vec2I& size, 
+	const Color& color, bool updateRs) {
+	mImpl->mRenderer->DrawQuad(pos, size, color, updateRs);
 }
 
 CameraPtr EngineFacade::GetMainCamera() const{
@@ -1029,7 +1038,6 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 			mImpl->mRenderer->TakeScreenshot();
 		else if (wp == VK_SCROLL)
 			mImpl->mRenderer->TakeScreenshot(3840, 2160);
-
 	}
 	return 0;
 
@@ -1123,6 +1131,10 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 
 void EngineFacade::RegisterInputConsumer(IInputConsumerPtr consumer, int priority){
 	mImpl->mInputManager->RegisterInputConsumer(consumer, priority);
+}
+
+void EngineFacade::RegisterThreadIdConsideredMainThread(std::thread::id threadId) {
+	mImpl->mRenderer->RegisterThreadIdConsideredMainThread(threadId);
 }
 
 void EngineFacade::AddRendererObserver(int rendererObserverType, IRendererObserverPtr observer){
@@ -1252,6 +1264,12 @@ RenderTargetPtr EngineFacade::CreateRenderTarget(const RenderTargetParamEx& para
 		if (!param.mSceneNameToCreateAndOwn.empty()){
 			auto scene = SceneManager::GetInstance().CreateScene(param.mSceneNameToCreateAndOwn.c_str());
 			rt->TakeOwnershipScene(scene);
+			for (int i = 0; i < 2; ++i) {				
+				auto e = DirectionalLightIndex::Enum(i);
+				scene->SetLightDirection(e, GetLightDirection(e));
+				scene->SetLightDiffuse(e, GetLightDiffuse(e));
+				scene->SetLightIntensity(e, GetLightIntensity(e));
+			}
 			scene->SetRttScene(true);
 		}
 		if (!param.mEnvironmentTexture.empty()){
@@ -1359,8 +1377,8 @@ void EngineFacade::PlayMusic(const char* path, float fadeOutOld, bool loop){
 	mImpl->PlayMusic(path, fadeOutOld, loop);
 }
 
-void EngineFacade::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter){
-	mImpl->ChangeMusic(path, fadeOutOld, startNewAfter);
+void EngineFacade::ChangeMusic(const char* path, float fadeOutOld, float startNewAfter, bool loop){
+	mImpl->ChangeMusic(path, fadeOutOld, startNewAfter, loop);
 }
 
 void EngineFacade::StopMusic(float fadeOut){

@@ -28,6 +28,7 @@
     <ClCompile Include="NoiseGen.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Quat.cpp" />
+    <ClCompile Include="Random.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Transformation.cpp" />
     <ClCompile Include="Vec2.cpp" />

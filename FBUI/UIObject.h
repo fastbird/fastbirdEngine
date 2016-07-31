@@ -37,7 +37,7 @@ namespace fb
 		~UIObject();
 
 	public:
-		static UIObjectPtr Create(const Vec2I& renderTargetSize);
+		static UIObjectPtr Create(const Vec2I& renderTargetSize, WinBase* uicomponent);
 
 		// debug data.
 		WinBase* mOwnerUI;
@@ -91,5 +91,8 @@ namespace fb
 
 		void SetSeperatedBackground(bool seperated);
 		void SetUseSeperatedUVForAlpha(bool seperatedUV);
+
+		void SetUIComponent(WinBase* comp);
+		WinBase* GetUIComponent() const;
 	};
 }

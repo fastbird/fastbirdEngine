@@ -53,7 +53,7 @@ VerticalGauge::VerticalGauge()
 		mTextures[i] = 0;
 	}
 
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->SetMaterial("EssentialEngineData/materials/UIVerticalGauge.material");
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());

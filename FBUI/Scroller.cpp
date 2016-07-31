@@ -49,7 +49,7 @@ Scroller::Scroller()
 	, mScrollAmountScale(2.f)
 	, mLastWheel(0)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 }

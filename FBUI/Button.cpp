@@ -55,7 +55,7 @@ namespace fb
 		, mFps(0), mActivatedRot(false), mImageColorOverlay(1, 1, 1, 1)
 		, mImageSize(0, 0)
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->SetMaterial("EssentialEngineData/materials/UIButton.material");
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
@@ -334,6 +334,9 @@ namespace fb
 			{
 				OnSizeChanged();
 				AlignIconText();
+			}
+			if (mFps > 0.f) {
+				image->SetProperty(UIProperty::FPS, StringConverter::ToString(mFps).c_str());
 			}
 			return true;
 		}

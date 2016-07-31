@@ -31,14 +31,19 @@
 namespace fb{
 	// intended redundancy
 	static std::string FormatString(const char* str, ...){
-		static char buf[2048];
+		static const size_t BufferSize = 2048;
+		std::string buffer(BufferSize, 0);
 		va_list args;
-
 		va_start(args, str);
-		vsprintf_s(buf, str, args);
+		auto len = (size_t)_vscprintf(str, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), str, args);
 		va_end(args);
 
-		return buf;
+		return std::string(&buffer[0]);
 	}
 
 	ModuleHandle ModuleHandler::LoadModule(const char* path){

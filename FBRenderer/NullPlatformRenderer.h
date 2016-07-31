@@ -36,6 +36,7 @@ namespace fb{
 	public:
 		static NullPlatformRendererPtr Create();
 
+		void RegisterThreadIdConsideredMainThread(std::thread::id threadId) OVERRIDE;
 		void PrepareQuit() OVERRIDE;
 		//-------------------------------------------------------------------
 		// Device features

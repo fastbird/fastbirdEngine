@@ -848,9 +848,13 @@ public:
 			{
 				if ((*it)->CheckOptions(param))
 				{
-					if (param.mEveryFrame)
-						mRenderTargets.push_back(*it);
 					auto rt = *it;
+					if (param.mEveryFrame) {
+						mRenderTargetsEveryFrame.push_back(rt);
+					}
+					else {
+						mRenderTargets.push_back(rt);
+					}					
 					mRenderTargetPool.erase(it);
 					return rt;
 				}
@@ -860,8 +864,7 @@ public:
 		auto rt = RenderTarget::Create();
 		mRenderTargets.push_back(rt);		
 		rt->SetColorTextureDesc(param.mSize.x, param.mSize.y, param.mPixelFormat, param.mShaderResourceView,
-				param.mMipmap, param.mCubemap);
-		
+				param.mMipmap, param.mCubemap);		
 		rt->SetUsePool(param.mUsePool);
 		if (param.mEveryFrame)
 		{
@@ -872,13 +875,13 @@ public:
 		{
 			mRenderTargets.push_back(rt);
 			return rt;
-		}
-		return rt;
+		}		
 	}
 
 	void KeepRenderTargetInPool(RenderTargetPtr rt){
 		if (!rt)
 			return;
+		DeleteValuesInVector(mRenderTargetsEveryFrame, rt);
 		if (!ValueExistsInVector(mRenderTargetPool, rt)){
 			mRenderTargetPool.push_back(rt);
 		}
@@ -3253,20 +3256,21 @@ public:
 		mShadowManager->CreateViewports();
 	}
 
-	void KeepTextureReference(const char* filepath, const TextureCreationOption& option){
+	TexturePtr  KeepTextureReference(const char* filepath, const TextureCreationOption& option){
 		if (!ValidCString(filepath)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
-			return;
+			return nullptr;
 		}
 		std::string filepathKey(filepath);
 		ToLowerCase(filepathKey);
 		auto it = mTexturesReferenceKeeper.Find(filepathKey);
 		if (it != mTexturesReferenceKeeper.end())
-			return;
+			return it->second;
 		auto texture = CreateTexture(filepath, option);
 		if (texture){
 			mTexturesReferenceKeeper.Insert(std::make_pair(filepathKey, texture));
 		}
+		return texture;
 	}
 
 	std::stack<RenderStatesPtr> mRenderStateSnapshots;
@@ -3594,6 +3598,10 @@ Renderer::~Renderer(){
 
 bool Renderer::PrepareRenderEngine(const char* rendererPlugInName) {
 	return mImpl->PrepareRenderEngine(rendererPlugInName);
+}
+
+void Renderer::RegisterThreadIdConsideredMainThread(std::thread::id threadId) {
+	mImpl->GetPlatformRenderer().RegisterThreadIdConsideredMainThread(threadId);
 }
 
 void Renderer::PrepareQuit() {
@@ -4159,8 +4167,10 @@ void Renderer::OnShadowOptionChanged(){
 	mImpl->OnShadowOptionChanged();
 }
 
-void Renderer::KeepTextureReference(const char* filepath, const TextureCreationOption& option){
-	mImpl->KeepTextureReference(filepath, option);
+TexturePtr Renderer::KeepTextureReference(const char* filepath, 
+	const TextureCreationOption& option)
+{
+	return mImpl->KeepTextureReference(filepath, option);
 }
 
 void Renderer::PushRenderStates()

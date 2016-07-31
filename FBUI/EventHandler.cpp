@@ -67,7 +67,7 @@ bool EventHandler::RegisterEventLuaFunc(UIEvents::Enum e, const char* luaFuncNam
 {
 	if (luaFuncName == 0)
 	{
-		Error("Cannot register null function!");
+		Logger::Log(FB_ERROR_LOG_ARG, "Cannot register null function!");
 		return false;
 	}
 	std::string funcName = StripBoth(luaFuncName);
@@ -116,12 +116,12 @@ bool EventHandler::OnEvent(UIEvents::Enum e)
 			LUA_STACK_CLIPPER lsc(L);
 			it->second.PushToStack();
 			WinBase* pComp = dynamic_cast<WinBase*>(this);
-			LuaUtils::pushstring(pComp->GetName());			
+			LuaUtils::pushstring(L, pComp->GetName());			
 			auto root = pComp->GetRootWnd();
 			if (root)
-				LuaUtils::pushstring(root->GetName());
+				LuaUtils::pushstring(L, root->GetName());
 			else
-				LuaUtils::pushnil();
+				LuaUtils::pushnil(L);
 
 			it->second.CallWithManualArgs(2, 0);
 			processed = processed || true;

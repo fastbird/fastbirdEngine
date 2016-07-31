@@ -118,7 +118,7 @@ public:
 		if (mMaxPoints == 0)
 			return;
 
-		if (GetDistToCam() > 100.0f)
+		if (GetDistToCam() > 300.0f)
 			return;
 
 		if (!mPoints.empty()){

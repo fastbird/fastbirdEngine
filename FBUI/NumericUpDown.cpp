@@ -48,7 +48,7 @@ namespace fb
 		, mShiftStep(5)
 		, mStep(1)
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 		mUIObject->SetTextColor(mTextColor);
@@ -161,6 +161,9 @@ namespace fb
 			if (injector->IsKeyDown(VK_SHIFT)){
 				SetNumber(mValue - mShiftStep);
 			}
+			else if (injector->IsKeyDown(VK_CONTROL)) {
+				SetNumber(mMin);
+			}
 			else{
 				SetNumber(mValue - mStep);
 			}
@@ -176,6 +179,9 @@ namespace fb
 			auto injector = InputManager::GetInstance().GetInputInjector();
 			if (injector->IsKeyDown(VK_SHIFT)){
 				SetNumber(mValue + mShiftStep);
+			}
+			else if (injector->IsKeyDown(VK_CONTROL)) {
+				SetNumber(mMax);
 			}
 			else{
 				SetNumber(mValue + mStep);

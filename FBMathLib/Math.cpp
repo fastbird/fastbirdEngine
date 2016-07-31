@@ -1333,4 +1333,13 @@ namespace fb
 		return val % 4 == 0;
 	}
 
+	bool IsPointIn(const Rect& r, const Vec2I& p) {
+		return !(p.x < r.left || p.y < r.top || p.x > r.right || p.y > r.bottom);
+	}
+
+	bool IsContained(const Rect& container, const Rect& contained) {
+		return !(contained.left < container.left || contained.top < container.top ||
+			contained.right > container.right || contained.bottom > container.bottom);
+	}
+
 } // namespace fb

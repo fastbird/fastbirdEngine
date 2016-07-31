@@ -34,6 +34,7 @@ namespace fb{
 	class Frustum;
 	class Vec3;
 	FB_DECLARE_SMART_PTR(ISpatialObject);
+	FB_DECLARE_SMART_PTR(ICamera);
 	class ICamera{
 	public:
 		enum MatrixType {
@@ -46,6 +47,8 @@ namespace fb{
 			ViewProj,
 			NumMatrices,
 		};
+		virtual void CloneTo(const ICameraPtr& cam) = 0;
+		virtual ICameraPtr GetSelfPtr() = 0;
 		virtual const Mat44& GetMatrix(MatrixType type) = 0;		
 		virtual const Transformation& GetTransformation() const = 0;
 		virtual bool IsCulled(BoundingVolume* pBV) const = 0;

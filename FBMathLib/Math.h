@@ -211,4 +211,7 @@ namespace fb
 	std::pair<Vec3, Vec3> ComputeExtrema(const Real* points, int numElem);
 
 	bool MultipliesOfFour(int val);
+
+	bool IsPointIn(const Rect& r, const Vec2I& p);
+	bool IsContained(const Rect& container, const Rect& contained);
 }

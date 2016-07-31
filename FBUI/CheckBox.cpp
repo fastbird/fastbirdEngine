@@ -41,7 +41,7 @@ CheckBoxPtr CheckBox::Create(){
 CheckBox::CheckBox()
 	: mChecked(false)	
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	mUIObject->SetNoDrawBackground(true);

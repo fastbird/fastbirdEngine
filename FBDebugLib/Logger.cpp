@@ -83,28 +83,40 @@ void Logger::Release(){
 	}
 }
 
+void Logger::LogDirect(const char* message) {
+	if (!ValidCString(message))
+		return;
+	std::cerr << message;
+	FBOutputDebugString(message);
+
+	if (sLogFile && sLogFile->is_open()) {
+		*sLogFile << message;
+		sLogFile->flush();
+	}
+}
+
 void Logger::Log(const char* format, ...){
 	if (!ValidCString(format))
 		return;
-	static const size_t CurrentBufferSize = 1024;
-	ByteArray buffer(CurrentBufferSize);
+
 	va_list args;
 	va_start(args, format);
+	Log(format, args);	
+	va_end(args);
+}
+
+std::string Logger::Log(const char* format, va_list args) {
+	static const size_t BufferSize = 2048;
+	std::string buffer(BufferSize, 0);
 	auto len = (size_t)_vscprintf(format, args) + 1;
-	if (len > CurrentBufferSize) {
-		buffer.resize(len);			
+	if (len > BufferSize) {
+		buffer.resize(len, 0);
 	}
 	auto s = buffer.size();
 	vsprintf_s((char*)&buffer[0], buffer.size(), format, args);
-	va_end(args);
 
-	std::cerr << (char*)&buffer[0];
-	FBOutputDebugString((char*)&buffer[0]);
-
-	if (sLogFile && sLogFile->is_open()){
-		*sLogFile << (char*)&buffer[0];
-		sLogFile->flush();
-	}
+	LogDirect(buffer.c_str());
+	return buffer;
 }
 
 struct PreventedMessage{
@@ -124,28 +136,34 @@ struct PreventedMessage{
 static std::set<PreventedMessage> sPreventedMessage;
 static VectorMap<FRAME_PRECISION, std::set< std::string > > sMessages;
 void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* str, ...){
-	static const unsigned BUFFER_SIZE = 2048;
 	if (!str) return;
-	auto length = strlen(str);
-	if (length == 0) return;
-	if (length >= BUFFER_SIZE){
-		std::cerr << "Log message is too long to print and truncated. Maximum 2047 characters are supported.\n";
-	}
-	char buffer[BUFFER_SIZE];
 	va_list args;
 	va_start(args, str);
-	vsprintf_s(buffer, str, args);
+	Log(curFrame, curTime, str, args);
 	va_end(args);
 
+	
+}
+
+void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* str, va_list args) {
+	static const size_t BufferSize = 2048;
+	std::string buffer(BufferSize, 0);
+	auto len = (size_t)_vscprintf(str, args) + 1;
+	if (len > BufferSize) {
+		buffer.resize(len, 0);
+	}
+	auto s = buffer.size();
+	vsprintf_s((char*)&buffer[0], buffer.size(), str, args);
+
 	static const TIME_PRECISION PREVENT_IN = 5.f; // Do not print the same log in 5 secons.
-	if (curFrame > 1){
-		PreventedMessage currentMsg(curFrame, curTime, std::string(buffer));
+	if (curFrame > 1) {
+		PreventedMessage currentMsg(curFrame, curTime, std::string(&buffer[0]));
 		auto itPrevented = sPreventedMessage.find(currentMsg);
-		if (itPrevented != sPreventedMessage.end()){
+		if (itPrevented != sPreventedMessage.end()) {
 			TIME_PRECISION elapsed = curTime - itPrevented->mTime;
 			if (elapsed < PREVENT_IN)
 				return; // block the message
-			else{
+			else {
 				// update the time.
 				sPreventedMessage.erase(itPrevented);
 				sPreventedMessage.insert(currentMsg);
@@ -154,9 +172,9 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 
 		//  check whether the last frame has the same message
 		auto it = sMessages.Find(curFrame - 1);
-		if (it != sMessages.end()){
-			
-			if (it->second.find(currentMsg.mMessage) != it->second.end()){
+		if (it != sMessages.end()) {
+
+			if (it->second.find(currentMsg.mMessage) != it->second.end()) {
 				sPreventedMessage.insert(currentMsg); // found. insert it to prevented and return.
 				return;
 			}
@@ -164,24 +182,24 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 
 		// so far so good.
 		// delete  <= curFrame-2 data if exists
-		for (auto it = sMessages.begin(); it != sMessages.end(); ){			
-			if (it->first <= curFrame - 2){
+		for (auto it = sMessages.begin(); it != sMessages.end(); ) {
+			if (it->first <= curFrame - 2) {
 				it = sMessages.erase(it);
 			}
-			else{				
+			else {
 				break;
 			}
 		}
-		sMessages[curFrame].insert(buffer);
+		sMessages[curFrame].insert(std::string(&buffer[0]));
 	}
-	
-	std::cerr << buffer;
-	FBOutputDebugString(buffer);
 
-	if (sLogFile && sLogFile->is_open()){
-		*sLogFile << buffer;
+	std::cerr << &buffer[0];
+	FBOutputDebugString(&buffer[0]);
+
+	if (sLogFile && sLogFile->is_open()) {
+		*sLogFile << &buffer[0];
 		sLogFile->flush();
-	}	
+	}
 }
 
 void Logger::Log(std::ofstream& file, const char* str){
@@ -195,17 +213,25 @@ void Logger::Log(std::ofstream& file, const char* str){
 }
 
 void Logger::Output(const char* str, ...){
-	static const unsigned BUFFER_SIZE = 2048;
-	if (!str) return;
-	auto length = strlen(str);
-	if (length == 0) return;
-	if (length >= BUFFER_SIZE){
-		std::cerr << "Log message is too long to print and truncated. Maximum 2047 characters are supported.\n";
-	}
-	char buffer[BUFFER_SIZE];
+	if (!str) 
+		return;	
 	va_list args;
 	va_start(args, str);
-	vsprintf_s(buffer, str, args);
+	Output(str, args);
 	va_end(args);
-	FBOutputDebugString(buffer);
+
+	
+}
+
+std::string Logger::Output(const char* str, va_list args) {
+	static const size_t BufferSize = 2048;
+	std::string buffer(BufferSize, 0);
+	auto len = (size_t)_vscprintf(str, args) + 1;
+	if (len > BufferSize) {
+		buffer.resize(len, 0);
+	}
+	auto s = buffer.size();
+	vsprintf_s((char*)&buffer[0], buffer.size(), str, args);
+	FBOutputDebugString(&buffer[0]);
+	return buffer;
 }

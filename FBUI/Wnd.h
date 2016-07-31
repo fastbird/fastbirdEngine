@@ -57,6 +57,7 @@ public:
 
 	bool IsAlwaysOnTop() const{ return mAlwaysOnTop; }
 	bool GetCloseByEsc() const { return mCloseByEsc; }
+	bool GetCloseByBackgroundClick() const { return mCloseByBackgroundClick; }
 
 	void StartHighlight(float speed);
 	void StopHighlight();
@@ -87,6 +88,7 @@ private:
 	std::string mMsgTranslationUnit;	
 	bool mAlwaysOnTop;
 	bool mCloseByEsc;
+	bool mCloseByBackgroundClick;
 	bool mSyncWindowPos;
 	bool mNoFocus;
 	bool mMoveToBottom;

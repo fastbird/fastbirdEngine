@@ -46,11 +46,12 @@ Wnd::Wnd()
 : mUseFrame(false)
 , mAlwaysOnTop(false)
 , mCloseByEsc(false)
+, mCloseByBackgroundClick(false)
 , mSyncWindowPos(false)
 , mNoFocus(false)
 , mMoveToBottom(false)
 {
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 	//RegisterEventFunc(IEventHandler::EVENT_MOUSE_HOVER,
@@ -474,6 +475,12 @@ bool Wnd::SetProperty(UIProperty::Enum prop, const char* val)
 									 return true;
 	}
 
+	case UIProperty::CLOSE_BY_BACKGROUND_CLICK:
+	{
+		mCloseByBackgroundClick = StringConverter::ParseBool(val);
+		return true;
+	}
+
 	case UIProperty::SYNC_WINDOW_POS:
 	{
 		mSyncWindowPos = StringConverter::ParseBool(val);
@@ -611,6 +618,18 @@ bool Wnd::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool 
 		return true;
 	}
 
+	case UIProperty::CLOSE_BY_BACKGROUND_CLICK:
+	{
+		if (notDefaultOnly)
+		{
+			if (mCloseByBackgroundClick == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+
+		strcpy_s(val, bufsize, StringConverter::ToString(mCloseByBackgroundClick).c_str());
+		return true;
+	}
+
 	case UIProperty::SYNC_WINDOW_POS:
 	{
 		if (notDefaultOnly)
@@ -714,25 +733,26 @@ void Wnd::OnCloseBtnClicked(void* arg){
 
 bool Wnd::SetVisible(bool show)
 {
-	if (show){
-		auto parent = GetParent();
-		auto manualParent = GetManualParent();
-		if (!parent && !manualParent){
-			if (mNoFocus && !mMoveToBottom){
-				UIManager::GetInstance().MoveToTop(mSelfPtr.lock());
-			}
-			else if (!mNoFocus){
-				UIManager::GetInstance().SetFocusUI(mSelfPtr.lock());
-			}
-			if (mMoveToBottom){
-				UIManager::GetInstance().MoveToBottom(mSelfPtr.lock());
-			}
-
-		}
-	}
 	bool changed = __super::SetVisible(show);
 	if (changed)
 	{
+		if (show) {
+			auto parent = GetParent();
+			auto manualParent = GetManualParent();
+			if (!parent && !manualParent) {
+				if (mNoFocus && !mMoveToBottom) {
+					UIManager::GetInstance().MoveToTop(mSelfPtr.lock());
+				}
+				else if (!mNoFocus) {
+					UIManager::GetInstance().SetFocusUI(mSelfPtr.lock());
+				}
+				if (mMoveToBottom) {
+					UIManager::GetInstance().MoveToBottom(mSelfPtr.lock());
+				}
+
+			}
+		}
+
 		auto titlebar = mTitlebar.lock();
 		if (titlebar)
 			titlebar->SetVisible(show);

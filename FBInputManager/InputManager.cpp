@@ -284,6 +284,9 @@ void InputManager::OnSetFocus(HWindow hWnd){
 	if (mImpl->mMouse){
 		mImpl->mMouse->OnSetFocus(hWnd);
 	}
+	if (mImpl->mKeyboard) {
+		mImpl->mKeyboard->OnGetFocus();
+	}
 }
 
 void InputManager::OnKillFocus(){

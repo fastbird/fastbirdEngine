@@ -69,7 +69,7 @@ void StartUIEditor(StringVector& arg)
 {
 	if (uiEditorInitialized)
 	{
-		Log("Alreay started!");
+		Logger::Log(FB_ERROR_LOG_ARG, "Alreay started!");
 		return;
 	}
 	auto moduleHandle = UIManager::GetInstance().GetUIEditorModuleHandle();

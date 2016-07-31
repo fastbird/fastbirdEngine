@@ -61,17 +61,24 @@ namespace fb{
 		static void Release();
 
 		/** Output to the log file created by \b CreateLogFile(). */		
-		static void Log(const char* str, ...);		
+		static void LogDirect(const char* message);
+		static void Log(const char* format, ...);		
+		/// You should call va_end after this function has returned.
+		static std::string Log(const char* format, va_list args);
+		
 		/** Check whether the log message is same with the previous frame
 		You can prevent logging the same message every frame by passing \a frame arg.
 		*/
 		static void Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* str, ...);
+		/// You should call va_end after this function has returned.
+		static void Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* str, va_list args);
 
 		/** Output to the log file specified as a parameter. */
 		static void Log(std::ofstream& file, const char* str);
 
 		/** Output to the debug window.	*/
 		static void Output(const char* str, ...);
+		static std::string Output(const char* str, va_list args);
 	};
 }
 

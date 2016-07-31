@@ -70,8 +70,3 @@
 #include "FBFileMonitor/FileMonitor.h"
 #include "ComponentType.h"
 #include "Align.h"
-
-namespace fb{
-	void Log(const char* fmt, ...);
-	void Error(const char* fmt, ...);
-}

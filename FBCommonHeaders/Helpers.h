@@ -139,7 +139,7 @@ namespace fb{
 		return numDeleted;
 	}
 
-	inline unsigned GetStringMemSize(const std::string& str) {
+	inline size_t GetStringMemSize(const std::string& str) {
 		return sizeof(size_t) + str.length();
 	}
 

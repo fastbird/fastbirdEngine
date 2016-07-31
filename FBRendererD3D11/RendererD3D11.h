@@ -64,6 +64,7 @@ namespace fb
 		static void Destroy();
 		static RendererD3D11& GetInstance();			
 
+		void RegisterThreadIdConsideredMainThread(std::thread::id threadId) OVERRIDE;
 		void PrepareQuit() OVERRIDE;
 		//-------------------------------------------------------------------
 		// IPlatformRenderer interface

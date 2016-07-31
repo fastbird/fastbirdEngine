@@ -500,7 +500,7 @@ public:
 					{
 						char buf[1024];
 						sprintf_s(buf, "\n%s/%s", FileSystem::GetCurrentDir().c_str(), LuaUtils::tostring(-1));
-						Error(FB_ERROR_LOG_ARG, buf);
+						Logger::Log(FB_ERROR_LOG_ARG, buf);
 						assert(0);
 					}
 				}
@@ -739,11 +739,12 @@ public:
 		GetCurrentDirectory(MAX_PATH, buf);
 		if (err)
 		{
-			Error("parsing ui file(%s) failed.", filepath);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"parsing ui file(%s) failed.", filepath).c_str());
 			if (doc.GetErrorStr1())
-				Error(doc.GetErrorStr1());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
 			if (doc.GetErrorStr2())
-				Error(doc.GetErrorStr2());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
 			return false;
 		}
 
@@ -805,7 +806,7 @@ public:
 			sz = pComp->Attribute("type");
 			if (!sz)
 			{
-				Error("Component doesn't have type attribute. ignored");
+				Logger::Log(FB_ERROR_LOG_ARG, "Component doesn't have type attribute. ignored");
 				assert(0);
 				continue;
 			}
@@ -848,7 +849,8 @@ public:
 			auto it = mAnimations.Find(name);
 			if (it != mAnimations.end())
 			{
-				Log("UI global animation %s is replaced", name.c_str());
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"UI global animation %s is replaced", name.c_str()).c_str());
 				mAnimations.erase(it);				
 			}
 			mAnimations[pAnim->GetName()] = pAnim;
@@ -878,18 +880,19 @@ public:
 			if (it != mCppUIs.end())
 				topWindows = &it->second;
 		}
-		if (!topWindows){
-			Error(FB_ERROR_LOG_ARG, FormatString("no ui found with the name %s", uiname));
+		if (!topWindows){			
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"no ui found with the name %s", uiname));
 			return false;
 		}
 		if (topWindows->empty())
 		{
-			Error(FB_ERROR_LOG_ARG, "doesn't have any window!");
+			Logger::Log(FB_ERROR_LOG_ARG, "doesn't have any window!");
 			return false;
 		}
 		if (topWindows->size() != 1)
 		{
-			Error(FB_ERROR_LOG_ARG, "Only supporting an window per ui.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Only supporting an window per ui.");
 			return false;
 		}
 		auto window = (*topWindows)[0];
@@ -919,7 +922,7 @@ public:
 		auto it = FindLuaUI(uiName);
 		if (it != mLuaUIs.end())
 		{
-			Error("Already registered!");
+			Logger::Log(FB_ERROR_LOG_ARG, "Already registered!");
 			return false;
 		}
 		std::string typeText = data.GetField("type_").GetString();
@@ -1034,7 +1037,7 @@ public:
 		if (pWnd == mKeyboardFocus.lock())
 		{
 			if (mUIEditor)
-				mUIEditor->OnComponentSelected(0);
+				mUIEditor->OnComponentSelected(0, false);
 			mKeyboardFocus.reset();
 		}
 		if (pWnd == mModalWindow.lock()){
@@ -1124,12 +1127,14 @@ public:
 		auto it = FindLuaUI(uiName);
 		if (it == mLuaUIs.end())
 		{
-			Error("Cannot find ui with a name, %s", uiName);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find ui with a name, %s", uiName).c_str());			
 			return;
 		}
 		if (it->second.empty())
 		{
-			Error("UI doesn't have any elements, %s", uiName);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"UI doesn't have any elements, %s", uiName).c_str());
 			return;
 		}
 
@@ -1190,7 +1195,9 @@ public:
 		}
 		else
 		{
-			Error("Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", compname, uiname, UIProperty::ConvertToString(prop));
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find ui comp(%s) in ui(%s) to set uiproperty(%s).", 
+				compname, uiname, UIProperty::ConvertToString(prop)).c_str());
 		}
 	}
 
@@ -1212,7 +1219,9 @@ public:
 		}
 		else
 		{
-			Error("Cannot find ui comp(%s) in ui(%s) to set enable flag.", compname, uiname);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find ui comp(%s) in ui(%s) to set enable flag.", 
+				compname, uiname).c_str());
 		}		
 	}
 
@@ -1226,6 +1235,8 @@ public:
 
 	// IInputListener Interfaces
 	void ConsumeInput(IInputInjectorPtr injector){
+		//if (gpTimer->IsPaused())
+			//return;
 		/*if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug){
 			DebugUI();
 		}*/
@@ -1313,6 +1324,8 @@ public:
 				break;
 		}
 
+		mMouseIn = !mMouseOvered.expired();
+
 		if (injector->IsValid(InputDevice::Keyboard) && injector->GetChar() == VK_TAB)
 		{
 			if (UIManager::GetInstance().GetKeyboardFocusUI())
@@ -1339,6 +1352,9 @@ public:
 		bool isMainForeground = IsMainWindowForeground();
 		//Select
 		if (injector->IsValid(InputDevice::Mouse)) {
+			if (injector->IsKeyDown(VK_CONTROL)) {
+				SetCursor(WinBase::sCursorArrow);
+			}
 			auto mousePos = injector->GetMousePos();
 			RegionTestParam rparam;
 			rparam.mOnlyContainer = false;
@@ -1425,7 +1441,7 @@ public:
 				if (mUIEditor && (!injector->IsKeyDown(VK_MENU) && !editorFocused))
 				{
 					if (mUIEditor->GetCurSelected() != keyboardFocus || injector->IsKeyDown(VK_SHIFT) || mUIEditor->GetNumCurEditing() > 1)
-						mUIEditor->OnComponentSelected(keyboardFocus);
+						mUIEditor->OnComponentSelected(keyboardFocus, injector->IsKeyDown(VK_SHIFT));
 				}
 				else{
 					auto mouseOvered = mMouseOvered.lock();
@@ -1444,6 +1460,19 @@ public:
 
 			if (!injector->IsLButtonDown()){
 				mMouseDragStartedUI.reset();
+			}
+
+			if (!focusWnd && (injector->IsLButtonClicked() || injector->IsRButtonClicked())) {
+				for (auto it = mRenderUIs[hwndId].rbegin(); it != mRenderUIs[hwndId].rend(); ++it) {
+					auto wnd = dynamic_cast<Wnd*>((*it)->GetUIComponent());
+					if (wnd) {
+						if (wnd->GetCloseByBackgroundClick() && wnd->GetVisible()) {
+							wnd->SetVisible(false);
+							injector->Invalidate(InputDevice::Mouse);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1464,18 +1493,24 @@ public:
 		SetCursor(WinBase::GetMouseCursorOver());
 	}
 
-	void DisplayMsg(const char* msg, ...){
-		char buf[2048] = { 0 };
-		va_list args;
+	void DisplayMsg(const char* msg, ...){		
+		va_list args;		
 		va_start(args, msg);
-		vsprintf_s(buf, 2048, msg, args);
+		static const size_t BufferSize = 2048;
+		std::string buffer(BufferSize, 0);
+		auto len = (size_t)_vscprintf(msg, args) + 1;
+		if (len > BufferSize) {
+			buffer.resize(len, 0);
+		}
+		auto s = buffer.size();
+		vsprintf_s((char*)&buffer[0], buffer.size(), msg, args);
 		va_end(args);
 
-		if (strlen(buf)>0)
+		if (!buffer.empty())
 		{
-			Log(buf);
+			Logger::LogDirect(buffer.c_str());
 			Renderer::GetInstance().QueueDrawTextForDuration(4.0f, Vec2I(100, 200),
-					buf, fb::Color::White);			
+				buffer.c_str(), fb::Color::White);
 		}
 	}
 
@@ -1485,7 +1520,7 @@ public:
 
 
 	void SetTooltipString(const std::wstring& ts){
-		if (mTooltipText == ts)
+		if (mTooltipText == ts || gpTimer->IsPaused())
 		{
 			return;
 		}
@@ -1681,44 +1716,6 @@ mPopup->SetVisible(true);
 		for (auto it : *windows){
 			affected = it->SetVisible(visible) || affected;
 		}
-
-/*
-		if (affected){
-			if (visible){
-				char buffer[UIManager::PROPERTY_BUF_SIZE];
-				std::string openSound = mSounds[UISounds::WindowOpen];
-				if ((*windows->begin())->GetProperty(UIProperty::OPEN_SOUND, buffer, UIManager::PROPERTY_BUF_SIZE, false)){
-					bool play = true;
-					if (strlen(buffer))
-						openSound = buffer;
-					else if (!mProcessingButtonClick)
-						play = false;
-					if (_stricmp(buffer, "None") == 0)
-						openSound.clear();
-
-					if (play && !openSound.empty()){
-						AudioManager::GetInstance().PlayAudio(openSound.c_str());
-					}
-				}
-			}
-			else{
-				char buffer[UIManager::PROPERTY_BUF_SIZE];
-				std::string closeSound = mSounds[UISounds::WindowClose];
-				if ((*windows->begin())->GetProperty(UIProperty::CLOSE_SOUND, buffer, UIManager::PROPERTY_BUF_SIZE, false)){
-					bool play = true;
-					if (strlen(buffer))
-						closeSound = buffer;
-					else if (!mProcessingButtonClick)
-						play = false;
-					if (_stricmp(buffer, "None") == 0)
-						closeSound.clear();
-
-					if (play && !closeSound.empty()){
-						AudioManager::GetInstance().PlayAudio(closeSound.c_str());
-					}
-				}				
-			}
-		}*/
 	}
 
 	void LockFocus(bool lock){
@@ -1775,11 +1772,12 @@ mPopup->SetVisible(true);
 		int err = doc.LoadFile(filepath);
 		if (err)
 		{
-			Error("parsing ui file(%s) failed.", filepath);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"parsing ui file(%s) failed.", filepath).c_str());			
 			if (doc.GetErrorStr1())
-				Error(doc.GetErrorStr1());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
 			if (doc.GetErrorStr2())
-				Error(doc.GetErrorStr2());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
 			return;
 		}
 
@@ -1819,7 +1817,7 @@ mPopup->SetVisible(true);
 			sz = pComp->Attribute("type");
 			if (!sz)
 			{
-				Error("Component doesn't have type attribute. ignored");
+				Logger::Log(FB_ERROR_LOG_ARG, "Component doesn't have type attribute. ignored");
 				assert(0);
 				continue;
 			}
@@ -1983,7 +1981,7 @@ mPopup->SetVisible(true);
 		bool success = AddLuaUI("MouseTooltip", tooltip, Renderer::GetInstance().GetMainWindowHandleId());
 		if (!success)
 		{
-			Error(FB_ERROR_LOG_ARG, "Cannot create MouseTooltip UI.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Cannot create MouseTooltip UI.");
 		}
 		else
 		{
@@ -2071,7 +2069,7 @@ mPopup->SetVisible(true);
 		auto it = FindLuaUI(nameOnly.c_str());
 		if (it == mLuaUIs.end())
 		{
-			Error(FB_ERROR_LOG_ARG, FormatString("cannot find the ui %s", uiname));
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("cannot find the ui %s", uiname));
 			return "";
 		}
 		auto& windows = it->second;
@@ -2110,11 +2108,12 @@ mPopup->SetVisible(true);
 		auto resourcePath = FileSystem::GetResourcePath("EssentialEngineData/ui/style.xml");
 		int err = doc.LoadFile(resourcePath.c_str());
 		if (err){
-			Error("parsing style file(EssentialEngineData/ui/style.xml) failed.");
+			Logger::Log(FB_ERROR_LOG_ARG, 
+				"parsing style file(EssentialEngineData/ui/style.xml) failed.");
 			if (doc.GetErrorStr1())
-				Error(doc.GetErrorStr1());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
 			if (doc.GetErrorStr2())
-				Error(doc.GetErrorStr2());
+				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
 			return;
 		}
 
@@ -2360,6 +2359,25 @@ mPopup->SetVisible(true);
 		}
 	}
 
+	IUIEditor::Comps GetComponentsInRegion(const fb::Rect& r) {
+		IUIEditor::Comps comps;
+		auto hwndId = GetForegroundWindowId();
+		if (hwndId == INVALID_HWND_ID) {
+			hwndId = 1;
+		}
+		auto windows = mWindows[hwndId];
+		for (auto& ui : windows) {
+			auto posStart = ui->GetFinalPos();
+			auto posEnd = posStart + ui->GetFinalSize();
+			Rect uiR = { posStart.x, posStart.y, posEnd.x, posEnd.y };
+			if (IsPointIn(r, posStart) || IsPointIn(r, posEnd) ||
+					IsContained(uiR, r)) {
+				ui->GetComponentsInRegion(r, comps);
+			}
+		}
+		return comps;
+	}
+
 	//-------------------------------------------------------------------
 	// For UI Editing
 	//-------------------------------------------------------------------	
@@ -2384,7 +2402,8 @@ mPopup->SetVisible(true);
 		auto it = FindLuaUI(name.c_str());
 		if (it == mLuaUIs.end())
 		{
-			Error(FB_ERROR_LOG_ARG, FormatString("Cannot find the ui %s", name.c_str()));
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find the ui %s", name.c_str()));
 			return;
 		}
 		auto newName = FileSystem::GetName(newfile);
@@ -2393,7 +2412,8 @@ mPopup->SetVisible(true);
 			auto newIt = FindLuaUI(newName.c_str());
 			if (newIt != mLuaUIs.end())
 			{
-				Error(FB_ERROR_LOG_ARG, FormatString("The new name %s is already used.", newName.c_str()));
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"The new name %s is already used.", newName.c_str()));
 				return;
 			}
 			if (FileSystem::Exists(newfile))
@@ -2444,7 +2464,7 @@ mPopup->SetVisible(true);
 			const char* sz = comp->Attribute("type");
 			if (!sz)
 			{
-				Error("component doesn't have the type attribute.");
+				Logger::Log(FB_ERROR_LOG_ARG, "component doesn't have the type attribute.");
 				break;
 			}
 			ComponentType::Enum type = ComponentType::ConvertToEnum(sz);
@@ -2480,7 +2500,7 @@ mPopup->SetVisible(true);
 		rparam.mHwndId = Renderer::GetInstance().GetMainWindowHandleId();
 		auto mouseOveredContainer = std::dynamic_pointer_cast<Container>(WinBaseWithPoint(pt, rparam));
 		mMouseOveredContainer = mouseOveredContainer;
-		if (injector->IsLButtonDown())
+		if (injector->IsLButtonDown() && !injector->IsKeyDown(VK_CONTROL))
 		{
 			if (!mDragBox.IsStarted())
 			{
@@ -2554,7 +2574,7 @@ mPopup->SetVisible(true);
 			mLocatingComp = ComponentType::NUM;
 			if (mUIEditor)
 			{
-				mUIEditor->OnComponentSelected(win);
+				mUIEditor->OnComponentSelected(win, injector->IsKeyDown(VK_SHIFT));
 				mUIEditor->OnCancelComponent();
 			}
 		}
@@ -2595,7 +2615,8 @@ mPopup->SetVisible(true);
 
 	void DragUI(){
 		assert(mUIEditor);
-		static bool sDragStarted = false;
+		static bool sDragStarted = false;		
+		static Vec2I sDragStartedPos;
 		static bool sSizingXRight = false;
 		static bool sSizingXLeft = false;
 		static bool sSizingYTop = false;
@@ -2623,22 +2644,102 @@ mPopup->SetVisible(true);
 
 		if (!sDragStarted)
 		{
-			bool in = false;
-			for (unsigned i = 0; i < num; ++i){
-				auto curUI = mUIEditor->GetCurSelected(i);
-				if (!curUI)
-					return;
+			/// move by drag
+			if (!injector->IsKeyDown(VK_CONTROL)) {
+				bool in = false;
+				for (unsigned i = 0; i < num; ++i) {
+					auto curUI = mUIEditor->GetCurSelected(i);
+					if (!curUI)
+						return;
 
-				in = curUI->IsIn(testPos, true, &sExpand);
+					in = curUI->IsIn(testPos, true, &sExpand);
+					if (in) {
+						sSizingXLeft = curUI->IsPtOnLeft(testPos, sAreaX);
+						sSizingXRight = curUI->IsPtOnRight(testPos, sAreaX);
+						sSizingYTop = curUI->IsPtOnTop(testPos, sAreaY);
+						sSizingYBottom = curUI->IsPtOnBottom(testPos, sAreaY);
+						break;
+					}
+				}
+
 				if (in) {
-					sSizingXLeft = curUI->IsPtOnLeft(testPos, sAreaX);
-					sSizingXRight = curUI->IsPtOnRight(testPos, sAreaX);
-					sSizingYTop = curUI->IsPtOnTop(testPos, sAreaY);
-					sSizingYBottom = curUI->IsPtOnBottom(testPos, sAreaY);
-					break;
+					if (
+						(sSizingXLeft && sSizingYTop) ||
+						(sSizingXRight && sSizingYBottom)
+						)
+					{
+						SetCursor(WinBase::sCursorNWSE);
+					}
+					else if (
+						(sSizingXRight && sSizingYTop) ||
+						(sSizingXLeft && sSizingYBottom)
+						)
+					{
+						SetCursor(WinBase::sCursorNESW);
+					}
+					else if (sSizingXLeft || sSizingXRight) {
+						SetCursor(WinBase::sCursorWE);
+					}
+					else if (sSizingYTop || sSizingYBottom) {
+						SetCursor(WinBase::sCursorNS);
+					}
+					else {
+						SetCursor(WinBase::sCursorAll);
+					}
+				}
+
+				if (dragStarted) {					
+					mUIEditor->BackupSizePos();
+				}				
+			}
+			else {
+				if (dragStarted && !mDragBox.IsStarted()) {
+					mDragBox.Start(dragStartPos);
 				}
 			}
-			if (in){
+			if (dragStarted) {
+				sDragStartedPos = dragStartPos;
+				injector->PopDragEvent();
+				sDragStarted = true;
+				mUIEditor->BackupSizePos();
+			}
+		}
+
+		if (sDragStarted){
+			/// move by drag
+			if (!injector->IsKeyDown(VK_CONTROL)) {
+				Vec2I delta = injector->GetAbsDeltaXY();
+				for (unsigned i = 0; i < num; ++i) {
+					auto curUI = mUIEditor->GetCurSelected(i);
+					bool sizing = false;
+					if (sSizingXLeft)
+					{
+						curUI->Move(Vec2I(delta.x, 0));
+						curUI->ModifySize(Vec2I(-delta.x, 0));
+						sizing = true;
+					}
+					if (sSizingXRight)
+					{
+						curUI->ModifySize(Vec2I(delta.x, 0));
+						sizing = true;
+					}
+					if (sSizingYTop)
+					{
+						curUI->Move(Vec2I(0, delta.y));
+						curUI->ModifySize(Vec2I(0, -delta.y));
+						sizing = true;
+					}
+					if (sSizingYBottom)
+					{
+						curUI->ModifySize(Vec2I(0, delta.y));
+						sizing = true;
+					}
+					if (!sizing)
+					{
+						curUI->Move(delta);
+					}
+				}
+
 				if (
 					(sSizingXLeft && sSizingYTop) ||
 					(sSizingXRight && sSizingYBottom)
@@ -2653,82 +2754,36 @@ mPopup->SetVisible(true);
 				{
 					SetCursor(WinBase::sCursorNESW);
 				}
-				else if (sSizingXLeft || sSizingXRight){
-					SetCursor(WinBase::sCursorWE);
+				else if (sSizingXLeft || sSizingXRight) {
+
 				}
-				else if (sSizingYTop || sSizingYBottom){
+				else if (sSizingYTop || sSizingYBottom) {
 					SetCursor(WinBase::sCursorNS);
 				}
 				else {
 					SetCursor(WinBase::sCursorAll);
 				}
 
-				if (dragStarted){
-					injector->PopDragEvent();
-					sDragStarted = true;
-					mUIEditor->BackupSizePos();
+				mUIEditor->OnPosSizeChanged();
+			}
+			else {
+				Vec2I curPos = injector->GetMousePos();
+				mDragBox.PushCur(curPos);
+				if (injector->IsDragEnded()) {					
+					mDragBox.End(curPos);
+					if (mUIEditor) {
+						if (sDragStartedPos.x > curPos.x) {
+							std::swap(sDragStartedPos.x, curPos.x);
+						}
+						if (sDragStartedPos.y > curPos.y) {
+							std::swap(sDragStartedPos.y, curPos.y);
+						}
+						Rect r = {sDragStartedPos.x, sDragStartedPos.y, curPos.x, curPos.y};
+						auto components = GetComponentsInRegion(r);
+						mUIEditor->OnComponentsSelected(components);
+					}
 				}
 			}
-		}
-
-		if (sDragStarted){
-			Vec2I delta = injector->GetAbsDeltaXY();
-			for (unsigned i = 0; i < num; ++i){
-				auto curUI = mUIEditor->GetCurSelected(i);
-				bool sizing = false;
-				if (sSizingXLeft)
-				{
-					curUI->Move(Vec2I(delta.x, 0));
-					curUI->ModifySize(Vec2I(-delta.x, 0));
-					sizing = true;
-				}
-				if (sSizingXRight)
-				{
-					curUI->ModifySize(Vec2I(delta.x, 0));
-					sizing = true;
-				}
-				if (sSizingYTop)
-				{
-					curUI->Move(Vec2I(0, delta.y));
-					curUI->ModifySize(Vec2I(0, -delta.y));
-					sizing = true;
-				}
-				if (sSizingYBottom)
-				{
-					curUI->ModifySize(Vec2I(0, delta.y));
-					sizing = true;
-				}
-				if (!sizing)
-				{
-					curUI->Move(delta);
-				}
-			}
-
-			if (
-				(sSizingXLeft && sSizingYTop) ||
-				(sSizingXRight && sSizingYBottom)
-				)
-			{
-				SetCursor(WinBase::sCursorNWSE);
-			}
-			else if (
-				(sSizingXRight && sSizingYTop) ||
-				(sSizingXLeft && sSizingYBottom)
-				)
-			{
-				SetCursor(WinBase::sCursorNESW);
-			}
-			else if (sSizingXLeft || sSizingXRight){
-
-			}
-			else if (sSizingYTop || sSizingYBottom){
-				SetCursor(WinBase::sCursorNS);
-			}
-			else{
-				SetCursor(WinBase::sCursorAll);
-			}
-
-			mUIEditor->OnPosSizeChanged();
 			if (injector->IsDragEnded() || injector->IsKeyDown(VK_ESCAPE)){
 				if (injector->IsKeyDown(VK_ESCAPE)){
 					mUIEditor->RestoreSizePos();
@@ -3179,6 +3234,10 @@ bool UIManager::GetRenderUIOption() const{
 
 void UIManager::SetLockUIVisibility(const char* ui, bool lock) {
 	mImpl->SetLockUIVisibility(ui, lock);
+}
+
+std::vector<WinBasePtr> UIManager::GetComponentsInRegion(const fb::Rect& r) {
+	return mImpl->GetComponentsInRegion(r);
 }
 
 void UIManager::SetUIEditor(IUIEditor* editor) {

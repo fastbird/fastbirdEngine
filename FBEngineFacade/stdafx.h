@@ -25,6 +25,7 @@
  -----------------------------------------------------------------------------
 */
 
+#pragma warning (disable : 4275)
 #include "FBCommonHeaders/platform.h"
 #if defined(_PLATFORM_WINDOWS_)
 #define FB_DLL_ENGINEFACADE __declspec(dllexport)

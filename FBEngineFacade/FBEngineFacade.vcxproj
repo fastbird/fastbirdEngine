@@ -82,6 +82,7 @@
     <ClInclude Include="EngineFacade.h" />
     <ClInclude Include="EngineOptions.h" />
     <ClInclude Include="GeometryRenderer.h" />
+    <ClInclude Include="ISkyFacadeListener.h" />
     <ClInclude Include="MeshFacade.h" />
     <ClInclude Include="MeshLoadOptions.h" />
     <ClInclude Include="ParticleFacade.h" />

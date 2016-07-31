@@ -43,7 +43,7 @@ namespace fb
 
 	NamedPortrait::NamedPortrait()
 	{
-		mUIObject = UIObject::Create(GetRenderTargetSize());		
+		mUIObject = UIObject::Create(GetRenderTargetSize(), this);		
 		mUIObject->mOwnerUI = this;
 		mUIObject->mTypeString = ComponentType::ConvertToString(GetType());		
 	}

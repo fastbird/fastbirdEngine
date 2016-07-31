@@ -83,7 +83,8 @@ namespace fb
 			return it->second;
 		}
 		else {
-			Error(FB_ERROR_LOG_ARG, FormatString("Data is not found with key %s", key.c_str()));
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Data is not found with key %s", key.c_str()).c_str());
 			return dummy;
 		}
 	}

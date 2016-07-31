@@ -24,6 +24,7 @@
     <ClInclude Include="TerrainMesh.h">
       <Filter>Terrain</Filter>
     </ClInclude>
+    <ClInclude Include="ISkySphereLIstener.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />

@@ -489,6 +489,7 @@ namespace fb
 		virtual void OnMouseHover(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseDown(IInputInjectorPtr injector);
 		virtual void OnMouseClicked(IInputInjectorPtr injector);
+
 		// return processed
 		virtual bool OnMouseDoubleClicked(IInputInjectorPtr injector);
 		virtual void OnMouseRButtonClicked(IInputInjectorPtr injector);
@@ -496,6 +497,8 @@ namespace fb
 
 		virtual void ReservePendingDelete(bool pendingDelete);
 		bool IsPendingDeleteReserved() const;
+		// Returns 'Found?'
+		virtual bool GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps);
 
 		
 	private:

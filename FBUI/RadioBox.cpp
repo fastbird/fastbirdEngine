@@ -81,7 +81,7 @@ void RadioBox::OnCreated(){
 		staticText->SetText(mTempString.c_str());
 		ClearWithSwap(mTempString);		
 	}
-	mUIObject = UIObject::Create(GetRenderTargetSize());
+	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
 

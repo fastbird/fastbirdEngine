@@ -50,268 +50,23 @@
 
 namespace fb
 {
-	int LoadLuaUI(lua_State* L);
-	int IsLoadedUI(lua_State* L);
-	int CloneLuaUI(lua_State* L);
-	int AddLuaUI(lua_State* L);
-	int DeleteLuaUI(lua_State* L);
-	int SetStaticText(lua_State* L);
-	int SetVisibleLuaUI(lua_State* L);
-	int ToggleVisibleLuaUI(lua_State* L);
-	int CloseAllLuaUI(lua_State* L);
-	int SetVisibleComponent(lua_State* L);
-	int SetVisibleChildrenComponent(lua_State* L);
-	int GetVisibleLuaUI(lua_State* L);
-	int RemoveAllChildrenOf(lua_State* L);
-	int RemoveComponent(lua_State* L);
-	int AddComponent(lua_State* L);
-	int AddComponentTabWindow(lua_State* L);
-	int CreateNewCard(lua_State* L);
-	int DeleteCard(lua_State* L);
-	int DeleteAllCard(lua_State* L);
-	int IsExistingCard(lua_State* L);
-	int BlinkButton(lua_State* L);
-	int UpdateButtonProgressBar(lua_State* L);
-	int StartButtonProgressBar(lua_State* L);
-	int EndButtonProgressBar(lua_State* L);
-	int SetTextBoxText(lua_State* L);
-	int SetUIBackground(lua_State* L);
-	int CacheUIComponent(lua_State* L);
-	int SetUIPropertyCached(lua_State* L);
-	int SetUIProperty(lua_State* L);
-	int GetUIProperty(lua_State* L);
-	int SetCardUIProperty(lua_State* L);
-	int RemoveUIEventhandler(lua_State* L);
-	int GetMousePos(lua_State* L);
-	int GetComponentWidth(lua_State* L);	
-	int FindAndRememberComponent(lua_State* L);
-	int SetActivationUIAnim(lua_State* L);
-	int SetFocusUI(lua_State* L);
-	int IsButtonActivated(lua_State* L);
-	int StartUIAnimation(lua_State* L);
-	int StopUIAnimation(lua_State* L);
-	int MatchUIHeight(lua_State* L);
-	int GetCheckedFromCheckBox(lua_State* L);
-	int GetNumericUpDownValue(lua_State* L);
-	int SetNumericUpDownValue(lua_State* L);
-	int MoveUIToBottom(lua_State* L);
-	int MoveUIToTop(lua_State* L);
-	int SetDropDownIndex(lua_State* L);
-	int GetDropDownIndex(lua_State* L);
-	int GetDropDownString(lua_State* L);
-	int ClearDropDownItem(lua_State* L);
-	int AddDropDownItem(lua_State* L);
-	int GetDropDownKey(lua_State* L);
-	int SetVisibleLuaUIWithoutFocusing(lua_State* L);
-	int GetColorRampUIValues(lua_State* L);
-	int SetColorRampUIValues(lua_State* L);
-	int HideUIsExcept(lua_State* L);
-	int StartHighlightUI(lua_State* L);
-	int StopHighlightUI(lua_State* L);
-	int SetHighlightUIComp(lua_State* L);
-	int SetEnableComponent(lua_State* L);
-	int GetUIPath(lua_State* L);
-	int GetUIScriptPath(lua_State* L);
-	int GetNumUIProperties(lua_State* L);
-	int GetUIPropertyName(lua_State* L);
-	int GetPropertyCurKeyValue(lua_State* L);	
-	int GetNumUIEvents(lua_State* L);
-	int GetUIEventName(lua_State* L);
-	int ModifyDropDownItem(lua_State* L);
-	int ChangeUISizeX(lua_State* L);
-	int ChangeUISizeY(lua_State* L);
-	int ChangeUISize(lua_State* L);
-	int HasComponent(lua_State* L);
-	int GetScrollbarOffset(lua_State* L);
-	int SetScrollbarOffset(lua_State* L);
-	int SetScrollbarEnd(lua_State* L);
-	int GetContentEndY(lua_State* L);
-	int RemoveGapChildren(lua_State* L);
-	int GetChildrenNames(lua_State* L);
-	int GetNumUIChildren(lua_State* L);
-
-	// listbox
-	int ClearListBox(lua_State* L);
-	int ClearPropertyItems(lua_State* L);
-	int SortPropertyList(lua_State* L);
-	int CacheListBox(lua_State* L);
-	int InsertListBoxItem(lua_State* L); // string or numeric key
-	int SetListBoxItem(lua_State* L);
-	int AddPropertyItem(lua_State* L);
-	int GetListBoxSelectedRows(lua_State* L);
-	int GetListBoxSelectedStringKeys(lua_State* L);
-	int GetListBoxSelectedNumericKeys(lua_State* L);
-	int GetListBoxStringKey(lua_State* L);
-	int GetListBoxNumericKey(lua_State* L);
-	int GetListBoxStringKeyCached(lua_State* L);
-	int GetListBoxNumericKeyCached(lua_State* L);
-	int GetListBoxRowIndex(lua_State* L);
-	int GetListBoxRowIndexCached(lua_State* L);
-	int SelectListBoxItem(lua_State* L);
-	int SelectListBoxItems(lua_State* L);	
-	int SelectListBoxItemsById(lua_State* L);
-	int GetListItemData(lua_State* L);	
-	int GetListItemDataCachedListBox(lua_State* L);
-	int SetListItemProperty(lua_State* L);
-	int StartUIAnimationForListItem(lua_State* L);
-	int StopUIAnimationForListItem(lua_State* L);	
-	int GetNumListBoxData(lua_State* L);
-	int SwapListBoxItem(lua_State* L);
-	int GetLastChangedRow(lua_State* L);
-	int SetListBoxItemProperty(lua_State* L);
-	int DisableListBoxItemEvent(lua_State* L);
-	int EnableListBoxItemEvent(lua_State* L);
-	int MoveUpListBoxItems(lua_State* L);
-	int MoveDownListBoxItems(lua_State* L);
-	int RemoveListBoxItems(lua_State* L);
-	int RemoveListBoxItemWithRowIndex(lua_State* L);
-
-	// etc
-	int SetTooltipString(lua_State* L);
-	int SetEnableUIInput(lua_State* L);
-	int SetCheckRadioBox(lua_State* L);
+	int GetUIPosSize(lua_State* L) {
+		const char* uiname = LuaUtils::checkstring(L, 1);
+		const char* compoName = LuaUtils::checkstring(L, 2);
+		auto comp = UIManager::GetInstance().FindComp(uiname, compoName);
+		if (!comp) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("no comp(%s, %s) found.", uiname, compoName).c_str());
+			return 0;
+		}
+		auto pos = comp->GetPos();
+		auto size = comp->GetSize();
+		LuaUtils::pushinteger(L, pos.x);
+		LuaUtils::pushinteger(L, pos.y);
+		LuaUtils::pushinteger(L, size.x);
+		LuaUtils::pushinteger(L, size.y);
+		return 4;
+	}
 	
-	int GetComponentFinalPos(lua_State* L);
-	int SetEnableUIRenderTarget(lua_State* L);
-	int SetLockUIVisibility(lua_State* L);
-
-	void RegisterLuaEnums(lua_State* mL){
-		ListItemDataType::RegisterToLua(mL);
-	}
-	//--------------------------------------------------------------------------------
-	void RegisterLuaFuncs(lua_State* mL)
-	{
-		LUA_SETCFUNCTION(mL, SetLockUIVisibility);
-		LUA_SETCFUNCTION(mL, SetEnableUIRenderTarget);
-		LUA_SETCFUNCTION(mL, GetComponentFinalPos);
-		LUA_SETCFUNCTION(mL, RemoveListBoxItemWithRowIndex);
-		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
-		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
-		LUA_SETCFUNCTION(mL, MoveUpListBoxItems);
-		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
-		LUA_SETCFUNCTION(mL, SetEnableUIInput);
-
-		LUA_SETCFUNCTION(mL, GetNumUIChildren);
-		LUA_SETCFUNCTION(mL, GetChildrenNames);
-		LUA_SETCFUNCTION(mL, RemoveGapChildren);
-		LUA_SETCFUNCTION(mL, GetContentEndY);
-		LUA_SETCFUNCTION(mL, SetScrollbarEnd);
-		LUA_SETCFUNCTION(mL, SetScrollbarOffset);
-		LUA_SETCFUNCTION(mL, GetScrollbarOffset);
-		LUA_SETCFUNCTION(mL, HasComponent);
-		LUA_SETCFUNCTION(mL, ChangeUISizeX);
-		LUA_SETCFUNCTION(mL, ChangeUISizeY);
-		LUA_SETCFUNCTION(mL, ChangeUISize);
-
-		LUA_SETCFUNCTION(mL, SetTooltipString);
-
-		//----------------------------------------------------------------------------
-		// Listbox
-		//--------------------------------------------------------------------------------
-		LUA_SETCFUNCTION(mL, DisableListBoxItemEvent);
-		LUA_SETCFUNCTION(mL, SetListBoxItemProperty);
-		LUA_SETCFUNCTION(mL, GetLastChangedRow);
-		LUA_SETCFUNCTION(mL, SwapListBoxItem);
-		LUA_SETCFUNCTION(mL, GetNumListBoxData);
-		LUA_SETCFUNCTION(mL, StopUIAnimationForListItem);
-		LUA_SETCFUNCTION(mL, StartUIAnimationForListItem);		
-		LUA_SETCFUNCTION(mL, SetListItemProperty);
-		LUA_SETCFUNCTION(mL, GetListItemDataCachedListBox);
-		LUA_SETCFUNCTION(mL, GetListItemData);
-		LUA_SETCFUNCTION(mL, SelectListBoxItemsById);
-		LUA_SETCFUNCTION(mL, SelectListBoxItems);
-		LUA_SETCFUNCTION(mL, SelectListBoxItem);		
-		LUA_SETCFUNCTION(mL, GetListBoxRowIndex);
-		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
-		LUA_SETCFUNCTION(mL, GetListBoxNumericKey);
-		LUA_SETCFUNCTION(mL, GetListBoxStringKey);
-		LUA_SETCFUNCTION(mL, GetListBoxNumericKeyCached);
-		LUA_SETCFUNCTION(mL, GetListBoxStringKeyCached);
-		LUA_SETCFUNCTION(mL, GetListBoxSelectedNumericKeys);
-		LUA_SETCFUNCTION(mL, GetListBoxSelectedStringKeys);
-		LUA_SETCFUNCTION(mL, GetListBoxSelectedRows);		
-		LUA_SETCFUNCTION(mL, AddPropertyItem);
-		LUA_SETCFUNCTION(mL, SetListBoxItem);
-		LUA_SETCFUNCTION(mL, InsertListBoxItem);
-		LUA_SETCFUNCTION(mL, CacheListBox);
-		LUA_SETCFUNCTION(mL, SortPropertyList);
-		LUA_SETCFUNCTION(mL, ClearPropertyItems);
-		LUA_SETCFUNCTION(mL, ClearListBox);
-		
-
-		LUA_SETCFUNCTION(mL, ModifyDropDownItem);
-		LUA_SETCFUNCTION(mL, GetUIEventName);
-		LUA_SETCFUNCTION(mL, GetNumUIEvents);
-		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
-		LUA_SETCFUNCTION(mL, GetUIPropertyName);
-		LUA_SETCFUNCTION(mL, GetNumUIProperties);
-		LUA_SETCFUNCTION(mL, GetUIPath);
-		LUA_SETCFUNCTION(mL, GetUIScriptPath);
-		LUA_SETCFUNCTION(mL, SetEnableComponent);
-		LUA_SETCFUNCTION(mL, StartHighlightUI);
-		LUA_SETCFUNCTION(mL, StopHighlightUI);
-		LUA_SETCFUNCTION(mL, SetHighlightUIComp);
-		LUA_SETCFUNCTION(mL, HideUIsExcept);
-		LUA_SETCFUNCTION(mL, SetColorRampUIValues);
-		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
-		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
-		LUA_SETCFUNCTION(mL, GetDropDownIndex);
-		LUA_SETCFUNCTION(mL, GetDropDownString);
-		LUA_SETCFUNCTION(mL, ClearDropDownItem);
-		LUA_SETCFUNCTION(mL, AddDropDownItem);
-		LUA_SETCFUNCTION(mL, GetDropDownKey);		
-		LUA_SETCFUNCTION(mL, SetDropDownIndex);
-		LUA_SETCFUNCTION(mL, MoveUIToBottom);
-		LUA_SETCFUNCTION(mL, MoveUIToTop);
-		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
-		LUA_SETCFUNCTION(mL, GetNumericUpDownValue);
-		LUA_SETCFUNCTION(mL, GetCheckedFromCheckBox);
-		LUA_SETCFUNCTION(mL, MatchUIHeight);
-		LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
-		LUA_SETCFUNCTION(mL, ToggleVisibleLuaUI);
-		LUA_SETCFUNCTION(mL, CloseAllLuaUI);
-		LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
-		LUA_SETCFUNCTION(mL, SetVisibleComponent);
-		LUA_SETCFUNCTION(mL, SetVisibleChildrenComponent);
-		LUA_SETCFUNCTION(mL, LoadLuaUI);
-		LUA_SETCFUNCTION(mL, IsLoadedUI);
-		LUA_SETCFUNCTION(mL, CloneLuaUI);
-		LUA_SETCFUNCTION(mL, AddLuaUI);
-		LUA_SETCFUNCTION(mL, DeleteLuaUI);
-		LUA_SETCFUNCTION(mL, SetStaticText);
-		LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
-		LUA_SETCFUNCTION(mL, RemoveComponent);
-		LUA_SETCFUNCTION(mL, AddComponent);
-		LUA_SETCFUNCTION(mL, AddComponentTabWindow);
-		LUA_SETCFUNCTION(mL, CreateNewCard);
-		LUA_SETCFUNCTION(mL, DeleteCard);
-		LUA_SETCFUNCTION(mL, DeleteAllCard);
-		LUA_SETCFUNCTION(mL, IsExistingCard);
-		LUA_SETCFUNCTION(mL, BlinkButton);
-		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
-		LUA_SETCFUNCTION(mL, StartButtonProgressBar);
-		LUA_SETCFUNCTION(mL, EndButtonProgressBar);
-		LUA_SETCFUNCTION(mL, SetTextBoxText);
-		LUA_SETCFUNCTION(mL, SetUIBackground);
-		LUA_SETCFUNCTION(mL, SetUIPropertyCached);
-		LUA_SETCFUNCTION(mL, CacheUIComponent);
-		LUA_SETCFUNCTION(mL, SetUIProperty);		
-		LUA_SETCFUNCTION(mL, GetUIProperty);
-		LUA_SETCFUNCTION(mL, SetCardUIProperty);
-		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
-		LUA_SETCFUNCTION(mL, GetMousePos);
-		LUA_SETCFUNCTION(mL, GetComponentWidth);		
-		LUA_SETCFUNCTION(mL, FindAndRememberComponent);
-		LUA_SETCFUNCTION(mL, SetActivationUIAnim);
-		LUA_SETCFUNCTION(mL, SetFocusUI);		
-		LUA_SETCFUNCTION(mL, IsButtonActivated);
-		LUA_SETCFUNCTION(mL, StartUIAnimation);
-		LUA_SETCFUNCTION(mL, StopUIAnimation);
-
-		ListItemDataType::RegisterToLua(mL);
-
-	}
-
 	int LoadLuaUI(lua_State* L)
 	{
 		const char* uiFile = LuaUtils::checkstring(L, 1);
@@ -390,7 +145,7 @@ namespace fb
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);		
 		LuaUtils::checktype(L, 2, LUA_TBOOLEAN);
-		bool visible = LuaUtils::toboolean(L, 2);
+		bool visible = LuaUtils::toboolean(L, 2);		
 		UIManager::GetInstance().SetVisible(uiname, visible);
 		return 0;
 	}
@@ -484,7 +239,7 @@ namespace fb
 			}
 			else
 			{
-				Error(FB_ERROR_LOG_ARG, "Cannot remove root component.");
+				Logger::Log(FB_ERROR_LOG_ARG, "Cannot remove root component.");
 			}
 		}
 		return 0;
@@ -550,7 +305,7 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
-			Error(FB_ERROR_LOG_ARG, "No card scroller found!");
+			Logger::Log(FB_ERROR_LOG_ARG, "No card scroller found!");
 			return 0;
 		}
 
@@ -565,7 +320,7 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
-			Error(FB_ERROR_LOG_ARG, "No card scroller found!");
+			Logger::Log(FB_ERROR_LOG_ARG, "No card scroller found!");
 			return 0;
 		}
 
@@ -581,7 +336,7 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
-			Error(FB_ERROR_LOG_ARG, "No card scroller found!");
+			Logger::Log(FB_ERROR_LOG_ARG, "No card scroller found!");
 			return 0;
 		}
 
@@ -596,7 +351,7 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, cardScrollerName);
 		if (!comp)
 		{
-			Error(FB_ERROR_LOG_ARG, "No card scroller found!");
+			Logger::Log(FB_ERROR_LOG_ARG, "No card scroller found!");
 			return 0;
 		}
 
@@ -793,7 +548,8 @@ namespace fb
 			}
 		}
 		else{
-			Log("Component(%s) in the ui(%s) is not found.", compName, uiname);
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Component(%s) in the ui(%s) is not found.", compName, uiname).c_str());
 		}
 		return 0;
 	}
@@ -856,7 +612,8 @@ namespace fb
 			return 1;
 		}
 		assert(0);
-		Error("UI component not found! (%s, %s)", uiname, compName);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"UI component not found! (%s, %s)", uiname, compName).c_str());
 		LuaUtils::pushinteger(L, 0);
 		return 1;
 	}
@@ -878,7 +635,7 @@ namespace fb
 		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
 		if (!comp)
 		{
-			Error(FB_ERROR_LOG_ARG, "no comp found");
+			Logger::Log(FB_ERROR_LOG_ARG, "no comp found");
 			return 0;
 		}
 		const char* animName = LuaUtils::checkstring(L, 3);
@@ -1228,7 +985,7 @@ namespace fb
 		const char* compName = LuaUtils::checkstring(L, 2);
 		if (!LuaUtils::isboolean(L, 3))
 		{
-			Error(FB_ERROR_LOG_ARG, "Invalid param.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid param.");
 			return 0;
 		}
 		bool enable = LuaUtils::toboolean(L, 3) != 0;
@@ -1262,7 +1019,7 @@ namespace fb
 		const char* compName = LuaUtils::checkstring(L, 2);
 		if (!LuaUtils::isboolean(L, 3))
 		{
-			Error(FB_ERROR_LOG_ARG, "Invalid param.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid param.");
 			return 0;
 		}
 		bool enable = LuaUtils::toboolean(L, 3)!=0;
@@ -1731,7 +1488,7 @@ namespace fb
 		LuaObject rows(L, 3);
 		if (!rows.IsTable())
 		{
-			Error(FB_ERROR_LOG_ARG, "Invalid Param.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid Param.");
 			return 0;
 		}
 		auto winbase = UIManager::GetInstance().FindComp(wnd, comp).get();
@@ -1760,7 +1517,7 @@ namespace fb
 		LuaObject ids(L, 3);
 		if (!ids.IsTable())
 		{
-			Error(FB_ERROR_LOG_ARG, "Invalid Param.");
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid Param.");
 			return 0;
 		}
 		auto winbase = UIManager::GetInstance().FindComp(wnd, comp).get();
@@ -2243,5 +2000,143 @@ namespace fb
 		bool b = LuaUtils::toboolean(L, 2);
 		UIManager::GetInstance().SetLockUIVisibility(ui, b);
 		return 0;
+	}
+
+	void RegisterLuaEnums(lua_State* mL) {
+		ListItemDataType::RegisterToLua(mL);
+	}
+	//--------------------------------------------------------------------------------
+	void RegisterLuaFuncs(lua_State* mL)
+	{
+		LUA_SETCFUNCTION(mL, SetLockUIVisibility);
+		LUA_SETCFUNCTION(mL, SetEnableUIRenderTarget);
+		LUA_SETCFUNCTION(mL, GetComponentFinalPos);
+		LUA_SETCFUNCTION(mL, RemoveListBoxItemWithRowIndex);
+		LUA_SETCFUNCTION(mL, RemoveListBoxItems);
+		LUA_SETCFUNCTION(mL, MoveDownListBoxItems);
+		LUA_SETCFUNCTION(mL, MoveUpListBoxItems);
+		LUA_SETCFUNCTION(mL, SetCheckRadioBox);
+		LUA_SETCFUNCTION(mL, SetEnableUIInput);
+
+		LUA_SETCFUNCTION(mL, GetNumUIChildren);
+		LUA_SETCFUNCTION(mL, GetChildrenNames);
+		LUA_SETCFUNCTION(mL, RemoveGapChildren);
+		LUA_SETCFUNCTION(mL, GetContentEndY);
+		LUA_SETCFUNCTION(mL, SetScrollbarEnd);
+		LUA_SETCFUNCTION(mL, SetScrollbarOffset);
+		LUA_SETCFUNCTION(mL, GetScrollbarOffset);
+		LUA_SETCFUNCTION(mL, HasComponent);
+		LUA_SETCFUNCTION(mL, ChangeUISizeX);
+		LUA_SETCFUNCTION(mL, ChangeUISizeY);
+		LUA_SETCFUNCTION(mL, ChangeUISize);
+
+		LUA_SETCFUNCTION(mL, SetTooltipString);
+
+		//----------------------------------------------------------------------------
+		// Listbox
+		//--------------------------------------------------------------------------------
+		LUA_SETCFUNCTION(mL, DisableListBoxItemEvent);
+		LUA_SETCFUNCTION(mL, SetListBoxItemProperty);
+		LUA_SETCFUNCTION(mL, GetLastChangedRow);
+		LUA_SETCFUNCTION(mL, SwapListBoxItem);
+		LUA_SETCFUNCTION(mL, GetNumListBoxData);
+		LUA_SETCFUNCTION(mL, StopUIAnimationForListItem);
+		LUA_SETCFUNCTION(mL, StartUIAnimationForListItem);
+		LUA_SETCFUNCTION(mL, SetListItemProperty);
+		LUA_SETCFUNCTION(mL, GetListItemDataCachedListBox);
+		LUA_SETCFUNCTION(mL, GetListItemData);
+		LUA_SETCFUNCTION(mL, SelectListBoxItemsById);
+		LUA_SETCFUNCTION(mL, SelectListBoxItems);
+		LUA_SETCFUNCTION(mL, SelectListBoxItem);
+		LUA_SETCFUNCTION(mL, GetListBoxRowIndex);
+		LUA_SETCFUNCTION(mL, GetListBoxRowIndexCached);
+		LUA_SETCFUNCTION(mL, GetListBoxNumericKey);
+		LUA_SETCFUNCTION(mL, GetListBoxStringKey);
+		LUA_SETCFUNCTION(mL, GetListBoxNumericKeyCached);
+		LUA_SETCFUNCTION(mL, GetListBoxStringKeyCached);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedNumericKeys);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedStringKeys);
+		LUA_SETCFUNCTION(mL, GetListBoxSelectedRows);
+		LUA_SETCFUNCTION(mL, AddPropertyItem);
+		LUA_SETCFUNCTION(mL, SetListBoxItem);
+		LUA_SETCFUNCTION(mL, InsertListBoxItem);
+		LUA_SETCFUNCTION(mL, CacheListBox);
+		LUA_SETCFUNCTION(mL, SortPropertyList);
+		LUA_SETCFUNCTION(mL, ClearPropertyItems);
+		LUA_SETCFUNCTION(mL, ClearListBox);
+
+
+		LUA_SETCFUNCTION(mL, ModifyDropDownItem);
+		LUA_SETCFUNCTION(mL, GetUIEventName);
+		LUA_SETCFUNCTION(mL, GetNumUIEvents);
+		LUA_SETCFUNCTION(mL, GetPropertyCurKeyValue);
+		LUA_SETCFUNCTION(mL, GetUIPropertyName);
+		LUA_SETCFUNCTION(mL, GetNumUIProperties);
+		LUA_SETCFUNCTION(mL, GetUIPath);
+		LUA_SETCFUNCTION(mL, GetUIScriptPath);
+		LUA_SETCFUNCTION(mL, SetEnableComponent);
+		LUA_SETCFUNCTION(mL, StartHighlightUI);
+		LUA_SETCFUNCTION(mL, StopHighlightUI);
+		LUA_SETCFUNCTION(mL, SetHighlightUIComp);
+		LUA_SETCFUNCTION(mL, HideUIsExcept);
+		LUA_SETCFUNCTION(mL, SetColorRampUIValues);
+		LUA_SETCFUNCTION(mL, GetColorRampUIValues);
+		LUA_SETCFUNCTION(mL, SetVisibleLuaUIWithoutFocusing);
+		LUA_SETCFUNCTION(mL, GetDropDownIndex);
+		LUA_SETCFUNCTION(mL, GetDropDownString);
+		LUA_SETCFUNCTION(mL, ClearDropDownItem);
+		LUA_SETCFUNCTION(mL, AddDropDownItem);
+		LUA_SETCFUNCTION(mL, GetDropDownKey);
+		LUA_SETCFUNCTION(mL, SetDropDownIndex);
+		LUA_SETCFUNCTION(mL, MoveUIToBottom);
+		LUA_SETCFUNCTION(mL, MoveUIToTop);
+		LUA_SETCFUNCTION(mL, SetNumericUpDownValue);
+		LUA_SETCFUNCTION(mL, GetNumericUpDownValue);
+		LUA_SETCFUNCTION(mL, GetCheckedFromCheckBox);
+		LUA_SETCFUNCTION(mL, MatchUIHeight);
+		LUA_SETCFUNCTION(mL, SetVisibleLuaUI);
+		LUA_SETCFUNCTION(mL, ToggleVisibleLuaUI);
+		LUA_SETCFUNCTION(mL, CloseAllLuaUI);
+		LUA_SETCFUNCTION(mL, GetVisibleLuaUI);
+		LUA_SETCFUNCTION(mL, SetVisibleComponent);
+		LUA_SETCFUNCTION(mL, SetVisibleChildrenComponent);
+		LUA_SETCFUNCTION(mL, LoadLuaUI);
+		LUA_SETCFUNCTION(mL, IsLoadedUI);
+		LUA_SETCFUNCTION(mL, CloneLuaUI);
+		LUA_SETCFUNCTION(mL, AddLuaUI);
+		LUA_SETCFUNCTION(mL, DeleteLuaUI);
+		LUA_SETCFUNCTION(mL, SetStaticText);
+		LUA_SETCFUNCTION(mL, RemoveAllChildrenOf);
+		LUA_SETCFUNCTION(mL, RemoveComponent);
+		LUA_SETCFUNCTION(mL, AddComponent);
+		LUA_SETCFUNCTION(mL, AddComponentTabWindow);
+		LUA_SETCFUNCTION(mL, CreateNewCard);
+		LUA_SETCFUNCTION(mL, DeleteCard);
+		LUA_SETCFUNCTION(mL, DeleteAllCard);
+		LUA_SETCFUNCTION(mL, IsExistingCard);
+		LUA_SETCFUNCTION(mL, BlinkButton);
+		LUA_SETCFUNCTION(mL, UpdateButtonProgressBar);
+		LUA_SETCFUNCTION(mL, StartButtonProgressBar);
+		LUA_SETCFUNCTION(mL, EndButtonProgressBar);
+		LUA_SETCFUNCTION(mL, SetTextBoxText);
+		LUA_SETCFUNCTION(mL, SetUIBackground);
+		LUA_SETCFUNCTION(mL, SetUIPropertyCached);
+		LUA_SETCFUNCTION(mL, CacheUIComponent);
+		LUA_SETCFUNCTION(mL, SetUIProperty);
+		LUA_SETCFUNCTION(mL, GetUIProperty);
+		LUA_SETCFUNCTION(mL, SetCardUIProperty);
+		LUA_SETCFUNCTION(mL, RemoveUIEventhandler);
+		LUA_SETCFUNCTION(mL, GetMousePos);
+		LUA_SETCFUNCTION(mL, GetComponentWidth);
+		LUA_SETCFUNCTION(mL, FindAndRememberComponent);
+		LUA_SETCFUNCTION(mL, SetActivationUIAnim);
+		LUA_SETCFUNCTION(mL, SetFocusUI);
+		LUA_SETCFUNCTION(mL, IsButtonActivated);
+		LUA_SETCFUNCTION(mL, StartUIAnimation);
+		LUA_SETCFUNCTION(mL, StopUIAnimation);
+		LUA_SETCFUNCTION(mL, GetUIPosSize);
+
+		ListItemDataType::RegisterToLua(mL);
+
 	}
 }

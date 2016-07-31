@@ -155,6 +155,14 @@ public:
 		mDirectionalLight[idx]->SetDirection(dir);
 	}
 
+	void SetLightDiffuse(DirectionalLightIndex::Enum idx, const Vec3& color) {
+		mDirectionalLight[idx]->SetDiffuse(color);
+	}
+
+	void SetLightIntensity(DirectionalLightIndex::Enum idx, float intensity) {
+		mDirectionalLight[idx]->SetIntensity(intensity);
+	}
+
 	void GetDirectionalLightInfo(DirectionalLightIndex::Enum idx, DirectionalLightInfo& data){
 		auto& light = mDirectionalLight[idx];
 		data.mDirection_Intensiy = Vec4(light->GetDirection(), light->GetIntensity());
@@ -730,9 +738,16 @@ const Vec3& Scene::GetMainLightDirection(){
 }
 
 void Scene::SetLightDirection(DirectionalLightIndex::Enum idx, const Vec3& dir){
-	return mImpl->SetLightDirection(idx, dir);
+	mImpl->SetLightDirection(idx, dir);
 }
 
+void Scene::SetLightDiffuse(DirectionalLightIndex::Enum idx, const Vec3& color) {
+	mImpl->SetLightDiffuse(idx, color);
+}
+
+void Scene::SetLightIntensity(DirectionalLightIndex::Enum idx, float intensity) {
+	mImpl->SetLightIntensity(idx, intensity);
+}
 
 void Scene::GetDirectionalLightInfo(DirectionalLightIndex::Enum idx, DirectionalLightInfo& data){
 	mImpl->GetDirectionalLightInfo(idx, data);

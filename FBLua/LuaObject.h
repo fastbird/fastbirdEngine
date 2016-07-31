@@ -107,6 +107,7 @@ namespace fb
 		LuaSequenceIterator GetSequenceIterator() const;
 
 		LuaObject SetFieldTable(const char* fieldName) const;
+		void SetFieldTable(const char* fieldName, LuaObject& tableObj) const;
 		void SetField(const char* fieldName, double num) const;
 		void SetField(const char* fieldName, int num) const;
 		void SetField(const char* fieldName, unsigned num) const;
@@ -134,6 +135,7 @@ namespace fb
 		void SetSeq(int n, const Vec3ITuple& val) const;
 		void SetSeq(int n, const Vec3Tuple& val) const;
 		void SetSeq(int n, LuaObject& value) const;
+		void SetSeqNil(int n) const;
 		
 		template<class T>
 		void SetSeq(int n, T* val) const

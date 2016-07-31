@@ -80,6 +80,7 @@ public:
 	} mInternalParams;
 
 	Camera* mSelf;
+	CameraWeakPtr mSelfPtr;
 	bool mMainCamera;
 	bool mViewPropertyChanged;
 	bool mProjPropertyChanged;
@@ -801,7 +802,13 @@ public:
 };
 
 //----------------------------------------------------------------------------
-FB_IMPLEMENT_STATIC_CREATE(Camera);
+CameraPtr Camera::Create() {
+	auto p = CameraPtr(new Camera, [](Camera* obj) {
+		delete obj;
+	});
+	p->mImpl->mSelfPtr = p;
+	return p;
+}
 
 Camera::Camera()
 	: mImpl(new Impl(this)){
@@ -828,12 +835,21 @@ CameraPtr Camera::Clone()
 	return CameraPtr(new Camera(*this), [](Camera* obj) {delete obj; });	
 }
 
+void Camera::CloneTo(const ICameraPtr& icam) {
+	auto cam =  std::dynamic_pointer_cast<Camera>(icam);
+	*cam->mImpl = *mImpl;
+}
+
 void Camera::SetMainCamera(bool main){
 	mImpl->mMainCamera = main;
 }
 
 bool Camera::IsMainCamera() const{
 	return mImpl->mMainCamera;
+}
+
+ICameraPtr Camera::GetSelfPtr() {
+	return mImpl->mSelfPtr.lock();
 }
 
 //----------------------------------------------------------------------------
