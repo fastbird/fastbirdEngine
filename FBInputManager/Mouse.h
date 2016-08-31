@@ -61,8 +61,8 @@ namespace fb
 		virtual void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION);
 		
 		// Positions		
-		virtual void GetDeltaXY(long &x, long &y) const;
-		virtual Vec2ITuple GetDeltaXY() const;
+		virtual void GetDpiDependentDeltaXY(long &x, long &y) const;
+		virtual Vec2ITuple GetDpiDependentDeltaXY() const;
 		// exactlay match to the cursor
 		virtual void GetAbsDeltaXY(long &x, long &y) const;
 		virtual Vec2ITuple GetAbsDeltaXY() const;
@@ -92,6 +92,7 @@ namespace fb
 		virtual bool IsLButtonDownPrev() const;
 		virtual bool IsLButtonDown(Real* time = 0) const;
 		virtual bool IsLButtonClicked() const;
+		virtual bool IsLButtonUp() const OVERRIDE;
 		virtual bool IsLButtonDoubleClicked() const;
 		virtual bool IsLButtonPressed() const;
 		virtual bool IsRButtonDown(Real* time = 0) const;

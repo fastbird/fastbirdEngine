@@ -87,6 +87,7 @@ namespace fb{
 		void SetTangents(int matGroupIdx, const Vec3* t, size_t numTangents);
 		void SetIndices(int matGroupIdx, const UINT* indices, size_t numIndices);
 		void SetIndices(int matGroupIdx, const USHORT* indices, size_t numIndices);
+		void SetIndices(int matGroupIdx, const std::vector<unsigned>& indices);
 		void SetIndexBuffer(int matGroupIdx, IndexBufferPtr pIndexBuffer);
 		Vec3* GetPositions(int matGroupIdx, size_t& outNumPositions);
 		Vec3* GetNormals(int matGroupIdx, size_t& outNumNormals);
@@ -125,4 +126,7 @@ namespace fb{
 		void SetAmbientColor(const Color& color);
 		void SetCheckDistance(bool check);
 	};
+
+	/*void write_template(std::ostream& stream, const MeshObject& data, int version);
+	void read_template(std::istream& stream, MeshObject& data);*/
 }

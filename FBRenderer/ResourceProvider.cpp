@@ -37,6 +37,10 @@
 #include "FBFileSystem/FileSystem.h"
 #include "FBSerializationLib/Serialization.h"
 #include "EssentialEngineData/shaders/CommonDefines.h"
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
 using namespace fb;
 
 static const int NumToneMaps = 5;
@@ -44,28 +48,38 @@ static const int NumLuminanceMaps = 3;
 class ResourceProvider::Impl
 {
 public:
-	VectorMap<int, std::vector<TexturePtr> > mTextures;
-	VectorMap<int, ShaderPtr> mShaders;
-	VectorMap<int, MaterialPtr> mMaterials;
-	VectorMap<int, RasterizerStatePtr> mRasterizerStates;
-	VectorMap<int, BlendStatePtr> mBlendStates;
-	VectorMap<int, DepthStencilStatePtr> mDepthStencilStates;
-	VectorMap<int, SamplerStatePtr> mSamplerStates;
-	VectorMap<ResourceTypes::IndexBuffer, IndexBufferPtr> mIndexBuffers;
+	std::unordered_map<int, std::vector<TexturePtr> > mTextures;
+	std::unordered_map<int, ShaderPtr> mShaders;
+	std::unordered_map<int, MaterialPtr> mMaterials;
+	std::unordered_map<int, RasterizerStatePtr> mRasterizerStates;
+	std::unordered_map<int, BlendStatePtr> mBlendStates;
+	std::unordered_map<int, DepthStencilStatePtr> mDepthStencilStates;
+	std::unordered_map<int, SamplerStatePtr> mSamplerStates;
+	std::unordered_map<ResourceTypes::IndexBuffer, IndexBufferPtr> mIndexBuffers;
 
 	//---------------------------------------------------------------------------
 	std::vector<TexturePtr> CreatePermutationTexture() {
 		ByteArray p;
-		auto path = FileSystem::GetResourcePathIfPathNotExists("EssentialEngineData/Permutation_256_extented.dat");
-		std::ifstream file(path, std::ios::binary);
-		if (file) {
-			read(file, p);
-			std::vector<TexturePtr> ret;
-			ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
-				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
-			ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
-				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
-			return ret;
+		FileSystem::Open file("EssentialEngineData/Permutation_256_extented.dat", "rb");
+		if (file.IsOpen()) {
+			auto& data = *file.GetBinaryData();
+			if (!data.empty()) {
+				typedef boost::iostreams::basic_array_source<char> Device;				
+				boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+				std::vector<TexturePtr> ret;
+				try {
+					boost::archive::binary_iarchive ar(buffer);
+					ar & p;					
+					ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
+						1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
+					ret.push_back(Renderer::GetInstance().CreateTexture(&p[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R8_UINT,
+						1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
+				}
+				catch (const boost::archive::archive_exception& exc){
+					Logger::Log(FB_ERROR_LOG_ARG, exc.what());
+				}
+				return ret;
+			}
 		}
 		Logger::Log(FB_ERROR_LOG_ARG, "Failed to create Permutation_256_Extended texture.");
 		return{};
@@ -73,16 +87,21 @@ public:
 
 	std::vector<TexturePtr> CreateGradientTexture() {
 		std::vector<Vec4> g;
-		auto path = FileSystem::GetResourcePathIfPathNotExists("EssentialEngineData/Gradiants_256_extended.dat");
-		std::ifstream file(path, std::ios::binary);
-		if (file) {
-			read(file, g);
-			std::vector<TexturePtr> ret;
-			ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
-				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
-			ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
-				1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
-			return ret;
+		FileSystem::Open file("EssentialEngineData/Gradiants_256_extended.dat", "rb");
+		if (file.IsOpen()) {
+			auto& data = *file.GetBinaryData();
+			if (!data.empty()) {
+				typedef boost::iostreams::basic_array_source<char> Device;
+				boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+				boost::archive::binary_iarchive ar(buffer);
+				ar & g;
+				std::vector<TexturePtr> ret;
+				ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D));
+				ret.push_back(Renderer::GetInstance().CreateTexture(&g[0], NUM_PERM + NUM_PERM + 2, 1, PIXEL_FORMAT_R32G32B32A32_FLOAT,
+					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_1D | TEXTURE_TYPE_SECOND_DEVICE));
+				return ret;
+			}
 		}
 		Logger::Log(FB_ERROR_LOG_ARG, "Failed to create Gradiants_256_Extended texture.");
 		return{};
@@ -206,7 +225,7 @@ public:
 	}
 
 	TexturePtr GetTexture(int ResourceTypes_Textures, int index){
-		auto it = mTextures.Find(ResourceTypes_Textures);
+		auto it = mTextures.find(ResourceTypes_Textures);
 		if (it == mTextures.end() || index >= (int)it->second.size()){
 			auto textures = CreateTexture(ResourceTypes_Textures);
 			mTextures[ResourceTypes_Textures] = textures;
@@ -376,7 +395,7 @@ public:
 	}
 
 	ShaderPtr GetShader(int ResourceTypes_Shaders){
-		auto it = mShaders.Find(ResourceTypes_Shaders);
+		auto it = mShaders.find(ResourceTypes_Shaders);
 		if (it == mShaders.end()){
 			auto shader = CreateShader(ResourceTypes_Shaders);
 			if (!shader){
@@ -420,7 +439,7 @@ public:
 	}
 
 	MaterialPtr GetMaterial(int ResourceTypes_Materials){
-		auto it = mMaterials.Find(ResourceTypes_Materials);
+		auto it = mMaterials.find(ResourceTypes_Materials);
 		if (it == mMaterials.end()){
 			auto material = CreateMaterial(ResourceTypes_Materials);
 			if (!material){
@@ -444,37 +463,37 @@ public:
 		}
 		case ResourceTypes::RasterizerStates::CullFrontFace:
 		{
-			desc.CullMode = CULL_MODE_FRONT;
+			desc.SetCullMode(CULL_MODE_FRONT);
 			return renderer.CreateRasterizerState(desc);
 		}
 		case ResourceTypes::RasterizerStates::NoCull:
 		{
-			desc.CullMode = CULL_MODE_NONE;
+			desc.SetCullMode(CULL_MODE_NONE);
 			return renderer.CreateRasterizerState(desc);
 		}
 		case ResourceTypes::RasterizerStates::OneBiased:
 		{
-			desc.DepthBias = 1;
+			desc.SetDepthBias(1);
 			return renderer.CreateRasterizerState(desc);
 		}
 		case ResourceTypes::RasterizerStates::WireFrame:
 		{
-			desc.FillMode = FILL_MODE_WIREFRAME;
-			desc.CullMode = CULL_MODE_NONE;
-			desc.FrontCounterClockwise = false;
-			desc.DepthBias = 0;
-			desc.DepthBiasClamp = 0.0f;
-			desc.SlopeScaledDepthBias = 0.0f;
-			desc.DepthClipEnable = true;
-			desc.ScissorEnable = false;
-			desc.MultisampleEnable = false;
-			desc.AntialiasedLineEnable = false;
+			desc.SetFillMode(FILL_MODE_WIREFRAME);
+			desc.SetCullMode(CULL_MODE_NONE);
+			desc.SetFrontCounterClockwise(false);
+			desc.SetDepthBias(0);
+			desc.SetDepthBiasClamp(0.0f);
+			desc.SetSlopeScaledDepthBias(0.0f);
+			desc.SetDepthClipEnable(true);
+			desc.SetScissorEnable(false);
+			desc.SetMultisampleEnable(false);
+			desc.SetAntialiasedLineEnable(false);
 			return renderer.CreateRasterizerState(desc);
 		}
 		case ResourceTypes::RasterizerStates::ShadowMapRS:
 		{
-			desc.CullMode = CULL_MODE_NONE;
-			desc.AntialiasedLineEnable = false;
+			desc.SetCullMode(CULL_MODE_NONE);
+			desc.SetAntialiasedLineEnable(false);
 			return renderer.CreateRasterizerState(desc);
 		}
 		default:
@@ -484,7 +503,7 @@ public:
 	}
 
 	RasterizerStatePtr GetRasterizerState(int ResourceTypes_RasterizerStates){
-		auto it = mRasterizerStates.Find(ResourceTypes_RasterizerStates);
+		auto it = mRasterizerStates.find(ResourceTypes_RasterizerStates);
 		if (it == mRasterizerStates.end()){
 			auto rasterizerState = CreateRasterizerState(ResourceTypes_RasterizerStates);
 			if (!rasterizerState){
@@ -631,7 +650,7 @@ public:
 	}
 
 	BlendStatePtr GetBlendState(int ResourceTypes_BlendStates){
-		auto it = mBlendStates.Find(ResourceTypes_BlendStates);
+		auto it = mBlendStates.find(ResourceTypes_BlendStates);
 		if (it == mBlendStates.end()){
 			auto state = CreateBlendState(ResourceTypes_BlendStates);
 			if (!state){
@@ -653,27 +672,27 @@ public:
 			return renderer.CreateDepthStencilState(desc);
 		}
 		case ResourceTypes::DepthStencilStates::NoDepthStencil:{
-			desc.DepthEnable = false;
-			desc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+			desc.SetDepthEnable(false);
+			desc.SetDepthWriteMask(DEPTH_WRITE_MASK_ZERO);
 			return renderer.CreateDepthStencilState(desc);
 		}
 		case ResourceTypes::DepthStencilStates::NoDepthWrite_LessEqual:{
-			desc.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
-			desc.DepthFunc = COMPARISON_LESS_EQUAL;
+			desc.SetDepthWriteMask(DEPTH_WRITE_MASK_ZERO);
+			desc.SetDepthFunc(COMPARISON_LESS_EQUAL);
 			return renderer.CreateDepthStencilState(desc);
 		}
 		case ResourceTypes::DepthStencilStates::LessEqual:{
-			desc.DepthFunc = COMPARISON_LESS_EQUAL;
+			desc.SetDepthFunc(COMPARISON_LESS_EQUAL);
 			return renderer.CreateDepthStencilState(desc);
 		}
 		case ResourceTypes::DepthStencilStates::Greater: {
-			desc.DepthFunc = COMPARISON_GREATER;
+			desc.SetDepthFunc(COMPARISON_GREATER);
 			return renderer.CreateDepthStencilState(desc);
 		}
 		case ResourceTypes::DepthStencilStates::IncrementalStencilOpaqueIf: {
-			desc.StencilEnable = true;
-			desc.FrontFace.StencilPassOp = STENCIL_OP_REPLACE;
-			desc.FrontFace.StencilFunc = COMPARISON_GREATER_EQUAL;
+			desc.SetStencilEnable(true);
+			desc.GetFrontFace().SetStencilPassOp(STENCIL_OP_REPLACE);
+			desc.GetFrontFace().SetStencilFunc(COMPARISON_GREATER_EQUAL);
 			return renderer.CreateDepthStencilState(desc);
 		}
 		default:
@@ -683,7 +702,7 @@ public:
 	}
 
 	DepthStencilStatePtr GetDepthStencilState(int ResourceTypes_DepthStencilStates){
-		auto it = mDepthStencilStates.Find(ResourceTypes_DepthStencilStates);
+		auto it = mDepthStencilStates.find(ResourceTypes_DepthStencilStates);
 		if (it == mDepthStencilStates.end()){
 			auto state = CreateDepthStencilState(ResourceTypes_DepthStencilStates);
 			if (!state){
@@ -703,73 +722,73 @@ public:
 		switch (ResourceTypes_SamplerStates){
 		case ResourceTypes::SamplerStates::Point:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::Linear:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::Anisotropic:
 		{
-			desc.Filter = TEXTURE_FILTER_ANISOTROPIC;
+			desc.SetFilter(TEXTURE_FILTER_ANISOTROPIC);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::Shadow:
 		{
-			desc.Filter = TEXTURE_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;			
-			desc.AddressU = TEXTURE_ADDRESS_BORDER;
-			desc.AddressV = TEXTURE_ADDRESS_BORDER;
-			desc.AddressW = TEXTURE_ADDRESS_BORDER;			
-			desc.MaxAnisotropy = 0;
-			desc.MinLOD = 0.f;
-			desc.MaxLOD = 0.f;
-			desc.ComparisonFunc = COMPARISON_LESS;				
+			desc.SetFilter(TEXTURE_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT);			
+			desc.SetAddressU(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressV(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressW(TEXTURE_ADDRESS_BORDER);			
+			desc.SetMaxAnisotropy(0);
+			desc.SetMinLOD(0.f);
+			desc.SetMaxLOD(0.f);
+			desc.SetComparisonFunc(COMPARISON_LESS);				
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::PointWrap:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-			desc.AddressU = TEXTURE_ADDRESS_WRAP;
-			desc.AddressV = TEXTURE_ADDRESS_WRAP;
-			desc.AddressW = TEXTURE_ADDRESS_WRAP;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);
+			desc.SetAddressU(TEXTURE_ADDRESS_WRAP);
+			desc.SetAddressV(TEXTURE_ADDRESS_WRAP);
+			desc.SetAddressW(TEXTURE_ADDRESS_WRAP);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::LinearWrap:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-			desc.AddressU = TEXTURE_ADDRESS_WRAP;
-			desc.AddressV = TEXTURE_ADDRESS_WRAP;
-			desc.AddressW = TEXTURE_ADDRESS_WRAP;			
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR);
+			desc.SetAddressU(TEXTURE_ADDRESS_WRAP);
+			desc.SetAddressV(TEXTURE_ADDRESS_WRAP);
+			desc.SetAddressW(TEXTURE_ADDRESS_WRAP);			
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::BlackBorder:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-			desc.AddressU = TEXTURE_ADDRESS_BORDER;
-			desc.AddressV = TEXTURE_ADDRESS_BORDER;
-			desc.AddressW = TEXTURE_ADDRESS_BORDER;
-			for (int i = 0; i < 4; i++)
-				desc.BorderColor[i] = 0;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR);
+			desc.SetAddressU(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressV(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressW(TEXTURE_ADDRESS_BORDER);
+			float color[4] = { 0, 0, 0, 0 };
+			desc.SetBorderColor(color);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::PointBlackBorder:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
-			desc.AddressU = TEXTURE_ADDRESS_BORDER;
-			desc.AddressV = TEXTURE_ADDRESS_BORDER;
-			desc.AddressW = TEXTURE_ADDRESS_BORDER;
-			for (int i = 0; i < 4; i++)
-				desc.BorderColor[i] = 0;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);
+			desc.SetAddressU(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressV(TEXTURE_ADDRESS_BORDER);
+			desc.SetAddressW(TEXTURE_ADDRESS_BORDER);
+			float color[4] = { 0, 0, 0, 0 };
+			desc.SetBorderColor(color);
 			return renderer.CreateSamplerState(desc);
 		}
 		case ResourceTypes::SamplerStates::LinearMirror:
 		{
-			desc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_LINEAR;
-			desc.AddressU = TEXTURE_ADDRESS_MIRROR;
-			desc.AddressV = TEXTURE_ADDRESS_MIRROR;
-			desc.AddressW = TEXTURE_ADDRESS_MIRROR;
+			desc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR);
+			desc.SetAddressU(TEXTURE_ADDRESS_MIRROR);
+			desc.SetAddressV(TEXTURE_ADDRESS_MIRROR);
+			desc.SetAddressW(TEXTURE_ADDRESS_MIRROR);
 			return renderer.CreateSamplerState(desc);
 		}
 		default:
@@ -813,7 +832,7 @@ public:
 	}
 
 	SamplerStatePtr GetSamplerState(int ResourceTypes_SamplerStates){
-		auto it = mSamplerStates.Find(ResourceTypes_SamplerStates);
+		auto it = mSamplerStates.find(ResourceTypes_SamplerStates);
 		if (it == mSamplerStates.end()){
 			auto state = CreateSamplerState(ResourceTypes_SamplerStates);
 			if (!state){
@@ -829,7 +848,7 @@ public:
 	}
 
 	IndexBufferPtr GetIndexBuffer(ResourceTypes::IndexBuffer type) {
-		auto it = mIndexBuffers.Find(type);
+		auto it = mIndexBuffers.find(type);
 		if (it == mIndexBuffers.end()) {
 			auto ib = CreateIndexBuffer(type);
 			if (!ib)
@@ -874,15 +893,11 @@ public:
 	}
 
 	void DeleteTexture(int ResourceTypes_Textures){
-		auto it = mTextures.Find(ResourceTypes_Textures);
-		if (it != mTextures.end())
-			mTextures.erase(it);
+		mTextures.erase(ResourceTypes_Textures);
 	}
 
 	void DeleteShader(int ResourceTypes_Shaders){
-		auto it = mShaders.Find(ResourceTypes_Shaders);
-		if (it != mShaders.end())
-			mShaders.erase(it);
+		mShaders.erase(ResourceTypes_Shaders);
 	}
 };
 

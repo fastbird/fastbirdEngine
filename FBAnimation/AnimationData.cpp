@@ -1,4 +1,4 @@
-/*
+﻿/*
  -----------------------------------------------------------------------------
  This source file is part of fastbird engine
  For the latest info, see http://www.jungwan.net/
@@ -26,14 +26,17 @@
 */
 
 #include "stdafx.h"
+#include <boost/serialization/vector.hpp>
 #include "AnimationData.h"
 #include "FBCommonHeaders/VectorMap.h"
+#include "FBCommonHeaders/VectorMapSerialization.h"
 #include "FBCommonHeaders/Helpers.h"
 #include "FBMathLib/Math.h"
 #include "FBStringLib/StringLib.h"
 #include "FBStringLib/StringConverter.h"
 #include "FBDebugLib/Logger.h"
 #include "TinyXmlLib/tinyxml2.h"
+#include "FBFileSystem/FileSystem.h"
 using namespace fb;
 class AnimationData::Impl{
 public:
@@ -45,9 +48,26 @@ public:
 	fb::VectorMap<float, Vec3> mPos;
 	fb::VectorMap<std::string, Action> mActions;
 
+private:
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
+		ar & mName & mScale & mRot & mEuler & mPos & mActions;
+		if (Archive::is_loading()) {
+			for (auto& newAction : mActions) {
+				newAction.second.mPosStartEnd[0] = FindPos(newAction.second.mStartTime);
+				newAction.second.mPosStartEnd[1] = FindPos(newAction.second.mEndTime);
+				newAction.second.mRotStartEnd[0] = FindRot(newAction.second.mStartTime);
+				newAction.second.mRotStartEnd[1] = FindRot(newAction.second.mEndTime);
+			}
+		}
+	}
+
+public:
+
 	//---------------------------------------------------------------------------
 	void AddPosition(float time, float v, PosComp comp){
-		auto itFind = mPos.Find(time);
+		auto itFind = mPos.find(time);
 		if (itFind == mPos.end())
 		{
 			auto prevPos = FindPos(time);
@@ -71,7 +91,7 @@ public:
 	}
 
 	void AddScale(float time, float v, PosComp comp){
-		auto itFind = mScale.Find(time);
+		auto itFind = mScale.find(time);
 		if (itFind == mScale.end())
 		{
 			auto prev = FindScale(time);
@@ -96,7 +116,7 @@ public:
 	}
 
 	void AddRotEuler(float time, float v, PosComp comp){
-		auto itFind = mEuler.Find(time);
+		auto itFind = mEuler.find(time);
 		if (itFind == mEuler.end())
 		{
 			auto prev = FindRotEuler(time);
@@ -212,15 +232,14 @@ public:
 		if (!ValidCString(filename)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return false;
-		}
+		}		
 		GenerateQuatFromEuler();
 
-		tinyxml2::XMLDocument doc;
-		int errId = doc.LoadFile(filename);
-		if (errId)
+		auto pdoc = FileSystem::LoadXml(filename);
+		tinyxml2::XMLDocument& doc = *pdoc;		
+		if (doc.Error())
 		{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("AnimationData::ParseAction err : %s", doc.GetErrorStr1()).c_str());
-			Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
+			Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorString().c_str());
 			return false;
 		}
 		auto actions = doc.FirstChildElement("Actions");
@@ -272,7 +291,7 @@ public:
 	}
 
 	const Action* GetAction(const char* name) const{
-		auto it = mActions.Find(name);
+		auto it = mActions.find(name);
 		if (it != mActions.end())
 			return &(it->second);
 		return 0;
@@ -425,4 +444,19 @@ bool AnimationData::ParseAction(const char* filename){
 
 const AnimationData::Action* AnimationData::GetAction(const char* name) const{
 	return mImpl->GetAction(name);
+}
+
+namespace fb {
+	template<>
+	void AnimationData::serialize<boost::archive::binary_oarchive>
+		(boost::archive::binary_oarchive &ar, unsigned int version)
+	{
+		ar & *mImpl;
+	}
+	template<>
+	void AnimationData::serialize<boost::archive::binary_iarchive>
+		(boost::archive::binary_iarchive &ar, unsigned int version)
+	{
+		ar & *mImpl;
+	}	
 }

@@ -35,8 +35,79 @@ using namespace fb;
 
 // luawapper util
 
+
 namespace fb
-{
+{	
+	static int IsFilePathSafe(lua_State* L)
+	{
+		const char* filepath = LuaUtils::checkstring(L, 1);
+		bool ret = FileSystem::CheckSecurity(filepath);
+		LuaUtils::pushboolean(L, ret);
+		return 1;
+	}
+
+	static std::unordered_map<std::string, lua_CFunction> gModules;
+	static int LoadAndExecuteScriptResource(lua_State* L)
+	{
+		const char* file = LuaUtils::checkstring(L, 1);
+		if (strlen(FileSystem::GetExtension(file)) == 0) {
+			auto itFind = gModules.find(file);
+			if (itFind != gModules.end())
+			{
+				return itFind->second(L);
+			}
+		}
+		int error = LuaUtils::DoFile(L, file);
+		if (error)
+		{
+			auto itFind = gModules.find(file);
+			if (itFind != gModules.end())
+			{
+				return itFind->second(L);
+			}
+			else
+			{
+				fb::LuaUtils::PrintLuaErrorString(L, LuaUtils::tostring(L, -1));
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load %s", file).c_str());				
+				LuaUtils::pushboolean(L, 0);
+				return 1;
+			}
+		}
+		else
+		{
+			LuaUtils::pushboolean(L, 1);
+			return 2;
+		}
+	}
+
+	static int OutputDebugString_(lua_State* L) {
+		Logger::Log(LuaUtils::checkstring(L, 1));
+		return 0;
+	}
+	int DoFile(lua_State* L) {
+		auto path = LuaUtils::checkstring(L, 1);
+		LuaUtils::DoFile(L, path);
+		return 0;
+	}
+
+	static int TempTestFunc(lua_State* L) {
+		auto path = LuaUtils::checkstring(L, 1);
+		int a = 0;
+		a++;
+		return 0;
+	}
+
+	static int get_lua_content(lua_State* L) {
+		auto path = LuaUtils::checkstring(L, 1);
+		FileSystem::Open file(path, "r");
+		if (!file.IsOpen()) {
+			return 0;
+		}
+		auto& data = file.GetTextData();
+		LuaUtils::pushstring(L, data.c_str());
+		return 1;
+	}
+
 	const char* GetCWD() {
 		static char buf[MAX_PATH];
 #if defined(_PLATFORM_WINDOWS_)
@@ -46,6 +117,8 @@ namespace fb
 #endif
 		return buf;
 	}
+
+	bool RunGlobalOverride(lua_State* L);
 
 	static lua_State* sLuaState = 0;
 	lua_State* LuaUtils::OpenLuaState(){
@@ -57,6 +130,27 @@ namespace fb
 			FileSystem::BackupFile(filepath, 5, "Backup_Log");
 			Logger::Init(filepath);
 		}
+
+		LuaUtils::pushcfunction(L, fb::IsFilePathSafe);
+		LuaUtils::setglobal(L, "IsFilePathSafe");
+
+		LuaUtils::pushcfunction(L, fb::LoadAndExecuteScriptResource);
+		LuaUtils::setglobal(L, "LoadAndExecuteScriptResource");		
+
+		LuaUtils::pushcfunction(L, fb::OutputDebugString_);
+		LuaUtils::setglobal(L, "OutputDebugString");		
+
+		LuaUtils::pushcfunction(L, fb::DoFile);
+		LuaUtils::setglobal(L, "DoFile");
+
+		LuaUtils::pushcfunction(L, fb::TempTestFunc);
+		LuaUtils::setglobal(L, "TempTestFunc");		
+
+		LuaUtils::pushcfunction(L, fb::get_lua_content);
+		LuaUtils::setglobal(L, "get_lua_content");
+
+		RunGlobalOverride(L);
+		
 		return L;
 	}
 
@@ -72,8 +166,15 @@ namespace fb
 		else if (L){
 			lua_close(L);
 		}
+	}	
+	
+	void LuaUtils::RegisterLuaModule(const char* moduleName, lua_CFunction func) {
+		if (!ValidCString(moduleName)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+		gModules[moduleName] = func;
 	}
-
 
 	void LuaUtils::CallLuaFunction(lua_State* L, const char* func, const char* sig, ...)
 	{
@@ -377,12 +478,22 @@ namespace fb
 	}
 
 	bool LuaUtils::DoFile(lua_State* L, const char* filepath){
-		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
-		bool error = luaL_dofile(L, resourcePath.c_str());
+		FileSystem::Open file(filepath, "r");
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"File(%s) not found.", filepath).c_str());
+			return false;
+		}
+		const auto& str = file.GetTextData();		
+		return DoString(L, str.c_str());
+	}
+
+	bool LuaUtils::DoString(lua_State* L, const char* str) {
+		bool error = luaL_dostring(L, str);
 		if (error)
 		{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Running script(%s) is failed", filepath).c_str());			
-			PrintLuaErrorString(L, tostring(L, -1));			
+			Logger::Log(FB_ERROR_LOG_ARG, "Cannot run the string.");
+			PrintLuaErrorString(L, tostring(L, -1));
 		}
 		return error;
 	}
@@ -1369,4 +1480,72 @@ namespace fb{
 		PushNumbers(L, n, val);
 	}
 
+	bool RunGlobalOverride(lua_State* L) {
+
+		const char* strRun =
+			"do\n\
+	local OldRequire = require;  --save the old require() function\n\
+	local resourceIdMap = {};  --map of resource id's we've already loaded\n\
+\n\
+	require = function(script)\n\
+		if (not resourceIdMap[script]) then\n\
+			resourceIdMap[script] = LoadAndExecuteScriptResource(script)\n\
+			if (resourceIdMap[script]) then\n\
+				return resourceIdMap[script]\n\
+			else\n\
+				--failed to load file through the resource system so fall back to the old method\n\
+				return OldRequire(script)\n\
+			end\n\
+		else\n\
+				return resourceIdMap[script]\n\
+		end\n\
+	end\n\
+end\n\
+\n\
+do\n\
+	local OldDofile = dofile;\n\
+	dofile = function(filepath)\n\
+		DoFile(filepath);\n\
+	end\n\
+end\n\
+\n\
+do\n\
+	local Oldloadfile = loadfile;\n\
+	loadfile = function(filepath)\n\
+		local chunk_string = get_lua_content(filepath);\n\
+		return load(chunk_string);\n\
+	end\n\
+end\n\
+\
+do\n\
+	local OldFileOpen = io.open;\n\
+	io.open = function(filepath, mode)\n\
+		local isSafe = IsFilePathSafe(filepath);\n\
+		if isSafe then\n\
+			return OldFileOpen(filepath, mode);\n\
+		end\n\
+  end\n\
+\n\
+	local OldInput = io.input;\n\
+	io.input = function(filepath)\n\
+		if not filepath then\n\
+			return OldInput();\n\
+		end\n\
+		local isSafe = IsFilePathSafe(filepath);\n\
+		if isSafe then\n\
+			return OldInput(filepath);\n\
+		end\n\
+	end\n\
+\n\
+	local OldOutput = io.output;\n\
+	io.output = function(filepath)\n\
+		local isSafe = IsFilePathSafe(filepath);\n\
+		if isSafe then\n\
+			return OldOuput(filepath);\n\
+		end\n\
+	end\n\
+end\n\
+";
+		return 	LuaUtils::DoString(L, strRun);
+	}
 }

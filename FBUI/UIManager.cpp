@@ -162,7 +162,7 @@ public:
 		, mLockFocus(false), mDelayForTooltip(0)
 		, mUIEditorModuleHandle(0), mLocatingComp(ComponentType::NUM)
 		, mUIEditor(0)
-		, mUIFolder("data/ui")
+		, mUIFolder("Data/ui")
 		, mMultiLocating(false), mAtlasStaging(0)
 		, mPrevTooltipNPos(-1, -1)
 	{	
@@ -563,7 +563,7 @@ public:
 	}
 
 	void OnResolutionChanged(HWindowId hwndId, HWindow hwnd){
-		auto it = mWindows.Find(hwndId);
+		auto it = mWindows.find(hwndId);
 		if (it != mWindows.end()){
 			auto& windows = it->second;
 			for (auto& it : windows){
@@ -732,23 +732,16 @@ public:
 		{
 			hwndId = Renderer::GetInstance().GetMainWindowHandleId();
 		}
-		tinyxml2::XMLDocument doc;
-		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
-		int err = doc.LoadFile(resourcePath.c_str());
+		auto pdocument = FileSystem::LoadXml(filepath);		
 		char buf[MAX_PATH];
 		GetCurrentDirectory(MAX_PATH, buf);
-		if (err)
+		if (pdocument->Error())
 		{
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
-				"parsing ui file(%s) failed.", filepath).c_str());
-			if (doc.GetErrorStr1())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
-			if (doc.GetErrorStr2())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
+			Logger::Log(FB_ERROR_LOG_ARG, pdocument->GetErrorString().c_str());
 			return false;
 		}
 
-		tinyxml2::XMLElement* pRoot = doc.RootElement();
+		tinyxml2::XMLElement* pRoot = pdocument->RootElement();
 		if (!pRoot)
 		{
 			assert(0);
@@ -846,7 +839,7 @@ public:
 			auto pAnim = UIAnimation::Create();
 			pAnim->LoadFromXML(animElem);
 			std::string name = pAnim->GetName();
-			auto it = mAnimations.Find(name);
+			auto it = mAnimations.find(name);
 			if (it != mAnimations.end())
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
@@ -1051,7 +1044,7 @@ public:
 	}
 
 	void DeleteWindowsFor(HWindowId hwndId){
-		auto it = mWindows.Find(hwndId);
+		auto it = mWindows.find(hwndId);
 		if (it == mWindows.end())
 			return;
 		auto& windows = it->second;
@@ -1355,6 +1348,7 @@ public:
 			if (injector->IsKeyDown(VK_CONTROL)) {
 				SetCursor(WinBase::sCursorArrow);
 			}
+
 			auto mousePos = injector->GetMousePos();
 			RegionTestParam rparam;
 			rparam.mOnlyContainer = false;
@@ -1768,16 +1762,13 @@ mPopup->SetVisible(true);
 		const char* filepath = it->second[0]->GetUIFilePath();
 		HWindowId hwndId = it->second[0]->GetHwndId();
 		LUA_STACK_CLIPPER c(mL);
-		tinyxml2::XMLDocument doc;
-		int err = doc.LoadFile(filepath);
-		if (err)
+		auto pdoc = FileSystem::LoadXml(filepath);
+		tinyxml2::XMLDocument& doc = *pdoc;		
+		if (doc.Error())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
 				"parsing ui file(%s) failed.", filepath).c_str());			
-			if (doc.GetErrorStr1())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
-			if (doc.GetErrorStr2())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
+			Logger::Log(doc.GetErrorString().c_str());
 			return;
 		}
 
@@ -1936,7 +1927,7 @@ mPopup->SetVisible(true);
 
 
 	UIAnimationPtr GetGlobalAnimation(const char* animName){
-		auto it = mAnimations.Find(animName);
+		auto it = mAnimations.find(animName);
 		if (it == mAnimations.end())
 			return 0;
 
@@ -1949,7 +1940,7 @@ mPopup->SetVisible(true);
 		{
 			anim = UIAnimation::Create();
 			anim->SetName(animName);
-			mAnimations.Insert(std::make_pair(animName, anim));
+			mAnimations.insert(std::make_pair(animName, anim));
 		}
 		return anim;
 	}
@@ -2103,17 +2094,13 @@ mPopup->SetVisible(true);
 
 		char buf[MAX_PATH];
 		GetCurrentDirectory(MAX_PATH, buf);
-		mStyle = style;
-		tinyxml2::XMLDocument doc;
-		auto resourcePath = FileSystem::GetResourcePath("EssentialEngineData/ui/style.xml");
-		int err = doc.LoadFile(resourcePath.c_str());
-		if (err){
+		mStyle = style;		
+		auto pdoc = FileSystem::LoadXml("EssentialEngineData/ui/style.xml");
+		tinyxml2::XMLDocument& doc = *pdoc;				
+		if (doc.Error()){
 			Logger::Log(FB_ERROR_LOG_ARG, 
 				"parsing style file(EssentialEngineData/ui/style.xml) failed.");
-			if (doc.GetErrorStr1())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr1());
-			if (doc.GetErrorStr2())
-				Logger::Log(FB_ERROR_LOG_ARG, doc.GetErrorStr2());
+			Logger::Log(doc.GetErrorString().c_str());
 			return;
 		}
 
@@ -2208,7 +2195,7 @@ mPopup->SetVisible(true);
 
 
 	const char* GetBorderRegion(const char* key) const{
-		auto it = mBorderRegions.Find(key);
+		auto it = mBorderRegions.find(key);
 		if (it != mBorderRegions.end()){
 			return it->second.c_str();
 		}
@@ -2216,7 +2203,7 @@ mPopup->SetVisible(true);
 	}
 
 	const char* GetWndBorderRegion(const char* key) const{
-		auto it = mWindowRegions.Find(key);
+		auto it = mWindowRegions.find(key);
 		if (it != mWindowRegions.end()){
 			return it->second.c_str();
 		}
@@ -2235,7 +2222,7 @@ mPopup->SetVisible(true);
 			callmeLater = true;
 			return 0;
 		}
-		auto it = mAlphaInfoTexture.Find(size);
+		auto it = mAlphaInfoTexture.find(size);
 		if (it != mAlphaInfoTexture.end()){
 			return it->second;
 		}

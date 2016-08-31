@@ -55,6 +55,7 @@ namespace fb{
 	typedef std::vector<float> FloatArray;
 	typedef std::vector<int> IntArray;
 	typedef std::vector<unsigned char> ByteArray;
+	typedef std::shared_ptr<ByteArray> ByteArrayPtr;
 
 	typedef __int64 HWindowId;
 	static const HWindowId INVALID_HWND_ID = (HWindowId)-1;
@@ -148,6 +149,12 @@ private:\
 	typedef std::shared_ptr<className> className##Ptr;\
 	typedef std::shared_ptr<const className> className##ConstPtr;\
 	typedef std::weak_ptr<className> className##WeakPtr
+
+#define FB_DECLARE_SMART_PTR2(class_name) \
+	class class_name;\
+	typedef std::shared_ptr<class_name> class_name##_ptr;\
+	typedef std::shared_ptr<const class_name> class_name##_constptr;\
+	typedef std::weak_ptr<class_name> class_name##_weakptr
 
 #define FB_DECLARE_SMART_PTR_STRUCT(className) \
 	struct className;\

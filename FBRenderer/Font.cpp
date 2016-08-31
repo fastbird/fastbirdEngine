@@ -66,7 +66,7 @@ struct SCharDescr
 class FontLoader
 {
 public:
-	FontLoader(FILE *f, Font *font, const char *fontFile);
+	FontLoader(FileSystem::Open& f, Font *font, const char *fontFile);
 	virtual int Load() = 0; // Must be implemented by derived class
 
 protected:
@@ -76,7 +76,7 @@ protected:
 	void AddChar(int id, int x, int y, int w, int h, int xoffset, int yoffset, int xadvance, int page, int chnl);
 	void AddKerningPair(int first, int second, int amount);
 
-	FILE *f;
+	FileSystem::Open& f;
 	Font *font;
 	std::string fontFile;
 
@@ -86,7 +86,7 @@ protected:
 class FontLoaderTextFormat : public FontLoader
 {
 public:
-	FontLoaderTextFormat(FILE *f, Font *font, const char *fontFile);
+	FontLoaderTextFormat(FileSystem::Open& f, Font *font, const char *fontFile);
 
 	int Load();
 
@@ -105,7 +105,7 @@ public:
 class FontLoaderBinaryFormat : public FontLoader
 {
 public:
-	FontLoaderBinaryFormat(FILE *f, Font *font, const char *fontFile);
+	FontLoaderBinaryFormat(FileSystem::Open& f, Font *font, const char *fontFile);
 
 	int Load();
 
@@ -826,13 +826,13 @@ public:
 		if (scissorEnable)
 		{
 			RASTERIZER_DESC rd;
-			rd.ScissorEnable = true;
+			rd.SetScissorEnable(true);
 			mTextureMaterial->SetRasterizerState(rd);
 		}
 		else
 		{
 			RASTERIZER_DESC rd;
-			rd.ScissorEnable = false;
+			rd.SetScissorEnable(false);
 			mTextureMaterial->SetRasterizerState(rd);			
 		}
 		if (depthEnable)
@@ -843,7 +843,7 @@ public:
 		else
 		{
 			DEPTH_STENCIL_DESC desc;
-			desc.DepthEnable = false;
+			desc.SetDepthEnable(false);
 			mTextureMaterial->SetDepthStencilState(desc);
 		}
 	}
@@ -1172,9 +1172,9 @@ Real Font::LineHeightForText(const wchar_t* text){
 // that has access to and knows how to set the Font members.
 //=============================================================================
 
-FontLoader::FontLoader(FILE *f, Font *font, const char *fontFile)
+FontLoader::FontLoader(FileSystem::Open& f_, Font *font, const char *fontFile)
+	: f(f_)
 {
-	this->f = f;
 	this->font = font;
 	this->fontFile = fontFile;
 
@@ -1284,7 +1284,7 @@ void FontLoader::AddKerningPair(int first, int second, int amount)
 // This class implements the logic for loading a BMFont file in text format
 //=============================================================================
 
-FontLoaderTextFormat::FontLoaderTextFormat(FILE *f, Font *font, const char *fontFile)
+FontLoaderTextFormat::FontLoaderTextFormat(FileSystem::Open& f, Font *font, const char *fontFile)
 	: FontLoader(f, font, fontFile)
 {
 }
@@ -1624,7 +1624,7 @@ void FontLoaderTextFormat::InterpretPage(const std::string str, int start,
 // This class implements the logic for loading a BMFont file in binary format
 //=============================================================================
 
-FontLoaderBinaryFormat::FontLoaderBinaryFormat(FILE *f, Font *font, const char *fontFile)
+FontLoaderBinaryFormat::FontLoaderBinaryFormat(FileSystem::Open& f, Font *font, const char *fontFile)
 	: FontLoader(f, font, fontFile)
 {
 }

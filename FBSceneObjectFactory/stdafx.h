@@ -39,6 +39,7 @@
 
 #include <assert.h>
 #include <queue>
+#include <unordered_map>
 
 #include "FBCommonHeaders/platform.h"
 #include "FBDebugLib/Logger.h"

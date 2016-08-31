@@ -66,7 +66,7 @@ namespace fb {
 			if (mWatchDir.empty())
 				mWatchDir = "./";
 			else
-				mWatchDir = FileSystem::MakrEndingSlashIfNot(mWatchDir.c_str());
+				mWatchDir = FileSystem::AddEndingSlashIfNot(mWatchDir.c_str());
 		}
 
 		void Exit() {						

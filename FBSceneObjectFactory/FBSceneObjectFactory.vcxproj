@@ -5,9 +5,17 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -21,7 +29,20 @@
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
@@ -34,7 +55,13 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -44,23 +71,54 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(BOOST_HOME)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(BOOST_HOME)\stage\lib\debug\x86</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..;$(BOOST_HOME)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <FloatingPointModel>Fast</FloatingPointModel>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(BOOST_HOME)\stage\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..;$(BOOST_HOME)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(BOOST_HOME)\stage\lib\x86</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(BOOST_HOME)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CPP;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -71,10 +129,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <AdditionalLibraryDirectories>$(BOOST_HOME)\stage\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BillboardQuad.h" />
+    <ClInclude Include="binary_mesh.h" />
     <ClInclude Include="CollisionInfo.h" />
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="DustRenderer.h" />
@@ -97,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BillboardQuad.cpp" />
+    <ClCompile Include="binary_mesh.cpp" />
     <ClCompile Include="DustRenderer.cpp" />
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="MeshGroup.cpp" />
@@ -110,7 +171,9 @@
     <ClCompile Include="stdafx.cpp">
       <FileType>Document</FileType>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -125,6 +188,8 @@
     </ProjectReference>
     <ProjectReference Include="..\FBFileSystem\FBFileSystem.vcxproj">
       <Project>{970770a8-f3c4-43ad-b4a0-c076ec6fe610}</Project>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\FBMathLib\FBMathLib.vcxproj">
       <Project>{2df8e079-28e5-4e7d-9c6a-ff87c1329eb5}</Project>
@@ -135,6 +200,9 @@
     <ProjectReference Include="..\FBSceneManager\FBSceneManager.vcxproj">
       <Project>{e1f08226-828d-4354-8128-2ae1b91fbd4f}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\FBSerializationLib\FBSerializationLib.vcxproj">
+      <Project>{9a6533f2-0d9f-4310-8626-42b27b5546d3}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBStringLib\FBStringLib.vcxproj">
       <Project>{97920097-3e86-410d-8d98-a2ecad02a35f}</Project>
     </ProjectReference>
@@ -143,6 +211,9 @@
     </ProjectReference>
     <ProjectReference Include="..\FBTimer\FBTimer.vcxproj">
       <Project>{e828f5fb-d914-4891-8be0-737dd73f06ab}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\TinyXmlLib\TinyXmlLib.vcxproj">
+      <Project>{23117a44-391e-4542-968f-c99c1bac52c0}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

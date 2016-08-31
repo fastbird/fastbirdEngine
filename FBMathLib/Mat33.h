@@ -28,13 +28,20 @@
 #pragma once
 #ifndef _Mat33_header_included_
 #define _Mat33_header_included_
-
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 #include "Vec3.h"
-
 namespace fb
 {
 	class Mat33
 	{
+	private:
+		friend class boost::serialization::access;		
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version)
+		{
+			ar & m;
+		}
 	public:
 	
 		Real m[3][3];
@@ -71,8 +78,7 @@ namespace fb
 
 		size_t ComputeHash() const;
 	};
-
-	void write(std::ostream& stream, const Mat33& data);
-	void read(std::istream& stream, Mat33& data);
 }
+BOOST_CLASS_IMPLEMENTATION(fb::Mat33, boost::serialization::primitive_type);
+
 #endif //_Mat33_header_included_

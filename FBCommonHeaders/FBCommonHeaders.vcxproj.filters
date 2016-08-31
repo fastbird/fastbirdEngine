@@ -20,5 +20,6 @@
     <ClInclude Include="QuadNode.h" />
     <ClInclude Include="LockQueue.h" />
     <ClInclude Include="ProfilerSimple.h" />
+    <ClInclude Include="VectorMapSerialization.h" />
   </ItemGroup>
 </Project>

@@ -1,23 +1,47 @@
+/*
+ -----------------------------------------------------------------------------
+ This source file is part of fastbird engine
+ For the latest info, see http://www.jungwan.net/
+ 
+ Copyright (c) 2013-2015 Jungwan Byun
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ -----------------------------------------------------------------------------
+*/
+
 #include "stdafx.h"
 #include "MusicPlayer.h"
 #include "AudioManager.h"
+#include "AudioSource.h"
 #include "FBCommonHeaders/Helpers.h"
 using namespace fb;
 class MusicPlayer::Impl{
 public:
 	AudioId mCurrentAudioId;	
 	std::string mCurrentAudioPath;
-	float mStartNewAfter;
-	float mMaxGain;
-	float mGain;
+	float mStartNewAfter;		
 	bool mLoop;
 
 	//---------------------------------------------------------------------------
 	Impl()
 		: mCurrentAudioId(INVALID_AUDIO_ID)		
-		, mStartNewAfter(0)
-		, mMaxGain(1)
-		, mGain(1)
+		, mStartNewAfter(0)		
 		, mLoop(true)
 	{
 
@@ -35,17 +59,14 @@ public:
 			am.StopWithFadeOut(mCurrentAudioId, fadeOutOld);
 		}
 		if (strstr(path, ".fbaudio")){
-			mCurrentAudioId = am.PlayFBAudio(path);
-			mGain = am.GetGainFromFBAudio(path);
+			mCurrentAudioId = am.PlayFBAudio(path, AudioSourceType::Music);
 		}
 		else{
-			mCurrentAudioId = am.PlayAudio(path);
-			mGain = 1.0f;
+			mCurrentAudioId = am.PlayAudio(path, AudioSourceType::Music);
 		}
 		
 		mCurrentAudioPath = path;
-		AudioManager::GetInstance().SetLoop(mCurrentAudioId, true);
-		AudioManager::GetInstance().SetGain(mCurrentAudioId, mGain * mMaxGain, true);
+		AudioManager::GetInstance().SetLoop(mCurrentAudioId, true);		
 		mStartNewAfter = 0.f;
 
 		/*auto elapsed = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() - tick;
@@ -104,16 +125,12 @@ public:
 	}
 
 	void SetGain(float gain){
-		mMaxGain = gain;
-		if (mCurrentAudioId != INVALID_AUDIO_ID){				
-			AudioManager::GetInstance().SetMaxGain(mCurrentAudioId, mMaxGain);
-			AudioManager::GetInstance().SetGain(mCurrentAudioId, 
-				mGain * mMaxGain, true);
-		}
+		AudioSource::sMasterGain = gain;		
+		AudioManager::GetInstance().OnGainOptionChanged();
 	}
 
 	float GetGain() const{
-		return mMaxGain;
+		return AudioSource::sMasterGain;
 	}
 
 	void SetEnabled(bool enabled){

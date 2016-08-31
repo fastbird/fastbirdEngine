@@ -30,6 +30,11 @@
 #include <vector>
 #include <algorithm>
 
+namespace boost {
+	namespace serialization {
+
+	}
+}
 namespace fb
 {
 	template<class _Kty, class _Ty>
@@ -85,7 +90,7 @@ namespace fb
 		}
 
 		//--------------------------------------------------------------------
-		iterator Insert(const _Val_type& data)
+		iterator insert(const _Val_type& data)
 		{
 			iterator i = std::lower_bound(
 				mVector.begin(), mVector.end(), data.first, key_compare());
@@ -131,7 +136,7 @@ namespace fb
 		}
 
 		//--------------------------------------------------------------------
-		iterator Find( const key_type& Key )
+		iterator find( const key_type& Key )
 		{
 			iterator i = std::lower_bound(
 				mVector.begin(), mVector.end(), Key, key_compare());
@@ -146,7 +151,7 @@ namespace fb
 		}
 
 		//--------------------------------------------------------------------
-		const_iterator Find( const key_type& Key ) const
+		const_iterator find( const key_type& Key ) const
 		{
 			const_iterator i =
 				std::lower_bound(mVector.begin(), mVector.end(), Key, key_compare());
@@ -244,9 +249,12 @@ namespace fb
 			mVector.swap(other.mVector);
 		}
 
+		void resize(size_t num) {
+			mVector.resize(num);
+		}
 
-	private:
-
+	
+		// data
 		std::vector< std::pair< _Kty,_Ty > > mVector;
 	};
 }

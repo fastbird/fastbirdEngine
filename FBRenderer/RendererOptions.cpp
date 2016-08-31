@@ -58,9 +58,6 @@ RendererOptions::RendererOptions(){
 	r_noParticleDraw = Console::GetInstance().GetIntVariable("r_noParticleDraw", 0);
 	FB_REGISTER_CVAR(r_noParticleDraw, r_noParticleDraw, CVAR_CATEGORY_CLIENT, "No particle Draw");
 
-	r_particleProfile = Console::GetInstance().GetIntVariable("r_particleProfile", 0);
-	FB_REGISTER_CVAR(r_particleProfile, r_particleProfile, CVAR_CATEGORY_CLIENT, "enable profiler");
-
 	r_HDR = Console::GetInstance().GetIntVariable("r_HDR", 1);
 	FB_REGISTER_CVAR(r_HDR, r_HDR, CVAR_CATEGORY_CLIENT, "enable hdr rendering");
 

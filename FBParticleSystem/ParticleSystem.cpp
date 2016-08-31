@@ -152,14 +152,11 @@ public:
 				it++;
 		}
 
-		if (0)//r_numParticleEmitters
-		{
-			wchar_t buf[256];
-			swprintf_s(buf, L"num of active particles : %u", mActiveParticles.size());
-			renderer.QueueDrawText(Vec2I(100, 226), buf, Color::White);
-		}
-
 		ParticleRenderObject::EndUpdateParticles();
+
+		if (mParticleOptions->r_ParticleProfile) {
+			RenderProfile();
+		}
 	}
 
 	void RenderProfile(){
@@ -168,15 +165,15 @@ public:
 		int y = 20;
 		int yStep = 20;
 		auto& r = Renderer::GetInstance();
-		swprintf_s(msg, 255, L"Emitter Types= %u", mParticleEmitters.size());
+		swprintf_s(msg, 255, L"Total mParticleEmitters= %u", mParticleEmitters.size());
 		r.QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 		y += yStep;
 
-		swprintf_s(msg, 255, L"Total Emitter Instances= %u", mActiveParticles.size());
+		swprintf_s(msg, 255, L"Total mActiveParticles= %u", mActiveParticles.size());
 		r.QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 		y += yStep;
 
-		swprintf_s(msg, 255, L"Total Emitter Renderers = %u", ParticleRenderObject::GetNumRenderObject());
+		swprintf_s(msg, 255, L"Total ParticleRenderObjects= %u", ParticleRenderObject::GetNumRenderObject());
 		r.QueueDrawText(Vec2I(x, y), msg, Vec3(1, 1, 1));
 		y += yStep;
 

@@ -53,6 +53,8 @@ namespace fb{
 		return stream.str();
 	}
 	//-----------------------------------------------------------------------
+#ifdef _WIN64
+#else
 	TString StringConverter::ToString(size_t val,
 		unsigned short width, char fill, std::ios::fmtflags flags)
 	{
@@ -64,6 +66,7 @@ namespace fb{
 		stream << val;
 		return stream.str();
 	}
+#endif
 	//-----------------------------------------------------------------------
 	TString StringConverter::ToString(unsigned long val,
 		unsigned short width, char fill, std::ios::fmtflags flags)

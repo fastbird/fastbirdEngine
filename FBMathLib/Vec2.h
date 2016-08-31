@@ -26,6 +26,8 @@
 */
 
 #pragma once
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 #include "Vec2I.h"
 #include "FBCommonHeaders\String.h"
 namespace fb
@@ -84,9 +86,7 @@ namespace fb
 		Real DistanceToSQ(const Vec2& other) const;
 		Real Cross(const Vec2& right);
 		
-		int MaxAxis() const;
-		
-		
+		int MaxAxis() const;		
 	};
 
 	Vec2 operator / (const Vec2I& left, const Vec2& right);
@@ -108,41 +108,4 @@ namespace fb
 #endif
 }
 
-//// luawapper util
-//template<>
-//struct luaU_Impl<fb::Vec2>
-//{
-//	static fb::Vec2 luaU_check(lua_State* L, int index)
-//	{
-//		luaL_checktype(L, index, LUA_TTABLE);
-//		fb::Vec2 ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static fb::Vec2 luaU_to(lua_State* L, int index)
-//	{
-//		fb::Vec2 ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static void luaU_push(lua_State* L, const fb::Vec2& val)
-//	{
-//		lua_createtable(L, 2, 0);
-//		lua_pushnumber(L, val.x);
-//		lua_rawseti(L, -2, 1);
-//		lua_pushnumber(L, val.y);
-//		lua_rawseti(L, -2, 2);
-//	}
-//};
+BOOST_CLASS_IMPLEMENTATION(fb::Vec2, boost::serialization::primitive_type);

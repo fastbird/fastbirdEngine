@@ -26,6 +26,8 @@
 */
 
 #pragma once
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 #include "Mat33.h"
 #include "Vec3.h"
 #include "Quat.h"
@@ -153,175 +155,10 @@ namespace fb
 		const Vec3& _GetS() { return mS; }
 		bool _GetIdentity() { return mIdentity; }
 		bool _GetRSSeperated() { return mRSSeperated; }
-		bool _GetUniformScale() { return mUniformScale; }
-
-		friend void write(std::ostream& stream, const Transformation& data);
-		friend void read(std::istream& stream, Transformation& data);
+		bool _GetUniformScale() { return mUniformScale; }		
 
 		size_t ComputeHash() const;
 	};
-	void write(std::ostream& stream, const Transformation& data);
-	void read(std::istream& stream, Transformation& data);
 }
 
-//// luawapper util
-//template<>
-//struct luaU_Impl<fb::Transformation>
-//{
-//	static fb::Transformation luaU_check(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Transformation luaU_check(lua_State* L, int index)");
-//		luaL_checktype(L, index, LUA_TTABLE);
-//		int n = 1;
-//		fb::Transformation ret;
-//		auto& mat33 = ret._GetMat33();
-//		for (int r = 0; r < 3; ++r)
-//			for (int c = 0; c < 3; ++c){
-//				lua_rawgeti(L, index, n++);
-//				mat33.m[r][c] = (Real)luaL_checknumber(L, -1);
-//				lua_pop(L, 1);
-//			}
-//
-//		auto& rot = ret._GetQuat();
-//		for (int i = 0; i < 4; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&rot.w + i) = (Real)luaL_checknumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& t = ret._GetT();
-//		for (int i = 0; i < 3; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&t.x + i) = (Real)luaL_checknumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& s = ret._GetS();
-//		for (int i = 0; i < 3; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&s.x + i) = (Real)luaL_checknumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& bi = ret._GetIdentity();
-//		lua_rawgeti(L, index, n++);
-//		assert(lua_isboolean(L, -1));
-//		bi = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		auto& brs = ret._GetRSSeperated();
-//		lua_rawgeti(L, index, n++);		
-//		assert(lua_isboolean(L, -1));
-//		brs = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		auto& bu = ret._GetUniformScale();
-//		lua_rawgeti(L, index, n++);		
-//		assert(lua_isboolean(L, -1));
-//		bu = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		return ret;
-//	}
-//
-//	static fb::Transformation luaU_to(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Transformation luaU_to(lua_State* L, int index)");
-//		int n = 1;
-//		fb::Transformation ret;
-//		auto& mat33 = ret._GetMat33();
-//		for (int r = 0; r < 3; ++r)
-//			for (int c = 0; c < 3; ++c){
-//				lua_rawgeti(L, index, n++);
-//				mat33.m[r][c] = (Real)lua_tonumber(L, -1);
-//				lua_pop(L, 1);
-//			}
-//
-//		auto& rot = ret._GetQuat();
-//		for (int i = 0; i < 4; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&rot.w + i) = (Real)lua_tonumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& t = ret._GetT();
-//		for (int i = 0; i < 3; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&t.x + i) = (Real)lua_tonumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& s = ret._GetS();
-//		for (int i = 0; i < 3; ++i){
-//			lua_rawgeti(L, index, n++);
-//			*(&s.x + i) = (Real)lua_tonumber(L, -1);
-//			lua_pop(L, 1);
-//		}
-//
-//		auto& bi = ret._GetIdentity();
-//		lua_rawgeti(L, index, n++);
-//		bi = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		auto& brs = ret._GetRSSeperated();
-//		lua_rawgeti(L, index, n++);
-//		brs = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		auto& bu = ret._GetUniformScale();
-//		lua_rawgeti(L, index, n++);
-//		bu = lua_toboolean(L, -1) != 0;
-//		lua_pop(L, 1);
-//
-//		return ret;
-//	}
-//
-//	static void luaU_push(lua_State* L, const fb::Transformation& val)
-//	{
-//		fb::Transformation& val2 = const_cast<fb::Transformation&>(val);
-//		luaU_push(L, val2);
-//	}
-//
-//	static void luaU_push(lua_State* L, fb::Transformation& val)
-//	{
-//		lua_createtable(L, 22, 0);
-//
-//		int n = 1;		
-//		auto& mat33 = val._GetMat33();
-//		for (int r = 0; r < 3; ++r)
-//			for (int c = 0; c < 3; ++c){
-//				lua_pushnumber(L, mat33.m[r][c]);
-//				lua_rawseti(L, -2, n++);
-//			}
-//
-//		auto& rot = val._GetQuat();
-//		for (int i = 0; i < 4; ++i){
-//			lua_pushnumber(L, *(&rot.w+i));
-//			lua_rawseti(L, -2, n++);			
-//		}
-//
-//		auto& t = val._GetT();
-//		for (int i = 0; i < 3; ++i){
-//			lua_pushnumber(L, *(&t.x + i));
-//			lua_rawseti(L, -2, n++);			
-//		}
-//
-//		auto& s = val._GetS();
-//		for (int i = 0; i < 3; ++i){
-//			lua_pushnumber(L, *(&s.x + i));
-//			lua_rawseti(L, -2, n++);			
-//		}
-//
-//		auto& bi = val._GetIdentity();
-//		lua_pushboolean(L, bi);
-//		lua_rawseti(L, -2, n++);		
-//
-//		auto& brs = val._GetRSSeperated();
-//		lua_pushboolean(L, brs);
-//		lua_rawseti(L, -2, n++);
-//
-//		auto& bu = val._GetUniformScale();
-//		lua_pushboolean(L, bu);
-//		lua_rawseti(L, -2, n++);
-//	}
-//};
+BOOST_CLASS_IMPLEMENTATION(fb::Transformation, boost::serialization::primitive_type);

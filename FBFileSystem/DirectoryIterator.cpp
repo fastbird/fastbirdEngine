@@ -27,51 +27,115 @@
 
 #include "stdafx.h"
 #include "DirectoryIterator.h"
+#include "FileSystem.h"
+#include "FBDataPackLib/fba.h"
 
 namespace fb{
 	class DirectoryIterator::Impl{
 	public:
-		std::string mLastFile;
+		std::string mLastFile;		
 		bool mRecursive;
 		boost::filesystem::recursive_directory_iterator mRecursiveIterator;
 		boost::filesystem::directory_iterator mIterator;
 
-		Impl() :mRecursive(false){
+		const pack_datum* pack;
+		std::string path;
+		std::string pack_parent_path;
+		unsigned current_pack_index;
+
+		Impl() 
+			: mRecursive(false)
+			, current_pack_index(0)
+			, pack(0)
+		{
 		}
 
 		bool IsOpen() const{
-			return mIterator != boost::filesystem::directory_iterator();
+			if (!pack) {
+				return mIterator != boost::filesystem::directory_iterator();
+			}
+			else {
+				return StartsWith(path, pack->pack_path);
+			}
 		}
 
 		bool HasNext(){
-			if (mRecursive)
-				return mRecursiveIterator != boost::filesystem::recursive_directory_iterator();
-			return mIterator != boost::filesystem::directory_iterator();
+			if (!pack) {
+				if (mRecursive)
+					return mRecursiveIterator != boost::filesystem::recursive_directory_iterator();
+				return mIterator != boost::filesystem::directory_iterator();
+			}
+			else {				
+				for (unsigned i = current_pack_index; i < pack->headers.size(); ++i) {
+					auto& h = pack->headers[i];
+					// pack path = Data/actors.fba
+					// pack_parent_path = Data/
+					// file_path = actors/something.lua
+					// output_path = pack_parent_path + file_path = Data/actors/something.lua
+					auto output_path = pack_parent_path + h.path;
+					if (StartsWith(output_path.c_str(), path)) {
+						if (!mRecursive) {
+							auto file = output_path.substr(path.size());
+							if (file.find('/') != std::string::npos) {
+								continue;
+							}
+						}
+						return true;
+					}					
+				}
+				return false;
+			}
 		}
 
 		const char* GetNext(bool* isDirectory){
 			if (!HasNext())
 				return "";
 
-			boost::filesystem::path path;
-			if (mRecursive){
+			if (!pack) {
+				boost::filesystem::path path;
+				if (mRecursive) {
 					auto entity = *mRecursiveIterator;
 					mRecursiveIterator++;
 					path = entity.path();
-			}
-			else{
+				}
+				else {
 					auto entity = *mIterator;
 					mIterator++;
 					path = entity.path();
+				}
+
+				if (path.empty())
+					return "";
+
+				mLastFile = path._tgeneric_string();
+				if (isDirectory)
+					*isDirectory = boost::filesystem::is_directory(path);
+				return mLastFile.c_str();
 			}
-
-			if (path.empty())
+			else {
+				for (unsigned i = current_pack_index; i < pack->headers.size(); ++i) {
+					auto& h = pack->headers[i];
+					// pack path = Data/actors.fba
+					// pack_parent_path = Data/
+					// file_path = actors/something.lua
+					// output_path = pack_parent_path + file_path = Data/actors/something.lua
+					auto output_path = pack_parent_path + h.path;
+					if (StartsWith(output_path, path)) {
+						if (!mRecursive) {
+							auto file = output_path.substr(path.size());
+							if (file.find('/') != std::string::npos) {
+								continue;
+							}
+						}
+						current_pack_index = i+1;
+						mLastFile = output_path;
+						if (isDirectory)
+							*isDirectory = false;
+						return mLastFile.c_str();
+					}
+				}
 				return "";
-
-			mLastFile = path._tgeneric_string();
-			if (isDirectory)
-				*isDirectory = boost::filesystem::is_directory(path);
-			return mLastFile.c_str();			
+			}
 		}
 		
 	};
@@ -91,8 +155,22 @@ namespace fb{
 		}
 	}
 
-	DirectoryIterator::~DirectoryIterator(){
+	DirectoryIterator::DirectoryIterator(const char* directoryPath, bool recursive, const pack_datum* pack_datum)
+		: mImpl(new Impl)
+	{
+		if (!pack_datum) {
+			const char* msg = "Do not create Directory Iterator with out pack_datum. Use other construct if you are opening actual directory.";
+			Logger::Log(FB_ERROR_LOG_ARG, msg);
+			throw std::invalid_argument(msg);
+		}
+		mImpl->pack = pack_datum;
+		mImpl->path = FileSystem::AddEndingSlashIfNot(directoryPath);
+		mImpl->pack_parent_path = FileSystem::GetParentPath(pack_datum->pack_path.c_str());
+		mImpl->pack_parent_path = FileSystem::AddEndingSlashIfNot(mImpl->pack_parent_path.c_str());
+		mImpl->mRecursive = recursive;
+	}
 
+	DirectoryIterator::~DirectoryIterator(){
 	}
 
 	bool DirectoryIterator::IsOpen() const{

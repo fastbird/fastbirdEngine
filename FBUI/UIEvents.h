@@ -39,6 +39,7 @@ namespace fb{
 			EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 			EVENT_MOUSE_RIGHT_CLICK,
 			EVENT_MOUSE_DOWN,
+			EVENT_MOUSE_UP,
 			EVENT_MOUSE_DRAG,
 			EVENT_FILE_SELECTOR_SELECTED,
 			EVENT_FILE_SELECTOR_OK,
@@ -55,6 +56,7 @@ namespace fb{
 			EVENT_LISTBOX_SELECTION_CHANGED,
 			EVENT_COLORRAMP_DRAGGED,
 			EVENT_TAB_WINDOW_CHANGED,
+			EVENT_GAGUE_CHANGED,
 
 			EVENT_NUM
 		};
@@ -68,6 +70,7 @@ namespace fb{
 			"OnMouseLDClick",
 			"OnMouseRClick",
 			"OnMouseDown",
+			"OnMouseUp",
 			"OnMouseDrag",
 			"OnFileSelectorSelected",
 			"OnFileSelectorOk",
@@ -84,6 +87,7 @@ namespace fb{
 			"OnListBoxSelectionChanged",
 			"OnColorRampDragged",
 			"OnTabWindowChanged",
+			"EVENT_GAGUE_CHANGED",
 
 			"EVENT_NUM"
 		};

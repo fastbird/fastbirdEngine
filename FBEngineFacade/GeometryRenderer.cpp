@@ -154,7 +154,7 @@ public:
 		mVertexBufferThickLine = renderer.CreateVertexBuffer(0, THICK_LINE_STRIDE, MAX_LINE_VERTEX,
 			BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 		DEPTH_STENCIL_DESC ddesc;
-		ddesc.DepthEnable = true;
+		ddesc.SetDepthEnable(true);
 		mDepthStencilState = renderer.CreateDepthStencilState(ddesc);
 		RASTERIZER_DESC desc;
 		mRasterizerState = renderer.CreateRasterizerState(desc);		

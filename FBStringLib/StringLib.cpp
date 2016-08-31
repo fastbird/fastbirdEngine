@@ -336,7 +336,7 @@ namespace fb{
 		}
 		else {
 			for (size_t i = 0; i < findingLen; ++i) {
-				if (str[i] != findingStr[1])
+				if (str[i] != findingStr[i])
 					return false;
 			}
 			return true;
@@ -743,8 +743,9 @@ namespace fb{
 			size = (int)strlen(source);
 
 		static std::vector<WCHAR> wideBuffer;
-		if (wideBuffer.size() < size+1) {
-			wideBuffer.resize(size + 1);
+		size_t targetSize = (size_t)(size + 1);
+		if (wideBuffer.size() < targetSize) {
+			wideBuffer.resize(targetSize);
 		}
         
 		memset(&wideBuffer[0], 0, wideBuffer.size() * sizeof(WCHAR));

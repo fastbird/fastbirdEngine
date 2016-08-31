@@ -63,6 +63,8 @@ void Logger::Init(const WCHAR* filepath){
 }
 
 void Logger::InitGlobalLog(const char* filepath){
+	if (sGlobalErrorLog)
+		return;
 	sGlobalErrorLog = std::make_shared<std::ofstream>();
 	sGlobalErrorLog->open(filepath);
 	auto errStream = std::cerr.rdbuf(sGlobalErrorLog->rdbuf());
@@ -171,7 +173,7 @@ void Logger::Log(FRAME_PRECISION curFrame, TIME_PRECISION curTime, const char* s
 		}
 
 		//  check whether the last frame has the same message
-		auto it = sMessages.Find(curFrame - 1);
+		auto it = sMessages.find(curFrame - 1);
 		if (it != sMessages.end()) {
 
 			if (it->second.find(currentMsg.mMessage) != it->second.end()) {

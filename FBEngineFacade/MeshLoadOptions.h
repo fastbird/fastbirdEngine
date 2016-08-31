@@ -37,7 +37,7 @@ namespace fb{
 
 		MeshLoadOptions()
 			: yzSwap(false), oppositeCull(true),
-			useIndexBuffer(false), mergeMaterialGroups(false),
+			useIndexBuffer(true), mergeMaterialGroups(false),
 			keepMeshData(false), generateTangent(true)
 		{
 

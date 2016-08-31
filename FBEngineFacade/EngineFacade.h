@@ -28,6 +28,7 @@
 #pragma once
 #include "FBCommonHeaders/platform.h"
 #include "FBCommonHeaders/Types.h"
+#include "FBCommonHeaders/VectorMap.h"
 #include "FBFileMonitor/IFileChangeObserver.h"
 #include "FBSceneManager/DirectionalLightIndex.h"
 #include "FBSceneManager/ISceneObserver.h"
@@ -41,6 +42,7 @@ namespace fb{
 	class LuaObject;
 	class Color;
 	class Ray;
+	typedef VectorMap<std::string, std::string> OptionsData;
 	FB_DECLARE_SMART_PTR(AudioExFacade);
 	FB_DECLARE_SMART_PTR(ISpatialObject);
 	FB_DECLARE_SMART_PTR(MeshFacade);
@@ -257,9 +259,14 @@ namespace fb{
 		void StopMusic(float fadeOut);
 		bool IsMusicPlaying() const;
 
-		void SetMasterGain(float gain);
-		void SetMusicGain(float gain);
+		void SetMasterGain(float gain, bool writeOptions);
+		float GetMasterGain() const;
+		void SetMusicGain(float gain, bool writeOptions);
+		float GetMusicGain() const;
+		void SetSoundGain(float gain, bool writeOptions);
+		float GetSoundGain() const;
 
-		void SetEnabled(bool enabled);
+		//void SetEnabled(bool enabled);
+		void WriteOptions(const char* filename, const OptionsData& newdata);
 	};
 }

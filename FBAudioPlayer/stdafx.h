@@ -44,6 +44,7 @@
 #include <stack>
 #include <map>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <AL/al.h>
 #include <AL/alc.h>

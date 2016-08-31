@@ -195,20 +195,6 @@ std::string Vec4::ToString() const {
 	return FormatString("%.2f, %.2f, %.2f, %.2f", x, y, z, w);
 }
 
-void write(std::ostream& stream, const Vec4& data) {
-	stream.write((char*)&data.x, sizeof(data.x));
-	stream.write((char*)&data.y, sizeof(data.y));
-	stream.write((char*)&data.z, sizeof(data.z));
-	stream.write((char*)&data.w, sizeof(data.w));
-}
-
-void read(std::istream& stream, Vec4& data) {
-	stream.read((char*)&data.x, sizeof(data.x));
-	stream.read((char*)&data.y, sizeof(data.y));
-	stream.read((char*)&data.z, sizeof(data.z));
-	stream.read((char*)&data.w, sizeof(data.w));
-}
-
 #if defined(FB_DOUBLE_PRECISION)
 const Vec4f Vec4f::ZERO(0, 0, 0, 0);
 Vec4f::Vec4f(){

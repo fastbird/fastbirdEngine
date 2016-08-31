@@ -27,6 +27,8 @@
 
 #pragma once
 #include "Vec3.h"
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 namespace fb
 {
 	class Vec3I
@@ -67,63 +69,6 @@ namespace fb
 		Real distance(const Vec3I& to) const;
 		Real distanceSQ(const Vec3I& to) const;
 	};
-
-	void write(std::ostream& stream, const Vec3I& data);
-	void read(std::istream& stream, Vec3I& data);
-
-	/*void write(std::ostream& stream, fb::Vec3I& v);
-	void read(std::istream& stream, fb::Vec3I& v);*/
 }
 
-//// luawapper util
-//template<>
-//struct luaU_Impl<fb::Vec3I>
-//{
-//	static fb::Vec3I luaU_check(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Vec3I luaU_check(lua_State* L, int index)");
-//		luaL_checktype(L, index, LUA_TTABLE);
-//		fb::Vec3I ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = luaL_checkint(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = luaL_checkint(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 3);
-//		ret.z = luaL_checkint(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static fb::Vec3I luaU_to(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Vec3I luaU_to(lua_State* L, int index)");
-//		fb::Vec3I ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = lua_tointeger(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = lua_tointeger(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 3);
-//		ret.z = lua_tointeger(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static void luaU_push(lua_State* L, const fb::Vec3I& val)
-//	{
-//		lua_createtable(L, 3, 0);
-//		lua_pushinteger(L, val.x);
-//		lua_rawseti(L, -2, 1);
-//		lua_pushinteger(L, val.y);
-//		lua_rawseti(L, -2, 2);
-//		lua_pushinteger(L, val.z);
-//		lua_rawseti(L, -2, 3);
-//	}
-//};
-
-// serialization
-std::istream& operator>>(std::istream& stream, fb::Vec3I& v);
-std::ostream& operator<<(std::ostream& stream, const fb::Vec3I& v);
+BOOST_CLASS_IMPLEMENTATION(fb::Vec3I, boost::serialization::primitive_type);

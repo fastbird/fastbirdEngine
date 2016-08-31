@@ -208,6 +208,7 @@ namespace fb
 		/** Close lus state. If L is 0, then the main state will be closed.
 		*/
 		static void CloseLuaState(lua_State* L);
+		static void RegisterLuaModule(const char* moduleName, lua_CFunction func);
 		static void CallLuaFunction(lua_State* L, const char* func, const char* sig, ...);
 		static bool CheckLuaGlobalExist(lua_State* L, const char* name);
 		static void PrintLuaErrorString(lua_State* L, const char* luaString);
@@ -224,6 +225,7 @@ namespace fb
 		static bool ExecuteLua(lua_State* L, const char* chunk);
 		static bool DoFile(lua_State* L, const char* filepath);
 		static bool DoFile(const char* filepath);
+		static bool DoString(lua_State* L, const char* str);
 		static bool LoadConfig(const char* filepath);
 		static int Traceback(lua_State *L);
 

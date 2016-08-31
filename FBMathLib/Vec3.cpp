@@ -31,7 +31,7 @@
 #include "Mat33.h"
 #include "Math.h"
 #include "Vec3d.h"
-#include "MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 
 namespace fb
 {
@@ -410,18 +410,6 @@ namespace fb
 		return std::max(std::max(x, y), z);
 	}
 
-	void write(std::ostream& stream, const Vec3& data) {
-		stream.write((char*)&data.x, sizeof(data.x));
-		stream.write((char*)&data.y, sizeof(data.y));
-		stream.write((char*)&data.z, sizeof(data.z));
-	}
-
-	void read(std::istream& stream, Vec3& data){
-		stream.read((char*)&data.x, sizeof(data.x));
-		stream.read((char*)&data.y, sizeof(data.y));
-		stream.read((char*)&data.z, sizeof(data.z));
-	}
-
 	std::string Vec3::ToString() const {
 		return FormatString("%f %f %f", x, y, z);
 	}
@@ -436,6 +424,10 @@ namespace fb
 
 	size_t Vec3::ComputeHash() const {
 		return murmur3_32((const char*)this, sizeof(Vec3));
+	}
+
+	bool Vec3::IsSpecialFloat() const {
+		return isnan(x) || isnan(y) || isnan(z) || isinf(x) || isinf(y) || isinf(z);
 	}
 
 	//--------------------------------------------------------------------------
@@ -501,17 +493,4 @@ namespace fb
 		return *this;
 	}
 #endif
-}
-
-
-std::istream& operator>>(std::istream& stream, fb::Vec3& v)
-{
-	stream >> v.x >> v.y >> v.z;
-	return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const fb::Vec3& v)
-{
-	stream << v.x << v.y << v.z;
-	return stream;
 }

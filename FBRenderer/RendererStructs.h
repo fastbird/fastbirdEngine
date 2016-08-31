@@ -32,43 +32,16 @@
 #include "FBCommonHeaders/Helpers.h"
 #include "FBMathLib/Color.h"
 #include "FBMathLib/Math.h"
+#include "FBStringLib/MurmurHash.h"
 
 namespace fb
 {
 	struct RASTERIZER_DESC
 	{
-		RASTERIZER_DESC()
-			: FillMode(FILL_MODE_SOLID)
-			, CullMode(CULL_MODE_BACK)
-			, FrontCounterClockwise(false)
-			, DepthBias(0)
-			, DepthBiasClamp(0.f)
-			, SlopeScaledDepthBias(0.f)
-			, DepthClipEnable(true)
-			, ScissorEnable(false)
-			, MultisampleEnable(true)
-			, AntialiasedLineEnable(true)
-		{
-			memset(padding, 0, 3);
-		}
-
-		bool operator<(const RASTERIZER_DESC& other) const
-		{
-			return memcmp(this, &other, sizeof(RASTERIZER_DESC)) < 0;
-		}
-
-		bool operator==(const RASTERIZER_DESC& other) const
-		{
-			return memcmp(this, &other, sizeof(RASTERIZER_DESC)) == 0;
-		}
-
-		bool operator!=(const RASTERIZER_DESC& other) const
-		{
-			return !operator==(other);
-		}
-
+	private:
+		mutable size_t	HashValue;
 		FILL_MODE		FillMode;
-		CULL_MODE		CullMode;		
+		CULL_MODE		CullMode;
 		int             DepthBias;
 		float           DepthBiasClamp;
 		float           SlopeScaledDepthBias;
@@ -77,35 +50,134 @@ namespace fb
 		bool            ScissorEnable;
 		bool            MultisampleEnable;
 		bool            AntialiasedLineEnable;
-		char			padding[3];
+		mutable bool		HashDirty;
+		char			padding[2];
+
+	public:
+		RASTERIZER_DESC()
+			: HashValue(false)
+			, FillMode(FILL_MODE_SOLID)
+			, CullMode(CULL_MODE_BACK)			
+			, DepthBias(0)
+			, DepthBiasClamp(0.f)
+			, SlopeScaledDepthBias(0.f)
+			, FrontCounterClockwise(false)
+			, DepthClipEnable(true)
+			, ScissorEnable(false)
+			, MultisampleEnable(true)
+			, AntialiasedLineEnable(true)
+			, HashDirty(true)
+		{
+			memset(padding, 0, 2);
+		}
+
+		void SetFillMode(FILL_MODE fillmode) {
+			FillMode = fillmode;
+			HashDirty = true;
+		}
+		FILL_MODE GetFillMode() const { 
+			return FillMode; }
+
+		void SetCullMode(CULL_MODE cullmode) {
+			CullMode = cullmode;
+			HashDirty = true;
+		}
+		CULL_MODE GetCullMode() const {
+			return CullMode;
+		}
+
+		void SetDepthBias(int depthBias) {
+			DepthBias = depthBias;
+			HashDirty = true;
+		}
+		int GetDepthBias() const {
+			return DepthBias;
+		}
+
+		void SetDepthBiasClamp(float clamp) {
+			DepthBiasClamp = clamp;
+			HashDirty = true;
+		}
+		float GetDepthBiasClamp() const {
+			return DepthBiasClamp;
+		}
+
+		void SetSlopeScaledDepthBias(float slope) {
+			SlopeScaledDepthBias = slope;
+			HashDirty = true;
+		}
+		float GetSlopeScaledDepthBias() const {
+			return SlopeScaledDepthBias;
+		}
+
+		void SetFrontCounterClockwise(bool counter) {
+			FrontCounterClockwise = counter;
+			HashDirty = true;
+		}
+		bool GetFrontCounterClockwise() const {
+			return FrontCounterClockwise;
+		}
+
+		void SetDepthClipEnable(bool depthclip) {
+			DepthClipEnable = depthclip;
+			HashDirty = true;
+		}
+		bool GetDepthClipEnable() const {
+			return DepthClipEnable;
+		}
+
+		void SetScissorEnable(bool scissor) {
+			ScissorEnable = scissor;
+			HashDirty = true;
+		}
+		bool GetScissorEnable() const {
+			return ScissorEnable;
+		}
+
+		void SetMultisampleEnable(bool multisample) {
+			MultisampleEnable = multisample;
+			HashDirty = true;
+		}
+		bool GetMultisampleEnable() const {
+			return MultisampleEnable;
+		}
+
+		void SetAntialiasedLineEnable(bool antializedLine) {
+			AntialiasedLineEnable = antializedLine;
+			HashDirty = true;
+		}
+		bool GetAntialiasedLineEnable() const {
+			return AntialiasedLineEnable;
+		}
+
+		bool operator<(const RASTERIZER_DESC& other) const
+		{
+			return Hash() < other.Hash();
+		}
+
+		bool operator==(const RASTERIZER_DESC& other) const
+		{
+			return Hash() == other.Hash();
+		}
+
+		bool operator!=(const RASTERIZER_DESC& other) const
+		{
+			return !operator==(other);
+		}
+
+		size_t Hash() const {
+			if (HashDirty) {
+				HashDirty = false;
+				HashValue = 0;
+				HashValue = murmur3_32((const char*)this, sizeof(RASTERIZER_DESC));
+			}
+			return HashValue;
+		}
 	};
 
 	struct SAMPLER_DESC
 	{
-		SAMPLER_DESC()
-			: Filter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR)
-			, AddressU(TEXTURE_ADDRESS_CLAMP)
-			, AddressV(TEXTURE_ADDRESS_CLAMP)
-			, AddressW(TEXTURE_ADDRESS_CLAMP)
-			, MipLODBias(0.f)
-			, MaxAnisotropy(16)
-			, ComparisonFunc(COMPARISON_ALWAYS)
-			, MinLOD(-FLT_MAX)
-			, MaxLOD(FLT_MAX)
-
-		{
-			BorderColor[0] = BorderColor[1] = BorderColor[2] = BorderColor[3] = 0.f;
-		}
-
-		bool operator<(const SAMPLER_DESC& other) const
-		{
-			return memcmp(this, &other, sizeof(SAMPLER_DESC)) < 0;
-		}
-
-		bool operator == (const SAMPLER_DESC& other) const{
-			return memcmp(this, &other, sizeof(SAMPLER_DESC)) == 0;
-		}
-
+	private:
 		TEXTURE_FILTER       Filter;
 		TEXTURE_ADDRESS_MODE AddressU;
 		TEXTURE_ADDRESS_MODE AddressV;
@@ -116,6 +188,136 @@ namespace fb
 		float                BorderColor[4];
 		float                MinLOD;
 		float                MaxLOD;
+		mutable size_t				HashValue;
+		mutable bool					HashDirty;
+
+	public:
+		SAMPLER_DESC()
+			: Filter(TEXTURE_FILTER_MIN_MAG_MIP_LINEAR)
+			, AddressU(TEXTURE_ADDRESS_CLAMP)
+			, AddressV(TEXTURE_ADDRESS_CLAMP)
+			, AddressW(TEXTURE_ADDRESS_CLAMP)
+			, MipLODBias(0.f)
+			, MaxAnisotropy(16)
+			, ComparisonFunc(COMPARISON_ALWAYS)
+			, MinLOD(-FLT_MAX)
+			, MaxLOD(FLT_MAX)
+			, HashDirty(true)
+
+		{
+			BorderColor[0] = BorderColor[1] = BorderColor[2] = BorderColor[3] = 0.f;
+		}
+
+		void SetFilter(TEXTURE_FILTER filter) {
+			Filter = filter;
+			HashDirty = true;
+		}
+		TEXTURE_FILTER GetFilter() const {
+			return Filter;
+		}
+
+		void SetAddressU(TEXTURE_ADDRESS_MODE addressMode) {
+			AddressU = addressMode;
+			HashDirty = true;
+		}
+		TEXTURE_ADDRESS_MODE GetAddressU() const {
+			return AddressU;
+		}
+
+		void SetAddressV(TEXTURE_ADDRESS_MODE addressMode) {
+			AddressV = addressMode;
+			HashDirty = true;
+		}
+		TEXTURE_ADDRESS_MODE GetAddressV() const {
+			return AddressV;
+		}
+
+		void SetAddressW(TEXTURE_ADDRESS_MODE addressMode) {
+			AddressW = addressMode;
+			HashDirty = true;
+		}
+		TEXTURE_ADDRESS_MODE GetAddressW() const {
+			return AddressW;
+		}
+
+		void SetMipLODBias(float lodBias) {
+			MipLODBias = lodBias;
+			HashDirty = true;
+		}
+		float GetMipLODBias() const {
+			return MipLODBias;
+		}
+
+		void SetMaxAnisotropy(unsigned int maxAni) {
+			MaxAnisotropy = maxAni;
+			HashDirty = true;
+		}
+		unsigned int GetMaxAnisotropy() const {
+			return MaxAnisotropy;
+		}
+
+		void SetComparisonFunc(COMPARISON_FUNC func) {
+			ComparisonFunc = func;
+			HashDirty = true;
+		}
+		COMPARISON_FUNC GetComparisonFunc() const {
+			return ComparisonFunc;
+		}
+
+		void SetBorderColor(float color[4]) {
+			memcpy(BorderColor, color, sizeof(float) * 4);
+			HashDirty = true;
+		}
+		const float* GetBorderColor() const {
+			return BorderColor;
+		}
+
+		void SetMinLOD(float minLod) {
+			MinLOD = minLod;
+			HashDirty = true;
+		}
+		float GetMinLOD() const {
+			return MinLOD;
+		}
+
+		void SetMaxLOD(float maxLod) {
+			MaxLOD = maxLod;
+			HashDirty = true;
+		}
+		float GetMaxLOD() const {
+			return MaxLOD;
+		}
+
+		bool operator<(const SAMPLER_DESC& other) const
+		{
+			return Hash() < other.Hash();
+		}
+
+		bool operator == (const SAMPLER_DESC& other) const {
+			return Hash() == other.Hash();
+		}
+
+		size_t Hash() const {
+			if (HashDirty) {
+				HashDirty = false;
+				std::hash<int> intHasher;
+				std::hash<float> floatHasher;
+				HashValue = intHasher(Filter);
+				hash_combine(HashValue, intHasher(AddressU));
+				hash_combine(HashValue, intHasher(AddressV));
+				hash_combine(HashValue, intHasher(AddressW));
+				hash_combine(HashValue, floatHasher(MipLODBias));
+				hash_combine(HashValue, std::hash<unsigned int>()(MaxAnisotropy));
+				hash_combine(HashValue, intHasher(ComparisonFunc));
+				hash_combine(HashValue, floatHasher(BorderColor[0]));
+				hash_combine(HashValue, floatHasher(BorderColor[1]));
+				hash_combine(HashValue, floatHasher(BorderColor[2]));
+				hash_combine(HashValue, floatHasher(BorderColor[3]));
+				hash_combine(HashValue, floatHasher(MinLOD));
+				hash_combine(HashValue, floatHasher(MaxLOD));				
+			}
+			return HashValue;
+		}
 	};
 
 	struct RENDER_TARGET_BLEND_DESC
@@ -128,7 +330,7 @@ namespace fb
 			, DestBlendAlpha(BLEND_ZERO)
 			, BlendOpAlpha(BLEND_OP_ADD)
 			, RenderTargetWriteMask(COLOR_WRITE_MASK_ALL)
-			, BlendEnable(false)			
+			, BlendEnable(false)
 		{
 			memset(padding, 0, 2);
 		}
@@ -150,7 +352,7 @@ namespace fb
 			, IndependentBlendEnable(false)
 		{
 			memset(padding, 0, 2);
-			for (int i=0; i<8; i++)
+			for (int i = 0; i < 8; i++)
 			{
 				RenderTarget[i].BlendEnable = false;
 				RenderTarget[i].SrcBlend = BLEND_ONE;
@@ -168,7 +370,7 @@ namespace fb
 			return memcmp(this, &other, sizeof(BLEND_DESC)) < 0;
 		}
 
-		bool operator==(const BLEND_DESC& other) const{
+		bool operator==(const BLEND_DESC& other) const {
 			return memcmp(this, &other, sizeof(BLEND_DESC)) == 0;
 		}
 
@@ -181,29 +383,90 @@ namespace fb
 		char						padding[2];
 		RENDER_TARGET_BLEND_DESC	RenderTarget[8];
 	};
+}
 
+namespace std {
+	template<>
+	struct hash<fb::BLEND_DESC>
+		: public _Bitwise_hash<fb::BLEND_DESC>
+	{
+		typedef fb::BLEND_DESC _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			return fb::murmur3_32((const char*)&_Keyval, sizeof(fb::BLEND_DESC));
+		}
+	};
+}
+
+namespace fb
+{
 	//------------------------------------------------------------------------
 	struct DEPTH_STENCILOP_DESC
 	{
+	private:
+		STENCIL_OP			StencilFailOp;
+		STENCIL_OP			StencilDepthFailOp;
+		STENCIL_OP			StencilPassOp;
+		COMPARISON_FUNC StencilFunc;
+		mutable size_t HashValue;
+		mutable bool HashDirty;
+
+	public:
+
 		DEPTH_STENCILOP_DESC()
 			: StencilFailOp(STENCIL_OP_KEEP)
 			, StencilDepthFailOp(STENCIL_OP_KEEP)
 			, StencilPassOp(STENCIL_OP_KEEP)
 			, StencilFunc(COMPARISON_ALWAYS)
+			, HashDirty(true)
 		{
 			
 		}
-		size_t ComputeHash() const {
-			size_t h = std::hash<int>()(StencilFailOp);
-			hash_combine(h, std::hash<int>()(StencilDepthFailOp));
-			hash_combine(h, std::hash<int>()(StencilPassOp));
-			hash_combine(h, std::hash<int>()(StencilFunc));
-			return h;
+
+		void SetStencilFailOp(STENCIL_OP op) {
+			StencilFailOp = op;
+			HashDirty = true;
+		}	
+		STENCIL_OP GetStencilFailOp() const {
+			return StencilFailOp;
 		}
-		STENCIL_OP StencilFailOp;
-		STENCIL_OP StencilDepthFailOp;
-		STENCIL_OP StencilPassOp;
-		COMPARISON_FUNC StencilFunc;
+
+		void SetStencilDepthFailOp(STENCIL_OP op) {
+			StencilDepthFailOp = op;
+			HashDirty = true;
+		}
+		STENCIL_OP GetStencilDepthFailOp() const {
+			return StencilDepthFailOp;
+		}
+
+		void SetStencilPassOp(STENCIL_OP op) {
+			StencilPassOp = op;
+			HashDirty = true;
+		}
+		STENCIL_OP GetStencilPassOp() const {
+			return StencilPassOp;
+		}
+
+		void SetStencilFunc(COMPARISON_FUNC func) {
+			StencilFunc = func;
+			HashDirty = true;
+		}
+		COMPARISON_FUNC GetStencilFunc() const {
+			return StencilFunc;
+		}
+
+		size_t Hash() const {
+			if (HashDirty) {
+				HashDirty = false;
+				HashValue = std::hash<int>()(StencilFailOp);
+				hash_combine(HashValue, std::hash<int>()(StencilDepthFailOp));
+				hash_combine(HashValue, std::hash<int>()(StencilPassOp));
+				hash_combine(HashValue, std::hash<int>()(StencilFunc));
+			}
+			return HashValue;
+		}		
 	};
 
 	//------------------------------------------------------------------------
@@ -212,6 +475,19 @@ namespace fb
 	// do not need to call ComputeHash(). The Renderer calls it.
 	struct DEPTH_STENCIL_DESC
 	{
+	private:
+		DEPTH_WRITE_MASK			DepthWriteMask;
+		COMPARISON_FUNC				DepthFunc;
+		DEPTH_STENCILOP_DESC	FrontFace;
+		DEPTH_STENCILOP_DESC	BackFace;
+		unsigned char					StencilReadMask;
+		unsigned char					StencilWriteMask;
+		bool									DepthEnable;
+		bool									StencilEnable;
+		mutable bool HashDirty;
+		mutable size_t HashValue;
+
+	public:
 		DEPTH_STENCIL_DESC()
 			: DepthEnable(true)
 			, DepthWriteMask(DEPTH_WRITE_MASK_ALL)
@@ -219,18 +495,89 @@ namespace fb
 			, StencilEnable(false)
 			, StencilReadMask(0xff)
 			, StencilWriteMask(0xff)
+			, HashDirty(true)
 		{
-			ComputeHash();
+		}
+
+		void SetDepthWriteMask(DEPTH_WRITE_MASK writemask) {
+			DepthWriteMask = writemask;
+			HashDirty = true;
+		}
+		DEPTH_WRITE_MASK GetDepthWriteMask() const {
+			return DepthWriteMask;
+		}
+
+		void SetDepthFunc(COMPARISON_FUNC func) {
+			DepthFunc = func;
+			HashDirty = true;
+		}
+		COMPARISON_FUNC GetDepthFunc() const {
+			return DepthFunc;
+		}
+
+		void SetFrontFace(DEPTH_STENCILOP_DESC stencilop) {
+			FrontFace = stencilop;
+		}
+		DEPTH_STENCILOP_DESC GetFrontFace() const {
+			return FrontFace;
+		}
+		DEPTH_STENCILOP_DESC& GetFrontFace() {
+			HashDirty = true;
+			return FrontFace;
+		}
+
+		void SetBackFace(DEPTH_STENCILOP_DESC stencilop) {
+			BackFace = stencilop;
+			HashDirty = true;
+		}
+		DEPTH_STENCILOP_DESC GetBackFace() const {
+			return BackFace;
+		}
+		DEPTH_STENCILOP_DESC& GetBackFace() {
+			HashDirty = true;
+			return BackFace;
+		}
+
+		void SetStencilReadMask(unsigned char mask) {
+			StencilReadMask = mask;
+			HashDirty = true;
+		}
+		unsigned char GetStencilReadMask() const {
+			return StencilReadMask;
+		}
+
+		void SetStencilWriteMask(unsigned char mask) {
+			StencilWriteMask = mask;
+			HashDirty = true;
+		}
+		unsigned char GetStencilWriteMask() const {
+			return StencilWriteMask;
+		}
+
+		void SetDepthEnable(bool depthEnable) {
+			DepthEnable = depthEnable;
+			HashDirty = true;
+		}
+		bool GetDepthEnable() const {
+			return DepthEnable;
+		}
+
+		void SetStencilEnable(bool stencilEnable) {
+			StencilEnable = stencilEnable;
+			HashDirty = true;
+		}
+		bool GetStencilEnable() const {
+			return StencilEnable;
 		}
 
 		bool operator<(const DEPTH_STENCIL_DESC& other) const
 		{
-			return mHash < other.mHash;			
+			return Hash() < other.Hash();
 		}
 
 		bool operator==(const DEPTH_STENCIL_DESC& other) const
 		{
-			return mHash == other.mHash;			
+			return Hash() == other.Hash();
 		}
 
 		bool operator!=(const DEPTH_STENCIL_DESC& other) const
@@ -238,29 +585,21 @@ namespace fb
 			return !operator==(other);
 		}
 
-		size_t ComputeHash() const {
-			size_t h = std::hash<int>()(DepthWriteMask);
-			hash_combine(h, std::hash<int>()(DepthFunc));
-			hash_combine(h, std::hash<int>()(DepthFunc));
-			hash_combine(h, FrontFace.ComputeHash());
-			hash_combine(h, BackFace.ComputeHash());
-			hash_combine(h, std::hash<unsigned char>()(StencilReadMask));
-			hash_combine(h, std::hash<unsigned char>()(StencilWriteMask));
-			hash_combine(h, std::hash<bool>()(DepthEnable));
-			hash_combine(h, std::hash<bool>()(StencilEnable));
-			mHash = h;
-			return h;
-		}
-
-		DEPTH_WRITE_MASK DepthWriteMask;
-		COMPARISON_FUNC DepthFunc;				
-		DEPTH_STENCILOP_DESC FrontFace;
-		DEPTH_STENCILOP_DESC BackFace;
-		unsigned char StencilReadMask;
-		unsigned char StencilWriteMask;
-		bool DepthEnable;
-		bool StencilEnable;		
-		mutable size_t mHash;
+		size_t Hash() const {
+			if (HashDirty) {
+				HashDirty = false;
+				HashValue = std::hash<int>()(DepthWriteMask);
+				hash_combine(HashValue, std::hash<int>()(DepthFunc));
+				hash_combine(HashValue, std::hash<int>()(DepthFunc));
+				hash_combine(HashValue, FrontFace.Hash());
+				hash_combine(HashValue, BackFace.Hash());
+				hash_combine(HashValue, std::hash<unsigned char>()(StencilReadMask));
+				hash_combine(HashValue, std::hash<unsigned char>()(StencilWriteMask));
+				hash_combine(HashValue, std::hash<bool>()(DepthEnable));
+				hash_combine(HashValue, std::hash<bool>()(StencilEnable));
+			}
+			return HashValue;
+		}	
 	};
 
 	struct RENDERER_FRAME_PROFILER
@@ -500,4 +839,46 @@ namespace fb
 		int textureType;
 	};
 }
+
+namespace std {
+	template<>
+	struct hash<fb::RASTERIZER_DESC>
+		: public _Bitwise_hash<fb::RASTERIZER_DESC>
+	{
+		typedef fb::RASTERIZER_DESC _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			return _Keyval.Hash();
+		}
+	};
+
+	template<>
+	struct hash<fb::DEPTH_STENCIL_DESC>
+		: public _Bitwise_hash<fb::DEPTH_STENCIL_DESC>
+	{
+		typedef fb::DEPTH_STENCIL_DESC _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			return _Keyval.Hash();
+		}
+	};	
+
+	template<>
+	struct hash<fb::SAMPLER_DESC>
+		: public _Bitwise_hash<fb::SAMPLER_DESC>
+	{
+		typedef fb::SAMPLER_DESC _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			return _Keyval.Hash();
+		}
+	};
+}
+
 #endif //_fastbird_RenderStructs_header_included_

@@ -200,7 +200,7 @@ namespace fb
 		bool GetRenderUIOption() const;
 
 		void SetLockUIVisibility(const char* ui, bool lock);
-		std::vector<WinBasePtr> GetComponentsInRegion(const fb::Rect& r);
+		std::vector<WinBasePtr> GetComponentsInRegion(const fb::Rect& r);		
 
 		//-------------------------------------------------------------------
 		// For UI Editing

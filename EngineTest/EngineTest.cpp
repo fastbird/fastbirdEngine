@@ -41,6 +41,7 @@
 #include "GenerateNoise.h"
 #include "ComputeShaderTest.h"
 #include "TaskTest.h"
+#include "Permutation.h"
 
 #include "FBCommonHeaders/Helpers.h"
 #include "FBEngineFacade/EngineFacade.h"
@@ -91,21 +92,23 @@ void UpdateFrame(){
 }
 
 void InitEngine(){
-	gEngine = EngineFacade::Create();
+	FileSystem::set_fba_password("fastbird");
+	FileSystem::parse_fba("./");
+	gEngine = EngineFacade::Create();	
 	RECT rect;
 	GetClientRect(gHWnd, &rect);
 	auto width = rect.right - rect.left;
 	auto height = rect.bottom - rect.top;
 	gEngine->InitRenderer("FBRendererD3D11");
-	gEngine->InitCanvas((HWindow)gHWnd);
+	gEngine->InitCanvas((HWindow)gHWnd);	
 }
 
 void DeinitEngine(){
 	gEngine = 0;
 }
 
-void StartTest(){
-	gEngine->SetEnvironmentMap("data/environment.dds");
+void StartTest(){	
+	gEngine->SetEnvironmentMap("Data/environment.dds");
 	gEngine->SetMainCameraPos(Vec3(0, -5, 0));
 	gEngine->EnableCameraInput(true);	
 	auto L = LuaUtils::GetLuaState();
@@ -115,16 +118,17 @@ void StartTest(){
 
 	gMeshTest = MeshTest::Create();	
 	gMeshTest->SetCameraTarget();
+	gFractalTest = FractalTest::Create();
 	//gSkyBoxTest = SkyBoxTest::Create();
 	//gParticleTest = ParticleTest::Create();
 	//gAudioTest = AudioTest::Create();
 	//gVideoTest = VideoTest::Create();	
 	//gTextTest = TextTest::Create();
 	//gLuaTest = LuaTest::Create();	
-	//gFractalTest = FractalTest::Create();
+	
 	//gEngine->AddRendererObserver(IRendererObserver::DefaultRenderEvent, gFractalTest);
 	//gComputeShaderTest = ComputeShaderTest::Create();
-	gTaskTest = TaskTest::Create();
+	//gTaskTest = TaskTest::Create();
 }
 
 void EndTest(){
@@ -178,6 +182,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	{
 		return FALSE;
 	}
+
+	//GenerateGradients("Gradiants_256_extended.dat");		
+	//GeneratePermutation("Permutation_256_extented.dat");
 
 	InitEngine();
 	StartTest();

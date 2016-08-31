@@ -32,7 +32,7 @@
 #include "luawrapperutil.hpp"
 using namespace fb;
 
-fb::VectorMap<int, unsigned> LuaObject::sUsedCount;
+std::unordered_map<int, unsigned> LuaObject::sUsedCount;
 fb::SpinLock<true, false> LuaObject::sUsedCountGuard;
 void LuaObject::AddUsedCount(int ref)
 {
@@ -47,7 +47,7 @@ bool LuaObject::ReleaseUsedCount(int ref)
 	if (ref == LUA_NOREF)
 		return false;
 	sUsedCountGuard.Lock();
-	auto itFind = sUsedCount.Find(ref);
+	auto itFind = sUsedCount.find(ref);
 	assert(itFind != sUsedCount.end());
 	if (--(itFind->second) == 0)
 	{

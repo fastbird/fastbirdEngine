@@ -44,6 +44,8 @@ namespace fb
 		ComponentType::Enum GetType() const { return ComponentType::HorizontalGauge; }
 		virtual void GatherVisit(std::vector<UIObject*>& v);
 		virtual void OnStartUpdate(float elapsedTime);
+		void OnMouseHover(IInputInjectorPtr injector, bool propergated = false) OVERRIDE;		
+		void OnMouseDrag(IInputInjectorPtr injector) OVERRIDE;		
 
 		virtual void SetPercentage(float p);
 		virtual void SetMaximum(float m);		
@@ -61,6 +63,7 @@ namespace fb
 
 		virtual bool SetProperty(UIProperty::Enum prop, const char* val) OVERRIDE;
 		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly) OVERRIDE;
+		void SetDrag(bool drag);
 
 	protected:		
 		void SetTextureAtlasRegion(UIProperty::Enum prop, const char* region);
@@ -85,9 +88,10 @@ namespace fb
 		std::string mRegionNotFilled;
 		Color mBlinkColor;
 		bool mBlink;
+		bool mDrag;
+		bool mDragging;
 		float mBlinkSpeed;
 		float mBlinkTime;
-
-
+		WinBaseWeakPtr mDragPart;
 	};
 }

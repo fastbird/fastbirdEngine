@@ -53,5 +53,6 @@ extern "C"
 #else
 #endif
 #include <regex>
+#include <unordered_map>
 
 #include "FBMemoryManagerLib/MemoryManager.h"

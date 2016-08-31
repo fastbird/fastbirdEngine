@@ -330,8 +330,7 @@ public:
 		}
 	}
 
-	void CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){
-		desc.ComputeHash();
+	void CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){		
 		auto& renderer = Renderer::GetInstance();
 		if (DefaultDDesc == desc){
 			if (mDDesc){
@@ -362,7 +361,7 @@ public:
 		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) DepthStencilStates : 0x%x", mDepthStencilState.get()).c_str());
 
 		if (mRDesc){
-			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RDesc scissor: %d", mRDesc->ScissorEnable ? 1 : 0).c_str());
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RDesc scissor: %d", mRDesc->GetScissorEnable() ? 1 : 0).c_str());
 		}
 		else{
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) RDesc null").c_str());

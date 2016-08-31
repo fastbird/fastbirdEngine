@@ -107,9 +107,9 @@ public:
 	btConstraintSolver*	mSolver;
 	btDiscreteDynamicsWorld* mDynamicsWorld;
 
-	VectorMap<std::string, btCollisionShape*> mColShapes;
-	VectorMap<btCollisionShape*, unsigned> mColShapesRefs;
-	VectorMap<btCollisionShape*, float> mColShapePendingDelete;
+	std::unordered_map<std::string, btCollisionShape*> mColShapes;
+	std::unordered_map<btCollisionShape*, unsigned> mColShapesRefs;
+	std::unordered_map<btCollisionShape*, float> mColShapePendingDelete;
 
 	// private functions
 	friend class RigidBody;
@@ -119,7 +119,7 @@ public:
 	int mRayGroup;
 
 	static unsigned NextInternalColShapeId;
-	VectorMap<unsigned, btCollisionShape*> mInternalShapes;
+	std::unordered_map<unsigned, btCollisionShape*> mInternalShapes;
 
 	BulletFilterCallback* mFilterCallback;
 	bool mEnabled;
@@ -192,8 +192,9 @@ public:
 
 			for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
 			{
-				auto colShape = it->first;
-				it = mColShapePendingDelete.erase(it);
+				auto curIt = it++;
+				auto colShape = curIt->first;
+				mColShapePendingDelete.erase(curIt);
 				if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 				{
 					btCompoundShape* compound = (btCompoundShape*)(colShape);
@@ -478,16 +479,16 @@ public:
 		}
 		std::string lowerPath(collisionFile);
 		ToLowerCase(lowerPath);
-		auto it = mColShapes.Find(lowerPath);
+		auto it = mColShapes.find(lowerPath);
 		if (it != mColShapes.end())
 			return it->second;
 
-		tinyxml2::XMLDocument doc;
-		int errId = doc.LoadFile(collisionFile);
-		if (errId)
+		auto pdoc = FileSystem::LoadXml(collisionFile);
+		tinyxml2::XMLDocument& doc = *pdoc;		
+		if (doc.Error())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Physics::ParseAction ParseCollisionFile %s : %s", collisionFile, doc.GetErrorStr1()).c_str());			
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("	%s", doc.GetErrorStr2()).c_str());
+			Logger::Log(doc.GetErrorString().c_str());
 			assert(0);
 			return 0;
 		}
@@ -596,7 +597,7 @@ public:
 	void AddRef(btCollisionShape* colShape){
 		if (!colShape)
 			return;
-		auto it = mColShapesRefs.Find(colShape);
+		auto it = mColShapesRefs.find(colShape);
 		if (it == mColShapesRefs.end())
 		{
 			mColShapesRefs[colShape] = 1;
@@ -610,7 +611,7 @@ public:
 		if (!colShape)
 			return;
 
-		auto it = mColShapesRefs.Find(colShape);
+		auto it = mColShapesRefs.find(colShape);
 		if (it == mColShapesRefs.end())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "Physics::Release() : cannot find the colshape!");
@@ -621,7 +622,7 @@ public:
 		if (it->second == 0)
 		{
 			mColShapesRefs.erase(it);
-			mColShapePendingDelete.Insert(std::make_pair(colShape, 3.f));
+			mColShapePendingDelete[colShape] = 3.f;
 		}
 	}
 
@@ -1033,7 +1034,7 @@ public:
 	}
 
 	void DeleteBTShape(unsigned id){
-		auto it = mInternalShapes.Find(id);
+		auto it = mInternalShapes.find(id);
 		if (it != mInternalShapes.end()){
 			FB_DELETE_ALIGNED(it->second);
 			mInternalShapes.erase(it);
@@ -1182,11 +1183,12 @@ public:
 	void _CheckCollisionShapeForDel(float timeStep){
 		for (auto it = mColShapePendingDelete.begin(); it != mColShapePendingDelete.end();)
 		{
-			auto colShape = it->first;
-			it->second -= timeStep;
-			if (it->second <= 0)
+			auto curIt = it++;
+			auto colShape = curIt->first;
+			curIt->second -= timeStep;
+			if (curIt->second <= 0)
 			{
-				it = mColShapePendingDelete.erase(it);
+				curIt = mColShapePendingDelete.erase(curIt);
 				if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 				{
 					btCompoundShape* compound = (btCompoundShape*)(colShape);

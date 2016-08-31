@@ -34,6 +34,7 @@
 #include "FBAnimation/AnimationData.h"
 #include <COLLADAFWIWriter.h>
 #include <libxml/parser.h>
+#include <unordered_map>
 
 static const float PI = 3.1415926535897932384626433832795f;
 namespace fb{
@@ -184,8 +185,12 @@ public:
 		return IteratorWrapper<ColladaMeshObjects>(mMeshObjects);
 	}
 
+	unsigned GetNumMeshes() const {
+		return mMeshObjects.size();
+	}
+
 	const collada::CameraData& GetCameraData(const char* id) const{
-		auto it = mCameraDatas.Find(id);
+		auto it = mCameraDatas.find(id);
 		if (it == mCameraDatas.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Collada Camera %s is not found", id).c_str());
 			static collada::CameraData dummy;
@@ -277,7 +282,7 @@ public:
 			}
 			break;
 			default:
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot handle MeshPrimitive type : %d", type).c_str());
+				Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Ignored mesh primitive type: %d", type).c_str());
 			}
 
 			// material
@@ -415,8 +420,7 @@ public:
 		size_t nextIdx = 0;
 		INDICES indices;
 		indices.reserve(10000);
-		std::set<collada::DEFAULT_INPUTS::V_PNT> vertSet; // for building index buffer
-		std::map<collada::DEFAULT_INPUTS::V_PNT, size_t> vertToIdx; // for building index buffer
+		std::unordered_map<collada::DEFAULT_INPUTS::V_PNT, unsigned> vertToIdx;		
 		for (int pri = 0; pri<meshInfo->mNumPrimitives; pri++)
 		{
 			const INDICES& posIndices = meshInfo->mPosIndices[pri];
@@ -449,25 +453,20 @@ public:
 							collada::Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]),
 							uvCoord);
 
-						auto ret = vertSet.insert(vert);
-						if (ret.second)
-						{
-							// new vertex
+						auto it = vertToIdx.find(vert);
+						if (it != vertToIdx.end()) {
+							// existing combination
+							indices.push_back(it->second);
+						}
+						else {
+							// new combination
 							vertToIdx[vert] = nextIdx;
 							indices.push_back(nextIdx++);
 							positions.push_back(vert.p);
 							normals.push_back(vert.n);
 							uvs.push_back(vert.uv);
-						}
-						else
-						{
-							assert(vertToIdx.find(vert) != vertToIdx.end());
-							// existing
-							indices.push_back(vertToIdx[vert]);
-						}
-						tri.v[k] = indices.back();
-					}
-					assert(0 && "not tested!");
+						}						
+					}					
 					collada::Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
 					collada::Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
 					tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
@@ -517,18 +516,17 @@ public:
 				size_t added = positions.size();
 				assert(added == normals.size());
 				assert(added == uvs.size());
-				assert(added / 3 == triangles.size());
+				assert((added / 3 == triangles.size()) || (indices.size()/3 == triangles.size()));
 
 
-				pMeshObject->mMaterialGroups[pri].mPositions = std::move(positions);
-				pMeshObject->mMaterialGroups[pri].mNormals = std::move(normals);
-				pMeshObject->mMaterialGroups[pri].mUVs = std::move(uvs);
-				pMeshObject->mMaterialGroups[pri].mTriangles = std::move(triangles);
-				pMeshObject->mMaterialGroups[pri].mIndexBuffer = std::move(indices);
+				pMeshObject->mMaterialGroups[pri].mPositions.swap(positions);
+				pMeshObject->mMaterialGroups[pri].mNormals.swap(normals);
+				pMeshObject->mMaterialGroups[pri].mUVs.swap(uvs);
+				pMeshObject->mMaterialGroups[pri].mTriangles.swap(triangles);
+				pMeshObject->mMaterialGroups[pri].mIndexBuffer.swap(indices);
 				pMeshObject->mMaterialGroups[pri].mMaterialPath = meshInfo->mMaterials[pri];
 
 				// clear for only not merge
-				vertSet.clear();
 				vertToIdx.clear();
 				nextIdx = 0;
 			} // !mMergeMaterialGroups
@@ -544,12 +542,12 @@ public:
 			size_t added = positions.size();
 			assert(added == normals.size());
 			assert(added == uvs.size());
-			assert(added / 3 == triangles.size());
-			pMeshObject->mMaterialGroups[0].mPositions = std::move(positions);
-			pMeshObject->mMaterialGroups[0].mNormals = std::move(normals);
-			pMeshObject->mMaterialGroups[0].mUVs = std::move(uvs);
-			pMeshObject->mMaterialGroups[0].mTriangles = std::move(triangles);
-			pMeshObject->mMaterialGroups[0].mIndexBuffer = std::move(indices);
+			assert((added / 3 == triangles.size()) || (indices.size() / 3 == triangles.size()));
+			pMeshObject->mMaterialGroups[0].mPositions.swap(positions);
+			pMeshObject->mMaterialGroups[0].mNormals.swap(normals);
+			pMeshObject->mMaterialGroups[0].mUVs.swap(uvs);
+			pMeshObject->mMaterialGroups[0].mTriangles.swap(triangles);
+			pMeshObject->mMaterialGroups[0].mIndexBuffer.swap(indices);
 		}
 
 		return pMeshObject;
@@ -587,12 +585,10 @@ public:
 
 			for (size_t i = 0; i<numIndices; i += 3)
 			{
-				collada::ModelTriangle tri;
 				for (int k = 0; k<3; k++)
 				{
 					size_t pi = posIndices[i + indexOffset[k]] * 3;
-					positions.push_back(collada::Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));
-					tri.v[k] = positions.size() - 1;
+					positions.push_back(collada::Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));					
 				}
 			}
 		} // pri
@@ -684,14 +680,14 @@ public:
 				assert(mMeshGroup->mMeshes[parentMeshIdx].mMesh);
 				assert(parsingChildMesh);
 				auto& camInfos = mMeshGroup->mMeshes[parentMeshIdx].mMesh->mCameraInfo;
-				assert(camInfos.Find(name) == camInfos.end());
-				camInfos.Insert(std::make_pair(name, camInfo));
+				assert(camInfos.find(name) == camInfos.end());
+				camInfos.insert(std::make_pair(name, camInfo));
 			}
 			else{
 				assert(!mMeshObjects.empty());
 				auto& camInfos = mMeshObjects.begin()->second->mCameraInfo;
-				assert(camInfos.Find(name) == camInfos.end());
-				camInfos.Insert(std::make_pair(name, camInfo));
+				assert(camInfos.find(name) == camInfos.end());
+				camInfos.insert(std::make_pair(name, camInfo));
 			}
 		}
 
@@ -870,14 +866,14 @@ public:
 				camInfo.mData = GetCameraData(strCameraId.c_str());
 				if (mOptions.mUseMeshGroup){
 					auto& camInfos = mMeshGroup->mCameraInfo;
-					assert(camInfos.Find(name) == camInfos.end());
-					camInfos.Insert(std::make_pair(name, camInfo));
+					assert(camInfos.find(name) == camInfos.end());
+					camInfos.insert(std::make_pair(name, camInfo));
 				}
 				else{
 					assert(!mMeshObjects.empty());
 					auto& camInfos = mMeshObjects.begin()->second->mCameraInfo;
-					assert(camInfos.Find(name) == camInfos.end());
-					camInfos.Insert(std::make_pair(name, camInfo));
+					assert(camInfos.find(name) == camInfos.end());
+					camInfos.insert(std::make_pair(name, camInfo));
 				}
 			}
 
@@ -942,7 +938,7 @@ public:
 			collada::CameraData::Orthogonal : 
 			collada::CameraData::Perspective;
 
-		mCameraDatas.Insert(std::make_pair(uniqueId, data));
+		mCameraDatas.insert(std::make_pair(uniqueId, data));
 		return true;
 	}
 
@@ -1145,6 +1141,10 @@ collada::MeshGroupPtr ColladaImporter::GetMeshGroup() const {
 
 IteratorWrapper<ColladaMeshObjects> ColladaImporter::GetMeshIterator(){
 	return mImpl->GetMeshIterator();
+}
+
+unsigned ColladaImporter::GetNumMeshes() const {
+	return mImpl->GetNumMeshes();
 }
 
 }

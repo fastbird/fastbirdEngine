@@ -26,6 +26,8 @@
 */
 
 #pragma once
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 
 namespace fb
 {
@@ -106,3 +108,5 @@ namespace fb
 	typedef Mat44 Mat44f;
 #endif
 }
+
+BOOST_CLASS_IMPLEMENTATION(fb::Mat44, boost::serialization::primitive_type);

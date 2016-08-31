@@ -29,6 +29,7 @@
 #include "EngineOptions.h"
 #include "FBConsole/Console.h"
 #include "FBThread/TaskScheduler.h"
+#include "FBFileSystem/FileSystem.h"
 using namespace fb;
 void NumTasks(StringVector& args);
 
@@ -65,4 +66,9 @@ void NumTasks(StringVector& args) {
 	auto str = FormatString("Num taks = %u", TaskScheduler::GetInstance().GetNumTasks());
 	Logger::Log(FB_DEFAULT_LOG_ARG, str.c_str());
 	Console::GetInstance().Log(str.c_str());
+}
+
+bool EngineOptions::OnChangeCVar(CVarPtr pCVar) {
+
+	return false;
 }

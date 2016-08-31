@@ -29,7 +29,7 @@
 #include "Transformation.h"
 #include "Math.h"
 #include "Frustum.h"
-#include "MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 #include "FBCommonHeaders/Helpers.h"
 
 namespace fb
@@ -904,25 +904,4 @@ namespace fb
 		hash_combine(h, std::hash<bool>()(mUniformScale));
 		return h;
 	}
-
-	void write(std::ostream& stream, const Transformation& data) {
-		write(stream, data.mMat);
-		write(stream, data.mR);
-		write(stream, data.mT);
-		write(stream, data.mS);		
-		stream.write((char*)&data.mIdentity, sizeof(data.mIdentity));
-		stream.write((char*)&data.mRSSeperated, sizeof(data.mRSSeperated));
-		stream.write((char*)&data.mUniformScale, sizeof(data.mUniformScale));
-	}
-
-	void read(std::istream& stream, Transformation& data) {
-		read(stream, data.mMat);
-		read(stream, data.mR);
-		read(stream, data.mT);
-		read(stream, data.mS);
-		stream.read((char*)&data.mIdentity, sizeof(data.mIdentity));
-		stream.read((char*)&data.mRSSeperated, sizeof(data.mRSSeperated));
-		stream.read((char*)&data.mUniformScale, sizeof(data.mUniformScale));
-	}
-
 }

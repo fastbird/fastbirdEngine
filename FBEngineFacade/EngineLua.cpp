@@ -34,36 +34,40 @@
 #include "FBEngineFacade/MeshFacade.h"
 #include "FBSceneManager/Scene.h"
 namespace fb{
-	int GetResolution(lua_State* L);
-	int GetFrameCounter(lua_State* L);
-	int PrintSpatialObject(lua_State* L);
-	int InvalidateMouseKeyboard(lua_State* L);
+	int GetMasterGain(lua_State* L) {		
+		auto masterGain = EngineFacade::GetInstance().GetMasterGain();
+		LuaUtils::pushnumber(L, masterGain);
+		return 1;
+	}
 
-	int IsKeyPressed(lua_State* L);
-	int IsKeyDown(lua_State* L);
-	int IsLButtonClicked(lua_State* L);
-	int IsRButtonClicked(lua_State* L);
-	int IsLButtonDown(lua_State* L);
+	int GetMusicGain(lua_State* L) {		
+		auto musicGain = EngineFacade::GetInstance().GetMusicGain();
+		LuaUtils::pushnumber(L, musicGain);
+		return 1;
 
-	int GenGGX(lua_State* L);
-	int LoadMesh(lua_State* L);
-	int FBConsole(lua_State* L);
+	}
 
-	void InitEngineLua(){
-		LuaUtils::LoadConfig("configEngine.lua");		
-		auto L = LuaUtils::GetLuaState();
-		LUA_SETCFUNCTION(L, FBConsole);
-		LUA_SETCFUNCTION(L, LoadMesh);
-		LUA_SETCFUNCTION(L, GenGGX);
-		LUA_SETCFUNCTION(L, IsKeyPressed);
-		LUA_SETCFUNCTION(L, IsKeyDown);
-		LUA_SETCFUNCTION(L, IsLButtonClicked);
-		LUA_SETCFUNCTION(L, IsRButtonClicked);
-		LUA_SETCFUNCTION(L, IsLButtonDown);
-		LUA_SETCFUNCTION(L, PrintSpatialObject);
-		LUA_SETCFUNCTION(L, GetResolution);
-		LUA_SETCFUNCTION(L, GetFrameCounter);
-		LUA_SETCFUNCTION(L, InvalidateMouseKeyboard);
+	int GetSoundGain(lua_State* L) {				
+		auto soundGain = EngineFacade::GetInstance().GetSoundGain();
+		LuaUtils::pushnumber(L, soundGain);
+		return 1;
+	}
+
+	int SetMasterGain(lua_State* L) {
+		auto volume = (float)LuaUtils::checknumber(L, 1);
+		EngineFacade::GetInstance().SetMasterGain(volume, true);
+		return 0;
+	}
+	int SetMusicGain(lua_State* L) {
+		auto volume = (float)LuaUtils::checknumber(L, 1);
+		EngineFacade::GetInstance().SetMusicGain(volume, true);
+		return 0;
+	}
+
+	int SetSoundGain(lua_State* L) {
+		auto volume = (float)LuaUtils::checknumber(L, 1);
+		EngineFacade::GetInstance().SetSoundGain(volume, true);
+		return 0;
 	}
 
 	int GetResolution(lua_State* L)
@@ -98,7 +102,7 @@ namespace fb{
 			injector->Invalidate(InputDevice::Keyboard);
 			injector->ClearBuffer();
 			injector->InvalidateClickTime();
-			injector->ClearWheel();			
+			injector->ClearWheel();
 		}
 		return 0;
 	}
@@ -138,33 +142,58 @@ namespace fb{
 		return 1;
 	}
 
-	int GenGGX(lua_State* L){
-		Logger::Log(FB_ERROR_LOG_ARG, "GenGGX() lua function is Deprecated.");		
+	int GenGGX(lua_State* L) {
+		Logger::Log(FB_ERROR_LOG_ARG, "GenGGX() lua function is Deprecated.");
 		return 0;
 	}
 
-	int LoadMesh(lua_State* L){
+	int LoadMesh(lua_State* L) {
 		auto meshPath = LuaUtils::checkstring(L, 1);
-		if (strlen(meshPath) != 0){
+		if (strlen(meshPath) != 0) {
 			MeshFacadePtr mesh = MeshFacade::Create()->LoadMeshObject(meshPath);
-			if (mesh){
+			if (mesh) {
 				mesh->AttachToScene();
 				EngineFacade::GetInstance().SetMainCameraTarget(mesh->GetSpatialObject());
 				EngineFacade::GetInstance().EnableCameraInput(true);
 			}
-			else{
+			else {
 				EngineFacade::GetInstance().EnableCameraInput(false);
 			}
 		}
-		else{
+		else {
 			EngineFacade::GetInstance().EnableCameraInput(false);
 		}
 		return 0;
 	}
 
-	int FBConsole(lua_State* L){
+	int FBConsole(lua_State* L) {
 		auto str = LuaUtils::checkstring(L, 1);
 		EngineFacade::GetInstance().QueueProcessConsoleCommand(str, false);
 		return 0;
 	}
+
+	void InitEngineLua(){
+		LuaUtils::LoadConfig("configEngine.lua");		
+		auto L = LuaUtils::GetLuaState();
+		LUA_SETCFUNCTION(L, FBConsole);
+		LUA_SETCFUNCTION(L, LoadMesh);
+		LUA_SETCFUNCTION(L, GenGGX);
+		LUA_SETCFUNCTION(L, IsKeyPressed);
+		LUA_SETCFUNCTION(L, IsKeyDown);
+		LUA_SETCFUNCTION(L, IsLButtonClicked);
+		LUA_SETCFUNCTION(L, IsRButtonClicked);
+		LUA_SETCFUNCTION(L, IsLButtonDown);
+		LUA_SETCFUNCTION(L, PrintSpatialObject); 
+		LUA_SETCFUNCTION(L, GetResolution);
+		LUA_SETCFUNCTION(L, GetFrameCounter);
+		LUA_SETCFUNCTION(L, InvalidateMouseKeyboard);
+		LUA_SETCFUNCTION(L, SetMasterGain);
+		LUA_SETCFUNCTION(L, SetMusicGain);
+		LUA_SETCFUNCTION(L, SetSoundGain);
+		LUA_SETCFUNCTION(L, GetMasterGain);
+		LUA_SETCFUNCTION(L, GetMusicGain);
+		LUA_SETCFUNCTION(L, GetSoundGain);
+	}
+
+	
 }

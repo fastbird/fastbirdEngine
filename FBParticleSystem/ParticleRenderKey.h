@@ -26,6 +26,7 @@
 */
 
 #pragma once
+#include "FBCommonHeaders/Helpers.h"
 #include "FBRenderer/RendererStructs.h"
 namespace fb{
 	class IScene;
@@ -43,5 +44,26 @@ namespace fb{
 			const BLEND_DESC& desc, bool glow, bool depthFade, int screenspace);
 		bool operator==(const ParticleRenderKey& other) const;
 		bool operator<(const ParticleRenderKey& other) const;
+	};
+}
+
+namespace std {
+	template<>
+	struct hash<fb::ParticleRenderKey>
+		: public _Bitwise_hash<fb::ParticleRenderKey>
+	{
+		typedef fb::ParticleRenderKey _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			auto h = std::hash<void*>()(_Keyval.mScene);
+			fb::hash_combine(h, std::hash<int>()(_Keyval.mScreenspace));
+			fb::hash_combine(h, std::hash<std::string>()(std::string(_Keyval.mTexturePath)));
+			fb::hash_combine(h, std::hash<fb::BLEND_DESC>()(_Keyval.mBDesc));
+			fb::hash_combine(h, std::hash<bool>()(_Keyval.mGlow));
+			fb::hash_combine(h, std::hash<bool>()(_Keyval.mDepthFade));		
+			return h;
+		}
 	};
 }

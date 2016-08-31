@@ -79,6 +79,7 @@
     <ClInclude Include="PrimitiveTopology.h">
       <Filter>Enum&amp;Structures</Filter>
     </ClInclude>
+    <ClInclude Include="RendererKeys.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />

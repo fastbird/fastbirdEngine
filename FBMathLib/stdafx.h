@@ -34,6 +34,8 @@
 #include <sstream>
 #include <numeric>
 #include <random>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 #include "FBCommonHeaders/Types.h"
 
 #include "FBDebugLib/DebugLib.h"

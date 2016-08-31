@@ -37,5 +37,6 @@ namespace fb{
 		static ParticleOptionsPtr Create();
 
 		int MoveEditParticle;
+		int r_ParticleProfile;
 	};
 }

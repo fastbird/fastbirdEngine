@@ -94,15 +94,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Full</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../</AdditionalIncludeDirectories>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -130,12 +126,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BitManipulator.h" />
+    <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StringConverter.h" />
     <ClInclude Include="StringLib.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitManipulator.cpp" />
+    <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

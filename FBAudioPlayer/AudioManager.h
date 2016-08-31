@@ -30,7 +30,9 @@
 #include "AudioProperty.h"
 #include "AudioManipulatorType.h"
 #include "AudioSourceStatus.h"
+#include "AudioSourceType.h"
 #include "FBCommonHeaders/VectorMap.h"
+
 typedef unsigned int ALuint;
 namespace fb{
 	FB_DECLARE_SMART_PTR_STRUCT(AudioSource);
@@ -52,11 +54,11 @@ namespace fb{
 		void Update(TIME_PRECISION dt);
 		
 		// fb audio
-		AudioId PlayFBAudio(const char* fbAudioPath);
+		AudioId PlayFBAudio(const char* fbAudioPath, AudioSourceType::Enum sourceType = AudioSourceType::Sound);
 		AudioId PlayFBAudio(const char* fbAudioPath, const Vec3Tuple& pos);
 
 		// no position.
-		AudioId PlayAudio(const char* path);
+		AudioId PlayAudio(const char* path, AudioSourceType::Enum sourceType = AudioSourceType::Sound);
 		// position or no position
 		AudioId PlayAudio(const char* path, const AudioProperty& prop);
 		// position
@@ -106,7 +108,7 @@ namespace fb{
 
 		void DeleteManipulator(AudioId id, AudioManipulatorType::Enum type);
 
-		typedef VectorMap<AudioId, AudioSourcePtr> AudioSources;
+		typedef std::unordered_map<AudioId, AudioSourcePtr> AudioSources;
 		/// only for FBAudioDebuffer
 		struct AudioDebugData{
 			float mDistPerRef;
@@ -125,6 +127,11 @@ namespace fb{
 
 		void SetMasterGain(float gain);
 		float GetMasterGain() const;
+
+		void OnGainOptionChanged();
+
+		void SetSoundGain(float gain);
+		float GetSoundGain() const;
 
 		void SetEnabled(bool enabled);		
 	};

@@ -27,7 +27,7 @@
 
 #include "stdafx.h"
 #include "Mat33.h"
-#include "MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 
 using namespace fb;
 
@@ -221,21 +221,4 @@ bool Mat33::IsSymmetric() const {
 
 size_t Mat33::ComputeHash() const {
 	return (size_t)murmur3_32((const char*)this, sizeof(Mat33));
-}
-
-namespace fb {
-	void write(std::ostream& stream, const Mat33& data) {
-		for (int row = 0; row < 3; ++row) {
-			for (int col = 0; col < 3; ++col) {
-				stream.write((char*)&data.m[row][col], sizeof(Real));
-			}
-		}
-	}
-	void read(std::istream& stream, Mat33& data) {
-		for (int row = 0; row < 3; ++row) {
-			for (int col = 0; col < 3; ++col) {
-				stream.read((char*)&data.m[row][col], sizeof(Real));
-			}
-		}
-	}
 }

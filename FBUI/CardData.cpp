@@ -52,7 +52,7 @@ unsigned CardData::AddData(unsigned key, LuaObject& data){
 }
 
 unsigned CardData::DeleteData(unsigned key){
-	auto it = mData.Find(key);
+	auto it = mData.find(key);
 	unsigned distance = -1;
 	if (it != mData.end()){
 		mData.erase(it);
@@ -61,7 +61,7 @@ unsigned CardData::DeleteData(unsigned key){
 		distance = std::distance(mKeys.begin(), keyIt);
 		mKeys.erase(keyIt);		
 	}
-	auto textureIt = mTextures.Find(key);
+	auto textureIt = mTextures.find(key);
 	if (textureIt != mTextures.end()){
 		mTextures.erase(textureIt);
 	}
@@ -81,11 +81,11 @@ void CardData::DeleteDataWithIndex(unsigned index){
 }
 
 void CardData::SetTexture(unsigned key, const char* comp, TexturePtr texture){
-	auto it = mTextures.Find(key);
+	auto it = mTextures.find(key);
 	if (it == mTextures.end()){
-		mTextures.Insert(std::make_pair(key, std::vector<TextureData>()));
+		mTextures.insert(std::make_pair(key, std::vector<TextureData>()));
 	}
-	it = mTextures.Find(key);
+	it = mTextures.find(key);
 	assert(it != mTextures.end());
 	auto& v = it->second;
 	bool found = false;
@@ -102,7 +102,7 @@ void CardData::SetTexture(unsigned key, const char* comp, TexturePtr texture){
 }
 
 void CardData::GetTextures(unsigned key, std::vector<TextureData>& textures){
-	auto it = mTextures.Find(key);
+	auto it = mTextures.find(key);
 	if (it != mTextures.end()){
 		const auto& v = it->second;
 		for (auto i = v.begin(); i != v.end(); ++i){
@@ -117,7 +117,7 @@ unsigned CardData::GetNumData() const{
 }
 
 LuaObject CardData::GetData(unsigned key) const{
-	auto it = mData.Find(key);
+	auto it = mData.find(key);
 	if (it == mData.end()){
 		return LuaObject();
 	}

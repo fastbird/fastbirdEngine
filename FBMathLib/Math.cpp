@@ -912,46 +912,31 @@ namespace fb
 	}
 
 	void MakeShortestYaw(Real& from, Real& to){
-		while (to > TWO_PI)
-		{
+		while (to > TWO_PI){
 			to -= TWO_PI;
 		}
-		while (to < -TWO_PI)
-		{
+		while (to < 0) {
 			to += TWO_PI;
 		}
 
-		// forward check
-		float forwardLength;
-		float backwardLength;
-		bool swaped = false;
-		if (from > to){
-			std::swap(from, to);
-			swaped = true;
+		while (from > TWO_PI){
+			from -= TWO_PI;
 		}
-		forwardLength = to - from;
-		backwardLength = ((from + TWO_PI) - to);
+		while (from < 0) {
+			from += TWO_PI;
+		}
+		
 
-		if (!swaped){
-			if (forwardLength <= backwardLength) {
-				to = from + forwardLength;
-				from = to - forwardLength;
-			}
-			else {
-				to = from - backwardLength;
-				from = to + backwardLength;
+		if (from > to) {
+			if (from > PI && (from - PI) > to) { // passing 0 degree
+				from -= TWO_PI;
 			}
 		}
-		else{
-			if (forwardLength <= backwardLength) {
-				to = from - forwardLength;
-				from = to + forwardLength;
+		else {
+			if (to > PI && (to - PI) > from) {
+				to -= TWO_PI;
 			}
-			else {
-				to = from + backwardLength;
-				from = to - backwardLength;				
-			}
-		}
+		}		
 	}
 
 	void CalcRatio(float src[], float dest[], int num) {

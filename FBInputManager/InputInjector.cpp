@@ -114,14 +114,14 @@ void InputInjector::ClearKeydown(){
 // Mouse
 //-------------------------------------------------------------------
 // Positions
-void InputInjector::GetDeltaXY(long &x, long &y) const{
+void InputInjector::GetDpiDependentDeltaXY(long &x, long &y) const{
 	if (mImpl->mMouse)
-		mImpl->mMouse->GetDeltaXY(x, y);
+		mImpl->mMouse->GetDpiDependentDeltaXY(x, y);
 }
 
-Vec2ITuple InputInjector::GetDeltaXY() const{
+Vec2ITuple InputInjector::GetDpiDependentDeltaXY() const{
 	if (mImpl->mMouse)
-		return mImpl->mMouse->GetDeltaXY();
+		return mImpl->mMouse->GetDpiDependentDeltaXY();
 	return std::make_tuple(0, 0);
 }
 
@@ -255,6 +255,12 @@ bool InputInjector::IsLButtonDown(Real* time) const{
 bool InputInjector::IsLButtonClicked() const{
 	if (mImpl->mMouse)
 		return mImpl->mMouse->IsLButtonClicked();
+	return false;
+}
+
+bool InputInjector::IsLButtonUp() const {
+	if (mImpl->mMouse)
+		return mImpl->mMouse->IsLButtonUp();
 	return false;
 }
 

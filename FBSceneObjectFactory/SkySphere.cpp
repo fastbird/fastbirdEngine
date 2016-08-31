@@ -255,7 +255,7 @@ public:
 		pTexture->GenerateMips();
 		//pTexture->SaveToFile("environment.dds");
 		// for bight test.
-		//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("data/textures/brightEnv.jpg");
+		//ITexture* textureFile = gFBEnv->pRenderer->CreateTexture("Data/textures/brightEnv.jpg");
 		
 		renderer.SetEnvironmentTexture(pTexture);
 		sRT->GetScene()->DetachSky();

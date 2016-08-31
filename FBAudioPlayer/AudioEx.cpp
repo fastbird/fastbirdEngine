@@ -32,7 +32,7 @@
 #include "FBCommonHeaders/Helpers.h"
 using namespace fb;
 using namespace std::chrono;
-VectorMap<std::string, std::vector<AudioExWeakPtr>> sAudioExList;
+std::unordered_map<std::string, std::vector<AudioExWeakPtr>> sAudioExList;
 FB_READ_WRITE_CS sAudioExListLock;
 
 class AudioEx::Impl{
@@ -105,14 +105,13 @@ public:
 		mFilePathKey = audioEx;
 		ToLowerCase(mFilePathKey);
 
-		tinyxml2::XMLDocument doc;
-		auto err = doc.LoadFile(audioEx);
-		if (err){
+		auto pdoc = FileSystem::LoadXml(audioEx);		
+		if (pdoc->Error()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot parse fbaudioex(%s)", audioEx).c_str());
 			return;
 		}
 
-		auto root = doc.RootElement();
+		auto root = pdoc->RootElement();
 		if (!root){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid format(%s)", audioEx);
 			return;
@@ -301,10 +300,10 @@ public:
 		if (mProperty.mNumSimultaneous == 0)
 			return true;
 		
-		VectorMap< std::string, std::vector<AudioExWeakPtr>>::iterator audioListIt;
+		std::unordered_map< std::string, std::vector<AudioExWeakPtr>>::iterator audioListIt;
 		{
 			READ_LOCK l(sAudioExListLock);
-			audioListIt = sAudioExList.Find(mFilePathKey);
+			audioListIt = sAudioExList.find(mFilePathKey);
 			if (audioListIt == sAudioExList.end())
 				return true;
 		}

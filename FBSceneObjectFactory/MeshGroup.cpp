@@ -37,20 +37,21 @@
 #include "FBRenderer/RenderParam.h"
 #include "FBRenderer/Material.h"
 #include "FBStringLib/StringLib.h"
+#include "FBSerializationLib/Serialization.h"
 #include <map>
 using namespace fb;
 class MeshGroup::Impl{
 public:
 	struct Hierarchy
 	{
-		size_t mParentIndex;
-		size_t mMyIndex;
-		std::vector<size_t> mChildren;
+		unsigned mParentIndex;
+		unsigned mMyIndex;
+		std::vector<unsigned> mChildren;
 
-		Hierarchy(){
+		Hierarchy() {
 		}
 
-		Hierarchy(size_t parentIdx, size_t myIdx)
+		Hierarchy(unsigned parentIdx, unsigned myIdx)
 			: mParentIndex(parentIdx)
 			, mMyIndex(myIdx)
 		{
@@ -351,7 +352,7 @@ public:
 
 	const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const{
 		if (mMeshCameras.const_get()){
-			auto it = mMeshCameras.const_get()->Find(name);
+			auto it = mMeshCameras.const_get()->find(name);
 			if (it != mMeshCameras.const_get()->end()){
 				outFound = true;
 				return it->second;
@@ -711,3 +712,30 @@ unsigned MeshGroup::GetNumCollisionShapes(unsigned idx) const {
 	return mImpl->GetNumCollisionShapes(idx);
 }
 
+namespace fb {
+	/*void write_template(std::ostream& stream, const MeshGroup& data, int version) {
+		write(stream, version);
+		write_template(stream, mMeshObjects, version);
+
+
+		typedef std::vector< std::pair< MeshObjectPtr, Transformation> > MESH_OBJECTS;
+		MESH_OBJECTS mMeshObjects;
+		typedef std::vector< Transformation > LOCAL_TRANSFORMATIONS;
+		LOCAL_TRANSFORMATIONS mLocalTransforms;
+		typedef std::vector< bool > CHANGES;
+		CHANGES mChanges;
+		typedef std::map<size_t, Hierarchy> HIERARCHY_MAP;
+		CowPtr<HIERARCHY_MAP> mHierarchyMap;
+		CowPtr<AUXILIARIES> mAuxiliaries;
+		FRAME_PRECISION mLastUpdateFrame;
+		typedef std::vector< FBCollisionShapePtr > COLLISION_SHAPES;
+		CowPtr<COLLISION_SHAPES> mCollisions;
+		CowPtr<MeshCameras> mMeshCameras;
+
+		unsigned mLastPreRendered;
+		bool mRootAnimated;
+	}
+	void read_template(std::istream& stream, MeshGroup& data) {
+
+	}*/
+}

@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "Vec2I.h"
 #include "Math.h"
+#include "FBCommonHeaders/Helpers.h"
 
 namespace fb
 {

@@ -1,3 +1,30 @@
+/*
+ -----------------------------------------------------------------------------
+ This source file is part of fastbird engine
+ For the latest info, see http://www.jungwan.net/
+ 
+ Copyright (c) 2013-2015 Jungwan Byun
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ -----------------------------------------------------------------------------
+*/
+
 #include "stdafx.h"
 #include "AudioSource.h"
 #include "AudioBuffer.h"
@@ -6,6 +33,8 @@ using namespace fb;
 namespace fb{
 	void CheckALError();
 	float AudioSource::sMasterGain = 1.f;	
+	float AudioSource::sSoundGain = 1.f;
+	float AudioSource::sMusicGain = 1.f;
 }
 
 class AudioSource::Impl{
@@ -17,14 +46,16 @@ public:
 	float mPlayingTime;
 	AudioSourceStatus::Enum mStatus;
 	float mDistPerRef;
+	AudioSourceType::Enum mType;
 
 	//---------------------------------------------------------------------------
-	Impl(AudioId audioId)
+	Impl(AudioId audioId, AudioSourceType::Enum type)
 		: mAudioId(audioId)
 		, mALSource(-1)		
 		, mPlayingTime(0)
 		, mStatus(AudioSourceStatus::Waiting)
 		, mDistPerRef(FLT_MAX)
+		, mType(type)
 	{		
 
 	}
@@ -75,7 +106,8 @@ public:
 			alSourcei(mALSource, AL_SOURCE_RELATIVE, mProperty.mRelative ? AL_TRUE : AL_FALSE);
 			alSourcef(mALSource, AL_REFERENCE_DISTANCE, mProperty.mReferenceDistance);
 			alSourcef(mALSource, AL_ROLLOFF_FACTOR, mProperty.mRolloffFactor);
-			alSourcef(mALSource, AL_GAIN, mProperty.mGain * sMasterGain);
+			alSourcef(mALSource, AL_GAIN, mProperty.mGain * sMasterGain * 
+				(mType == AudioSourceType::Music ? sMusicGain : sSoundGain));
 			alSourcei(mALSource, AL_LOOPING, mProperty.mLoop ? AL_TRUE : AL_FALSE);
 			alSourcef(mALSource, AL_MAX_GAIN, mProperty.mMaxGain);
 			CheckALError();
@@ -164,6 +196,14 @@ public:
 		return mProperty.mGain;
 	}
 
+	void OnGainOptionChanged() {
+		if (mALSource != -1) {
+			alSourcef(mALSource, AL_GAIN, mProperty.mGain * sMasterGain *
+				(mType == AudioSourceType::Music ? sMusicGain : sSoundGain));
+			CheckALError();
+		}
+	}
+
 	float GetLeftTime() const{
 		return mAudioBuffer->mLength - mPlayingTime;
 	}
@@ -193,11 +233,11 @@ public:
 	}
 };
 //---------------------------------------------------------------------------
-AudioSourcePtr AudioSource::Create(AudioId audioId){
-	return AudioSourcePtr(new AudioSource(audioId), [](AudioSource* obj){delete obj; });
+AudioSourcePtr AudioSource::Create(AudioId audioId, AudioSourceType::Enum type){
+	return AudioSourcePtr(new AudioSource(audioId, type), [](AudioSource* obj){delete obj; });
 }
-AudioSource::AudioSource(AudioId audioId)
-	: mImpl(new Impl(audioId))
+AudioSource::AudioSource(AudioId audioId, AudioSourceType::Enum type)
+	: mImpl(new Impl(audioId, type))
 {
 
 }
@@ -292,6 +332,10 @@ void AudioSource::SetGain(float gain) {
 
 float AudioSource::GetGain() const {
 	return mImpl->GetGain();
+}
+
+void AudioSource::OnGainOptionChanged() {
+	mImpl->OnGainOptionChanged();
 }
 
 float AudioSource::GetLeftTime() const {

@@ -71,13 +71,13 @@ protected:
 	std::string mStrColAlignH;
 	std::string mStrHeaderTextSizes;
 	std::string mStrHeaders;
-	VectorMap<Vec2I, bool> mHighlighted;
+	std::unordered_map<Vec2I, bool> mHighlighted;
 
 	typedef std::vector<std::pair<UIProperty::Enum, std::string>> PropertyData;
-	VectorMap<unsigned, PropertyData > mItemPropertyByUnsigned;
-	VectorMap<std::wstring, PropertyData> mItemPropertyByString;
-	VectorMap<unsigned, PropertyData> mItemPropertyByColumn;
-	VectorMap<Vec2I, PropertyData> mItemPropertyKeyCol;
+	std::unordered_map<unsigned, PropertyData > mItemPropertyByUnsigned;
+	std::unordered_map<std::wstring, PropertyData> mItemPropertyByString;
+	std::unordered_map<unsigned, PropertyData> mItemPropertyByColumn;
+	std::unordered_map<Vec2I, PropertyData> mItemPropertyKeyCol;
 	std::set<unsigned> mNoVirtualizingRows;
 	std::set<unsigned> mDisabledItemKeys;
 	bool mMultiSelection;

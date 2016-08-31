@@ -47,10 +47,9 @@
 #include "FBStringLib/StringLib.h"
 #include "FBMathLib/GeomUtils.h"
 #include "EssentialEngineData/shaders/Constants.h"
+#include "FBSerializationLib/Serialization.h"
 using namespace fb;
-
-class MeshObject::Impl{
-public:
+namespace fb {
 	struct MaterialGroup
 	{
 		MaterialPtr mMaterial;
@@ -68,6 +67,18 @@ public:
 		std::vector<DWORD> mColors;
 		std::vector<Vec3> mTangents;
 	};
+
+	void write_template(std::ostream& stream, const MeshObject& data, int version = serialization_version) {
+
+	}
+	void read_template(std::istream& stream, MeshObject& data, int version = serialization_version) {
+
+	}
+}
+
+class MeshObject::Impl{
+public:
+	
 
 	struct ModelIntersection {
 		const ModelTriangle        *pTri;      // Pointer to mesh triangle that was intersected by ray
@@ -132,6 +143,7 @@ public:
 		, mMeshCameras(other.mMeshCameras)
 		, mLastPreRendered(other.mLastPreRendered)
 		, mForceAlphaBlending(other.mForceAlphaBlending)
+		, mCheckDistance(other.mCheckDistance)
 
 	{
 		unsigned idx = 0;
@@ -583,6 +595,17 @@ public:
 		group.mIndexBuffer = renderer.CreateIndexBuffer((void*)indices, numIndices, INDEXBUFFER_FORMAT_16BIT);
 	}
 
+	void SetIndices(int matGroupIdx, const std::vector<unsigned>& indices) {				
+		if (indices.size() > std::numeric_limits<USHORT>::max()) {
+			SetIndices(matGroupIdx, &indices[0], indices.size());
+		}
+		else {
+			std::vector<USHORT> shortIndices;
+			shortIndices.insert(shortIndices.end(), indices.begin(), indices.end());
+			SetIndices(matGroupIdx, &shortIndices[0], shortIndices.size());
+		}
+	}
+
 	void SetIndexBuffer(int matGroupIdx, IndexBufferPtr pIndexBuffer){
 		auto& group = GetMaterialGroupFor(matGroupIdx);
 		group.mIndexBuffer = pIndexBuffer;
@@ -634,6 +657,10 @@ public:
 				Vec2 uv3 = group.mUVs[indices[i + 2]];
 				Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
 					uv1, uv2, uv3);
+				if (tan == Vec3::ZERO) {
+					int a = 0;
+					a++;
+				}
 				group.mTangents[indices[i]] = tan;
 				group.mTangents[indices[i + 1]] = tan;
 				group.mTangents[indices[i + 2]] = tan;
@@ -806,7 +833,7 @@ public:
 
 	const MeshCamera& GetMeshCamera(const char* name, bool& outFound) const {
 		if (mMeshCameras.const_get()){
-			auto it = mMeshCameras.const_get()->Find(name);
+			auto it = mMeshCameras.const_get()->find(name);
 			if (it != mMeshCameras.const_get()->end()){
 				outFound = true;
 				return it->second;
@@ -1133,13 +1160,13 @@ public:
 					it.mForceAlphaMaterial->SetDiffuseColor(diffuse);
 
 					RASTERIZER_DESC rs;
-					rs.CullMode = CULL_MODE_NONE;
+					rs.SetCullMode(CULL_MODE_NONE);
 					it.mForceAlphaMaterial->SetRasterizerState(rs);
 
 					DEPTH_STENCIL_DESC ds;
-					ds.DepthWriteMask = DEPTH_WRITE_MASK_ZERO;
+					ds.SetDepthWriteMask(DEPTH_WRITE_MASK_ZERO);
 					if (disableDepth){
-						ds.DepthEnable = false;
+						ds.SetDepthEnable(false);
 					}
 					it.mForceAlphaMaterial->SetDepthStencilState(ds);
 
@@ -1345,6 +1372,10 @@ void MeshObject::SetIndices(int matGroupIdx, const UINT* indices, size_t numIndi
 
 void MeshObject::SetIndices(int matGroupIdx, const USHORT* indices, size_t numIndices) {
 	mImpl->SetIndices(matGroupIdx, indices, numIndices);
+}
+
+void MeshObject::SetIndices(int matGroupIdx, const std::vector<unsigned>& indices) {
+	mImpl->SetIndices(matGroupIdx, indices);
 }
 
 void MeshObject::SetIndexBuffer(int matGroupIdx, IndexBufferPtr pIndexBuffer) {

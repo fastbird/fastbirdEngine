@@ -270,7 +270,7 @@ void CardScroller::VisualizeData(unsigned index){
 	if (!mItems[index].expired())
 	{
 		auto item = mItems[index].lock();
-		auto it = mKeys.Find(index);
+		auto it = mKeys.find(index);
 		if (it == mKeys.end() || it->second != key){
 			item->SetVisible(false);
 			item->RemoveAllChildren(true);
@@ -437,7 +437,7 @@ void CardScroller::RefreshTextures(unsigned index){
 
 void CardScroller::RefreshProps(unsigned index){
 	auto key = mCardData->GetKey(index);
-	auto it = mItemProps.Find(key);
+	auto it = mItemProps.find(key);
 	if (it == mItemProps.end())
 		return;
 

@@ -1,0 +1,6 @@
+objects/.+/.+/
+.spp$
+.spp/resources/
+/\.
+particles/missile_geom/
+.+/paint/.*dae$

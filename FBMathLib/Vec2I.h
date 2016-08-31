@@ -27,7 +27,9 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
-
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
+#include "FBCommonHeaders/Helpers.h"
 namespace fb
 {
 	class Vec2;
@@ -73,41 +75,20 @@ namespace fb
 	Vec2I operator*(const Vec2I& left, unsigned right);
 }
 
-//// luawapper util
-//template<>
-//struct luaU_Impl<fb::Vec2I>
-//{
-//	static fb::Vec2I luaU_check(lua_State* L, int index)
-//	{
-//		luaL_checktype(L, index, LUA_TTABLE);
-//		fb::Vec2I ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = luaL_checkint(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = luaL_checkint(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static fb::Vec2I luaU_to(lua_State* L, int index)
-//	{
-//		fb::Vec2I ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.x = lua_tointeger(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.y = lua_tointeger(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static void luaU_push(lua_State* L, const fb::Vec2I& val)
-//	{
-//		lua_createtable(L, 2, 0);
-//		lua_pushinteger(L, val.x);
-//		lua_rawseti(L, -2, 1);
-//		lua_pushinteger(L, val.y);
-//		lua_rawseti(L, -2, 2);
-//	}
-//};
+BOOST_CLASS_IMPLEMENTATION(fb::Vec2I, boost::serialization::primitive_type);
+
+namespace std {
+	template<>
+	struct hash<fb::Vec2I>
+		: public _Bitwise_hash<fb::Vec2I>
+	{
+		typedef fb::Vec2I _Kty;
+		typedef _Bitwise_hash<_Kty> _Mybase;
+
+		size_t operator()(const _Kty& _Keyval) const
+		{
+			std::hash<int> intHasher;
+			return fb::hash_combine_ret(intHasher(_Keyval.x), intHasher(_Keyval.y));
+		}
+	};
+}

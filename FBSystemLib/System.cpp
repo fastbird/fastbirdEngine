@@ -95,10 +95,9 @@ namespace fb{
 		auto resolY = originalRect.bottom - originalRect.top;
 		RECT rect;
 		rect.left = std::get<0>(pos);
-		rect.top = std::get<1>(pos);
-		rect.right = rect.left + resolX;
-		rect.bottom = rect.top + resolY;		
-		SetWindowPos(hwnd, 0, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, 0);
+		rect.top = std::get<1>(pos);		
+		MoveWindow(hwnd, rect.left, rect.top, resolX, resolY, TRUE);
+		GetWindowRect(hwnd, &originalRect);
 #else
 		assert(0 && "Not implemented");
 #endif

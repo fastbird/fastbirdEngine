@@ -59,7 +59,7 @@ void SetThreadName(DWORD ThreadID, const char* ThreadName)
 #if defined(_PLATFORM_WINDOWS_)
 	__try
 	{
-		RaiseException(0x406D1388, 0, sizeof(Info) / sizeof(DWORD), (DWORD*)&Info);
+		RaiseException(0x406D1388, 0, sizeof(Info) / sizeof(DWORD), (ULONG_PTR*)&Info);
 	}
 	__except (EXCEPTION_CONTINUE_EXECUTION)
 	{

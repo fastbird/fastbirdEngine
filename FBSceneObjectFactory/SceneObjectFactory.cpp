@@ -27,7 +27,6 @@
 
 #include "stdafx.h"
 #include "SceneObjectFactory.h"
-#include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/Helpers.h"
 #include "FBStringLib/StringLib.h"
 #include "FBDebugLib/Logger.h"
@@ -46,6 +45,11 @@
 #include "BillboardQuad.h"
 #include "DustRenderer.h"
 #include "TrailObject.h"
+#include "binary_mesh.h"
+
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 using namespace fb;
 
@@ -61,9 +65,9 @@ public:
 		T mObject;
 	};
 	// key is lower case.
-	VectorMap<std::string, DataHolder<MeshObjectPtr> > mMeshObjects;
-	VectorMap<std::string, DataHolder<MeshGroupPtr> > mMeshGroups;
-	std::map<std::string, std::vector< MeshObjectPtr >  > mFractureObjects;
+	std::unordered_map<std::string, DataHolder<MeshObjectPtr> > mMeshObjects;
+	std::unordered_map<std::string, DataHolder<MeshGroupPtr> > mMeshGroups;
+	std::unordered_map<std::string, std::vector< MeshObjectPtr >  > mFractureObjects;
 	bool mNoMesh;
 
 	SkySphereWeakPtr mNextEnvUpdateSky;
@@ -212,6 +216,9 @@ public:
 				std::vector<ModelTriangle> triangles = ConvertCollada(group.second.mTriangles);
 				mesh->SetTriangles(group.first, &triangles[0], triangles.size());
 			}
+			if (!group.second.mIndexBuffer.empty()) {				
+				mesh->SetIndices(group.first, group.second.mIndexBuffer);
+			}
 			MaterialPtr material;
 			if (!group.second.mMaterialPath.empty()){
 				if (FileSystem::ResourceExists(group.second.mMaterialPath.c_str())){
@@ -256,7 +263,7 @@ public:
 			MeshCameras cameras;
 			for (auto& it : meshData->mCameraInfo){
 				MeshCamera cam = ConvertCollada(it.second);
-				cameras.Insert(std::make_pair(it.first, cam));				
+				cameras.insert(std::make_pair(it.first, cam));				
 			}
 			mesh->SetMeshCameras(cameras);
 		}
@@ -278,26 +285,40 @@ public:
 		{
 			filepath = "EssentialEngineData/objects/defaultCube.dae";
 		}
+
 		std::string filepathKey = filepath;
 		ToLowerCase(filepathKey);
-		
-
-		auto it = mMeshObjects.Find(filepathKey);
-		if (it != mMeshObjects.end()){
+		auto it = mMeshObjects.find(filepathKey);
+		if (it != mMeshObjects.end()) {
 			it->second.mNumCloned++;
 			return it->second.mObject->Clone();
 		}
+		collada::MeshPtr compiled_mesh;
+		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmesh");
+		FileSystem::Open file(fbmesh_path.c_str(), "rb");
+		if (file.IsOpen()) {
+			auto& data = *file.GetBinaryData();
+			typedef boost::iostreams::basic_array_source<char> Device;
+			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+			std::istream stream(&buffer);
+			compiled_mesh = load_mesh(stream, fbmesh_path.c_str(), desc);
+		}
 
-		auto pColladaImporter = ColladaImporter::Create();
-		ColladaImporter::ImportOptions option;
-		option.mMergeMaterialGroups = desc.mergeMaterialGroups;
-		option.mOppositeCull = desc.oppositeCull;
-		option.mSwapYZ = desc.yzSwap;
-		option.mUseIndexBuffer = desc.useIndexBuffer;
-		option.mUseMeshGroup = false;
-		pColladaImporter->ImportCollada(filepath.c_str(), option);
-		auto meshData = pColladaImporter->GetMeshObject();
-		auto meshObject = ConvertMeshData(meshData, daeFilePath, desc.generateTangent, desc.keepMeshData);
+		if (!compiled_mesh) {
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(info) %s not found", fbmesh_path.c_str()).c_str());
+
+			auto pColladaImporter = ColladaImporter::Create();
+			ColladaImporter::ImportOptions option;
+			option.mMergeMaterialGroups = desc.mergeMaterialGroups;
+			option.mOppositeCull = desc.oppositeCull;
+			option.mSwapYZ = desc.yzSwap;
+			option.mUseIndexBuffer = desc.useIndexBuffer;
+			option.mUseMeshGroup = false;
+			pColladaImporter->ImportCollada(filepath.c_str(), option);
+			compiled_mesh = pColladaImporter->GetMeshObject();
+		}
+		auto meshObject = ConvertMeshData(compiled_mesh, daeFilePath, desc.generateTangent, desc.keepMeshData);
 		if (meshObject)
 		{
 			meshObject->SetName(filepath.c_str());
@@ -338,25 +359,45 @@ public:
 			return ret;
 		}
 
-		auto pColladaImporter = ColladaImporter::Create();
-		ColladaImporter::ImportOptions option;
-		option.mMergeMaterialGroups = desc.mergeMaterialGroups;
-		option.mOppositeCull = desc.oppositeCull;
-		option.mSwapYZ = desc.yzSwap;
-		option.mUseIndexBuffer = desc.useIndexBuffer;
-		option.mUseMeshGroup = false;
-		pColladaImporter->ImportCollada(filepath.c_str(), option);
 		auto& fractureObjects = mFractureObjects[filepathKey];
-		auto meshIt = pColladaImporter->GetMeshIterator();
-		if (!meshIt.HasMoreElement()){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load fracture mehses(%s)", daeFilePath).c_str());
+		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmeshes");
+		std::vector<collada::MeshPtr> meshes;
+		FileSystem::Open file(fbmesh_path.c_str(), "rb");
+		if (file.IsOpen()) {
+			auto& data = *file.GetBinaryData();
+			typedef boost::iostreams::basic_array_source<char> Device;
+			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+			meshes = load_meshes(std::istream(&buffer), fbmesh_path.c_str(), desc);
 		}
-		while (meshIt.HasMoreElement()){
-			auto meshObject = ConvertMeshData(meshIt.GetNext().second, daeFilePath, desc.generateTangent, desc.keepMeshData);
-			if (meshObject){
+		if (meshes.empty()) {
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(info) %s not found", fbmesh_path.c_str()).c_str());
+
+			auto pColladaImporter = ColladaImporter::Create();
+			ColladaImporter::ImportOptions option;
+			option.mMergeMaterialGroups = desc.mergeMaterialGroups;
+			option.mOppositeCull = desc.oppositeCull;
+			option.mSwapYZ = desc.yzSwap;
+			option.mUseIndexBuffer = desc.useIndexBuffer;
+			option.mUseMeshGroup = false;
+			pColladaImporter->ImportCollada(filepath.c_str(), option);
+			auto num = pColladaImporter->GetNumMeshes();
+			meshes.reserve(num);
+			auto meshIt = pColladaImporter->GetMeshIterator();
+			if (!meshIt.HasMoreElement()) {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load fracture mehses(%s)", daeFilePath).c_str());
+			}
+			while (meshIt.HasMoreElement()) {
+				meshes.push_back(meshIt.GetNext().second);				
+			}
+		}
+		for (auto& mesh : meshes) {
+			auto meshObject = ConvertMeshData(mesh, daeFilePath, desc.generateTangent, desc.keepMeshData);
+			if (meshObject) {
 				fractureObjects.push_back(meshObject);
 			}
 		}
+
 		for (auto mesh : fractureObjects){
 			ret.push_back(mesh->Clone());
 		}
@@ -370,7 +411,7 @@ public:
 		}
 		std::string filepathKey(name);
 		ToLowerCase(filepathKey);
-		auto it = mMeshObjects.Find(filepathKey);
+		auto it = mMeshObjects.find(filepathKey);
 		if (it != mMeshObjects.end()){
 			return it->second.mObject;
 		}
@@ -403,7 +444,7 @@ public:
 			MeshCameras cameras;
 			for (auto& it : groupData->mCameraInfo){
 				MeshCamera cam = ConvertCollada(it.second);
-				cameras.Insert(std::make_pair(it.first, cam));
+				cameras.insert(std::make_pair(it.first, cam));
 			}
 			meshGroup->SetMeshCameras(cameras);
 		}
@@ -427,22 +468,35 @@ public:
 		std::string filepathKey = filepath;
 		ToLowerCase(filepathKey);
 
-		auto it = mMeshGroups.Find(filepathKey);
+		auto it = mMeshGroups.find(filepathKey);
 		if (it != mMeshGroups.end()){
 			it->second.mNumCloned++;
 			return it->second.mObject->Clone();
 		}
 
-		auto pColladaImporter = ColladaImporter::Create();
-		ColladaImporter::ImportOptions option;
-		option.mMergeMaterialGroups = desc.mergeMaterialGroups;
-		option.mOppositeCull = desc.oppositeCull;
-		option.mSwapYZ = desc.yzSwap;
-		option.mUseIndexBuffer = desc.useIndexBuffer;
-		option.mUseMeshGroup = true;
-		pColladaImporter->ImportCollada(filepath.c_str(), option);
-		auto meshData = pColladaImporter->GetMeshGroup();
-		auto meshGroup = ConvertMeshGroupData(meshData, daeFilePath, desc.generateTangent, desc.keepMeshData);
+		collada::MeshGroupPtr compiled_mesh;
+		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmesh_group");		
+		FileSystem::Open file(fbmesh_path.c_str(), "rb");
+		if (file.IsOpen()) {
+			auto& data = *file.GetBinaryData();
+			typedef boost::iostreams::basic_array_source<char> Device;
+			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+			compiled_mesh = load_mesh_group(std::istream(&buffer), fbmesh_path.c_str(), desc);
+		}
+		if (!compiled_mesh) {
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(info) %s does not exist.", fbmesh_path.c_str()).c_str());
+			auto pColladaImporter = ColladaImporter::Create();
+			ColladaImporter::ImportOptions option;
+			option.mMergeMaterialGroups = desc.mergeMaterialGroups;
+			option.mOppositeCull = desc.oppositeCull;
+			option.mSwapYZ = desc.yzSwap;
+			option.mUseIndexBuffer = desc.useIndexBuffer;
+			option.mUseMeshGroup = true;
+			pColladaImporter->ImportCollada(filepath.c_str(), option);
+			compiled_mesh = pColladaImporter->GetMeshGroup();
+		}
+		auto meshGroup = ConvertMeshGroupData(compiled_mesh, daeFilePath, desc.generateTangent, desc.keepMeshData);
 		if (meshGroup)
 		{
 			meshGroup->SetName(filepath.c_str());

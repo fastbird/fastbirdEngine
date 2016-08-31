@@ -615,17 +615,89 @@ public:
 		return mMusicPlayer->IsPlaying();
 	}
 
-	void SetMasterGain(float gain){
+	void SetMasterGain(float gain, bool writeOptions){
 		mAudioManager->SetMasterGain(gain);
+		VectorMap<std::string, std::string> options;
+		options["a_MasterGain"] = FormatString("%.2f", gain);
+		if (writeOptions)
+			WriteOptions("configEngine.lua", options);
 	}
 
-	void SetMusicGain(float gain){
+	float GetMasterGain() const {
+		return mAudioManager->GetMasterGain();
+	}
+
+	void SetMusicGain(float gain, bool writeOptions){
 		mMusicPlayer->SetGain(gain);
+		VectorMap<std::string, std::string> options;
+		options["a_MusicGain"] = FormatString("%.2f", gain);
+		if (writeOptions)
+			WriteOptions("configEngine.lua", options);
+	}
+
+	float GetMusicGain() const {
+		return mMusicPlayer->GetGain();
+	}
+
+	void SetSoundGain(float gain, bool writeOptions) {
+		mAudioManager->SetSoundGain(gain);
+		VectorMap<std::string, std::string> options;
+		options["a_SoundGain"] = FormatString("%.2f", gain);
+		if (writeOptions)
+			WriteOptions("configEngine.lua", options);
+	}
+
+	float GetSoundGain() const {
+		return mAudioManager->GetSoundGain();
 	}
 
 	void SetEnabled(bool enabled){
 		mAudioManager->SetEnabled(enabled);
 		mMusicPlayer->SetEnabled(enabled);
+	}
+
+	void WriteOptions(const char* filename, const OptionsData& newdata) {
+		FILE* file = 0;
+		if (!FileSystem::Exists(filename)) {
+			std::ofstream file(filename);
+		}
+		auto err = fopen_s(&file, filename, "r");
+		if (err) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot open the file %s", filename).c_str());
+			return;
+		}
+		std::vector<std::string> mData;
+		OptionsData unprocessed = newdata;
+		char buf[512];
+		while (fgets(buf, 512, file)) {
+			mData.push_back(std::string(buf));
+			if (mData.back().find("--") == std::string::npos) {
+				for (auto& it : newdata) {
+					if (mData.back().find(it.first) != std::string::npos) {
+						mData.back() = FormatString("%s = %s\n", it.first.c_str(), it.second.c_str());
+						auto delIt = unprocessed.find(it.first);
+						unprocessed.erase(delIt);
+						break;
+					}
+				}
+			}
+		}
+		fclose(file);
+
+		err = fopen_s(&file, filename, "w");
+		if (err) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot write the file %s", filename).c_str());
+			return;
+		}
+		for (auto& it : mData) {
+			fputs(it.c_str(), file);
+		}
+		for (auto& it : unprocessed) {
+			fputs(FormatString("%s = %s\n", it.first.c_str(), it.second.c_str()).c_str(), file);
+		}
+		fclose(file);
 	}
 };
 HWindow EngineFacade::Impl::MainWindowHandle = INVALID_HWND;
@@ -1002,6 +1074,11 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 
 		unsigned ret = GetRawInputData((HRAWINPUT)lp, RID_INPUT,
 			lpb, &dwSize, sizeof(RAWINPUTHEADER));
+		if (dwSize > 40) {
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(error) Detected bigger raw input data size: %d, currently buffer size is only "
+				"40 bytes", dwSize).c_str());
+		}
 
 		RAWINPUT* raw = (RAWINPUT*)lpb;
 		if (InputManager::HasInstance()){
@@ -1389,14 +1466,34 @@ bool EngineFacade::IsMusicPlaying() const{
 	return mImpl->IsMusicPlaying();
 }
 
-void EngineFacade::SetMasterGain(float gain){
-	mImpl->SetMasterGain(gain);
+void EngineFacade::SetMasterGain(float gain, bool writeOptions){
+	mImpl->SetMasterGain(gain, writeOptions);
 }
 
-void EngineFacade::SetMusicGain(float gain){
-	mImpl->SetMusicGain(gain);
+float EngineFacade::GetMasterGain() const {
+	return mImpl->GetMasterGain();
 }
 
-void EngineFacade::SetEnabled(bool enabled){
-	mImpl->SetEnabled(enabled);
+void EngineFacade::SetMusicGain(float gain, bool writeOptions){
+	mImpl->SetMusicGain(gain, writeOptions);
+}
+
+float EngineFacade::GetMusicGain() const {
+	return mImpl->GetMusicGain();
+}
+
+void EngineFacade::SetSoundGain(float gain, bool writeOptions) {
+	mImpl->SetSoundGain(gain, writeOptions);
+}
+
+float EngineFacade::GetSoundGain() const {
+	return mImpl->GetSoundGain();
+}
+
+//void EngineFacade::SetEnabled(bool enabled){
+//	mImpl->SetEnabled(enabled);
+//}
+
+void EngineFacade::WriteOptions(const char* filename, const OptionsData& newdata) {
+	mImpl->WriteOptions(filename, newdata);
 }

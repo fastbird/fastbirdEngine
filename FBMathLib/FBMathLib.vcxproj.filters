@@ -14,7 +14,6 @@
     <ClCompile Include="GeomUtils.cpp" />
     <ClCompile Include="Mat33.cpp" />
     <ClCompile Include="Mat44.cpp" />
-    <ClCompile Include="MurmurHash.cpp" />
     <ClCompile Include="NoiseGen.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Quat.cpp" />
@@ -45,7 +44,6 @@
     <ClInclude Include="Mat33.h" />
     <ClInclude Include="Mat44.h" />
     <ClInclude Include="MathDefines.h" />
-    <ClInclude Include="MurmurHash.h" />
     <ClInclude Include="NoiseGen.h" />
     <ClInclude Include="OBB.h" />
     <ClInclude Include="Plane.h" />

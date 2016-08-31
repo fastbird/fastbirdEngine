@@ -1710,6 +1710,28 @@ namespace tinyxml2
 		}
 	}
 
+	std::string XMLDocument::GetErrorString() const {
+		std::string strString;
+		if (errorID) {
+			static const int LEN = 50;
+			char buf1[LEN] = { 0 };
+			char buf2[LEN] = { 0 };
+
+			if (errorStr1) {
+				TIXML_SNPRINTF(buf1, LEN, "%s", errorStr1);
+			}
+			if (errorStr2) {
+				TIXML_SNPRINTF(buf2, LEN, "%s", errorStr2);
+			}
+
+			char buf[512];
+			sprintf_s(buf, "XMLDocument error id=%d str1=%s str2=%s\n",
+				errorID, buf1, buf2);
+			return std::string(buf);
+		}
+		return{};
+	}
+
 
 	XMLPrinter::XMLPrinter( FILE* file, bool compact ) :
 		elementJustOpened( false ),

@@ -24,7 +24,7 @@
  THE SOFTWARE.
  -----------------------------------------------------------------------------
 */
-
+#pragma comment(lib, "zdll")
 #include "FBCommonHeaders/platform.h"
 #if defined(_PLATFORM_WINDOWS_) 
 	#define FB_DLL_FILESYSTEM __declspec(dllexport)

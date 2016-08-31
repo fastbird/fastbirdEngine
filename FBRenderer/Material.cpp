@@ -34,7 +34,6 @@
 #include "Texture.h"
 #include "RenderTarget.h"
 #include "EssentialEngineData/shaders/Constants.h"
-#include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/CowPtr.h"
 #include "FBDebugLib/DebugLib.h"
 #include "FBMathLib/ColorRamp.h"
@@ -217,34 +216,31 @@ public:
 		if (!filepath)
 			return false;
 		mUniqueData->mName = filepath;
-		tinyxml2::XMLDocument doc;
-		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(filepath);
-		doc.LoadFile(resourcePath.c_str());
-		if (doc.Error())
+		auto pdoc = FileSystem::LoadXml(filepath);		
+		if (pdoc->Error())
 		{			
-			if (doc.ErrorID() == tinyxml2::XML_ERROR_FILE_NOT_FOUND)
+			if (pdoc->ErrorID() == tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Material(%s) not found.", filepath).c_str());
 			}
 			else{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to load a Material(%s)", filepath).c_str());
-				const char* errMsg = doc.GetErrorStr1();
+				const char* errMsg = pdoc->GetErrorStr1();
 				if (errMsg)
 					Logger::Log("\t%s\n", errMsg);
-				errMsg = doc.GetErrorStr2();
+				errMsg = pdoc->GetErrorStr2();
 				if (errMsg)
 					Logger::Log("\t%s\n", errMsg);
 			}			
-			doc.LoadFile(FileSystem::GetResourcePathIfPathNotExists(
-				"EssentialEngineData/materials/missing.material").c_str());
-			if (doc.Error())
+			pdoc = FileSystem::LoadXml("EssentialEngineData/materials/missing.material");									
+			if (pdoc->Error())
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, "Loading the fallback material is also failed.");
 				return false;
 			}
 		}
 
-		tinyxml2::XMLElement* pRoot = doc.FirstChildElement("Material");
+		tinyxml2::XMLElement* pRoot = pdoc->FirstChildElement("Material");
 		if (!pRoot)
 		{
 			assert(0);
@@ -258,21 +254,21 @@ public:
 		const char* sz;
 		sz = elem->Attribute("StencilPassOp");
 		if (sz){
-			desc.StencilPassOp = StencilOpFromString(sz);
+			desc.SetStencilPassOp(StencilOpFromString(sz));
 		}
 		sz = elem->Attribute("StencilFailOp");
 		if (sz){
-			desc.StencilFailOp = StencilOpFromString(sz);
+			desc.SetStencilFailOp(StencilOpFromString(sz));
 		}
 
 		sz = elem->Attribute("StencilDepthFailOp");
 		if (sz) {
-			desc.StencilDepthFailOp = StencilOpFromString(sz);
+			desc.SetStencilDepthFailOp(StencilOpFromString(sz));
 		}
 
 		sz = elem->Attribute("StencilFunc");
 		if (sz){
-			desc.StencilFunc = ComparisonFuncFromString(sz);
+			desc.SetStencilFunc(ComparisonFuncFromString(sz));
 		}
 	}
 
@@ -383,15 +379,15 @@ public:
 		{
 			sz = depthDescElem->Attribute("DepthEnable");
 			if (sz)
-				ddesc.DepthEnable = StringConverter::ParseBool(sz);
+				ddesc.SetDepthEnable(StringConverter::ParseBool(sz));
 
 			sz = depthDescElem->Attribute("DepthWriteMask");
 			if (sz)
-				ddesc.DepthWriteMask = DepthWriteMaskFromString(sz);
+				ddesc.SetDepthWriteMask(DepthWriteMaskFromString(sz));
 
 			sz = depthDescElem->Attribute("DepthFunc");
 			if (sz)
-				ddesc.DepthFunc = ComparisonFuncFromString(sz);
+				ddesc.SetDepthFunc(ComparisonFuncFromString(sz));
 
 			sz = depthDescElem->Attribute("ResetAtUnbind");
 			if (sz) {
@@ -400,30 +396,30 @@ public:
 
 			sz = depthDescElem->Attribute("StencilEnable");
 			if (sz) {
-				ddesc.StencilEnable = StringConverter::ParseBool(sz);
+				ddesc.SetStencilEnable(StringConverter::ParseBool(sz));
 			}
 
 			sz = depthDescElem->Attribute("StencilReadMask");
 			if (sz) {
-				ddesc.StencilReadMask = StringConverter::ParseInt(sz);
+				ddesc.SetStencilReadMask( StringConverter::ParseInt(sz));
 			}
 
 			sz = depthDescElem->Attribute("StencilWriteMask");
 			if (sz) {
-				ddesc.StencilWriteMask = StringConverter::ParseInt(sz);
+				ddesc.SetStencilWriteMask(StringConverter::ParseInt(sz));
 			}
 			auto frontFaceElem = depthDescElem->FirstChildElement("FrontFace");
 			if (frontFaceElem) {
-				ParseDepthStencilFace(frontFaceElem, ddesc.FrontFace);
+				ParseDepthStencilFace(frontFaceElem, ddesc.GetFrontFace());
 			}
 			auto backFaceElem = depthDescElem->FirstChildElement("BackFace");
 			if (backFaceElem) {
-				ParseDepthStencilFace(backFaceElem, ddesc.BackFace);
+				ParseDepthStencilFace(backFaceElem, ddesc.GetBackFace());
 			}			
 		}
 		else
 		{
-			ddesc.DepthWriteMask = renderStatesData->mTransparent ? DEPTH_WRITE_MASK_ZERO : DEPTH_WRITE_MASK_ALL;
+			ddesc.SetDepthWriteMask(renderStatesData->mTransparent ? DEPTH_WRITE_MASK_ZERO : DEPTH_WRITE_MASK_ALL);
 		}
 		renderStates->CreateDepthStencilState(ddesc);
 
@@ -436,27 +432,27 @@ public:
 		{
 			sz = rasterizerDescElem->Attribute("FillMode");
 			if (sz)
-				rdesc.FillMode = FillModeFromString(sz);
+				rdesc.SetFillMode(FillModeFromString(sz));
 
 			sz = rasterizerDescElem->Attribute("CullMode");
 			if (sz)
-				rdesc.CullMode = CullModeFromString(sz);
+				rdesc.SetCullMode(CullModeFromString(sz));
 
 			sz = rasterizerDescElem->Attribute("ScissorEnable");
 			if (sz)
-				rdesc.ScissorEnable = StringConverter::ParseBool(sz);
+				rdesc.SetScissorEnable(StringConverter::ParseBool(sz));
 
 			sz = rasterizerDescElem->Attribute("DepthBias");
 			if (sz)
-				rdesc.DepthBias = StringConverter::ParseInt(sz);
+				rdesc.SetDepthBias(StringConverter::ParseInt(sz));
 
 			sz = rasterizerDescElem->Attribute("SlopeScaledDepthBias");
 			if (sz)
-				rdesc.SlopeScaledDepthBias = StringConverter::ParseReal(sz);
+				rdesc.SetSlopeScaledDepthBias(StringConverter::ParseReal(sz));
 
 			sz = rasterizerDescElem->Attribute("FrontCounterClockwise");
 			if (sz)
-				rdesc.FrontCounterClockwise = StringConverter::ParseBool(sz);
+				rdesc.SetFrontCounterClockwise(StringConverter::ParseBool(sz));
 
 			sz = rasterizerDescElem->Attribute("ResetAtUnbind");
 			if (sz) {
@@ -465,7 +461,7 @@ public:
 		}
 		else
 		{
-			rdesc.CullMode = renderStatesData->mDoubleSided ? CULL_MODE_NONE : CULL_MODE_BACK;
+			rdesc.SetCullMode(renderStatesData->mDoubleSided ? CULL_MODE_NONE : CULL_MODE_BACK);
 		}
 		renderStates->CreateRasterizerState(rdesc);
 
@@ -519,7 +515,7 @@ public:
 				if (szVector)
 				{
 					Vec4 v(szVector);
-					materialData->mShaderConstants.Insert(Parameters::value_type(i++, v));
+					materialData->mShaderConstants.insert(Parameters::value_type(i++, v));
 				}
 				pElem = pElem->NextSiblingElement();
 			}
@@ -571,11 +567,11 @@ public:
 					const char* szShader = pTexElem->Attribute("shader");
 					shader = BindingShaderFromString(szShader);
 					const char* szAddressU = pTexElem->Attribute("AddressU");
-					samplerDesc.AddressU = AddressModeFromString(szAddressU);
+					samplerDesc.SetAddressU(AddressModeFromString(szAddressU));
 					const char* szAddressV = pTexElem->Attribute("AddressV");
-					samplerDesc.AddressV = AddressModeFromString(szAddressV);
+					samplerDesc.SetAddressV(AddressModeFromString(szAddressV));
 					const char* szFilter = pTexElem->Attribute("Filter");
-					samplerDesc.Filter = FilterFromString(szFilter);
+					samplerDesc.SetFilter(FilterFromString(szFilter));
 					TexturePtr pTextureInTheSlot;
 					const char* szType = pTexElem->Attribute("type");
 					int texture_type = TEXTURE_TYPE_DEFAULT;
@@ -897,7 +893,7 @@ public:
 	TexturePtr GetTexture(SHADER_TYPE shader, int slot) const
 	{
 		TextureBinding binding{ shader, slot };
-		auto it = mMaterialData->mTextureByBinding.Find(binding);
+		auto it = mMaterialData->mTextureByBinding.find(binding);
 		if (it != mMaterialData->mTextureByBinding.end()){
 			return it->second;
 		}
@@ -991,7 +987,7 @@ public:
 
 	void RemoveTexture(SHADER_TYPE shader, int slot)
 	{
-		auto it = mMaterialData->mTextureByBinding.Find({ shader, slot });
+		auto it = mMaterialData->mTextureByBinding.find({ shader, slot });
 		if (it != mMaterialData->mTextureByBinding.end()){
 			RemoveTexture(it->second);
 			return;
@@ -1171,7 +1167,7 @@ public:
 	const Vec4f& GetShaderParameter(unsigned index) const
 	{
 		auto& params = mMaterialData->mShaderConstants;
-		auto it = params.Find(index);
+		auto it = params.find(index);
 		if (it == params.end())
 		{
 			return Vec4f::ZERO;
@@ -1197,7 +1193,7 @@ public:
 	}
 
 	bool IsUsingMaterialParameter(unsigned index) const{
-		auto it = mMaterialData->mShaderConstants.Find(index);
+		auto it = mMaterialData->mShaderConstants.find(index);
 		return it != mMaterialData->mShaderConstants.end();
 	}
 
@@ -1479,7 +1475,7 @@ public:
 			return false;
 		}
 		TextureBinding binding{ shader, slot };
-		auto it = mMaterialData->mTextureByBinding.Find(binding);
+		auto it = mMaterialData->mTextureByBinding.find(binding);
 		if (it != mMaterialData->mTextureByBinding.end()){
 			outTextureInTheSlot = it->second;
 		}		

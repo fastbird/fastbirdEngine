@@ -50,8 +50,9 @@
 #include "StarDef.h"
 #include "CascadedShadowsManager.h"
 #include "LuaFunctions.h"
+#include "RendererKeys.h"
 #include "FBCommonHeaders/SpinLock.h"
-#include "FBMathLib/MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 #include "FBMathLib/Frustum.h"
 #include "FBConsole/Console.h"
 #include "EssentialEngineData/shaders/Constants.h"
@@ -118,9 +119,9 @@ public:
 	IPlatformRendererPtr mNullRenderer;
 	
 
-	VectorMap<HWindowId, HWindow> mWindowHandles;
-	VectorMap<HWindow, HWindowId> mWindowIds;
-	VectorMap<HWindowId, Vec2I> mWindowSizes;
+	std::unordered_map<HWindowId, HWindow> mWindowHandles;
+	std::unordered_map<HWindow, HWindowId> mWindowIds;
+	std::unordered_map<HWindowId, Vec2I> mWindowSizes;
 	HWindowId mMainWindowId;	
 	VectorMap<HWindowId, RenderTargetPtr> mWindowRenderTargets;
 	RenderTargetPtr mCurrentRenderTarget;
@@ -142,7 +143,7 @@ public:
 	CameraPtr mCameraBackup;
 	CameraPtr mOverridingCamera;
 	CascadedShadowsManagerPtr mShadowManager;
-	VectorMap<std::string, TexturePtr> mTexturesReferenceKeeper;
+	std::unordered_map<std::string, TexturePtr> mTexturesReferenceKeeper;
 	Mat44 mScreenToNDCMatrix;
 	OBJECT_CONSTANTS mObjectConstants;
 	CameraPtr mAxisDrawingCamera;
@@ -187,7 +188,7 @@ public:
 	TexturePtr mEnvironmentTexture;
 	TexturePtr mEnvironmentTextureOverride;
 	bool mGenerateRadianceCoef;
-	VectorMap<SystemTextures::Enum, std::vector< TextureBinding > > mSystemTextureBindings;
+	std::unordered_map<SystemTextures::Enum, std::vector< TextureBinding > > mSystemTextureBindings;
 	FRAME_CONSTANTS			mFrameConstants;
 	CAMERA_CONSTANTS		mCameraConstants;
 	RENDERTARGET_CONSTANTS	mRenderTargetConstants;
@@ -364,9 +365,9 @@ public:
 		IPlatformTexturePtr platformColorTexture;
 		IPlatformTexturePtr platformDepthTexture;
 		
-		GetPlatformRenderer().InitCanvas(CanvasInitInfo(id, window, width, height, 0, 
-			PIXEL_FORMAT_R8G8B8A8_UNORM, PIXEL_FORMAT_D24_UNORM_S8_UINT)
-			, platformColorTexture, platformDepthTexture);
+		CanvasInitInfo ci(id, window, width, height, 0,
+			PIXEL_FORMAT_R8G8B8A8_UNORM, PIXEL_FORMAT_D24_UNORM_S8_UINT);
+		GetPlatformRenderer().InitCanvas(ci, platformColorTexture, platformDepthTexture);
 
 		if (platformColorTexture && platformDepthTexture){
 			RenderTargetParam param;
@@ -650,7 +651,7 @@ public:
 	}
 
 	void DeinitCanvas(HWindowId id){
-		auto it = mWindowHandles.Find(id);
+		auto it = mWindowHandles.find(id);
 		if (it == mWindowHandles.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find the window.");
 			return;
@@ -658,10 +659,10 @@ public:
 		HWindow hwnd = it->second;
 		GetPlatformRenderer().DeinitCanvas(id, it->second);
 		mWindowHandles.erase(it);
-		auto itId = mWindowIds.Find(hwnd);
+		auto itId = mWindowIds.find(hwnd);
 		assert(itId != mWindowIds.end());
 		mWindowIds.erase(itId);
-		auto itRt = mWindowRenderTargets.Find(id);
+		auto itRt = mWindowRenderTargets.find(id);
 		assert(itRt != mWindowRenderTargets.end());
 		mWindowRenderTargets.erase(itRt);
 	}
@@ -1000,78 +1001,11 @@ public:
 		return indexBuffer;
 	}
 	
-	struct PlatformShaderKey {
-	private:
-		SHADER_TYPE mShader;
-		std::string mFilepath;
-		SHADER_DEFINES mDefines;
-		size_t mHash;
+	
 
-	public:
-		PlatformShaderKey(const char* path, SHADER_TYPE shader, const SHADER_DEFINES& defines)
-			: mFilepath(path)
-			, mShader(shader)
-			, mDefines(defines)
-		{
-			std::sort(mDefines.begin(), mDefines.end());
-			mHash = std::hash<SHADER_TYPE>()(mShader);
-			hash_combine(mHash, std::hash<std::string>()(mFilepath));
-			hash_combine(mHash, fb::Hash(mDefines));
-		}
-
-		size_t Hash() {
-			return mHash;
-		}
-
-		SHADER_TYPE GetShaderType() const {
-			return mShader;
-		}
-		const char* GetFilePath() const {
-			return mFilepath.c_str();
-		}
-
-		const SHADER_DEFINES& GetShaderDefines() const {
-			return mDefines;
-		}
-
-		bool operator < (const PlatformShaderKey& other) const {
-			return mHash < other.mHash;
-		}
-
-		bool operator == (const PlatformShaderKey& other) const {
-			return mHash == other.mHash;
-		}
-	};
-
-	struct ShaderKey {
-		int mShaderTypes;
-		std::string mFilepath;
-		SHADER_DEFINES mDefines;
-		size_t mHash;
-
-		ShaderKey(const char* path, int shaderTypes, const SHADER_DEFINES& defines)
-			: mFilepath(path)
-			, mShaderTypes(shaderTypes)
-			, mDefines(defines)
-		{
-			std::sort(mDefines.begin(), mDefines.end());
-
-			mHash = std::hash<int>()(mShaderTypes);
-			hash_combine(mHash, std::hash<std::string>()(mFilepath));
-			hash_combine(mHash, fb::Hash(mDefines));
-		}
-		bool operator < (const ShaderKey& other) const {
-			return mHash < other.mHash;
-		}
-
-		bool operator == (const ShaderKey& other) const {
-			return mHash == other.mHash;
-		}
-	};
-
-	VectorMap<PlatformShaderKey, IPlatformShaderWeakPtr> sPlatformShaders;
+	std::unordered_map<PlatformShaderKey, IPlatformShaderWeakPtr> sPlatformShaders;
 	IPlatformShaderPtr FindPlatformShader(const PlatformShaderKey& key) {
-		auto it = sPlatformShaders.Find(key);
+		auto it = sPlatformShaders.find(key);
 		if (it != sPlatformShaders.end()) {
 			auto platformShader = it->second.lock();
 			if (platformShader) {
@@ -1081,9 +1015,9 @@ public:
 		return 0;
 	}
 
-	VectorMap<ShaderKey, ShaderWeakPtr> sAllShaders;
+	std::unordered_map<ShaderKey, ShaderWeakPtr> sAllShaders;
 	ShaderPtr FindShader(const ShaderKey& key) {
-		auto it = sAllShaders.Find(key);
+		auto it = sAllShaders.find(key);
 		if (it != sAllShaders.end()) {
 			auto shader = it->second.lock();
 			if (shader) {
@@ -1349,7 +1283,7 @@ public:
 		return false;
 	}
 	
-	VectorMap<unsigned, InputLayoutWeakPtr> sInputLayouts;
+	std::unordered_map<unsigned, InputLayoutWeakPtr> sInputLayouts;
 	// use this if you are sure there is instance of the descs.
 	InputLayoutPtr CreateInputLayout(const INPUT_ELEMENT_DESCS& descs, ShaderPtr shader){
 		if (!shader || descs.empty()){
@@ -1368,7 +1302,7 @@ public:
 		memcpy(&temp[0], &descs[0], sizeof(descs));
 		memcpy(&temp[0] + descsSize, data, size);
 		unsigned key = murmur3_32((const char*)&temp[0], totalSize, murmurSeed);
-		auto it = sInputLayouts.Find(key);
+		auto it = sInputLayouts.find(key);
 		if (it != sInputLayouts.end()){
 			auto inputLayout = it->second.lock();
 			if (inputLayout)
@@ -1388,9 +1322,9 @@ public:
 		return CreateInputLayout(desc, shader);
 	}
 
-	VectorMap<RASTERIZER_DESC, RasterizerStateWeakPtr> sRasterizerStates;
+	std::unordered_map<RASTERIZER_DESC, RasterizerStateWeakPtr> sRasterizerStates;
 	RasterizerStatePtr CreateRasterizerState(const RASTERIZER_DESC& desc){
-		auto it = sRasterizerStates.Find(desc);
+		auto it = sRasterizerStates.find(desc);
 		if (it != sRasterizerStates.end()){
 			auto state = it->second.lock();
 			if (state){
@@ -1406,7 +1340,7 @@ public:
 
 	VectorMap<BLEND_DESC, BlendStateWeakPtr> sBlendStates;
 	BlendStatePtr CreateBlendState(const BLEND_DESC& desc){		
-		auto it = sBlendStates.Find(desc);
+		auto it = sBlendStates.find(desc);
 		if (it != sBlendStates.end()){
 			auto state = it->second.lock();
 			if (state){
@@ -1421,10 +1355,9 @@ public:
 		
 	}
 
-	VectorMap<DEPTH_STENCIL_DESC, DepthStencilStateWeakPtr> sDepthStates;
-	DepthStencilStatePtr CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){
-		desc.ComputeHash();
-		auto it = sDepthStates.Find(desc);
+	std::unordered_map<DEPTH_STENCIL_DESC, DepthStencilStateWeakPtr> sDepthStates;
+	DepthStencilStatePtr CreateDepthStencilState(const DEPTH_STENCIL_DESC& desc){		
+		auto it = sDepthStates.find(desc);
 		if (it != sDepthStates.end()){
 			auto state = it->second.lock();
 			if (state){
@@ -1438,9 +1371,9 @@ public:
 		return state;
 	}
 
-	VectorMap<SAMPLER_DESC, SamplerStateWeakPtr> sSamplerStates;
+	std::unordered_map<SAMPLER_DESC, SamplerStateWeakPtr> sSamplerStates;
 	SamplerStatePtr CreateSamplerState(const SAMPLER_DESC& desc){
-		auto it = sSamplerStates.Find(desc);
+		auto it = sSamplerStates.find(desc);
 		if (it != sSamplerStates.end()){
 			auto state = it->second.lock();
 			if (state){
@@ -1463,12 +1396,10 @@ public:
 			return it->second;
 		}
 
-		tinyxml2::XMLDocument doc;
-		auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(path);
-		doc.LoadFile(resourcePath.c_str());
-		if (doc.Error())
+		auto pdoc = FileSystem::LoadXml(path);		
+		if (pdoc->Error())
 		{
-			const char* errMsg = doc.GetErrorStr1();
+			const char* errMsg = pdoc->GetErrorStr1();
 			if (ValidCString(errMsg)){
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s(%s)", errMsg, path));
 			}
@@ -1478,7 +1409,7 @@ public:
 			return 0;
 		}
 
-		tinyxml2::XMLElement* pRoot = doc.FirstChildElement("TextureAtlas");
+		tinyxml2::XMLElement* pRoot = pdoc->FirstChildElement("TextureAtlas");
 		if (!pRoot)
 		{
 			return 0;
@@ -1561,13 +1492,13 @@ public:
 					Logger::Log(FB_ERROR_LOG_ARG, FormatString(
 						"TextureAtlas(%s) has size 0,0.", mTextureAtlas->GetPath()).c_str());
 				}
-				auto numRegions = mTextureAtlas->GetNumRegions();
-				for (size_t i = 0; i < numRegions; ++i) {
-					auto region = mTextureAtlas->GetRegion(i);
+				auto it = mTextureAtlas->GetIterator();
+				while (it.HasMoreElement()) {
+					auto region = it.GetNext().second;
 					assert(region);
 					region->mUVStart = region->mUVStart / textureSize;
 					region->mUVEnd = region->mUVEnd / textureSize;
-				}
+				}				
 			}
 		};
 		if (divideUVLater) {
@@ -1589,12 +1520,12 @@ public:
 
 	TexturePtr GetTemporalDepthBuffer(const Vec2I& size, const char* key){
 		TemporalDepthKey depthkey(size, key);
-		auto it = mTempDepthBuffers.Find(depthkey);
+		auto it = mTempDepthBuffers.find(depthkey);
 		if (it == mTempDepthBuffers.end())
 		{
 			auto depthBuffer = CreateTexture(0, size.x, size.y, PIXEL_FORMAT_D32_FLOAT, 1, BUFFER_USAGE_DEFAULT,
 				BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_DEPTH_STENCIL);
-			mTempDepthBuffers.Insert(std::make_pair(depthkey, depthBuffer));
+			mTempDepthBuffers.insert(std::make_pair(depthkey, depthBuffer));
 			return depthBuffer;
 		}
 		return it->second;
@@ -1730,7 +1661,12 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No ds texture bound.");
 			return;
 		}
-
+		for (auto it = mDepthStencilTextureOverride.begin(); it != mDepthStencilTextureOverride.end();) {
+			auto curIt = it++;
+			if (curIt->first.expired()) {
+				mDepthStencilTextureOverride.erase(curIt);
+			}
+		}
 		TexturePtr overridingDSTexture;
 		if (enable) {
 			auto it = mDepthStencilTextureOverride.find(mCurrentDSTexture);
@@ -1826,7 +1762,7 @@ public:
 
 	std::unordered_map<SystemTextures::Enum, TextureWeakPtr> sSystemTextures;
 	void SetSystemTexture(SystemTextures::Enum type, TexturePtr texture, int shader_type_mask = ~SHADER_TYPE_CS){
-		auto it = mSystemTextureBindings.Find(type);
+		auto it = mSystemTextureBindings.find(type);
 		if (it == mSystemTextureBindings.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find the binding information for the system texture(%d)", type).c_str());
 			return;
@@ -1904,7 +1840,7 @@ public:
 	}
 
 	const TextureBindings& GetSystemTextureBindings(SystemTextures::Enum type){
-		auto it = mSystemTextureBindings.Find(type);
+		auto it = mSystemTextureBindings.find(type);
 		if (it != mSystemTextureBindings.end())
 			return it->second;
 		static TextureBindings noBindingInfo;
@@ -2491,7 +2427,7 @@ public:
 	// GPU Manipulation
 	//-------------------------------------------------------------------
 	void SetClearColor(HWindowId id, const Color& color){
-		auto it = mWindowRenderTargets.Find(id);
+		auto it = mWindowRenderTargets.find(id);
 		if (it == mWindowRenderTargets.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find the render target.");
 			return;
@@ -2500,7 +2436,7 @@ public:
 	}
 
 	void SetClearDepthStencil(HWindowId id, Real z, UINT8 stencil){
-		auto it = mWindowRenderTargets.Find(id);
+		auto it = mWindowRenderTargets.find(id);
 		if (it == mWindowRenderTargets.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Cannot find the render target.");
 			return;
@@ -2576,7 +2512,12 @@ public:
 	void ChangeResolution(HWindow window, const Vec2I& resol){
 		if (resol == Vec2I::ZERO)
 			return;
-
+		auto handleId = GetWindowHandleId(window);
+		if (handleId == INVALID_HWND_ID)
+			return;
+		auto rt = GetRenderTarget(handleId);
+		if (!rt)
+			return;
 		if (window == GetMainWindowHandle()) {
 			mRendererOptions->r_resolution = resol;
 			mScreenToNDCMatrix = MakeOrthogonalMatrix(0, 0,
@@ -2585,8 +2526,8 @@ public:
 				0.f, 1.0f);			
 		}
 
-		auto handleId = GetWindowHandleId(window);
-		auto rt = GetRenderTarget(handleId);
+		
+		
 		if (!rt->GetRenderTargetTexture() || rt->GetRenderTargetTexture()->GetSize() == resol)
 			return;		
 		rt->RemoveTextures();
@@ -2601,7 +2542,8 @@ public:
 			rt->SetDepthTexture(CreateTexture(depth));			
 		}
 
-
+		mDepthStencilTextureOverride.clear();
+		rt->Bind();
 		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
 		for (auto it = observers.begin(); it != observers.end(); /**/){
 			IteratingWeakContainer(observers, it, observer);
@@ -2633,8 +2575,8 @@ public:
 	}
 
 	std::string GetScreenhotFolder(){
-		auto appData = FileSystem::GetAppDataFolder();
-		const char* screenShotFolder = "/ScreenShot/";
+		auto appData = FileSystem::GetMyDocumentGameFolder();
+		const char* screenShotFolder = "ScreenShot/";
 		auto screenShotFolderFull = FileSystem::ConcatPath(appData.c_str(), screenShotFolder);
 		return screenShotFolderFull;
 	}
@@ -2683,7 +2625,7 @@ public:
 	}
 
 	RenderTargetPtr GetMainRenderTarget() const{
-		auto it = mWindowRenderTargets.Find(mMainWindowId);
+		auto it = mWindowRenderTargets.find(mMainWindowId);
 		if (it == mWindowRenderTargets.end()){
 			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "No main window render target found.");
 			return 0;
@@ -2692,7 +2634,7 @@ public:
 	}
 
 	unsigned GetMainRenderTargetId() const{
-		auto it = mWindowRenderTargets.Find(mMainWindowId);
+		auto it = mWindowRenderTargets.find(mMainWindowId);
 		if (it == mWindowRenderTargets.end()){
 			Logger::Log(FB_FRAME_TIME, FB_ERROR_LOG_ARG, "No main window render target found.");
 			return -1;
@@ -3114,7 +3056,7 @@ public:
 		/*ZeroMemory( avColorWeight, sizeof(D3DXVECTOR4)*15 );
 		avColorWeight[7] = D3DXVECTOR4( 1, 1, 1, 1 );*/
 
-		return S_OK;
+		return true;
 	}
 
 	float GaussianDistribution(float x, float y, float rho)
@@ -3129,7 +3071,7 @@ public:
 
 	void GetSampleOffsets_GaussianBlur5x5(DWORD texWidth, DWORD texHeight, Vec4f** avTexCoordOffset, Vec4f** avSampleWeight, float fMultiplier){
 		assert(avTexCoordOffset && avSampleWeight);
-		auto it = mGauss5x5.Find(std::make_pair(texWidth, texHeight));
+		auto it = mGauss5x5.find(std::make_pair(texWidth, texHeight));
 		if (it == mGauss5x5.end())
 		{
 			float tu = 1.0f / (float)texWidth;
@@ -3169,7 +3111,7 @@ public:
 				weights[i] /= totalWeight;
 				weights[i] *= fMultiplier;
 			}
-			auto it = mGauss5x5.Insert(std::make_pair(std::make_pair(texWidth, texHeight), std::make_pair(offsets, weights)));
+			auto it = mGauss5x5.insert(std::make_pair(std::make_pair(texWidth, texHeight), std::make_pair(offsets, weights)));
 			*avTexCoordOffset = &(it->second.first[0]);
 			*avSampleWeight = &(it->second.second[0]);
 		}
@@ -3263,12 +3205,12 @@ public:
 		}
 		std::string filepathKey(filepath);
 		ToLowerCase(filepathKey);
-		auto it = mTexturesReferenceKeeper.Find(filepathKey);
+		auto it = mTexturesReferenceKeeper.find(filepathKey);
 		if (it != mTexturesReferenceKeeper.end())
 			return it->second;
 		auto texture = CreateTexture(filepath, option);
 		if (texture){
-			mTexturesReferenceKeeper.Insert(std::make_pair(filepathKey, texture));
+			mTexturesReferenceKeeper[filepathKey] =  texture;
 		}
 		return texture;
 	}
@@ -3337,7 +3279,7 @@ public:
 	}
 
 	RenderTargetPtr GetRenderTarget(HWindowId id) const{
-		auto it = mWindowRenderTargets.Find(id);
+		auto it = mWindowRenderTargets.find(id);
 		if (it != mWindowRenderTargets.end()){
 			return it->second;
 		}
@@ -3346,7 +3288,7 @@ public:
 	}
 
 	RenderTargetPtr GetRenderTarget(HWindow hwnd) const{
-		auto it = mWindowIds.Find(hwnd);
+		auto it = mWindowIds.find(hwnd);
 		if (it == mWindowIds.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "Failed to find window Id");
 			return 0;
@@ -3393,7 +3335,7 @@ public:
 	}
 
 	HWindow GetMainWindowHandle(){
-		auto it = mWindowHandles.Find(mMainWindowId);
+		auto it = mWindowHandles.find(mMainWindowId);
 		if (it != mWindowHandles.end())
 			return it->second;
 		Logger::Log(FB_ERROR_LOG_ARG, "Cannot find maint window handle.");
@@ -3405,7 +3347,7 @@ public:
 	}
 
 	HWindow GetWindowHandle(HWindowId windowId){
-		auto it = mWindowHandles.Find(windowId);
+		auto it = mWindowHandles.find(windowId);
 		if (it != mWindowHandles.end()){
 			return it->second;
 		}
@@ -3413,7 +3355,7 @@ public:
 	}
 
 	HWindowId GetWindowHandleId(HWindow window){
-		auto it = mWindowIds.Find(window);
+		auto it = mWindowIds.find(window);
 		if (it != mWindowIds.end()){
 			return it->second;
 		}
@@ -3421,7 +3363,7 @@ public:
 	}
 
 	Vec2I ToSreenPos(HWindowId id, const Vec3& ndcPos) const{
-		auto it = mWindowRenderTargets.Find(id);
+		auto it = mWindowRenderTargets.find(id);
 		if (it == mWindowRenderTargets.end())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Window id %u is not found.", id).c_str());			
@@ -3435,7 +3377,7 @@ public:
 	}
 
 	Vec2 ToNdcPos(HWindowId id, const Vec2I& screenPos) const{
-		auto it = mWindowRenderTargets.Find(id);
+		auto it = mWindowRenderTargets.find(id);
 		if (it == mWindowRenderTargets.end())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Window id %u is not found.", id).c_str());			

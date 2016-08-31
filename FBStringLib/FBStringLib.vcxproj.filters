@@ -5,11 +5,13 @@
     <ClCompile Include="StringConverter.cpp" />
     <ClCompile Include="BitManipulator.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="MurmurHash.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StringLib.h" />
     <ClInclude Include="StringConverter.h" />
     <ClInclude Include="BitManipulator.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="MurmurHash.h" />
   </ItemGroup>
 </Project>

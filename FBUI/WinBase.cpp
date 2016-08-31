@@ -915,16 +915,10 @@ void WinBase::OnMouseIn(IInputInjectorPtr injector, bool propergated){
 	}
 	mMouseIn = true;
 	assert(injector);
-	auto npos = injector->GetMouseNPos();
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_IN) && parent){
-		parent->OnMouseIn(injector);
-		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
-	}
-	else{
-		ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
-		TriggerRedraw();
-	}
+	auto npos = injector->GetMouseNPos();	
+	OnEvent(UIEvents::EVENT_MOUSE_IN);
+	ToolTipEvent(UIEvents::EVENT_MOUSE_IN, npos);
+	TriggerRedraw();
 }
 void WinBase::OnMouseOut(IInputInjectorPtr injector, bool propergated){
 	mMouseIn = false;
@@ -934,11 +928,8 @@ void WinBase::OnMouseOut(IInputInjectorPtr injector, bool propergated){
 	}
 	assert(injector);	
 	auto npos = injector->GetMouseNPos();
-	ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_OUT) && parent){
-		parent->OnMouseOut(injector);
-	}
+	ToolTipEvent(UIEvents::EVENT_MOUSE_OUT, npos);	
+	OnEvent(UIEvents::EVENT_MOUSE_OUT);
 	TriggerRedraw();
 	SetCursor(WinBase::sCursorArrow);
 }
@@ -950,13 +941,8 @@ void WinBase::OnMouseHover(IInputInjectorPtr injector, bool propergated){
 	assert(injector);
 	auto npos = injector->GetMouseNPos();
 	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_HOVER) && parent){
-		parent->OnMouseHover(injector);
-	}
-	else{
-		ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, npos);
-		TriggerRedraw();
-	}
+	OnEvent(UIEvents::EVENT_MOUSE_HOVER);
+	ToolTipEvent(UIEvents::EVENT_MOUSE_HOVER, npos);	
 }
 
 void WinBase::OnMouseDown(IInputInjectorPtr injector){
@@ -965,13 +951,18 @@ void WinBase::OnMouseDown(IInputInjectorPtr injector){
 		return;
 	}
 	assert(injector);
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_DOWN) && parent){
-		parent->OnMouseDown(injector);
+	OnEvent(UIEvents::EVENT_MOUSE_DOWN);	
+	TriggerRedraw();
+}
+
+void WinBase::OnMouseUp(IInputInjectorPtr injector) {
+	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone)
+	{
+		return;
 	}
-	else{
-		TriggerRedraw();
-	}
+	assert(injector);
+	OnEvent(UIEvents::EVENT_MOUSE_UP);
+	TriggerRedraw();
 }
 
 void WinBase::OnMouseClicked(IInputInjectorPtr injector){
@@ -979,23 +970,17 @@ void WinBase::OnMouseClicked(IInputInjectorPtr injector){
 	{
 		return;
 	}
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK) && parent){
-		parent->OnMouseClicked(injector);
+	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+	auto type = GetType();
+	bool invaliClickTime = type == ComponentType::DropDown ||
+		type == ComponentType::CheckBox;
+	if (invaliClickTime) {
+		injector->InvalidateClickTime();
 	}
-	else{
-		auto type = GetType();
-		bool invaliClickTime =			
-			type == ComponentType::DropDown ||
-			type == ComponentType::CheckBox;
-
-		if (invaliClickTime)
-			injector->InvalidateClickTime();
-		else
+	else {
 			injector->Invalidate(InputDevice::Mouse);
-		TriggerRedraw();
 	}
-
+	TriggerRedraw();
 }
 
 bool WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
@@ -1003,38 +988,27 @@ bool WinBase::OnMouseDoubleClicked(IInputInjectorPtr injector){
 	{
 		return false;
 	}
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK) ){
-		if (parent)
-			return parent->OnMouseDoubleClicked(injector);
-		return false;
+	bool processed = OnEvent(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK);
+	if (GetType() == ComponentType::Button){
+		injector->InvalidateClickTime();
 	}
-	else{		
-		if (GetType() == ComponentType::Button){
-			injector->InvalidateClickTime();
-		}
-		else{
+	else{
 			injector->Invalidate(InputDevice::Mouse);
-		}
-		
-		UIManager::GetInstance().CleanTooltip();
-		TriggerRedraw();
-		return true;
 	}
+	
+	UIManager::GetInstance().CleanTooltip();
+	TriggerRedraw();
+	return processed;
 }
 
 void WinBase::OnMouseRButtonClicked(IInputInjectorPtr injector){
 	if (!mEnable || mNoMouseEvent || mNoMouseEventAlone){
 		return;
 	}
-	auto parent = mParent.lock();
-	if (!OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK) && parent){
-		parent->OnMouseRButtonClicked(injector);
-	}
-	else{
-		injector->Invalidate(InputDevice::Mouse);
-		TriggerRedraw();
-	}
+	OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK);
+	injector->Invalidate(InputDevice::Mouse);
+
+	TriggerRedraw();
 }
 
 void WinBase::OnMouseDrag(IInputInjectorPtr injector){
@@ -1044,19 +1018,13 @@ void WinBase::OnMouseDrag(IInputInjectorPtr injector){
 	}
 	long x, y;
 	injector->GetAbsDeltaXY(x, y);	
-	auto parent = mParent.lock();
 	if (x != 0 || y != 0)
 	{
-		if (OnEvent(UIEvents::EVENT_MOUSE_DRAG))
-		{
-			injector->Invalidate(InputDevice::Mouse);
-		}
-		else if (mDragable != Vec2I::ZERO)
+		OnEvent(UIEvents::EVENT_MOUSE_DRAG);
+		injector->Invalidate(InputDevice::Mouse);		
+		if (mDragable != Vec2I::ZERO)
 		{
 			OnDrag(x, y);
-		}
-		else if (parent){
-			parent->OnMouseDrag(injector);
 		}
 		TriggerRedraw();
 	}
@@ -1068,7 +1036,8 @@ bool WinBase::OnInputFromHandler(IInputInjectorPtr injector)
 	if (!GetFocus())
 		return mMouseIn;
 
-	if (injector->IsValid(InputDevice::Keyboard) && UIManager::GetInstance().GetKeyboardFocusUI().get() == this)
+	if (injector->IsValid(InputDevice::Keyboard) && 
+		UIManager::GetInstance().GetKeyboardFocusUI().get() == this)
 	{
 
 		char c = (char)injector->GetChar();
@@ -1260,7 +1229,7 @@ int WinBase::GetTextEndPosLocal() const
 
 UIAnimationPtr WinBase::GetOrCreateUIAnimation(const char* name)
 {
-	auto itfind = mAnimations.Find(name);
+	auto itfind = mAnimations.find(name);
 	if (itfind == mAnimations.end())
 	{
 		mAnimations[name] = UIAnimation::Create();
@@ -1272,7 +1241,7 @@ UIAnimationPtr WinBase::GetOrCreateUIAnimation(const char* name)
 
 UIAnimationPtr WinBase::GetUIAnimation(const char* name)
 {
-	auto itfind = mAnimations.Find(name);
+	auto itfind = mAnimations.find(name);
 	if (itfind == mAnimations.end())
 	{
 		return 0;
@@ -1285,7 +1254,7 @@ void WinBase::SetUIAnimation(UIAnimationPtr anim)
 	const char* name = anim->GetName();
 	assert(name && strlen(name) != 0);
 
-	auto itfind = mAnimations.Find(name);
+	auto itfind = mAnimations.find(name);
 	if (itfind != mAnimations.end())
 	{
 		itfind->second = 0;		
@@ -3828,7 +3797,7 @@ void WinBase::SetEvent(UIEvents::Enum e, const char* luaFuncName){
 	{
 		if (strlen(luaFuncName) == 0){
 			UnregisterEventLuaFunc(e);
-			auto it = mEventFuncNames.Find(e);
+			auto it = mEventFuncNames.find(e);
 			if (it != mEventFuncNames.end()){
 				mEventFuncNames.erase(it);
 			}
@@ -3842,7 +3811,7 @@ void WinBase::SetEvent(UIEvents::Enum e, const char* luaFuncName){
 
 const char* WinBase::GetEvent(UIEvents::Enum e){
 	assert(e < UIEvents::EVENT_NUM);
-	auto it = mEventFuncNames.Find(e);
+	auto it = mEventFuncNames.find(e);
 	if (it != mEventFuncNames.end()){
 		return it->second.c_str();
 	}

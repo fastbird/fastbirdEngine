@@ -27,6 +27,10 @@
 
 #pragma once
 #include "FBCommonHeaders/platform.h"
+#include <boost/serialization/serialization.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/export.hpp>
 namespace fb{
 	class Transformation;
 	class Vec3;
@@ -48,6 +52,7 @@ namespace fb{
 			Y,
 			Z
 		};
+
 		struct Action
 		{			
 			std::string mName;
@@ -57,8 +62,15 @@ namespace fb{
 			bool mLoop;
 			const Vec3* mPosStartEnd[2];
 			const Quat* mRotStartEnd[2];
-
 			Action();
+
+		private:
+			friend class boost::serialization::access;
+			template<class Archive>
+			void serialize(Archive & ar, const unsigned int version) {
+				ar & mName & mStartTime & mEndTime & mLength & mLoop;
+			}
+			
 		};
 
 		void AddPosition(float time, float v, PosComp comp);
@@ -77,5 +89,16 @@ namespace fb{
 		const Action* GetAction(const char* name) const;
 
 
+	private:
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, unsigned int version);
+
+		template<>
+		void serialize<boost::archive::binary_oarchive>
+			(boost::archive::binary_oarchive &ar, unsigned int version);
+		template<>
+		void serialize<boost::archive::binary_iarchive>
+			(boost::archive::binary_iarchive &ar, unsigned int version);
 	};
 }

@@ -33,33 +33,34 @@ namespace fb
 {
 	void ConvertStructD3D11(D3D11_RASTERIZER_DESC& dest, const RASTERIZER_DESC& src)
 	{
-		dest.FillMode = ConvertEnumD3D11(src.FillMode);
-		dest.CullMode = ConvertEnumD3D11(src.CullMode);
-		dest.FrontCounterClockwise = src.FrontCounterClockwise;
-		dest.DepthBias = src.DepthBias;
-		dest.DepthBiasClamp = src.DepthBiasClamp;
-		dest.SlopeScaledDepthBias = src.SlopeScaledDepthBias;
-		dest.DepthClipEnable = src.DepthClipEnable;
-		dest.ScissorEnable = src.ScissorEnable;
-		dest.MultisampleEnable = src.MultisampleEnable;
-		dest.AntialiasedLineEnable = src.AntialiasedLineEnable;	
+		dest.FillMode = ConvertEnumD3D11(src.GetFillMode());
+		dest.CullMode = ConvertEnumD3D11(src.GetCullMode());
+		dest.FrontCounterClockwise = src.GetFrontCounterClockwise();
+		dest.DepthBias = src.GetDepthBias();
+		dest.DepthBiasClamp = src.GetDepthBiasClamp();
+		dest.SlopeScaledDepthBias = src.GetSlopeScaledDepthBias();
+		dest.DepthClipEnable = src.GetDepthClipEnable();
+		dest.ScissorEnable = src.GetScissorEnable();
+		dest.MultisampleEnable = src.GetMultisampleEnable();
+		dest.AntialiasedLineEnable = src.GetAntialiasedLineEnable();	
 	}
 
 	void ConvertStructD3D11(D3D11_SAMPLER_DESC& dest, const SAMPLER_DESC& src)
 	{
-		dest.Filter = ConvertEnumD3D11(src.Filter);
-		dest.AddressU = ConvertEnumD3D11(src.AddressU);
-		dest.AddressV = ConvertEnumD3D11(src.AddressV);
-		dest.AddressW = ConvertEnumD3D11(src.AddressW);
-		dest.MipLODBias = src.MipLODBias;
-		dest.MaxAnisotropy = src.MaxAnisotropy;
-		dest.ComparisonFunc = ConvertEnumD3D11(src.ComparisonFunc);
-		dest.BorderColor[0] = src.BorderColor[0];
-		dest.BorderColor[1] = src.BorderColor[1];
-		dest.BorderColor[2] = src.BorderColor[2];
-		dest.BorderColor[3] = src.BorderColor[3];
-		dest.MinLOD = src.MinLOD;
-		dest.MaxLOD = src.MaxLOD;
+		dest.Filter = ConvertEnumD3D11(src.GetFilter());
+		dest.AddressU = ConvertEnumD3D11(src.GetAddressU());
+		dest.AddressV = ConvertEnumD3D11(src.GetAddressV());
+		dest.AddressW = ConvertEnumD3D11(src.GetAddressW());
+		dest.MipLODBias = src.GetMipLODBias();
+		dest.MaxAnisotropy = src.GetMaxAnisotropy();
+		dest.ComparisonFunc = ConvertEnumD3D11(src.GetComparisonFunc());
+		auto borderColor = src.GetBorderColor();
+		dest.BorderColor[0] = borderColor[0];
+		dest.BorderColor[1] = borderColor[1];
+		dest.BorderColor[2] = borderColor[2];
+		dest.BorderColor[3] = borderColor[3];
+		dest.MinLOD = src.GetMinLOD();
+		dest.MaxLOD = src.GetMaxLOD();
 	}
 
 	void ConvertStructD3D11(D3D11_RENDER_TARGET_BLEND_DESC& dest, const RENDER_TARGET_BLEND_DESC& src)
@@ -86,22 +87,22 @@ namespace fb
 
 	void ConvertStructD3D11(D3D11_DEPTH_STENCILOP_DESC& desc, const DEPTH_STENCILOP_DESC& src)
 	{
-		desc.StencilFailOp = ConvertEnumD3D11(src.StencilFailOp);
-		desc.StencilDepthFailOp = ConvertEnumD3D11(src.StencilDepthFailOp);
-		desc.StencilPassOp = ConvertEnumD3D11(src.StencilPassOp);
-		desc.StencilFunc = ConvertEnumD3D11(src.StencilFunc);
+		desc.StencilFailOp = ConvertEnumD3D11(src.GetStencilFailOp());
+		desc.StencilDepthFailOp = ConvertEnumD3D11(src.GetStencilDepthFailOp());
+		desc.StencilPassOp = ConvertEnumD3D11(src.GetStencilPassOp());
+		desc.StencilFunc = ConvertEnumD3D11(src.GetStencilFunc());
 	}
 
 	void ConvertStructD3D11(D3D11_DEPTH_STENCIL_DESC& desc, const DEPTH_STENCIL_DESC& src)
 	{
-		desc.DepthEnable = src.DepthEnable;
-		desc.DepthWriteMask = ConvertEnumD3D11(src.DepthWriteMask);
-		desc.DepthFunc = ConvertEnumD3D11(src.DepthFunc);
-		desc.StencilEnable = src.StencilEnable;
-		desc.StencilReadMask = src.StencilReadMask;
-		desc.StencilWriteMask = src.StencilWriteMask;
-		ConvertStructD3D11(desc.FrontFace, src.FrontFace);
-		ConvertStructD3D11(desc.BackFace, src.BackFace);
+		desc.DepthEnable = src.GetDepthEnable();
+		desc.DepthWriteMask = ConvertEnumD3D11(src.GetDepthWriteMask());
+		desc.DepthFunc = ConvertEnumD3D11(src.GetDepthFunc());
+		desc.StencilEnable = src.GetStencilEnable();
+		desc.StencilReadMask = src.GetStencilReadMask();
+		desc.StencilWriteMask = src.GetStencilWriteMask();
+		ConvertStructD3D11(desc.FrontFace, src.GetFrontFace());
+		ConvertStructD3D11(desc.BackFace, src.GetBackFace());
 
 	}
 

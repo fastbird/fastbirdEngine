@@ -53,10 +53,8 @@ public:
 		
 		MeshImportDesc importDesc;
 		importDesc.mergeMaterialGroups = true;
-		importDesc.generateTangent = false;
-		importDesc.keepMeshData = false;
-		importDesc.oppositeCull = oppositCull;
-		importDesc.useIndexBuffer = false;
+		importDesc.generateTangent = false;		
+		importDesc.oppositeCull = oppositCull;		
 		importDesc.yzSwap = swapYZ;
 		mMeshObject = SceneObjectFactory::GetInstance().CreateMeshObject(filename, importDesc);
 		if (!mMeshObject){
@@ -87,7 +85,7 @@ public:
 		std::vector<float> y_min, y_max;
 		std::vector<float> z_min, z_max;
 		RASTERIZER_DESC rd_cull_front;
-		rd_cull_front.CullMode = CULL_MODE_FRONT;
+		rd_cull_front.SetCullMode(CULL_MODE_FRONT);
 		RASTERIZER_DESC rd_cull_back;
 
 		if (!mMeshObject)

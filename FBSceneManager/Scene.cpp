@@ -56,7 +56,7 @@ public:
 	OBJECTS_WEAK mObjects;
 	SPATIAL_OBJECTS_WEAK mSpatialObjects;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleObjectsMain;
-	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleObjectsLight;
+	//VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleObjectsLight;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mPreRenderList;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleTransparentObjects;
 	VectorMap<ICamera*, SPATIAL_OBJECTS_RAW> mVisibleAfterObjects;
@@ -176,7 +176,7 @@ public:
 			return;
 
 		if (!force){
-			auto it = mLastMakeVisibleSetPerCam.Find(cam);
+			auto it = mLastMakeVisibleSetPerCam.find(cam);
 			if (it != mLastMakeVisibleSetPerCam.end() && it->second == gpTimer->GetFrame())
 				return;
 		}
@@ -301,7 +301,7 @@ public:
 			auto cam = renderParam.mCamera;
 			assert(cam);
 
-			auto it = mLastPreRenderFramePerCam.Find(cam);
+			auto it = mLastPreRenderFramePerCam.find(cam);
 			if (it != mLastPreRenderFramePerCam.end() && it->second == gpTimer->GetFrame())
 				return;
 			mLastPreRenderFramePerCam[cam] = gpTimer->GetFrame();

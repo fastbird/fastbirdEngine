@@ -54,6 +54,7 @@ namespace fb{
 			, mWindow(window)
 			, mWidth(width)
 			, mHeight(height)
+			, mFullscreen(fullscreen)
 			, mColorFormat(colorFormat)
 			, mDepthFormat(depthFormat)
 		{

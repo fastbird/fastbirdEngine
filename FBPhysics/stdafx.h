@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <assert.h>
+#include <unordered_map>
 
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>

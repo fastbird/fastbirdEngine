@@ -30,6 +30,7 @@
 #include "FBCommonHeaders/String.h"
 #include "FBCommonHeaders/Types.h"
 namespace fb{
+	struct pack_datum;
 	class DirectoryIterator;
 	typedef std::shared_ptr<DirectoryIterator> DirectoryIteratorPtr;
 	typedef std::weak_ptr<DirectoryIterator> DirectoryIteratorWeakPtr;
@@ -44,6 +45,8 @@ namespace fb{
 
 	public:
 		DirectoryIterator(const char* directoryPath, bool recursive);
+		/// throw std::invalid_argument if pack_datum is nullptr.
+		DirectoryIterator(const char* directoryPath, bool recursive, const pack_datum* pack_datum);
 		~DirectoryIterator();
 
 		bool IsOpen() const;

@@ -70,7 +70,7 @@ ImageBox::~ImageBox()
 
 void ImageBox::OnCreated()
 {
-	SetProperty(UIProperty::TEXTUREATLAS, "data/textures/gameui.xml");
+	SetProperty(UIProperty::TEXTUREATLAS, "Data/textures/gameui.xml");
 }
 
 void ImageBox::OnResolutionChanged(HWindowId hwndId){
@@ -269,9 +269,9 @@ void ImageBox::SetTexture(TexturePtr pTexture)
 	}
 	mTexture = pTexture;
 	SAMPLER_DESC sd;
-	sd.AddressU = TEXTURE_ADDRESS_BORDER;
-	sd.AddressV = TEXTURE_ADDRESS_BORDER;
-	sd.AddressW = TEXTURE_ADDRESS_BORDER;
+	sd.SetAddressU(TEXTURE_ADDRESS_BORDER);
+	sd.SetAddressV(TEXTURE_ADDRESS_BORDER);
+	sd.SetAddressW(TEXTURE_ADDRESS_BORDER);
 	mUIObject->GetMaterial()->SetTexture(pTexture, SHADER_TYPE_PS, 0, sd);
 	if (pTexture){
 		mTextureAtlas = 0;
@@ -338,7 +338,7 @@ const Vec2I& ImageBox::SetTextureAtlasRegion(const char* atlas, const char* regi
 			// Now texture atals will not use mImageDisplay to display.
 		}
 		SAMPLER_DESC sdesc;
-		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		sdesc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);
 		TriggerRedraw();
 
 		mAtlasRegion = mTextureAtlas->GetRegion(region);
@@ -374,7 +374,7 @@ void ImageBox::SetTextureAtlasRegions(const char* atlas, const std::vector<std::
 			mAtlasRegions.push_back(mTextureAtlas->GetRegion(region.c_str()));
 		}
 		SAMPLER_DESC sdesc;
-		sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;
+		sdesc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);
 		mUIObject->GetMaterial()->SetTexture(mTexture, SHADER_TYPE_PS, 0, sdesc);
 
 		if (!mAtlasRegions.empty())
@@ -476,7 +476,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 		mStrRegion = val;
 		if (mTextureAtlasFile.empty()){
-			mTextureAtlasFile = "data/textures/gameui.xml";
+			mTextureAtlasFile = "Data/textures/gameui.xml";
 		}
 		SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
 		return true;
@@ -487,7 +487,7 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 		mStrRegions = val;
 		if (mTextureAtlasFile.empty()){
-			mTextureAtlasFile = "data/textures/gameui.xml";
+			mTextureAtlasFile = "Data/textures/gameui.xml";
 		}
 		mAnimation = true;
 		auto useNumberData = Split(val, ":");
@@ -525,15 +525,15 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 
 	case UIProperty::FPS:
 	{
-							mSecPerFrame = 1.0f / StringConverter::ParseReal(val);
-							return true;
+		mSecPerFrame = 1.0f / StringConverter::ParseReal(val);
+		return true;
 	}
 		break;
 
 	case UIProperty::TEXTURE_FILE:
 	{
-									 SetTexture(val);
-									 return true;
+		SetTexture(val);
+		return true;
 	}
 
 	case UIProperty::IMAGE_DISPLAY:
@@ -545,20 +545,20 @@ bool ImageBox::SetProperty(UIProperty::Enum prop, const char* val)
 	case UIProperty::FRAME_IMAGE:
 	{
 		mStrFrameImage = val;
-									if (!mFrameImage)
-									{
-										mFrameImage = CreateChildImageBox();
-									}
-									mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
-									if (strlen(val) == 0)
-									{
-										mFrameImage->SetVisible(false);
-									}
-									else
-									{
-										mFrameImage->SetVisible(true);
-									}
-									return true;
+		if (!mFrameImage)
+		{
+			mFrameImage = CreateChildImageBox();
+		}
+		mFrameImage->SetTextureAtlasRegion(mTextureAtlasFile.c_str(), val);
+		if (strlen(val) == 0)
+		{
+			mFrameImage->SetVisible(false);
+		}
+		else
+		{
+			mFrameImage->SetVisible(true);
+		}
+		return true;
 	}
 
 	case UIProperty::IMAGE_COLOR_OVERLAY:

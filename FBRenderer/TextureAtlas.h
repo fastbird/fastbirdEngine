@@ -26,7 +26,7 @@
 */
 
 #pragma once
-#include "FBCommonHeaders/VectorMap.h"
+#include "FBCommonHeaders/IteratorWrapper.h"
 #include "FBMathLib/Math.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR_STRUCT(TextureAtlasRegion);
@@ -52,7 +52,7 @@ namespace fb{
 	{
 		std::string mPath;
 		TexturePtr mTexture;
-		typedef VectorMap<std::string, TextureAtlasRegionPtr> REGION_MAP;
+		typedef std::unordered_map<std::string, TextureAtlasRegionPtr> REGION_MAP;
 		REGION_MAP mRegions;
 		
 		TextureAtlas();
@@ -63,8 +63,7 @@ namespace fb{
 
 		TextureAtlasRegionPtr AddRegion(const char* name);
 		TextureAtlasRegionPtr GetRegion(const char* name);
-		TextureAtlasRegionPtr GetRegion(size_t index);
-		size_t GetNumRegions() const;
+		IteratorWrapper<REGION_MAP> GetIterator();
 		void SetTexture(TexturePtr texture);
 		TexturePtr GetTexture() const;
 		void SetPath(const char* path);		

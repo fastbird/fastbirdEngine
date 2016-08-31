@@ -461,7 +461,7 @@ public:
 	}
 
 	void SetTransform(const btTransform& aT, VectorMap<void*, int>& set){
-		if (set.Find(mSelf) != set.end())
+		if (set.find(mSelf) != set.end())
 			return;
 		mSelf->setWorldTransform(aT);
 		mSelf->clearForces();

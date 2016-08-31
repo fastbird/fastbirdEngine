@@ -48,7 +48,7 @@ TexturePtr GetTextureFromExistings(IPlatformTexturePtr platformShader) {
 }
 
 size_t Texture::sNextTextureID = 0;
-static VectorMap< SHADER_TYPE, VectorMap<int, TextureWeakPtr> > sBindedTextures;
+static std::unordered_map< SHADER_TYPE, VectorMap<int, TextureWeakPtr> > sBindedTextures;
 void SetBindedTexture(SHADER_TYPE shader, int startSlot, TexturePtr pTextures[], int num){
 	auto& shaderCategory = sBindedTextures[shader];
 	int count = 0;

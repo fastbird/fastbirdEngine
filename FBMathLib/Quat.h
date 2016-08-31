@@ -26,6 +26,8 @@
 */
 
 #pragma once
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 
 namespace fb
 {
@@ -96,69 +98,6 @@ namespace fb
 		bool IsNaN() const;	
 		size_t ComputeHash() const;
 	};
-
-	void write(std::ostream& stream, const Quat& data);
-	void read(std::istream& stream, Quat& data);
 }
 
-//-----------------------------------------------------------------------
-// serialization
-std::istream& operator>>(std::istream& stream, fb::Quat& v);
-std::ostream& operator<<(std::ostream& stream, const fb::Quat& v);
-
-//// luawapper util
-//template<>
-//struct luaU_Impl<fb::Quat>
-//{
-//	static fb::Quat luaU_check(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Quat luaU_check(lua_State* L, int index)");
-//		luaL_checktype(L, index, LUA_TTABLE);
-//		fb::Quat ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.w = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.x = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 3);
-//		ret.y = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 4);
-//		ret.z = (Real)luaL_checknumber(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static fb::Quat luaU_to(lua_State* L, int index)
-//	{
-//		fb::LUA_STACK_WATCHER watcher(L, "static fb::Quat luaU_to(lua_State* L, int index)");
-//		fb::Quat ret;
-//		lua_rawgeti(L, index, 1);
-//		ret.w = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 2);
-//		ret.x = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 3);
-//		ret.y = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		lua_rawgeti(L, index, 4);
-//		ret.z = (Real)lua_tonumber(L, -1);
-//		lua_pop(L, 1);
-//		return ret;
-//	}
-//
-//	static void luaU_push(lua_State* L, const fb::Quat& val)
-//	{
-//		lua_createtable(L, 0, 3);
-//		lua_pushnumber(L, val.w);
-//		lua_rawseti(L, -1, 1);
-//		lua_pushnumber(L, val.x);
-//		lua_rawseti(L, -1, 2);
-//		lua_pushnumber(L, val.y);
-//		lua_rawseti(L, -1, 3);
-//		lua_pushnumber(L, val.z);
-//		lua_rawseti(L, -1, 4);
-//	}
-//};
+BOOST_CLASS_IMPLEMENTATION(fb::Quat, boost::serialization::primitive_type);

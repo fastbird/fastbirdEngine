@@ -83,5 +83,6 @@ namespace fb
 		collada::MeshPtr GetMeshObject() const;
 		collada::MeshGroupPtr GetMeshGroup() const;
 		IteratorWrapper<ColladaMeshObjects> GetMeshIterator();
+		unsigned GetNumMeshes() const;
 	};
 }

@@ -159,7 +159,7 @@ public:
 			BUFFER_USAGE_DYNAMIC, BUFFER_CPU_ACCESS_WRITE);
 
 		DEPTH_STENCIL_DESC ddesc;
-		ddesc.DepthEnable = false;
+		ddesc.SetDepthEnable(false);
 		mRenderStates = RenderStates::Create();
 		mRenderStates->CreateDepthStencilState(ddesc);		
 	}

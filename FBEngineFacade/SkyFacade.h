@@ -30,6 +30,7 @@
 #include "FBRenderer/RenderPass.h"
 #include "FBCommonHeaders/GenericNotifier.h"
 #include "FBSceneObjectFactory/ISkySphereLIstener.h"
+#include "ISkyFacadeListener.h"
 namespace fb{
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(Material);

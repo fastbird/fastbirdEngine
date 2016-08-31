@@ -26,6 +26,7 @@
 */
 
 #pragma once
+#include <unordered_map>
 #include "FBCommonHeaders/platform.h"
 #include "FBCommonHeaders/VectorMap.h"
 #include "FBCommonHeaders/SpinLock.h"
@@ -67,7 +68,7 @@ namespace fb
 		int mType;
 		std::string mName;
 		LuaObject* mSelf;
-		static VectorMap<int, unsigned> sUsedCount;
+		static std::unordered_map<int, unsigned> sUsedCount;
 		static SpinLock<true, false> sUsedCountGuard;
 
 		static void AddUsedCount(int ref);

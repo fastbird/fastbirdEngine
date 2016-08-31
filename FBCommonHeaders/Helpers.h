@@ -73,7 +73,7 @@ Convenent macros for manipulating stl containers.
 
 	
 
-#define ValidCString(szStr) szStr && szStr[0]!=0
+#define ValidCString(szStr) (szStr && szStr[0]!=0)
 
 #define ARRAYCOUNT(A)       (sizeof(A) / sizeof(A[0]))
 

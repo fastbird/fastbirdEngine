@@ -193,7 +193,9 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 		sprintf_s(buf, "%d", (int)(ratio * 100));
 		text->SetText(AnsiToWide(buf));
 		mTexts.push_back(text);
-
+		if (GetVisible()) {
+			text->SetVisible(true);
+		}
 		prevXPos = xPos;
 	}
 	float ratio = values.back();
@@ -207,6 +209,9 @@ void ColorRampComp::SetColorRampValuesFloats(const std::vector<float>& values)
 	sprintf_s(buf, "%d", (int)(ratio * 100));
 	text->SetText(AnsiToWide(buf));
 	mTexts.push_back(text);
+	if (GetVisible()) {
+		text->SetVisible(true);
+	}
 }
 
 void ColorRampComp::OnChildHasDragged()

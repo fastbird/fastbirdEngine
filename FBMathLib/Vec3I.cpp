@@ -145,39 +145,4 @@ namespace fb
 		Vec3I dif = to - *this;
 		return dif.lengthSQ();
 	}
-
-	void write(std::ostream& stream, const Vec3I& data) {
-		stream.write((char*)&data.x, sizeof(data.x));
-		stream.write((char*)&data.y, sizeof(data.y));
-		stream.write((char*)&data.z, sizeof(data.z));
-	}
-
-	void read(std::istream& stream, Vec3I& data){
-		stream.read((char*)&data.x, sizeof(data.x));
-		stream.read((char*)&data.y, sizeof(data.y));
-		stream.read((char*)&data.z, sizeof(data.z));
-	}
-	/*void write(std::ostream& stream, fb::Vec3I& v){
-		stream.write((char*)&v.x, sizeof(v.x));
-		stream.write((char*)&v.y, sizeof(v.y));
-		stream.write((char*)&v.z, sizeof(v.z));
-	}
-
-	void read(std::istream& stream, fb::Vec3I& v){
-		stream.read((char*)&v.x, sizeof(v.x));
-		stream.read((char*)&v.y, sizeof(v.y));
-		stream.read((char*)&v.z, sizeof(v.z));
-	}*/
-}
-
-std::istream& operator>>(std::istream& stream, fb::Vec3I& v)
-{
-	stream >> v.x >> v.y >> v.z;
-	return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const fb::Vec3I& v)
-{
-	stream << v.x << v.y << v.z;
-	return stream;
 }

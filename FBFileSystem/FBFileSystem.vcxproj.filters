@@ -12,5 +12,6 @@
     <ClCompile Include="DirectoryIterator.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="File.cpp" />
+    <ClCompile Include="DllMain.cpp" />
   </ItemGroup>
 </Project>

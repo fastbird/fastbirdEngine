@@ -475,7 +475,7 @@ public:
 		{
 			mScissorRect = rect;
 			RASTERIZER_DESC rd;
-			rd.ScissorEnable = true;			
+			rd.SetScissorEnable(true);			
 			mMaterial->SetRasterizerState(rd);
 		}
 		else

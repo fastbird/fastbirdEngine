@@ -63,8 +63,8 @@ namespace fb{
 		// Mouse
 		//-------------------------------------------------------------------
 		// Positions		
-		void GetDeltaXY(long &x, long &y) const;
-		Vec2ITuple GetDeltaXY() const;
+		void GetDpiDependentDeltaXY(long &x, long &y) const;
+		Vec2ITuple GetDpiDependentDeltaXY() const;
 		void GetAbsDeltaXY(long &x, long &y) const;
 		Vec2ITuple GetAbsDeltaXY() const;
 		void GetMousePos(long &x, long &y) const;
@@ -92,6 +92,7 @@ namespace fb{
 		bool IsLButtonDownPrev() const;
 		bool IsLButtonDown(Real* time = 0) const;
 		bool IsLButtonClicked() const;
+		bool IsLButtonUp() const OVERRIDE;
 		bool IsLButtonDoubleClicked() const;
 		bool IsLButtonPressed() const;
 		bool IsRButtonDown(Real* time = 0) const;

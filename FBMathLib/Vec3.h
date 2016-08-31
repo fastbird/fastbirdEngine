@@ -26,6 +26,8 @@
 */
 
 #pragma once
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/level.hpp>
 #include "MathDefines.h"
 #include "Vec2.h"
 namespace fb
@@ -114,9 +116,8 @@ namespace fb
 		Vec3 GetInv() const;
 
 		size_t ComputeHash() const;
+		bool IsSpecialFloat() const;
 	};
-	void write(std::ostream& stream, const Vec3& data);
-	void read(std::istream& stream, Vec3& data);
 
 	Vec3 operator* (Real l, const Vec3& r);
 	bool IsEqual(const Vec3& l, const Vec3& r, Real ep = EPSILON);
@@ -139,6 +140,4 @@ namespace fb
 #endif
 }
 
-// serialization
-std::istream& operator>>(std::istream& stream, fb::Vec3& v);
-std::ostream& operator<<(std::ostream& stream, const fb::Vec3& v);
+BOOST_CLASS_IMPLEMENTATION(fb::Vec3, boost::serialization::primitive_type);

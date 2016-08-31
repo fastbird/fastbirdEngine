@@ -43,6 +43,7 @@
 
 #include <assert.h>
 #include <map>
+#include <unordered_map>
 
 #include "FBMathLib/Math.h"
 #include "FBCommonHeaders/VectorMap.h"

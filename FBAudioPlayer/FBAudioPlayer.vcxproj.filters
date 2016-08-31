@@ -14,6 +14,7 @@
     <ClInclude Include="AudioSource.h" />
     <ClInclude Include="AudioBuffer.h" />
     <ClInclude Include="MusicPlayer.h" />
+    <ClInclude Include="AudioSourceType.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

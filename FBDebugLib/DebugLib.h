@@ -30,4 +30,5 @@
 namespace fb{
 	void FBDebugBreak();
 	void FBOutputDebugString(const char* msg);
+	std::string GetLastErrorAsString(int error);
 }

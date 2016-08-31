@@ -26,20 +26,72 @@
 */
 
 #pragma once
+#include <bitset>
+#include <boost/serialization/bitset.hpp>
 namespace fb {
 	struct MeshImportDesc
 	{
-		MeshImportDesc()
-			: yzSwap(false), oppositeCull(true),
-			useIndexBuffer(false), mergeMaterialGroups(false),
-			keepMeshData(false), generateTangent(true)
-		{
-		}
 		bool yzSwap;
 		bool oppositeCull;
 		bool useIndexBuffer;
 		bool mergeMaterialGroups;
 		bool keepMeshData;
 		bool generateTangent;
+		bool ignore_cache;
+
+		MeshImportDesc()
+			: yzSwap(false), oppositeCull(true),
+			useIndexBuffer(true), mergeMaterialGroups(false),
+			keepMeshData(false), generateTangent(true), ignore_cache(false)
+		{
+		}
+
+		bool operator==(const MeshImportDesc& other) {
+			return !(yzSwap != other.yzSwap || oppositeCull != other.oppositeCull ||
+				useIndexBuffer != other.useIndexBuffer || mergeMaterialGroups != other.mergeMaterialGroups ||
+				keepMeshData != other.keepMeshData || generateTangent != other.generateTangent || ignore_cache != other.ignore_cache);
+		}
+
+		std::string ToString() const {
+			return FormatString("yzSwap: %d, oppositeCull: %d, useIndexBuffer: %d, mergeMaterialGroups: %d, keepMeshData: %d, generateTangent: %d, ignore_cache: %d",
+				yzSwap, oppositeCull, useIndexBuffer, mergeMaterialGroups, keepMeshData, generateTangent, ignore_cache);
+		}
+
+	private:
+		friend class boost::serialization::access;
+		// When the class Archive corresponds to an output archive, the
+		// & operator is defined similar to <<.  Likewise, when the class Archive
+		// is a type of input archive the & operator is defined similar to >>.
+		template<class Archive>
+		void save(Archive & ar, const unsigned int version) const
+		{
+			std::bitset<7> bs;
+			bs.set(0, yzSwap);
+			bs.set(1, oppositeCull);
+			bs.set(2, useIndexBuffer);
+			bs.set(3, mergeMaterialGroups);
+			bs.set(4, keepMeshData);
+			bs.set(5, generateTangent);
+			bs.set(6, ignore_cache);
+			ar & bs;
+		}
+		template<class Archive>
+		void load(Archive & ar, const unsigned int version){
+			std::bitset<7> data;
+			ar & data;			
+			yzSwap = data[0];
+			oppositeCull = data[1];
+			useIndexBuffer = data[2];
+			mergeMaterialGroups = data[3];
+			keepMeshData = data[4];
+			generateTangent = data[5];
+			ignore_cache = data[6];
+		}
+		BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+
 	};
+
+	void write(std::ostream& stream, const MeshImportDesc& data);
+	void read(std::istream& stream, MeshImportDesc& data);
 }

@@ -1383,7 +1383,7 @@ namespace fb
 
 	void Button::SetDefaultImageAtlasPathIfNotSet(){
 		if (mImageAtlas.empty()){
-			mImageAtlas = "data/textures/gameui.xml";
+			mImageAtlas = "Data/textures/gameui.xml";
 		}
 	}
 

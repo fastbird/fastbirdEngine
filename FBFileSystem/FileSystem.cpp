@@ -24,22 +24,37 @@
  THE SOFTWARE.
  -----------------------------------------------------------------------------
 */
-
 #include "stdafx.h"
 #include "FileSystem.h"
 #include "DirectoryIterator.h"
 #include "File.h"
 #include "FBCommonHeaders/SpinLock.h"
 #include "FBCommonHeaders/RecursiveSpinLock.h"
+#include "FBCommonHeaders/Helpers.h"
+#include "FBDataPackLib/fba.h"
+#include "FBSerializationLib/Serialization.h"
+#include "boost/archive/binary_iarchive.hpp"
 using namespace fb;
 
 static bool gLogginStarted = false;
-static bool gSecurityCheck = true;
 static boost::filesystem::path gWorkingPath;
 std::string gApplicationName;
 static std::unordered_map<std::string, std::string> sResourceFolders;
+static std::unordered_map<std::string, std::string> sResourceFoldersLower;
+static std::unordered_map<std::string, pack_datum> g_fbas;
+static std::unordered_map<std::string, std::pair<const fba_header*, const pack_datum*> > g_path_header_cache;
 #define FBRExt "fbr"
 static RecursiveSpinLock<true, true> sGuard;
+typedef std::chrono::time_point<std::chrono::system_clock> SystemTimePoint;
+
+std::mutex pack_mutex;
+static std::string g_game_home;
+namespace fb {
+	void OnInit() {
+		g_game_home = boost::filesystem::current_path().generic_string();
+	}
+}
+
 void FileSystem::StartLoggingIfNot(){
 	if (gLogginStarted)
 		return;
@@ -56,36 +71,200 @@ void FileSystem::StopLogging(){
 	Logger::Release();
 }
 
-void FileSystem::SetSecurityCheck(bool enable) {
-	gSecurityCheck = enable;
+unsigned FileSystem::parse_fba(const char* path) {
+	unsigned num = 0;
+	auto it = GetDirectoryIterator(path, false);
+	while (it->HasNext()) {
+		std::string fba_path = it->GetNextFilePath();
+		if (IsDirectory(fba_path.c_str()))
+			continue;
+		if (HasExtension(fba_path.c_str(), ".fba")) {			
+			if (StartsWith(fba_path, "./")) {
+				fba_path = fba_path.substr(2);
+			}
+			pack_datum data;
+			if (parse_fba_headers(fba_path.c_str(), data)) {
+				auto key = ReplaceExtension(fba_path.c_str(), "");				
+				// key = Data/actors for children folders
+				// key = D:/Projects/fastbird-engine/EssentialEngineData for resource folders
+				++num;
+				g_fbas[key] = data; 
+			}
+			else {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"Parsing fba(%s) is failed.", fba_path).c_str());
+			}
+		}
+	}
+	return num;
 }
 
-bool FileSystem::Exists(const char* path){
-	//FileSystem::Lock l;
-	boost::system::error_code err;
-	return boost::filesystem::exists(path, err);
+// path_in_pack : actors/myactor.lua
+const fba_header* get_fba_header(pack_datum& pack, const char* path_in_pack) {
+	auto it = pack.name_index.find(path_in_pack);
+	if (it != pack.name_index.end()) {
+		auto& h = pack.headers[it->second];		
+		return &h;
+	}
+
+#if FB_FBA_IGNORE_CASE
+	// Todo : after removing all case differences and comment below out.
+	auto it2 = pack.namelower_index.find(ToLowerCase(path_in_pack));
+	if (it2 != pack.namelower_index.end()) {
+		auto originalIt = pack.name_index.begin();
+		for (; originalIt != pack.name_index.end(); originalIt++) {
+			if (!StringCompareNoCase(originalIt->first, it2->first))
+				break;
+		}
+		if (originalIt == pack.name_index.end()) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Cannot find original file for (%s)", it2->first.c_str()).c_str());
+		}
+		else {
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(Info) Ignoring case: Requested File(%s) is detected by ignoring case. Chage the request name to (%s)",
+				path_in_pack, originalIt->first.c_str()).c_str());
+		}
+		auto& h = pack.headers[it2->second];
+		std::lock_guard<std::mutex> l(pack_mutex);
+		pack.name_index[path_in_pack] = h.index;
+		return &h;		
+	}	
+#endif
+
+	return nullptr;
 }
 
-bool FileSystem::ResourceExists(const char* path, std::string* outResoucePath) {
-	//FileSystem::Lock l;
+const fba_header* get_fba_header(const char* path, std::string& fba_path) {
+	auto it = g_path_header_cache.find(path);
+	if (it != g_path_header_cache.end()) {
+		fba_path = it->second.second->pack_path;
+		return it->second.first;
+	}
+
+	for (auto it = g_fbas.begin(); it != g_fbas.end(); ++it) {
+		// it->first: Data/actors
+		// path: Data/actors/myactor.lua
+
+		if (StartsWith(path, it->first.c_str(), false)) {
+			auto parent_path = FileSystem::GetParentPath(it->first.c_str()); // Data
+			auto path_in_pack = path + (parent_path.empty() ? 0 : (parent_path.size() + 1));
+			auto header = get_fba_header(it->second, path_in_pack);
+			fba_path = it->second.pack_path;
+			std::lock_guard<std::mutex> l(pack_mutex);
+			g_path_header_cache[path] = { header, &it->second };
+			return header;
+		}
+#if FB_FBA_IGNORE_CASE
+		if (StartsWith(path, it->first.c_str(), true)) {
+			auto parent_path = FileSystem::GetParentPath(it->first.c_str()); // Data
+			auto path_in_pack = path + (parent_path.empty() ? 0 : (parent_path.size() + 1));			
+			auto path_in_pack_correct_case = std::string(path);
+			path_in_pack_correct_case.replace(path_in_pack_correct_case.begin(), path_in_pack_correct_case.begin() + it->first.length(),
+				it->first.begin(), it->first.end());
+
+			auto header = get_fba_header(it->second, path_in_pack);
+			fba_path = it->second.pack_path;
+			std::lock_guard<std::mutex> l(pack_mutex);
+			g_path_header_cache[path] = { header, &it->second };
+			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
+				"(Info) Ignoring case: the requested path(%s) should be (%s)", path, path_in_pack_correct_case.c_str()).c_str());
+			return header;
+		}
+#endif
+	}
+	return 0;
+}
+static std::string g_fba_password;
+void FileSystem::set_fba_password(const char* password) {
+	if (!ValidCString(password)) {
+		g_fba_password.clear();
+		return;
+	}
+	g_fba_password = password;
+}
+
+struct FbaFileDataCache {
+	ByteArrayPtr data;
+	SystemTimePoint last_access;
+};
+std::unordered_map<std::string, FbaFileDataCache> g_file_data_cache;
+SystemTimePoint last_fba_removal = std::chrono::system_clock::now();
+ByteArrayPtr FileSystem::get_fba_file_data(const char* path) {
+	using namespace std::chrono_literals;
+	auto now = std::chrono::system_clock::now();
+	if (now - last_fba_removal > 10s) {
+		last_fba_removal = now;
+		std::lock_guard<std::mutex> l(pack_mutex);
+		for (auto it = g_file_data_cache.begin(); it != g_file_data_cache.end(); ) {
+			auto curIt = it++;
+			if (now - curIt->second.last_access > 10s) {				
+				g_file_data_cache.erase(curIt);
+			}
+		}
+	}
+
+	{
+		std::lock_guard<std::mutex> l(pack_mutex);
+		auto it = g_file_data_cache.find(path);
+		if (it != g_file_data_cache.end()) {
+			it->second.last_access = now;
+			return it->second.data;
+		}
+	}
+	std::string fba_path;	
+	auto header = get_fba_header(path, fba_path);
+	if (header) {
+		auto data = parse_fba_data(fba_path.c_str(), *header, g_fba_password);
+		std::lock_guard<std::mutex> l(pack_mutex);
+		g_file_data_cache[path] = FbaFileDataCache{ data, now };
+		return data;
+	}
+
+	return nullptr;
+}
+
+pack_datum* get_pack_datum_containing(const char* path) {
+	for (auto& it : g_fbas) {
+		if (StartsWith(path, it.first.c_str())) {
+			return &it.second;
+		}
+	}
+	return nullptr;
+}
+
+bool FileSystem::ExistsInFba(const char* path) {	
+	std::string fba_path;
+	auto header = get_fba_header(path, fba_path);
+	return header != nullptr;
+}
+bool FileSystem::Exists(const char* path){	
 	boost::system::error_code err;
-	bool ex = boost::filesystem::exists(path, err);
+	bool exists = boost::filesystem::exists(path, err);
+	if (exists)
+		return true;
+	std::string pack_path;
+	return ExistsInFba(path)!=0;
+}
+
+bool FileSystem::ResourceExists(const char* path, std::string* outResoucePath) {	
+	auto ex = Exists(path);
 	if (ex) {
 		if (outResoucePath)
 			*outResoucePath = path;
 		return ex;
 	}
 	else{
-		auto resourcePath = GetResourcePath(path);
 		boost::system::error_code err;
-		ex = boost::filesystem::exists(resourcePath, err);
+		auto resourcePath = GetResourcePath(path);		
+		ex = Exists(resourcePath.c_str());			
 		if (ex) {
 			if (outResoucePath)
 				*outResoucePath = resourcePath;
 			return ex;
 		}
 	}
-	return ex;
+	return false;
 }
 
 bool FileSystem::IsDirectory(const char* path){
@@ -105,12 +284,8 @@ int FileSystem::Rename(const char* path, const char* newpath){
 	if (!Exists(path)){
 		return RENAME_NO_SOURCE;
 	}
-
-	if (Exists(newpath)){
-		return RENAME_DEST_EXISTS;
-	}
 	
-	if (!SecurityOK(path) || !SecurityOK(newpath))
+	if (!CheckSecurity(path) || !CheckSecurity(newpath))
 		return SECURITY_NOT_OK;
 	try{
 		boost::filesystem::rename(path, newpath);
@@ -153,6 +328,21 @@ int FileSystem::CopyFile(const char* src, const char* dest, bool overwrite, bool
 	return FB_NO_ERROR;
 }
 
+void FileSystem::ResizeFile(const char* path, unsigned new_size) {
+	if (!CheckSecurity(path)) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot resize the file(%s) for the sake of security.", path).c_str());
+		return;
+	}
+	try {
+		boost::filesystem::resize_file(path, new_size);
+	}
+	catch (const boost::filesystem::filesystem_error& err) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Cannot resize the file(%s).", path).c_str());
+		Logger::Log(FB_ERROR_LOG_ARG, err.what());
+	}
+}
+
 bool FileSystem::Remove(const char* path){
 	bool ret = true;
 	try{
@@ -164,8 +354,7 @@ bool FileSystem::Remove(const char* path){
 	return ret;
 }
 
-size_t FileSystem::RemoveAll(const char* path) {
-	Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) removing all files in %s", path).c_str());
+size_t FileSystem::RemoveAll(const char* path) {	
 	size_t ret = true;
 	try {
 		ret = (size_t)boost::filesystem::remove_all(path);
@@ -174,6 +363,18 @@ size_t FileSystem::RemoveAll(const char* path) {
 		Logger::Log(FB_ERROR_LOG_ARG, err.what());
 	}
 	return ret;
+}
+
+size_t FileSystem::RemoveAllInside(const char* path) {
+	size_t num = 0;
+	if (IsDirectory(path)) {
+		namespace fs = boost::filesystem;
+		fs::path path_to_remove(path);
+		for (fs::directory_iterator end_dir_it, it(path_to_remove); it != end_dir_it; ++it) {
+			num += (size_t)fs::remove_all(it->path());
+		}
+	}
+	return num;
 }
 
 std::string FileSystem::ReplaceExtension(const char* path, const char* ext){
@@ -300,12 +501,21 @@ std::string FileSystem::Absolute(const char* path){
 	return ret;
 }
 
-std::string FileSystem::MakrEndingSlashIfNot(const char* directory){
+std::string FileSystem::AddEndingSlashIfNot(const char* directory){
 	if (!ValidCString(directory))
 		return std::string();
 	std::string ret = boost::filesystem::path(directory).generic_string();
 	if (ret.back() != '/')
 		ret.push_back('/');
+	return ret;
+}
+
+std::string FileSystem::RemoveEndingSlash(const char* directory) {
+	if (!ValidCString(directory))
+		return std::string();
+	std::string ret = boost::filesystem::path(directory).generic_string();
+	if (ret.back() == '/')
+		ret.pop_back();
 	return ret;
 }
 
@@ -325,34 +535,45 @@ std::string FileSystem::StripFirstDirectoryPath(const char* strFilepath, bool* o
 	return ret;
 }
 
-void FileSystem::BackupFile(const char* filepath, unsigned numKeeping) {
-	BackupFile(filepath, numKeeping, "./");
+std::string FileSystem::BackupFile(const char* filepath, unsigned numKeeping) {
+	return BackupFile(filepath, numKeeping, "");
 }
 
-void FileSystem::BackupFile(const char* filepath, unsigned numKeeping, const char* directory){
+std::string FileSystem::BackupFile(const char* filepath, unsigned numKeeping, const char* directory){
 	boost::filesystem::path path(filepath);
+	if (!Exists(filepath))
+		return{};
 	auto parentPath = path.parent_path().generic_string();
 	if (parentPath.empty()) {
 		parentPath = "./";
 	}
-	parentPath = MakrEndingSlashIfNot(parentPath.c_str());
+	parentPath = AddEndingSlashIfNot(parentPath.c_str());
 	auto filename = path.filename().generic_string();
-	std::string backupDir = MakrEndingSlashIfNot(directory);
+	std::string backupDir = strlen(directory) != 0  ? AddEndingSlashIfNot(directory) : "";
 	auto filenameOnly = FileSystem::ReplaceExtension(filename.c_str(), "");
 	auto extension = FileSystem::GetExtension(filepath);
+	
+	if (!backupDir.empty()) {
+		boost::system::error_code ec;
+		boost::filesystem::create_directories(boost::filesystem::path(backupDir), ec);
+		if (ec) {
+			Logger::Log(FB_ERROR_LOG_ARG, ec.message().c_str());
+		}
+	}
+
 	for (int i = (int)numKeeping - 1; i > 0; --i){
-		auto oldPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), i, extension);
-		auto newPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), i + 1, extension);
-		boost::filesystem::create_directories(boost::filesystem::path(newPath).parent_path());
+		auto oldPath = FormatString("%s%s_bak%d%s", backupDir.c_str(), filenameOnly.c_str(), i, extension);
+		auto newPath = FormatString("%s%s_bak%d%s", backupDir.c_str(), filenameOnly.c_str(), i + 1, extension);		
 		FileSystem::Rename(oldPath.c_str(), newPath.c_str());
 	}
-	auto newPath = FormatString("%s%s%s_bak%d%s", parentPath.c_str(), backupDir.c_str(), filenameOnly.c_str(), 1, extension);
+	auto newPath = FormatString("%s%s_bak%d%s", backupDir.c_str(), filenameOnly.c_str(), 1, extension);
 	FileSystem::CopyFile(filepath, newPath.c_str(), true, true);
+	return newPath;
 }
 
 int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
 	if (!Exists(file1) || !Exists(file2))
-		return FILE_NO_EXISTS;	
+		return FILE_NOT_EXISTS;	
 	try{
 		auto time1 = boost::filesystem::last_write_time(file1);
 		auto time2 = boost::filesystem::last_write_time(file2);
@@ -372,16 +593,44 @@ int FileSystem::CompareFileModifiedTime(const char* file1, const char* file2){
 
 int FileSystem::CompareResourceFileModifiedTime(const char* resourceFile, const char* file) {
 	auto resourcePath = GetResourcePathIfPathNotExists(resourceFile);
+	std::string fba_path;
+	auto header = get_fba_header(resourcePath.c_str(), fba_path);
+	if (header) {
+		auto l = header->modified_time;
+		if (!FileSystem::Exists(file)) {
+			return FILE_NOT_EXISTS;
+		}
+		auto r = boost::filesystem::last_write_time(file);
+		if (l < r)
+			return -1;
+		else if (l == r)
+			return 0;
+		else 
+			return 1;
+	}	
 	return CompareFileModifiedTime(resourcePath.c_str(), file);
 }
 
-bool FileSystem::SecurityOK(const char* filepath){
-	if (!gSecurityCheck)
+bool FileSystem::CheckSecurity(const char* filepath){	
+	auto abspath = boost::filesystem::absolute(filepath);
+	auto testing_folder = abspath.generic_string();
+	if (testing_folder.find(g_game_home) != std::string::npos)
 		return true;
 
-	auto cwd = GetCurrentDir();
-	auto abspath = boost::filesystem::absolute(filepath);
-	if (abspath.generic_string().find(cwd) != std::string::npos)
+	auto localFolder = GetAppDataLocalGameFolder();
+	if (testing_folder.find(localFolder) != std::string::npos)
+		return true;
+
+	auto roamingFolder = GetAppDataRoamingGameFolder();
+	if (testing_folder.find(roamingFolder) != std::string::npos)
+		return true;
+
+	auto gameFolder = GetMyDocumentGameFolder();
+	if (testing_folder.find(gameFolder) != std::string::npos)
+		return true;
+
+	auto temp_dir = GetTempDir();
+	if (testing_folder.find(temp_dir) != std::string::npos)
 		return true;
 
 	return false;
@@ -410,7 +659,7 @@ bool FileSystem::WriteBinaryFile(const char* path, const char* data, size_t leng
 	if (!data || length == 0 || path == 0)
 		return false;
 
-	if (!SecurityOK(path))
+	if (!CheckSecurity(path))
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: SaveBinaryFile to %s has security violation.", path).c_str());
 		return false;
@@ -435,7 +684,7 @@ bool FileSystem::WriteTextFile(const char* path, const char* data, size_t length
 	if (!data || length == 0 || path == 0)
 		return false;
 
-	if (!SecurityOK(path))
+	if (!CheckSecurity(path))
 	{
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("FileSystem: SaveBinaryFile to %s has security violation.", path).c_str());
 		return false;
@@ -460,7 +709,7 @@ namespace fb {
 		}
 		~DeleteOnExit() {
 			for (auto& path : sDeleteOnExit) {
-				if (FileSystem::SecurityOK(path.c_str())) {
+				if (FileSystem::CheckSecurity(path.c_str())) {
 					FileSystem::Remove(path.c_str());
 				}
 			}
@@ -530,24 +779,46 @@ bool FileSystem::IsFileOutOfDate(const char* url, size_t expiryTime) {
 	}
 }
 
+std::shared_ptr<tinyxml2::XMLDocument> FileSystem::LoadXml(const char* path) {
+	Open file(path, "r", ReadAllow, PrintErrorMsg);
+	auto doc = std::make_shared<tinyxml2::XMLDocument>();
+	auto& text = file.GetTextData();	
+	doc->Parse(text.c_str());	
+	return doc;
+}
 
 //---------------------------------------------------------------------------
 // Directory Operataions
 //---------------------------------------------------------------------------
 DirectoryIteratorPtr FileSystem::GetDirectoryIterator(const char* filepath, bool recursive){
+	if (!Exists(filepath))
+	{
+		// check fba
+		pack_datum* pack = get_pack_datum_containing(filepath);
+		if (pack) {
+			return DirectoryIteratorPtr(new DirectoryIterator(filepath, recursive, pack),
+				[](DirectoryIterator* obj) {delete obj; });
+		}
+
+		return nullptr;
+	}
 	return DirectoryIteratorPtr(new DirectoryIterator(filepath, recursive),
 		[](DirectoryIterator* obj){delete obj; });
 }
 
 bool FileSystem::CreateDirectory(const char* filepath){
+	std::string path = boost::filesystem::path(filepath).generic_string();
+	if (StartsWith(path, "./")) {
+		path = path.substr(2);
+	}
 	bool ret = false;
 	try{
-		if (FindLastIndexOf(filepath, '.') != -1) {
-			auto parentPath = GetParentPath(filepath);
+		if (FindLastIndexOf(path.c_str(), '.') != -1) {
+			auto parentPath = GetParentPath(path.c_str());
 			ret = boost::filesystem::create_directories(parentPath.c_str());
 		}
 		else {
-			ret = boost::filesystem::create_directories(filepath);
+			ret = boost::filesystem::create_directories(path.c_str());
 		}
 	}
 	catch (boost::filesystem::filesystem_error& err){
@@ -564,21 +835,67 @@ void FileSystem::SetApplicationName(const char* name){
 	gApplicationName = name;
 }
 
-std::string FileSystem::GetAppDataFolder(){
+std::string AppendGameFolder(const std::string& known_folder) {	
+	std::string game_folder = FileSystem::AddEndingSlashIfNot(known_folder.c_str());	
+	if (!gApplicationName.empty()) {
+		game_folder += gApplicationName;
+		game_folder += "/";
+	}
+	else {
+		game_folder += "fb_game/";
+	}
+	return game_folder;
+}
+std::string FileSystem::GetMyDocumentGameFolder(){
 #if defined(_PLATFORM_WINDOWS_)
 	PWSTR path=0;
 	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, 0, &path))){
 		auto ret = std::string(WideToAnsi(path));
-		if (!gApplicationName.empty())
-			ret += "\\my games\\" + gApplicationName;
+		ret += "\\my games\\";
+		auto game_folder = AppendGameFolder(ret);		
 		CoTaskMemFree(path);
-		boost::filesystem::path p(ret);
+		boost::filesystem::path p(game_folder);
 		return p.generic_string();		
 	}	
 #else
 	assert(0 && "Not implemented");
 #endif
-	return std::string("./temp/");
+	Logger::Log(FB_ERROR_LOG_ARG, "Cannot retrieve MyDocumentGameFolder.");
+	return std::string("/temp/documents/fb_game/");
+}
+
+std::string FileSystem::GetAppDataRoamingGameFolder() {
+#if defined(_PLATFORM_WINDOWS_)
+	PWSTR path = 0;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &path))) {
+		auto ret = std::string(WideToAnsi(path));
+		auto game_folder = AppendGameFolder(ret);
+		CoTaskMemFree(path);
+		boost::filesystem::path p(game_folder);
+		return p.generic_string();
+	}
+
+#else
+	assert(0 && "Not implemented");
+#endif
+	return std::string("./temp/appdata_roaming/fb_game/");
+}
+
+std::string FileSystem::GetAppDataLocalGameFolder() {
+#if defined(_PLATFORM_WINDOWS_)
+	PWSTR path = 0;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, 0, &path))) {
+		auto ret = std::string(WideToAnsi(path));
+		auto game_folder = AppendGameFolder(ret);
+		CoTaskMemFree(path);
+		boost::filesystem::path p(game_folder);
+		return p.generic_string();
+	}
+
+#else
+	assert(0 && "Not implemented");
+#endif
+	return std::string("./temp/appdata_local/fb_game/");
 }
 
 
@@ -587,6 +904,21 @@ std::string FileSystem::GetCurrentDir(){
 		gWorkingPath = boost::filesystem::current_path(); // absolute
 	}
 	return gWorkingPath.generic_string();
+}
+
+std::string FileSystem::GetTempDir() {
+	auto tmp = boost::filesystem::temp_directory_path().generic_string();
+	tmp = AppendGameFolder(tmp.c_str());	
+	return tmp;
+}
+
+void FileSystem::SetCurrentDir(const char* path) {
+	try {
+		boost::filesystem::current_path(path);
+	}
+	catch (const boost::filesystem::filesystem_error& error) {
+		Logger::Log(FB_ERROR_LOG_ARG, error.what());
+	}
 }
 
 std::string FileSystem::TempFileName(const char* prefix, const char* suffix) {
@@ -671,11 +1003,26 @@ void FileSystem::AddResourceFolder(const char* startingPath, const char* res) {
 	}
 
 	if (!Exists(res)) {
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
-			"Resource(%s) does not exist.", res).c_str());
-		return;
+		auto path = FileSystem::UnifyFilepath(res);		
+		// result: D:/Projects/fastbird-engine/EssentialEngineData
+		auto fba_path = FileSystem::RemoveEndingSlash(path.c_str());
+		fba_path += ".fba";
+		if (!Exists(fba_path.c_str())) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+				"Resource path(%s) does not exists.", res).c_str());
+			return;
+		}
+		else {
+			auto ppath = FileSystem::GetParentPath(fba_path.c_str());
+			if (parse_fba(ppath.c_str()) == 0) {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+					"Failed to load resource pack file(%s).", fba_path.c_str()).c_str());
+				return;
+			}
+		}		
 	}
-	sResourceFolders[startingPath] = res;
+	sResourceFolders[startingPath] = res;		
+	sResourceFoldersLower[ToLowerCase(startingPath)] = res;
 }
 
 void FileSystem::RemoveResourceFolder(const char* startingPath) {
@@ -684,6 +1031,7 @@ void FileSystem::RemoveResourceFolder(const char* startingPath) {
 		return;
 	}
 	sResourceFolders.erase(startingPath);
+	sResourceFoldersLower.erase(ToLowerCase(startingPath));
 }
 
 const char* FileSystem::GetResourceFolder(const char* startingPath) {
@@ -691,6 +1039,7 @@ const char* FileSystem::GetResourceFolder(const char* startingPath) {
 		Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 		return "";
 	}
+	
 	auto it = sResourceFolders.find(startingPath);
 	if (it != sResourceFolders.end()) {
 		if (strcmp(GetExtensionWithOutDot(it->second.c_str()), FBRExt) == 0) {
@@ -699,6 +1048,19 @@ const char* FileSystem::GetResourceFolder(const char* startingPath) {
 		}
 		else {
 			return it->second.c_str();
+		}
+	}
+	{
+		auto loweredPath = ToLowerCase(startingPath);
+		auto it = sResourceFoldersLower.find(loweredPath);
+		if (it != sResourceFoldersLower.end()) {
+			if (strcmp(GetExtensionWithOutDot(it->second.c_str()), FBRExt) == 0) {
+				Logger::Log(FB_ERROR_LOG_ARG, FormatString("%s is not a folder. It is a fbr.", startingPath).c_str());
+				return "";
+			}
+			else {
+				return it->second.c_str();
+			}
 		}
 	}
 
@@ -720,12 +1082,18 @@ bool FileSystem::IsResourceFolderByVal(const char* resourcePath) {
 			return true;
 		}
 	}
+	auto lowered = ToLowerCase(resourcePath);
+	for (auto& it : sResourceFoldersLower) {
+		if (strcmp(it.second.c_str(), lowered.c_str()) == 0) {
+			return true;
+		}
+	}
 	return false;
 }
 
 std::string FileSystem::GetResourcePath(const char* path) {
 	for (auto& it : sResourceFolders) {
-		if (StartsWith(path, it.first.c_str())) {
+		if (StartsWith(path, it.first.c_str(), true)) {
 			std::string newPath = it.second;
 			newPath += boost::filesystem::path(path).generic_string().substr(it.first.size());
 			return newPath;
@@ -753,12 +1121,27 @@ std::string FileSystem::GetResourceKeyFromVal(const char* val) {
 	return{};
 }
 
-errno_t FileSystem::OpenResourceFile(FILE** f, const char* path, const char* mode) {
-	auto err = fopen_s(f, path, mode);
+errno_t FileSystem::OpenResourceFile(FILE** f, const char* path, const char* mode, ByteArrayPtr& fbdata) {
+	fbdata = 0;
+	errno_t err;
+	
+	err = fopen_s(f, path, mode);
+	if (err) {
+		fbdata = FileSystem::get_fba_file_data(path);
+		if (fbdata) {
+			err = 0;
+		}
+	}
 	if (err) {
 		auto resourcePath = GetResourcePath(path);
 		if (!resourcePath.empty()) {
-			err = fopen_s(f, resourcePath.c_str(), mode);			
+			err = fopen_s(f, resourcePath.c_str(), mode);
+			if (err) {
+				fbdata = FileSystem::get_fba_file_data(resourcePath.c_str());
+				if (fbdata) {
+					err = 0;
+				}
+			}
 		}
 	}
 	return err;
@@ -767,6 +1150,8 @@ errno_t FileSystem::OpenResourceFile(FILE** f, const char* path, const char* mod
 FileSystem::Open::Open()
 	: mFile(0)
 	, mErr(0)
+	, mCurrentPosition(0)
+	, mMemoryFile(false)
 {
 
 }
@@ -816,7 +1201,7 @@ errno_t FileSystem::Open::Reset(const char* path, const char* mode, SharingMode 
 }
 
 bool FileSystem::Open::IsOpen() {
-	return mFile != 0;
+	return mFile != 0 || mMemoryFile;
 }
 
 void FileSystem::Open::Close()
@@ -826,6 +1211,9 @@ void FileSystem::Open::Close()
 		mFile = 0;		
 	}
 	mErr = 0;
+	ClearWithSwap(mBinaryData);
+	ClearWithSwap(mTextData);
+	mCurrentPosition = 0;
 }
 
 FILE* FileSystem::Open::Release()
@@ -860,22 +1248,41 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 		if (!smode) {
 			smode = _SH_DENYNO;
 		}
+		
 		mFile = _fsopen(path, mode, smode);
 		if (!mFile) {
+			mBinaryData = FileSystem::get_fba_file_data(path);
+			if (mBinaryData) {
+				mMemoryFile = true;
+				mErr = 0;
+			}
+		}
+		if (!mMemoryFile && !mFile) {
 			auto resourcePath = GetResourcePath(path);
 			if (!resourcePath.empty()) {
 				mFile = _fsopen(resourcePath.c_str(), mode, smode);
+				if (!mFile) {
+					mBinaryData = FileSystem::get_fba_file_data(resourcePath.c_str());
+					if (mBinaryData) {
+						mMemoryFile = true;
+						mErr = 0;
+					}
+				}
 			}
-			if (!mFile) {
+			if (!mFile && !mMemoryFile) {
 				mErr = errno;
 			}
 		}
 	}
 	else {
-		mErr = OpenResourceFile(&mFile, path, mode);
+		mErr = OpenResourceFile(&mFile, path, mode, mBinaryData);
+		if (mBinaryData) {
+			mErr = 0;
+			mMemoryFile = true;
+		}
 	}	
 
-	if (mErr && errorMsgMode == PrintErrorMsg) {
+	if (mErr && !mMemoryFile && errorMsgMode == PrintErrorMsg) {
 		char errString[512] = {};
 		strerror_s(errString, mErr);
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
@@ -885,14 +1292,74 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 	return mErr;
 }
 
-FileSystem::Open::operator FILE* () const
-{
-	return mFile;
+//FileSystem::Open::operator FILE* () const
+//{
+//	if (!mFile && mFileData) {
+//		Logger::Log(FB_ERROR_LOG_ARG, "This file is in the memory. Use GetFileData()");
+//	}
+//	return mFile;
+//}
+
+ByteArrayPtr FileSystem::Open::GetBinaryData() {
+	if (!mBinaryData && mFile) {
+		fseek(mFile, 0, SEEK_END);
+		auto size = ftell(mFile);
+		fseek(mFile, 0, SEEK_SET);
+		mBinaryData = std::make_shared<ByteArray>(size);		
+		if (size == 0) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Zero length file(%s) found.", size).c_str());
+			return mBinaryData;
+		}
+		auto& data = *mBinaryData;
+		auto got = fread(&data[0], 1, size, mFile);
+		if (got != size) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Ascii file treated as binary.");
+		}
+		if (ferror(mFile)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Error reading file.");
+		}
+	}
+
+	return mBinaryData;
+}
+const std::string& FileSystem::Open::GetTextData() {
+	if (mTextData.empty() && mBinaryData) {
+		mTextData.insert(mTextData.begin(), mBinaryData->begin(), mBinaryData->end());
+#if defined(_PLATFORM_WINDOWS_)
+		ReplaceAll(mTextData, "\r\n", "\n");
+#endif
+	}
+	else if (mTextData.empty() && mFile) {
+		char buffer[65536];
+		size_t readsize = 0;
+		while (readsize = fread(buffer, 1, 65535, mFile)) {
+			buffer[readsize] = 0;
+			mTextData += buffer;
+		}
+		if (ferror(mFile)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Error reading file.");
+		}
+	}
+
+	return mTextData;
+}
+
+bool FileSystem::Open::IsMemoryFile() {
+	return mMemoryFile;
 }
 
 errno_t FileSystem::Open::Error() const
 {
 	return mErr;
+}
+
+int FileSystem::Open::eof() {
+	if (mMemoryFile) {
+		return (mCurrentPosition == mBinaryData->size()) ? 1 : 0;
+	}
+	else {
+		return feof(mFile);
+	}
 }
 
 FILE* FileSystem::OpenFile(const char* path, const char* mode, errno_t* errorNo)
@@ -964,4 +1431,138 @@ FileSystem::Lock::Lock() {
 }
 FileSystem::Lock::~Lock() {
 	sGuard.Unlock();
+}
+namespace fb {
+	FB_DLL_FILESYSTEM
+	size_t fread(void* buffer, size_t element_size, size_t element_count, FileSystem::Open& file) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File is not open.");
+			return 0;
+		}
+		if (file.mMemoryFile) {
+			auto& data = *file.GetBinaryData();
+			auto readlen = element_size * element_count;
+			auto end = file.mCurrentPosition + readlen;
+			if (end >= data.size()) {
+				readlen = data.size() - file.mCurrentPosition;
+			}
+			memcpy(buffer, &data[0] + file.mCurrentPosition, readlen);
+			file.mCurrentPosition += readlen;
+			return readlen;
+		}
+		else {
+			return ::fread(buffer, element_size, element_count, file.mFile);
+		}
+	}
+
+	FB_DLL_FILESYSTEM
+	size_t fread_s(void* buffer, size_t buffer_size, size_t element_size, size_t count, FileSystem::Open& file) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File is not open.");
+			return 0;
+		}
+		if (file.mMemoryFile) {
+			auto& data = *file.GetBinaryData();
+			auto readlen = element_size * count;
+			auto end = file.mCurrentPosition + readlen;
+			if (end >= data.size()) {
+				readlen = data.size() - file.mCurrentPosition;
+			}
+			if (readlen > buffer_size) {
+				readlen = buffer_size;
+			}
+			memcpy(buffer, &data[0] + file.mCurrentPosition, readlen);
+			file.mCurrentPosition += readlen;
+			return readlen;
+		}
+		else {
+			return ::fread_s(buffer, buffer_size, element_size, count, file.mFile);
+		}
+	}
+
+	FB_DLL_FILESYSTEM
+	size_t fseek(FileSystem::Open& file, long offset, int origin) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File is not open");
+			return -1;
+		}
+		if (file.mMemoryFile) {
+			if (origin == SEEK_SET) {
+				if (offset > (long)file.mBinaryData->size() || offset < 0) {
+					Logger::Log(FB_ERROR_LOG_ARG, "Invalid offset.");
+					return 1;
+				}
+				file.mCurrentPosition = offset;
+				return 0;
+			}
+			else if (origin == SEEK_CUR) {
+				auto result_pos = file.mCurrentPosition + offset;
+				if (result_pos > (long)file.mBinaryData->size() || result_pos < 0) {
+					Logger::Log(FB_ERROR_LOG_ARG, "Invalid offset.");
+					return 1;
+				}
+				file.mCurrentPosition = result_pos;
+				return 0;
+			}
+			else if (origin == SEEK_END) {
+				auto result_pos = file.mBinaryData->size() + offset;
+				if (result_pos > file.mBinaryData->size() || result_pos < 0) {
+					Logger::Log(FB_ERROR_LOG_ARG, "Invalid offset.");
+					return 1;
+				}
+				file.mCurrentPosition = result_pos;
+				return 0;
+			}
+			else {
+				return 2;
+			}
+		}
+		else {
+			return ::fseek(file.mFile, offset, origin);
+		}
+	}
+
+	FB_DLL_FILESYSTEM
+	int feof(FileSystem::Open& file) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File not open.");
+			return 0;
+		}
+
+		if (file.mMemoryFile) {
+			return (file.mCurrentPosition >= (long long)file.mBinaryData->size()) ? 1 : 0;
+		}
+		else {
+			return ::feof(file.mFile);
+		}
+	}
+
+	FB_DLL_FILESYSTEM
+	long int ftell(FileSystem::Open& file) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File not open.");
+			return -1L;
+		}
+
+		if (file.mMemoryFile) {
+			return file.mCurrentPosition;
+		}
+		else {
+			return ftell(file.mFile);
+		}
+	}
+
+	FB_DLL_FILESYSTEM
+	void rewind(FileSystem::Open& file) {
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, "File not open.");
+			return;
+		}
+		if (file.mMemoryFile) {
+			file.mCurrentPosition = 0;
+		}
+		else {
+			rewind(file.mFile);
+		}
+	}
 }

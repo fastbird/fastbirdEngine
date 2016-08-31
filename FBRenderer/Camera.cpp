@@ -34,9 +34,8 @@
 #include "FBInputManager/IInputInjector.h"
 #include "FBInputManager/KeyCodes.h"
 #include "FBSceneManager/ISpatialObject.h"
-#include "FBCommonHeaders/VectorMap.h"
 #include "FBTimer/Timer.h"
-#include "FBMathLib/MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 
 using namespace fb;
 
@@ -110,7 +109,7 @@ public:
 	Frustum mFrustumInCameraSpace;
 	size_t mFrustumInCameraSpaceCalcFrame = -1;
 	CameraPtr mOverridingCamera;
-	VectorMap<Vec2I, Ray> mRayCache;
+	std::unordered_map<Vec2I, Ray> mRayCache;
 	InterpolateWrapManager<Real> mInterpolManReal;
 	FRAME_PRECISION mLastUpdateFrame;
 
@@ -132,6 +131,7 @@ public:
 		, mRenderFrustum(false)
 		, mLastUpdateFrame(-1)
 	{
+
 		// proj properties
 		SetFOV(Radian(45));
 		mNear = 0.5f;
@@ -543,7 +543,7 @@ public:
 	Ray ScreenPosToRay(long x, long y)
 	{
 		RefreshTransform();
-		auto it = mRayCache.Find(Vec2I(x, y));
+		auto it = mRayCache.find(Vec2I(x, y));
 		if (it != mRayCache.end()){
 			return it->second;
 		}
@@ -629,7 +629,7 @@ public:
 		}
 		if (injector->IsValid(InputDevice::Mouse) && !injector->IsKeyDown(VK_CONTROL)){			
 			long dx, dy;
-			injector->GetDeltaXY(dx, dy);
+			injector->GetDpiDependentDeltaXY(dx, dy);
 
 			if (injector->IsLButtonDown())
 			{

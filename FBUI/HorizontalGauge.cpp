@@ -26,6 +26,7 @@
 */
 
 #include "StdAfx.h"
+#include "UIManager.h"
 #include "HorizontalGauge.h"
 #include "UIObject.h"
 #include "FBRenderer/TextureAtlas.h"
@@ -42,11 +43,13 @@ namespace fb
 	HorizontalGauge::HorizontalGauge()
 		:mPercentage(0), mMaximum(1.f)
 		, mBlink(false)
-		, mBlinkSpeed(3.f)		
+		, mBlinkSpeed(3.f)
 		, mBlinkTime(0)
 		, mVertical(false)
 		, mHorizontalFlip(false)
 		, mMaterialUsingImage(false)
+		, mDrag(false), mDragging(false)
+		, mGaugeColorEmpty(0, 0, 0, 1)
 	{
 		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->SetMaterial("EssentialEngineData/materials/UIHorizontalGauge.material");
@@ -97,13 +100,65 @@ namespace fb
 		}
 	}
 
+	void HorizontalGauge::OnMouseHover(IInputInjectorPtr injector, bool propergated) {
+		__super::OnMouseHover(injector, propergated);
+		if (mDrag) {
+			SetCursor(WinBase::sCursorWE);
+		}
+	}
+
+	void HorizontalGauge::OnMouseDrag(IInputInjectorPtr injector) {		
+		__super::OnMouseDrag(injector);
+		if (!mDrag)
+			return;
+		Vec2I delta = injector->GetAbsDeltaXY();
+		if (delta.x != 0) {
+			auto percent = GetPercentage();
+			auto maximum = GetFinalSize().x;
+			auto cur = maximum * percent;
+			cur += delta.x;
+			percent = cur / (float)maximum;
+			SetPercentage(percent);
+		}
+	}
+
+	/*bool HorizontalGauge::OnInputFromHandler(IInputInjectorPtr injector) {
+		if (mDragging && IsIn(injector)) {
+			Vec2I delta = injector->GetAbsDeltaXY();
+			if (delta.x != 0) {
+				auto dragPart = mDragPart.lock();
+				auto startX = GetFinalPos().x;
+				auto endX = startX + GetFinalSize().x;
+				Vec2I mousePos = injector->GetMousePos();
+				auto destX = mousePos.x - startX;
+				destX = std::min(startX + 1, destX);
+				destX = std::max(endX - 1, destX);
+				auto posRelative = destX - startX;
+				if (dragPart) {
+					dragPart->ChangePosX(posRelative);
+				}
+				SetPercentage(posRelative / GetFinalSize().x);
+			}
+			return true;
+		}
+		return __super::OnInputFromHandler(injector);
+	}*/
+
 	bool HorizontalGauge::UsingEmptyColor() {
 		return mGaugeColorEmpty.r() + mGaugeColorEmpty.g() + mGaugeColorEmpty.b() + mGaugeColorEmpty.a() != 0.f;
 	}
 
 	void HorizontalGauge::SetPercentage(float p)
 	{
-		mPercentage = p;
+		mPercentage = std::min(mMaximum, p);
+		mPercentage = std::max(0.f, mPercentage);
+
+		auto dragPart = mDragPart.lock();
+		if (dragPart) {
+			dragPart->ChangeNPosX(mPercentage);
+		}
+		OnEvent(UIEvents::EVENT_GAGUE_CHANGED);
+		
 		auto mat = mUIObject->GetMaterial();
 		// x : percent		
 		// y : sin
@@ -178,6 +233,14 @@ namespace fb
 
 	void HorizontalGauge::SetGaugeColorEmpty(const Color& color)
 	{
+		if (mGaugeBorderColor.r() != mGaugeBorderColor.r()) {
+			int a = 0;
+			a++;
+		}
+		if (mGaugeBorderColor.g() != mGaugeBorderColor.g()) {
+			int a = 0;
+			a++;
+		}
 		mGaugeColorEmpty = color;
 		SetPercentage(mPercentage);
 	}
@@ -243,6 +306,12 @@ namespace fb
 					mat->SetAmbientColor(mGaugeBorderColor.GetVec4());
 				}
 			}
+			return true;
+		}
+
+		case UIProperty::Gauge_DRAG: {
+			SetDrag(StringConverter::ParseBool(val));
+			
 			return true;
 		}
 
@@ -371,6 +440,17 @@ namespace fb
 			strcpy_s(val, bufsize, data.c_str());
 			return true;
 		}
+
+		case UIProperty::Gauge_DRAG: {
+			if (notDefaultOnly) {
+				if (mDrag == UIProperty::GetDefaultValueBool(prop)) {
+					return false;
+				}
+			}
+			strcpy_s(val, bufsize, StringConverter::ToString(mDrag).c_str());
+			return true;
+		}
+
 		case UIProperty::GAUGE_VERTICAL:
 		{
 			if (notDefaultOnly)
@@ -478,7 +558,7 @@ namespace fb
 					region, mTextureAtlasFile.c_str()).c_str());
 			}
 			SAMPLER_DESC sdesc;
-			sdesc.Filter = TEXTURE_FILTER_MIN_MAG_MIP_POINT;			
+			sdesc.SetFilter(TEXTURE_FILTER_MIN_MAG_MIP_POINT);			
 			auto mat = mUIObject->GetMaterial();
 			mat->SetTexture(mTextures[index], SHADER_TYPE_PS, index, sdesc);
 			if (mAtlasRegions[index])
@@ -519,6 +599,28 @@ namespace fb
 			for (auto& it : parameters) {
 				newMat->SetShaderParameter(it.first, it.second);
 			}
+		}
+	}
+
+	void HorizontalGauge::SetDrag(bool drag) {
+		mDrag = drag;
+		auto dragPart = mDragPart.lock();
+		if (mDrag && !dragPart) {
+			dragPart = AddChild(mPercentage, 0.5f, 0.01f, 0.9f, ComponentType::StaticText);
+			dragPart->SetProperty(UIProperty::USE_NPOSX, "true");
+			dragPart->SetProperty(UIProperty::USE_NPOSY, "true");
+			dragPart->SetProperty(UIProperty::NO_BACKGROUND, "false");			
+			dragPart->SetProperty(UIProperty::BACK_COLOR, "1, 1, 0, 1");
+			dragPart->SetProperty(UIProperty::ALIGNH, "center");
+			dragPart->SetProperty(UIProperty::ALIGNV, "middle");
+			dragPart->ChangeSizeX(2);
+			if (GetVisible()) {
+				dragPart->SetVisible(true);
+			}
+			mDragPart = dragPart;
+		}
+		else if (!mDrag && dragPart) {
+			RemoveChild(dragPart);
 		}
 	}
 }

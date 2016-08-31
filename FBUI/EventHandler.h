@@ -26,14 +26,13 @@
 */
 
 #pragma once
+#include "FBCommonHeaders/Types.h"
 #include "UIEvents.h"
-
 namespace fb
 {
 	class FB_DLL_UI EventHandler
 	{
-	public:
-		typedef size_t FunctionId;
+	public:		
 		typedef std::function< void(void*) > EVENT_FUNCTION;
 		static size_t UNIQUE_ID;
 		static unsigned sLastEventProcess;

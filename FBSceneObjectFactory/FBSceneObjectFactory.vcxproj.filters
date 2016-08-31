@@ -25,6 +25,7 @@
       <Filter>Terrain</Filter>
     </ClInclude>
     <ClInclude Include="ISkySphereLIstener.h" />
+    <ClInclude Include="binary_mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />
@@ -37,6 +38,7 @@
     <ClCompile Include="TrailObject.cpp" />
     <ClCompile Include="SkySphere.cpp" />
     <ClCompile Include="SkyBox.cpp" />
+    <ClCompile Include="binary_mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Terrain">

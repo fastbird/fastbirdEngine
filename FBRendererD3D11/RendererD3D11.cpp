@@ -45,6 +45,10 @@
 #include "FBThread/TaskScheduler.h"
 #include "FBThread/Invoker.h"
 #include "FBCommonHeaders/SpinLock.h"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/string.hpp>
 #include <set>
 
 #define _RENDERER_FRAME_PROFILER_
@@ -367,7 +371,7 @@ public:
 	// Device features
 	Vec2ITuple FindClosestSize(HWindowId id, const Vec2ITuple& input){
 		Vec2I closest = input;
-		auto it = mSwapChains.Find(id);
+		auto it = mSwapChains.find(id);
 		if (it == mSwapChains.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("RendererD3D11::FindClosestSize : swap chain %d is not found", id).c_str());
 			return closest;
@@ -403,7 +407,7 @@ public:
 	}
 
 	bool GetResolutionList(unsigned& outNum, Vec2ITuple* list){
-		auto it = mSwapChains.Find(1);
+		auto it = mSwapChains.find(1);
 		if (it == mSwapChains.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "RendererD3D11::GetResolutionList : swap chain 1 is not found");
 			return false;
@@ -547,12 +551,12 @@ public:
 	}
 
 	void DeinitCanvas(HWindowId id, HWindow window){
-		auto it = mRenderTargetTextures.Find(id);
+		auto it = mRenderTargetTextures.find(id);
 		if (it != mRenderTargetTextures.end()){
 			mRenderTargetTextures.erase(it);
 		}
 
-		auto itSwapChain = mSwapChains.Find(id);
+		auto itSwapChain = mSwapChains.find(id);
 		if (itSwapChain != mSwapChains.end())
 		{
 			BOOL fullscreen = TRUE;
@@ -573,7 +577,7 @@ public:
 
 	bool ChangeResolution(HWindowId id, HWindow window, const Vec2ITuple& newResol,
 		IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture){
-		auto swIt = mSwapChains.Find(id);
+		auto swIt = mSwapChains.find(id);
 		if (swIt == mSwapChains.end()){
 			Logger::Log(FB_ERROR_LOG_ARG, "No swap chain found.");
 			return false;
@@ -603,7 +607,7 @@ public:
 	}
 
 	bool ChangeFullscreenMode(HWindowId id, HWindow window, int mode){
-		auto it = mSwapChains.Find(id);
+		auto it = mSwapChains.find(id);
 		if (it == mSwapChains.end())
 			return false;
 
@@ -720,6 +724,9 @@ public:
 								BUFFER_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE, BUFFER_CPU_ACCESS_NONE, type);
 							--pimpl->mNumLoadingTexture;
 						});
+					}
+					else {
+						Logger::Log(FB_ERROR_LOG_ARG, "Texture is null.");
 					}
 				}
 			};
@@ -1285,8 +1292,14 @@ public:
 #endif
 
 		ID3DBlob* pErrorBlob = 0;
-		auto wfilename = AnsiToWideMT(FileSystem::GetResourcePathIfPathNotExists(filename).c_str());
-		hr = D3DCompileFromFile(wfilename.c_str(), pDefines, includeProcessor, entryPoint, shaderModel, dwShaderFlags, 0,
+		FileSystem::Open file(filename, "r");
+		if (!file.IsOpen()) {
+			Logger::Log(FB_ERROR_LOG_ARG, 
+				FormatString("Shader compile failed. File not found. %s", filename).c_str());
+			return 0x80070002;
+		}
+		auto& shader_code = file.GetTextData();		
+		hr = D3DCompile(&shader_code[0], shader_code.size(), filename, pDefines, includeProcessor, entryPoint, shaderModel, dwShaderFlags, 0,
 			ppBlobOut, &pErrorBlob);
 			/*D3DX11CompileFromFile(filename, pDefines, includeProcessor, entryPoint, shaderModel, dwShaderFlags, 0,
 			0, ppBlobOut, &pErrorBlob, 0);*/
@@ -1326,11 +1339,12 @@ public:
 		{
 			std::string includeCacheFile = GetIncludeCacheFile(cachefile);			
 			// include files also containg self main shader path.
-			std::ifstream includeFile(includeCacheFile, std::ios_base::binary);
+			std::ifstream includeFile(includeCacheFile, std::ios_base::binary);			
 			bool includesAreNotModified = true;
-			if (includeFile) {
+			if (includeFile) {				
 				StringVector includes;
-				read(includeFile, includes);
+				boost::archive::binary_iarchive ar(includeFile);
+				ar >> includes;
 				for (auto header : includes) {
 					if (FileSystem::CompareResourceFileModifiedTime(header.c_str(), cachefile) != -1) {
 						includesAreNotModified = false;
@@ -1361,7 +1375,8 @@ public:
 			if (!includes.empty()) {
 				std::ofstream includeFile(GetIncludeCacheFile(cachefile), std::ios_base::binary);
 				if (includeFile) {
-					write(includeFile, includeProcessor->GetIncludesSV());
+					boost::archive::binary_oarchive ar(includeFile);
+					ar << includes;
 				}
 			}
 		}
@@ -1485,7 +1500,9 @@ public:
 
 	std::string BuildCacheKeyForShader(const char* path, SHADER_TYPE shaderType, const SHADER_DEFINES& defines) {
 		// build cache key
-		std::string cachekey = path;
+		std::string cachekey = FileSystem::GetAppDataLocalGameFolder();
+		cachekey += path;
+		
 		if (!defines.empty())
 		{
 			std::string namevalue;
@@ -2858,7 +2875,7 @@ public:
 		mCurrentDSView = 0;
 		Vec2I originalSize;
 		// release render target textures
-		auto it = mRenderTargetTextures.Find(hwndId);
+		auto it = mRenderTargetTextures.find(hwndId);
 		if (it == mRenderTargetTextures.end())
 		{
 			Error(FB_ERROR_LOG_ARG, FormatString("Cannot find the swap chain render target with id %u", hwndId).c_str());
@@ -2872,7 +2889,7 @@ public:
 		}
 
 		// resize swap chain
-		auto itSwapChain = mSwapChains.Find(hwndId);
+		auto itSwapChain = mSwapChains.find(hwndId);
 		TextureD3D11Ptr color, depth;
 		if (itSwapChain != mSwapChains.end()) {
 			BOOL fullscreen;
@@ -3264,16 +3281,23 @@ void RendererD3D11::SetSamplerState(SamplerStateD3D11* pSamplerState, SHADER_TYP
 
 static DirectX::TexMetadata GetMetadata(const char* path) {
 	DirectX::TexMetadata metadata{};
-	auto resourcePath = FileSystem::GetResourcePathIfPathNotExists(path);
-	std::wstring wpath = AnsiToWideMT(resourcePath.c_str());
-	auto ret = DirectX::GetMetadataFromWICFile(wpath.c_str(), 0, metadata);
+	FileSystem::Open file(path, "rb");
+	if (!file.IsOpen()) {
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+			"Cannot open file %s", path).c_str());
+	}
+	auto& data = *file.GetBinaryData();
+	
+	auto ret = DirectX::GetMetadataFromWICMemory(&data[0], data.size(), 0, metadata);
 	if (SUCCEEDED(ret)) {
 		return metadata;
 	}
-	ret = DirectX::GetMetadataFromDDSFile(wpath.c_str(), 0, metadata);
+	ret = DirectX::GetMetadataFromDDSMemory(&data[0], data.size(), 0, metadata);
 	if (SUCCEEDED(ret)) {
 		return metadata;
 	}
+	Logger::Log(FB_ERROR_LOG_ARG, FormatString(
+		"Failed to read metadata from %s", path).c_str());
 	return metadata;	
 }
 

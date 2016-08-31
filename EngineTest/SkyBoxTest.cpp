@@ -38,7 +38,7 @@ public:
 		mSky->SetMaterial("Data/skysphere_equirectangular.material", RENDER_PASS::PASS_NORMAL);
 
 		//mSky->SetMaterial("Data/skysphere_geom.material", RENDER_PASS::PASS_NORMAL);
-		//mSky->SetGeometry("data/SkySphere.dae");
+		//mSky->SetGeometry("Data/SkySphere.dae");
 
 		mSky->AttachToScene();
 	}

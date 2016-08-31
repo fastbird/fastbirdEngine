@@ -26,8 +26,18 @@
 */
 
 #pragma once
-namespace fb
-{
-const unsigned int murmurSeed = 0xaabbccdd;
-unsigned int murmur3_32(const char *key, unsigned int len, unsigned int seed = murmurSeed);
-}
+#include "VectorMap.h"
+#include <boost/serialization/vector.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/utility.hpp>
+
+namespace boost {
+	namespace serialization {
+		template<class Archive, class U, class V, class CMP>
+		void serialize(Archive & ar, fb::VectorMap<U, V, CMP> &t, const unsigned int version)
+		{
+			ar & t.mVector;
+		}
+	} // serialization
+} // namespace boost

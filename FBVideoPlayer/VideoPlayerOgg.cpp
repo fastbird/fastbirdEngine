@@ -162,7 +162,7 @@ public:
 		while (readed = buffer_data()){
 			/* nothing to do*/
 		}
-		if (mFile) {
+		if (mFile.IsOpen()) {
 			mFile.Close();
 		}
 
@@ -244,7 +244,7 @@ public:
 			return 0;
 
 		char *buffer = ogg_sync_buffer(&mSyncState, 4096);
-		int bytes = fread_s(buffer, 4096, 1, 4096, mFile);
+		int bytes = fb::fread_s(buffer, 4096, 1, 4096, mFile);
 		ogg_sync_wrote(&mSyncState, bytes);
 		return(bytes);
 

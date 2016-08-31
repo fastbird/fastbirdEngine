@@ -337,7 +337,7 @@ void VerticalGauge::SetTextureAtlasRegion(UIProperty::Enum prop, const char* reg
 {
 	if (mTextureAtlasFile.empty())
 	{
-		mTextureAtlasFile = "data/textures/gameui.xml";
+		mTextureAtlasFile = "Data/textures/gameui.xml";
 	}
 	int index = 0;
 	if (prop == UIProperty::REGION_FILLED)

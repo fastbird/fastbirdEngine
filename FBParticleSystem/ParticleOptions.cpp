@@ -37,9 +37,11 @@ static void ScaleEditingParticle(StringVector& arg);
 FB_IMPLEMENT_STATIC_CREATE(ParticleOptions)
 ParticleOptions::ParticleOptions(){
 	MoveEditParticle = 0;
+	r_ParticleProfile = 0;
 	FB_REGISTER_CVAR(MoveEditParticle, MoveEditParticle, CVAR_CATEGORY_CLIENT, "MoveEditParticle");
+	FB_REGISTER_CVAR(r_ParticleProfile, r_ParticleProfile, CVAR_CATEGORY_CLIENT, "particle profiler");
 	FB_REGISTER_CC(EditParticle, "Start editing particle");
-	FB_REGISTER_CC(ScaleEditingParticle, "Scale editing particle");
+	FB_REGISTER_CC(ScaleEditingParticle, "Scale editing particle");	
 }
 
 ParticleOptions::~ParticleOptions(){

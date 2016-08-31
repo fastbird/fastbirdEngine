@@ -54,22 +54,22 @@ public:
 	CowPtr<PARTICLE_TEMPLATES> mTemplates; // currently support only one template per emitter.
 
 	// internal
-	typedef VectorMap<const ParticleTemplate*, float> NEXT_EMITS;
+	typedef std::unordered_map<const ParticleTemplate*, float> NEXT_EMITS;
 	NEXT_EMITS mNextEmits;
 
-	VectorMap<const ParticleTemplate*, ParticleRenderObjectPtr> mParticleRenderObjects;
+	std::unordered_map<const ParticleTemplate*, ParticleRenderObjectPtr> mParticleRenderObjects;
 
 	// pos interpolation
-	typedef VectorMap<const ParticleTemplate*, Vec3> LAST_EMIT_POS;
+	typedef std::unordered_map<const ParticleTemplate*, Vec3> LAST_EMIT_POS;
 	LAST_EMIT_POS mLastEmitPos;
 
 	typedef CircularBuffer<Particle> PARTICLES;
 	typedef std::shared_ptr<PARTICLES> PARTICLES_PTR;
-	typedef VectorMap<const ParticleTemplate*, PARTICLES_PTR> ParticlesPerTemplate;
+	typedef std::unordered_map<const ParticleTemplate*, PARTICLES_PTR> ParticlesPerTemplate;
 	ParticlesPerTemplate mParticlesPerTemplate;
 
-	VectorMap<const ParticleTemplate*, unsigned> mAliveParticles;
-	VectorMap<const ParticleTemplate*, unsigned> mMaxParticles;
+	std::unordered_map<const ParticleTemplate*, unsigned> mAliveParticles;
+	std::unordered_map<const ParticleTemplate*, unsigned> mMaxParticles;
 
 	// not using currently
 	// Assuming Y is the direction.
@@ -95,7 +95,7 @@ public:
 	bool mVisible;
 	int mScreenspace;
 
-	VectorMap<std::string, std::string>  mShaderDefines;
+	std::unordered_map<std::string, std::string>  mShaderDefines;
 	struct SoundData{
 		std::string mPath;
 		bool mUpdateToLine;
@@ -156,11 +156,11 @@ public:
 		for (const auto& it : *(mTemplates.const_get())){
 			PARTICLES_PTR particles(new PARTICLES, [](PARTICLES* obj){delete obj; });
 
-			mMaxParticles.Insert({ &it, it.mMaxParticle });
+			mMaxParticles[&it] = it.mMaxParticle;
 			particles->Init(it.mMaxParticle * 2);
-			mParticlesPerTemplate.Insert({ &it, particles });
-			mNextEmits.Insert({ &it, (float)it.mInitialParticles });
-			mAliveParticles.Insert({ &it, 0 });
+			mParticlesPerTemplate[&it] = particles;
+			mNextEmits[&it] = (float)it.mInitialParticles;
+			mAliveParticles[&it] = 0;
 		}
 	}
 
@@ -174,21 +174,16 @@ public:
 	}
 
 	bool Load(const char* filepath, bool reload){
-		tinyxml2::XMLDocument doc;
-		int err = doc.LoadFile(filepath);
-		if (err)
+		auto pdoc = FileSystem::LoadXml(filepath);
+		tinyxml2::XMLDocument& doc = *pdoc;		
+		if (doc.Error())
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Error while parsing particle(%s)!", filepath).c_str());			
 			if (doc.ErrorID() == tinyxml2::XML_ERROR_FILE_NOT_FOUND)
 			{
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("particle %s is not found!", filepath).c_str());				
 			}
-			const char* errMsg = doc.GetErrorStr1();
-			if (errMsg)
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("\t%s", errMsg).c_str());				
-			errMsg = doc.GetErrorStr2();
-			if (errMsg)
-				Logger::Log(FB_ERROR_LOG_ARG, FormatString("\t%s", errMsg).c_str());
+			Logger::Log(doc.GetErrorString().c_str());			
 			return false;
 		}
 
@@ -258,7 +253,6 @@ public:
 			if (sz)
 			{
 				pt.mTexturePath = sz;
-				ToLowerCase(pt.mTexturePath);
 			}
 
 
@@ -859,8 +853,7 @@ public:
 			if (templates)
 			{
 				for (const auto& it : *templates)
-				{
-					mNextEmits.Insert(NEXT_EMITS::value_type(&it, 1.f));
+				{						
 					mNextEmits[&it] = (float)it.mInitialParticles;
 				}
 			}
@@ -886,7 +879,7 @@ public:
 		{
 			if (pt.mDeleteWhenStop || force)
 			{
-				auto it = mParticlesPerTemplate.Find(&pt);
+				auto it = mParticlesPerTemplate.find(&pt);
 				if (it == mParticlesPerTemplate.end())
 					continue;
 				PARTICLES& particles = *(it->second);
@@ -1004,12 +997,18 @@ public:
 				continue;
 
 			unsigned alives = mAliveParticles[&pt];
+			auto itMax = mMaxParticles.find(&pt);
+			if (itMax == mMaxParticles.end()) {
+				Logger::Log(FB_ERROR_LOG_ARG, "No max particle information.");
+				mMaxParticles[&pt] = 10;
+			}
 			unsigned& maxParticles = mMaxParticles[&pt];
 			if (alives >= maxParticles && !pt.mDeleteWhenFull)
 			{
-				Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("ParticleEmitter(%u) doubled its buffer.", mEmitterID).c_str());				
 				mParticlesPerTemplate[&pt]->DoubleSize();
 				maxParticles *= 2;
+				if (maxParticles > 500)
+					Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("ParticleEmitter(id:%u) doubled its buffer(size:%u).", mEmitterID, maxParticles).c_str());
 			}
 
 			float& nextEmit = mNextEmits[&pt];
@@ -1017,7 +1016,7 @@ public:
 			float integral;
 			nextEmit = modf(nextEmit, &integral);
 			int num = (int)integral;
-			auto itFind = mLastEmitPos.Find(&pt);
+			auto itFind = mLastEmitPos.find(&pt);
 			Particle* p = 0;
 			for (int i = 0; i<num; i++)
 			{
@@ -1042,15 +1041,13 @@ public:
 			return;
 		CameraPtr pCamera = Renderer::GetInstance().GetMainCamera();
 		assert(pCamera);
-		//if (pCamera->IsCulled(mBoundingVolumeWorld))
-		//return;
 
 		for(auto& it : mParticlesPerTemplate)
 		{
-			auto particles = (it.second);
+			auto& particles = it.second;
 			const ParticleTemplate* pt = it.first;
 
-			ParticleRenderObjectPtr pro = mParticleRenderObjects[pt];
+			ParticleRenderObjectPtr& pro = mParticleRenderObjects[pt];
 
 			if (pro && pt->mAlign)
 			{
@@ -1077,7 +1074,6 @@ public:
 					{
 						Logger::Log(FB_ERROR_LOG_ARG, FormatString("Emitter(%u) tried lock %u but only %u locked.", mEmitterID, numVertices, numWritable).c_str());						
 					}
-
 				}
 
 				PARTICLES::IteratorWrapper itParticle = particles->begin(), itEndParticle = particles->end();
@@ -1222,7 +1218,7 @@ public:
 		mLength = length;
 		for(auto& it : mParticlesPerTemplate)
 		{
-			auto particles = it.second;
+			auto& particles = it.second;
 			const ParticleTemplate* pt = it.first;
 			if (pt->mAlign == ParticleAlign::Direction)
 			{
@@ -1249,14 +1245,14 @@ public:
 	}
 
 	void RemoveShaderDefine(const char* def){
-		auto it = mShaderDefines.Find(def);
+		auto it = mShaderDefines.find(def);
 		if (it != mShaderDefines.end())
 			mShaderDefines.erase(it);
 
 		for (const auto& pt : *(mTemplates.const_get()))
 		{
-			PARTICLES& particles = *(mParticlesPerTemplate[&pt]);
-			for (auto& p : particles)
+			auto particles = mParticlesPerTemplate[&pt];
+			for (auto& p : *particles)
 			{
 				if (p.mMeshObject){					
 					auto mat = p.mMeshObject->GetMaterial();
@@ -1269,7 +1265,7 @@ public:
 	}
 
 	void AddShaderDefine(const char* def, const char* val){
-		auto it = mShaderDefines.Find(std::string(def));
+		auto it = mShaderDefines.find(std::string(def));
 		if (it != mShaderDefines.end())
 		{
 			it->second = val;
@@ -1280,8 +1276,8 @@ public:
 
 		for (const auto& pt : *(mTemplates.const_get()))
 		{
-			PARTICLES& particles = *(mParticlesPerTemplate[&pt]);
-			for (auto& p : particles)
+			auto particles = mParticlesPerTemplate[&pt];
+			for (auto& p : *particles)
 			{
 				if (p.mMeshObject){					
 					auto mat = p.mMeshObject->GetMaterial();
@@ -1429,9 +1425,9 @@ public:
 	}
 
 	Particle* Emit(const ParticleTemplate& pt){
-		PARTICLES& particles = *(mParticlesPerTemplate[&pt]);
-		size_t addedPos = particles.push_back(Particle());
-		Particle& p = particles.GetAt(addedPos);
+		auto particles = mParticlesPerTemplate[&pt];
+		size_t addedPos = particles->push_back(Particle());
+		Particle& p = particles->GetAt(addedPos);
 		const auto& vScale = mSelf->GetScale();
 		float scale = vScale.x;
 		switch (pt.mRangeType)
@@ -1648,16 +1644,6 @@ public:
 			}
 		}
 		return &p;
-	}
-
-	Particle& GetParticle(unsigned templateIdx, unsigned particleIdx){
-		if (!mManualEmitter)
-		{
-			assert(0);
-		}
-		const ParticleTemplate& pt = (*(mTemplates.const_get()))[templateIdx];
-		PARTICLES& particles = *(mParticlesPerTemplate[&pt]);
-		return particles.GetAt(particleIdx);
 	}
 };
 

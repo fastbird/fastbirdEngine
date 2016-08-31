@@ -31,6 +31,7 @@
 #include "Texture.h"
 #include "TinyXmlLib/tinyxml2.h"
 #include "FBStringLib/StringLib.h"
+#include "FBFileSystem/FileSystem.h"
 
 namespace fb{
 	void TextureAtlasRegion::GetQuadUV(Vec2 uv[])
@@ -68,7 +69,7 @@ namespace fb{
 			Logger::Log(FB_DEFAULT_LOG_ARG, "invalid arg");
 			return 0;
 		}
-		auto it = mRegions.Find(name);
+		auto it = mRegions.find(name);
 		if (it != mRegions.end()){
 			Logger::Log(FB_DEFAULT_LOG_ARG, "already existing. returning it.");
 			return it->second;
@@ -76,7 +77,7 @@ namespace fb{
 
 		TextureAtlasRegionPtr region(FB_NEW(TextureAtlasRegion), [](TextureAtlasRegion* obj){ FB_DELETE(obj); });
 		region->mName = name;
-		mRegions.Insert(std::make_pair(region->mName, region));
+		mRegions[region->mName] = region;
 		return region;
 	}
 
@@ -87,7 +88,7 @@ namespace fb{
 			return 0;
 		}
 
-		REGION_MAP::iterator it = mRegions.Find(name);
+		REGION_MAP::iterator it = mRegions.find(name);
 		if (it != mRegions.end())
 		{
 			return it->second;
@@ -100,12 +101,8 @@ namespace fb{
 		}
 	}
 
-	TextureAtlasRegionPtr TextureAtlas::GetRegion(size_t index) {
-		return (mRegions.begin() + index)->second;
-	}
-
-	size_t TextureAtlas::GetNumRegions() const {
-		return mRegions.size();
+	IteratorWrapper<TextureAtlas::REGION_MAP> TextureAtlas::GetIterator() {
+		return IteratorWrapper<TextureAtlas::REGION_MAP>(mRegions);
 	}
 	
 	void TextureAtlas::SetTexture(TexturePtr texture){
@@ -131,17 +128,16 @@ namespace fb{
 	bool TextureAtlas::ReloadTextureAtlas()
 	{
 		auto& renderer = Renderer::GetInstance();		
-		tinyxml2::XMLDocument doc;
-		doc.LoadFile(mPath.c_str());
-		if (doc.Error()) {
-			const char* errMsg = doc.GetErrorStr1();
+		auto pdoc = FileSystem::LoadXml(mPath.c_str());		
+		if (pdoc->Error()) {
+			const char* errMsg = pdoc->GetErrorStr1();
 			if (errMsg)
 				Logger::Log(FB_ERROR_LOG_ARG, FormatString("texture atlas error : \t%s", errMsg).c_str());
 			else
 				Logger::Log(FB_ERROR_LOG_ARG, "ReloadTextureAtlas Failed");
 			return false;
 		}
-		tinyxml2::XMLElement* pRoot = doc.FirstChildElement("TextureAtlas");
+		tinyxml2::XMLElement* pRoot = pdoc->FirstChildElement("TextureAtlas");
 		if (!pRoot) {
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid TextureAtlas format!");
 			return false;

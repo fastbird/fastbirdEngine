@@ -101,4 +101,7 @@ namespace fb
 		bool HasCollisionShapes() const;
 		unsigned GetNumCollisionShapes(unsigned idx) const;
 	};
+
+	void write_template(std::ostream& stream, const MeshGroup& data, int version);
+	void read_template(std::istream& stream, MeshGroup& data);
 }

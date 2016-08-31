@@ -38,6 +38,7 @@
 #include <assert.h>
 #include <vector>
 #include <fstream>
+#include <unordered_map>
 
 #include <algorithm>
 #include "FBLua/LuaUtils.h"

@@ -50,8 +50,9 @@ public:
 	long mAbsXPrev;
 	long mAbsY;
 	long mAbsYPrev;
-	long mAbsDeltaX;
-	long mAbsDeltaY;
+	
+	long mDpiDependentDeltaX;
+	long mDpiDependentDeltaY;
 
 	long mPhysicalX;
 	long mPhysicalY;
@@ -153,6 +154,7 @@ public:
 		mButtonsPressed = 0;
 		mLastX = 0;
 		mLastY = 0;
+
 		if (mLockMouse){
 			// mLastEventWindow is ok?
 			// or need the current forground window.
@@ -166,8 +168,9 @@ public:
 			mAbsXPrev = mAbsX;
 			mAbsYPrev = mAbsY;			
 		}
-		mAbsDeltaX = 0;
-		mAbsDeltaY = 0;
+		
+		mDpiDependentDeltaX = 0;
+		mDpiDependentDeltaY = 0;
 		mValid = true;
 		//if (mLButtonDoubleClicked)
 			//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double click cleared");
@@ -209,10 +212,10 @@ public:
 
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
-		if (mLastX != 0 || mLastY != 0){
-			mAbsDeltaX += mLastX;
-			mAbsDeltaY += mLastY;
-			GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);			
+		if (mLastX != 0 || mLastY != 0){			
+			mDpiDependentDeltaX += mLastX;
+			mDpiDependentDeltaY += mLastY;
+			GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);
 			if (!mLockMouse)
 			{
 				const auto& size = mRenderTargetSizes[handle];
@@ -421,13 +424,13 @@ public:
 		}
 	}
 
-	void GetDeltaXY(long &x, long &y) const{		
-		x = mAbsDeltaX;
-		y = mAbsDeltaY;
+	void GetDpiDependentDeltaXY(long &x, long &y) const{
+		x = mDpiDependentDeltaX;
+		y = mDpiDependentDeltaY;
 	}
 
-	Vec2ITuple GetDeltaXY() const{		
-		return Vec2ITuple(mAbsDeltaX, mAbsDeltaY);
+	Vec2ITuple GetDpiDependentDeltaXY() const{
+		return Vec2ITuple(mDpiDependentDeltaX, mDpiDependentDeltaY);
 	}
 
 	void GetAbsDeltaXY(long &x, long &y) const{
@@ -800,12 +803,12 @@ void Mouse::InvalidTemporary(bool invalidate){
 	mImpl->InvalidTemporary(invalidate);
 }
 //---------------------------------------------------------------------------
-void Mouse::GetDeltaXY(long &x, long &y) const	{
-	mImpl->GetDeltaXY(x, y);
+void Mouse::GetDpiDependentDeltaXY(long &x, long &y) const	{
+	mImpl->GetDpiDependentDeltaXY(x, y);
 }
 
-Vec2ITuple Mouse::GetDeltaXY() const{
-	return mImpl->GetDeltaXY();
+Vec2ITuple Mouse::GetDpiDependentDeltaXY() const{
+	return mImpl->GetDpiDependentDeltaXY();
 }
 
 void Mouse::GetAbsDeltaXY(long &x, long &y) const{
@@ -859,6 +862,10 @@ bool Mouse::IsLButtonDown(Real* time) const{
 	
 bool Mouse::IsLButtonClicked() const{
 	return mImpl->IsLButtonClicked();
+}
+
+bool Mouse::IsLButtonUp() const {
+	return mImpl->IsLButtonDownPrev() && !mImpl->IsLButtonDown();
 }
 bool Mouse::IsLButtonDoubleClicked() const{
 	return mImpl->IsLButtonDoubleClicked();

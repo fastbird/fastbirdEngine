@@ -97,7 +97,7 @@ namespace fb
 			, mId(NextRenderTargetId++)
 			, mCamera(Camera::Create())
 			, mAssociatedWindowId(INVALID_HWND_ID)
-			, mMain(false)			
+			, mMain(false), mForceWireframe(false)
 		{
 			mStrategy = RenderStrategyDefault::Create();
 		}

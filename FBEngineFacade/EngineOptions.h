@@ -27,19 +27,23 @@
 
 #pragma once
 #include "FBCommonHeaders/Types.h"
+#include "FBConsole/ICVarObserver.h"
 namespace fb{
+	FB_DECLARE_SMART_PTR_STRUCT(CVar);
 	FB_DECLARE_SMART_PTR(EngineOptions);
-	class FB_DLL_ENGINEFACADE EngineOptions{
+	class FB_DLL_ENGINEFACADE EngineOptions : public ICVarObserver {
 		EngineOptions();
-		~EngineOptions();
+		~EngineOptions();	
 
 	public:
 		static EngineOptionsPtr Create();
+		// ICVarObserver
+		bool OnChangeCVar(CVarPtr pCVar);
 
 		float WheelSens;
 		float MouseSens;
 		int e_profile;
 		int e_NoMeshLoad;
-		int AudioDebug;
+		int AudioDebug;		
 	};
 }

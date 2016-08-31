@@ -43,7 +43,7 @@ EventHandler::~EventHandler()
 {
 }
 
-EventHandler::FunctionId EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
+FunctionId EventHandler::RegisterEventFunc(UIEvents::Enum e, EVENT_FUNCTION func)
 {
 	mFuncMap[UNIQUE_ID] = func;
 	mEventFuncMap[e].insert(UNIQUE_ID);

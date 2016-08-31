@@ -1277,7 +1277,7 @@ void ListBox::OnDragHeader(void* arg){
 	ListItemPtr item = std::static_pointer_cast<ListItem>(rawItem->GetPtr());
 	auto col = item->GetColIndex();
 	auto injector = InputManager::GetInstance().GetInputInjector();	
-	auto mouseMove = Vec2I(injector->GetDeltaXY()).x;
+	auto mouseMove = Vec2I(injector->GetDpiDependentDeltaXY()).x;
 	if (mouseMove > 0){
 		if (col != mNumCols - 1){ // not last
 			float fMove = mouseMove / (float)GetParentSize().x;
@@ -1434,8 +1434,7 @@ void ListBox::VisualizeData(unsigned index){
 	if (!GetVisible() || !mData || mItems.empty())
 		return;
 
-	if (index >= mItems.size()) {
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Invalid index(%u)", index).c_str());
+	if (index >= mItems.size()) {		
 		return;
 	}
 
@@ -1703,7 +1702,7 @@ void ListBox::FillItem(unsigned index){
 		}
 		}
 
-		auto it = mHighlighted.Find(Vec2I((int)index, (int)i));
+		auto it = mHighlighted.find(Vec2I((int)index, (int)i));
 		if (it != mHighlighted.end() && it->second){
 			SetHighlightRowCol(index, i, true);
 		}
@@ -1713,7 +1712,7 @@ void ListBox::FillItem(unsigned index){
 	}
 
 	unsigned int key = mData->GetUnsignedKey(index);
-	auto it = mItemPropertyByUnsigned.Find(key);
+	auto it = mItemPropertyByUnsigned.find(key);
 	if (it != mItemPropertyByUnsigned.end()){
 		for (auto& property : it->second){
 			for (auto it : mItems[index]){
@@ -1734,7 +1733,7 @@ void ListBox::FillItem(unsigned index){
 	{
 		auto key = mData->GetStringKey(index);
 		if (wcslen(key) != 0) {
-			auto it = mItemPropertyByString.Find(key);
+			auto it = mItemPropertyByString.find(key);
 			if (it != mItemPropertyByString.end()){
 				for (auto& property : it->second){
 					for (auto it : mItems[index]){
@@ -2303,7 +2302,7 @@ void ListBox::ClearItemProperties(){
 	int row = 0;
 	for (auto items : mItems) {		
 		auto key = mData->GetUnsignedKey(row);
-		auto it = mItemPropertyByUnsigned.Find(key);
+		auto it = mItemPropertyByUnsigned.find(key);
 		if (it != mItemPropertyByUnsigned.end()) {
 			for (auto& property : it->second) {
 				for (auto itemIt : items) {
@@ -2321,7 +2320,7 @@ void ListBox::ClearItemProperties(){
 	row = 0;
 	for (auto items : mItems) {
 		auto key = mData->GetStringKey(row);
-		auto it = mItemPropertyByString.Find(key);
+		auto it = mItemPropertyByString.find(key);
 		if (it != mItemPropertyByString.end()) {
 			for (auto& property : it->second) {
 				for (auto itemIt : items) {

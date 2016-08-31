@@ -29,7 +29,7 @@
 #include "Quat.h"
 #include "Vec3.h"
 #include "Math.h"
-#include "MurmurHash.h"
+#include "FBStringLib/MurmurHash.h"
 
 namespace fb
 {
@@ -367,31 +367,4 @@ size_t Quat::ComputeHash() const {
 	return murmur3_32((const char*)this, sizeof(Quat));
 }
 
-void write(std::ostream& stream, const Quat& data){
-	stream.write((char*)&data.w, sizeof(Real));
-	stream.write((char*)&data.x, sizeof(Real));
-	stream.write((char*)&data.y, sizeof(Real));
-	stream.write((char*)&data.z, sizeof(Real));
-}
-
-void read(std::istream& stream, Quat& data){
-	stream.read((char*)&data.w, sizeof(Real));
-	stream.read((char*)&data.x, sizeof(Real));
-	stream.read((char*)&data.y, sizeof(Real));
-	stream.read((char*)&data.z, sizeof(Real));
-}
-
-}
-
-//-----------------------------------------------------------------------
-std::istream& operator>>(std::istream& stream, fb::Quat& v)
-{
-	stream >> v.w >> v.x >> v.y >> v.z;
-	return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const fb::Quat& v)
-{
-	stream << v.w << v.x << v.y << v.z;
-	return stream;
 }

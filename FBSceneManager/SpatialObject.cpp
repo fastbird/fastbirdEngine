@@ -83,7 +83,7 @@ void SpatialObject::SetDistToCam(ICamera* cam, Real dist){
 }
 
 Real SpatialObject::GetDistToCam(ICamera* cam) const{
-	auto it = mDistToCam.Find(cam);
+	auto it = mDistToCam.find(cam);
 	if (it != mDistToCam.end()){
 		return it->second;
 	}

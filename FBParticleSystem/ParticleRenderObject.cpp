@@ -37,11 +37,12 @@
 using namespace fb;
 
 namespace fb{
-	typedef VectorMap< ParticleRenderKey, ParticleRenderObjectPtr > RENDER_OBJECTS;
+	typedef std::unordered_map< ParticleRenderKey, ParticleRenderObjectPtr > RENDER_OBJECTS;
 	static RENDER_OBJECTS sRenderObjects;
 	static size_t sNumDrawCalls;
 	static size_t sNumDrawPrimitives;
 	const int ParticleRenderObject::MAX_SHARED_VERTICES = 5000;
+
 	void ClearParticleRenderObjects(){
 		sRenderObjects.clear();
 	}
@@ -84,7 +85,7 @@ public:
 
 	}
 
-	void Render(const RenderParam& param, RenderParamOut* paramOut){
+	void Render(const RenderParam& param, RenderParamOut* paramOut){		
 		RenderEventMarker mark("ParticleRenderObject");
 		if (mMapped)
 		{
@@ -135,7 +136,7 @@ public:
 		}
 		if (num)
 		{
-			assert(num < mMaxVertices);
+			//assert(num < mMaxVertices);
 			renderer.Draw(num, start);
 			++sNumDrawCalls;
 			sNumDrawPrimitives += num;
@@ -187,7 +188,7 @@ public:
 		{
 			mDoubleSided = set;
 			RASTERIZER_DESC desc;
-			desc.CullMode = CULL_MODE_NONE;
+			desc.SetCullMode(CULL_MODE_NONE);
 			mMaterial->SetRasterizerState(desc);
 		}
 		else
@@ -274,12 +275,13 @@ ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene,
 		return 0;
 	}
 
-	RENDER_OBJECTS::iterator it = sRenderObjects.Find(key);
+	RENDER_OBJECTS::iterator it = sRenderObjects.find(key);
 	if (it != sRenderObjects.end())
 	{
-		created = false;
+		created = false;		
 		return it->second;
 	}
+
 	created = true;	
 	ParticleRenderObjectPtr p(new ParticleRenderObject, [](ParticleRenderObject* obj){ delete obj; });
 	auto material = p->GetMaterial();
@@ -293,7 +295,7 @@ ParticleRenderObjectPtr ParticleRenderObject::GetRenderObject(IScenePtr scene,
 		scene->AttachObjectFB(p);
 	}
 	
-	sRenderObjects.Insert(RENDER_OBJECTS::value_type(key, p));
+	sRenderObjects[key] = p;
 	return p;
 }
 
