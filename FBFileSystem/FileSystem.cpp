@@ -1237,6 +1237,36 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 {
 	Close();
 	mFilePath = path;
+	
+	mErr = TryOpenFile(path, mode, share);
+
+	using namespace std::chrono_literals;
+	if (mErr && !mMemoryFile) {
+#if defined(_PLATFORM_WINDOWS_)
+		if (mErr == 13 && share== NoSharing) {// permission denied
+			int numTry = 0;
+			while (numTry++ < 10 && mErr == 13) {
+				std::this_thread::sleep_for(20ms);
+				mErr = TryOpenFile(path, mode, share);
+				if (IsOpen())
+					break;
+			}
+		}
+#else
+#endif
+	}
+	
+	if (mErr && !mMemoryFile && errorMsgMode == PrintErrorMsg) {
+		char errString[512] = {};
+		strerror_s(errString, mErr);
+		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
+			path, mErr, errString).c_str());
+	}
+
+	return mErr;
+}
+
+errno_t FileSystem::Open::TryOpenFile(const char* path, const char* mode, SharingMode share) {
 	if (share != NoSharing) {
 		int smode = 0;
 		if (!(share & ReadAllow)) {
@@ -1248,7 +1278,7 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 		if (!smode) {
 			smode = _SH_DENYNO;
 		}
-		
+
 		mFile = _fsopen(path, mode, smode);
 		if (!mFile) {
 			mBinaryData = FileSystem::get_fba_file_data(path);
@@ -1280,15 +1310,7 @@ errno_t FileSystem::Open::operator()(const char* path, const char* mode, Sharing
 			mErr = 0;
 			mMemoryFile = true;
 		}
-	}	
-
-	if (mErr && !mMemoryFile && errorMsgMode == PrintErrorMsg) {
-		char errString[512] = {};
-		strerror_s(errString, mErr);
-		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot open a file(%s): error(%d): %s",
-			path, mErr, errString).c_str());
 	}
-
 	return mErr;
 }
 

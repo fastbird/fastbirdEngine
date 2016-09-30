@@ -125,12 +125,12 @@ public:
 	}
 
 	void SetGain(float gain){
-		AudioSource::sMasterGain = gain;		
+		AudioSource::sMusicGain = gain;		
 		AudioManager::GetInstance().OnGainOptionChanged();
 	}
 
 	float GetGain() const{
-		return AudioSource::sMasterGain;
+		return AudioSource::sMusicGain;
 	}
 
 	void SetEnabled(bool enabled){

@@ -66,33 +66,34 @@ WinBase::WinBase()
 , mTextColorDown(1.0f, 1.0f, 1.0f, 1.f)
 , mTextAlignH(ALIGNH::LEFT)
 , mTextAlignV(ALIGNV::MIDDLE)
-, mMatchSize(false)
 , mSize(123, 321)
 , mTextSize(16 + gTextSizeMod)
-, mFixedTextSize(true)
 , mWNScrollingOffset(0, 0)
 , mMouseDragStartInHere(false)
 , mDestNPos(0, 0)
-, mSimplePosAnimEnabled(false)
 , mAnimationSpeed(0.f)
 , mAspectRatio(1.0)
 , mNPos(0, 0)
 , mUIObject(0)
+, mFixedTextSize(true)
+, mMatchSize(false)
+, mSimplePosAnimEnabled(false)
 , mNoMouseEvent(false), mNoMouseEventAlone(false), mVisualOnlyUI(false)
 , mUseScissor(true)
 , mUseAbsoluteXPos(true)
 , mUseAbsoluteYPos(true)
 , mUseAbsoluteXSize(true)
 , mUseAbsoluteYSize(true)
+, mLockTextSizeChange(false)
+, mStopScissorParent(false)
+, mInheritVisibleTrue(true)
+, mUseBorderAlpha(false)
 , mAbsOffset(0, 0), mSizeMod(0, 0)
 , mNOffset(0, 0)
 , mCustomContent(0)
-, mLockTextSizeChange(false)
-, mStopScissorParent(false)
 , mSpecialOrder(0)
 , mTextWidth(0)
 , mNumTextLines(1)
-, mInheritVisibleTrue(true)
 , mPos(0, 0)
 , mWPos(0, 0)
 , mWNPos(0, 0)
@@ -110,7 +111,7 @@ WinBase::WinBase()
 , mKeepUIRatio(false)
 , mUpdateAlphaTexture(false)
 , mHand(false), mHandFuncId(-1), mNoFocusByClick(false), mReceiveEventFromParent(false)
-, mUserDataInt(-1), mPendingDelete(false)
+, mUserDataInt(-1), mPendingDelete(false), mUseSimpleBorder(false)
 {
 	mVisibility.SetWinBase(this);
 }
@@ -1704,6 +1705,14 @@ bool WinBase::SetProperty(UIProperty::Enum prop, const char* val)
 			mUserDataInt = StringConverter::ParseInt(val);
 			return true;
 		}
+
+		case UIProperty::USE_SIMPLE_BORDER: {
+			mUseSimpleBorder = StringConverter::ParseBool(val);
+			if (mUIObject) {
+				mUIObject->SetRenderSimpleBorder(mUseSimpleBorder);
+			}
+			return true;
+		}
 	}
 	if (!sSuppressPropertyWarning) {
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString(
@@ -2258,6 +2267,16 @@ bool WinBase::GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, b
 		strcpy_s(val, bufsize, StringConverter::ToString(mUserDataInt).c_str());
 		return true;
 	}
+
+	case UIProperty::USE_SIMPLE_BORDER: {
+		if (notDefaultOnly) {
+			if (mUseSimpleBorder == UIProperty::GetDefaultValueBool(prop))
+				return false;
+		}
+		strcpy_s(val, bufsize, StringConverter::ToString(mUseSimpleBorder).c_str());
+		return true;
+	}
+
 	}
 	val = "";
 	return false;
@@ -2317,7 +2336,7 @@ void WinBase::SetUseBorder(bool use)
 	}
 }
 
-void WinBase::SetUseBorderAlpha(bool use){
+void WinBase::SetUseBorderAlpha(bool use){	
 	mUseBorderAlpha = use;
 	if (!mBorders.empty())
 		return;

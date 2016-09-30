@@ -92,9 +92,11 @@ namespace fb
 
 		virtual void Release(RayResultAll* r) = 0;
 
-		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except) = 0;
+		virtual unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, 
+			RigidBody* ret[], unsigned index[],
+			unsigned limit, RigidBody* except) = 0;
 
-		virtual float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b) = 0;
+		virtual float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) = 0;
 
 		virtual unsigned CreateBTSphereShape(float radius) = 0;
 		virtual void DeleteBTShape(unsigned id) = 0;

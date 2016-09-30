@@ -126,5 +126,6 @@ namespace fb
 		virtual Mat33 GetInertiaTensor() const;
 		virtual void SetGravity(const Vec3& gravity) OVERRIDE;
 		virtual void OnAABBOverflow() OVERRIDE;
+		AABB GetAABB() const OVERRIDE;
 	};
 }

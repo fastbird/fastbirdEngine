@@ -86,6 +86,10 @@ namespace fb
 
 		bool mUseAbsoluteXSize;
 		bool mUseAbsoluteYSize;
+		bool mMouseIn;
+		bool mMouseInPrev;
+		bool mFixedTextSize;
+		bool mMatchSize; // match text and window size
 
 		ContainerWeakPtr mParent;
 		WinBaseWeakPtr mManualParent;
@@ -94,22 +98,14 @@ namespace fb
 		Vec2I mSizeMod;
 		Vec2 mNOffset;
 
-
-		bool mMouseIn;
-		bool mMouseInPrev;		
-
 		std::wstring mTextw;
 		std::string mTextBeforeTranslated;
 		Color mTextColor;
 		Color mTextColorHover;
-		Color mTextColorDown;
-		bool mFixedTextSize;
+		Color mTextColorDown;		
 		float mTextSize;
-
 		ALIGNH::Enum mTextAlignH;
-		ALIGNV::Enum mTextAlignV;
-		bool mMatchSize; // match text and window size
-
+		ALIGNV::Enum mTextAlignV;	
 		UIObjectPtr mUIObject;
 
 		static HCURSOR sCursorOver;
@@ -118,15 +114,14 @@ namespace fb
 		static HCURSOR sCursorNESW;
 		static HCURSOR sCursorWE;
 		static HCURSOR sCursorNS;
-		static HCURSOR sCursorArrow;
-		
-		bool mMouseDragStartInHere;
+		static HCURSOR sCursorArrow;		
 
 		Vec2 mDestNPos;
 		float mAnimationSpeed;
 		VectorMap<std::string, UIAnimationPtr> mAnimations;
 		std::wstring mTooltipText;
 		std::string mTooltipTextBeforeT;
+		bool mMouseDragStartInHere;
 		// this is not related to mAnimations
 		bool mSimplePosAnimEnabled;
 		bool mNoMouseEvent;
@@ -179,6 +174,7 @@ namespace fb
 		int mUserDataInt;
 		bool mUseBorderAlpha;
 		bool mPendingDelete;
+		bool mUseSimpleBorder;
 
 		VectorMap<UIEvents::Enum, std::string> mEventFuncNames;
 

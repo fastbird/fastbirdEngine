@@ -135,7 +135,7 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	const float3 dielectricColor = float3(0.15, 0.15, 0.15);
 	const float minRoughness = 1e-4;
 	roughness = max(minRoughness, roughness);
-	float3 diffColor = baseColor * (1.0 - metallic);
+	float3 diffColor = baseColor * max(0.2, 1.0 - metallic);
 	float3 specColor = lerp(dielectricColor, baseColor, metallic);	
 	specColor *= gDirectionalLightSpecular[0];
 
@@ -148,7 +148,7 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	//INPUT.WorldPos.w == current pixel depth
 	float invShadow = GetShadow(INPUT.TexShadow, INPUT.WorldPos.w);
 	float3 shadedColor = ndl * lightColor * (diffColor + CookTorrance(vdh, ndh, ndl, specColor, roughness));	
-	float3 colorFromInversedLight =  ndl2 * lightColor2;
+	float3 colorFromInversedLight =  ndl2 * lightColor2 * diffColor;
 	
 	float3 envContrib = {0, 0, 0};		
 #ifdef ENV_TEXTURE

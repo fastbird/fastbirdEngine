@@ -83,6 +83,15 @@ void FileSelector::OnCreated(){
 			std::bind(&FileSelector::OnDriveClick, this, std::placeholders::_1));
 		xpos += 0.082f;
 	}
+	auto parentButton = std::static_pointer_cast<Button>(AddChild(0.95f, 0.07f, 0.08f, 0.05f, ComponentType::Button));
+	parentButton->SetProperty(UIProperty::ALIGNH, "RIGHT");
+	parentButton->SetRuntimeChild(true);
+	parentButton->SetProperty(UIProperty::BACK_COLOR, "0.30f, 0.30f, 0.30f, 1.0f");
+	parentButton->SetProperty(UIProperty::BACK_COLOR_OVER, "0.2, 0.2, 0.2, 1.0f");
+	parentButton->SetText(L"Up");
+	parentButton->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
+		std::bind(&FileSelector::OnUp, this, std::placeholders::_1));
+
 	auto textField = std::static_pointer_cast<TextField>(
 		AddChild(0.05f, 0.13f, 0.9f, 0.05f, ComponentType::TextField));
 	mFileTextField = textField;
@@ -269,5 +278,16 @@ void FileSelector::OnDriveClick(void* pButton)
 {
 	Button* driveBtn = (Button*)pButton;
 	ListFiles(WideToAnsi(driveBtn->GetText()), std::string(mFilter).c_str());
+}
+
+void FileSelector::OnUp(void* pButton) {
+	auto curfolder = FileSystem::RemoveEndingSlash(mFolder.c_str());
+	auto parent = FileSystem::GetParentPath(curfolder.c_str());
+	parent = FileSystem::AddEndingSlashIfNot(parent.c_str());
+	if (parent != curfolder) {
+		ListFiles(parent.c_str(), mFilter.c_str());
+	}	
+	UIManager::GetInstance().SetFocusUI(mListBox.lock());
+	mFileTextField.lock()->SetText(AnsiToWide(parent.c_str()));
 }
 }

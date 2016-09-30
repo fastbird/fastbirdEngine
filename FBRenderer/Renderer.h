@@ -360,8 +360,11 @@ namespace fb{
 		void DrawFrustum(const Frustum& frustum);		
 		void DrawLine(const Vec3& start, const Vec3& end,
 			const Color& color0, const Color& color1);
+		void DrawLine(const Vec2I& start, const Vec2I& end,
+			const Color& color0, const Color& color1);
 		/// bottom:ll lr ur ul, top:ll lr ur ul
 		void DrawBox(const Vec3::Array& corners, const Color& color);
+		void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color);
 		void DrawPoints(const Vec3::Array& points, const Color& color);
 		void DrawQuadWithTexture(const Vec2I& pos, const Vec2I& size, const Color& color, TexturePtr texture, MaterialPtr materialOverride = 0);
 		void DrawQuadWithTextureUV(const Vec2I& pos, const Vec2I& size, const Vec2& uvStart, const Vec2& uvEnd,

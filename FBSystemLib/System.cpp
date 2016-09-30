@@ -49,7 +49,7 @@ namespace fb{
 #endif
 	}
 
-	HWindow ForegroundWindow(){
+	HWindow ForegroundWindow() {
 #if defined(_PLATFORM_WINDOWS_)
 		return (HWindow)GetForegroundWindow();
 #else

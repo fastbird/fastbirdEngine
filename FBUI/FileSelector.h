@@ -58,6 +58,7 @@ public:
 	void OnListClick(void* pList);
 	void OnListDoubleClick(void* pList);
 	void OnDriveClick(void* pButton);
+	void OnUp(void* pButton);
 
 	// IFileSelector
 	void SetTitle(const wchar_t* szTitle);

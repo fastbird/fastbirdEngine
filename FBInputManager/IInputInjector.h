@@ -70,6 +70,7 @@ namespace fb{
 		virtual void LockMousePos(bool lock, void* key) = 0;
 		virtual bool IsMouseIn(int left, int top, int right, int bottom) = 0;
 		virtual Real GetSensitivity() const = 0;
+		virtual bool IsCursorVisible() const = 0;
 
 		// Dragging
 		virtual void GetDragStart(long &x, long &y) const = 0;

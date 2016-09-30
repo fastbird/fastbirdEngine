@@ -38,6 +38,21 @@ using namespace fb;
 
 namespace fb
 {	
+	static int GetFileNameOnly(lua_State* L) {
+		auto str = LuaUtils::checkstring(L, 1);
+		LuaUtils::pushstring(L, FileSystem::GetName(str).c_str());
+		return 1;
+	}
+	static int GetFileNameExt(lua_State* L) {
+		auto str = LuaUtils::checkstring(L, 1);
+		LuaUtils::pushstring(L, FileSystem::GetFileName(str).c_str());
+		return 1;
+	}
+
+	static int GetMyDocumentGameFolder(lua_State* L) {
+		LuaUtils::pushstring(L, FileSystem::GetMyDocumentGameFolder().c_str());
+		return 1;
+	}
 	static int IsFilePathSafe(lua_State* L)
 	{
 		const char* filepath = LuaUtils::checkstring(L, 1);
@@ -130,6 +145,15 @@ namespace fb
 			FileSystem::BackupFile(filepath, 5, "Backup_Log");
 			Logger::Init(filepath);
 		}
+
+		LuaUtils::pushcfunction(L, GetFileNameExt);
+		LuaUtils::setglobal(L, "GetFileNameExt");
+
+		LuaUtils::pushcfunction(L, GetFileNameOnly);
+		LuaUtils::setglobal(L, "GetFileNameOnly");		
+
+		LuaUtils::pushcfunction(L, GetMyDocumentGameFolder);
+		LuaUtils::setglobal(L, "GetMyDocumentGameFolder");
 
 		LuaUtils::pushcfunction(L, fb::IsFilePathSafe);
 		LuaUtils::setglobal(L, "IsFilePathSafe");

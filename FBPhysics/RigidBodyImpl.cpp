@@ -87,7 +87,7 @@ public:
 			Physics::GetInstance().Release(colShape);
 		}
 
-		if (mWorld){
+		if (mWorld){			
 			mWorld->removeRigidBody(mSelf);
 			mAddedToWorld = false;
 		}
@@ -99,7 +99,7 @@ public:
 	}
 
 	// Physics dll internal
-	void RefreshColShape(IPhysicsInterface* colProvider){
+	void RefreshColShape(IPhysicsInterface* colProvider){		
 		if (!colProvider)
 		{
 			Logger::Log(FB_ERROR_LOG_ARG, "No colProvider");			
@@ -143,7 +143,7 @@ public:
 		else{
 			SetMass(0.f);
 		}
-		assert(!mAddedToWorld);
+
 		mWorld->addRigidBody(mSelf, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
 		mAddedToWorld = true;
 	}
@@ -314,9 +314,11 @@ public:
 	}
 
 
-	void SetCollisionFilterGroup(unsigned group){
-		mWorld->removeRigidBody(mSelf);
+	void SetCollisionFilterGroup(unsigned group){		
+		if (mAddedToWorld)
+			mWorld->removeRigidBody(mSelf);
 		mWorld->addRigidBody(mSelf, group, mColProvider->GetCollisionMask());
+		mAddedToWorld = true;
 	}
 
 	void RemoveCollisionFilterGroup(unsigned flag){
@@ -422,12 +424,15 @@ public:
 
 	void RemoveFromWorld(){
 		mWorld->removeRigidBody(mSelf);
+		mAddedToWorld = false;
 	}
 
 	// make sure mColProvider is valid.
-	void AddToWorld(){
-		mWorld->removeRigidBody(mSelf);
+	void AddToWorld(){		
+		if (mAddedToWorld)
+			mWorld->removeRigidBody(mSelf);
 		mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());		
+		mAddedToWorld = true;
 	}
 
 	void ReaddToWorld() {
@@ -509,7 +514,7 @@ public:
 			return;
 		}
 
-		if (mWorld && mColProvider){			
+		if (mWorld && mColProvider){						
 			mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
 			mAddedToWorld = true;
 			auto num = mSelf->getNumConstraintRefs();
@@ -532,6 +537,7 @@ public:
 				assert(constraint);
 				constraint->setEnabled(false);
 			}
+			
 			mWorld->removeRigidBody(mSelf);
 			mAddedToWorld = false;
 		}		
@@ -888,4 +894,10 @@ void RigidBodyImpl::OnAABBOverflow() {
 	if (mImpl->mColProvider) {
 		mImpl->mColProvider->OnAABBOverflow();
 	}
+}
+
+AABB RigidBodyImpl::GetAABB() const {
+	btVector3 min, max;
+	getAabb(min, max);
+	return AABB(BulletToFB(min), BulletToFB(max));
 }

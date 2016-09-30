@@ -267,6 +267,9 @@ namespace fb{
 			friend FB_DLL_FILESYSTEM int feof(FileSystem::Open& file);
 			friend FB_DLL_FILESYSTEM long int ftell(FileSystem::Open& file);
 			friend FB_DLL_FILESYSTEM void rewind(FileSystem::Open& file);
+
+			errno_t TryOpenFile(const char* path, const char* mode, SharingMode share);
+
 		public:
 			Open();
 			Open(const char* path, const char* mode);

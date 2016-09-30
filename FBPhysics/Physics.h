@@ -84,8 +84,10 @@ namespace fb
 		bool RayTestWithAnObj(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, RayResultWithObj& result);
 		RayResultAll* RayTestAll(const Vec3& fromWorld, const Vec3& toWorld, int additionalGroupFlag, int mask);
 		void Release(RayResultAll* r);
-		unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except);
-		float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b);
+		unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, 
+			RigidBody* ret[], unsigned index[],
+			unsigned limit, RigidBody* except);
+		float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) OVERRIDE;
 
 		unsigned CreateBTSphereShape(float radius);
 		void DeleteBTShape(unsigned id);
@@ -112,5 +114,8 @@ namespace fb
 		void _ReportCollisions();
 		void _CheckCollisionShapeForDel(float timeStep);
 		btDynamicsWorld* _GetDynamicWorld() const;
+
+		static std::thread::id get_main_thread_id();
+		static bool is_main_thread();
 	};
 }

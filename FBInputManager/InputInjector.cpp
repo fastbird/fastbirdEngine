@@ -187,6 +187,12 @@ Real InputInjector::GetSensitivity() const{
 	return 0;
 }
 
+bool InputInjector::IsCursorVisible() const {
+	if (mImpl->mMouse)
+		return mImpl->mMouse->IsCursorVisible();
+	return true;
+}
+
 // Dragging
 void InputInjector::GetDragStart(long &x, long &y) const{
 	if (mImpl->mMouse)

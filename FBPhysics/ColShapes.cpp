@@ -233,8 +233,7 @@ MeshShapePtr CollisionShapeMan::CreateConvexMeshShape(const Vec3& pos, const Qua
 void MeshShape::CreateTriangleMesh()
 {
 	assert(mVertices);
-	mTriangleMesh = FB_NEW_ALIGNED(btTriangleMesh, 16)();
-	assert(mNumVertices % 3 == 0);
+	mTriangleMesh = FB_NEW_ALIGNED(btTriangleMesh, 16)();	
 	for (unsigned i = 0; i < mNumVertices; i += 3)
 	{
 		mTriangleMesh->addTriangle(FBToBullet(mVertices[i]), FBToBullet(mVertices[i + 2]), FBToBullet(mVertices[i + 1]));

@@ -145,4 +145,8 @@ namespace fb
 		Vec3I dif = to - *this;
 		return dif.lengthSQ();
 	}
+
+	std::string Vec3I::ToString() const {
+		return FormatString("%d, %d, %d", x, y, z);
+	}
 }

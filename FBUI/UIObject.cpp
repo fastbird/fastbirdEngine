@@ -69,6 +69,7 @@ public:
 	bool mNeedToUpdateColorVB;
 	bool mNeedToUpdateTexcoordVB;
 	bool mDoNotDraw;
+	bool mRenderSimpleBorder;
 	Vec2 mPivot;
 	Vec2I mRenderTargetSize;
 	unsigned mLastPreRendered;
@@ -101,6 +102,7 @@ public:
 		, mNeedToUpdateColorVB(false)
 		, mNeedToUpdateTexcoordVB(false)
 		, mUIComopnent(0)
+		, mRenderSimpleBorder(false)
 	{
 		SetMaterial("EssentialEngineData/materials/UI.material");
 		
@@ -339,6 +341,14 @@ public:
 				textColor.a() *= mAlpha;
 				pFont->Write(x, y, 0.0f, textColor.Get4Byte(), (const char*)mText.c_str(), -1, Font::FONT_ALIGN_LEFT);
 			}
+		}
+
+		if (mRenderSimpleBorder) {			
+			renderer.RestoreRasterizerState();
+			renderer.DrawQuadLine(
+				Vec2I(mRegion.left, mRegion.top), 
+				Vec2I(mRegion.right - mRegion.left, mRegion.bottom - mRegion.top),
+				mTextColor);
 		}
 
 		/*if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug)
@@ -707,4 +717,8 @@ void UIObject::SetUIComponent(WinBase* comp) {
 
 WinBase* UIObject::GetUIComponent() const {
 	return mImpl->mUIComopnent;
+}
+
+void UIObject::SetRenderSimpleBorder(bool simpleBorder) {
+	mImpl->mRenderSimpleBorder = simpleBorder;
 }

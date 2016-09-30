@@ -142,6 +142,7 @@ namespace fb
 			CLOSE_BTN,
 			USE_BORDER,
 			USE_BORDER_ALPHA_FORCE, // do not need to set when USE_BORDER is true
+			USE_SIMPLE_BORDER, // not rounded border
 			SPECIAL_ORDER, // higher will render top
 			INHERIT_VISIBLE_TRUE, // Inherites visibility from parents constainer. Only works when the setting visibility is true.
 			VISIBLE,
@@ -311,6 +312,7 @@ namespace fb
 			"CLOSE_BTN",
 			"USE_BORDER",
 			"USE_BORDER_ALPHA_FORCE",
+			"USE_SIMPLE_BORDER",
 			"SPECIAL_ORDER",
 			"INHERIT_VISIBLE_TRUE",
 			"VISIBLE",
@@ -527,6 +529,8 @@ namespace fb
 			case USE_BORDER:
 				return false;
 			case USE_BORDER_ALPHA_FORCE:
+				return false;
+			case USE_SIMPLE_BORDER:
 				return false;
 			case INHERIT_VISIBLE_TRUE:
 				return true;

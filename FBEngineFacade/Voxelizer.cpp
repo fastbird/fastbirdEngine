@@ -42,7 +42,7 @@ public:
 	std::string mFilepath;
 	float mVoxelSize;
 
-	float* mDistanceMap;
+	std::vector<bool> mDistanceMap;
 	std::vector<Vec3I> mHulls;
 	UINT mNumVoxels; // in one axis.
 	MeshObjectPtr mMeshObject;
@@ -77,9 +77,8 @@ public:
 	{
 		const UINT numVoxelsSQ = mNumVoxels*mNumVoxels;
 		const UINT numVoxelsCB = mNumVoxels*mNumVoxels*mNumVoxels;
-		free(mDistanceMap);
-		mDistanceMap = (float*)malloc(sizeof(float) * numVoxelsCB);
-		memset(mDistanceMap, 0, sizeof(float) * numVoxelsCB);
+		mDistanceMap.clear();
+		mDistanceMap.resize(numVoxelsCB, true);
 
 		std::vector<float> x_min, x_max;
 		std::vector<float> y_min, y_max;
@@ -127,9 +126,10 @@ public:
 		TexturePtr pStaging = Renderer::GetInstance().CreateTexture(0, mNumVoxels, mNumVoxels, PIXEL_FORMAT_D32_FLOAT,
 			1, BUFFER_USAGE_STAGING, BUFFER_CPU_ACCESS_READ, TEXTURE_TYPE_DEFAULT);
 
+		// x
 		pCam->SetDirection(Vec3(-radius, 0, 0).NormalizeCopy());
 		pDepthRT->Render();
-		//pColorTexture->SaveToFile("test_x.bmp");
+		//pColorTexture->SaveToFile("test.bmp");
 		pDepthTexture->CopyToStaging(pStaging, 0, 0, 0, 0, 0, 0);
 		MapData data = pStaging->Map(0, MAP_TYPE_READ, MAP_FLAG_NONE);
 		x_min.assign(numVoxelsSQ, 0);
@@ -178,29 +178,12 @@ public:
 			for (size_t sy = 0; sy<mNumVoxels; sy++)
 			{
 				size_t dest_row_i = sy * mNumVoxels;
-				if (x_min[src_row_i + sy] == 1.0f || x_max[src_row_i + sy] == 1.0f)
+				if (x_min[src_row_i + sy] == 1.0f && x_max[src_row_i + sy] == 1.0f)
 				{
 					for (size_t dx = 0; dx < mNumVoxels; dx++)
 					{
-						mDistanceMap[dest_depth_i + dest_row_i + dx] = -1.f;
+						mDistanceMap[dest_depth_i + dest_row_i + dx] = false;
 					}
-				}
-				else
-				{
-					size_t xi_min = (size_t)(x_min[src_row_i + sy] * mNumVoxels);
-					size_t xi_max = (size_t)(x_max[src_row_i + sy] * mNumVoxels);
-					if (xi_max < xi_min)
-						std::swap(xi_max, xi_min);
-
-					for (size_t dx = xi_min; dx <= xi_max; dx++)
-					{
-						size_t destIdx = dest_depth_i + dest_row_i + dx;
-						if (mDistanceMap[destIdx] != -1.f)
-						{
-							mDistanceMap[destIdx] = 1.f;
-						}
-					}
-
 				}
 			}
 		}
@@ -253,28 +236,15 @@ public:
 		for (size_t sz = 0; sz < mNumVoxels; sz++)
 		{
 			size_t src_row_i = sz * mNumVoxels;
-			size_t dest_depth_i = (mNumVoxels - 1 - sz) * numVoxelsSQ;
+			//size_t dest_depth_i = (mNumVoxels - 1 - sz) * numVoxelsSQ;
+			size_t dest_depth_i = sz * numVoxelsSQ;
 			for (size_t sx = 0; sx<mNumVoxels; sx++)
 			{
-				if (y_min[src_row_i + sx] == 1.0f || y_max[src_row_i + sx] == 1.0f)
+				if (y_min[src_row_i + sx] == 1.0f && y_max[src_row_i + sx] == 1.0f)
 				{
 					for (size_t dy = 0; dy < mNumVoxels; dy++)
 					{
-						mDistanceMap[dest_depth_i + dy*mNumVoxels + sx] = -1.f;
-					}
-				}
-				else
-				{
-					size_t yi_min = (size_t)(y_min[src_row_i + sx] * mNumVoxels);
-					size_t yi_max = (size_t)(y_max[src_row_i + sx] * mNumVoxels);
-
-					for (size_t dy = yi_min; dy < yi_max; dy++)
-					{
-						size_t destIdx = dest_depth_i + dy*mNumVoxels + sx;
-						if (mDistanceMap[destIdx] != -1.f)
-						{
-							mDistanceMap[destIdx] = 1.f;
-						}
+						mDistanceMap[dest_depth_i + dy*mNumVoxels + sx] = false;
 					}
 				}
 			}
@@ -331,26 +301,12 @@ public:
 			size_t dest_row_i = (mNumVoxels - 1 - sy) * mNumVoxels;
 			for (size_t sx = 0; sx<mNumVoxels; sx++)
 			{
-				if (z_min[src_row_i + sx] == 1.0f || z_max[src_row_i + sx] == 1.0f)
+				if (z_min[src_row_i + sx] == 1.0f && z_max[src_row_i + sx] == 1.0f)
 				{
 					for (size_t dz = 0; dz < mNumVoxels; dz++)
 					{
 						size_t dest_depth_i = dz * numVoxelsSQ;
-						mDistanceMap[dest_depth_i + dest_row_i + sx] = -1.f;
-					}
-				}
-				else
-				{
-					size_t zi_min = (size_t)(z_min[src_row_i + sx] * mNumVoxels);
-					size_t zi_max = (size_t)(z_max[src_row_i + sx] * mNumVoxels);
-
-					for (size_t dz = zi_min; dz < zi_max; dz++)
-					{
-						size_t dest_idx = (mNumVoxels - 1 - dz) * numVoxelsSQ + dest_row_i + sx;
-						if (mDistanceMap[dest_idx] != -1.f)
-						{
-							mDistanceMap[dest_idx] = 1.f;
-						}
+						mDistanceMap[dest_depth_i + dest_row_i + sx] = false;
 					}
 				}
 			}
@@ -375,37 +331,37 @@ public:
 				for (size_t x = 0; x<mNumVoxels; x++)
 				{
 					size_t idx = zIdx + yIdx + x;
-					if (mDistanceMap[idx] == 1.0f)
+					if (mDistanceMap[idx])
 					{
 						bool inner = true;
 						//check +x, -x
 						if (x<mNumVoxels - 1)
 						{
-							inner = inner && mDistanceMap[idx + 1] == 1.0f;
+							inner = inner && mDistanceMap[idx + 1];
 						}
 						if (x>0)
 						{
-							inner = inner && mDistanceMap[idx - 1] == 1.0f;
+							inner = inner && mDistanceMap[idx - 1];
 						}
 
 						// check +y, -y
 						if (y<mNumVoxels - 1)
 						{
-							inner = inner && mDistanceMap[zIdx + (y + 1)*mNumVoxels + x] == 1.0f;
+							inner = inner && mDistanceMap[zIdx + (y + 1)*mNumVoxels + x];
 						}
 						if (y>0)
 						{
-							inner = inner && mDistanceMap[zIdx + (y - 1)*mNumVoxels + x] == 1.0f;
+							inner = inner && mDistanceMap[zIdx + (y - 1)*mNumVoxels + x];
 						}
 
 						// check +z, -z
 						if (z<mNumVoxels - 1)
 						{
-							inner = inner && mDistanceMap[(z + 1) * numVoxelsSQ + yIdx + x] == 1.0f;
+							inner = inner && mDistanceMap[(z + 1) * numVoxelsSQ + yIdx + x];
 						}
 						if (z>0)
 						{
-							inner = inner && mDistanceMap[(z - 1) * numVoxelsSQ + yIdx + x] == 1.0f;
+							inner = inner && mDistanceMap[(z - 1) * numVoxelsSQ + yIdx + x];
 						}
 
 						if (!inner)

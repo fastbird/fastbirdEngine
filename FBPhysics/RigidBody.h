@@ -118,5 +118,6 @@ namespace fb
 		virtual Mat33 GetInertiaTensor() const = 0;
 
 		virtual void SetGravity(const Vec3& gravity) = 0;
+		virtual AABB GetAABB() const = 0;		
 	};
 }

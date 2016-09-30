@@ -669,6 +669,9 @@ public:
 						curX += xAddition;
 						lengthAfterSpace += xAddition;
 					}
+					else if (tag == TextTags::FixedWidthEnd) {
+						lengthAfterSpace = curX = mFixedWidthStart + mFixedWidth;
+					}
 					int startN = n;
 					for (; n < startN + numSkip;)
 					{

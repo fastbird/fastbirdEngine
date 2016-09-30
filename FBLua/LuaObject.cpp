@@ -1264,13 +1264,23 @@ LuaSequenceIterator::LuaSequenceIterator(const LuaObject& sequence)
 {
 	assert(sequence.IsTable());
 	mL = sequence.GetLuaState();
-	sequence.PushToStack();
-	mLen = luaL_len(mL, -1);
+	mLen = 0;
+	if (sequence.IsTable()) {
+		sequence.PushToStack();
+		mLen = luaL_len(mL, -1);
+		mValid = true;
+	}
+	else {
+		Logger::Log(FB_ERROR_LOG_ARG, "This lua object is not a table.");
+		mValid = false;
+	}
 }
 
 LuaSequenceIterator::~LuaSequenceIterator()
 {
-	lua_pop(mL, 1); // remove sequence from the stack
+	if (mValid) {
+		lua_pop(mL, 1); // remove sequence from the stack
+	}
 }
 
 bool LuaSequenceIterator::GetNext(LuaObject& out)

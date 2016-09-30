@@ -44,7 +44,6 @@ CheckBox::CheckBox()
 	mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 	mUIObject->mOwnerUI = this;
 	mUIObject->mTypeString = ComponentType::ConvertToString(GetType());
-	mUIObject->SetNoDrawBackground(true);
 	mTextGap.x = 28;
 }
 

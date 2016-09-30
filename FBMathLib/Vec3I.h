@@ -68,6 +68,8 @@ namespace fb
 		Real lengthSQ() const;
 		Real distance(const Vec3I& to) const;
 		Real distanceSQ(const Vec3I& to) const;
+
+		std::string ToString() const;
 	};
 }
 

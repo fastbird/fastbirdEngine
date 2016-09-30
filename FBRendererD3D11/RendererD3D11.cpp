@@ -726,7 +726,7 @@ public:
 						});
 					}
 					else {
-						Logger::Log(FB_ERROR_LOG_ARG, "Texture is null.");
+						//Logger::Log(FB_ERROR_LOG_ARG, "Texture is null.");
 					}
 				}
 			};

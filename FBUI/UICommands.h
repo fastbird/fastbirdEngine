@@ -40,6 +40,7 @@ namespace fb
 		static UICommandsPtr Create();
 		int r_UI;
 		int UI_Debug;
+		int UI_EditorX;
 
 		bool OnChangeCVar(CVarPtr pCVar);		
 	};

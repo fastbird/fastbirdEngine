@@ -44,26 +44,28 @@
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 using namespace fb;
+
+                                                         // shape index for compound
+using AABBResultType = std::vector<std::pair<RigidBody*, unsigned>>;
 ///The AABBOverlapCallback is used to collect object that overlap with a given bounding box defined by aabbMin and aabbMax. 
 struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 {
 	btVector3 m_queryAabbMin;
 	btVector3 m_queryAabbMax;
 	RigidBody* mExcept;
-	RigidBody** mRet;
+	AABBResultType& mRet;
 	int mLimit;
-	int mCurSize;
 	unsigned mColMask;
 
 	int m_numOverlap;
 	AABBOverlapCallback(const btVector3& aabbMin, const btVector3& aabbMax, unsigned colMask,
-		RigidBody* ret[], int limit, RigidBody* except)
+		AABBResultType& ret, int limit, RigidBody* except)
 		: m_queryAabbMin(aabbMin), m_queryAabbMax(aabbMax), m_numOverlap(0), mExcept(except), mRet(ret)
-		, mLimit(limit), mColMask(colMask), mCurSize(0)
+		, mLimit(limit), mColMask(colMask)
 	{}
 	virtual bool	process(const btBroadphaseProxy* proxy)
 	{
-		if (mCurSize >= mLimit)
+		if ((int)mRet.size() >= mLimit)
 			return false;
 
 		btVector3 proxyAabbMin, proxyAabbMax;
@@ -73,11 +75,26 @@ struct	AABBOverlapCallback : public btBroadphaseAabbCallback
 			return true;
 		if ((proxy->m_collisionFilterGroup & mColMask) == 0)
 			return true;
-
-		colObj0->getCollisionShape()->getAabb(colObj0->getWorldTransform(), proxyAabbMin, proxyAabbMax);
-		if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
-		{
-			mRet[mCurSize++] = rigidBody;
+		auto colshape = colObj0->getCollisionShape();
+		if (colshape->isCompound()) {
+			btCompoundShape* cshape= (btCompoundShape*)colshape;
+			auto numchildren = cshape->getNumChildShapes();
+			for (int c = 0; c < numchildren && (int)mRet.size() < mLimit; ++c) {
+				auto child = cshape->getChildShape(c);
+				child->getAabb(colObj0->getWorldTransform() * cshape->getChildTransform(c),
+					proxyAabbMin, proxyAabbMax);
+				if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
+				{
+					mRet.push_back({ rigidBody, c });										
+				}
+			}
+		}
+		else {
+			colshape->getAabb(colObj0->getWorldTransform(), proxyAabbMin, proxyAabbMax);
+			if (TestAabbAgainstAabb2(proxyAabbMin, proxyAabbMax, m_queryAabbMin, m_queryAabbMax))
+			{
+				mRet.push_back({ rigidBody, -1 });				
+			}
 		}
 
 		return true;
@@ -96,6 +113,16 @@ bool ConvexResultNeedCollision(btCollisionObject* a, btCollisionObject* b){
 	}
 
 	return true;
+}
+
+std::thread::id main_thread_id;
+
+std::thread::id Physics::get_main_thread_id() {
+	return main_thread_id;
+}
+
+bool Physics::is_main_thread() {
+	return main_thread_id == std::this_thread::get_id();
 }
 
 class Physics::Impl{
@@ -131,6 +158,7 @@ public:
 		, mFilterCallback(0)
 		, mEnabled(true)
 	{
+		main_thread_id = std::this_thread::get_id();
 		Initilaize();
 		auto filepath = "_FBPhysics.log";
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
@@ -195,7 +223,7 @@ public:
 				auto curIt = it++;
 				auto colShape = curIt->first;
 				mColShapePendingDelete.erase(curIt);
-				if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
+				if (colShape->isCompound())
 				{
 					btCompoundShape* compound = (btCompoundShape*)(colShape);
 					unsigned num = compound->getNumChildShapes();
@@ -930,15 +958,25 @@ public:
 
 	
 
-	unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except){
+	unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, 
+		RigidBody* ret[], unsigned index[],
+		unsigned limit, RigidBody* except)
+	{
 		btVector3 min = FBToBullet(aabb.GetMin());
 		btVector3 max = FBToBullet(aabb.GetMax());
-		AABBOverlapCallback callback(min, max, colMask, ret, limit, except);
+		AABBResultType result;
+		result.reserve(limit);
+		AABBOverlapCallback callback(min, max, colMask, result, limit, except);
 		mDynamicsWorld->getBroadphase()->aabbTest(min, max, callback);
-		return callback.mCurSize;
+		for (size_t i = 0; i < result.size(); ++i) {
+			ret[i] = result[i].first;
+			index[i] = result[i].second;
+		}
+
+		return result.size();
 	}
 
-	float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b){
+	float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB){
 		if (!a || !b)
 		{
 			return FLT_MAX;
@@ -948,8 +986,8 @@ public:
 		RigidBodyImpl* bImpl = (RigidBodyImpl*)b.get();
 		auto aColShape = aImpl->getCollisionShape();
 		auto bColShape = bImpl->getCollisionShape();
-		btCompoundShape* aCompound = aColShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE ? (btCompoundShape*)aColShape : 0;
-		btCompoundShape* bCompound = bColShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE ? (btCompoundShape*)bColShape : 0;
+		btCompoundShape* aCompound = aColShape->isCompound() ? (btCompoundShape*)aColShape : 0;
+		btCompoundShape* bCompound = bColShape->isCompound() ? (btCompoundShape*)bColShape : 0;
 		if (aCompound && bCompound)
 		{
 			unsigned anum = aCompound->getNumChildShapes();
@@ -971,17 +1009,23 @@ public:
 					input.m_transformB = bImpl->getWorldTransform() * bCompound->getChildTransform(bi);
 
 					convexConvex.getClosestPoints(input, gjkOutput, 0);
-					distance = std::min(gjkOutput.m_distance, distance);
+					if (gjkOutput.m_distance < distance) {
+						distance = gjkOutput.m_distance;
+						if (outNormalOnB)
+							*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
+					}
 				}
 			}
 		}
 
+		bool swapped = false;
 		if (!aCompound && bCompound)
 		{
 			std::swap(aCompound, bCompound);
 			std::swap(a, b);
 			std::swap(aImpl, bImpl);
 			std::swap(aColShape, bColShape);
+			swapped = true;
 		}
 
 		if (aCompound && !bCompound)
@@ -1001,7 +1045,17 @@ public:
 				input.m_transformB = bImpl->getWorldTransform();
 
 				convexConvex.getClosestPoints(input, gjkOutput, 0);
-				distance = std::min(gjkOutput.m_distance, distance);
+				if (gjkOutput.m_distance < distance) {
+					distance = gjkOutput.m_distance;
+					if (outNormalOnB) {
+						if (swapped) {
+							*outNormalOnB = -BulletToFB(gjkOutput.m_normalOnBInWorld);
+						}
+						else {
+							*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
+						}
+					}
+				}				
 			}
 		}
 
@@ -1019,8 +1073,18 @@ public:
 
 			convexConvex.getClosestPoints(input, gjkOutput, 0);
 			distance = std::min(gjkOutput.m_distance, distance);
+			if (gjkOutput.m_distance < distance) {
+				distance = gjkOutput.m_distance;
+				if (outNormalOnB) {
+					if (swapped) {
+						*outNormalOnB = -BulletToFB(gjkOutput.m_normalOnBInWorld);
+					}
+					else {
+						*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
+					}
+				}
+			}
 		}
-
 
 		return distance;
 	}
@@ -1189,7 +1253,7 @@ public:
 			if (curIt->second <= 0)
 			{
 				curIt = mColShapePendingDelete.erase(curIt);
-				if (colShape->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
+				if (colShape->isCompound())
 				{
 					btCompoundShape* compound = (btCompoundShape*)(colShape);
 					unsigned num = compound->getNumChildShapes();
@@ -1363,12 +1427,13 @@ void Physics::Release(RayResultAll* r) {
 	mImpl->Release(r);
 }
 
-unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, RigidBody* ret[], unsigned limit, RigidBody* except) {
-	return mImpl->GetAABBOverlaps(aabb, colMask, ret, limit, except);
+unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask, 
+	RigidBody* ret[], unsigned index[], unsigned limit, RigidBody* except) {
+	return mImpl->GetAABBOverlaps(aabb, colMask, ret, index, limit, except);
 }
 
-float Physics::GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b) {
-	return mImpl->GetDistanceBetween(a, b);
+float Physics::GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) {
+	return mImpl->GetDistanceBetween(a, b, outNormalOnB);
 }
 
 unsigned Physics::CreateBTSphereShape(float radius) {

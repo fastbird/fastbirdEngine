@@ -439,7 +439,8 @@ public:
 	}
 
 	void DepthWriteShaderCloud(){
-
+		auto& renderer = Renderer::GetInstance();
+		renderer.SetDepthWriteShaderCloud();
 	}
 
 	void CloudVolumeTarget(bool bind)

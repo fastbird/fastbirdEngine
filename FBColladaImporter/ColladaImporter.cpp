@@ -163,7 +163,7 @@ public:
 
 	// private
 	collada::MeshPtr GetMeshObject(const char* id) const{
-		for (auto it : mMeshObjects)
+		for (auto& it : mMeshObjects)
 		{
 			if (strcmp(it.first.c_str(), id) == 0)
 				return it.second;
@@ -323,9 +323,9 @@ public:
 		}
 	}
 
-	void AssignProjections(collada::ModelTriangle* pTri, const std::vector<collada::Vec3>& positions)
+	void AssignProjections(collada::ModelTriangle* pTri, const std::vector<Vec3>& positions)
 	{
-		collada::Vec3 N;
+		Vec3 N;
 
 		N.x = abs(pTri->faceNormal.x);
 		N.y = abs(pTri->faceNormal.y);
@@ -408,11 +408,11 @@ public:
 		collada::MeshPtr pMeshObject(new collada::Mesh, [](collada::Mesh* obj) { delete obj; });
 		mMeshObjects.insert(std::make_pair(meshInfo->mUniqueId, pMeshObject));
 		pMeshObject->mName = meshInfo->mName;
-		std::vector<collada::Vec3> positions;
+		std::vector<Vec3> positions;
 		positions.reserve(10000);
-		std::vector<collada::Vec3> normals;
+		std::vector<Vec3> normals;
 		normals.reserve(10000);
-		std::vector<collada::Vec2> uvs;
+		std::vector<Vec2> uvs;
 		uvs.reserve(10000);
 		std::vector<collada::ModelTriangle> triangles;
 		triangles.reserve(3000);
@@ -441,7 +441,7 @@ public:
 					{
 						size_t pi = posIndices[i + indexOffset[k]] * 3;
 						size_t ni = norIndices[i + indexOffset[k]] * 3;
-						collada::Vec2 uvCoord{ 0, 0 };
+						Vec2 uvCoord{ 0, 0 };
 						if (meshInfo->mHasUVs[pri])
 						{
 							size_t ui = uvIndices[i + indexOffset[k]] * 2;
@@ -449,14 +449,15 @@ public:
 						}
 
 						collada::DEFAULT_INPUTS::V_PNT vert(
-							collada::Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]),
-							collada::Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]),
+							Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]),
+							Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]),
 							uvCoord);
 
 						auto it = vertToIdx.find(vert);
 						if (it != vertToIdx.end()) {
 							// existing combination
 							indices.push_back(it->second);
+							tri.v[k] = it->second;
 						}
 						else {
 							// new combination
@@ -465,10 +466,11 @@ public:
 							positions.push_back(vert.p);
 							normals.push_back(vert.n);
 							uvs.push_back(vert.uv);
+							tri.v[k] = nextIdx;
 						}						
 					}					
-					collada::Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
-					collada::Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
+					Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
+					Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
 					tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
 					tri.d = tri.faceNormal.Dot(positions[tri.v[0]]);
 					AssignProjections(&tri, positions);
@@ -484,21 +486,21 @@ public:
 					{
 						size_t pi = posIndices[i + indexOffset[k]] * 3;
 						size_t ni = norIndices[i + indexOffset[k]] * 3;
-						collada::Vec2 uvCoord{ 0, 0 };
+						Vec2 uvCoord{ 0, 0 };
 						if (meshInfo->mHasUVs[pri])
 						{
 							size_t ui = uvIndices[i + indexOffset[k]] * 2;
 							uvCoord = { meshInfo->mUVs[ui + 0], meshInfo->mUVs[ui + 1] };
 						}
 
-						positions.push_back(collada::Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));
-						normals.push_back(collada::Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]));
+						positions.push_back(Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));
+						normals.push_back(Vec3(meshInfo->mNormals[ni], meshInfo->mNormals[ni + elemOffset[1]], meshInfo->mNormals[ni + elemOffset[2]]));
 						uvs.push_back(uvCoord);
 
 						tri.v[k] = positions.size() - 1;
 					}
-					collada::Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
-					collada::Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
+					Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
+					Vec3 vEdge2 = positions[tri.v[2]] - positions[tri.v[0]];
 					tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
 					tri.d = tri.faceNormal.Dot(positions[tri.v[0]]);
 					AssignProjections(&tri, positions);
@@ -573,7 +575,7 @@ public:
 		collada::MeshPtr pMeshObject(new collada::Mesh, [](collada::Mesh* obj){ delete obj; });
 		mCollisionMeshes.insert(std::make_pair(meshInfo->mUniqueId, pMeshObject));
 		pMeshObject->mName = meshInfo->mName; // this will be overwrtten by the node name		
-		std::vector<collada::Vec3> positions;
+		std::vector<Vec3> positions;
 		positions.reserve(10000);
 		for (int pri = 0; pri<meshInfo->mNumPrimitives; pri++)
 		{
@@ -588,7 +590,7 @@ public:
 				for (int k = 0; k<3; k++)
 				{
 					size_t pi = posIndices[i + indexOffset[k]] * 3;
-					positions.push_back(collada::Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));					
+					positions.push_back(Vec3(meshInfo->mPos[pi], meshInfo->mPos[pi + elemOffset[1]], meshInfo->mPos[pi + elemOffset[2]]));					
 				}
 			}
 		} // pri
@@ -625,25 +627,28 @@ public:
 		return collada::ConvertColShapeStringToEnum(typestring.c_str());
 	}
 
-	collada::Vec4 ConvertData(const COLLADABU::Math::Quaternion& src){
-		return collada::Vec4((float)src.x, (float)src.y, (float)src.z, (float)src.w);
+	Quat ConvertData(const COLLADABU::Math::Quaternion& src){
+		return Quat((float)src.w, (float)src.x, (float)src.y, (float)src.z);
 	}
-	collada::Vec3 ConvertData(const COLLADABU::Math::Vector3& src){
-		return collada::Vec3((float)src.x, (float)src.y, (float)src.z);
+	Vec3 ConvertData(const COLLADABU::Math::Vector3& src){
+		return Vec3((float)src.x, (float)src.y, (float)src.z);
+	}
+	Transformation ConvertData(const COLLADABU::Math::Matrix4& mat, bool normalizeQuat) {
+		Transformation t;
+		t.SetScale(ConvertData(mat.getScale()));
+		auto quat = mat.extractQuaternion();
+		if (normalizeQuat)
+			quat.normalise();
+		t.SetRotation(ConvertData(quat));
+		t.SetTranslation(ConvertData(mat.getTrans()));
+		return t;
 	}
 	void WriteChildNode(const COLLADAFW::Node* node, size_t parentMeshIdx){
 		using namespace COLLADAFW;
 
 		std::string name = node->getName();
-		COLLADABU::Math::Matrix4 mat = node->getTransformationMatrix();
-		COLLADABU::Math::Vector3 scale = mat.getScale();
-		COLLADABU::Math::Quaternion rot = mat.extractQuaternion();
-		rot.normalise();
-		COLLADABU::Math::Vector3 trans = mat.getTrans();
-		collada::Location location;
-		location.mPos = ConvertData(trans);
-		location.mScale = ConvertData(scale);
-		location.mQuat = ConvertData(rot);		
+		COLLADABU::Math::Matrix4 mat = node->getTransformationMatrix();		
+		Transformation location = ConvertData(mat, true);		
 		bool auxiliaryNode = name.find("_POS") == 0;
 		bool collisionNode = name.find("_COL") == 0;
 		bool cameraNode = name.find("_CAM") == 0;
@@ -652,7 +657,8 @@ public:
 		{
 			assert(mMeshGroup->mMeshes[parentMeshIdx].mMesh);
 			assert(parsingChildMesh);
-			mMeshGroup->mMeshes[parentMeshIdx].mMesh->mAuxiliaries.push_back(collada::AUXILIARIES::value_type(name, location));
+			mMeshGroup->mMeshes[parentMeshIdx].mMesh->mAuxiliaries.push_back(
+				collada::AUXILIARIES::value_type(name, location));
 		}
 		else if (collisionNode)
 		{
@@ -781,15 +787,8 @@ public:
 		for (size_t i = 0; i<count; i++)
 		{
 			std::string name = node[i]->getName();
-			COLLADABU::Math::Matrix4 mat = node[i]->getTransformationMatrix();
-			COLLADABU::Math::Vector3 scale = mat.getScale();
-			COLLADABU::Math::Quaternion rot = mat.extractQuaternion();
-			rot.normalise();
-			COLLADABU::Math::Vector3 trans = mat.getTrans();
-			collada::Location location;
-			location.mPos = ConvertData(trans);
-			location.mScale = ConvertData(scale);
-			location.mQuat = ConvertData(rot);
+			COLLADABU::Math::Matrix4 mat = node[i]->getTransformationMatrix();			
+			Transformation transform = ConvertData(mat, true);
 			size_t idx = -1;
 			if (mOptions.mUseMeshGroup)
 			{
@@ -809,11 +808,11 @@ public:
 						idx = mMeshGroup->mMeshes.size();
 						mMeshGroup->mMeshes[idx].mMesh = pMeshObject;
 						mMeshGroup->mMeshes[idx].mParentMeshIdx = -1;
-						mMeshGroup->mMeshes[idx].mTransformation = location;
+						mMeshGroup->mMeshes[idx].mTransformation = transform;
 						if (name.find("_PART") == 0)
 						{
 							collada::AUXILIARIES aux;
-							aux.push_back(collada::AUXILIARIES::value_type(name, location));
+							aux.push_back(collada::AUXILIARIES::value_type(name, transform));
 							mMeshGroup->mAuxiliaries = aux;
 						}
 					}
@@ -830,6 +829,25 @@ public:
 					if (pMeshObject)
 					{
 						pMeshObject->mName = name;
+						if (!transform.IsIdentity()) {
+							auto transformWithOutPos = transform;
+							transformWithOutPos.SetTranslation(Vec3::ZERO);
+							for (auto& it : pMeshObject->mMaterialGroups) {
+								for (auto& pos : it.second.mPositions) {
+									pos = transformWithOutPos.ApplyForward(pos);
+								}
+								for (auto& normal : it.second.mNormals) {
+									normal = transformWithOutPos.ApplyForwardDir(normal);
+								}
+								for (auto& tri : it.second.mTriangles) {
+									Vec3 vEdge1 = it.second.mPositions[tri.v[1]] - it.second.mPositions[tri.v[0]];
+									Vec3 vEdge2 = it.second.mPositions[tri.v[2]] - it.second.mPositions[tri.v[0]];
+									tri.faceNormal = vEdge1.Cross(vEdge2).NormalizeCopy();
+									tri.d = tri.faceNormal.Dot(it.second.mPositions[tri.v[0]]);
+									AssignProjections(&tri, it.second.mPositions);
+								}
+							}
+						}
 					}
 				}
 			}
@@ -841,24 +859,24 @@ public:
 			if (auxiliaryNode)
 			{
 				if (mOptions.mUseMeshGroup){
-					mMeshGroup->mAuxiliaries.push_back(collada::AUXILIARIES::value_type(name, location));
+					mMeshGroup->mAuxiliaries.push_back(collada::AUXILIARIES::value_type(name, transform));
 				}
 				else{
-					mMeshObjects.begin()->second->mAuxiliaries.push_back(collada::AUXILIARIES::value_type(name, location));
+					mMeshObjects.begin()->second->mAuxiliaries.push_back(collada::AUXILIARIES::value_type(name, transform));
 				}
 			}
 			else if (collisionNode)
 			{
 				auto shape = GetColShape(name.c_str());
 				if (mOptions.mUseMeshGroup){
-					mMeshGroup->mCollisionInfo.push_back(collada::CollisionInfo(shape, location, 0));
+					mMeshGroup->mCollisionInfo.push_back(collada::CollisionInfo(shape, transform, 0));
 				}
 				else{
-					mMeshObjects.begin()->second->mCollisionInfo.push_back(collada::CollisionInfo(shape, location, 0));
+					mMeshObjects.begin()->second->mCollisionInfo.push_back(collada::CollisionInfo(shape, transform, 0));
 				}
 			}
 			else if (cameraNode){
-				collada::CameraInfo camInfo(name, location);				
+				collada::CameraInfo camInfo(name, transform);
 				const auto& instance_cameras = node[i]->getInstanceCameras();
 				auto numCameras = instance_cameras.getCount();
 				assert(numCameras == 1); // currently support only one

@@ -38,6 +38,7 @@
 #include "FBCommonHeaders/Types.h"
 #include "FBCommonHeaders/Helpers.h"
 #include "FBCommonHeaders/VectorMap.h"
+#include "FBMathLib/Math.h"
 #include "FBAnimation/AnimationData.h"
 #include <string>
 #include <memory>
@@ -53,62 +54,6 @@ namespace fb{
 		};
 		/// \a colShape is lower case
 		ColShape ConvertColShapeStringToEnum(const char* colShape);
-		
-		struct Vec2{
-			float x, y;
-
-			bool IsEqual(const Vec2& other, float epsilon = 0.0005f) const {
-				return !(abs(other.x - x) > epsilon || abs(other.y - y) > epsilon);
-			}
-
-			size_t Hash() const {
-				return hash_combine_ret(std::hash<float>()(x), std::hash<float>()(y));				
-			}
-		};
-
-		struct Vec3{
-			float x, y, z;
-
-			Vec3(){
-
-			}
-			Vec3(float x_, float y_, float z_)
-				:x(x_), y(y_), z(z_)
-			{
-			}
-
-			bool operator==(const Vec3& other) {
-				return !(x != other.x || y != other.y || z != other.z);
-			}
-
-			bool IsEqual(const Vec3& other, float epsilon = 0.0005f) const {
-				return !(abs(other.x - x) > epsilon || abs(other.y - y) > epsilon || abs(other.z - z) > epsilon);
-			}
-
-			size_t Hash() const {
-				auto h = std::hash<float>()(x);
-				hash_combine(h, std::hash<float>()(y));
-				return hash_combine_ret(h, std::hash<float>()(z));
-			}
-
-			Vec3 operator- (const Vec3& r) const;
-			Vec3 Cross(const Vec3& rVector) const;
-			float Dot(const Vec3& vec) const;
-			float Normalize();
-			Vec3 NormalizeCopy() const;
-		};
-
-		struct Vec4{
-			float x, y, z, w;
-
-			Vec4(){
-			}
-
-			Vec4(float x_, float y_, float z_, float w_)
-				: x(x_), y(y_), z(z_), w(w_)
-			{
-			}
-		};
 
 		struct ModelTriangle {
 			unsigned        v[3];
@@ -159,23 +104,26 @@ namespace fb{
 		struct Mesh;
 		typedef std::shared_ptr<Mesh> MeshPtr;
 
-		struct Location{
-			Vec3 mScale;
-			Vec4 mQuat; // w, x, y, z order.
-			Vec3 mPos;
-		};
+		//struct Location{
+		//	Vec3 mScale;
+		//	Quat mQuat; // w, x, y, z order.
+		//	Vec3 mPos;
+
+		//	Vec3 operator* (const Vec3& point);
+		//	Vec3 TransformNormal(const Vec3& point);
+		//};
 
 		struct CollisionInfo
 		{
 			ColShape mColShapeType;
-			Location mTransform;
+			Transformation mTransform;
 			MeshPtr mCollisionMesh;
 
 			CollisionInfo(){
 
 			}
 
-			CollisionInfo(ColShape type, const Location& transform, MeshPtr colMesh)
+			CollisionInfo(ColShape type, const Transformation& transform, MeshPtr colMesh)
 				:mColShapeType(type), mTransform(transform), mCollisionMesh(colMesh)
 			{
 
@@ -207,7 +155,7 @@ namespace fb{
 		typedef std::vector< CollisionInfo > COLLISION_INFOS;
 
 		
-		typedef std::vector< std::pair<std::string, Location> > AUXILIARIES;
+		typedef std::vector< std::pair<std::string, Transformation> > AUXILIARIES;
 
 		struct CameraData{
 			float mXFov;
@@ -251,13 +199,13 @@ namespace fb{
 
 		struct CameraInfo{
 			std::string mName;
-			Location mLocation;
+			Transformation mLocation;
 			CameraData mData;
 			CameraInfo()				
 			{
 			}
 
-			CameraInfo(std::string name, const Location& l)
+			CameraInfo(std::string name, const Transformation& l)
 				: mName(name), mLocation(l)				
 			{
 
@@ -318,7 +266,7 @@ namespace fb{
 			struct Data{
 				int mParentMeshIdx;
 				MeshPtr mMesh;
-				Location mTransformation; // In Local Space(Parent Space)				
+				Transformation mTransformation; // In Local Space(Parent Space)				
 
 			private:
 				friend class boost::serialization::access;
@@ -364,9 +312,9 @@ namespace fb{
 					: p(_p), n(_n), uv(_uv){}
 
 				size_t Hash() const {
-					auto h = p.Hash();
-					hash_combine(h, n.Hash());
-					return hash_combine_ret(h, uv.Hash());
+					auto h = p.ComputeHash();
+					hash_combine(h, n.ComputeHash());
+					return hash_combine_ret(h, uv.ComputeHash());
 				}
 
 				bool operator==(const POSITION_NORMAL_TEXCOORD_V& other) const {
@@ -381,11 +329,6 @@ namespace fb{
 		}
 	}	
 }
-
-BOOST_CLASS_IMPLEMENTATION(fb::collada::Vec2, boost::serialization::primitive_type);
-BOOST_CLASS_IMPLEMENTATION(fb::collada::Vec3, boost::serialization::primitive_type);
-BOOST_CLASS_IMPLEMENTATION(fb::collada::Vec4, boost::serialization::primitive_type);
-BOOST_CLASS_IMPLEMENTATION(fb::collada::Location, boost::serialization::primitive_type);
 
 namespace std {
 	template<>

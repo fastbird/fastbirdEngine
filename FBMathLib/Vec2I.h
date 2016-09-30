@@ -70,6 +70,7 @@ namespace fb
 		Real DistanceTo(const Vec2I& d) const;
 		Real Length() const;
 		Vec2I Scale(Real f) const;
+		std::string ToString() const;
 	};
 
 	Vec2I operator*(const Vec2I& left, unsigned right);

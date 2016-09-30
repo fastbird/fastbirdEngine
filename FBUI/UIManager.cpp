@@ -146,9 +146,11 @@ public:
 
 	Vec2 mPrevTooltipNPos;
 
-	KeyboardCursorPtr mKeyboardCursor;
+	KeyboardCursorPtr mKeyboardCursor;	
 	std::vector<std::string> mSounds;	
 	std::vector<std::string> mLockedVisibilityUIs;
+	ImageBoxPtr mCursorImage;
+	bool mDisplayingCursor;
 
 	//---------------------------------------------------------------------------
 	Impl(UIManager* self)
@@ -165,14 +167,20 @@ public:
 		, mUIFolder("Data/ui")
 		, mMultiLocating(false), mAtlasStaging(0)
 		, mPrevTooltipNPos(-1, -1)
+		, mDisplayingCursor(false)
 	{	
 		auto filepath = "_FBUI.log";
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
 		Logger::Init(filepath);
 		mSounds.assign(UISounds::Num, std::string());
+		mCursorImage = std::dynamic_pointer_cast<ImageBox>(CreateComponent(ComponentType::ImageBox));
+		mCursorImage->SetHwndId(Renderer::GetInstance().GetMainWindowHandleId());		
+		mCursorImage->SetProperty(UIProperty::USE_SCISSOR, "false");		
+		mCursorImage->SetProperty(UIProperty::IMAGE_DISPLAY, "FreeScaleUIMatchAll");
 	}
 
 	~Impl(){
+		mCursorImage = 0;
 		mTextManipulator = 0;
 
 		/*if (gFBEnv->pConsole)
@@ -574,7 +582,7 @@ public:
 
 
 	// IUIManager Interfaces
-	void Update(float elapsedTime){
+	void Update(float elapsedTime){		
 		for (auto & ui : mDeleteLuaUIPending){
 			DeleteLuaUI(ui.c_str(), false);
 
@@ -717,6 +725,9 @@ public:
 
 					if (mPopup&& mPopup->GetVisible())
 						mPopup->GatherVisit(uiObjects);
+					if (mDisplayingCursor) {						
+						mCursorImage->GatherVisit(uiObjects);
+					}
 				}
 				/*for (auto it : render3DList)
 				{
@@ -1227,12 +1238,15 @@ public:
 	}
 
 	// IInputListener Interfaces
-	void ConsumeInput(IInputInjectorPtr injector){
-		//if (gpTimer->IsPaused())
-			//return;
-		/*if (gFBEnv->pConsole->GetEngineCommand()->UI_Debug){
-			DebugUI();
-		}*/
+	void ConsumeInput(IInputInjectorPtr injector) {
+		if (mDisplayingCursor) {
+			auto pos_ = InputManager::GetInstance().GetInputInjector()->GetMousePos();
+			Vec2I pos(pos_);			
+			auto& size = mCursorImage->GetSize();
+			pos.x += size.x*.5f;
+			mCursorImage->ChangePos(pos);
+		}
+
 		if (!injector->IsValid(InputDevice::Keyboard) &&
 			!injector->IsValid(InputDevice::Mouse)){
 			return;
@@ -3225,6 +3239,28 @@ void UIManager::SetLockUIVisibility(const char* ui, bool lock) {
 
 std::vector<WinBasePtr> UIManager::GetComponentsInRegion(const fb::Rect& r) {
 	return mImpl->GetComponentsInRegion(r);
+}
+
+void UIManager::DisplayCursor(CursorType::Enum cursorType) {
+	mImpl->mDisplayingCursor = true;
+	mImpl->mCursorImage->SetVisible(true);
+	auto pos = InputManager::GetInstance().GetInputInjector()->GetMousePos();
+	mImpl->mCursorImage->ChangePos(pos);
+	switch (cursorType) {
+	case CursorType::Gold:
+	{
+		mImpl->mCursorImage->SetProperty(UIProperty::REGION, "Gold24");
+		break;
+	}
+	case CursorType::Num: 
+	{
+		mImpl->mDisplayingCursor = false;
+		mImpl->mCursorImage->SetVisible(false);
+		break;
+	}
+	}
+
+	DirtyRenderList(INVALID_HWND_ID);
 }
 
 void UIManager::SetUIEditor(IUIEditor* editor) {

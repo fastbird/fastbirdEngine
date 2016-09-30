@@ -1424,6 +1424,9 @@ namespace fb
 				return 1;
 			}
 		}
+		else {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot find the comp(%s)", compName).c_str());
+		}
 		return 0;
 	}
 
@@ -2005,9 +2008,17 @@ namespace fb
 	void RegisterLuaEnums(lua_State* mL) {
 		ListItemDataType::RegisterToLua(mL);
 	}
+
+	int DisplayCursor(lua_State* L) {
+		auto cursorType = LuaUtils::checkstring(L, 1);
+		UIManager::GetInstance().DisplayCursor(CursorType::ConvertToEnum(cursorType));
+		return 0;
+	}
+
 	//--------------------------------------------------------------------------------
 	void RegisterLuaFuncs(lua_State* mL)
 	{
+		LUA_SETCFUNCTION(mL, DisplayCursor);
 		LUA_SETCFUNCTION(mL, SetLockUIVisibility);
 		LUA_SETCFUNCTION(mL, SetEnableUIRenderTarget);
 		LUA_SETCFUNCTION(mL, GetComponentFinalPos);

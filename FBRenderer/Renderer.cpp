@@ -2180,6 +2180,12 @@ public:
 		mDebugHud->DrawLineNow(start, end, color0, color1);
 	}
 
+	void DrawLine(const Vec2I& start, const Vec2I& end,
+		const Color& color0, const Color& color1) 
+	{
+		mDebugHud->DrawLineNow(start, end, color0, color1);
+	}
+
 	void DrawBox(const std::vector<Vec3>& corners, const Color& color)
 	{
 		/// bottom:ll lr ur ul, top:ll lr ur ul
@@ -2197,6 +2203,17 @@ public:
 		DrawLine(corners[1], corners[5], color, color);
 		DrawLine(corners[2], corners[6], color, color);
 		DrawLine(corners[3], corners[7], color, color);
+	}
+
+	void DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) {
+		int left = pos.x - 1;
+		int top = pos.y - 1;
+		int right = pos.x + size.x + 1;
+		int bottom = pos.y + size.y + 1;
+		mDebugHud->DrawLineNow(Vec2I(left, top), Vec2I(right, top), color, color);
+		mDebugHud->DrawLineNow(Vec2I(left, top), Vec2I(left, bottom), color, color);
+		mDebugHud->DrawLineNow(Vec2I(right, top), Vec2I(right, bottom), color, color);
+		mDebugHud->DrawLineNow(Vec2I(left, bottom), Vec2I(right, bottom), color, color);
 	}
 
 	void DrawPoints(const std::vector<Vec3>& points, const Color& color)
@@ -4259,8 +4276,18 @@ void Renderer::DrawLine(const Vec3& start, const Vec3& end,
 	mImpl->DrawLine(start, end, color0, color1);
 }
 
+void Renderer::DrawLine(const Vec2I& start, const Vec2I& end,
+	const Color& color0, const Color& color1) 
+{
+	mImpl->DrawLine(start, end, color0, color1);
+}
+
 void Renderer::DrawBox(const Vec3::Array& corners, const Color& color) {
 	mImpl->DrawBox(corners, color);
+}
+
+void Renderer::DrawQuadLine(const Vec2I& pos, const Vec2I& size, const Color& color) {
+	mImpl->DrawQuadLine(pos, size, color);
 }
 
 void Renderer::DrawPoints(const Vec3::Array& points, const Color& color){

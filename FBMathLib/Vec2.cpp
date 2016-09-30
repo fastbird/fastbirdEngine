@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "Vec2.h"
 #include "Math.h"
+#include "FBStringLib/MurmurHash.h"
 
 namespace fb
 {
@@ -252,6 +253,10 @@ namespace fb
 	int Vec2::MaxAxis() const
 	{
 		return x < y ? 1 : 0;
+	}
+
+	size_t Vec2::ComputeHash() const {
+		return murmur3_32((const char*)this, sizeof(Vec2));
 	}
 
 	//--------------------------------------------------------------------------

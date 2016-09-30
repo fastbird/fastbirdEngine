@@ -36,6 +36,7 @@
 #include "ComponentType.h"
 #include "Align.h"
 #include "UISounds.h"
+#include "CursorType.h"
 #include "FBFileMonitor/IFileChangeObserver.h"
 #include "FBRenderer/IRendererObserver.h"
 #include "FBInputManager/IInputConsumer.h"
@@ -200,7 +201,8 @@ namespace fb
 		bool GetRenderUIOption() const;
 
 		void SetLockUIVisibility(const char* ui, bool lock);
-		std::vector<WinBasePtr> GetComponentsInRegion(const fb::Rect& r);		
+		std::vector<WinBasePtr> GetComponentsInRegion(const fb::Rect& r);
+		void DisplayCursor(CursorType::Enum cursorType);
 
 		//-------------------------------------------------------------------
 		// For UI Editing

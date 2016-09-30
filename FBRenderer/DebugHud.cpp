@@ -306,6 +306,40 @@ public:
 		mScreenLines.push_back(line);
 	}
 
+	void DrawLineNow(const Vec2I& start, const Vec2I& end,
+		const Color& color0, const Color& color1)
+	{
+		Line line;
+		line.mStart = Vec3((Real)start.x, (Real)start.y, 0.f);
+		line.mColor = color0.Get4Byte();
+
+		line.mEnd = Vec3((Real)end.x, (Real)end.y, 0.f);
+		line.mColore = color1.Get4Byte();
+
+		auto& renderer = Renderer::GetInstance();
+		const auto& size = renderer.GetMainRenderTargetSize();
+		mObjectConstants.gWorldViewProj = MakeOrthogonalMatrix(0, 0,
+			(Real)size.x,
+			(Real)size.y,
+			0.f, 1.0f);
+		mObjectConstants.gWorld.MakeIdentity();
+		renderer.UpdateObjectConstantsBuffer(&mObjectConstants);
+
+		mInputLayout->Bind();
+		mLineShader->Bind(true);
+		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_LINELIST);		
+
+		MapData mapped = mVertexBuffer->Map(0, MAP_TYPE_WRITE_DISCARD, MAP_FLAG_NONE);
+		if (mapped.pData)
+		{
+			memcpy((char*)mapped.pData, &line, LINE_STRIDE * 2);
+			mVertexBuffer->Unmap(0);
+
+			mVertexBuffer->Bind();
+			renderer.Draw(2, 0);
+		}
+	}
+
 	void DrawSphere(const Vec3& pos, Real radius, const Color& color)
 	{
 		mSpheres.push_back(Sphere());
@@ -723,6 +757,12 @@ void DebugHud::DrawLine(const Vec2I& start, const Vec2I& end,
 	const Color& color0, const Color& color1)
 {
 	mImpl->DrawLine(start, end, color0, color1);
+}
+
+void DebugHud::DrawLineNow(const Vec2I& start, const Vec2I& end, const Color& color0,
+	const Color& color1)
+{
+	mImpl->DrawLineNow(start, end, color0, color1);
 }
 
 void DebugHud::DrawSphere(const Vec3& pos, Real radius, const Color& color)

@@ -36,6 +36,13 @@ AABB::AABB()
 	Invalidate();
 }
 
+AABB::AABB(const Vec3& min, const Vec3& max)
+	: mMin(min)
+	, mMax(max)
+{
+
+}
+
 bool AABB::IsValid() const
 {
 	return mMax >= mMin;
@@ -103,4 +110,15 @@ void AABB::GetPoints(Vec3 points[8]) const{
 
 std::string AABB::ToString() const {
 	return FormatString("AABB Min: %s, Max: %s", mMin.ToString().c_str(), mMax.ToString().c_str());
+}
+
+AABB& AABB::operator*=(float scale) {
+	auto center = GetCenter();
+	mMin = mMin - center;
+	mMax = mMax - center;
+	mMin *= scale;
+	mMax *= scale;
+	mMin = mMin + center;
+	mMax = mMax + center;
+	return *this;
 }

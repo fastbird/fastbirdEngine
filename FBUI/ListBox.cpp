@@ -117,6 +117,8 @@ ListItemPtr ListBox::CreateNewItem(int row, int col)
 	item->SetProperty(UIProperty::NO_BACKGROUND, "true");
 	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 		std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+		std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 	item->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 		std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 	item->SetVisible(mVisibility.IsVisible());
@@ -1166,7 +1168,7 @@ void ListBox::ChangeFocusItem(ListItemPtr newItem){
 }
 
 void ListBox::OnItemClicked(void* arg)
-{		
+{
 	WinBase* clickedWin = (WinBase*)arg;
 	while (clickedWin && clickedWin->GetType() != ComponentType::ListItem){
 		clickedWin = clickedWin->GetParent().get();
@@ -1221,6 +1223,38 @@ void ListBox::OnItemClicked(void* arg)
 	
 
 	OnEvent(UIEvents::EVENT_MOUSE_LEFT_CLICK);
+	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
+}
+
+void ListBox::OnItemRClicked(void* arg) {
+	WinBase* clickedWin = (WinBase*)arg;
+	while (clickedWin && clickedWin->GetType() != ComponentType::ListItem) {
+		clickedWin = clickedWin->GetParent().get();
+	}
+	if (!clickedWin || clickedWin->GetType() != ComponentType::ListItem)
+		return;
+	ListItem* listItem = (ListItem*)clickedWin;
+
+	size_t rowIndex = listItem->GetRowIndex();
+	if (rowIndex != ListItem::INVALID_INDEX)
+	{
+		auto injector = InputManager::GetInstance().GetInputInjector();
+		unsigned clickedIndex = rowIndex;
+		unsigned lastIndex = -1;
+		DeselectAll();
+		SetHighlightRowAndSelect(rowIndex, true);
+	}
+
+	auto listItemPtr = std::static_pointer_cast<ListItem>(listItem->GetPtr());
+	ChangeFocusItem(listItemPtr);
+	if (listItem->GetNumChildren() > 0) {
+		UIManager::GetInstance().SetFocusUI(listItem->GetChild(0));
+	}
+	else {
+		UIManager::GetInstance().SetFocusUI(listItemPtr);
+	}
+
+	OnEvent(UIEvents::EVENT_MOUSE_RIGHT_CLICK);
 	OnEvent(UIEvents::EVENT_LISTBOX_SELECTION_CHANGED);
 }
 
@@ -1332,6 +1366,8 @@ WinBasePtr ListBox::MakeMergedRow(unsigned row)
 
 	NoVirtualizingItem(row);
 	auto firstItem = mItems[row][0].lock();
+	if (!firstItem)
+		return nullptr;
 	assert(firstItem);
 	firstItem->ChangeNSizeX(1.0f);
 	if (mScrollerV.lock())
@@ -1532,6 +1568,8 @@ void ListBox::FillItem(unsigned index){
 				checkbox->SetUseAbsSize(false);
 				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+					std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 				checkbox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				checkbox->SetRuntimeChild(true);
@@ -1627,6 +1665,8 @@ void ListBox::FillItem(unsigned index){
 				textField->SetVisible(mVisibility.IsVisible());
 				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+					std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 				textField->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				textField->RegisterEventFunc(UIEvents::EVENT_ENTER,
@@ -1647,6 +1687,8 @@ void ListBox::FillItem(unsigned index){
 				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+					std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
@@ -1668,6 +1710,8 @@ void ListBox::FillItem(unsigned index){
 				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+					std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);
@@ -1689,6 +1733,8 @@ void ListBox::FillItem(unsigned index){
 				imageBox->MatchUISizeToImageAtCenter();
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_CLICK,
 					std::bind(&ListBox::OnItemClicked, this, std::placeholders::_1));
+				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_RIGHT_CLICK,
+					std::bind(&ListBox::OnItemRClicked, this, std::placeholders::_1));
 				imageBox->RegisterEventFunc(UIEvents::EVENT_MOUSE_LEFT_DOUBLE_CLICK,
 					std::bind(&ListBox::OnItemDoubleClicked, this, std::placeholders::_1));
 				imageBox->SetRuntimeChild(true);

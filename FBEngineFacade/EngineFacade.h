@@ -167,7 +167,7 @@ namespace fb{
 		void QueueDraw3DText(const Vec3& worldpos, WCHAR* text, const Color& color);
 		void QueueDraw3DText(const Vec3& worldpos, WCHAR* text, const Color& color, Real size);
 		void QueueDraw3DText(const Vec3& worldpos, const char* text, const Color& color);
-		void QueueDraw3DText(const Vec3& worldpos, const char* text, const Color& color, Real size);
+		void QueueDraw3DText(const Vec3& worldpos, const char* text, const Color& color, Real size);		
 		void QueueDrawLineBeforeAlphaPass(const Vec3& start, const Vec3& end,
 			const Color& color0, const Color& color1);
 		void QueueDrawLine(const Vec3& start, const Vec3& end,
@@ -181,6 +181,7 @@ namespace fb{
 		void QueueDrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha);
 		/**Rendered before the transparent object.*/
 		void QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha);
+		void QueueDrawTransform(const Transformation t, float scale);
 
 		FontPtr GetFont(int fontSize);
 		FontPtr GetFontWithHeight(float fontHeight);

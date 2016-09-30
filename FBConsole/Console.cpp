@@ -121,8 +121,8 @@ public:
 		if (file.is_open())
 		{
 			do {
-				char buf[256] = { 0 };
-				file.getline(buf, 256);
+				char buf[1024] = { 0 };
+				file.getline(buf, 1024);
 				if (strlen(buf) != 0)
 				{
 					mHistory.push_back(buf);

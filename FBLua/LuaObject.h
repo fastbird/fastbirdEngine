@@ -44,6 +44,7 @@ namespace fb
 		~LuaTableIterator();
 		typedef std::pair<LuaObject, LuaObject> KeyValue;
 		bool GetNext(KeyValue& outKeyValue);
+		LuaTableIterator& operator=(const LuaTableIterator& other) = delete;
 	};
 
 	//-----------------------------------------------------------------------------
@@ -51,13 +52,15 @@ namespace fb
 	{
 		lua_State* mL;
 		size_t mLen;
-		size_t mCurIdx;
+		size_t mCurIdx;		
+		bool mValid;
 
 	public:
 		LuaSequenceIterator(const LuaObject& sequence);
 		~LuaSequenceIterator();
-		bool GetNext(LuaObject& out);
+		LuaSequenceIterator& operator=(const LuaSequenceIterator& other) = delete;
 
+		bool GetNext(LuaObject& out);
 	};
 
 	//-----------------------------------------------------------------------------

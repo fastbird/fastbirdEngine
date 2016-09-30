@@ -51,6 +51,9 @@ UICommands::UICommands()
 
 	UI_Debug = Console::GetInstance().GetIntVariable("UI_Debug", 0);
 	FB_REGISTER_CVAR(UI_Debug, UI_Debug, CVAR_CATEGORY_CLIENT, "UI debug");
+
+	UI_EditorX = Console::GetInstance().GetIntVariable("UI_EditorX", 0);
+	FB_REGISTER_CVAR(UI_EditorX, UI_EditorX, CVAR_CATEGORY_CLIENT, "UI Editors x position");
 }
 
 UICommands::~UICommands()
@@ -80,11 +83,11 @@ void StartUIEditor(StringVector& arg)
 	}
 	if (moduleHandle)
 	{		
-		typedef int(__cdecl *StartProc)();
+		typedef int(__cdecl *StartProc)(int x);
 		auto startFunc = (StartProc)ModuleHandler::GetFunction(moduleHandle, "StartUIEditor");
 		if (startFunc)
 		{
-			startFunc();
+			startFunc(UIManager::GetInstance().GetUICommands()->UI_EditorX);
 			uiEditorInitialized = true;
 			LuaLock L;
 			LuaUtils::pushboolean(L, 1);

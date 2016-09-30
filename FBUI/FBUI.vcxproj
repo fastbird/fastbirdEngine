@@ -192,6 +192,7 @@
     <ClInclude Include="ColorRampComp.h" />
     <ClInclude Include="ComponentType.h" />
     <ClInclude Include="Container.h" />
+    <ClInclude Include="CursorType.h" />
     <ClInclude Include="DiscretedGauge.h" />
     <ClInclude Include="DragBox.h" />
     <ClInclude Include="DropDown.h" />

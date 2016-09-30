@@ -75,6 +75,8 @@ namespace fb
 			const Color& color1);
 		void DrawLine(const Vec2I& start, const Vec2I& end, const Color& color0, 
 			const Color& color1);
+		void DrawLineNow(const Vec2I& start, const Vec2I& end, const Color& color0,
+			const Color& color1);
 		void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color);
 
 		void DrawSphere(const Vec3& pos, Real radius, const Color& color);

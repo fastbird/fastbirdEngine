@@ -36,7 +36,7 @@ static int Round(Real v)
 {
 	return (int)(v + 0.5f);
 }
-class Mouse::MouseImpl{
+class Mouse::MouseImpl {
 public:
 	HWindow mLastEventWindow;
 	int mButtonsDown;
@@ -46,16 +46,16 @@ public:
 	int mButtonsDoubleClicked;
 
 	// this should be used for picking.
-	long mAbsX;
+	mutable long mAbsX;
 	long mAbsXPrev;
-	long mAbsY;
+	mutable long mAbsY;
 	long mAbsYPrev;
-	
+
 	long mDpiDependentDeltaX;
 	long mDpiDependentDeltaY;
 
-	long mPhysicalX;
-	long mPhysicalY;
+	mutable long mPhysicalX;
+	mutable long mPhysicalY;
 
 	Real mNPosX;
 	Real mNPosY;
@@ -104,7 +104,7 @@ public:
 	Real mSensitivity;
 	Real mWheelSensitivity;
 
-	MouseImpl() 
+	MouseImpl()
 		: mLastDownPos(0, 0)
 		, mLastLeftDownTime(0)
 		, mLastRightDownTime(0)
@@ -114,7 +114,7 @@ public:
 		, mNPosX(0)
 		, mNPosY(0)
 		, mPhysicalX(0)
-		, mPhysicalY(0)		
+		, mPhysicalY(0)
 		, mLastWheelPush(0)
 		, mDragStarted(false)
 		, mDragEnd(false)
@@ -123,7 +123,7 @@ public:
 		, mRDragEnd(false)
 		, mNoClickOnce(false)
 		, mSensitivity(0.002f)
-		, mWheelSensitivity(0.003f){
+		, mWheelSensitivity(0.003f) {
 
 		mLButtonDoubleClicked = false;
 		mButtonsDown = 0;
@@ -149,13 +149,13 @@ public:
 	//-------------------------------------------------------------------
 	// IInputDevice
 	//-------------------------------------------------------------------
-	void EndFrame(Real gameTimeInSec){
+	void EndFrame(Real gameTimeInSec) {
 		mButtonsClicked = 0;
 		mButtonsPressed = 0;
 		mLastX = 0;
 		mLastY = 0;
 
-		if (mLockMouse){
+		if (mLockMouse) {
 			// mLastEventWindow is ok?
 			// or need the current forground window.
 			if (mAbsX != mAbsXPrev || mAbsY != mAbsYPrev) {
@@ -164,19 +164,19 @@ public:
 				mAbsY = mAbsYPrev;
 			}
 		}
-		else{
+		else {
 			mAbsXPrev = mAbsX;
-			mAbsYPrev = mAbsY;			
+			mAbsYPrev = mAbsY;
 		}
-		
+
 		mDpiDependentDeltaX = 0;
 		mDpiDependentDeltaY = 0;
 		mValid = true;
 		//if (mLButtonDoubleClicked)
 			//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double click cleared");
 		mLButtonDoubleClicked = false;
-		if (gameTimeInSec - mLastWheelPush > 0.5f){
-			while (!mWheel.empty()){
+		if (gameTimeInSec - mLastWheelPush > 0.5f) {
+			while (!mWheel.empty()) {
 				mWheel.pop();
 			}
 		}
@@ -186,13 +186,13 @@ public:
 		return mValid && !mInvalidatedTemporary;
 	}
 
-	void Invalidate(bool buttonClicked = false){
+	void Invalidate(bool buttonClicked = false) {
 		if (buttonClicked)
 			mLastClickTime = 0;
 		mValid = false;
 	}
 
-	void InvalidTemporary(bool invalidate){
+	void InvalidTemporary(bool invalidate) {
 		mInvalidatedTemporary = invalidate;
 	}
 
@@ -200,7 +200,7 @@ public:
 	// IMouse
 	//-------------------------------------------------------------------
 
-	void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec){
+	void PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec) {
 		/*Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("usFlags = %x, usButtonFlags = %x, usButtonData = %x, ulRawButtons = %x, lLastX = %d, lLastY = %d, ulExtraInformation = %d",
 			mouseEvent.usFlags,
 			mouseEvent.usButtonFlags,
@@ -212,7 +212,7 @@ public:
 
 		mLastX = mouseEvent.lLastX;
 		mLastY = mouseEvent.lLastY;
-		if (mLastX != 0 || mLastY != 0){			
+		if (mLastX != 0 || mLastY != 0) {
 			mDpiDependentDeltaX += mLastX;
 			mDpiDependentDeltaY += mLastY;
 			GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);
@@ -221,19 +221,17 @@ public:
 				const auto& size = mRenderTargetSizes[handle];
 				mNPosX = (Real)mAbsX / (Real)std::get<0>(size);
 				mNPosY = (Real)mAbsY / (Real)std::get<1>(size);
-				if (!IsLButtonDown()){
+				if (!IsLButtonDown()) {
 					auto hwnd = FBWindowFromPoint(mPhysicalX, mPhysicalY);
 					if (hwnd != handle)
 					{
-						if (ValueExistsInVector(mInterestedWindows, hwnd)){
+						if (ValueExistsInVector(mInterestedWindows, hwnd)) {
 							FBSetForegroundWindow(hwnd);
 						}
 					}
 				}
 			}
 		}
-
-		
 
 		static HWindow downHwnd = 0;
 		mButtonsDownPrev = mButtonsDown;
@@ -306,8 +304,8 @@ public:
 		}
 
 
-		bool mouseNotMoved = abs((std::get<0>(mLastDownPos) - mAbsX)) < 6 && 
-			abs((std::get<1>(mLastDownPos)- mAbsY)) < 6;
+		bool mouseNotMoved = abs((std::get<0>(mLastDownPos) - mAbsX)) < 6 &&
+			abs((std::get<1>(mLastDownPos) - mAbsY)) < 6;
 
 		auto curTime = gameTimeInSec;
 		auto leftElapsedTime = (curTime - mLastLeftDownTime);
@@ -318,7 +316,7 @@ public:
 			{
 				mDragEndX = mAbsX;
 				mDragEndY = mAbsY;
-				if (mDragStarted){
+				if (mDragStarted) {
 					mDragStarted = false;
 				}
 				mDragEnd = true;
@@ -328,17 +326,17 @@ public:
 				}
 			}
 			auto curHwnd = FBWindowFromPoint(mPhysicalX, mPhysicalY);
-			if (curHwnd != downHwnd){
+			if (curHwnd != downHwnd) {
 				Invalidate();
 				EndFrame(0);
 			}
-			else{
+			else {
 				mButtonsDown &= ~MOUSE_BUTTON_LEFT;
 
 				Real doubleClickElapsedTime = curTime - mLastClickTime;
-				bool doubleClickMouseNotMoved = 
-					abs((std::get<0>(mLastClickPos)- mAbsX)) < 6 && 
-					abs((std::get<1>(mLastClickPos)- mAbsY)) < 6;
+				bool doubleClickMouseNotMoved =
+					abs((std::get<0>(mLastClickPos) - mAbsX)) < 6 &&
+					abs((std::get<1>(mLastClickPos) - mAbsY)) < 6;
 				if (doubleClickElapsedTime < mDoubleClickSpeed && doubleClickMouseNotMoved)
 				{
 					//Logger::Log(FB_DEFAULT_LOG_ARG, "(info) double clicked");
@@ -349,10 +347,10 @@ public:
 				//if (mouseNotMoved && !mLButtonDoubleClicked && leftElapsedTime < 0.25f)
 				if (!mLButtonDoubleClicked)
 				{
-					if (mNoClickOnce){
+					if (mNoClickOnce) {
 						mNoClickOnce = false;
 					}
-					else{
+					else {
 						mButtonsClicked |= MOUSE_BUTTON_LEFT;
 						mLastClickTime = gameTimeInSec;
 						mLastClickPos = Vec2ITuple(mAbsX, mAbsY);
@@ -363,7 +361,7 @@ public:
 			LockMousePos(false, (void*)-1);
 		}
 		if (mouseEvent.usButtonFlags & MOUSE_BUTTON_FLAG_RIGHT_BUTTON_UP)
-		{			
+		{
 			mRDragEndX = mAbsX;
 			mRDragEndY = mAbsY;
 			if (mRDragStarted) {
@@ -424,105 +422,105 @@ public:
 		}
 	}
 
-	void GetDpiDependentDeltaXY(long &x, long &y) const{
+	void GetDpiDependentDeltaXY(long &x, long &y) const {
 		x = mDpiDependentDeltaX;
 		y = mDpiDependentDeltaY;
 	}
 
-	Vec2ITuple GetDpiDependentDeltaXY() const{
+	Vec2ITuple GetDpiDependentDeltaXY() const {
 		return Vec2ITuple(mDpiDependentDeltaX, mDpiDependentDeltaY);
 	}
 
-	void GetAbsDeltaXY(long &x, long &y) const{
+	void GetAbsDeltaXY(long &x, long &y) const {
 		x = mAbsX - mAbsXPrev;
 		y = mAbsY - mAbsYPrev;
 	}
 
-	Vec2ITuple GetAbsDeltaXY() const{
+	Vec2ITuple GetAbsDeltaXY() const {
 		return Vec2ITuple(mAbsX - mAbsXPrev, mAbsY - mAbsYPrev);
 	}
 
-	void GetPos(long &x, long &y) const{
+	void GetPos(long &x, long &y) const {		
 		x = mAbsX;
 		y = mAbsY;
 	}
 
-	Vec2ITuple GetPos() const{
+	Vec2ITuple GetPos() const {
 		return Vec2ITuple(mAbsX, mAbsY);
 	}
 
-	void GetPrevPos(long &x, long &y) const{
+	void GetPrevPos(long &x, long &y) const {
 		x = mAbsXPrev;
 		y = mAbsYPrev;
 	}
 
-	void GetNPos(Real &x, Real &y) const{
+	void GetNPos(Real &x, Real &y) const {
 		x = mNPosX;
 		y = mNPosY;
 	}
 
-	Vec2Tuple GetNPos() const{
+	Vec2Tuple GetNPos() const {
 		return std::make_tuple(mNPosX, mNPosY);
 	}
 
-	bool IsLButtonDownPrev() const{
+	bool IsLButtonDownPrev() const {
 		return (mButtonsDownPrev&MOUSE_BUTTON_LEFT) != 0;
 	}
 
-	bool IsLButtonDown(Real* time = 0) const{
+	bool IsLButtonDown(Real* time = 0) const {
 		if (time)
 			*time = mLastLeftDownTime;
 		return (mButtonsDown & MOUSE_BUTTON_LEFT) != 0;
 	}
 
-	bool IsLButtonClicked() const{
+	bool IsLButtonClicked() const {
 		return (mButtonsClicked & MOUSE_BUTTON_LEFT) != 0;
 	}
 
-	bool IsLButtonDoubleClicked() const{
+	bool IsLButtonDoubleClicked() const {
 		return mLButtonDoubleClicked;
 	}
 
-	bool IsLButtonPressed() const{
+	bool IsLButtonPressed() const {
 		return (mButtonsPressed&MOUSE_BUTTON_LEFT) != 0;
 	}
 
-	bool IsRButtonDown(Real* time = 0) const{
+	bool IsRButtonDown(Real* time = 0) const {
 		if (time)
 			*time = mLastRightDownTime;
 		return (mButtonsDown & MOUSE_BUTTON_RIGHT) != 0;
 	}
 
-	bool IsRButtonDownPrev() const{
+	bool IsRButtonDownPrev() const {
 		return (mButtonsDownPrev & MOUSE_BUTTON_RIGHT) != 0;
 	}
 
-	bool IsRButtonClicked() const{
+	bool IsRButtonClicked() const {
 		return (mButtonsClicked & MOUSE_BUTTON_RIGHT) != 0;
 	}
 
-	bool IsRButtonPressed() const{
+	bool IsRButtonPressed() const {
 		return (mButtonsPressed&MOUSE_BUTTON_RIGHT) != 0;
 	}
 
-	bool IsMButtonDown() const{
+	bool IsMButtonDown() const {
 		return (mButtonsDown&MOUSE_BUTTON_MIDDLE) != 0;
 	}
 
-	bool IsMoved() const{
+	bool IsMoved() const {
 		return mLastX != 0 || mLastY != 0;
 	}
 
-	void GetDragStart(long &x, long &y) const{
+	void GetDragStart(long &x, long &y) const {
 		x = mDragStartX;
 		y = mDragStartY;
 	}
 
-	Vec2ITuple GetDragStartedPos() const{
+	Vec2ITuple GetDragStartedPos() const {
 		return std::make_tuple(mDragStartX, mDragStartY);
 	}
 
-	bool IsDragStartIn(int left, int top, int right, int bottom) const{
+	bool IsDragStartIn(int left, int top, int right, int bottom) const {
 		if (mDragStartX < left ||
 			mDragStartX > right ||
 			mDragStartY < top ||
@@ -533,7 +531,7 @@ public:
 
 	}
 
-	bool IsDragStarted(int& outX, int& outY) const{
+	bool IsDragStarted(int& outX, int& outY) const {
 		if (mDragStarted)
 		{
 			outX = mDragStartX;
@@ -542,57 +540,57 @@ public:
 		return mDragStarted;
 	}
 
-	bool IsDragEnded() const{
+	bool IsDragEnded() const {
 		return mDragEnd;
 	}
 
-	void PopDragEvent(){
+	void PopDragEvent() {
 		mDragStarted = false;
 		mDragEnd = false;
 	}
 
-	bool IsRDragStarted(int& outX, int& outY) const{
-		if (mRDragStarted){
+	bool IsRDragStarted(int& outX, int& outY) const {
+		if (mRDragStarted) {
 			outX = mRDragStartX;
 			outY = mRDragStartY;
 		}
 		return mRDragStarted;
 	}
 
-	bool IsRDragEnded(int& outX, int& outY) const{
+	bool IsRDragEnded(int& outX, int& outY) const {
 		return mRDragEnd;
 	}
 
-	void PopRDragEvent(){
+	void PopRDragEvent() {
 		mRDragStarted = false;
 		mRDragEnd = false;
 	}
 
-	long GetWheel() const{
+	long GetWheel() const {
 		if (mWheel.empty())
 			return 0;
 		return mWheel.top();
 	}
 
-	void PopWheel(){
+	void PopWheel() {
 		mWheel.pop();
 	}
 
-	void ClearWheel(){
+	void ClearWheel() {
 		while (!mWheel.empty())
 			mWheel.pop();
 	}
 
-	void ClearButton(){
+	void ClearButton() {
 		mButtonsClicked = 0;
 		mButtonsPressed = 0;
 	}
 
-	unsigned long GetNumLinesWheelScroll() const{
+	unsigned long GetNumLinesWheelScroll() const {
 		return mNumLinesWheelScroll;
 	}
 
-	void LockMousePos(bool lock, void* key){
+	void LockMousePos(bool lock, void* key) {
 		if (mLockMouse == lock)
 			return;
 		if (!lock && mLockMouseKey != key && key != (void*)-1)
@@ -607,39 +605,46 @@ public:
 				if (!mLockMouse)
 				{
 					mAbsXPrev = mAbsX;
-					mAbsYPrev = mAbsY;					
+					mAbsYPrev = mAbsY;
 				}
 				mLockMouse = true;
+#ifdef _PLATFORM_WINDOWS_
 				int displayCounter = ShowCursor(false);
 				while (displayCounter >= 0)
 				{
 					displayCounter = ShowCursor(false);
 				}
+#else
+				assert(0);
+#endif
 				return;
 			}
 		}
-
+#ifdef _PLATFORM_WINDOWS_
 		int displayCounter = ShowCursor(true);
-		while (displayCounter<0)
+		while (displayCounter < 0)
 		{
 			displayCounter = ShowCursor(true);
 		}
+#else
+		assert(0);
+#endif
 
 		mLockMouse = false;
 	}
 
-	void NoClickOnce(){
+	void NoClickOnce() {
 		mNoClickOnce = true;
 	}
 
-	void OnKillFocus(){
+	void OnKillFocus() {
 		LockMousePos(false, (void*)-1);
 		mButtonsDown = 0;
 	}
 
-	void OnSetFocus(HWindow hWnd){
+	void OnSetFocus(HWindow hWnd) {
 		GetCurrentMousePos(mAbsX, mAbsY, mPhysicalX, mPhysicalY);
-		const auto& size = mRenderTargetSizes[hWnd];			
+		const auto& size = mRenderTargetSizes[hWnd];
 		mNPosX = (Real)mAbsX / (Real)std::get<0>(size);
 		mNPosY = (Real)mAbsY / (Real)std::get<1>(size);
 		mAbsXPrev = mAbsX;
@@ -653,14 +658,14 @@ public:
 		}
 	}
 
-	bool IsIn(int left, int top, int right, int bottom){
+	bool IsIn(int left, int top, int right, int bottom) {
 		return !(mAbsX < left || mAbsX > right || mAbsY < top || mAbsY > bottom);
 	}
 
-	void CursorToCenter(){
-		if (IsMainWindowForeground()){			
+	void CursorToCenter() {
+		if (IsMainWindowForeground()) {
 			auto size = GetForegroundRenderTargetSize();
-			size = std::make_tuple( Round(std::get<0>(size) / 2.f) , Round(std::get<1>(size) / 2.f) );
+			size = std::make_tuple(Round(std::get<0>(size) / 2.f), Round(std::get<1>(size) / 2.f));
 			SetCurrentMousePos(std::get<0>(size), std::get<1>(size));
 			mAbsX = std::get<0>(size);
 			mAbsY = std::get<1>(size);
@@ -669,39 +674,39 @@ public:
 		}
 	}
 
-	void ClearRightDown(){
+	void ClearRightDown() {
 		mButtonsDown &= ~MOUSE_BUTTON_RIGHT;
 	}
 
-	Real GetLButtonDownTime() const{
+	Real GetLButtonDownTime() const {
 		return mLastLeftDownTime;
 	}
 
-	void AddHwndInterested(HWindow wnd){
+	void AddHwndInterested(HWindow wnd) {
 		mInterestedWindows.push_back(wnd);
 	}
 
-	void OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow){
+	void OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow) {
 		mRenderTargetSizes[associatedWindow] = Vec2ITuple(x, y);
-		if (ForegroundWindow() == associatedWindow){
+		if (ForegroundWindow() == associatedWindow) {
 			mNPosX = mAbsX / (Real)x;
 			mNPosY = mAbsY / (Real)y;
 		}
 	}
 
-	void GetCurrentMousePos(long& x, long& y, long& physicalX, long& physicalY)
+	void GetCurrentMousePos(long& x, long& y, long& physicalX, long& physicalY) const
 	{
 #ifdef _PLATFORM_WINDOWS_
-		auto rtSize = GetForegroundRenderTargetSize();		
-		Vec2ITuple windowSize = GetWindowClientSize(ForegroundWindow());		
+		auto rtSize = GetForegroundRenderTargetSize();
+		Vec2ITuple windowSize = GetWindowClientSize(ForegroundWindow());
 		POINT cursor;
 		GetCursorPos(&cursor);
 		physicalX = cursor.x;
-		physicalY = cursor.y;		
+		physicalY = cursor.y;
 		ScreenToClient(GetForegroundWindow(), &cursor);
 		x = cursor.x;
 		y = cursor.y;
-		if (windowSize != rtSize){
+		if (windowSize != rtSize) {
 			Real xr = std::get<0>(rtSize) / (Real)std::get<0>(windowSize);
 			Real yr = std::get<1>(rtSize) / (Real)std::get<1>(windowSize);
 			x = Round(x * xr);
@@ -717,7 +722,7 @@ public:
 #ifdef _PLATFORM_WINDOWS_
 		auto rtSize = GetForegroundRenderTargetSize();
 		Vec2ITuple windowSize = GetForgroundWindowClientSize();
-		if (windowSize != rtSize){
+		if (windowSize != rtSize) {
 			Real xr = std::get<0>(windowSize) / (Real)std::get<0>(rtSize);
 			Real yr = std::get<1>(windowSize) / (Real)std::get<1>(rtSize);
 			x = Round(x*xr);
@@ -735,23 +740,28 @@ public:
 #endif _PLATFORM_WINDOWS_
 	}
 
-	void ClearDrag(){		
+	void ClearDrag() {
 		mDragStarted = false;
 		mDragEnd = true;
 	}
 
-	void ClearRDrag(){
+	void ClearRDrag() {
 		mRDragStartX = mRDragEndX = -1;
 		mRDragStartY = mRDragEndY = -1;
 		mRDragStarted = false;
 		mRDragEnd = true;
 	}
 
-	Vec2ITuple GetForegroundRenderTargetSize(){
-		return mRenderTargetSizes[ForegroundWindow()];
+	Vec2ITuple GetForegroundRenderTargetSize() const {
+		auto it = mRenderTargetSizes.find(ForegroundWindow());
+		if (it == mRenderTargetSizes.end()) {
+			return Vec2ITuple{ 1234, 567 };
+		}
+
+		return it->second;
 	}
 
-	HWindow FBWindowFromPoint(int x, int y){
+	HWindow FBWindowFromPoint(int x, int y) {
 #if defined(_PLATFORM_WINDOWS_)
 		return (HWindow)WindowFromPoint(POINT{ x, y });
 #else
@@ -759,7 +769,7 @@ public:
 #endif
 	}
 
-	void FBSetForegroundWindow(HWindow hwnd){
+	void FBSetForegroundWindow(HWindow hwnd) {
 #if defined(_PLATFORM_WINDOWS_)
 		SetForegroundWindow((HWND)hwnd);
 #else
@@ -767,9 +777,9 @@ public:
 #endif
 	}
 
-	bool IsMainWindowForeground(){
+	bool IsMainWindowForeground() {
 		auto foreground = ForegroundWindow();
-		if (!mInterestedWindows.empty() && mInterestedWindows[0] == foreground){
+		if (!mInterestedWindows.empty() && mInterestedWindows[0] == foreground) {
 			return true;
 		}
 		return false;
@@ -777,53 +787,53 @@ public:
 };
 
 Mouse::Mouse()
-	: mImpl(new MouseImpl){		
+	: mImpl(new MouseImpl) {
 }
-Mouse::~Mouse(){
+Mouse::~Mouse() {
 	delete mImpl;
-}	
+}
 
-void Mouse::PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec)	{
+void Mouse::PushEvent(HWindow handle, const MouseEvent& mouseEvent, TIME_PRECISION gameTimeInSec) {
 	mImpl->PushEvent(handle, mouseEvent, gameTimeInSec);
 }
 
-void Mouse::EndFrame(TIME_PRECISION gameTimeInSec)	{
+void Mouse::EndFrame(TIME_PRECISION gameTimeInSec) {
 	mImpl->EndFrame(gameTimeInSec);
 }
 
-bool Mouse::IsValid() const{
+bool Mouse::IsValid() const {
 	return mImpl->IsValid();
 }
 
-void Mouse::Invalidate(bool buttonClicked){
+void Mouse::Invalidate(bool buttonClicked) {
 	mImpl->Invalidate(buttonClicked);
 }
 
-void Mouse::InvalidTemporary(bool invalidate){
+void Mouse::InvalidTemporary(bool invalidate) {
 	mImpl->InvalidTemporary(invalidate);
 }
 //---------------------------------------------------------------------------
-void Mouse::GetDpiDependentDeltaXY(long &x, long &y) const	{
+void Mouse::GetDpiDependentDeltaXY(long &x, long &y) const {
 	mImpl->GetDpiDependentDeltaXY(x, y);
 }
 
-Vec2ITuple Mouse::GetDpiDependentDeltaXY() const{
+Vec2ITuple Mouse::GetDpiDependentDeltaXY() const {
 	return mImpl->GetDpiDependentDeltaXY();
 }
 
-void Mouse::GetAbsDeltaXY(long &x, long &y) const{
+void Mouse::GetAbsDeltaXY(long &x, long &y) const {
 	mImpl->GetAbsDeltaXY(x, y);
 }
 
-Vec2ITuple Mouse::GetAbsDeltaXY() const{
+Vec2ITuple Mouse::GetAbsDeltaXY() const {
 	return mImpl->GetAbsDeltaXY();
 }
 
-void Mouse::GetPos(long &x, long &y) const{
+void Mouse::GetPos(long &x, long &y) const {
 	mImpl->GetPos(x, y);
 }
 
-Vec2ITuple Mouse::GetPos() const{
+Vec2ITuple Mouse::GetPos() const {
 	return mImpl->GetPos();
 }
 
@@ -832,19 +842,19 @@ void Mouse::GetPrevPos(long &x, long &y) const
 	mImpl->GetPrevPos(x, y);
 }
 
-void Mouse::GetNPos(Real &x, Real &y) const{
+void Mouse::GetNPos(Real &x, Real &y) const {
 	mImpl->GetNPos(x, y);
 }
 
-void Mouse::GetDragStart(long &x, long &y) const	{
+void Mouse::GetDragStart(long &x, long &y) const {
 	mImpl->GetDragStart(x, y);
 }
 
-Vec2ITuple Mouse::GetDragStartedPos() const{
+Vec2ITuple Mouse::GetDragStartedPos() const {
 	return mImpl->GetDragStartedPos();
 }
 
-Vec2Tuple Mouse::GetNPos() const{
+Vec2Tuple Mouse::GetNPos() const {
 	return mImpl->GetNPos();
 }
 
@@ -852,163 +862,174 @@ Vec2Tuple Mouse::GetNPos() const{
 // LButton
 //-------------------------------------------------------------------------
 
-bool Mouse::IsLButtonDownPrev() const{
+bool Mouse::IsLButtonDownPrev() const {
 	return mImpl->IsLButtonDownPrev();
 }
 
-bool Mouse::IsLButtonDown(Real* time) const{
-	return mImpl->IsLButtonDown(time);		
+bool Mouse::IsLButtonDown(Real* time) const {
+	return mImpl->IsLButtonDown(time);
 }
-	
-bool Mouse::IsLButtonClicked() const{
+
+bool Mouse::IsLButtonClicked() const {
 	return mImpl->IsLButtonClicked();
 }
 
 bool Mouse::IsLButtonUp() const {
 	return mImpl->IsLButtonDownPrev() && !mImpl->IsLButtonDown();
 }
-bool Mouse::IsLButtonDoubleClicked() const{
+bool Mouse::IsLButtonDoubleClicked() const {
 	return mImpl->IsLButtonDoubleClicked();
 }
 
-bool Mouse::IsLButtonPressed() const{
+bool Mouse::IsLButtonPressed() const {
 	return mImpl->IsLButtonPressed();
 }
 
-bool Mouse::IsMButtonDown() const{
+bool Mouse::IsMButtonDown() const {
 	return mImpl->IsMButtonDown();
 }
 
 //-------------------------------------------------------------------------
 // RButton
 //-------------------------------------------------------------------------
-bool Mouse::IsRButtonDown(Real* time) const{
+bool Mouse::IsRButtonDown(Real* time) const {
 	return mImpl->IsRButtonDown(time);
 }
 
-bool Mouse::IsRButtonDownPrev() const{
+bool Mouse::IsRButtonDownPrev() const {
 	return mImpl->IsRButtonDownPrev();
 }
 
-bool Mouse::IsRButtonClicked() const{
+bool Mouse::IsRButtonClicked() const {
 	return mImpl->IsRButtonClicked();
 }
 
-bool Mouse::IsRButtonPressed() const{
+bool Mouse::IsRButtonPressed() const {
 	return mImpl->IsRButtonPressed();
 }
 
-bool Mouse::IsMoved() const{
+bool Mouse::IsMoved() const {
 	return mImpl->IsMoved();
 }
 
-bool Mouse::IsDragStartIn(int left, int top, int right, int bottom) const{
+bool Mouse::IsDragStartIn(int left, int top, int right, int bottom) const {
 	return mImpl->IsDragStartIn(left, top, right, bottom);
 }
 
-bool Mouse::IsDragStarted(int& outX, int& outY) const{
+bool Mouse::IsDragStarted(int& outX, int& outY) const {
 	return mImpl->IsDragStarted(outX, outY);
 }
 
-bool Mouse::IsDragEnded() const{
+bool Mouse::IsDragEnded() const {
 	return mImpl->IsDragEnded();
 }
 
-void Mouse::PopDragEvent(){
+void Mouse::PopDragEvent() {
 	mImpl->PopDragEvent();
 }
 
-bool Mouse::IsRDragStarted(int& outX, int& outY) const{
+bool Mouse::IsRDragStarted(int& outX, int& outY) const {
 	return mImpl->IsRDragStarted(outX, outY);
 }
 
-bool Mouse::IsRDragEnded(int& outX, int& outY) const{
+bool Mouse::IsRDragEnded(int& outX, int& outY) const {
 	return mImpl->IsRDragEnded(outX, outY);
 }
 
-void Mouse::PopRDragEvent(){
+void Mouse::PopRDragEvent() {
 	mImpl->PopRDragEvent();
 }
 
 long Mouse::GetWheel() const
 {
-	return mImpl->GetWheel();	
+	return mImpl->GetWheel();
 }
-	
-void Mouse::PopWheel(){
+
+void Mouse::PopWheel() {
 	mImpl->PopWheel();
 }
 
-void Mouse::ClearWheel(){
+void Mouse::ClearWheel() {
 	mImpl->ClearWheel();
 }
 
-void Mouse::ClearButton(){
+void Mouse::ClearButton() {
 	mImpl->ClearButton();
 }
 
-unsigned long Mouse::GetNumLinesWheelScroll() const{
+unsigned long Mouse::GetNumLinesWheelScroll() const {
 	return mImpl->GetNumLinesWheelScroll();
 }
 
-void Mouse::LockMousePos(bool lock, void* key){
+void Mouse::LockMousePos(bool lock, void* key) {
 	mImpl->LockMousePos(lock, key);
 }
 
-void Mouse::OnSetFocus(HWindow hWnd){
+void Mouse::OnSetFocus(HWindow hWnd) {
 	mImpl->OnSetFocus(hWnd);
 }
 
-void Mouse::OnKillFocus(){		
+void Mouse::OnKillFocus() {
 	mImpl->OnKillFocus();
 }
 
-bool Mouse::IsIn(int left, int top, int right, int bottom){
+bool Mouse::IsIn(int left, int top, int right, int bottom) {
 	return mImpl->IsIn(left, top, right, bottom);
 }
 
-void Mouse::CursorToCenter(){
+void Mouse::CursorToCenter() {
 	mImpl->CursorToCenter();
 }
 
-void Mouse::SetCursorPosition(int x, int y){
+void Mouse::SetCursorPosition(int x, int y) {
 	mImpl->SetCurrentMousePos(x, y);
 }
 
-void Mouse::NoClickOnce(){
+void Mouse::NoClickOnce() {
 	mImpl->NoClickOnce();
 }
 
-void Mouse::ClearRightDown(){		
+void Mouse::ClearRightDown() {
 	mImpl->ClearRightDown();
 }
 
-Real Mouse::GetLButtonDownTime() const{
+Real Mouse::GetLButtonDownTime() const {
 	return mImpl->GetLButtonDownTime();
 }
 
-void Mouse::AddHwndInterested(HWindow wnd){
+void Mouse::AddHwndInterested(HWindow wnd) {
 	mImpl->AddHwndInterested(wnd);
 }
 
-Real Mouse::GetSensitivity() const{
+Real Mouse::GetSensitivity() const {
 	return mImpl->mSensitivity;
 }
 
-void Mouse::SetSensitivity(Real sens){
+bool Mouse::IsCursorVisible() const {
+#ifdef _PLATFORM_WINDOWS_
+	CURSORINFO ci;
+	if (GetCursorInfo(&ci)) {
+		return (ci.flags & CURSOR_SHOWING) != 0;
+	}
+#else
+
+#endif
+	return !mImpl->mLockMouse;
+}
+
+void Mouse::SetSensitivity(Real sens) {
 	mImpl->mSensitivity = sens;
 }
 
-Real Mouse::GetWheelSensitivity() const{
+Real Mouse::GetWheelSensitivity() const {
 	return mImpl->mWheelSensitivity;
 }
 
-void Mouse::SetWheelSensitivity(Real sens){
+void Mouse::SetWheelSensitivity(Real sens) {
 	mImpl->mWheelSensitivity = sens;
 }
 
-void Mouse::OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow){
+void Mouse::OnRenderTargetSizeChanged(int x, int y, HWindow associatedWindow) {
 	mImpl->OnRenderTargetSizeChanged(x, y, associatedWindow);
 }
-
 }

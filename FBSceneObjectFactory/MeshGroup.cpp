@@ -123,9 +123,9 @@ public:
 		if (param.mRenderPass == PASS_NORMAL){
 			auto radius = mSelf->GetRadius();
 			auto distToCam = mSelf->GetDistToCam(param.mCamera);
-			if (distToCam > 100 && radius < 5.0f)
+			if (distToCam > 200 && radius < 5.0f)
 				return;
-			if (distToCam > 150 && radius < 10.0f)
+			if (distToCam > 300 && radius < 10.0f)
 				return;
 		}
 

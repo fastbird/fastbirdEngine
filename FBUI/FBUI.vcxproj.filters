@@ -95,5 +95,6 @@
     <ClInclude Include="ImageDisplay.h" />
     <ClInclude Include="DiscretedGauge.h" />
     <ClInclude Include="HorizontalGauge.h" />
+    <ClInclude Include="CursorType.h" />
   </ItemGroup>
 </Project>

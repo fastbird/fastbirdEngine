@@ -83,12 +83,6 @@ public:
 		mNoMesh = !enable;
 	}
 
-	Vec3 ConvertCollada(const collada::Vec3& src){
-		return Vec3((Real)src.x, (Real)src.y, (Real)src.z);
-	}
-	Vec2 ConvertCollada(const collada::Vec2& src){
-		return Vec2((Real)src.x, (Real)src.y);
-	}
 	std::vector<ModelTriangle> ConvertCollada(const std::vector<collada::ModelTriangle>& data){
 		std::vector<ModelTriangle> ret;
 		ret.reserve(data.size());
@@ -97,57 +91,14 @@ public:
 			auto& d = ret.back();
 			for (int i = 0; i<3; ++i) 
 				d.v[i] = src.v[i];
-			d.v0Proj = ConvertCollada(src.v0Proj);
-			d.v1Proj = ConvertCollada(src.v1Proj);
-			d.v2Proj = ConvertCollada(src.v2Proj);
-			d.faceNormal = ConvertCollada(src.faceNormal);
+			d.v0Proj = src.v0Proj;
+			d.v1Proj = src.v1Proj;
+			d.v2Proj = src.v2Proj;
+			d.faceNormal = src.faceNormal;
 			d.d = src.d;
 			d.dominantAxis = src.dominantAxis;
 		}
 		return ret;
-	}
-
-	std::vector<Vec2> ConvertCollada(const std::vector<collada::Vec2>& data){
-		std::vector<Vec2> ret;
-		ret.reserve(data.size());
-#if defined(FB_DOUBLE_PRECISION)
-		for (auto v : data){
-			ret.push_back(Vec2(data.x, data.y, data.z));
-		}
-#else
-		ret.resize(data.size());
-		memcpy(&ret[0], &data[0], sizeof(Vec2) * data.size());
-#endif
-		return ret;
-	}
-
-	std::vector<Vec3> ConvertCollada(const std::vector<collada::Vec3>& data){
-		std::vector<Vec3> ret;
-		ret.reserve(data.size());
-#if defined(FB_DOUBLE_PRECISION)
-		for (auto v : data){
-			ret.push_back(Vec3(data.x, data.y, data.z));
-		}
-#else
-		ret.resize(data.size());
-		memcpy(&ret[0], &data[0], sizeof(Vec3) * data.size());
-#endif
-		return ret;
-	}
-
-	Quat ConvertToQuternion(const collada::Vec4& src){
-		return Quat((Real)src.w, (Real)src.x, (Real)src.y, (Real)src.z);
-	}
-
-	Transformation ConvertCollada(const collada::Location& src){
-		Transformation transformation;
-		auto trans = ConvertCollada(src.mPos);
-		auto scale = ConvertCollada(src.mScale);
-		auto quat = ConvertToQuternion(src.mQuat);
-		transformation.SetScale(scale);
-		transformation.SetRotation(quat);
-		transformation.SetTranslation(trans);
-		return transformation;
 	}
 
 	COLLISION_INFOS ConvertCollada(const collada::COLLISION_INFOS& colInfos){
@@ -156,7 +107,7 @@ public:
 			ret.push_back(CollisionInfo());
 			auto& d = ret.back();
 			d.mColShapeType = (ColisionShapeType::Enum)it.mColShapeType;
-			d.mTransform = ConvertCollada(it.mTransform);
+			d.mTransform = it.mTransform;
 			d.mCollisionMesh = ConvertMeshData(it.mCollisionMesh, "", false, true);			
 		}
 		return ret;
@@ -166,7 +117,7 @@ public:
 		MeshCamera ret;
 		ret.mAspectRatio = camInfo.mData.mAspectRatio;
 		ret.mFar = camInfo.mData.mFar;
-		ret.mLocation = ConvertCollada(camInfo.mLocation);
+		ret.mLocation = camInfo.mLocation;
 		Quat rot(Radian(-90), Vec3::UNIT_X);
 		ret.mLocation.AddRotation(rot);
 		ret.mName = camInfo.mName;
@@ -202,14 +153,14 @@ public:
 		mesh->SetName(meshData->mName.c_str());
 		mesh->StartModification();
 		for (auto& group : meshData->mMaterialGroups){
-			std::vector<Vec3> data = ConvertCollada(group.second.mPositions);
+			std::vector<Vec3> data = group.second.mPositions;
 			mesh->SetPositions(group.first, &data[0], data.size());
 			if (!group.second.mNormals.empty()){
-				data = ConvertCollada(group.second.mNormals);
+				data = group.second.mNormals;
 				mesh->SetNormals(group.first, &data[0], data.size());
 			}
 			if (!group.second.mUVs.empty()){
-				std::vector<Vec2> data2 = ConvertCollada(group.second.mUVs);
+				std::vector<Vec2> data2 = group.second.mUVs;
 				mesh->SetUVs(group.first, &data2[0], data2.size());
 			}
 			if (!group.second.mTriangles.empty()){
@@ -253,7 +204,7 @@ public:
 		for (auto& it : meshData->mAuxiliaries){
 			AUXILIARY aux;
 			aux.first = it.first;			
-			aux.second = ConvertCollada(it.second);
+			aux.second = it.second;
 			mesh->AddAuxiliary(aux);
 		}
 		mesh->SetCollisionShapes(ConvertCollada(meshData->mCollisionInfo));
@@ -422,7 +373,7 @@ public:
 		MeshGroupPtr meshGroup = MeshGroup::Create();
 		for (auto& it : groupData->mMeshes){
 			auto mesh = ConvertMeshData(it.second.mMesh, daeFilepath, buildTangent, keepDataInMesh);
-			auto transformation = ConvertCollada(it.second.mTransformation);
+			auto transformation = it.second.mTransformation;
 			auto animData = mesh->GetAnimationData();
 			
 			unsigned idx = meshGroup->AddMesh(mesh, transformation, it.second.mParentMeshIdx);
@@ -435,7 +386,7 @@ public:
 		for (auto& it : groupData->mAuxiliaries){
 			AUXILIARY aux;
 			aux.first = it.first;
-			aux.second = ConvertCollada(it.second);
+			aux.second = it.second;
 			meshGroup->AddAuxiliary(aux);
 		}
 		meshGroup->SetCollisionShapes(ConvertCollada(groupData->mCollisionInfo));

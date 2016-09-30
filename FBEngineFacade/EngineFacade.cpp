@@ -1306,6 +1306,13 @@ void EngineFacade::QueueDrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c
 	mImpl->mGeometryRenderer->DrawTriangle(a, b, c, color, alpha);
 }
 
+void EngineFacade::QueueDrawTransform(const Transformation t, float scale) {
+	auto origin = t.GetTranslation();
+	mImpl->mGeometryRenderer->DrawLine(origin, origin + t.GetRight() * scale, Color::Red, Color::Red);
+	mImpl->mGeometryRenderer->DrawLine(origin, origin + t.GetForward() * scale, Color::Green, Color::Green);
+	mImpl->mGeometryRenderer->DrawLine(origin, origin + t.GetUp() * scale, Color::Blue, Color::Blue);
+}
+
 FontPtr EngineFacade::GetFont(int fontSize){
 	if (Renderer::HasInstance())
 		return Renderer::GetInstance().GetFont(fontSize);

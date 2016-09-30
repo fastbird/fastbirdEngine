@@ -38,6 +38,7 @@ namespace fb
 
 	public:
 		AABB();
+		AABB(const Vec3& min, const Vec3& max);
 		bool IsValid() const;
 		void Invalidate();
 		void Merge(const Vec3& point);
@@ -57,5 +58,6 @@ namespace fb
 		//  right top, left top, right bottom, left bottom
 		void GetPoints(Vec3 points[8]) const;
 		std::string ToString() const;
+		AABB& operator*=(float scale);
 	};
 }

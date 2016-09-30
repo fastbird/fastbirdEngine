@@ -164,6 +164,10 @@ namespace fb
 		return Vec2I(Round(x*f), Round(y*f));
 	}
 
+	std::string Vec2I::ToString() const {
+		return FormatString("%d, %d", x, y);
+	}
+
 	Vec2I operator*(const Vec2I& left, unsigned right) {
 		return Vec2I(left.x * right, left.y * right);
 	}

@@ -87,6 +87,7 @@ namespace fb
 		Real Cross(const Vec2& right);
 		
 		int MaxAxis() const;		
+		size_t ComputeHash() const;
 	};
 
 	Vec2 operator / (const Vec2I& left, const Vec2& right);

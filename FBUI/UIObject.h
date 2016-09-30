@@ -94,5 +94,7 @@ namespace fb
 
 		void SetUIComponent(WinBase* comp);
 		WinBase* GetUIComponent() const;
+
+		void SetRenderSimpleBorder(bool simpleBorder);
 	};
 }

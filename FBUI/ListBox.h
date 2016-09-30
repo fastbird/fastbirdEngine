@@ -128,6 +128,7 @@ public:
 
 	void OnItemClicked(void* arg);
 	void OnItemDoubleClicked(void* arg);
+	void OnItemRClicked(void* arg);
 	void OnItemEnter(void* arg);
 	void OnNumericChanged(void* arg);
 	void OnDragHeader(void* arg);

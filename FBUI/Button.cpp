@@ -1366,18 +1366,23 @@ namespace fb
 			auto atlas = Renderer::GetInstance().GetTextureAtlas(mImageAtlas.c_str());
 			assert(atlas);
 			auto region = atlas->GetRegion(mAlphaRegion.c_str());
-			assert(region);
-			auto& startUv = region->GetStartUV();
-			auto endUv = startUv + region->GetUVSize();
-			Vec2 texcoords[4] = {
-				Vec2(startUv.x, endUv.y),
-				Vec2(startUv.x, startUv.y),
-				Vec2(endUv.x, endUv.y),
-				Vec2(endUv.x, startUv.y)
-			};
-			mUIObject->SetTexCoord(texcoords, 4);
+			if (region) {
+				auto& startUv = region->GetStartUV();
+				auto endUv = startUv + region->GetUVSize();
+				Vec2 texcoords[4] = {
+					Vec2(startUv.x, endUv.y),
+					Vec2(startUv.x, startUv.y),
+					Vec2(endUv.x, endUv.y),
+					Vec2(endUv.x, startUv.y)
+				};
+				mUIObject->SetTexCoord(texcoords, 4);
 
-			mat->SetTexture(atlas->GetTexture(), SHADER_TYPE_PS, 1);
+				mat->SetTexture(atlas->GetTexture(), SHADER_TYPE_PS, 1);
+			}
+			else {
+				mAlphaRegion.clear();
+				mat->SetTexture(0, SHADER_TYPE_PS, 1);
+			}
 		}
 	}
 
