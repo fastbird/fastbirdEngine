@@ -181,6 +181,7 @@ public:
 	std::vector<MaterialWeakPtr> mClonedMaterials;	
 	
 	bool mCloned;
+	int mDebug;
 	//bool mMarkNoShaderDefineChanges;
 
 	//---------------------------------------------------------------------------
@@ -190,6 +191,7 @@ public:
 		, mRenderStatesData(new RenderStatesData)
 		, mShaderData(new ShaderData)				
 		, mCloned(false)
+		, mDebug(0)
 		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
@@ -200,6 +202,7 @@ public:
 		, mRenderStatesData(other.mRenderStatesData)
 		, mShaderData(other.mShaderData)		
 		, mCloned(true)
+		, mDebug(other.mDebug)
 		//, mMarkNoShaderDefineChanges(false)
 	{
 	}
@@ -422,6 +425,15 @@ public:
 			ddesc.SetDepthWriteMask(renderStatesData->mTransparent ? DEPTH_WRITE_MASK_ZERO : DEPTH_WRITE_MASK_ALL);
 		}
 		renderStates->CreateDepthStencilState(ddesc);
+
+		//-----------------------------------------------------------------------------
+		auto debugElem = pRoot->FirstChildElement("Debug");
+		if (debugElem) {
+			auto szValue = debugElem->Attribute("value");
+			if (szValue) {
+				mDebug = StringConverter::ParseInt(szValue);
+			}
+		}
 
 		//-----------------------------------------------------------------------------
 		// RasterizerDesc
@@ -1297,7 +1309,7 @@ public:
 		for (auto mat : mUniqueData->mSubMaterials){
 			if (mat->GetRenderPass() == p)
 				return mat;
-		}		
+		}
 		return 0;
 	}
 
