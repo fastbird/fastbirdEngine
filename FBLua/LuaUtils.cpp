@@ -461,7 +461,13 @@ namespace fb
 	unsigned LuaUtils::GetLuaVarAsUnsigned(lua_State* L, const char* varName){
 		LUA_STACK_CLIPPER w(L);
 		lua_getglobal(L, varName);
-		return (unsigned)luaL_checknumber(L, -1);
+		return (unsigned)luaL_checkunsigned(L, -1);
+	}
+
+	int LuaUtils::GetLuaVarAsInt(lua_State* L, const char* varName) {
+		LUA_STACK_CLIPPER w(L);
+		lua_getglobal(L, varName);
+		return luaL_checkint(L, -1);
 	}
 
 	void LuaUtils::SetLuaVar(lua_State* L, const char* varName, bool value)
@@ -774,6 +780,14 @@ namespace fb
 
 	double LuaUtils::checknumber(lua_State* L, int index){
 		return luaL_checknumber(L, index);
+	}
+
+	float LuaUtils::checkfloat(int index) {
+		return (float)checknumber(index);
+	}
+
+	float LuaUtils::checkfloat(lua_State* L, int index) {
+		return (float)checknumber(L, index);
 	}
 
 	void LuaUtils::checktype(int index, int luaType){

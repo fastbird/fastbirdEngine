@@ -70,6 +70,7 @@ namespace fb{
 		void SetGameType(int type);
 		void SetGameId(unsigned id);
 		void SetGamePtr(void* ptr);
+		void SetCameraPulling(float cameraPulling);
 		/// Combination of SceneObjectFlag::Enum
 		void ModifyObjFlag(unsigned flag, bool enable);		
 		void SetEnableHighlight(bool enable);

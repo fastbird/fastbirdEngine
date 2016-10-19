@@ -139,6 +139,7 @@
     <ClInclude Include="CollisionShapeType.h" />
     <ClInclude Include="DustRenderer.h" />
     <ClInclude Include="FBCollisionShape.h" />
+    <ClInclude Include="SceneObjectFactoryOptions.h" />
     <ClInclude Include="ISkySphereLIstener.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="MeshAuxiliary.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="FBCollisionShape.cpp" />
     <ClCompile Include="MeshGroup.cpp" />
     <ClCompile Include="MeshObject.cpp" />
+    <ClCompile Include="SceneObjectFactoryOptions.cpp" />
     <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="SkySphere.cpp" />
     <ClCompile Include="TrailObject.cpp" />
@@ -182,6 +184,9 @@
     </ProjectReference>
     <ProjectReference Include="..\FBColladaImporter\FBColladaImporter.vcxproj">
       <Project>{2d0d1e03-d6f8-44ed-8ade-0ee9d4ef7bc9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FBConsole\FBConsole.vcxproj">
+      <Project>{ae082870-0e26-479c-9aab-c7d3c32a55ca}</Project>
     </ProjectReference>
     <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
       <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>

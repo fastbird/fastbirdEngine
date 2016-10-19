@@ -73,6 +73,7 @@ public:
 	CowPtr<MeshCameras> mMeshCameras;
 
 	unsigned mLastPreRendered;
+	float mCameraPulling;
 	bool mRootAnimated;
 
 	//---------------------------------------------------------------------------
@@ -81,6 +82,7 @@ public:
 		, mLastUpdateFrame(0)
 		, mRootAnimated(false)
 		, mLastPreRendered(0)
+		, mCameraPulling(0)
 	{
 
 	}
@@ -712,30 +714,11 @@ unsigned MeshGroup::GetNumCollisionShapes(unsigned idx) const {
 	return mImpl->GetNumCollisionShapes(idx);
 }
 
-namespace fb {
-	/*void write_template(std::ostream& stream, const MeshGroup& data, int version) {
-		write(stream, version);
-		write_template(stream, mMeshObjects, version);
+void MeshGroup::SetCameraPulling(float cameraPulling) {
+	mImpl->mCameraPulling = cameraPulling;
+}
 
-
-		typedef std::vector< std::pair< MeshObjectPtr, Transformation> > MESH_OBJECTS;
-		MESH_OBJECTS mMeshObjects;
-		typedef std::vector< Transformation > LOCAL_TRANSFORMATIONS;
-		LOCAL_TRANSFORMATIONS mLocalTransforms;
-		typedef std::vector< bool > CHANGES;
-		CHANGES mChanges;
-		typedef std::map<size_t, Hierarchy> HIERARCHY_MAP;
-		CowPtr<HIERARCHY_MAP> mHierarchyMap;
-		CowPtr<AUXILIARIES> mAuxiliaries;
-		FRAME_PRECISION mLastUpdateFrame;
-		typedef std::vector< FBCollisionShapePtr > COLLISION_SHAPES;
-		CowPtr<COLLISION_SHAPES> mCollisions;
-		CowPtr<MeshCameras> mMeshCameras;
-
-		unsigned mLastPreRendered;
-		bool mRootAnimated;
-	}
-	void read_template(std::istream& stream, MeshGroup& data) {
-
-	}*/
+Real MeshGroup::GetDistToCam(ICamera* cam) const {
+	float dist = __super::GetDistToCam(cam);
+	return dist - mImpl->mCameraPulling;
 }

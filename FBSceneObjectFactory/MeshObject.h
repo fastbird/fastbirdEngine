@@ -125,6 +125,8 @@ namespace fb{
 		void SetForceAlphaBlending(bool enable, Real alpha, Real forceGlow = 0.f, bool disableDepth = false);
 		void SetAmbientColor(const Color& color);
 		void SetCheckDistance(bool check);
+		void SetCameraPulling(float pulling);
+		Real GetDistToCam(ICamera* cam) const OVERRIDE;
 	};
 
 	/*void write_template(std::ostream& stream, const MeshObject& data, int version);

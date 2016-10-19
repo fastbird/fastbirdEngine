@@ -205,29 +205,39 @@ public:
 		if (!sz || strlen(sz) == 0)
 			return std::string();
 
+		auto t = strstr(sz, "fighter");
+		if (t) {
+			int a = 0;
+			a++;
+		}
 		// example of 'sz'
 		// in case dae file exported from Blender.
 		// data_materials_hull2_material-material
 
-		struct funcObj
-		{
-			bool operator()(char v)
-			{
-				return v == '_';
-
-			}
-		};
-		const char* p = strrchr(sz, '-');
+		auto p = strrchr(sz, '-');
 		std::string ret(sz, sz + (p - sz));
-		std::replace_if(ret.begin(), ret.end(), funcObj(), '/');
+		
+		auto underMaterialPos = ret.find_last_of("_");
+		if (underMaterialPos != std::string::npos) {
+			ret[underMaterialPos] = '.';
+		}
 
-		size_t dotPos = ret.find_last_of('/');
-		if (dotPos != std::string::npos)
-			ret[dotPos] = '.';
-		else
-			return std::string();
+		std::string folderPath;
+		size_t startPos = 0;
+		for (size_t i = 1; i < ret.size(); ++i) {
+			if (ret[i] == '_') {
+				auto folder = ret.substr(startPos, i - startPos);				
+				if (FileSystem::IsDirectory(folder.c_str())) {
+					ret[i] = '/';
+					folderPath += '/';
+				}
+				else {
+					break;
+				}
+			}
+		}
+		
 		return ret;
-
 	}
 
 	MeshInfo* CopyData(COLLADAFW::Mesh* pColladaMesh){

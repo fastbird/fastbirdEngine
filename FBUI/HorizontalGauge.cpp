@@ -613,6 +613,7 @@ namespace fb
 			dragPart->SetProperty(UIProperty::BACK_COLOR, "1, 1, 0, 1");
 			dragPart->SetProperty(UIProperty::ALIGNH, "center");
 			dragPart->SetProperty(UIProperty::ALIGNV, "middle");
+			dragPart->SetRuntimeChild(true);
 			dragPart->ChangeSizeX(2);
 			if (GetVisible()) {
 				dragPart->SetVisible(true);
@@ -621,6 +622,7 @@ namespace fb
 		}
 		else if (!mDrag && dragPart) {
 			RemoveChild(dragPart);
+			mDragPart.reset();
 		}
 	}
 }

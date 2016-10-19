@@ -268,7 +268,35 @@ bool FileSystem::ResourceExists(const char* path, std::string* outResoucePath) {
 }
 
 bool FileSystem::IsDirectory(const char* path){
-	return boost::filesystem::is_directory(path);
+	auto dir =  boost::filesystem::is_directory(path);
+	if (dir)
+		return true;
+	else if (strrchr(path, '.') == 0) {
+		// check resource path		
+		return IsResourceDirectory(path);
+	}
+	return false;
+}
+
+bool FileSystem::IsResourceDirectory(const char* path) {
+	auto p = strrchr(path, '/');
+	if (!p) {
+		for (auto it : sResourceFolders) {
+			auto pos = it.second.find(path);
+			if (pos != std::string::npos)
+				return true;
+		}
+	}
+	else {
+		for (auto it : sResourceFolders) {
+			if (StartsWith(path, it.first.c_str(), true)) {
+				std::string newPath = it.second;
+				newPath += boost::filesystem::path(path).generic_string().substr(it.first.size());
+				return boost::filesystem::is_directory(newPath.c_str());
+			}
+		}
+	}	
+	return false;
 }
 
 size_t FileSystem::GetFileSize(const char* path) {

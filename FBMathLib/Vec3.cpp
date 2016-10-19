@@ -133,6 +133,13 @@ namespace fb
 		return *this;
 	}
 
+	Vec3& Vec3::operator+= (Real r) {
+		x += r;
+		y += r;
+		z += r;
+		return *this;
+	}
+
 	Vec3 Vec3::operator- () const
 	{
 		return Vec3(-x, -y, -z);

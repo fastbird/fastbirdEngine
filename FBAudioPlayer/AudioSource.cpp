@@ -187,7 +187,8 @@ public:
 	void SetGain(float gain){
 		mProperty.mGain = gain;
 		if (mALSource != -1){
-			alSourcef(mALSource, AL_GAIN, gain * sMasterGain);
+			alSourcef(mALSource, AL_GAIN, gain * sMasterGain *
+				(mType == AudioSourceType::Music ? sMusicGain : sSoundGain));
 			CheckALError();
 		}
 	}
@@ -197,11 +198,7 @@ public:
 	}
 
 	void OnGainOptionChanged() {
-		if (mALSource != -1) {
-			alSourcef(mALSource, AL_GAIN, mProperty.mGain * sMasterGain *
-				(mType == AudioSourceType::Music ? sMusicGain : sSoundGain));
-			CheckALError();
-		}
+		SetGain(mProperty.mGain);
 	}
 
 	float GetLeftTime() const{

@@ -923,6 +923,8 @@ public:
 	}
 
 	void SetVisible(bool visible){
+		if (mVisible == visible)
+			return;
 		mVisible = visible;		
 		for (auto& pt : *(mTemplates.const_get()))
 		{
@@ -940,6 +942,20 @@ public:
 					p.mPointLight->SetEnabled(visible);
 				if (p.mParticleEmitter)
 					p.mParticleEmitter->SetVisible(visible);
+			}
+		}
+		if (visible) {
+			mStop = false;
+			mStopImmediate = false;
+			if (!mInActiveList) {
+				ParticleSystem::GetInstance().AddActiveParticlePending(mSelfPtr.lock());
+				mInActiveList = true;
+			}
+		}
+		else {
+			if (mInActiveList) {
+				ParticleSystem::GetInstance().RemoveDeactiveParticle(mSelfPtr.lock());
+				mInActiveList = false;
 			}
 		}
 	}

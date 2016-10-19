@@ -127,14 +127,10 @@ void Frustum::_Validate() {
 	auto dir = rot.Column(1);
 	auto up = rot.Column(2);
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_NEAR].mNormal, dir, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Near plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Near plane normal is wrong");		
 	}
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_FAR].mNormal, -dir, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Far plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Far plane normal is wrong");		
 	}
 
 	Vec3 lefttopn = mOrientation * Vec3(mLeftSlope * mNear, mNear, mTopSlope * mNear);
@@ -142,9 +138,7 @@ void Frustum::_Validate() {
 	Vec3 leftbottomf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mBottomSlope * mFar);
 	Vec3 leftNormal = (leftbottomf - leftbottomn).Cross(lefttopn - leftbottomn).NormalizeCopy();
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_LEFT].mNormal, leftNormal, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");		
 	}
 
 	Vec3 righttopn = mOrientation * Vec3(mRightSlope * mNear, mNear, mTopSlope * mNear);
@@ -152,9 +146,7 @@ void Frustum::_Validate() {
 	Vec3 rightbottomf = mOrientation * Vec3(mRightSlope * mFar, mFar, mBottomSlope * mFar);
 	Vec3 rightNormal = (righttopn - rightbottomn).Cross(rightbottomf - rightbottomn).NormalizeCopy();
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_RIGHT].mNormal, rightNormal, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Left plane normal is wrong");		
 	}
 
 	Vec3 rightn = mOrientation * Vec3(mRightSlope * mNear, mNear, mTopSlope * mNear);
@@ -162,9 +154,7 @@ void Frustum::_Validate() {
 	Vec3 leftf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mTopSlope * mFar);
 	Vec3 topNormal = (leftf - leftn).Cross(rightn - leftn).NormalizeCopy();
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_TOP].mNormal, topNormal, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Top plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Top plane normal is wrong");		
 	}
 
 	 rightn = mOrientation * Vec3(mRightSlope * mNear, mNear, mBottomSlope * mNear);
@@ -172,9 +162,7 @@ void Frustum::_Validate() {
 	 leftf = mOrientation * Vec3(mLeftSlope * mFar, mFar, mBottomSlope * mFar);
 	Vec3 bottomNormal = (rightn - leftn).Cross(leftf - leftn).NormalizeCopy();
 	if (!IsEqual(mPlanes[FRUSTUM_PLANE_BOTTOM].mNormal, bottomNormal, 0.01f)) {
-		Logger::Log(FB_ERROR_LOG_ARG, "Bottom plane normal is wrong");
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "Bottom plane normal is wrong");		
 	}
 	
 

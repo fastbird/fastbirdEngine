@@ -96,7 +96,8 @@ namespace fb
 			RigidBody* ret[], unsigned index[],
 			unsigned limit, RigidBody* except) = 0;
 
-		virtual float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) = 0;
+		virtual float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB, 
+			Vec3* outDirToB) = 0;
 
 		virtual unsigned CreateBTSphereShape(float radius) = 0;
 		virtual void DeleteBTShape(unsigned id) = 0;

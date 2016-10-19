@@ -205,7 +205,7 @@ public:
 	void Draw3DText(const Vec3& pos, WCHAR* text, const Color& color, Real size)
 	{
 		auto& renderer = Renderer::GetInstance();
-		auto cam = renderer.GetCamera();
+		auto cam = renderer.GetMainCamera();
 		if (cam)
 		{
 			Vec2I spos = cam->WorldToScreen(pos);

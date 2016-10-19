@@ -268,6 +268,8 @@ namespace fb
 		virtual void SetNPosY(float y);
 
 		virtual void SetInitialOffset(Vec2I offset);
+		virtual void SetInitialOffsetX(int offsetX);
+		virtual void SetInitialOffsetY(int offsetY);
 		virtual void Move(Vec2I amount);
 		virtual void SetWNPos(const fb::Vec2& wnPos);
 		virtual void OnParentPosChanged();
@@ -290,6 +292,8 @@ namespace fb
 		virtual const Vec2I& GetInitialOffset() const { return mAbsOffset; }
 		virtual const Vec2I& GetSizeMod() const { return mSizeMod; }
 		virtual void SetSizeMod(const Vec2I& mod);
+		virtual void SetSizeModX(int x);
+		virtual void SetSizeModY(int y);
 		
 		// coordinates are decided by functions like SetNPos():for relative or SetPos() for absolute.
 		virtual void SetUseAbsPos(bool use){ mUseAbsoluteXPos = use; mUseAbsoluteYPos = use; }

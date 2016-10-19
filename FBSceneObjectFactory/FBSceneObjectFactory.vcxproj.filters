@@ -26,6 +26,7 @@
     </ClInclude>
     <ClInclude Include="ISkySphereLIstener.h" />
     <ClInclude Include="binary_mesh.h" />
+    <ClInclude Include="SceneObjectFactoryOptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MeshObject.cpp" />
@@ -39,6 +40,7 @@
     <ClCompile Include="SkySphere.cpp" />
     <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="binary_mesh.cpp" />
+    <ClCompile Include="SceneObjectFactoryOptions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Terrain">

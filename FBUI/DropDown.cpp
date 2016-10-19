@@ -356,6 +356,10 @@ size_t DropDown::AddDropDownItem(WinBasePtr winbase)
 }
 
 void DropDown::ClearDropDownItems(){
+	if (mName == "popPolicy") {
+		int a = 0;
+		a++;
+	}
 	auto holder = mHolder.lock();
 	if (holder){
 		holder->RemoveAllChildren();
@@ -370,7 +374,7 @@ void DropDown::SetCommonProperty(WinBasePtr item, size_t index)
 {
 	item->SetVisible(false);
 	item->SetProperty(UIProperty::NO_BACKGROUND, "false");
-	item->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 1.0");
+	item->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0.8");
 	item->SetProperty(UIProperty::BACK_COLOR_OVER, "0.1, 0.1, 0.1, 1.0");
 	item->SetProperty(UIProperty::USE_SCISSOR, "false");
 	item->SetProperty(UIProperty::SPECIAL_ORDER, "3");

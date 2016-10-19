@@ -77,6 +77,7 @@ namespace fb
 		IPhysicsInterface* GetPhysicsInterface() const;
 
 		void* GetColShapeUserPtr(int idx = 0);
+		fb::Transformation GetChildShapeTransform(int idx) OVERRIDE;
 		void* GetGamePtr() const;
 		void SetRotationalForce(float force);
 
@@ -99,6 +100,7 @@ namespace fb
 		void ModifyCollisionFlag(int flag, bool enable);
 		void SetCCDMotionThreshold(float threshold);
 		void SetCCDSweptSphereRadius(float radius);
+		void SetContactProcessingThreshold(float threshold) OVERRIDE;
 		void SetIgnoreCollisionCheck(RigidBodyPtr rigidBody, bool ignore);
 
 		void SetTransform(const Transformation& t);

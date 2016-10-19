@@ -59,5 +59,6 @@ namespace fb
 		void GetPoints(Vec3 points[8]) const;
 		std::string ToString() const;
 		AABB& operator*=(float scale);
+		AABB& operator+=(float radius);
 	};
 }

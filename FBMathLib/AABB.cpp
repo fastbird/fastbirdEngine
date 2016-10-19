@@ -122,3 +122,9 @@ AABB& AABB::operator*=(float scale) {
 	mMax = mMax + center;
 	return *this;
 }
+
+AABB& AABB::operator+=(float radius) {
+	mMin -= radius;
+	mMax += radius;
+	return *this;
+}

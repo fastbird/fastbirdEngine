@@ -87,7 +87,8 @@ namespace fb
 		unsigned GetAABBOverlaps(const AABB& aabb, unsigned colMask, 
 			RigidBody* ret[], unsigned index[],
 			unsigned limit, RigidBody* except);
-		float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) OVERRIDE;
+		float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB, 
+			Vec3* outDirToB) OVERRIDE;
 
 		unsigned CreateBTSphereShape(float radius);
 		void DeleteBTShape(unsigned id);

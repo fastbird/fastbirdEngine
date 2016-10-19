@@ -150,11 +150,7 @@ public:
 
 	void ApplyForce(const Vec3& force, const Vec3& rel_pos){
 		if (mDebug){
-			Logger::Log(FB_ERROR_LOG_ARG, FormatString("ApplyForce = %.3f, %.3f, %.3f", force.x, force.y, force.z).c_str());			
-			if (force.Length() > 5){
-				int a = 0;
-				a++;
-			}
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("ApplyForce = %.3f, %.3f, %.3f", force.x, force.y, force.z).c_str());						
 		}
 		mSelf->applyForce(FBToBullet(force), FBToBullet(rel_pos));
 		mSelf->activate();
@@ -303,6 +299,32 @@ public:
 			return colShape->getUserPointer();
 		}
 		return 0;
+	}
+
+	fb::Transformation GetChildShapeTransform(int idx) {
+		auto colShape = mSelf->getCollisionShape();
+		assert(colShape);
+		if (colShape->isCompound())
+		{
+			btCompoundShape* compound = (btCompoundShape*)colShape;
+			if (idx < compound->getNumChildShapes() && idx >= 0)
+			{
+				fb::Transformation t;
+				BulletToFB(mSelf->getWorldTransform() * compound->getChildTransform(idx), t);
+				return t;
+			}
+			else
+			{
+				Logger::Log(FB_ERROR_LOG_ARG, "Invalid idx.");
+			}
+		}
+		else
+		{
+			Transformation t;
+			BulletToFB(mSelf->getWorldTransform(), t);
+			return t;
+		}
+		return Transformation();
 	}
 
 	void* GetGamePtr() const{
@@ -456,6 +478,10 @@ public:
 
 	void SetCCDSweptSphereRadius(float radius){
 		mSelf->setCcdSweptSphereRadius(radius);
+	}
+
+	void SetContactProcessingThreshold(float threshold) {
+		mSelf->setContactProcessingThreshold(threshold);
 	}
 
 	void SetIgnoreCollisionCheck(RigidBodyPtr rigidBody, bool ignore){
@@ -736,6 +762,10 @@ void* RigidBodyImpl::GetColShapeUserPtr(int idx) {
 	return mImpl->GetColShapeUserPtr(idx);
 }
 
+fb::Transformation RigidBodyImpl::GetChildShapeTransform(int idx) {
+	return mImpl->GetChildShapeTransform(idx);
+}
+
 void* RigidBodyImpl::GetGamePtr() const {
 	return mImpl->GetGamePtr();
 }
@@ -802,6 +832,10 @@ void RigidBodyImpl::SetCCDMotionThreshold(float threshold) {
 
 void RigidBodyImpl::SetCCDSweptSphereRadius(float radius) {
 	mImpl->SetCCDSweptSphereRadius(radius);
+}
+
+void RigidBodyImpl::SetContactProcessingThreshold(float threshold) {
+	mImpl->SetContactProcessingThreshold(threshold);
 }
 
 void RigidBodyImpl::SetIgnoreCollisionCheck(RigidBodyPtr rigidBody, bool ignore) {

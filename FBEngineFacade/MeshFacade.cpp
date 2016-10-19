@@ -120,6 +120,15 @@ public:
 			mMeshGroup->SetGamePtr(ptr);
 	}
 
+	void SetCameraPulling(float cameraPulling) {
+		if (mMeshObject) {
+			mMeshObject->SetCameraPulling(cameraPulling);
+		}
+		else if(mMeshGroup) {
+			mMeshGroup->SetCameraPulling(cameraPulling);
+		}
+	}
+
 	/// Combination of SceneObjectFlag::Enum
 	void ModifyObjFlag(unsigned flag, bool enable){
 		if (mMeshObject)
@@ -821,6 +830,10 @@ void MeshFacade::SetGameId(unsigned id) {
 
 void MeshFacade::SetGamePtr(void* ptr) {
 	mImpl->SetGamePtr(ptr);
+}
+
+void MeshFacade::SetCameraPulling(float cameraPulling) {
+	mImpl->SetCameraPulling(cameraPulling);
 }
 
 void MeshFacade::ModifyObjFlag(unsigned flag, bool enable) {

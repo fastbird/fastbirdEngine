@@ -1243,7 +1243,7 @@ public:
 			auto pos_ = InputManager::GetInstance().GetInputInjector()->GetMousePos();
 			Vec2I pos(pos_);			
 			auto& size = mCursorImage->GetSize();
-			pos.x += size.x*.5f;
+			pos.x += Round(size.x*.5f);
 			mCursorImage->ChangePos(pos);
 		}
 
@@ -1471,15 +1471,18 @@ public:
 			}
 
 			if (!focusWnd && (injector->IsLButtonClicked() || injector->IsRButtonClicked())) {
+				bool closedAny = false;
 				for (auto it = mRenderUIs[hwndId].rbegin(); it != mRenderUIs[hwndId].rend(); ++it) {
 					auto wnd = dynamic_cast<Wnd*>((*it)->GetUIComponent());
 					if (wnd) {
 						if (wnd->GetCloseByBackgroundClick() && wnd->GetVisible()) {
 							wnd->SetVisible(false);
-							injector->Invalidate(InputDevice::Mouse);
-							break;
+							closedAny = true;
 						}
 					}
+				}
+				if (closedAny) {
+					injector->Invalidate(InputDevice::Mouse);
 				}
 			}
 		}

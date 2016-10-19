@@ -1214,7 +1214,8 @@ namespace fb
 		case ListItemDataType::TexturePath:
 		case ListItemDataType::TextureRegion:
 		{
-			listbox->SetItem(Vec2I(rowIndex, colIndex), AnsiToWide(LuaUtils::checkstring(L, 4)), dataType);
+			auto str = LuaUtils::checkstring(L, 4);			
+			listbox->SetItem(Vec2I(rowIndex, colIndex), AnsiToWide(str), dataType);
 			break;
 		}
 		case ListItemDataType::CheckBox:

@@ -1008,6 +1008,7 @@ Real Mouse::GetSensitivity() const {
 bool Mouse::IsCursorVisible() const {
 #ifdef _PLATFORM_WINDOWS_
 	CURSORINFO ci;
+	ci.cbSize = sizeof(CURSORINFO);
 	if (GetCursorInfo(&ci)) {
 		return (ci.flags & CURSOR_SHOWING) != 0;
 	}

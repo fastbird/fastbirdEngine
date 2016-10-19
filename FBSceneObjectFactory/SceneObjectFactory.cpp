@@ -46,6 +46,7 @@
 #include "DustRenderer.h"
 #include "TrailObject.h"
 #include "binary_mesh.h"
+#include "SceneObjectFactoryOptions.h"
 
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/array.hpp>
@@ -69,12 +70,14 @@ public:
 	std::unordered_map<std::string, DataHolder<MeshGroupPtr> > mMeshGroups;
 	std::unordered_map<std::string, std::vector< MeshObjectPtr >  > mFractureObjects;
 	bool mNoMesh;
+	SceneObjectFactoryOptionsPtr mOptions;
 
 	SkySphereWeakPtr mNextEnvUpdateSky;
 	Impl()
 		: mNoMesh(false)
 	{
-		gpTimer = Timer::GetMainTimer().get();		
+		gpTimer = Timer::GetMainTimer().get();	
+		mOptions = SceneObjectFactoryOptions::Create();
 	}
 	~Impl(){
 	}
@@ -246,13 +249,15 @@ public:
 		}
 		collada::MeshPtr compiled_mesh;
 		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmesh");
-		FileSystem::Open file(fbmesh_path.c_str(), "rb");
-		if (file.IsOpen()) {
-			auto& data = *file.GetBinaryData();
-			typedef boost::iostreams::basic_array_source<char> Device;
-			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
-			std::istream stream(&buffer);
-			compiled_mesh = load_mesh(stream, fbmesh_path.c_str(), desc);
+		if (!mOptions->o_rawCollada) {			
+			FileSystem::Open file(fbmesh_path.c_str(), "rb");
+			if (file.IsOpen()) {
+				auto& data = *file.GetBinaryData();
+				typedef boost::iostreams::basic_array_source<char> Device;
+				boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+				std::istream stream(&buffer);
+				compiled_mesh = load_mesh(stream, fbmesh_path.c_str(), desc);
+			}
 		}
 
 		if (!compiled_mesh) {
@@ -313,13 +318,16 @@ public:
 		auto& fractureObjects = mFractureObjects[filepathKey];
 		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmeshes");
 		std::vector<collada::MeshPtr> meshes;
-		FileSystem::Open file(fbmesh_path.c_str(), "rb");
-		if (file.IsOpen()) {
-			auto& data = *file.GetBinaryData();
-			typedef boost::iostreams::basic_array_source<char> Device;
-			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
-			meshes = load_meshes(std::istream(&buffer), fbmesh_path.c_str(), desc);
+		if (!mOptions->o_rawCollada) {
+			FileSystem::Open file(fbmesh_path.c_str(), "rb");
+			if (file.IsOpen()) {
+				auto& data = *file.GetBinaryData();
+				typedef boost::iostreams::basic_array_source<char> Device;
+				boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+				meshes = load_meshes(std::istream(&buffer), fbmesh_path.c_str(), desc);
+			}
 		}
+
 		if (meshes.empty()) {
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
 				"(info) %s not found", fbmesh_path.c_str()).c_str());
@@ -427,12 +435,14 @@ public:
 
 		collada::MeshGroupPtr compiled_mesh;
 		std::string fbmesh_path = FileSystem::ReplaceExtension(daeFilePath, "fbmesh_group");		
-		FileSystem::Open file(fbmesh_path.c_str(), "rb");
-		if (file.IsOpen()) {
-			auto& data = *file.GetBinaryData();
-			typedef boost::iostreams::basic_array_source<char> Device;
-			boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
-			compiled_mesh = load_mesh_group(std::istream(&buffer), fbmesh_path.c_str(), desc);
+		if (!mOptions->o_rawCollada) {
+			FileSystem::Open file(fbmesh_path.c_str(), "rb");
+			if (file.IsOpen()) {
+				auto& data = *file.GetBinaryData();
+				typedef boost::iostreams::basic_array_source<char> Device;
+				boost::iostreams::stream_buffer<Device> buffer((char*)&data[0], data.size());
+				compiled_mesh = load_mesh_group(std::istream(&buffer), fbmesh_path.c_str(), desc);
+			}
 		}
 		if (!compiled_mesh) {
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(

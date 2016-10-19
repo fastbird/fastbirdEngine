@@ -56,7 +56,7 @@ namespace fb{
 		void SetRadius(Real r);
 		Real GetRadius() const;
 		void SetDistToCam(ICamera* cam, Real dist);
-		Real GetDistToCam(ICamera* cam) const;
+		virtual Real GetDistToCam(ICamera* cam) const;
 		const Vec3& GetPosition() const;
 		const Vec3& GetPreviousPosition() const;
 		const Vec3& GetScale() const;

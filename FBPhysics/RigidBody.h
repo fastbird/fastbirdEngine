@@ -69,6 +69,7 @@ namespace fb
 
 		// idx is for compound shape
 		virtual void* GetColShapeUserPtr(int idx = 0) = 0;
+		virtual fb::Transformation GetChildShapeTransform(int idx) = 0;
 		// rigid body user ptr
 		virtual void* GetGamePtr() const = 0;
 
@@ -93,6 +94,11 @@ namespace fb
 
 		virtual void SetCCDMotionThreshold(float threshold) = 0;
 		virtual void SetCCDSweptSphereRadius(float radius) = 0;
+		///the constraint solver can discard solving contacts, if the distance is above this threshold. 
+		// 0 by default. Note that using contacts with positive distance can improve stability. 
+		// It increases, however, the chance of colliding with degerate contacts, such as 
+		// 'interior' triangle edges
+		virtual void SetContactProcessingThreshold(float threshold) = 0;
 
 		virtual void SetIgnoreCollisionCheck(RigidBodyPtr rigidBody, bool ignore) = 0;
 

@@ -101,9 +101,13 @@ PS_OUT MeshPBR_PixelShader(in v2p INPUT) : SV_Target
 float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 #endif
 {
+#if Glow
+	PS_OUT psout;
+#endif
+
 	INPUT.UV.y = 1.0 - INPUT.UV.y;
 	// process normal map.
-	float3 baseColor = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV).xyz;
+	float3 baseColor = gDiffuseTexture.Sample(gLinearWrapSampler, INPUT.UV).xyz;  
 #if MergedMaterialTexture
 	float4 materialData = gMaterialTexture.Sample(gLinearWrapSampler, INPUT.UV);
 	float metallic = materialData.x;
@@ -114,6 +118,7 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	float roughness = gRoughnessTexture.Sample(gLinearWrapSampler, INPUT.UV).r;
 	float emissive = 0;
 #endif
+
 #ifdef NORMAL_TEXTURE
 	float3 normalT = gNormalTexture.Sample(gLinearWrapSampler, INPUT.UV).xyz;
 #endif //NORMAL_TEXTURE
@@ -161,7 +166,6 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	float3 foggedColor = GetFoggedColor(screenUV, shadedColor, normalize(INPUT.WorldPos));	
 	
 #if Glow
-	PS_OUT psout;
 	psout.color0 = float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);		
 	psout.color1 = psout.color0 * emissive;
 	return psout;

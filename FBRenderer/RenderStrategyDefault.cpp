@@ -421,11 +421,11 @@ public:
 
 				mGlowTexture[0] = renderer.CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, 
 					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-				mGlowTexture[0]->SetDebugName(FormatString("rt%u_%u_%u_GlowTexture0", rt->GetId(), mSize.x, mSize.y).c_str());
+				mGlowTexture[0]->SetDebugName(FormatString("rt%u_%u_%u_GlowTexture0", rt->GetId(), mSize.x*0.25f, mSize.y*0.25f).c_str());				
 
 				mGlowTexture[1] = renderer.CreateTexture(0, (int)(mSize.x * 0.25f), (int)(mSize.y * 0.25f), PIXEL_FORMAT_R16G16B16A16_FLOAT, 
 					1, BUFFER_USAGE_DEFAULT, BUFFER_CPU_ACCESS_NONE, TEXTURE_TYPE_RENDER_TARGET_SRV | TEXTURE_TYPE_MULTISAMPLE);
-				mGlowTexture[1]->SetDebugName(FormatString("rt%u_%u_%u_GlowTexture1", rt->GetId(), mSize.x, mSize.y).c_str());
+				mGlowTexture[1]->SetDebugName(FormatString("rt%u_%u_%u_GlowTexture1", rt->GetId(), mSize.x*0.25f, mSize.y*0.25f).c_str());
 			}			
 			renderer.SetRenderTargetAtSlot(mGlowTarget, mRenderingFace, secondSlot);
 			mGlowSet = true;

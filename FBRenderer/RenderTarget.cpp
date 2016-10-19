@@ -387,7 +387,7 @@ namespace fb
 		}
 
 		void GlowRenderTarget(bool bind) {
-			mStrategy->GlowRenderTarget(true);
+			mStrategy->GlowRenderTarget(bind);
 		}
 
 		void ConsumeInput(IInputInjectorPtr injector)

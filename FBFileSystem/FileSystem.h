@@ -91,6 +91,7 @@ namespace fb{
 		*/
 		static bool ResourceExists(const char* path, std::string* outResoucePath = 0);
 		static bool IsDirectory(const char* path);
+		static bool IsResourceDirectory(const char* path);
 		static size_t GetFileSize(const char* path);
 		/** Rename a file.
 		@remark  If \a path and \a newpath resolve to the same existing file, no action is taken. 

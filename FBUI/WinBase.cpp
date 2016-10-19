@@ -509,7 +509,20 @@ void WinBase::SetSizeMod(const Vec2I& mod){
 	mSizeMod = mod;
 	Vec2I newSize = originalSize + mod;
 	ChangeSize(newSize);
+}
 
+void WinBase::SetSizeModX(int x) {
+	int originalSizeX = mSize.x - mSizeMod.x;
+	mSizeMod.x = x;
+	int newSizeX = originalSizeX + x;
+	ChangeSizeX(newSizeX);
+}
+
+void WinBase::SetSizeModY(int y) {
+	int originalSizeY = mSize.y - mSizeMod.y;
+	mSizeMod.y = y;
+	int newSizeY = originalSizeY + y;
+	ChangeSizeY(newSizeY);
 }
 
 //---------------------------------------------------------------------------
@@ -738,6 +751,16 @@ void WinBase::SetWNPos(const fb::Vec2& wnPos)
 void WinBase::SetInitialOffset(Vec2I offset)
 {
 	mAbsOffset = offset;
+	OnPosChanged(false);
+}
+
+void WinBase::SetInitialOffsetX(int offsetX) {
+	mAbsOffset.x = offsetX;
+	OnPosChanged(false);
+}
+
+void WinBase::SetInitialOffsetY(int offsetY) {
+	mAbsOffset.y = offsetY;
 	OnPosChanged(false);
 }
 
@@ -1190,7 +1213,7 @@ std::string WinBase::TranslateText(const char* text)
 			return var.GetString();
 		}
 	}
-	return std::string();
+	return text;
 }
 
 void WinBase::SetTextColor(const Color& c)
@@ -3427,8 +3450,7 @@ void WinBase::RefreshScissorRects()
 		mUIObject->SetUseScissor(false, Rect());
 	}
 	else{
-		int a = 0;
-		a++;
+		Logger::Log(FB_ERROR_LOG_ARG, "No UIObject");
 	}
 }
 

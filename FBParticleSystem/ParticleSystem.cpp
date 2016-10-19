@@ -348,9 +348,12 @@ public:
 	}
 
 	void AddActiveParticlePending(ParticleEmitterPtr pEmitter){
-		assert(!ValueExistsInVector(mPendingAdds, pEmitter));
-		mPendingAdds.push_back(pEmitter);
 		DeleteValuesInVector(mPendingDeletes, pEmitter);
+		if (!mPendingDeletesDeletedAny) {
+			assert(!ValueExistsInVector(mPendingAdds, pEmitter));
+			mPendingAdds.push_back(pEmitter);
+		}
+		
 	}	
 };
 

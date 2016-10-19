@@ -110,6 +110,7 @@ public:
 	bool mUseDynamicVB[MeshVertexBufferType::Num];
 	bool mForceAlphaBlending;
 	bool mCheckDistance;
+	float mCameraPulling;
 
 	//---------------------------------------------------------------------------
 	Impl(MeshObject* self)
@@ -118,6 +119,7 @@ public:
 		, mForceAlphaBlending(false)
 		, mLastPreRendered(0)
 		, mCheckDistance(true)
+		, mCameraPulling(0.f)
 	{
 		mTopology = PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		mObjectConstants.gWorld.MakeIdentity();
@@ -656,11 +658,7 @@ public:
 				Vec2 uv2 = group.mUVs[indices[i + 1]];
 				Vec2 uv3 = group.mUVs[indices[i + 2]];
 				Vec3 tan = CalculateTangentSpaceVector(p1, p2, p3,
-					uv1, uv2, uv3);
-				if (tan == Vec3::ZERO) {
-					int a = 0;
-					a++;
-				}
+					uv1, uv2, uv3);				
 				group.mTangents[indices[i]] = tan;
 				group.mTangents[indices[i + 1]] = tan;
 				group.mTangents[indices[i + 2]] = tan;
@@ -1512,4 +1510,13 @@ void MeshObject::SetAmbientColor(const Color& color) {
 
 void MeshObject::SetCheckDistance(bool check){
 	mImpl->SetCheckDistance(check);
+}
+
+void MeshObject::SetCameraPulling(float pulling) {
+	mImpl->mCameraPulling = pulling;
+}
+
+Real MeshObject::GetDistToCam(ICamera* cam) const {
+	auto dist = __super::GetDistToCam(cam);
+	return dist - mImpl->mCameraPulling;
 }

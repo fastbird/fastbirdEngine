@@ -215,11 +215,7 @@ public:
 				}
 				++it;
 
-				bool inserted = false;
-				if (obj->mDebug){
-					int a = 0;
-					a++;
-				}				
+				bool inserted = false;							
 				if (!cam->IsCulled(obj->GetBoundingVolumeWorld().get())){				
 					if (obj->HasObjFlag(SceneObjectFlag::Transparent))
 					{

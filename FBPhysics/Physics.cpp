@@ -976,7 +976,8 @@ public:
 		return result.size();
 	}
 
-	float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB){
+	float GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB,
+		Vec3* outDirToB){
 		if (!a || !b)
 		{
 			return FLT_MAX;
@@ -1013,6 +1014,10 @@ public:
 						distance = gjkOutput.m_distance;
 						if (outNormalOnB)
 							*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
+						if (outDirToB) {
+							*outDirToB = BulletToFB(
+								(input.m_transformB.getOrigin() - input.m_transformA.getOrigin()).normalized());
+						}
 					}
 				}
 			}
@@ -1055,6 +1060,10 @@ public:
 							*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
 						}
 					}
+					if (outDirToB) {
+						*outDirToB = BulletToFB(
+							(input.m_transformB.getOrigin() - input.m_transformA.getOrigin()).normalized());
+					}
 				}				
 			}
 		}
@@ -1071,8 +1080,7 @@ public:
 			input.m_transformA = aImpl->getWorldTransform();
 			input.m_transformB = bImpl->getWorldTransform();
 
-			convexConvex.getClosestPoints(input, gjkOutput, 0);
-			distance = std::min(gjkOutput.m_distance, distance);
+			convexConvex.getClosestPoints(input, gjkOutput, 0);			
 			if (gjkOutput.m_distance < distance) {
 				distance = gjkOutput.m_distance;
 				if (outNormalOnB) {
@@ -1082,6 +1090,10 @@ public:
 					else {
 						*outNormalOnB = BulletToFB(gjkOutput.m_normalOnBInWorld);
 					}
+				}
+				if (outDirToB) {
+					*outDirToB = BulletToFB(
+						(input.m_transformB.getOrigin() - input.m_transformA.getOrigin()).normalized());
 				}
 			}
 		}
@@ -1432,8 +1444,9 @@ unsigned Physics::GetAABBOverlaps(const AABB& aabb, unsigned colMask,
 	return mImpl->GetAABBOverlaps(aabb, colMask, ret, index, limit, except);
 }
 
-float Physics::GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB) {
-	return mImpl->GetDistanceBetween(a, b, outNormalOnB);
+float Physics::GetDistanceBetween(RigidBodyPtr a, RigidBodyPtr b, Vec3* outNormalOnB,
+	Vec3* outDirToB) {
+	return mImpl->GetDistanceBetween(a, b, outNormalOnB, outDirToB);
 }
 
 unsigned Physics::CreateBTSphereShape(float radius) {

@@ -220,6 +220,7 @@ namespace fb
 		static Vec2ITuple GetLuaVarAsVec2I(lua_State* L, const char* varname);
 		static float GetLuaVarAsFloat(lua_State* L, const char* varName);
 		static unsigned GetLuaVarAsUnsigned(lua_State* L, const char* varName);
+		static int GetLuaVarAsInt(lua_State* L, const char* varName);
 		static void SetLuaVar(lua_State* L, const char* varName, bool value);
 		static bool ExecuteLua(const char* chunk);
 		static bool ExecuteLua(lua_State* L, const char* chunk);
@@ -287,6 +288,8 @@ namespace fb
 		static unsigned checkunsigned(lua_State* L, int index);
 		static double checknumber(int index);
 		static double checknumber(lua_State* L, int index);
+		static float checkfloat(int index);
+		static float checkfloat(lua_State* L, int index);
 		static void checktype(int index, int luaType);
 		static void checktype(lua_State* L, int index, int luaType);
 		static Vec2Tuple checkVec2(int index);

@@ -427,9 +427,18 @@ namespace fb{
 		auto len = _tstrlen(str);
 		for (size_t i = 0; i < len; i++)
 		{
-			if (!_tisdigit(str[i]))
-				return false;
+			if (i == len - 1) {
+				if (!_tisdigit(str[i]) && str[i] != '.' && str[i] != 'f')
+					return false;
+			}
+			else {
+				if (!_tisdigit(str[i]) && str[i] != '.')
+					return false;
+			}
 		}
+		if (len == 1 && (str[0] == '.' || str[1] == 'f'))
+			return false;
+
 		return true;
 	}
 

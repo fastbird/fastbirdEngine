@@ -100,6 +100,8 @@ namespace fb
 		const FBCollisionShapeConstPtr GetCollisionShape(unsigned idx) const;
 		bool HasCollisionShapes() const;
 		unsigned GetNumCollisionShapes(unsigned idx) const;
+		void SetCameraPulling(float cameraPulling);
+		Real GetDistToCam(ICamera* cam) const OVERRIDE;
 	};
 
 	void write_template(std::ostream& stream, const MeshGroup& data, int version);
