@@ -59,18 +59,24 @@ namespace fb
 			Random(min.y, max.y),
 			Random(min.z, max.z));
 	};
+
+	inline Vec2 Random(const Vec2& min, const Vec2& max)
+	{
+		return Vec2(Random(min.x, max.x), Random(min.y, max.y));
+	};
+	
 	inline Vec3 RandomDirection()
 	{
 		return Random(Vec3(-1, -1, -1), Vec3(1, 1, 1)).NormalizeCopy();
 	}
 
-	Vec3 RandomDirectionCone(const Vec3& axis, Real theta);
-
-	inline Vec2 Random(const Vec2& min, const Vec2& max) 
+	inline Vec2 Random2DDirection()
 	{
-		return Vec2(Random(min.x, max.x),
-			Random(min.y, max.y));
-	};
+		return Random(Vec2(-1, -1), Vec2(1, 1)).NormalizeCopy();
+	}
+
+	Vec3 RandomDirectionCone(const Vec3& axis, Real theta);
+	
 
 	//-------------------------------------------------------------------------
 	template<class T>

@@ -17,6 +17,7 @@
     <ClInclude Include="RotationInfo.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="RigidBodyEvents.h" />
+    <ClInclude Include="CollisionShapeFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ColShapes.cpp" />
@@ -29,5 +30,6 @@
     <ClCompile Include="BulletFilterCallback.cpp" />
     <ClCompile Include="RayResult.cpp" />
     <ClCompile Include="RigidBodyEvents.cpp" />
+    <ClCompile Include="CollisionShapeFactory.cpp" />
   </ItemGroup>
 </Project>

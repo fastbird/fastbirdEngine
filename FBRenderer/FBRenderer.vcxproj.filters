@@ -80,6 +80,7 @@
       <Filter>Enum&amp;Structures</Filter>
     </ClInclude>
     <ClInclude Include="RendererKeys.h" />
+    <ClInclude Include="InputDisplayer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
@@ -125,6 +126,7 @@
       <Filter>Enum&amp;Structures</Filter>
     </ClCompile>
     <ClCompile Include="SystemTextures.cpp" />
+    <ClCompile Include="InputDisplayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Enum&amp;Structures">

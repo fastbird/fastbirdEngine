@@ -31,12 +31,11 @@
 namespace fb{
 	FB_DECLARE_SMART_PTR_STRUCT(CVar);
 	FB_DECLARE_SMART_PTR(EngineOptions);
-	class FB_DLL_ENGINEFACADE EngineOptions : public ICVarObserver {
-		EngineOptions();
-		~EngineOptions();	
-
-	public:
-		static EngineOptionsPtr Create();
+	class FB_DLL_ENGINEFACADE EngineOptions : public ICVarObserver {	
+	public:		
+		EngineOptions(lua_State* L);
+		~EngineOptions();
+		static EngineOptionsPtr Create(lua_State* L);
 		// ICVarObserver
 		bool OnChangeCVar(CVarPtr pCVar);
 

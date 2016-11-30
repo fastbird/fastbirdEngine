@@ -35,9 +35,9 @@
 
 namespace fb{
 static std::vector<TextureWeakPtr> sAllTextures;
-FB_READ_WRITE_CS sAllTexturesLock;
+ReadWriteCS sAllTexturesLock;
 TexturePtr GetTextureFromExistings(IPlatformTexturePtr platformShader) {
-	READ_LOCK lock(sAllTexturesLock);
+	ReadLock lock(sAllTexturesLock);
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end(); /**/){
 		IteratingWeakContainer(sAllTextures, it, texture);
 		if (texture->GetPlatformTexture() == platformShader){
@@ -217,7 +217,7 @@ TexturePtr Texture::Create(){
 	auto p = TexturePtr(FB_NEW(Texture), [](Texture* obj){ FB_DELETE(obj); });
 	
 	{
-		WRITE_LOCK lock(sAllTexturesLock);
+		WriteLock lock(sAllTexturesLock);
 		sAllTextures.push_back(p);
 	}
 	p->mImpl->mSelf = p;
@@ -226,7 +226,7 @@ TexturePtr Texture::Create(){
 
 void Texture::ReloadTexture(const char* file){
 	auto& renderer = Renderer::GetInstance();
-	WRITE_LOCK lock(sAllTexturesLock);
+	WriteLock lock(sAllTexturesLock);
 	for (auto it = sAllTextures.begin(); it != sAllTextures.end(); /**/){
 		IteratingWeakContainer(sAllTextures, it, texture);
 		if (strcmp(texture->GetFilePath(), file)==0){
@@ -240,7 +240,7 @@ Texture::Texture()
 }
 
 Texture::~Texture(){
-	WRITE_LOCK lock(sAllTexturesLock);
+	WriteLock lock(sAllTexturesLock);
 	auto itEnd = sAllTextures.end();
 	for (auto it = sAllTextures.begin(); it != itEnd; it++){
 		if (it->expired()){

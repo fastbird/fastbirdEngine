@@ -28,6 +28,7 @@
 #pragma once
 #include "IPhysics.h"
 #include "FBCommonHeaders/Types.h"
+class btDynamicsWorld;
 namespace fb
 {
 	struct FBFilterCallback;
@@ -41,12 +42,7 @@ namespace fb
 		~Physics();
 
 	public:
-		/**Internal only.
-		Use IPhysics::Create() instead. */
-		static PhysicsPtr Create();
-		/**Internal only.
-		Use IPhysics::GetInstance() instead. */
-		static Physics& GetInstance();
+		static PhysicsPtr Create();						
 
 		static NeedCollisionForConvexCallback sNeedCollisionForConvexCallback;
 
@@ -99,14 +95,14 @@ namespace fb
 		//-------------------------------------------------------------------
 		// collision shape manager
 		//-------------------------------------------------------------------
-		BoxShapePtr CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0);
+		/*BoxShapePtr CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0);
 		SphereShapePtr CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr = 0);
 		CylinderShapePtr CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0);
 		CapsuleShapePtr CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr = 0);
 		MeshShapePtr CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
 			bool staticObj, void* userPtr = 0);
 		MeshShapePtr CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,
-			const Vec3& scale, void* userPtr = 0);
+			const Vec3& scale, void* userPtr = 0);*/
 
 		void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func);		
 

@@ -28,6 +28,7 @@
     <ClInclude Include="GeometryBuffer.h" />
     <ClInclude Include="ICamera.h" />
     <ClInclude Include="ICameraObserver.h" />
+    <ClInclude Include="InputDisplayer.h" />
     <ClInclude Include="InputLayout.h" />
     <ClInclude Include="IPlatformIndexBuffer.h" />
     <ClInclude Include="IPlatformInputLayout.h" />
@@ -86,6 +87,7 @@
     <ClCompile Include="GaussianDistribution.cpp" />
     <ClCompile Include="GeometryBuffer.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
+    <ClCompile Include="InputDisplayer.cpp" />
     <ClCompile Include="InputElementDesc.cpp" />
     <ClCompile Include="InputLayout.cpp" />
     <ClCompile Include="LuaFunctions.cpp" />

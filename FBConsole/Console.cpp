@@ -886,18 +886,21 @@ public:
 		return 0;
 	}
 
-	int GetIntVariable(const char* name, int def) const{
-		LuaObject obj(name);
+	int GetIntVariable(lua_State* lua, const char* name, int def) const{
+		LuaLock L(lua);		
+		LuaObject obj(L, name);
 		return obj.GetInt(def);
 	}
 
-	Real GetRealVariable(const char* name, Real def) const{
-		LuaObject obj(name);
+	Real GetRealVariable(lua_State* lua, const char* name, Real def) const{
+		LuaLock L(lua);
+		LuaObject obj(L, name);
 		return obj.GetFloat(def);
 	}
 
-	Vec2ITuple GetVec2IVariable(const char* name, const Vec2ITuple& def) const{
-		LuaObject obj(name);
+	Vec2ITuple GetVec2IVariable(lua_State* lua, const char* name, const Vec2ITuple& def) const{
+		LuaLock L(lua);
+		LuaObject obj(L, name);
 		return obj.GetVec2I(def);
 	}
 };
@@ -1024,16 +1027,16 @@ CVarPtr Console::GetVariable(const char* name) const{
 	return mImpl->GetVariable(name);
 }
 
-int Console::GetIntVariable(const char* name, int def) const{
-	return mImpl->GetIntVariable(name, def);
+int Console::GetIntVariable(lua_State* L, const char* name, int def) const{
+	return mImpl->GetIntVariable(L, name, def);
 }
 
-Real Console::GetRealVariable(const char* name, Real def) const{
-	return mImpl->GetRealVariable(name, def);
+Real Console::GetRealVariable(lua_State* L, const char* name, Real def) const{
+	return mImpl->GetRealVariable(L, name, def);
 }
 
-Vec2ITuple Console::GetVec2IVariable(const char* name, const Vec2ITuple& def) const{
-	return mImpl->GetVec2IVariable(name, def);
+Vec2ITuple Console::GetVec2IVariable(lua_State* L, const char* name, const Vec2ITuple& def) const{
+	return mImpl->GetVec2IVariable(L, name, def);
 }
 
 //---------------------------------------------------------------------------

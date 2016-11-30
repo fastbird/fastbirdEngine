@@ -400,7 +400,7 @@ namespace fb
 
 	Real Vec3::AngleBetween(const Vec3& v) const
 	{
-		Real lenProduct = Length() * v.Length();
+		Real lenProduct = sqrt(LengthSQ() * v.LengthSQ());
 
 		// Prevent dividing zero
 		if (lenProduct < 1e-6f)

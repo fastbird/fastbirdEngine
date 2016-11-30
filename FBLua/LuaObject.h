@@ -38,8 +38,9 @@ namespace fb
 	class FB_DLL_LUA LuaTableIterator
 	{
 		lua_State* mL;
-	public:
 
+	public:
+		// L should be locked until this iterator is destoryed.
 		LuaTableIterator(const LuaObject& table);
 		~LuaTableIterator();
 		typedef std::pair<LuaObject, LuaObject> KeyValue;
@@ -67,7 +68,7 @@ namespace fb
 	class FB_DLL_LUA LuaObject
 	{
 		int mRef;
-		lua_State* mL;
+		lua_State* mL;		
 		int mType;
 		std::string mName;
 		LuaObject* mSelf;
@@ -89,9 +90,7 @@ namespace fb
 		~LuaObject();
 
 		void SetSelf(const LuaObject& other);
-		void FindFunction(lua_State* L, const char* functName);
-
-		lua_State* GetLuaState() const { return mL; }
+		void FindFunction(lua_State* L, const char* functName);		
 
 		void NewTable(lua_State* L);
 
@@ -106,6 +105,7 @@ namespace fb
 		bool IsNil() const;
 		bool IsValid(bool nilIsValid = false) const;
 		unsigned GetType() const { return mType; }
+
 		LuaObject GetField(const char* fieldName) const;
 		LuaTableIterator GetTableIterator() const;
 		LuaSequenceIterator GetSequenceIterator() const;
@@ -140,7 +140,7 @@ namespace fb
 		void SetSeq(int n, const Vec3Tuple& val) const;
 		void SetSeq(int n, LuaObject& value) const;
 		void SetSeqNil(int n) const;
-		
+
 		template<class T>
 		void SetSeq(int n, T* val) const
 		{
@@ -235,6 +235,7 @@ namespace fb
 		bool operator==(const LuaObject& other) const;
 
 		bool HasFunction() const;
+		lua_State* GetLuaState() const;
 
 	private:
 		void CheckType();

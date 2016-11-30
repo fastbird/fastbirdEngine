@@ -31,7 +31,8 @@
 #include "FBInputManager/IInputConsumer.h"
 #include "ICVarObserver.h"
 #include "ConsoleDataType.h"
-namespace fb{
+struct lua_State;
+namespace fb{	
 	class IConsoleRenderer;
 	class StdOutRedirect;
 	FB_DECLARE_SMART_PTR(Console);
@@ -66,9 +67,9 @@ namespace fb{
 		void Clear();
 		CVarPtr GetVariable(const char* name) const;
 		/// Use this functions to get default value defiend in lua script
-		int GetIntVariable(const char* name, int def) const;
-		Real GetRealVariable(const char* name, Real def) const;
-		Vec2ITuple GetVec2IVariable(const char* name, const Vec2ITuple& def) const;
+		int GetIntVariable(lua_State* L, const char* name, int def) const;
+		Real GetRealVariable(lua_State* L, const char* name, Real def) const;
+		Vec2ITuple GetVec2IVariable(lua_State* L, const char* name, const Vec2ITuple& def) const;
 		//---------------------------------------------------------------------------
 		// IInputConsumer
 		//---------------------------------------------------------------------------

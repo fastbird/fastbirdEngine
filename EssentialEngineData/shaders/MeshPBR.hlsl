@@ -140,7 +140,7 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	const float3 dielectricColor = float3(0.15, 0.15, 0.15);
 	const float minRoughness = 1e-4;
 	roughness = max(minRoughness, roughness);
-	float3 diffColor = baseColor * max(0.2, 1.0 - metallic);
+	float3 diffColor = baseColor * max(0.01, 1.0 - metallic);
 	float3 specColor = lerp(dielectricColor, baseColor, metallic);	
 	specColor *= gDirectionalLightSpecular[0];
 
@@ -166,10 +166,10 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	float3 foggedColor = GetFoggedColor(screenUV, shadedColor, normalize(INPUT.WorldPos));	
 	
 #if Glow
-	psout.color0 = float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);		
+	psout.color0 = float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);  
 	psout.color1 = psout.color0 * emissive;
 	return psout;
 #else
-	return float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);	
+  return float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);  
 #endif
 }

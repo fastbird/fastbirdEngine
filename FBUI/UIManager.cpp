@@ -1230,7 +1230,11 @@ public:
 	}
 
 	HWindowId GetForegroundWindowId(){
-		return Renderer::GetInstance().GetWindowHandleId(ForegroundWindow());
+		auto id = Renderer::GetInstance().GetWindowHandleId(ForegroundWindow());
+		if (id == -1) {
+			id = Renderer::GetInstance().GetMainWindowHandleId();
+		}
+		return id;
 	}
 
 	bool IsMainWindowForeground(){
@@ -1418,6 +1422,16 @@ public:
 					mouseOvered->OnMouseHover(injector);
 			}
 
+			if (focusWnd && injector->GetWheel()) {
+				auto scroller = focusWnd->GetScroller(true);
+				auto p = focusWnd->GetParent();
+				while (!scroller && p) {
+					scroller = p->GetScroller(false);
+					p = p->GetParent();
+				}
+				if (scroller)
+					scroller->ProcessWheel(injector);
+			}
 			auto dragStartedUI = mMouseDragStartedUI.lock();
 			if (focusWnd && injector->IsLButtonDown() && !dragStartedUI){
 				mMouseDragStartedUI = focusWnd;
@@ -1441,7 +1455,7 @@ public:
 				auto keyboardFocus = mKeyboardFocus.lock();
 				if (keyboardFocus != focusWnd)
 				{
-					if (mUIEditor || !focusWnd || (!focusWnd->GetNoMouseEventAlone() && !focusWnd->GetNoFocusByClick()))
+					if (mUIEditor || !focusWnd || (!focusWnd->GetNoMouseEventAlone() && !focusWnd->GetNoFocusByClick() && !mUIEditor))
 						SetFocusUI(focusWnd);
 				}
 				keyboardFocus = mKeyboardFocus.lock();
@@ -2014,7 +2028,7 @@ mPopup->SetVisible(true);
 	}
 
 	WinBasePtr WinBaseWithPoint(const Vec2I& pt, const RegionTestParam& param){
-		auto hwndId = GetForegroundWindowId();
+		auto hwndId = GetForegroundWindowId();		
 		auto windows = mWindows[hwndId];
 		auto it = windows.rbegin(), itEnd = windows.rend();
 		for (; it != itEnd; it++){

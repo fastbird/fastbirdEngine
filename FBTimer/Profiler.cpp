@@ -28,6 +28,7 @@
 #include "stdafx.h"
 #include "Profiler.h"
 #include "FBCommonHeaders/platform.h"
+#include "FBCommonHeaders/SpinLock.h"
 #include <stdarg.h>
 #include <fstream>
 
@@ -42,8 +43,7 @@ namespace fb
 	typedef std::stack<std::string> MSG_STACK;	
 	thread_local int indent = 0;
 	thread_local MSG_STACK msgs;
-	static std::ofstream profileLogFile("fb_profile_result.log");
-	
+	static std::ofstream profileLogFile("fb_profile_result.log");	
 
 	static void DebugOutput(const char* format, ...){
 		static const size_t BufferSize = 2048;
@@ -56,8 +56,7 @@ namespace fb
 		}
 		auto s = buffer.size();
 		vsprintf_s((char*)&buffer[0], buffer.size(), format, args);
-		va_end(args);
-
+		va_end(args);		
 #if defined(_PLATFORM_WINDOWS_)
 		OutputDebugString(&buffer[0]);
 #else

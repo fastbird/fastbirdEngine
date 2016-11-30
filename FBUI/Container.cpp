@@ -582,7 +582,8 @@ void Container::RefreshVScrollbar()
 		return;
 
 	// find last wn
-	float contentEnd = GetChildrenContentEnd() + 4.f / (float)GetRenderTargetSize().y;
+	int level = 1;
+	float contentEnd = GetChildrenContentEnd(level) + 4.f / (float)GetRenderTargetSize().y;
 	float contentHeight = contentEnd - mWNPos.y;
 	const auto& finalSize = GetFinalSize();
 	float wnSizeY = finalSize.y / (float)GetRenderTargetSize().y;
@@ -658,16 +659,13 @@ float Container::GetContentHeight() const
 	return contentWNEnd - mWNPos.y;
 }
 
-float Container::GetContentEnd() const{
-	float end = __super::GetContentEnd();
-	if (mChildren.empty()){
+float Container::GetContentEnd(int& level) const {
+	float end = __super::GetContentEnd(level);	
+	if (level == 0 || mChildren.empty()){
 		return end;
 	}
-
-	for (auto& winbase : mChildren){		
-		float cend = winbase->GetContentEnd();
-		end = std::max(end, cend);		
-	}
+	auto cend = GetChildrenContentEnd(level);
+	end = std::max(cend, end);	
 	return end;	
 }
 
@@ -675,11 +673,18 @@ void Container::SetChildrenContentEndFunc(ChildrenContentEndFunc func){
 	mChildrenContentEndFunc = func;
 }
 
-float Container::GetChildrenContentEnd() const{
+float Container::GetChildrenContentEnd(int& level) const{
+	if (level == 0) {
+		return  __super::GetContentEnd(level);
+	}
+
+	--level;
+
 	auto contentWnd = mWndContentUI.lock();
 	if (contentWnd) {
-		return contentWnd->GetChildrenContentEnd();
+		return contentWnd->GetChildrenContentEnd(level);
 	}
+
 	if (mChildrenContentEndFunc){
 		return mChildrenContentEndFunc();
 	}
@@ -687,7 +692,7 @@ float Container::GetChildrenContentEnd() const{
 	float end = 0;
 	for (auto& winbase : mChildren){		
 		if (!winbase->IsPendingDeleteReserved()) {
-			float cend = winbase->GetContentEnd();
+			float cend = winbase->GetContentEnd(level);
 			end = std::max(end, cend);
 		}
 	}
@@ -695,7 +700,8 @@ float Container::GetChildrenContentEnd() const{
 }
 
 int Container::GetChildrenContentEndInPixel() const {
-	auto end = GetChildrenContentEnd();
+	int level = 1;
+	auto end = GetChildrenContentEnd(level);
 	end *= GetParentSize().y;
 	
 	return Round(end);
@@ -910,7 +916,8 @@ bool Container::ParseLua(const fb::LuaObject& compTable)
 
 void Container::MatchHeight(bool checkName)
 {
-	auto nend = GetChildrenContentEnd();
+	int level = 1;
+	auto nend = GetChildrenContentEnd(level);
 	auto contentWNEnd = Round(nend * GetRenderTargetSize().y);
 	/*int contentWNEnd = 0;
 	for (auto& pWinBase : mChildren)
@@ -1366,6 +1373,41 @@ bool Container::HasScissorIgnoringChild() const{
 			return true;
 	}
 	return false;
+}
+
+void Container::ProcessWheel(IInputInjectorPtr injector) {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI) {
+		contentUI->ProcessWheel(injector);
+	}
+
+	for (auto child : mChildren) {
+		child->ProcessWheel(injector);
+	}
+	__super::ProcessWheel(injector);
+}
+
+WinBase* Container::GetScroller(bool checkChildren) {
+	auto contentUI = mWndContentUI.lock();
+	if (contentUI) {
+		auto scroller = contentUI->GetScroller(checkChildren);
+		if (scroller)
+			return scroller;
+	}
+	auto sc = mScrollerV.lock();
+	if (sc) {
+		return sc.get();
+	}
+	if (checkChildren) {
+		for (auto child : mChildren) {
+			auto scroller = child->GetScroller(checkChildren);
+			if (scroller)
+				return scroller;
+		}
+	}
+
+	return __super::GetScroller(checkChildren);
+
 }
 
 void Container::OnMouseIn(IInputInjectorPtr injector, bool propergated){

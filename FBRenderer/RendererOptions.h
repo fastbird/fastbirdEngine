@@ -81,6 +81,6 @@ namespace fb{
 		int r_fullscreen; // 0 : window, 1 : full-screen, 2 : fake full-screen
 		int r_noText;
 		int r_renderFrustum;
-		int r_renderAxis;
+		int r_renderAxis;		
 	};
 }

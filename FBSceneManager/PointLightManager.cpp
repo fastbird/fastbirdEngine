@@ -82,12 +82,12 @@ public:
 	{
 		struct GatheredData
 		{
-			GatheredData(Real distSQ, unsigned idx)
-				:mDistanceSQ(distSQ), mIndex(idx)
+			GatheredData(Real intensity, unsigned idx)
+				:mIntensity(intensity), mIndex(idx)
 			{
 
 			}
-			Real mDistanceSQ;
+			Real mIntensity;
 			unsigned mIndex;
 		};
 		static std::vector<GatheredData> gathered;
@@ -102,17 +102,18 @@ public:
 			Ray ray(p->GetPosition(), transform.GetTranslation() - p->GetPosition());
 			Ray localRay = transform.ApplyInverse(ray, false);
 			auto iresult = localRay.Intersects(boundingVolume);
-			Real distSQ = Squared(iresult.second);
+			Real dist = iresult.second;
 			Real range = p->GetRange();
-			if (distSQ < (range*range))
+			if (dist < range)
 			{
-				gathered.push_back(GatheredData(distSQ, i));
+				auto intensity = p->GetIntensityScoreAtRange(dist);
+				gathered.push_back(GatheredData(intensity, i));
 			}
 			++i;
 		}
 
 		std::sort(gathered.begin(), gathered.end(), [](const GatheredData& a, const GatheredData& b){
-			return a.mDistanceSQ < b.mDistanceSQ;
+			return a.mIntensity > b.mIntensity;
 		}
 		);
 

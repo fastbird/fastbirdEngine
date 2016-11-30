@@ -63,7 +63,7 @@ namespace fb{
 		MeshFacadePtr Clone();
 		const char* GetName() const;
 
-		bool IsVaildMesh() const;
+		bool IsValidMesh() const;
 		bool IsMeshObject() const;
 		bool IsMeshGroup() const;
 

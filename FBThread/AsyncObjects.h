@@ -33,25 +33,25 @@
 namespace fb
 {
 	//---------------------------------------------------------------------------
-	struct FB_DLL_THREAD FB_CRITICAL_SECTION
+	struct FB_DLL_THREAD CriticalSection
 	{
 	private:
 		std::mutex mMutex;
 	public:
-		FB_CRITICAL_SECTION();
-		~FB_CRITICAL_SECTION();
+		CriticalSection();
+		~CriticalSection();
 		void Lock();
 		void Unlock();	
 	};
 
 	//---------------------------------------------------------------------------
-	struct FB_DLL_THREAD FB_CRITICAL_SECTION_R
+	struct FB_DLL_THREAD RecursiveCriticalSection
 	{
 	private:
 		std::recursive_mutex mMutex;
 	public:
-		FB_CRITICAL_SECTION_R();
-		~FB_CRITICAL_SECTION_R();
+		RecursiveCriticalSection();
+		~RecursiveCriticalSection();
 		void Lock();
 		void Unlock();
 	};
@@ -59,24 +59,24 @@ namespace fb
 	//---------------------------------------------------------------------------
 	struct FB_DLL_THREAD ENTER_CRITICAL_SECTION
 	{
-		FB_CRITICAL_SECTION* mCS;
+		CriticalSection* mCS;
 
-		ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs);
-		ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs);
+		ENTER_CRITICAL_SECTION(CriticalSection* cs);
+		ENTER_CRITICAL_SECTION(CriticalSection& cs);
 		~ENTER_CRITICAL_SECTION();
 	};
 
 	struct FB_DLL_THREAD ENTER_CRITICAL_SECTION_R
 	{
-		FB_CRITICAL_SECTION_R* mCS;
+		RecursiveCriticalSection* mCS;
 
-		ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R* cs);
-		ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R& cs);
+		ENTER_CRITICAL_SECTION_R(RecursiveCriticalSection* cs);
+		ENTER_CRITICAL_SECTION_R(RecursiveCriticalSection& cs);
 		~ENTER_CRITICAL_SECTION_R();
 	};
 
 	//---------------------------------------------------------------------------
-	struct FB_DLL_THREAD FB_READ_WRITE_CS
+	struct FB_DLL_THREAD ReadWriteCS
 	{
 	private:
 		std::mutex mMutex;		
@@ -85,8 +85,8 @@ namespace fb
 		std::atomic<bool> mWriting;
 
 	public:
-		FB_READ_WRITE_CS();
-		~FB_READ_WRITE_CS();
+		ReadWriteCS();
+		~ReadWriteCS();
 		void EnterReader();
 		void LeaveReader();
 		void EnterWriter();
@@ -94,20 +94,20 @@ namespace fb
 	};
 
 	//-----------------------------------------------------------------------
-	struct FB_DLL_THREAD READ_LOCK
+	struct FB_DLL_THREAD ReadLock
 	{
-		FB_READ_WRITE_CS* mReadWrite;
+		ReadWriteCS* mReadWrite;
 
-		READ_LOCK(FB_READ_WRITE_CS& lock);
-		~READ_LOCK();
+		ReadLock(ReadWriteCS& lock);
+		~ReadLock();
 	};
 
-	struct FB_DLL_THREAD WRITE_LOCK
+	struct FB_DLL_THREAD WriteLock
 	{
-		FB_READ_WRITE_CS* mReadWrite;
+		ReadWriteCS* mReadWrite;
 
-		WRITE_LOCK(FB_READ_WRITE_CS& lock);
-		~WRITE_LOCK();
+		WriteLock(ReadWriteCS& lock);
+		~WriteLock();
 	};
 
 	FB_DECLARE_SMART_PTR(SyncEvent);

@@ -40,20 +40,10 @@ using namespace fb;
 
 
 static const int MAX_NUM_TASK = 2048;
-SyncEventPtr gScheduleSliceEvent = 0;
 bool sFinalize = false;
 namespace fb
 {
 	TaskScheduler* gTaskScheduler = 0;
-
-	/*void Scheduler()
-	{
-		while (!sFinalize && gTaskScheduler)
-		{
-			gTaskScheduler->_Schedule();
-			gScheduleSliceEvent->Wait(66);
-		}
-	}*/
 }
 
 class TaskScheduler::Impl{
@@ -98,10 +88,7 @@ public:
 				mWorkerThreads[i]->ForceExit(false);
 				mWorkerThreads[i]->SetTask(0);
 			}
-			std::this_thread::sleep_for(std::chrono::microseconds(500));
-			gScheduleSliceEvent->Trigger();
-			//mSchedulerThread.join();
-			gScheduleSliceEvent = 0;
+			std::this_thread::sleep_for(std::chrono::microseconds(500));			
 			for (int i = 0; i < mNumWorkerThreads; i++)
 			{
 				if (!mWorkerThreads[i]->IsRunning())
@@ -125,8 +112,6 @@ public:
 		}
 
 		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("Task Scheduler initialized using %d worker threads\n", mNumWorkerThreads).c_str());
-
-		gScheduleSliceEvent = CreateSyncEvent(false);
 		//mSchedulerThread = std::thread(Scheduler);
 	}
 	//---------------------------------------------------------------------------
@@ -190,10 +175,7 @@ public:
 			mWorkerThreads[i]->PrepareQuit();
 			mWorkerThreads[i]->Join();
 		}
-		std::this_thread::sleep_for(std::chrono::microseconds(500));
-		gScheduleSliceEvent->Trigger();
-		//mSchedulerThread.join();
-		gScheduleSliceEvent = 0;		
+		std::this_thread::sleep_for(std::chrono::microseconds(500));		
 		for (int i = 0; i<mNumWorkerThreads; i++)
 		{
 			if (!mWorkerThreads[i]->IsRunning())
@@ -345,10 +327,6 @@ public:
 			}
 			mSchedulerLock.Unlock();
 		}// if mSchedulerLock
-		else
-		{
-			gScheduleSliceEvent->Trigger();
-		}
 	}
 
 	TaskPtr GetNextReadyTask(WorkerThread* Thread){

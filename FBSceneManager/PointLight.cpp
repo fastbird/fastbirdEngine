@@ -142,6 +142,11 @@ public:
 	Real GetOlder(Real time){
 		return mLifeTime -= time;
 	}
+
+	float GetIntensityScoreAtRange(float dist) {
+		dist = std::min(mRange, dist);
+		return (mRange - dist) * mIntensity;
+	}
 };
 //---------------------------------------------------------------------------
 PointLightPtr PointLight::Create(ScenePtr scene, const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion){
@@ -219,4 +224,8 @@ void PointLight::SetEnabled(bool enable){
 
 Real PointLight::GetOlder(Real time){
 	return mImpl->GetOlder(time);
+}
+
+float PointLight::GetIntensityScoreAtRange(float dist) {
+	return mImpl->GetIntensityScoreAtRange(dist);
 }

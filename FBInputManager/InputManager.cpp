@@ -112,10 +112,14 @@ public:
 		mValid = InputDevice::AllMask;				
 		for (auto& it : mConsumers){
 			for (auto weak = it.second.begin(); weak != it.second.end(); /**/){
+				auto priority = it.first;
 				IteratingWeakContainer(it.second, weak, consumer);				
 				consumer->ConsumeInput(mInjector);
-				if (!(mValid & InputDevice::AllMask))
-					return;				
+				if (!(mValid & InputDevice::AllMask) ||
+					(priority == IInputConsumer::Priority11_Console && !mInjector->IsValid(InputDevice::Keyboard)))
+				{
+					return;
+				}
 			}
 		}
 	}

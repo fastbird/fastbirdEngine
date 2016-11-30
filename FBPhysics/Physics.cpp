@@ -189,7 +189,7 @@ public:
 
 		mDynamicsWorld->setGravity(btVector3(0, 0, 0));
 		mDynamicsWorld->setDebugDrawer(&mDebugDrawer);
-		mDynamicsWorld->setInternalTickCallback(TickCallback);
+		mDynamicsWorld->setInternalTickCallback(TickCallback, mSelf);
 
 		//auto& solverInfo = mDynamicsWorld->getSolverInfo();
 		//solverInfo.m_splitImpulse = 0;
@@ -447,7 +447,7 @@ public:
 			mass, motionState, colShape, localInertia);
 		rbInfo.m_angularDamping = obj->GetAngularDamping();
 		rbInfo.m_linearDamping = obj->GetLinearDamping();		
-		auto rigidBody = RigidBodyImpl::Create(rbInfo, mDynamicsWorld, obj);
+		auto rigidBody = RigidBodyImpl::Create(rbInfo, mSelf);
 		rigidBody->SetPhysicsInterface(obj);
 		return rigidBody;
 	}
@@ -489,14 +489,14 @@ public:
 		btVector3 localInertia(0, 0, 0);
 		auto btcol = CreateBulletColShape(colShape);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
-		return RigidBodyImpl::Create(rbInfo, 0, 0);		
+		return RigidBodyImpl::Create(rbInfo, mSelf);		
 	}
 
 	RigidBodyPtr CreateTempRigidBody(CollisionShapePtr shapes[], unsigned num){
 		btVector3 localInertia(0, 0, 0);
 		auto btcol = CreateColShape(shapes, num, false);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, 0, btcol, localInertia);
-		return RigidBodyImpl::Create(rbInfo, 0, 0);		
+		return RigidBodyImpl::Create(rbInfo, mSelf);
 	}
 
 	btCollisionShape* ParseCollisionFile(const char* collisionFile){
@@ -1140,36 +1140,6 @@ public:
 		return a->CheckCollideWith(b);
 	}
 
-
-	//-------------------------------------------------------------------
-	// collision shape manager
-	//-------------------------------------------------------------------
-	BoxShapePtr CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0){
-		return CollisionShapeMan::CreateBoxShape(pos, rot, actorScale, extent, userPtr);
-	}
-
-	SphereShapePtr CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr = 0){
-		return CollisionShapeMan::CreateSphereShape(pos, rot, actorScale, radius, userPtr);
-	}
-
-	CylinderShapePtr CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr = 0){
-		return CollisionShapeMan::CreateCylinderShape(pos, rot, actorScale, extent, userPtr);
-	}
-
-	CapsuleShapePtr CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr = 0){
-		return CollisionShapeMan::CreateCylinderShape(pos, rot, actorScale, radius, height, userPtr);
-	}
-
-	MeshShapePtr CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,
-		bool staticObj, void* userPtr = 0){
-		return CollisionShapeMan::CreateMeshShape(pos, rot, vertices, numVertices, scale, staticObj, userPtr);
-	}
-
-	MeshShapePtr CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,
-		const Vec3& scale, void* userPtr = 0){
-		return CollisionShapeMan::CreateConvexMeshShape(pos, rot, vertices, numVertices, scale, userPtr);
-	}
-
 	void RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func){
 		if (mFilterCallback){
 			mDynamicsWorld->getPairCache()->setOverlapFilterCallback(0);
@@ -1292,37 +1262,18 @@ public:
 	}
 };
 
-PhysicsWeakPtr sPhysics;
 IPhysicsPtr IPhysics::Create(){
-	if (sPhysics.expired()){
-		auto p = Physics::Create();
-		sPhysics = p;
-		return p;
-	}
-	return sPhysics.lock();
-}
-
-IPhysics& IPhysics::GetInstance(){
-	if (sPhysics.expired()){
-		Logger::Log(FB_ERROR_LOG_ARG, "Physics is already deleted. Program will crash...");
-	}
-	return *sPhysics.lock();
+	return Physics::Create();
 }
 
 FB_IMPLEMENT_STATIC_CREATE(Physics);
-Physics& Physics::GetInstance(){
-	if (sPhysics.expired()){
-		Logger::Log(FB_ERROR_LOG_ARG, "Physics is already deleted. Program will crash...");
-	}
-	return *sPhysics.lock();
-}
 
 NeedCollisionForConvexCallback Physics::sNeedCollisionForConvexCallback = 0;
 unsigned Physics::Impl::NextInternalColShapeId = 1;
 
 void TickCallback(btDynamicsWorld *world, btScalar timeStep)
 {
-	auto physics = sPhysics.lock();
+	auto physics = (Physics*)world->getWorldUserInfo();	
 	physics->_ReportCollisions();
 	physics->_CheckCollisionShapeForDel(timeStep);
 }
@@ -1469,29 +1420,29 @@ bool Physics::NeedToCollides(RigidBodyPtr a, RigidBodyPtr b){
 	return mImpl->NeedToCollides(a, b);
 }
 
-BoxShapePtr Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {
-	return mImpl->CreateBoxShape(pos, rot, actorScale, extent, userPtr);
-}
-
-SphereShapePtr Physics::CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr) {
-	return mImpl->CreateSphereShape(pos, rot, actorScale, radius, userPtr);
-}
-
-CylinderShapePtr Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {
-	return mImpl->CreateCylinderShape(pos, rot, actorScale, extent, userPtr);
-}
-
-CapsuleShapePtr Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr) {
-	return mImpl->CreateCylinderShape(pos, rot, actorScale, radius, height, userPtr);
-}
-
-MeshShapePtr Physics::CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,	bool staticObj, void* userPtr) {
-	return mImpl->CreateMeshShape(pos, rot, vertices, numVertices, scale, staticObj, userPtr);
-}
-
-MeshShapePtr Physics::CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,	const Vec3& scale, void* userPtr) {
-	return mImpl->CreateConvexMeshShape(pos, rot, vertices, numVertices, scale, userPtr);
-}
+//BoxShapePtr Physics::CreateBoxShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {
+//	return mImpl->CreateBoxShape(pos, rot, actorScale, extent, userPtr);
+//}
+//
+//SphereShapePtr Physics::CreateSphereShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, void* userPtr) {
+//	return mImpl->CreateSphereShape(pos, rot, actorScale, radius, userPtr);
+//}
+//
+//CylinderShapePtr Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, const Vec3& extent, void* userPtr) {
+//	return mImpl->CreateCylinderShape(pos, rot, actorScale, extent, userPtr);
+//}
+//
+//CapsuleShapePtr Physics::CreateCylinderShape(const Vec3& pos, const Quat& rot, const Vec3& actorScale, float radius, float height, void* userPtr) {
+//	return mImpl->CreateCylinderShape(pos, rot, actorScale, radius, height, userPtr);
+//}
+//
+//MeshShapePtr Physics::CreateMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices, const Vec3& scale,	bool staticObj, void* userPtr) {
+//	return mImpl->CreateMeshShape(pos, rot, vertices, numVertices, scale, staticObj, userPtr);
+//}
+//
+//MeshShapePtr Physics::CreateConvexMeshShape(const Vec3& pos, const Quat& rot, Vec3* vertices, unsigned numVertices,	const Vec3& scale, void* userPtr) {
+//	return mImpl->CreateConvexMeshShape(pos, rot, vertices, numVertices, scale, userPtr);
+//}
 
 void Physics::RegisterFilterCallback(IFilterCallback* callback, NeedCollisionForConvexCallback func) {
 	mImpl->RegisterFilterCallback(callback, func);

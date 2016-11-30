@@ -1,11 +1,13 @@
 #include "stdafx.h"
 #include "SceneObjectFactoryOptions.h"
+#include "FBLua/LuaUtils.h"
 #include "FBConsole/Console.h"
 
 namespace fb {
 
 SceneObjectFactoryOptions::SceneObjectFactoryOptions() {
-	o_rawCollada = Console::GetInstance().GetIntVariable("o_rawCollada", 0);
+	LuaLock L(LuaUtils::GetLuaState());
+	o_rawCollada = Console::GetInstance().GetIntVariable(L, "o_rawCollada", 0);
 	FB_REGISTER_CVAR(o_rawCollada, o_rawCollada, CVAR_CATEGORY_CLIENT, "Use .dae directly.");
 }
 SceneObjectFactoryOptions::~SceneObjectFactoryOptions() {

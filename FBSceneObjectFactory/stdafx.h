@@ -34,6 +34,7 @@
 #define FB_DLL_TIMER __declspec(dllimport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
 #define FB_DLL_CONSOLE __declspec(dllimport)
+#define FB_DLL_LUA __declspec(dllimport)
 #else
 #define FB_DLL_ANIMATION
 #endif

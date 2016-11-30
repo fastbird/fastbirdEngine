@@ -36,17 +36,18 @@ AudioOptionsPtr AudioOptions::Create(){
 }
 
 AudioOptions::AudioOptions(){
-	a_MasterGain = Console::GetInstance().GetRealVariable("a_MasterGain", 1.0);
+	LuaLock L(LuaUtils::GetLuaState());
+	a_MasterGain = Console::GetInstance().GetRealVariable(L, "a_MasterGain", 1.0);
 	FB_REGISTER_CVAR(a_MasterGain, a_MasterGain, 
 		CVAR_CATEGORY_CLIENT, "Audio Master Gain");
 	EngineFacade::GetInstance().SetMasterGain(a_MasterGain, false);
 
-	a_MusicGain = Console::GetInstance().GetRealVariable("a_MusicGain", 1.0);
+	a_MusicGain = Console::GetInstance().GetRealVariable(L, "a_MusicGain", 1.0);
 	FB_REGISTER_CVAR(a_MusicGain, a_MusicGain,
 		CVAR_CATEGORY_CLIENT, "Music Gain");
 	EngineFacade::GetInstance().SetMusicGain(a_MusicGain, false);
 
-	a_SoundGain = Console::GetInstance().GetRealVariable("a_SoundGain", 1.0);
+	a_SoundGain = Console::GetInstance().GetRealVariable(L, "a_SoundGain", 1.0);
 	FB_REGISTER_CVAR(a_SoundGain, a_SoundGain,
 		CVAR_CATEGORY_CLIENT, "Sound Gain");
 	EngineFacade::GetInstance().SetSoundGain(a_SoundGain, false);

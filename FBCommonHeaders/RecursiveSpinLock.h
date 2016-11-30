@@ -92,4 +92,5 @@ namespace fb
 			--mLockLevel;
 		}
 	};
+	using RecursiveSpinLockWaitSleep = RecursiveSpinLock<true, true>;
 }

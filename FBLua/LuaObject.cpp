@@ -59,7 +59,6 @@ bool LuaObject::ReleaseUsedCount(int ref)
 	return false; // still alive
 }
 
-
 LuaObject::LuaObject()
 	:LuaObject((lua_State*)0)
 {
@@ -81,20 +80,20 @@ LuaObject::LuaObject(lua_State* L, const char* globalName)
 	: LuaObject(L)
 {
 	assert(globalName != 0);
-	auto splitted = Split(globalName, ".");
+	auto splitted = Split(globalName, ".");	
 	LUA_STACK_CLIPPER clip(L);
-	for (auto& name : splitted){
-		if (!IsTable()){
+	for (auto& name : splitted) {
+		if (!IsTable()) {
 			lua_getglobal(L, name.c_str());
 			CheckType();
 		}
-		else{			
+		else {
 			lua_getfield(L, -1, name.c_str());
 			CheckType();
 		}
-	}	
+	}
 	mRef = luaL_ref(L, LUA_REGISTRYINDEX);
-	AddUsedCount(mRef);	
+	AddUsedCount(mRef);
 	mName = globalName;
 }
 
@@ -120,27 +119,6 @@ LuaObject::LuaObject(const LuaObject& other)
 	}
 }
 
-LuaObject& LuaObject::operator=(const LuaObject& other)
-{
-	mL = other.mL;
-	mType = LUA_TNONE;
-	mRef = LUA_NOREF;
-	FB_SAFE_DELETE(mSelf);
-
-	if (ReleaseUsedCount(mRef))
-		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
-
-	mRef = other.mRef;
-	mType = other.mType;
-	AddUsedCount(mRef);
-	mName = other.mName;
-	if (other.mSelf)
-	{
-		mSelf = FB_NEW(LuaObject)(*other.mSelf);
-	}
-	return *this;
-}
-
 LuaObject::LuaObject(lua_State* L)
 	: mL(L)
 	, mType(LUA_TNONE)
@@ -154,6 +132,29 @@ LuaObject::~LuaObject()
 	Clear();
 }
 
+LuaObject& LuaObject::operator=(const LuaObject& other)
+{
+	mL = other.mL;
+	mType = LUA_TNONE;
+	mRef = LUA_NOREF;
+	FB_SAFE_DELETE(mSelf);
+
+	if (ReleaseUsedCount(mRef)) {		
+		LuaLock L(mL);
+		luaL_unref(L, LUA_REGISTRYINDEX, mRef);
+	}
+
+	mRef = other.mRef;
+	mType = other.mType;
+	AddUsedCount(mRef);
+	mName = other.mName;
+	if (other.mSelf)
+	{
+		mSelf = FB_NEW(LuaObject)(*other.mSelf);
+	}
+	return *this;
+}
+
 void LuaObject::SetSelf(const LuaObject& other)
 {
 	assert(other.IsTable());
@@ -161,10 +162,12 @@ void LuaObject::SetSelf(const LuaObject& other)
 	mSelf = FB_NEW(LuaObject)(other);
 }
 
-void LuaObject::FindFunction(lua_State* L, const char* funcName)
+void LuaObject::FindFunction(lua_State* lua, const char* funcName)
 {
+	mL = lua;
+	LuaLock L(lua);
 	if (ReleaseUsedCount(mRef))
-		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
+		luaL_unref(L, LUA_REGISTRYINDEX, mRef);
 
 	auto splited = Split(funcName, ":");
 	auto size = splited.size();
@@ -202,12 +205,13 @@ void LuaObject::FindFunction(lua_State* L, const char* funcName)
 	mName = funcName;
 }
 
-void LuaObject::NewTable(lua_State* L)
+void LuaObject::NewTable(lua_State* lua)
 {
+	mL = lua;
+	LuaLock L(lua);
 	if (ReleaseUsedCount(mRef))
-		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
+		luaL_unref(L, LUA_REGISTRYINDEX, mRef);
 
-	mL = L;
 	lua_newtable(L);
 	CheckType();
 	mRef = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -222,12 +226,12 @@ bool LuaObject::IsValid(bool nilIsValid) const
 	return valid;
 }
 
-void LuaObject::SetGlobalName(lua_State* L, const char* globalName)
+void LuaObject::SetGlobalName(lua_State* lua, const char* globalName)
 {
+	mL = lua;
+	LuaLock L(mL);
 	ReleaseUsedCount(mRef);
 	mRef = LUA_NOREF;
-
-	mL = L;
 	assert(globalName != 0);
 	lua_getglobal(L, globalName);
 	CheckType();
@@ -238,8 +242,9 @@ void LuaObject::SetGlobalName(lua_State* L, const char* globalName)
 
 void LuaObject::PushToStack() const
 {
+	LuaLock L(mL);
 	if (IsValid()){
-		lua_rawgeti(mL, LUA_REGISTRYINDEX, mRef);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, mRef);
 		if (mSelf)
 		{
 			assert(IsFunction());
@@ -255,8 +260,10 @@ bool LuaObject::Call()
 		assert(0);
 		return false;
 	}
+
 	PushToStack();
-	LUA_PCALL_RET_FALSE(mL, IsMethod() ? 1 : 0, 0);
+	LuaLock L(mL);
+	LUA_PCALL_RET_FALSE(L, IsMethod() ? 1 : 0, 0);
 	return true;
 }
 
@@ -268,21 +275,23 @@ bool LuaObject::CallWithManualArgs(unsigned arg, unsigned ret)
 	{
 		arg++; // for self.
 	}
-	int cfuncbase = LuaUtils::gettop(mL) - (arg);  /* function index */
-	LuaUtils::pushcfunction(mL, LuaUtils::Traceback);  /* push traceback function */
-	LuaUtils::insert(mL, cfuncbase);  /* put it under chunk and args */
-	if (int error = LuaUtils::pcall((mL), (arg), ret, cfuncbase))
+	LuaLock L(mL);
+	int cfuncbase = LuaUtils::gettop(L) - (arg);  /* function index */
+	LuaUtils::pushcfunction(L, LuaUtils::Traceback);  /* push traceback function */
+	LuaUtils::insert(L, cfuncbase);  /* put it under chunk and args */
+	if (int error = LuaUtils::pcall((L), (arg), ret, cfuncbase))
 	{
-		LuaUtils::remove(mL, cfuncbase);
-		const char* errorString = LuaUtils::tostring(mL, -1);
+		LuaUtils::PrintLuaDebugInfo(L, 1);
+		LuaUtils::remove(L, cfuncbase);
+		const char* errorString = LuaUtils::tostring(L, -1);
 		Logger::Log(FB_ERROR_LOG_ARG, FormatString("Failed to call lua function. Error(%d)", error).c_str());
-		LuaUtils::PrintLuaErrorString(mL, errorString);
-		LuaUtils::pop(mL, 1);
+		LuaUtils::PrintLuaErrorString(L, errorString);
+		LuaUtils::pop(L, 1);
 		assert(0);
 		return false;
 	}
 	else{
-		LuaUtils::remove(mL, cfuncbase);
+		LuaUtils::remove(L, cfuncbase);
 	}
 	return true;
 }
@@ -323,23 +332,22 @@ bool LuaObject::IsNil() const
 
 void LuaObject::CheckType()
 {
-	mType = lua_type(mL, -1);
+	LuaLock L(mL);
+	mType = lua_type(L, -1);
 }
 
 LuaObject LuaObject::GetField(const char* fieldName) const
 {
-	assert(mL);
 	assert(IsTable());
 	if (!IsTable())
 	{
 		return LuaObject();
 	}
-	LUA_STACK_WATCHER watcher(mL, "LuaObject LuaObject::GetField(const char* fieldName) const");
 	PushToStack();
-
-	lua_getfield(mL, -1, fieldName);
-	LuaObject fieldObject(mL, -1);
-	lua_pop(mL, 2);
+	LuaLock L(mL);
+	lua_getfield(L, -1, fieldName);
+	LuaObject fieldObject(L, -1);
+	lua_pop(L, 2);
 	return fieldObject;
 }
 
@@ -357,142 +365,146 @@ LuaSequenceIterator LuaObject::GetSequenceIterator() const
 LuaObject LuaObject::SetFieldTable(const char* fieldName) const
 {
 	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "LuaObject LuaObject::SetFieldTable(const char* fieldName)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "LuaObject LuaObject::SetFieldTable(const char* fieldName)");
 	PushToStack();
-	lua_newtable(mL);
-	LuaObject ret(mL, -1);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_newtable(L);
+	LuaObject ret(L, -1);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 	return ret;
 }
 
-void LuaObject::SetFieldTable(const char* fieldName, LuaObject& tableObj) const {
-	LUA_STACK_WATCHER w(mL, __FUNCTION__);
+void LuaObject::SetFieldTable(const char* fieldName, LuaObject& tableObj) const {	
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, __FUNCTION__);
 	PushToStack();
 	tableObj.PushToStack();
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, double num) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, double num)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, double num)");
 	PushToStack();
-	lua_pushnumber(mL, num);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_pushnumber(L, num);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, int num) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, int num)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, int num)");
 	PushToStack();
-	lua_pushinteger(mL, num);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_pushinteger(L, num);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, unsigned num) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, unsigned num)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, unsigned num)");
 	PushToStack();
-	lua_pushunsigned(mL, num);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_pushunsigned(L, num);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, bool b) const
 {
+	LuaLock L(mL);
 	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, bool b)");
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, bool b)");
 	PushToStack();
-	lua_pushboolean(mL, b);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_pushboolean(L, b);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const char* str) const
 {
-	assert(str); assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const char* str)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const char* str)");
 	PushToStack();
-	lua_pushstring(mL, str);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	lua_pushstring(L, str);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec3Tuple& v) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec3& v)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec3& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec3ITuple& v) const
 {
+	LuaLock L(mL);
 	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec3I& v)");
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec3I& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec4Tuple& v) const{
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec4& v)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec4& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec2Tuple& v) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const QuatTuple& v) const // Quat
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const Vec2ITuple& v) const{
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
 	PushToStack();
-	luaU_push(mL, v);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, v);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetField(const char* fieldName, const TransformationTuple& t) const
 {
-	assert(fieldName);
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
+	LuaLock L(mL);	
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetField(const char* fieldName, const Vec2& v)");
 	PushToStack();
-	luaU_push(mL, t);
-	lua_setfield(mL, -2, fieldName);
-	lua_pop(mL, 1);
+	luaU_push(L, t);
+	lua_setfield(L, -2, fieldName);
+	lua_pop(L, 1);
 }
 
-void LuaObject::SetField(const char* fieldName, LuaObject& value) const{
+void LuaObject::SetField(const char* fieldName, LuaObject& value) const {	
 	if (value.IsTable()){
 		auto newTable = SetFieldTable(fieldName);
 		newTable.AppendTable(value);
@@ -511,7 +523,8 @@ void LuaObject::SetField(const char* fieldName, LuaObject& value) const{
 	}
 }
 
-void LuaObject::SetField(LuaObject& key, LuaObject& value) const{
+void LuaObject::SetField(LuaObject& key, LuaObject& value) const {
+	LuaLock L(mL);
 	if (key.IsString()){
 		SetField(key.GetString().c_str(), value);
 	}
@@ -522,105 +535,107 @@ void LuaObject::SetField(LuaObject& key, LuaObject& value) const{
 
 LuaObject LuaObject::SetSeqTable(int n) const
 {
-	LUA_STACK_WATCHER w(mL, "LuaObject LuaObject::SetSeqTable(int n) const");
+	LuaLock L(mL);	
 	PushToStack();
-	lua_newtable(mL);
-	LuaObject ret(mL, -1);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_newtable(L);
+	LuaObject ret(L, -1);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 	return ret;
 }
 
 LuaObject LuaObject::GetSeqTable(int n)
 {
-	LUA_STACK_WATCHER w(mL, "LuaObject LuaObject::GetSeqTable(int n)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "LuaObject LuaObject::GetSeqTable(int n)");
 	PushToStack();
-	lua_rawgeti(mL, -1, n);
-	LuaObject ret(mL, -1, true);
-	lua_pop(mL, 1);
+	lua_rawgeti(L, -1, n);
+	LuaObject ret(L, -1, true);
+	lua_pop(L, 1);
 	return ret;
 }
 
 void LuaObject::SetSeq(int n, const char* str)  const
 {
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, const char* str)");
+	LuaLock L(mL);
 	PushToStack();
-	lua_pushstring(mL, str);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushstring(L, str);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, char* str) const
 {
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, char* str)");
+	LuaLock L(mL);
+	LUA_STACK_WATCHER w(L, "void LuaObject::SetSeq(int n, char* str)");
 	PushToStack();
-	lua_pushstring(mL, str);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushstring(L, str);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, unsigned num) const
 {
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, unsigned num)");
+	LuaLock L(mL);	
 	PushToStack();
-	lua_pushunsigned(mL, num);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushunsigned(L, num);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, int num) const{
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, int num)");
+	LuaLock L(mL);
 	PushToStack();
-	lua_pushinteger(mL, num);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushinteger(L, num);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, float num) const
 {
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, float num)");
+	LuaLock L(mL);	
 	PushToStack();
-	lua_pushnumber(mL, num);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushnumber(L, num);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, double num) const{
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, double num)");
+	LuaLock L(mL);	
 	PushToStack();
-	lua_pushnumber(mL, num);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	lua_pushnumber(L, num);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, const Vec4Tuple& val) const
 {
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, const Vec4& val)");
+	LuaLock L(mL);	
 	PushToStack();
-	luaU_push<Vec4Tuple>(mL, val);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	luaU_push<Vec4Tuple>(L, val);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, const Vec3ITuple& val) const{
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, const Vec3I& val)");
+	LuaLock L(mL);	
 	PushToStack();
-	luaU_push<Vec3ITuple>(mL, val);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	luaU_push<Vec3ITuple>(L, val);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 void LuaObject::SetSeq(int n, const Vec3Tuple& val) const{
-	LUA_STACK_WATCHER w(mL, "void LuaObject::SetSeq(int n, const Vec3& val)");
+	LuaLock L(mL);	
 	PushToStack();
-	luaU_push<Vec3Tuple>(mL, val);
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	luaU_push<Vec3Tuple>(L, val);
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
-void LuaObject::SetSeq(int n, LuaObject& value) const{
+void LuaObject::SetSeq(int n, LuaObject& value) const{	
 	if (value.IsTable()){
-		auto newTable = SetSeqTable(n);;
+		auto newTable = SetSeqTable(n);
 		newTable.AppendTable(value);
 	}
 	else if (value.IsBool()){
@@ -637,12 +652,12 @@ void LuaObject::SetSeq(int n, LuaObject& value) const{
 	}
 }
 
-void LuaObject::SetSeqNil(int n) const {
-	LUA_STACK_WATCHER w(mL, __FUNCTION__);
+void LuaObject::SetSeqNil(int n) const {	
 	PushToStack();
-	lua_pushnil(mL);	
-	lua_rawseti(mL, -2, n);
-	lua_pop(mL, 1);
+	LuaLock L(mL);
+	lua_pushnil(L);	
+	lua_rawseti(L, -2, n);
+	lua_pop(L, 1);
 }
 
 
@@ -660,23 +675,23 @@ void LuaObject::AppendTable(LuaObject& table) const{
 
 double LuaObject::GetNumberAt(int index) const
 {
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
-	lua_rawgeti(mL, -1, index);
-	double number = lua_tonumber(mL, -1);
-	lua_pop(mL, 2);
+	LuaLock L(mL);
+	lua_rawgeti(L, -1, index);
+	double number = lua_tonumber(L, -1);
+	lua_pop(L, 2);
 	return number;
 }
 
 unsigned LuaObject::GetUnsignedAt(int index) const
-{
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+{	
 	PushToStack();
-	lua_rawgeti(mL, -1, index);
-	if (lua_isnumber(mL, -1))
+	LuaLock L(mL);
+	lua_rawgeti(L, -1, index);
+	if (lua_isnumber(L, -1))
 	{
-		unsigned v = lua_tounsigned(mL, -1);
-		lua_pop(mL, 2);
+		unsigned v = lua_tounsigned(L, -1);
+		lua_pop(L, 2);
 		return v;
 	}
 	else{
@@ -686,13 +701,13 @@ unsigned LuaObject::GetUnsignedAt(int index) const
 }
 
 int LuaObject::GetIntAt(int index) const {
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	lua_rawgeti(mL, -1, index);
-	if (lua_isnumber(mL, -1))
+	lua_rawgeti(L, -1, index);
+	if (lua_isnumber(L, -1))
 	{
-		auto v = lua_tointeger(mL, -1);
-		lua_pop(mL, 2);
+		auto v = lua_tointeger(L, -1);
+		lua_pop(L, 2);
 		return v;
 	}
 	else {
@@ -703,28 +718,28 @@ int LuaObject::GetIntAt(int index) const {
 
 LuaObject LuaObject::GetTableAt(int index) const
 {
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	lua_rawgeti(mL, -1, index);
-	if (lua_istable(mL, -1))
+	lua_rawgeti(L, -1, index);
+	if (lua_istable(L, -1))
 	{
-		LuaObject table(mL, -1);
-		unsigned v = lua_tounsigned(mL, -1);
-		lua_pop(mL, 2);
+		LuaObject table(L, -1);
+		unsigned v = lua_tounsigned(L, -1);
+		lua_pop(L, 2);
 		return table;
 	}
-	lua_pop(mL, 2);
+	lua_pop(L, 2);
 	return LuaObject();
 }
 
 const char* LuaObject::GetStringAt(int index) const{
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	lua_rawgeti(mL, -1, index);
-	if (lua_isstring(mL, -1))
+	lua_rawgeti(L, -1, index);
+	if (lua_isstring(L, -1))
 	{
-		auto str = lua_tostring(mL, -1);
-		lua_pop(mL, 2);
+		auto str = lua_tostring(L, -1);
+		lua_pop(L, 2);
 		return str;
 	}
 	else{
@@ -741,14 +756,14 @@ std::string LuaObject::GetString() const{
 std::string LuaObject::GetString(std::string& def) const
 {
 	if (!IsString())
-		return def;
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+		return def;	
 	PushToStack();
 	std::string ret;
-	const char* sz = lua_tostring(mL, -1);
+	LuaLock L(mL);
+	const char* sz = lua_tostring(L, -1);
 	if (sz)
 		ret = sz;
-	lua_pop(mL, 1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -758,14 +773,14 @@ std::string LuaObject::GetString(bool& success) const
 	{
 		success = false;
 		return std::string();
-	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	}	
+	LuaLock L(mL);
 	PushToStack();
 	std::string ret;
-	const char* sz = lua_tostring(mL, -1);
+	const char* sz = lua_tostring(L, -1);
 	if (sz)
 		ret = sz;
-	lua_pop(mL, 1);
+	lua_pop(L, 1);
 	success = true;
 	return ret;
 }
@@ -778,10 +793,10 @@ float	LuaObject::GetFloat(float def) const
 {
 	if (!IsNumber())
 		return def;
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	float f = (float)lua_tonumber(mL, -1);
-	lua_pop(mL, 1);
+	float f = (float)lua_tonumber(L, -1);
+	lua_pop(L, 1);
 	return f;
 }
 
@@ -792,10 +807,10 @@ double LuaObject::GetDouble() const{
 double LuaObject::GetDouble(double def) const{
 	if (!IsNumber())
 		return def;
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
 	PushToStack();
-	double d = lua_tonumber(mL, -1);
-	lua_pop(mL, 1);
+	LuaLock L(mL);
+	double d = lua_tonumber(L, -1);
+	lua_pop(L, 1);
 	return d;
 }
 
@@ -806,10 +821,10 @@ float LuaObject::GetFloat(bool& success) const
 		success = false;
 		return 0.f;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	float f = (float)lua_tonumber(mL, -1);
-	lua_pop(mL, 1);
+	float f = (float)lua_tonumber(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return f;
 }
@@ -823,10 +838,10 @@ int LuaObject::GetInt(int def) const
 	if (!IsNumber())
 		return def;
 
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	int i = lua_tointeger(mL, -1);
-	lua_pop(mL, 1);
+	int i = lua_tointeger(L, -1);
+	lua_pop(L, 1);
 	return i;
 }
 
@@ -837,11 +852,10 @@ int LuaObject::GetInt(bool& success) const
 		success = false;
 		return 0;
 	}
-
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	int i = lua_tointeger(mL, -1);
-	lua_pop(mL, 1);
+	int i = lua_tointeger(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return i;
 }
@@ -856,10 +870,10 @@ unsigned LuaObject::GetUnsigned(unsigned def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	unsigned u = lua_tounsigned(mL, -1);
-	lua_pop(mL, 1);
+	unsigned u = lua_tounsigned(L, -1);
+	lua_pop(L, 1);
 	return u;
 }
 
@@ -870,10 +884,10 @@ unsigned LuaObject::GetUnsigned(bool& success) const
 		success = false;
 		return 0;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	unsigned u = lua_tounsigned(mL, -1);
-	lua_pop(mL, 1);
+	unsigned u = lua_tounsigned(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return u;
 }
@@ -888,13 +902,13 @@ unsigned LuaObject::GetUnsignedFromString(unsigned def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
 	std::string ret;
-	const char* sz = lua_tostring(mL, -1);
+	const char* sz = lua_tostring(L, -1);
 	if (sz)
 		ret = sz;
-	lua_pop(mL, 1);
+	lua_pop(L, 1);
 	return StringConverter::ParseUnsignedInt(ret.c_str(), def);
 }
 
@@ -905,13 +919,13 @@ unsigned LuaObject::GetUnsignedFromString(bool& success) const
 		success = false;
 		return 0;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
 	std::string ret;
-	const char* sz = lua_tostring(mL, -1);
+	const char* sz = lua_tostring(L, -1);
 	if (sz)
 		ret = sz;
-	lua_pop(mL, 1);
+	lua_pop(L, 1);
 	success = true;
 	return StringConverter::ParseUnsignedInt(ret.c_str());
 }
@@ -926,10 +940,10 @@ bool LuaObject::GetBoolWithDef(bool def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	bool b = lua_toboolean(mL, -1) != 0;
-	lua_pop(mL, 1);
+	bool b = lua_toboolean(L, -1) != 0;
+	lua_pop(L, 1);
 	return b;
 }
 
@@ -940,15 +954,15 @@ bool LuaObject::GetBool(bool& success) const
 		success = false;
 		return false;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	bool b = lua_toboolean(mL, -1) != 0;
-	lua_pop(mL, 1);
+	bool b = lua_toboolean(L, -1) != 0;
+	lua_pop(L, 1);
 	success = true;
 	return b;
 }
 
-Vec3Tuple LuaObject::GetVec3() const{
+Vec3Tuple LuaObject::GetVec3() const {
 	return GetVec3(Vec3Tuple(0.f, 0.f, 0.f));
 }
 
@@ -958,10 +972,10 @@ Vec3Tuple LuaObject::GetVec3(const Vec3Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec3Tuple ret = luaU_check<Vec3Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec3Tuple ret = luaU_check<Vec3Tuple>(L, -1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -972,15 +986,15 @@ Vec3Tuple LuaObject::GetVec3(bool& success) const
 		success = false;
 		return Vec3Tuple(0.f, 0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	Vec3Tuple ret = luaU_check<Vec3Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec3Tuple ret = luaU_check<Vec3Tuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return ret;
 }
 
-Vec4Tuple LuaObject::GetVec4() const{
+Vec4Tuple LuaObject::GetVec4() const{	
 	return GetVec4(Vec4Tuple(0.f, 0.f, 0.f, 0.f));
 }
 
@@ -990,10 +1004,10 @@ Vec4Tuple LuaObject::GetVec4(const Vec4Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec4Tuple ret = luaU_check<Vec4Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec4Tuple ret = luaU_check<Vec4Tuple>(L, -1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -1004,10 +1018,10 @@ Vec4Tuple LuaObject::GetVec4(bool& success) const
 		success = false;
 		return Vec4Tuple(0.f, 0.f, 0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec4Tuple ret = luaU_check<Vec4Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec4Tuple ret = luaU_check<Vec4Tuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return ret;
 }
@@ -1022,10 +1036,10 @@ Vec3ITuple LuaObject::GetVec3I(const Vec3ITuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec3ITuple ret = luaU_check<Vec3ITuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec3ITuple ret = luaU_check<Vec3ITuple>(L, -1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -1036,10 +1050,10 @@ Vec3ITuple LuaObject::GetVec3I(bool& success) const
 		success = false;
 		return Vec3ITuple(0, 0, 0);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec3ITuple ret = luaU_check<Vec3ITuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec3ITuple ret = luaU_check<Vec3ITuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return ret;
 }
@@ -1054,10 +1068,10 @@ Vec2Tuple LuaObject::GetVec2(const Vec2Tuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec2Tuple ret = luaU_check<Vec2Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec2Tuple ret = luaU_check<Vec2Tuple>(L, -1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -1068,10 +1082,10 @@ Vec2Tuple LuaObject::GetVec2(bool& success) const
 		success = false;
 		return Vec2Tuple(0.f, 0.f);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	Vec2Tuple ret = luaU_check<Vec2Tuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec2Tuple ret = luaU_check<Vec2Tuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 	return ret;
 }
@@ -1087,10 +1101,10 @@ Vec2ITuple LuaObject::GetVec2I(const Vec2ITuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	Vec2ITuple ret = luaU_check<Vec2ITuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec2ITuple ret = luaU_check<Vec2ITuple>(L, -1);
+	lua_pop(L, 1);
 
 	return ret;
 }
@@ -1102,10 +1116,10 @@ Vec2ITuple LuaObject::GetVec2I(bool& success) const
 		success = false;
 		return Vec2ITuple(0, 0);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	Vec2ITuple ret = luaU_check<Vec2ITuple>(mL, -1);
-	lua_pop(mL, 1);
+	Vec2ITuple ret = luaU_check<Vec2ITuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 
 	return ret;
@@ -1121,10 +1135,10 @@ QuatTuple LuaObject::GetQuat(const QuatTuple& def) const
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	QuatTuple ret = luaU_check<QuatTuple>(mL, -1);
-	lua_pop(mL, 1);
+	QuatTuple ret = luaU_check<QuatTuple>(L, -1);
+	lua_pop(L, 1);
 	return ret;
 }
 
@@ -1145,10 +1159,10 @@ TransformationTuple LuaObject::GetTransformation(const TransformationTuple& def)
 	{
 		return def;
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	TransformationTuple ret = luaU_check<TransformationTuple>(mL, -1);
-	lua_pop(mL, 1);
+	TransformationTuple ret = luaU_check<TransformationTuple>(L, -1);
+	lua_pop(L, 1);
 
 	return ret;
 }
@@ -1160,10 +1174,10 @@ QuatTuple LuaObject::GetQuat(bool& success)const
 		success = false;
 		return QuatTuple(1., 0., 0., 0.);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);	
 	PushToStack();
-	QuatTuple ret = luaU_check<QuatTuple>(mL, -1);
-	lua_pop(mL, 1);
+	QuatTuple ret = luaU_check<QuatTuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 
 	return ret;
@@ -1184,10 +1198,10 @@ TransformationTuple LuaObject::GetTransformation(bool& success) const
 			true, true, true
 			);
 	}
-	LUA_STACK_WATCHER watcher(mL, __FUNCTION__);
+	LuaLock L(mL);
 	PushToStack();
-	TransformationTuple ret = luaU_check<TransformationTuple>(mL, -1);
-	lua_pop(mL, 1);
+	TransformationTuple ret = luaU_check<TransformationTuple>(L, -1);
+	lua_pop(L, 1);
 	success = true;
 
 	return ret;
@@ -1195,8 +1209,10 @@ TransformationTuple LuaObject::GetTransformation(bool& success) const
 
 void LuaObject::Clear()
 {
-	if (ReleaseUsedCount(mRef))
-		luaL_unref(mL, LUA_REGISTRYINDEX, mRef);
+	if (ReleaseUsedCount(mRef)) {
+		LuaLock L(mL);
+		luaL_unref(L, LUA_REGISTRYINDEX, mRef);
+	}
 
 	FB_SAFE_DELETE(mSelf);
 
@@ -1206,10 +1222,11 @@ void LuaObject::Clear()
 
 unsigned LuaObject::GetLen() const
 {
-	LUA_STACK_CLIPPER w(mL);
+	LuaLock L(mL);	
+	LUA_STACK_CLIPPER w(L);
 	PushToStack();
-	lua_len(mL, -1);
-	unsigned len = luaL_checkunsigned(mL, -1);
+	lua_len(L, -1);
+	unsigned len = luaL_checkunsigned(L, -1);
 	return len;
 }
 
@@ -1222,10 +1239,11 @@ bool LuaObject::operator == (const LuaObject& other) const
 	if (mRef == LUA_NOREF || other.mRef == LUA_NOREF)
 		return false;
 
-	lua_rawgeti(mL, LUA_REGISTRYINDEX, mRef);
-	lua_rawgeti(mL, LUA_REGISTRYINDEX, other.mRef);
-	bool equal = lua_rawequal(mL, -1, -2) == 1;
-	lua_pop(mL, 2);
+	LuaLock L(mL);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, mRef);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, other.mRef);
+	bool equal = lua_rawequal(L, -1, -2) == 1;
+	lua_pop(L, 2);
 
 	return equal;
 }
@@ -1234,10 +1252,11 @@ bool LuaObject::operator == (const LuaObject& other) const
 //---------------------------------------------------------------------------
 LuaTableIterator::LuaTableIterator(const LuaObject& table)
 {
-	assert(table.IsTable());
 	mL = table.GetLuaState();
+	assert(table.IsTable());	
 	table.PushToStack();
-	lua_pushnil(mL); // T, nil
+	LuaLock L( mL);
+	lua_pushnil(L); // T, nil
 }
 
 LuaTableIterator::~LuaTableIterator()
@@ -1262,12 +1281,13 @@ bool LuaTableIterator::GetNext(KeyValue& outKeyValue)
 LuaSequenceIterator::LuaSequenceIterator(const LuaObject& sequence)
 	: mCurIdx(0)
 {
-	assert(sequence.IsTable());
 	mL = sequence.GetLuaState();
+	assert(sequence.IsTable());	
 	mLen = 0;
 	if (sequence.IsTable()) {
 		sequence.PushToStack();
-		mLen = luaL_len(mL, -1);
+		LuaLock L(mL);
+		mLen = luaL_len(L, -1);
 		mValid = true;
 	}
 	else {
@@ -1369,8 +1389,7 @@ unsigned LuaObject::GetElementCount() const{
 	if (!IsTable()){
 		Logger::Log(FB_ERROR_LOG_ARG, "Not a table.");
 		return 0;
-	}
-
+	}	
 	auto iter = GetTableIterator();
 	LuaTableIterator::KeyValue kv;
 	unsigned num = 0;
@@ -1378,4 +1397,8 @@ unsigned LuaObject::GetElementCount() const{
 		++num;
 	}
 	return num;
+}
+
+lua_State* LuaObject::GetLuaState() const {
+	return mL;
 }

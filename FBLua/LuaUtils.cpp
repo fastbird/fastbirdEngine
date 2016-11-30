@@ -437,37 +437,29 @@ namespace fb
 		return lua_toboolean(L, -1)!=0;
 	}
 
-	Vec2ITuple LuaUtils::GetLuaVarAsVec2I(const char* varname){
-		return GetLuaVarAsVec2I(sLuaState, varname);
+	Vec2ITuple LuaUtils::GetLuaVarAsVec2I(const char* varName){
+		return GetLuaVarAsVec2I(sLuaState, varName);
 	}
 
-	Vec2ITuple LuaUtils::GetLuaVarAsVec2I(lua_State* L, const char* varname)
+	Vec2ITuple LuaUtils::GetLuaVarAsVec2I(lua_State* L, const char* varName)
 	{
-		LUA_STACK_CLIPPER w(L);
-		lua_getglobal(L, varname);
-		assert(lua_istable(L, -1));
-		Vec2ITuple ret = luaU_check<Vec2ITuple>(L, -1);
-
-		lua_pop(L, 1);
-		return ret;
+		LuaObject obj(L, varName);
+		return obj.GetVec2I();
 	}
 
 	float LuaUtils::GetLuaVarAsFloat(lua_State* L, const char* varName){
-		LUA_STACK_CLIPPER w(L);
-		lua_getglobal(L, varName);
-		return (float)luaL_checknumber(L, -1);
+		LuaObject obj(L, varName);
+		return obj.GetFloat();
 	}
 
 	unsigned LuaUtils::GetLuaVarAsUnsigned(lua_State* L, const char* varName){
-		LUA_STACK_CLIPPER w(L);
-		lua_getglobal(L, varName);
-		return (unsigned)luaL_checkunsigned(L, -1);
+		LuaObject obj(L, varName);
+		return obj.GetUnsigned();
 	}
 
-	int LuaUtils::GetLuaVarAsInt(lua_State* L, const char* varName) {
-		LUA_STACK_CLIPPER w(L);
-		lua_getglobal(L, varName);
-		return luaL_checkint(L, -1);
+	int LuaUtils::GetLuaVarAsInt(lua_State* L, const char* varName) {		
+		LuaObject obj(L, varName);
+		return obj.GetInt();
 	}
 
 	void LuaUtils::SetLuaVar(lua_State* L, const char* varName, bool value)
@@ -528,7 +520,7 @@ namespace fb
 		return error;
 	}
 
-	bool LuaUtils::LoadConfig(const char* filename){
+	bool LuaUtils::LoadConfig(lua_State* L, const char* filename){
 		// load the chunk and then change the value of its first upvalue
 		auto err = luaL_loadfile(sLuaState, filename); // func.
 		if (err){
@@ -551,7 +543,7 @@ namespace fb
 		}
 
 		const char* name = lua_getupvalue(sLuaState, -1, 1); // func. _ENV
-		LuaObject env(sLuaState, -1);
+		LuaObject env(sLuaState, -1);		
 		auto it = env.GetTableIterator();
 		LuaTableIterator::KeyValue kv;
 		while (it.GetNext(kv)){
@@ -863,6 +855,14 @@ namespace fb
 		return lua_isnil(L, index);
 	}
 
+	bool LuaUtils::isnone(int index) {
+		return lua_isnone(sLuaState, index);
+	}
+
+	bool LuaUtils::isnone(lua_State* L, int index) {
+		return lua_isnone(L, index);
+	}
+
 	bool LuaUtils::isnumber(int index){
 		return lua_isnumber(sLuaState, index) != 0;
 	}
@@ -1142,26 +1142,24 @@ namespace fb
 		return luaL_error(L, msg);
 	}
 
-	static RecursiveSpinLock<true, false> sLock;
-	void LuaUtils::LockLua(){
-		sLock.Lock();
-	}
-
-	void LuaUtils::UnlockLua(){
-		sLock.Unlock();
-	}
-
 	//---------------------------------------------------------------------------
-	LuaLock::LuaLock(){
-		LuaUtils::LockLua();
+	std::unordered_map<lua_State*, RecursiveSpinLock<true, false>> sLuaLocker;
+	LuaLock::LuaLock(lua_State* lua)
+		:mL(lua)
+	{
+		if (!lua) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Null lua!");
+		}
+		sLuaLocker[mL].Lock();
 	}
 	
-	LuaLock::~LuaLock(){
-		LuaUtils::UnlockLua();
+	LuaLock::~LuaLock()
+	{
+		sLuaLocker[mL].Unlock();		
 	}
 
 	LuaLock::operator lua_State*() const{
-		return LuaUtils::GetLuaState();
+		return mL;
 	}
 
 	//---------------------------------------------------------------------------

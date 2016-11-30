@@ -564,8 +564,8 @@ public:
 
 		//-----------------------------------------------------------------------
 		static_assert(DEFAULT_INPUTS::COUNT == 10, "You may not define a new element of mInputLayoutDesc for the new description.");
-
-		LuaObject multiFontSet("r_multiFont");
+		LuaLock L(LuaUtils::GetLuaState());
+		LuaObject multiFontSet(L, "r_multiFont");
 		if (multiFontSet.IsValid()){
 			auto it = multiFontSet.GetSequenceIterator();
 			LuaObject data;
@@ -578,7 +578,7 @@ public:
 		}
 		else{
 			FontPtr font = Font::Create();
-			LuaObject r_font("r_font");
+			LuaObject r_font(L, "r_font");
 			std::string fontPath = r_font.GetString();
 			if (fontPath.empty())
 			{

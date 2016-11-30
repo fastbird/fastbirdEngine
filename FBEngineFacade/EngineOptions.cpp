@@ -27,32 +27,35 @@
 
 #include "stdafx.h"
 #include "EngineOptions.h"
+#include "EngineFacade.h"
 #include "FBConsole/Console.h"
 #include "FBThread/TaskScheduler.h"
 #include "FBFileSystem/FileSystem.h"
 using namespace fb;
 void NumTasks(StringVector& args);
 
-FB_IMPLEMENT_STATIC_CREATE(EngineOptions);
-EngineOptions::EngineOptions(){
+EngineOptionsPtr EngineOptions::Create(lua_State* L) {
+	return std::make_shared<EngineOptions>(L);
+}
+
+EngineOptions::EngineOptions(lua_State* L){
 	if (!Console::HasInstance()){
 		Logger::Log(FB_ERROR_LOG_ARG, "Console is not initialized! Engine Options won't work.");
 		return;
 	}
-
-	WheelSens = Console::GetInstance().GetRealVariable("WheelSens", 0.005f);
+	WheelSens = Console::GetInstance().GetRealVariable(L, "WheelSens", 0.005f);
 	FB_REGISTER_CVAR(WheelSens, WheelSens, CVAR_CATEGORY_CLIENT, "WheelSensitivity");
 
-	MouseSens = Console::GetInstance().GetRealVariable("MouseSens", 0.03f);
+	MouseSens = Console::GetInstance().GetRealVariable(L, "MouseSens", 0.03f);
 	FB_REGISTER_CVAR(MouseSens, MouseSens, CVAR_CATEGORY_CLIENT, "MouseSensitivity");	
 
-	e_profile = Console::GetInstance().GetIntVariable("e_profile", 0);
+	e_profile = Console::GetInstance().GetIntVariable(L, "e_profile", 0);
 	FB_REGISTER_CVAR(e_profile, e_profile, CVAR_CATEGORY_CLIENT, "Display profile information");
 
-	e_NoMeshLoad = Console::GetInstance().GetIntVariable("e_NoMeshLoad", 0);
+	e_NoMeshLoad = Console::GetInstance().GetIntVariable(L, "e_NoMeshLoad", 0);
 	FB_REGISTER_CVAR(e_NoMeshLoad, e_NoMeshLoad, CVAR_CATEGORY_CLIENT, "Skip mesh loading");
 
-	AudioDebug = Console::GetInstance().GetIntVariable("AudioDebug", 0);
+	AudioDebug = Console::GetInstance().GetIntVariable(L, "AudioDebug", 0);
 	FB_REGISTER_CVAR(AudioDebug, AudioDebug, CVAR_CATEGORY_CLIENT, "Audio debug");
 	
 	FB_REGISTER_CC(NumTasks, "NumTasks");

@@ -447,7 +447,7 @@ namespace fb
 		virtual bool GetGhost() const{ return mGhost; }
 
 		virtual float GetContentHeight() const;
-		virtual float GetContentEnd() const;
+		virtual float GetContentEnd(int& level) const;
 
 		virtual bool IsKeyboardFocused() const;
 
@@ -483,7 +483,7 @@ namespace fb
 		virtual void CalcTextWidth(); // virtual for mutiline text
 		void OnDrag(int dx, int dy);
 		virtual void OnChildHasDragged(){}
-
+		virtual void ProcessWheel(IInputInjectorPtr injector);
 		virtual void OnMouseIn(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseOut(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseHover(IInputInjectorPtr injector, bool propergated = false);
@@ -500,6 +500,7 @@ namespace fb
 		bool IsPendingDeleteReserved() const;
 		// Returns 'Found?'
 		virtual bool GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps);
+		virtual WinBase* GetScroller(bool checkChildren);
 
 		
 	private:

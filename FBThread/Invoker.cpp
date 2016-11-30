@@ -34,8 +34,8 @@ class Invoker::Impl {
 public:
 	std::vector<std::function<void()>> mFuncsAtStart;
 	std::vector<std::function<void()>> mFuncsAtEnd;
-	FB_CRITICAL_SECTION mLockStart;
-	FB_CRITICAL_SECTION mLockEnd;
+	CriticalSection mLockStart;
+	CriticalSection mLockEnd;
 	std::atomic<bool> mPreparedQuit{ false };
 
 	void InvokeAtStart(std::function<void()>&& func)

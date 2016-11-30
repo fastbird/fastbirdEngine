@@ -30,51 +30,51 @@
 using namespace fb;
 
 //---------------------------------------------------------------------------
-FB_CRITICAL_SECTION::FB_CRITICAL_SECTION()
+CriticalSection::CriticalSection()
 {
 }
 
-FB_CRITICAL_SECTION::~FB_CRITICAL_SECTION()
+CriticalSection::~CriticalSection()
 {
 }
 
-void FB_CRITICAL_SECTION::Lock()
+void CriticalSection::Lock()
 {
 	mMutex.lock();
 }
 
-void FB_CRITICAL_SECTION::Unlock()
+void CriticalSection::Unlock()
 {
 	mMutex.unlock();
 }
 
 //---------------------------------------------------------------------------
-FB_CRITICAL_SECTION_R::FB_CRITICAL_SECTION_R()
+RecursiveCriticalSection::RecursiveCriticalSection()
 {
 }
 
-FB_CRITICAL_SECTION_R::~FB_CRITICAL_SECTION_R()
+RecursiveCriticalSection::~RecursiveCriticalSection()
 {
 }
 
-void FB_CRITICAL_SECTION_R::Lock()
+void RecursiveCriticalSection::Lock()
 {
 	mMutex.lock();
 }
 
-void FB_CRITICAL_SECTION_R::Unlock()
+void RecursiveCriticalSection::Unlock()
 {
 	mMutex.unlock();
 }
 
 //---------------------------------------------------------------------------
-ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION* cs)
+ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(CriticalSection* cs)
 	:mCS(cs)
 {
 	if (mCS)
 		mCS->Lock();
 }
-ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(FB_CRITICAL_SECTION& cs)
+ENTER_CRITICAL_SECTION::ENTER_CRITICAL_SECTION(CriticalSection& cs)
 	:mCS(&cs)
 {
 	mCS->Lock();
@@ -85,13 +85,13 @@ ENTER_CRITICAL_SECTION::~ENTER_CRITICAL_SECTION()
 		mCS->Unlock();
 }
 
-ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R* cs)
+ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(RecursiveCriticalSection* cs)
 	:mCS(cs)
 {
 	if (mCS)
 		mCS->Lock();
 }
-ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(FB_CRITICAL_SECTION_R& cs)
+ENTER_CRITICAL_SECTION_R::ENTER_CRITICAL_SECTION_R(RecursiveCriticalSection& cs)
 	: mCS(&cs)
 {
 	mCS->Lock();
@@ -103,16 +103,16 @@ ENTER_CRITICAL_SECTION_R::~ENTER_CRITICAL_SECTION_R()
 }
 
 //---------------------------------------------------------------------------
-FB_READ_WRITE_CS::FB_READ_WRITE_CS()
+ReadWriteCS::ReadWriteCS()
 	: mNumReaders(0)
 	, mWriting(false)
 {
 	mC.notify_all();
 }
-FB_READ_WRITE_CS::~FB_READ_WRITE_CS()
+ReadWriteCS::~ReadWriteCS()
 {
 }
-void FB_READ_WRITE_CS::EnterReader()
+void ReadWriteCS::EnterReader()
 {
 	using namespace std::chrono_literals;
 	std::unique_lock<std::mutex> lg(mMutex);
@@ -120,14 +120,14 @@ void FB_READ_WRITE_CS::EnterReader()
 		mC.wait_for(lg, 100ms);
 	++mNumReaders;	
 }
-void FB_READ_WRITE_CS::LeaveReader()
+void ReadWriteCS::LeaveReader()
 {
 	--mNumReaders;
 	if (mNumReaders == 0) {
 		mC.notify_all();
 	}
 }
-void FB_READ_WRITE_CS::EnterWriter()
+void ReadWriteCS::EnterWriter()
 {
 	using namespace std::chrono_literals;
 	std::unique_lock<std::mutex> lg(mMutex);
@@ -135,30 +135,30 @@ void FB_READ_WRITE_CS::EnterWriter()
 		mC.wait_for(lg, 100ms);
 	mWriting = true;
 }
-void FB_READ_WRITE_CS::LeaveWriter()
+void ReadWriteCS::LeaveWriter()
 {
 	mWriting = false;
 	mC.notify_all();
 }
 
 //---------------------------------------------------------------------------
-READ_LOCK::READ_LOCK(FB_READ_WRITE_CS& lock)
+ReadLock::ReadLock(ReadWriteCS& lock)
 	: mReadWrite(&lock)
 {
 	mReadWrite->EnterReader();
 }
-READ_LOCK::~READ_LOCK()
+ReadLock::~ReadLock()
 {
 	mReadWrite->LeaveReader();
 }
 
 //---------------------------------------------------------------------------
-WRITE_LOCK::WRITE_LOCK(FB_READ_WRITE_CS& lock)
+WriteLock::WriteLock(ReadWriteCS& lock)
 	: mReadWrite(&lock)
 {
 	mReadWrite->EnterWriter();
 }
-WRITE_LOCK::~WRITE_LOCK()
+WriteLock::~WriteLock()
 {
 	mReadWrite->LeaveWriter();
 }

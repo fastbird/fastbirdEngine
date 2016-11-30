@@ -74,4 +74,50 @@ namespace fb
 		Iterator mCurrent;
 		unsigned mNumElem;
 	};
+
+	template<typename T>
+	class CIteratorWrapper
+	{
+	public:
+		typedef typename T::value_type ValueType;
+		typedef typename T::const_iterator Iterator;
+		CIteratorWrapper(T& data)
+		{
+			mCurrent = mBegin = data.cbegin();
+			mEnd = data.cend();
+			mNumElem = data.size();
+		}		
+
+		ValueType GetType()
+		{
+			return *mBegin;
+		}
+
+		bool HasMoreElement() const
+		{
+			return  (mCurrent != mEnd);
+		}
+		ValueType GetNext()
+		{
+			return *mCurrent++;
+		}
+
+		void Advance(unsigned dist)
+		{
+			if (dist >= mNumElem)
+			{
+				mCurrent = mEnd;
+			}
+			else
+			{
+				mCurrent += dist;
+			}
+		}
+
+	private:
+		Iterator mBegin;
+		Iterator mEnd;
+		Iterator mCurrent;
+		unsigned mNumElem;
+	};
 }

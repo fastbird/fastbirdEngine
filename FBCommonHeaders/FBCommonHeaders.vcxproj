@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CircularBuffer.h" />
+    <ClInclude Include="CounterFromZero.h" />
     <ClInclude Include="CowPtr.h" />
     <ClInclude Include="Factory.h" />
     <ClInclude Include="GenericNotifier.h" />

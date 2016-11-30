@@ -33,7 +33,7 @@
 using namespace fb;
 using namespace std::chrono;
 std::unordered_map<std::string, std::vector<AudioExWeakPtr>> sAudioExList;
-FB_READ_WRITE_CS sAudioExListLock;
+ReadWriteCS sAudioExListLock;
 
 class AudioEx::Impl{
 public:
@@ -187,7 +187,7 @@ public:
 				mProperty.mSimultaneousCheckRange);
 		}
 
-		WRITE_LOCK l(sAudioExListLock);
+		WriteLock l(sAudioExListLock);
 		sAudioExList[mFilePathKey].push_back(mSelfPtr);
 	}
 
@@ -302,7 +302,7 @@ public:
 		
 		std::unordered_map< std::string, std::vector<AudioExWeakPtr>>::iterator audioListIt;
 		{
-			READ_LOCK l(sAudioExListLock);
+			ReadLock l(sAudioExListLock);
 			audioListIt = sAudioExList.find(mFilePathKey);
 			if (audioListIt == sAudioExList.end())
 				return true;

@@ -28,10 +28,12 @@
 #pragma once
 #include <stack>
 #include "FBCommonHeaders/platform.h"
+#include "FBCommonHeaders/Types.h"
 #include "FBCommonHeaders/ProfilerSimple.h"
 #include "Timer.h"
 namespace fb
 {
+	FB_DECLARE_SMART_PTR(Profiler);
 	class FB_DLL_TIMER Profiler
 	{
 		std::string mName;

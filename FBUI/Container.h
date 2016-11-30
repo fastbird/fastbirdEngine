@@ -103,8 +103,8 @@ namespace fb
 		virtual void GetBiggestTabOrder(int& curBiggest) const;
 		virtual void TabPressed();
 		virtual float GetContentHeight() const;
-		virtual float GetContentEnd() const;
-		virtual float GetChildrenContentEnd() const;
+		float GetContentEnd(int& level) const OVERRIDE;
+		virtual float GetChildrenContentEnd(int& level) const;
 		int GetChildrenContentEndInPixel() const;
 		
 		virtual void SetSpecialOrder(int specialOrder);
@@ -128,6 +128,8 @@ namespace fb
 		void RemoveGapChildren();
 		void GetChildrenNames(LuaObject& t);
 		bool GetComponentsInRegion(const Rect& r, std::vector<WinBasePtr>& comps) OVERRIDE;
+		void ProcessWheel(IInputInjectorPtr injector) OVERRIDE;
+		WinBase* GetScroller(bool checkChildren) OVERRIDE;
 
 	private:
 		friend class WinBase;
@@ -138,7 +140,7 @@ namespace fb
 		virtual void OnSizeChanged();
 		virtual void OnPosChanged(bool anim);
 		friend class UIManager;
-
+		
 		virtual void OnMouseIn(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseOut(IInputInjectorPtr injector, bool propergated = false);
 		virtual void OnMouseHover(IInputInjectorPtr injector, bool propergated = false);

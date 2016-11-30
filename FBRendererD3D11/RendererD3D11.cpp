@@ -1048,7 +1048,7 @@ public:
 				}
 			}
 
-			static size_t RTV_ID = 0;
+			static std::atomic<size_t> RTV_ID = 0;
 			if ((type & TEXTURE_TYPE_RENDER_TARGET) ||
 				(type & TEXTURE_TYPE_RENDER_TARGET_SRV))
 			{
@@ -1156,7 +1156,7 @@ public:
 		}
 		else
 		{
-			static unsigned ID = 0;
+			static std::atomic<unsigned> ID = 0;
 			char buf[256];
 			sprintf_s(buf, "VertexBuffer ID(%d)", ID++);
 			pHardwareBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1403,7 +1403,7 @@ public:
 		}
 
 		pShader->SetCompileFailed(false);
-		static unsigned vsID = 0;
+		static std::atomic<unsigned> vsID = 0;
 		char buf[256];
 		sprintf_s(buf, "VS ID(%u)", vsID++);
 		pVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1432,7 +1432,7 @@ public:
 		}
 		
 		pShader->SetCompileFailed(false);
-		static unsigned gsID = 0;
+		static std::atomic<unsigned> gsID = 0;
 		char buf[256];
 		sprintf_s(buf, "GS ID(%u)", gsID++);
 		pGeometryShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1460,7 +1460,7 @@ public:
 		}
 		
 		pShader->SetCompileFailed(false);
-		static unsigned psID = 0;
+		static std::atomic<unsigned> psID = 0;
 		char buf[256];
 		sprintf_s(buf, "PS ID(%u)", psID++);
 		pPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1489,7 +1489,7 @@ public:
 		}
 
 		pShader->SetCompileFailed(false);
-		static unsigned csID = 0;
+		static std::atomic<unsigned> csID = 0;
 		char buf[256];
 		sprintf_s(buf, "CS ID(%u)", csID++);
 		pComputeShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1713,7 +1713,7 @@ public:
 				return false;
 			}
 
-			static unsigned csID = 0;
+			static std::atomic<unsigned> csID = 0;
 			char buf[256];
 			sprintf_s(buf, "Compiled CS ID(%u)", csID++);
 			pComputeShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -1791,7 +1791,7 @@ public:
 		}
 		else
 		{
-			static unsigned ID = 0;
+			static std::atomic<unsigned> ID = 0;
 			char buf[256];
 			sprintf_s(buf, "InputLayout ID(%u)", ID++);
 			pHardwareInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buf), buf);
@@ -2713,7 +2713,7 @@ public:
 		return false;
 	}
 
-	FB_CRITICAL_SECTION ComputeShaderQueueLock;
+	CriticalSection ComputeShaderQueueLock;
 	std::vector<std::function<void()>> mQueuedComputeShaders;
 	bool QueueRunComputeShader(ComputeShaderD3D11* pShader, void* constants, size_t size,
 		int x, int y, int z,

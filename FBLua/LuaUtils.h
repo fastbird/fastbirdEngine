@@ -227,7 +227,7 @@ namespace fb
 		static bool DoFile(lua_State* L, const char* filepath);
 		static bool DoFile(const char* filepath);
 		static bool DoString(lua_State* L, const char* str);
-		static bool LoadConfig(const char* filepath);
+		static bool LoadConfig(lua_State* L, const char* filepath);
 		static int Traceback(lua_State *L);
 
 		/// push nil
@@ -309,6 +309,8 @@ namespace fb
 		static bool isboolean(lua_State* L, int index);
 		static bool isnil(int index);
 		static bool isnil(lua_State* L, int index);
+		static bool isnone(int index);
+		static bool isnone(lua_State* L, int index);
 		static bool isnumber(int index);
 		static bool isnumber(lua_State* L, int index);
 		static bool isstring(int index);
@@ -409,10 +411,12 @@ namespace fb
 	};	
 
 	struct FB_DLL_LUA LuaLock{
-		LuaLock();
+		LuaLock(lua_State* lua);
 		~LuaLock();
 
 		operator lua_State*() const;
+	private:
+		lua_State* mL;
 	};
 
 #include "luawrapperutil.hpp"

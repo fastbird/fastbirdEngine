@@ -102,8 +102,7 @@ public:
 	bool mRenderHighlight;	
 
 	typedef std::vector< FBCollisionShapePtr > COLLISION_SHAPES;
-	CowPtr<COLLISION_SHAPES> mCollisions;	
-	FRAME_PRECISION mLastPreRendered;
+	CowPtr<COLLISION_SHAPES> mCollisions;		
 
 	CowPtr<MeshCameras> mMeshCameras;
 
@@ -116,8 +115,7 @@ public:
 	Impl(MeshObject* self)
 		: mSelf(self)
 		, mRenderHighlight(false)
-		, mForceAlphaBlending(false)
-		, mLastPreRendered(0)
+		, mForceAlphaBlending(false)		
 		, mCheckDistance(true)
 		, mCameraPulling(0.f)
 	{
@@ -142,8 +140,7 @@ public:
 		, mModifying(other.mModifying)
 		, mRenderHighlight(other.mRenderHighlight)
 		, mCollisions(other.mCollisions)
-		, mMeshCameras(other.mMeshCameras)
-		, mLastPreRendered(other.mLastPreRendered)
+		, mMeshCameras(other.mMeshCameras)		
 		, mForceAlphaBlending(other.mForceAlphaBlending)
 		, mCheckDistance(other.mCheckDistance)
 
@@ -207,16 +204,12 @@ public:
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 		
-		auto currentFrame = gpTimer->GetFrame();
-		if (mLastPreRendered == currentFrame)
-			return;
-
-		mLastPreRendered = currentFrame;
-		auto& animatedLocation = mSelf->GetAnimatedLocation();
-		animatedLocation.GetHomogeneous(mObjectConstants.gWorld);
-		auto& renderer = Renderer::GetInstance();
-		assert(renderParam.mScene);
-		renderParam.mScene->GatherPointLightData(mSelf->GetAABB().get(), animatedLocation, &mPointLightConstants);
+		if (renderParam.mRenderPass == RENDER_PASS::PASS_NORMAL) {
+			auto& animatedLocation = mSelf->GetAnimatedLocation();
+			animatedLocation.GetHomogeneous(mObjectConstants.gWorld);
+			assert(renderParam.mScene);
+			renderParam.mScene->GatherPointLightData(mSelf->GetAABB().get(), animatedLocation, &mPointLightConstants);
+		}
 	}
 	
 	void Render(const RenderParam& renderParam, RenderParamOut* renderParamOut){

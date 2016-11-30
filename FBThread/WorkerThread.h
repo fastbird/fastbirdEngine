@@ -41,7 +41,7 @@ namespace fb
 		SyncEventPtr mTasksEvent;      // Event used when waiting for a task.
 		TaskScheduler* mScheduler;          // Scheduler owning this worker thread.
 
-		FB_CRITICAL_SECTION mTaskCS;
+		CriticalSection mTaskCS;
 
 	public:
 		WorkerThread(TaskScheduler* scheduler);

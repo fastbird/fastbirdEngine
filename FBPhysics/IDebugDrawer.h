@@ -26,7 +26,7 @@
 */
 
 #pragma once
-
+#undef DrawText
 namespace fb
 {
 	class Vec3;
@@ -43,6 +43,7 @@ namespace fb
 		virtual void	DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, float alpha) = 0;
 		virtual void	DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, float alpha) = 0;
 		virtual void  Draw3DText(const Vec3& location, const char* text) = 0;
+		virtual void  DrawText(const Vec2I& location, const char* text) = 0;
 		virtual void DrawTransform(const Transformation& transform, float scale) = 0;
 	};
 }

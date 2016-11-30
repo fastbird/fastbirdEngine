@@ -192,7 +192,30 @@ void ListBox::SetItem(const Vec2I& rowcol, const wchar_t* string, ListItemDataTy
 		return;
 	}
 	mData->SetData(rowcol, string, type);
+	auto dat = mData->GetData(rowcol.x);
+	if (dat) {
+		if (wcscmp(dat[rowcol.y].GetText(), string) != 0) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid data");
+		}
+	}
+	else {
+		Logger::Log(FB_ERROR_LOG_ARG, "no data");
+	}
 	VisualizeData(rowcol.x);
+
+	if (!(!GetVisible() || !mData || mItems.empty())) {
+		if (!mItems[rowcol.x][0].expired()) {
+			auto item = mItems[rowcol.x][rowcol.y].lock();
+			if (wcscmp(item->GetText(), string) != 0) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Invalid reflection");
+			}
+		}
+		else {
+			if (rowcol.x >= mStartIndex && rowcol.x <= mEndIndex) {
+				Logger::Log(FB_ERROR_LOG_ARG, "Invalid index");
+			}
+		}
+	}
 }
 
 void ListBox::SetItem(const Vec2I& rowcol, bool checked){
@@ -477,8 +500,7 @@ bool ListBox::SetProperty(UIProperty::Enum prop, const char* val)
 		{
 			// set UIProperty::LISTBOX_COL first
 			// don't need to set this property if the num of col is 1.
-			mStrColSizes = val;			
-			assert(mNumCols != 1);
+			mStrColSizes = val;
 			mColSizes.clear();
 			mColSizesInt.clear();
 			StringVector strs = Split(val);

@@ -35,15 +35,16 @@ namespace fb
 	class Vec3;
 	class Vec3I;
 	class Transformation;
+	class Physics;
 	FB_DECLARE_SMART_PTR(RigidBodyImpl);
 	class RigidBodyImpl : public RigidBody, public btRigidBody, public btCollisionWorld::ContactResultCallback
 	{
 		FB_DECLARE_PIMPL_NON_COPYABLE(RigidBodyImpl);
 
-		RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider);
+		RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, Physics* physic);
 		
 	public:	
-		static RigidBodyImplPtr Create(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider);
+		static RigidBodyImplPtr Create(btRigidBodyConstructionInfo& cinfo, Physics* physics);
 		//-------------------------------------------------------------------
 		// btCollisionWorld::ContactResultCallback
 		//-------------------------------------------------------------------
@@ -55,12 +56,13 @@ namespace fb
 		void ApplyImpulse(const Vec3& impulse, const Vec3& rel_pos);
 		void ApplyCentralImpulse(const Vec3& impulse);
 		void ApplyTorqueImpulse(const Vec3& torque);
-		void ApplyTorque(const Vec3& torque);
-		Vec3 GetForce();
+		void ApplyTorque(const Vec3& torque);		
 		void ClearForces();
 		/// clear forces and velocity;
 		void Stop();
 		float GetSpeed() const;
+		Vec3 GetLinearFactor() const OVERRIDE;
+		Vec3 GetForce() const OVERRIDE;
 		Vec3 GetVelocity() const;
 		Vec3 GetAngularVelocity() const;
 		void SetAngularVelocity(const Vec3& angVel);
@@ -74,7 +76,8 @@ namespace fb
 
 		void SetPhysicsInterface(IPhysicsInterface* obj);
 		void SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx);
-		IPhysicsInterface* GetPhysicsInterface() const;
+		IPhysicsInterface* GetPhysicsInterface() const OVERRIDE;
+		IPhysics* GetIPhyscis() const OVERRIDE;
 
 		void* GetColShapeUserPtr(int idx = 0);
 		fb::Transformation GetChildShapeTransform(int idx) OVERRIDE;

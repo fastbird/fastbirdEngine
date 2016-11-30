@@ -200,7 +200,7 @@ float3 CalcEnvContrib(float3 normal, float3 tangent, float3 binormal, float roug
 		float vdh = saturate(dot(toViewDir, Hn));
 		float ndh = saturate(dot(normal, Hn));
 		float lodS = roughness < 0.01 ? 0.0 : ComputeLOD(Ln, ProbabilityGGX(ndh, vdh, roughness));
-		//envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
+		envContrib += SampleEnvironmentMap(Ln, lodS) * CookTorranceContrib(vdh, ndh, ndl, specColor, roughness) * horiz;
 	}
 
 	envContrib /= ENV_SAMPLES;
@@ -226,8 +226,9 @@ float3 CalcPointLights(float3 worldPos, float3 normal)
 		atten *= atten;
 		float d = max(0, dot(toLight, normal));
 		result += (atten * d) * gPointLightColor[i].xyz;
+    //result += gPointLightColor[i].xyz;
 	}
-	return result;
+	return saturate(result);
 }
 #define _CASCADE_COUNT_FLAG 3
 

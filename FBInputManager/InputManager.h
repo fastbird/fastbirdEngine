@@ -99,7 +99,7 @@ namespace fb{
 		//-------------------------------------------------------------------
 		void PushKeyEvent(HWindow hWnd, const KeyboardEvent& keyboardEvent);
 		void PushChar(HWindow hWnd, unsigned keycode, TIME_PRECISION gameTimeInSec);
-		void ClearBuffer();
+		void ClearBuffer();		
 		
 
 		//-------------------------------------------------------------------

@@ -39,6 +39,7 @@
 #include "Camera.h"
 #include "ResourceProvider.h"
 #include "FBSceneManager/IScene.h"
+#include "FBCommonHeaders/SpinLock.h"
 #include "EssentialEngineData/shaders/Constants.h"
 #undef DrawText
 using namespace fb;
@@ -117,16 +118,25 @@ public:
 	typedef std::queue<TextData> MessageQueue;
 	MessageQueue mTexts;
 	typedef std::list<TextData> MessageBuffer;
+	SpinLockWaitSleep mTextsForDurLock;
 	std::map<Vec2I, MessageBuffer> mTextsForDur;
+	SpinLockWaitSleep mScreenLinesLock;
 	std::vector<Line> mScreenLines;
+	SpinLockWaitSleep mWorldLinesLock;
 	std::vector<Line> mWorldLines;
+	SpinLockWaitSleep mQuadsLock;
 	std::vector<Quad> mQuads;
+	SpinLockWaitSleep mWorldLinesBeforeAlphaPassLock;
 	std::vector<Line> mWorldLinesBeforeAlphaPass;
+
 	OBJECT_CONSTANTS mObjectConstants;
 	OBJECT_CONSTANTS mObjectConstants_WorldLine;
 
+	SpinLockWaitSleep mSpheresLock;
 	std::vector<Sphere> mSpheres;
+	SpinLockWaitSleep mBoxesLock;
 	std::vector<Box> mBoxes;
+	SpinLockWaitSleep mTrianglesLock;
 	std::vector<Triangle> mTriangles;
 
 	ShaderPtr mLineShader;
@@ -175,6 +185,7 @@ public:
 	void DrawTextForDuration(Real secs, const Vec2I& pos, WCHAR* text,
 		const Color& color, Real size)
 	{
+		EnterSpinLock<SpinLockWaitSleep> lock(mTextsForDurLock);
 		auto it = mTextsForDur.find(pos);
 		if (it == mTextsForDur.end()){
 			it = mTextsForDur.insert(std::make_pair(pos, MessageBuffer())).first;
@@ -184,11 +195,7 @@ public:
 		auto font = renderer.GetFontWithHeight(size);
 		if (font){
 			it->second.begin()->mWidth = font->GetTextWidth((const char*)text);
-		}
-		/*while (it->second.size() > 10)
-		{
-		it->second.pop_front();
-		}*/
+		}		
 	}
 
 	void ClearDurationTexts() {
@@ -238,6 +245,7 @@ public:
 		line.mEnd = end;
 		line.mColore = color1.Get4Byte();
 
+		EnterSpinLock<SpinLockWaitSleep> lock(mWorldLinesLock);
 		mWorldLines.push_back(line);
 	}
 
@@ -272,7 +280,7 @@ public:
 	}
 
 	void DrawQuad(const Vec2I& pos, const Vec2I& size, const Color& color){
-
+		EnterSpinLock<SpinLockWaitSleep> lock(mQuadsLock);
 		mQuads.push_back(Quad());
 		auto& q = mQuads.back();
 		q.mPos = pos;
@@ -289,7 +297,7 @@ public:
 
 		line.mEnd = end;
 		line.mColore = color1.Get4Byte();
-
+		EnterSpinLock<SpinLockWaitSleep> lock(mWorldLinesBeforeAlphaPassLock);
 		mWorldLinesBeforeAlphaPass.push_back(line);
 	}
 
@@ -303,6 +311,7 @@ public:
 		line.mEnd = Vec3((Real)end.x, (Real)end.y, 0.f);
 		line.mColore = color1.Get4Byte();
 
+		EnterSpinLock<SpinLockWaitSleep> lock(mScreenLinesLock);
 		mScreenLines.push_back(line);
 	}
 
@@ -342,6 +351,7 @@ public:
 
 	void DrawSphere(const Vec3& pos, Real radius, const Color& color)
 	{
+		EnterSpinLock<SpinLockWaitSleep> lock(mSpheresLock);
 		mSpheres.push_back(Sphere());
 		auto& s = mSpheres.back();
 		s.mPos = pos;
@@ -410,6 +420,7 @@ public:
 
 	void DrawBox(const Vec3& boxMin, const Vec3& boxMax, const Color& color, Real alpha)
 	{
+		EnterSpinLock<SpinLockWaitSleep> lock(mBoxesLock);
 		mBoxes.push_back(Box());
 		auto& b = mBoxes.back();
 		b.mPos = (boxMin + boxMax) * .5f;
@@ -419,6 +430,7 @@ public:
 	}
 	void DrawTriangle(const Vec3& a, const Vec3& b, const Vec3& c, const Color& color, Real alpha)
 	{
+		EnterSpinLock<SpinLockWaitSleep> lock(mTrianglesLock);
 		mTriangles.push_back(Triangle());
 		auto& t = mTriangles.back();
 		t.a = a;
@@ -530,7 +542,7 @@ public:
 
 		// render text for duration
 		{
-			auto dt = Timer::GetMainTimer()->GetDeltaTime();
+			auto dt = Timer::GetMainTimer()->GetDeltaTimeNotPausable();
 			pFont->SetRenderStates();
 			auto itDur = mTextsForDur.begin();
 			for (; itDur != mTextsForDur.end(); ++itDur)

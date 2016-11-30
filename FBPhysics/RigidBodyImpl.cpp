@@ -36,12 +36,9 @@ using namespace fb;
 class RigidBodyImpl::Impl{
 public:
 	RigidBodyImpl* mSelf;
-	btDiscreteDynamicsWorld* mWorld;
+	Physics* mPhysics;	
 
 	RotationInfo* mRotationInfo;
-	IPhysicsInterface* mColProvider;
-
-
 	// Game object. (class PhysicsComp for my game.)
 	IPhysicsInterface* mPhysicsInterface;
 
@@ -55,12 +52,11 @@ public:
 	bool mDebug;
 
 	//---------------------------------------------------------------------------
-	Impl(RigidBodyImpl* self, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider)
+	Impl(RigidBodyImpl* self, Physics* physics)
 		: mSelf(self)
-		, mWorld(world)
+		, mPhysics(physics)
 		, mPhysicsInterface(0)
-		, mGamePtr(0)
-		, mColProvider(colProvider)
+		, mGamePtr(0)		
 		, mGroupedRigidBody(false)
 		, mGroupIdx(Vec3I::MAX)
 		, mGameFlag(0)
@@ -70,10 +66,10 @@ public:
 		auto colShape = mSelf->getCollisionShape();
 		if (colShape)
 		{
-			Physics::GetInstance().AddRef(colShape);
+			physics->AddRef(colShape);
 		}
 		mRotationInfo = FB_NEW(RotationInfo);
-		mSelf->setUserPointer(self);
+		mSelf->setUserPointer(self);		
 	}
 	~Impl(){
 		UnregisterFromWorld();
@@ -84,13 +80,12 @@ public:
 
 		auto colShape = mSelf->getCollisionShape();
 		if (colShape){
-			Physics::GetInstance().Release(colShape);
+			mPhysics->Release(colShape);
 		}
 
-		if (mWorld){			
-			mWorld->removeRigidBody(mSelf);
-			mAddedToWorld = false;
-		}
+		mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
+		mAddedToWorld = false;
+		
 		FB_DELETE_ALIGNED(mSelf->getMotionState());
 	}
 
@@ -105,34 +100,33 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No colProvider");			
 			return;
 		}
-		mWorld->removeRigidBody(mSelf);
+		mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
 		mAddedToWorld = false;
 		auto prevColShape = mSelf->getCollisionShape();
 		if (prevColShape){
-			Physics::GetInstance().Release(prevColShape);
+			mPhysics->Release(prevColShape);
 		}
 
 		btCollisionShape* colShape = 0;
-		float mass = 1.0f;
-		auto& physics = Physics::GetInstance();
+		float mass = 1.0f;		
 		if (mGroupedRigidBody){
 			if (colProvider->GetNumColShapes(mGroupIdx) == 0)
 				return;
 
-			colShape = physics.CreateColShapeForGroup(colProvider, mGroupIdx);
+			colShape = mPhysics->CreateColShapeForGroup(colProvider, mGroupIdx);
 			mass = colProvider->GetMassForGroup(mGroupIdx);
 		}
 		else{
 			if (colProvider->GetNumColShapes() == 0)
 				return;
 
-			colShape = physics.CreateColShape(colProvider);
+			colShape = mPhysics->CreateColShape(colProvider);
 			mass = colProvider->GetMass();
 		}
 		assert(colShape);
 		mSelf->setCollisionShape(colShape);
 		if (colShape)
-			physics.AddRef(colShape);
+			mPhysics->AddRef(colShape);
 
 		if (mass > 0 && colShape)
 		{
@@ -144,7 +138,7 @@ public:
 			SetMass(0.f);
 		}
 
-		mWorld->addRigidBody(mSelf, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
+		mPhysics->_GetDynamicWorld()->addRigidBody(mSelf, colProvider->GetCollisionGroup(), colProvider->GetCollisionMask());
 		mAddedToWorld = true;
 	}
 
@@ -193,6 +187,10 @@ public:
 		return BulletToFB(mSelf->getTotalForce());
 	}
 
+	Vec3 GetLinearFactor() {
+		return BulletToFB(mSelf->getLinearFactor());
+	}
+
 	void ClearForces(){
 		mSelf->clearForces();
 	}
@@ -205,6 +203,10 @@ public:
 
 	float GetSpeed() const{
 		return mSelf->getLinearVelocity().length();
+	}
+
+	Vec3 GetForce() const {
+		return BulletToFB(mSelf->getTotalForce());
 	}
 
 	Vec3 GetVelocity() const{
@@ -261,6 +263,9 @@ public:
 
 		// save actor;
 		mGamePtr = obj->GetUserPtr();
+
+		auto colShape = mSelf->getCollisionShape();
+		colShape->setUserPointer(mGamePtr);
 	}
 
 	void SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx){
@@ -272,6 +277,9 @@ public:
 
 		mGroupIdx = groupIdx;
 		mGroupedRigidBody = true;
+
+		auto colShape = mSelf->getCollisionShape();
+		colShape->setUserPointer(mGamePtr);
 	}
 
 	IPhysicsInterface* GetPhysicsInterface() const{
@@ -338,8 +346,8 @@ public:
 
 	void SetCollisionFilterGroup(unsigned group){		
 		if (mAddedToWorld)
-			mWorld->removeRigidBody(mSelf);
-		mWorld->addRigidBody(mSelf, group, mColProvider->GetCollisionMask());
+			mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
+		mPhysics->_GetDynamicWorld()->addRigidBody(mSelf, group, mPhysicsInterface->GetCollisionMask());
 		mAddedToWorld = true;
 	}
 
@@ -425,9 +433,8 @@ public:
 				return 1.0f;
 			}
 		};
-		Callback callback(mSelf);
-		auto& physics = Physics::GetInstance();		
-		physics._GetDynamicWorld()->contactTest(mSelf, callback);
+		Callback callback(mSelf);		
+		mPhysics->_GetDynamicWorld()->contactTest(mSelf, callback);
 		unsigned num = 0;
 		if (gamePtrs && !callback.mCollided.empty())
 		{
@@ -445,15 +452,15 @@ public:
 
 
 	void RemoveFromWorld(){
-		mWorld->removeRigidBody(mSelf);
+		mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
 		mAddedToWorld = false;
 	}
 
 	// make sure mColProvider is valid.
 	void AddToWorld(){		
 		if (mAddedToWorld)
-			mWorld->removeRigidBody(mSelf);
-		mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());		
+			mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
+		mPhysics->_GetDynamicWorld()->addRigidBody(mSelf, mPhysicsInterface->GetCollisionGroup(), mPhysicsInterface->GetCollisionMask());
 		mAddedToWorld = true;
 	}
 
@@ -540,8 +547,8 @@ public:
 			return;
 		}
 
-		if (mWorld && mColProvider){						
-			mWorld->addRigidBody(mSelf, mColProvider->GetCollisionGroup(), mColProvider->GetCollisionMask());
+		if (mPhysicsInterface){
+			mPhysics->_GetDynamicWorld()->addRigidBody(mSelf, mPhysicsInterface->GetCollisionGroup(), mPhysicsInterface->GetCollisionMask());
 			mAddedToWorld = true;
 			auto num = mSelf->getNumConstraintRefs();
 			for (int i = 0; i < num; ++i){
@@ -555,18 +562,16 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "No colprovier exists!");
 	}
 
-	void UnregisterFromWorld(){
-		if (mWorld){
-			auto num = mSelf->getNumConstraintRefs();
-			for (int i = 0; i < num; ++i){
-				auto constraint = mSelf->getConstraintRef(i);
-				assert(constraint);
-				constraint->setEnabled(false);
-			}
+	void UnregisterFromWorld(){		
+		auto num = mSelf->getNumConstraintRefs();
+		for (int i = 0; i < num; ++i){
+			auto constraint = mSelf->getConstraintRef(i);
+			assert(constraint);
+			constraint->setEnabled(false);
+		}
 			
-			mWorld->removeRigidBody(mSelf);
-			mAddedToWorld = false;
-		}		
+		mPhysics->_GetDynamicWorld()->removeRigidBody(mSelf);
+		mAddedToWorld = false;		
 	}
 
 
@@ -596,7 +601,7 @@ public:
 		while (mSelf->getNumConstraintRefs()>0)
 		{
 			btTypedConstraint* pConstraint = mSelf->getConstraintRef(0);
-			Physics::GetInstance().RemoveConstraint(pConstraint);
+			mPhysics->RemoveConstraint(pConstraint);
 		}
 	}
 
@@ -605,7 +610,7 @@ public:
 		for (int i = 0; i < num; ++i){
 			btTypedConstraint* pConstraint = mSelf->getConstraintRef(i);
 			if (pConstraint == constraintPtr){
-				Physics::GetInstance().RemoveConstraint(pConstraint);
+				mPhysics->RemoveConstraint(pConstraint);
 				break;
 			}
 		}
@@ -617,7 +622,7 @@ public:
 			btTypedConstraint* pConstraint = mSelf->getConstraintRef(i);
 			if (pConstraint->getRigidBodyA().getUserPointer() ==
 				pConstraint->getRigidBodyB().getUserPointer()){
-				Physics::GetInstance().RemoveConstraint(pConstraint);
+				mPhysics->RemoveConstraint(pConstraint);
 			}
 			else{
 				++i;
@@ -653,13 +658,13 @@ public:
 };
 
 //---------------------------------------------------------------------------
-RigidBodyImplPtr RigidBodyImpl::Create(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider){
-	return RigidBodyImplPtr(FB_NEW_ALIGNED(RigidBodyImpl, IPhysics::MemAlign)(cinfo, world, colProvider), [](RigidBodyImpl* obj){ FB_DELETE_ALIGNED(obj); });
+RigidBodyImplPtr RigidBodyImpl::Create(btRigidBodyConstructionInfo& cinfo, Physics* physics){
+	return RigidBodyImplPtr(FB_NEW_ALIGNED(RigidBodyImpl, IPhysics::MemAlign)(cinfo, physics), [](RigidBodyImpl* obj){ FB_DELETE_ALIGNED(obj); });
 }
 
-RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, btDiscreteDynamicsWorld* world, IPhysicsInterface* colProvider)
+RigidBodyImpl::RigidBodyImpl(btRigidBodyConstructionInfo& cinfo, Physics* physics)
 : btRigidBody(cinfo)
-, mImpl(new Impl(this, world, colProvider))
+, mImpl(new Impl(this, physics))
 {
 	
 }
@@ -694,8 +699,12 @@ void RigidBodyImpl::ApplyTorque(const Vec3& torque) {
 	mImpl->ApplyTorque(torque);
 }
 
-Vec3 RigidBodyImpl::GetForce() {
+Vec3 RigidBodyImpl::GetForce() const {
 	return mImpl->GetForce();
+}
+
+Vec3 RigidBodyImpl::GetLinearFactor() const {
+	return mImpl->GetLinearFactor();
 }
 
 void RigidBodyImpl::ClearForces() {
@@ -756,6 +765,10 @@ void RigidBodyImpl::SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& gro
 
 IPhysicsInterface* RigidBodyImpl::GetPhysicsInterface() const {
 	return mImpl->GetPhysicsInterface();
+}
+
+IPhysics* RigidBodyImpl::GetIPhyscis() const {
+	return mImpl->mPhysics;
 }
 
 void* RigidBodyImpl::GetColShapeUserPtr(int idx) {
@@ -925,8 +938,8 @@ void RigidBodyImpl::SetGravity(const Vec3& gravity) {
 void RigidBodyImpl::OnAABBOverflow() {
 	__super::OnAABBOverflow();
 
-	if (mImpl->mColProvider) {
-		mImpl->mColProvider->OnAABBOverflow();
+	if (mImpl->mPhysicsInterface) {
+		mImpl->mPhysicsInterface->OnAABBOverflow();
 	}
 }
 

@@ -21,5 +21,6 @@
     <ClInclude Include="LockQueue.h" />
     <ClInclude Include="ProfilerSimple.h" />
     <ClInclude Include="VectorMapSerialization.h" />
+    <ClInclude Include="CounterFromZero.h" />
   </ItemGroup>
 </Project>

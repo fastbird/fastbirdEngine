@@ -932,6 +932,10 @@ bool WinBase::IsPtOnBottom(const Vec2I& pt, int area) const{
 	return pt.y <= bottom + area && pt.y >= bottom - area;
 }
 
+void WinBase::ProcessWheel(IInputInjectorPtr injector) {
+
+}
+
 void WinBase::OnMouseIn(IInputInjectorPtr injector, bool propergated){
 	if (!propergated && (mNoMouseEvent || mNoMouseEventAlone))
 	{
@@ -1206,7 +1210,7 @@ std::string WinBase::TranslateText(const char* text)
 		char varName[255];
 		const char* msgTranslationUnit = GetMsgTranslationUnit();
 		sprintf_s(varName, "%s.%s", msgTranslationUnit, text + 1);
-		LuaLock L;
+		LuaLock L(UIManager::GetInstance().GetLuaState());
 		auto var = GetLuaVar(L, varName);
 		if (var.IsString())
 		{
@@ -3822,7 +3826,7 @@ float WinBase::GetContentHeight() const
 	return GetFinalSize().y / (float)GetRenderTargetSize().y;
 }
 
-float WinBase::GetContentEnd() const{
+float WinBase::GetContentEnd(int& level) const{
 	return mWNPos.y + GetFinalSize().y / (float)GetRenderTargetSize().y;
 }
 
@@ -3946,4 +3950,12 @@ void SetDefaultPropertyForUI(WinBasePtr winbase, UIProperty::Enum prop) {
 	}
 	}
 }
+
+WinBase* WinBase::GetScroller(bool checkChildren) {
+	if (GetType() == ComponentType::Scroller) {
+		return this;
+	}
+	return 0;
+}
+
 }

@@ -66,19 +66,45 @@ void Scroller::GatherVisit(std::vector<UIObject*>& v)
 	v.push_back(mUIObject.get());	
 }
 
-bool Scroller::OnInputFromHandler(IInputInjectorPtr injector)
-{
-	auto parent = GetParent();
-	if (!parent || !mVisibility.IsVisible())
-		return false;
+//bool Scroller::OnInputFromHandler(IInputInjectorPtr injector)
+//{
+//	auto parent = GetParent();
+//	if (!parent || !mVisibility.IsVisible())
+//		return false;
+//
+//	bool isIn = __super::OnInputFromHandler(injector);
+//	long wheel = injector->GetWheel();
+//	if (wheel && parent->IsIn(injector))
+//	{
+//		injector->PopWheel();
+//		if ((gpTimer->GetTime() - mLastScrollTime )< 0.5f && Sign((float)mLastWheel) == Sign((float)wheel)){
+//			mScrollAmountScale += 0.3f;			
+//		}
+//		else {
+//			mScrollAmountScale = 1.0f;
+//		}
+//		mLastScrollTime = gpTimer->GetTime();
+//		mLastWheel = wheel;
+//		float wheelSens = injector->GetWheelSensitivity();
+//		float wheelSensitivity = wheelSens * (float)injector->GetNumLinesWheelScroll();
+//
+//		float prevDestOffset = mDestOffset;
+//		mDestOffset += wheel * wheelSensitivity * (mScrollAmount * mScrollAmountScale);
+//		mDestOffset = std::min(0.f, mDestOffset);
+//		mDestOffset = std::max(-mMaxOffset.y, mDestOffset);
+//		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
+//			injector->ClearWheel();
+//	}
+//	return isIn;
+//}
 
-	bool isIn = __super::OnInputFromHandler(injector);
+void Scroller::ProcessWheel(IInputInjectorPtr injector) {	
 	long wheel = injector->GetWheel();
-	if (wheel && parent->IsIn(injector))
+	if (wheel)
 	{
 		injector->PopWheel();
-		if ((gpTimer->GetTime() - mLastScrollTime )< 0.5f && Sign((float)mLastWheel) == Sign((float)wheel)){
-			mScrollAmountScale += 0.3f;			
+		if ((gpTimer->GetTime() - mLastScrollTime)< 0.5f && Sign((float)mLastWheel) == Sign((float)wheel)) {
+			mScrollAmountScale += 0.3f;
 		}
 		else {
 			mScrollAmountScale = 1.0f;
@@ -95,7 +121,6 @@ bool Scroller::OnInputFromHandler(IInputInjectorPtr injector)
 		if (prevDestOffset != mDestOffset || mDestOffset != mCurOffset)
 			injector->ClearWheel();
 	}
-	return isIn;
 }
 
 void Scroller::OnStartUpdate(float elapsedTime)

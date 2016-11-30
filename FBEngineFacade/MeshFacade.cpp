@@ -34,6 +34,7 @@
 #include "FBSceneManager/Scene.h"
 #include "FBRenderer/Material.h"
 #include "FBRenderer/Camera.h"
+#include "FBCommonHeaders/SpinLock.h"
 using namespace fb;
 class MeshFacade::Impl{
 public:
@@ -87,7 +88,7 @@ public:
 		return false;
 	}
 
-	bool IsVaildMesh() const{
+	bool IsValidMesh() const{
 		return IsMeshObject() || IsMeshGroup();
 	}
 
@@ -743,10 +744,14 @@ public:
 };
 
 std::vector<MeshFacadeWeakPtr> sMeshes;
+SpinLockWaitSleep sMeshesLock;
 //---------------------------------------------------------------------------
 MeshFacadePtr MeshFacade::Create(){
 	MeshFacadePtr p(new MeshFacade, [](MeshFacade* obj){ delete obj; });
-	sMeshes.push_back(p);
+	{
+		EnterSpinLock<SpinLockWaitSleep> lock(sMeshesLock);
+		sMeshes.push_back(p);
+	}
 	p->mImpl->mSelfPtr = p;
 	return p;
 }
@@ -808,8 +813,8 @@ const char* MeshFacade::GetName() const{
 	return "";
 }
 
-bool MeshFacade::IsVaildMesh() const{
-	return mImpl->IsVaildMesh();
+bool MeshFacade::IsValidMesh() const{
+	return mImpl->IsValidMesh();
 }
 
 bool MeshFacade::IsMeshObject() const{

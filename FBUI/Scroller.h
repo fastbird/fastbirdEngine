@@ -43,7 +43,8 @@ public:
 	// IWinBase
 	ComponentType::Enum GetType() const { return ComponentType::Scroller; }
 	void GatherVisit(std::vector<UIObject*>& v);
-	bool OnInputFromHandler(IInputInjectorPtr injector);
+	//bool OnInputFromHandler(IInputInjectorPtr injector);
+	void ProcessWheel(IInputInjectorPtr injector) OVERRIDE;
 
 	void OnStartUpdate(float elapsedTime);
 

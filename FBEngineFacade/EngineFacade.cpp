@@ -57,7 +57,7 @@
 #include "FBAudioDebugger/AudioDebugger.h"
 using namespace fb;
 namespace fb{
-	void InitEngineLua();
+	void InitEngineLua(lua_State* L);
 }
 class EngineFacade::Impl{
 public:
@@ -66,9 +66,8 @@ public:
 	EngineFacadeWeakPtr mSelfPtr;
 	std::map<HWindowId, HWindow> mWindowById;
 	std::map<HWindow, HWindowId> mWindowIdByHandle;
-	HWindowId mNextWindowId;
-	lua_State* mL;
-	
+	HWindowId mNextWindowId;	
+	lua_State* mLuaState;
 	// Engine Objects
 	ConsolePtr mConsole;
 	TaskSchedulerPtr mTaskSchedular;
@@ -97,8 +96,7 @@ public:
 	ParticleSystemPtr mParticleSystem;
 	//---------------------------------------------------------------------------
 	Impl()
-		: mL(0)
-		, mNextWindowId(MainWindowId)
+		: mNextWindowId(MainWindowId)
 		, mLockSceneOverriding(false)
 	{
 		FileSystem::StartLoggingIfNot();
@@ -107,10 +105,11 @@ public:
 		Logger::Init(filepath);
 		FileSystem::BackupFile("_Global.log", 5, "Backup_Log");
 		Logger::InitGlobalLog("_Global.log");
-		mL = LuaUtils::OpenLuaState();
+		auto L = LuaUtils::OpenLuaState();
+		mLuaState = L;
 		auto durDir = FileSystem::GetCurrentDir();
-		InitEngineLua();		
-		LuaObject resourcePaths(mL, "resourcePath");
+		InitEngineLua(L);		
+		LuaObject resourcePaths(L, "resourcePath");
 		if (resourcePaths.IsValid()) {
 			auto it = resourcePaths.GetSequenceIterator();
 			LuaObject path_res;
@@ -138,7 +137,7 @@ public:
 				Logger::Log(FB_ERROR_LOG_ARG, "Cannot create the main scene.");
 			}
 		}
-		mEngineOptions = EngineOptions::Create();
+		mEngineOptions = EngineOptions::Create(L);
 		mRenderer = Renderer::Create();		
 		mSceneObjectFactory = SceneObjectFactory::Create();		
 		mAudioManager = AudioManager::Create();
@@ -151,10 +150,15 @@ public:
 
 	~Impl(){
 		mAudioManager->Deinit();
-		SkySphere::DestroySharedEnvRT();
-		LuaUtils::CloseLuaState(mL);
+		SkySphere::DestroySharedEnvRT();		
+		LuaUtils::CloseLuaState(mLuaState);
+		mLuaState = 0;
 		FileSystem::StopLogging();
 		Logger::Release();
+	}
+
+	lua_State* GetLuaState() const {
+		return mLuaState;
 	}
 
 	void Init(){
@@ -175,8 +179,8 @@ public:
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mParticleSystem);
 		mFileMonitor->StartMonitor(".");
 		mFileMonitor->AddObserver(IFileChangeObserver::FileChange_Engine, mSelfPtr.lock());
-
-		LuaObject resourcePaths(mL, "resourcePath");
+		LuaLock L(mLuaState);
+		LuaObject resourcePaths(L, "resourcePath");
 		if (resourcePaths.IsValid()) {
 			auto it = resourcePaths.GetSequenceIterator();
 			LuaObject path_res;
@@ -741,6 +745,10 @@ EngineFacade::~EngineFacade(){
 
 void EngineFacade::SetApplicationName(const char* applicationName){
 	FileSystem::SetApplicationName(applicationName);
+}
+
+lua_State* EngineFacade::GetLuaState() const {
+	return mImpl->GetLuaState();
 }
 
 HWindowId EngineFacade::CreateEngineWindow(int x, int y, int width, int height,

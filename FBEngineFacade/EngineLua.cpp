@@ -172,9 +172,8 @@ namespace fb{
 		return 0;
 	}
 
-	void InitEngineLua(){
-		LuaUtils::LoadConfig("configEngine.lua");		
-		auto L = LuaUtils::GetLuaState();
+	void InitEngineLua(lua_State* L){		
+		LuaUtils::LoadConfig(L, "configEngine.lua");				
 		LUA_SETCFUNCTION(L, FBConsole);
 		LUA_SETCFUNCTION(L, LoadMesh);
 		LUA_SETCFUNCTION(L, GenGGX);
@@ -194,6 +193,4 @@ namespace fb{
 		LUA_SETCFUNCTION(L, GetMusicGain);
 		LUA_SETCFUNCTION(L, GetSoundGain);
 	}
-
-	
 }

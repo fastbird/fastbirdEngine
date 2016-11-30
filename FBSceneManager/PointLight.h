@@ -58,5 +58,6 @@ namespace fb
 		bool GetEnabled() const;
 		void SetEnabled(bool enable);
 		Real GetOlder(Real time);
+		float GetIntensityScoreAtRange(float dist);
 	};
 }

@@ -31,6 +31,7 @@ class btRigidBody;
 class btDiscreteDynamicsWorld;
 namespace fb
 {
+	class IPhysics;
 	class IPhysicsInterface;
 	struct RotationInfo;
 
@@ -51,6 +52,8 @@ namespace fb
 		virtual void ClearForces() = 0;
 		virtual void Stop() = 0;
 		virtual float GetSpeed() const = 0;
+		virtual Vec3 GetLinearFactor() const = 0;
+		virtual Vec3 GetForce() const = 0;
 		virtual Vec3 GetVelocity() const = 0;
 		virtual Vec3 GetAngularVelocity() const = 0;
 		virtual void SetAngularVelocity(const Vec3& angVel) = 0;
@@ -66,6 +69,7 @@ namespace fb
 		virtual void SetPhysicsInterface(IPhysicsInterface* obj) = 0;
 		virtual void SetPhysicsInterface(IPhysicsInterface* obj, const Vec3I& groupIdx) = 0;
 		virtual IPhysicsInterface* GetPhysicsInterface() const = 0;
+		virtual IPhysics* GetIPhyscis() const = 0;
 
 		// idx is for compound shape
 		virtual void* GetColShapeUserPtr(int idx = 0) = 0;

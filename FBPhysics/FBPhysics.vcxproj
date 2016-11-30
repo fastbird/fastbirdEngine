@@ -102,7 +102,7 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="BulletDebugDraw.h" />
     <ClInclude Include="BulletFilterCallback.h" />
+    <ClInclude Include="CollisionShapeFactory.h" />
     <ClInclude Include="ColShapes.h" />
     <ClInclude Include="fbMotionState.h" />
     <ClInclude Include="IDebugDrawer.h" />
@@ -151,6 +152,7 @@
   <ItemGroup>
     <ClCompile Include="BulletDebugDraw.cpp" />
     <ClCompile Include="BulletFilterCallback.cpp" />
+    <ClCompile Include="CollisionShapeFactory.cpp" />
     <ClCompile Include="ColShapes.cpp" />
     <ClCompile Include="fbMotionState.cpp" />
     <ClCompile Include="Physics.cpp" />

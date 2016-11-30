@@ -623,7 +623,11 @@ void luaW_setfuncs(lua_State* L, const char* classname, const luaL_Reg* table, c
 }
 
 template <typename T>
-void luaW_register(lua_State* L, const char* classname, const luaL_Reg* table, const luaL_Reg* metatable, T* (*allocator)(lua_State*) = luaW_defaultallocator<T>, void (*deallocator)(lua_State*, T*) = luaW_defaultdeallocator<T>, void (*identifier)(lua_State*, T*) = luaW_defaultidentifier<T>)
+void luaW_register(lua_State* L, const char* classname, 
+	const luaL_Reg* table, const luaL_Reg* metatable, 
+	T* (*allocator)(lua_State*) = luaW_defaultallocator<T>, 
+	void (*deallocator)(lua_State*, T*) = luaW_defaultdeallocator<T>, 
+	void (*identifier)(lua_State*, T*) = luaW_defaultidentifier<T>)
 {
     luaW_setfuncs(L, classname, table, metatable, allocator, deallocator, identifier); // ... T
     LuaUtils::pushvalue(L, -1); // ... T T

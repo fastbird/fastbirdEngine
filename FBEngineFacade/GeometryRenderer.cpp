@@ -40,6 +40,7 @@
 #include "FBRenderer/ResourceProvider.h"
 #include "FBRenderer/ResourceTypes.h"
 #include "FBRenderer/Camera.h"
+#include "FBCommonHeaders/SpinLock.h"
 #include "FBSceneManager/IScene.h"
 #include "EssentialEngineData/shaders/Constants.h"
 using namespace fb;
@@ -115,9 +116,12 @@ public:
 	};
 	static const unsigned THICK_LINE_STRIDE=44;
 	static const unsigned MAX_LINE_VERTEX=500;
+	SpinLockWaitSleep mWorldLinesLock;
 	std::vector<Line> mWorldLines;
+	SpinLockWaitSleep mWorldLinesBeforeAlphaPassLock;
 	std::vector<Line> mWorldLinesBeforeAlphaPass;
-	std::vector<ThickLine> mThickLines;
+	SpinLockWaitSleep mThickLinesLock;
+	std::vector<ThickLine> mThickLines;	
 	OBJECT_CONSTANTS mObjectConstants;
 	OBJECT_CONSTANTS mObjectConstants_WorldLine;
 
@@ -182,6 +186,7 @@ public:
 		line.mEnd = end;
 		line.mColore = color1.Get4Byte();
 
+		EnterSpinLock<SpinLockWaitSleep> lock(mWorldLinesLock);
 		mWorldLines.push_back(line);
 	}
 
@@ -195,6 +200,7 @@ public:
 		line.mEnd = end;
 		line.mColore = color1.Get4Byte();
 
+		EnterSpinLock<SpinLockWaitSleep> lock(mWorldLinesBeforeAlphaPassLock);
 		mWorldLinesBeforeAlphaPass.push_back(line);
 	}
 
@@ -214,7 +220,7 @@ public:
 			line.mTexture = renderer.CreateTexture(texture, {});
 		}
 		line.mTextureFlow = textureFlow;
-
+		EnterSpinLock<SpinLockWaitSleep> lock(mThickLinesLock);
 		mThickLines.push_back(line);
 	}
 
@@ -333,7 +339,7 @@ public:
 			}
 			mWorldLines.clear();
 		}
-
+		
 		std::sort(mThickLines.begin(), mThickLines.end(),
 			[](const ThickLine& left, const ThickLine& right)->bool
 		{

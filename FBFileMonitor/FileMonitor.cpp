@@ -40,7 +40,7 @@ namespace fb {
 		OVERLAPPED	mOverlapped; // platform dependent.
 		HANDLE mMonitoringDirectory;
 		std::string mWatchDir;
-		FB_CRITICAL_SECTION mChangedFilesGuard;
+		CriticalSection mChangedFilesGuard;
 		std::set<std::string> mChangedFiles;
 		bool mHasChangedFiles;
 		std::atomic<bool> mExiting;

@@ -43,16 +43,17 @@ UICommandsPtr UICommands::Create(){
 
 UICommands::UICommands()
 {
+	LuaLock L(LuaUtils::GetLuaState());
 	FB_REGISTER_CC(StartUIEditor, "Start ui editor");
 	FB_REGISTER_CC(KillUIEditor, "Kill ui editor");
 
-	r_UI = Console::GetInstance().GetIntVariable("r_UI", 1);
+	r_UI = Console::GetInstance().GetIntVariable(L, "r_UI", 1);
 	FB_REGISTER_CVAR(r_UI, r_UI, CVAR_CATEGORY_CLIENT, "Render uis.");
 
-	UI_Debug = Console::GetInstance().GetIntVariable("UI_Debug", 0);
+	UI_Debug = Console::GetInstance().GetIntVariable(L, "UI_Debug", 0);
 	FB_REGISTER_CVAR(UI_Debug, UI_Debug, CVAR_CATEGORY_CLIENT, "UI debug");
 
-	UI_EditorX = Console::GetInstance().GetIntVariable("UI_EditorX", 0);
+	UI_EditorX = Console::GetInstance().GetIntVariable(L, "UI_EditorX", 0);
 	FB_REGISTER_CVAR(UI_EditorX, UI_EditorX, CVAR_CATEGORY_CLIENT, "UI Editors x position");
 }
 
@@ -89,7 +90,7 @@ void StartUIEditor(StringVector& arg)
 		{
 			startFunc(UIManager::GetInstance().GetUICommands()->UI_EditorX);
 			uiEditorInitialized = true;
-			LuaLock L;
+			LuaLock L(UIManager::GetInstance().GetLuaState());
 			LuaUtils::pushboolean(L, 1);
 			LuaUtils::setglobal(L, "gThreatHold");
 		}
@@ -109,7 +110,7 @@ void KillUIEditor(StringVector& arg)
 		finalizeFunc = (FinalizeProc)ModuleHandler::GetFunction(moduleHandle, "KillUIEditor");
 		if (finalizeFunc)
 			finalizeFunc();
-		LuaLock L;
+		LuaLock L(UIManager::GetInstance().GetLuaState());
 		LuaUtils::pushboolean(L, 0);
 		LuaUtils::setglobal(L, "gThreatHold");
 
