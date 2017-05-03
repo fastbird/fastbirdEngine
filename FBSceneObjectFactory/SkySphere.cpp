@@ -34,6 +34,7 @@
 #include "FBRenderer/Material.h"
 #include "FBRenderer/Texture.h"
 #include "FBRenderer/RenderStrategyMinimum.h"
+#include "FBRenderer/RendererOptions.h"
 #include "FBSceneManager/Scene.h"
 #include "FBSceneManager/DirectionalLight.h"
 #include "FBRenderer/Camera.h"
@@ -79,6 +80,11 @@ public:
 
 	// IRenderable
 	void PreRender(const RenderParam& param, RenderParamOut* paramOut){
+		auto& renderer = Renderer::GetInstance();
+		auto renderOption = renderer.GetRendererOptions();
+		if (renderOption->r_noSky)
+			return;
+
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 
@@ -131,6 +137,11 @@ public:
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 
+		auto& renderer = Renderer::GetInstance();
+		auto renderOption = renderer.GetRendererOptions();
+		if (renderOption->r_noSky)
+			return;
+
 		if (mBlendingSkySphere && mBlendingSkySphere->GetAlpha() == 1.0f){
 			mBlendingSkySphere->Render(param, paramOut);
 			return;
@@ -141,8 +152,7 @@ public:
 			assert(0);
 			return;
 		}
-
-		auto& renderer = Renderer::GetInstance();
+		
 		renderer.SetPrimitiveTopology(PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		renderer.UnbindInputLayout();
 		renderer.UnbindVertexBuffers();

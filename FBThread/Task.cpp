@@ -115,5 +115,4 @@ bool Task::IsExecuted() const
 bool Task::IsTriggered() const{
 	return mTriggered;
 }
-
 }

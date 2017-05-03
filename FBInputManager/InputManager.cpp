@@ -35,8 +35,6 @@
 #include "FBTimer/Timer.h"
 using namespace fb;
 
-Timer* fb::gpTimer = 0;
-
 class InputManager::Impl{
 public:
 	InputManagerWeakPtr mSelf;
@@ -53,8 +51,6 @@ public:
 		, mKeyboard(IKeyboardPtr(new Keyboard))
 		, mMouse(IMousePtr(new Mouse))
 	{
-		
-		gpTimer = Timer::GetMainTimer().get();
 		for (int i = 0; i < InputDevice::DeviceNum; ++i){
 			mValid += 1 << i;
 		}		

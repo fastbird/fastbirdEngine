@@ -294,7 +294,7 @@ void CardScroller::VisualizeData(unsigned index){
 			item->SetVisible(true);
 			RefreshTextures(index);
 			RefreshProps(index);
-			item->SetWNScollingOffset(offset);
+			item->SetWNScrollingOffset(offset);
 			
 		}
 		else
@@ -305,13 +305,13 @@ void CardScroller::VisualizeData(unsigned index){
 			item->ParseLua(data);
 			RefreshTextures(index);
 			RefreshProps(index);
-			item->SetWNScollingOffset(offset);
+			item->SetWNScrollingOffset(offset);
 		}
 	}
 	mKeys[index] = key;
 }
 
-void CardScroller::Scrolled()
+Vec2 CardScroller::Scrolled()
 {
 	unsigned prevStart = mStartIndex;
 	unsigned prevEnd = mEndIndex;
@@ -369,7 +369,7 @@ void CardScroller::Scrolled()
 		VisualizeData(visualIndex);
 	}
 
-	__super::Scrolled();
+	return __super::Scrolled();
 }
 
 void CardScroller::MoveToRecycle(unsigned index){

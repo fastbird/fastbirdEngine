@@ -496,6 +496,9 @@ public:
 		if (mSelf->checkCollideWithOverride(colObj) == ignore){
 			mSelf->setIgnoreCollisionCheck(colObj, ignore);
 		}
+		/*if (colObj->checkCollideWithOverride(mSelf) == ignore) {
+			colObj->setIgnoreCollisionCheck(mSelf, ignore);
+		}*/
 	}
 
 	void SetTransform(const btTransform& aT, VectorMap<void*, int>& set){

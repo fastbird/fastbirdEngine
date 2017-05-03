@@ -1976,6 +1976,19 @@ mPopup->SetVisible(true);
 		return anim;
 	}
 
+	void StartUIAnimation(const char* uiname, const char* compname, const char* animname) {
+		if (!ValidCString(uiname) || !ValidCString(compname) || !ValidCString(animname)) {
+			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
+			return;
+		}
+
+		auto comp = UIManager::GetInstance().FindComp(uiname, compname);
+		if (comp)
+		{
+			comp->StartUIAnimation(animname);
+		}
+	}
+
 	void PrepareTooltipUI(){
 		LuaObject tooltip;
 		tooltip.NewTable(mL);
@@ -3176,6 +3189,10 @@ UIAnimationPtr UIManager::GetGlobalAnimation(const char* animName) {
 
 UIAnimationPtr UIManager::GetGlobalAnimationOrCreate(const char* animName) {
 	return mImpl->GetGlobalAnimationOrCreate(animName);
+}
+
+void UIManager::StartUIAnimation(const char* uiname, const char* compname, const char* animname) {
+	mImpl->StartUIAnimation(uiname, compname, animname);
 }
 
 void UIManager::PrepareTooltipUI() {

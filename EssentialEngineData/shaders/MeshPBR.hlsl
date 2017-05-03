@@ -163,7 +163,7 @@ float4 MeshPBR_PixelShader( in v2p INPUT ) : SV_Target
 	float3 pointLightResult = CalcPointLights(INPUT.WorldPos.xyz, normal) * baseColor;	
 	float2 screenUV = GetScreenUV(INPUT.Position.xy);	
 	float3 emissiveColor = baseColor * emissive;
-	float3 foggedColor = GetFoggedColor(screenUV, shadedColor, normalize(INPUT.WorldPos));	
+	float3 foggedColor = GetFoggedColor(screenUV, shadedColor, normalize(INPUT.WorldPos));	  
 	
 #if Glow
 	psout.color0 = float4(foggedColor * invShadow + colorFromInversedLight + envContrib + irrad + pointLightResult + emissiveColor + gAmbientColor.rgb, gDiffuseColor.a);  

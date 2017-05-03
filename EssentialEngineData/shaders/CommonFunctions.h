@@ -144,22 +144,19 @@ float spline(float x, float4 knot){
 }
 float3 GetFoggedColor(float2 uv, float3 incidentColor, float3 worldPos)
 {	
-	float4 volumeFog  = gFogMap.Sample(gPointSampler, uv);
-	float start = volumeFog.x;
-	float end = volumeFog.y;	
-	end += volumeFog.b*volumeFog.a;
+  return incidentColor;
+	// float4 volumeFog  = gFogMap.Sample(gPointSampler, uv);
+	// float start = volumeFog.x;
+	// float end = volumeFog.y;	
+	// end += volumeFog.b*volumeFog.a;
 	
-	float volumeFogDensity = (end - start);
-	volumeFogDensity = volumeFogDensity * gFogColor.w * turbulence(worldPos * 0.35f + float3(gTime*0.02f, 0, 0), 2);
+	// float volumeFogDensity = (end - start);  
+	// volumeFogDensity = volumeFogDensity * gFogColor.w * turbulence(worldPos * 0.35f + float3(gTime*0.02f, 0, 0), 2);	
 	
-	//return volumeFogDensity.xxx;
-	float p = volumeFogDensity*volumeFogDensity;
-	float f = 1.0/(pow(2.71828, p));
-	//return f.xxx;
-	//float noise = inoise(worldPos*10);
-	//return noise.xxx;
-	float3 foggedColor = f * incidentColor + (1.0-f) * gFogColor.rgb;
-	return foggedColor;
+	// float p = volumeFogDensity*volumeFogDensity;
+	// float f = 1.0/(pow(2.71828, p));	
+	// float3 foggedColor = f * incidentColor + (1.0-f) * gFogColor.rgb;
+	// return foggedColor;
 }
 
 float2 GetScreenUV(float2 screenxy)

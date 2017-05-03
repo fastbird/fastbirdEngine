@@ -66,6 +66,9 @@ namespace fb
 		virtual void EnablePhysics() = 0;
 		virtual void DisablePhysics() = 0;
 
+		virtual void SetPhysicsId(const char* id) = 0;
+		virtual const char* GetPhysicsId() const = 0;
+
 		//virtual void CreateRigidBody(float mass, const Transformation& startTransform, 
 			//btCollisionShape)
 

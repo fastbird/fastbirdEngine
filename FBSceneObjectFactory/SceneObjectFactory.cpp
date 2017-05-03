@@ -54,7 +54,6 @@
 
 using namespace fb;
 
-Timer* fb::gpTimer = 0;
 class SceneObjectFactory::Impl
 {
 public:
@@ -75,8 +74,7 @@ public:
 	SkySphereWeakPtr mNextEnvUpdateSky;
 	Impl()
 		: mNoMesh(false)
-	{
-		gpTimer = Timer::GetMainTimer().get();	
+	{		
 		mOptions = SceneObjectFactoryOptions::Create();
 	}
 	~Impl(){

@@ -601,6 +601,7 @@ public:
 		if (mLuaMode)
 		{
 			std::string newstring = std::string("  ") + command;
+			fb::ReplaceAll(newstring, "%", "%%");			
 			Log(newstring.c_str());
 			if (command[0]=='%')
 				processed =  LuaUtils::ExecuteLua(command+1);
@@ -876,7 +877,7 @@ public:
 			return 0;
 		}
 
-		std::string keyname(name);
+		std::string keyname = ToLowerCase(name);
 		for (auto& it : mCVars){
 			if (keyname == it->mName){
 				return it;

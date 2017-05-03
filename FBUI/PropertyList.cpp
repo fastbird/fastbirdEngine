@@ -71,6 +71,7 @@ void PropertyList::OnCreated()
 	auto parentX = GetParentSize().x;
 	mColSizesInt.push_back(Round(0.47f * parentX));
 	mColSizesInt.push_back(Round(0.50f * parentX));
+	SetChildrenContentEndFunc(std::bind(&ListBox::GetChildrenContentEnd, this));
 }
 
 const wchar_t* PropertyList::GetValue(const wchar_t* key)

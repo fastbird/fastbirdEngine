@@ -74,6 +74,14 @@ unsigned NullPlatformRenderer::GetMultiSampleCount() const {
 	return 1;
 }
 
+bool NullPlatformRenderer::IsDeviceRemoved() const {
+	return false;
+}
+
+bool NullPlatformRenderer::IsFullscreen() const {
+	return false;
+}
+
 void NullPlatformRenderer::SetShaderCacheOption(bool useShaderCache, bool generateCache) {
 	
 }

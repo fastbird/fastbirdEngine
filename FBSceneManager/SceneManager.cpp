@@ -29,6 +29,8 @@
 #include "SceneManager.h"
 #include "Scene.h"
 #include "DirectionalLight.h"
+#include "SceneManagerOptions.h"
+#include "FBConsole/Console.h"
 #include "FBTimer/Timer.h"
 using namespace fb;
 
@@ -38,10 +40,13 @@ public:
 	SceneManagerWeakPtr mSelf;
 	std::map<std::string, SceneWeakPtr> mScenes;
 	SceneWeakPtr mMainScene;
+	SceneManagerOptionsPtr mOptions;
 
 	//---------------------------------------------------------------------------
-	Impl(){
-		
+	Impl()
+		:mOptions(SceneManagerOptions::Create())
+	{
+		Console::GetInstance().AddObserver(ICVarObserver::Default, mOptions);
 	}
 	~Impl(){
 
@@ -98,15 +103,13 @@ public:
 	}
 };
 
-Timer* fb::gpTimer = 0;
 //---------------------------------------------------------------------------
 SceneManagerWeakPtr sSceneManager;
 SceneManagerPtr SceneManager::Create(){
 	if (sSceneManager.expired()){
 		auto sceneManager = SceneManagerPtr(new SceneManager, [](SceneManager* obj){ delete obj; });
 		sceneManager->mImpl->mSelf = sceneManager;
-		sSceneManager = sceneManager;
-		gpTimer = Timer::GetMainTimer().get();
+		sSceneManager = sceneManager;		
 		return sceneManager;
 	}
 	return sSceneManager.lock();
@@ -138,4 +141,8 @@ void SceneManager::Update(TIME_PRECISION dt){
 
 void SceneManager::CopyDirectionalLight(IScenePtr destScene, int destLightSlot, IScenePtr srcScene, int srcLightSlot){
 	mImpl->CopyDirectionalLight(destScene, destLightSlot, srcScene, srcLightSlot);
+}
+
+SceneManagerOptionsPtr SceneManager::GetOptions() const {
+	return mImpl->mOptions;
 }

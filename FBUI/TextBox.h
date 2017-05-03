@@ -48,7 +48,8 @@ namespace fb
 		bool SetProperty(UIProperty::Enum prop, const char* val);
 		bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);
 		void SetText(const wchar_t* szText);
-		void SetWNScollingOffset(const Vec2& offset);
+		virtual Vec2 Scrolled();
+		void SetWNScrollingOffset(const Vec2& offset);
 		unsigned GetTextBoxHeight() const;
 		void SetHwndId(HWindowId hwndId);
 
@@ -57,6 +58,8 @@ namespace fb
 		void OnPosChanged(bool anim);
 		void OnSizeChanged();
 		void CalcTextWidth(); // for mutiline text
+		float GetChildrenContentEnd();
+		virtual void SetTextOffset(const Vec2I& offset);
 
 	private:
 		int mCursorPos;
@@ -67,6 +70,7 @@ namespace fb
 		std::string mStrBackImage;
 		std::string mStrImageDisplay;
 		std::wstring mMultiLineText;
+		Vec2I mTextScrollingOffset;
 	};
 
 }

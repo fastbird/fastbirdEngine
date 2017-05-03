@@ -93,6 +93,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link />
   </ItemDefinitionGroup>
@@ -118,6 +119,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Task.cpp" />
+    <ClCompile Include="Task2.cpp" />
+    <ClCompile Include="TaskProcessor.cpp" />
     <ClCompile Include="TaskScheduler.cpp" />
     <ClCompile Include="threads.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
@@ -127,6 +130,8 @@
     <ClInclude Include="Invoker.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Task.h" />
+    <ClInclude Include="Task2.h" />
+    <ClInclude Include="TaskProcessor.h" />
     <ClInclude Include="TaskScheduler.h" />
     <ClInclude Include="threads.h" />
     <ClInclude Include="WorkerThread.h" />

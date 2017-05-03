@@ -44,6 +44,7 @@ namespace fb{
 
 		int r_noObjectConstants;
 		int r_noMesh;
+		int r_noPointLight;
 		int r_noSky;
 		int r_noParticleDraw;		
 		int r_HDR;

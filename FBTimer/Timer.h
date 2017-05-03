@@ -74,5 +74,5 @@ namespace fb
 		
 	};
 	/// only declaration. you need to define it.
-	extern Timer* gpTimer;
+	extern FB_DLL_TIMER Timer* gpTimer;
 }

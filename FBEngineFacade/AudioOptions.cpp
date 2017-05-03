@@ -29,13 +29,18 @@
 #include "AudioOptions.h"
 #include "EngineFacade.h"
 #include "FBConsole/Console.h"
+#include "FBStringLib/StringConverter.h"
 using namespace fb;
 
 AudioOptionsPtr AudioOptions::Create(){
 	return AudioOptionsPtr(new AudioOptions, [](AudioOptions* obj){delete obj; });
 }
 
+void NoAudio(StringVector& args);
+
 AudioOptions::AudioOptions(){
+	FB_REGISTER_CC(NoAudio, "NoAudio");
+
 	LuaLock L(LuaUtils::GetLuaState());
 	a_MasterGain = Console::GetInstance().GetRealVariable(L, "a_MasterGain", 1.0);
 	FB_REGISTER_CVAR(a_MasterGain, a_MasterGain, 
@@ -72,4 +77,14 @@ bool AudioOptions::OnChangeCVar(CVarPtr pCVar){
 	}	
 	
 	return false;
+}
+
+void NoAudio(StringVector& args) {
+	if (args.size() != 2) {
+		Console::GetInstance().Log("Invalid args");
+		return;
+	}
+
+	auto i = StringConverter::ParseInt(args[1]);
+	EngineFacade::GetInstance().SetEnableAudio(i == 0);
 }

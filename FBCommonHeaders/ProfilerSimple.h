@@ -32,46 +32,63 @@
 #include "Types.h"
 namespace fb {
 	class ProfilerSimple {
-		const char* mName;
-		INT64 mStartTick;
+		std::string mName;
 		std::function<void(const char*, INT64)> mCallbackFunction;
+
+		void* mPtr;
+		std::function<void(void*, INT64)> mCallbackFunction2;
+
+		INT64 mStartTick;				
 		mutable TIME_PRECISION mPrevDT;
 
 	public:
-		ProfilerSimple(const char* name, std::function<void(const char*, INT64)> callback = {})
+		ProfilerSimple(std::string name, std::function<void(const char*, INT64)> callback = {})
 			: mName(name)
 			, mCallbackFunction(callback)
+			, mPtr(0)
 		{
 			using namespace std::chrono;
-			mStartTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+			mStartTick = duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
+		}
+
+		ProfilerSimple(void* ptr, std::function<void(void*, INT64)> callback = {})
+			: mPtr(ptr)
+			, mCallbackFunction2(callback)
+		{
+			using namespace std::chrono;
+			mStartTick = duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
 		}
 
 		~ProfilerSimple()
 		{
-			if (mCallbackFunction)
-				mCallbackFunction(mName, GetDTMilliSecs());
+			if (mCallbackFunction) {
+				mCallbackFunction(mName.c_str(), GetDTMicro());
+			}
+			else if (mCallbackFunction2) {
+				mCallbackFunction2(mPtr, GetDTMicro());
+			}			
 		}
 
 		TIME_PRECISION GetDT() const {
 			using namespace std::chrono;
 			TIME_PRECISION dt = 
-				(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() - mStartTick) / (TIME_PRECISION)std::milli::den;
+				(duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count() - mStartTick) / (TIME_PRECISION)std::micro::den;
 			mPrevDT = (dt + mPrevDT) * .5f;
 			return mPrevDT;
 		}
 
-		INT64 GetDTMilliSecs() const {
+		INT64 GetDTMicro() const {
 			using namespace std::chrono;
-			return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() - mStartTick;
+			return duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count() - mStartTick;
 		}
 
 		const char* GetName() const {
-			return mName;
+			return mName.c_str();
 		}
 
 		void Reset() {
 			using namespace std::chrono;
-			mStartTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+			mStartTick = duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
 		}
 	};
 }

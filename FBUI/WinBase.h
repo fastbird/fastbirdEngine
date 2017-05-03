@@ -335,10 +335,11 @@ namespace fb
 		virtual int GetTextEndPosLocal() const;
 
 		virtual void SetPasswd(bool passwd) {};
+		virtual void StartUIAnimation(const char* name);
 		virtual UIAnimationPtr GetOrCreateUIAnimation(const char* name);
 		virtual UIAnimationPtr GetUIAnimation(const char* name);
 		virtual void SetUIAnimation(UIAnimationPtr anim);
-		virtual void ClearAnimationResult();
+		virtual void ClearAnimationResult();		
 
 		virtual EventHandler* GetEventHandler() const { return (EventHandler*)this; }
 
@@ -348,8 +349,8 @@ namespace fb
 		virtual float GetPropertyAsFloat(UIProperty::Enum prop, float defaultVal = 0.f);
 		virtual int GetPropertyAsInt(UIProperty::Enum prop, int defaultVal = 0);
 
-		virtual void Scrolled(){}
-		virtual void SetWNScollingOffset(const Vec2& offset);
+		virtual Vec2 Scrolled() { return Vec2::ZERO; }
+		virtual void SetWNScrollingOffset(const Vec2& offset);
 		virtual const Vec2& GetWNScrollingOffset() const { return mWNScrollingOffset; }
 		virtual void SetAnimScale(const Vec2& scale);
 		virtual void SetAnimPos(const Vec2& pos);
@@ -474,6 +475,7 @@ namespace fb
 		virtual void OnEnableChanged(){}
 
 		virtual void AlignText();
+		virtual void SetTextOffset(const Vec2I& offset);
 		Rect GetScissorRegion() const;
 		void GetScissorIntersection(Rect& region);
 		virtual void SetUseBorder(bool use);

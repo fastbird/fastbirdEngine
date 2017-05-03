@@ -68,6 +68,7 @@ LuaObject::LuaObject()
 LuaObject::LuaObject(lua_State* L, int index, bool pop)
 	: LuaObject(L)
 {
+	LuaLock lock(L);
 	// the vaile at index is not poped.
 	if (!pop)
 		lua_pushvalue(L, index);
@@ -81,6 +82,7 @@ LuaObject::LuaObject(lua_State* L, const char* globalName)
 {
 	assert(globalName != 0);
 	auto splitted = Split(globalName, ".");	
+	LuaLock lock(L);
 	LUA_STACK_CLIPPER clip(L);
 	for (auto& name : splitted) {
 		if (!IsTable()) {
@@ -1320,6 +1322,7 @@ fb::LuaObject fb::GetLuaVar(lua_State* L, const char* var, const char* file)
 {
 	if (!var)
 		return LuaObject();
+	LuaLock lock(L);
 	auto splitted = Split(var, ".");
 	if (!LuaUtils::CheckLuaGlobalExist(L, splitted[0].c_str()))
 	{

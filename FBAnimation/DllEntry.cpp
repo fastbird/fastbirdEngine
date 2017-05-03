@@ -27,12 +27,11 @@
 
 #include "stdafx.h"
 #include "FBTimer/Timer.h"
-namespace fb{
-	fb::Timer* gpTimer = 0;
+namespace fb{	
 	class FBAnimationDllentry{
 	public:
 		FBAnimationDllentry(){
-			gpTimer = Timer::GetMainTimer().get();
+			//gpTimer = Timer::GetMainTimer().get();
 		}		
 	};
 	static FBAnimationDllentry entry;

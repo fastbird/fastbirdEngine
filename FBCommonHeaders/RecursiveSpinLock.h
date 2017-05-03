@@ -47,7 +47,7 @@ namespace fb
 	{
 	protected:
 		SpinLock<true, false> mGuard;
-		long mLockLevel;
+		std::atomic<long> mLockLevel;
 		std::thread::id mThreadId;
 
 

@@ -1549,7 +1549,11 @@ do\n\
 	local Oldloadfile = loadfile;\n\
 	loadfile = function(filepath)\n\
 		local chunk_string = get_lua_content(filepath);\n\
-		return load(chunk_string);\n\
+		if chunk_string then\n\
+			return load(chunk_string);\n\
+		else\n\
+			return nil, 'no file found'\n\
+		end\n\
 	end\n\
 end\n\
 \

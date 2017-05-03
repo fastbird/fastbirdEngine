@@ -1540,7 +1540,7 @@ void ListBox::VisualizeData(unsigned index){
 			int y = hgap * index + mRowGap;
 			for (unsigned c = 0; c < mNumCols; ++c){
 				items[c]->SetPosY(y);
-				items[c]->SetWNScollingOffset(offset);
+				items[c]->SetWNScrollingOffset(offset);
 				items[c]->SetRowIndex(index);				
 				AddChildSimple(items[c]);
 				mItems[index][c] = items[c];
@@ -1558,7 +1558,7 @@ void ListBox::VisualizeData(unsigned index){
 				{
 					item->SetProperty(UIProperty::TEXT_LEFT_GAP, "5");
 				}
-				item->SetWNScollingOffset(offset);
+				item->SetWNScrollingOffset(offset);
 				mItems[index][c] = item;				
 			}
 			FillItem(index);
@@ -1935,7 +1935,7 @@ void ListBox::OnSizeChanged()
 	Scrolled();
 }
 
-void ListBox::Scrolled()
+Vec2 ListBox::Scrolled()
 {
 	unsigned prevStart = mStartIndex;
 	unsigned prevEnd = mEndIndex;
@@ -1998,7 +1998,7 @@ void ListBox::Scrolled()
 		VisualizeData(visualIndex);
 	}
 
-	__super::Scrolled();
+	return __super::Scrolled();
 }
 
 float ListBox::GetContentHeight() const

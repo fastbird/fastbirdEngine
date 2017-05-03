@@ -172,6 +172,7 @@ namespace fb
 
 		UIAnimationPtr GetGlobalAnimation(const char* animName);
 		UIAnimationPtr GetGlobalAnimationOrCreate(const char* animName);
+		void StartUIAnimation(const char* uiname, const char* compname, const char* animname);
 		void PrepareTooltipUI();
 
 		UICommandsPtr GetUICommands() const;

@@ -56,6 +56,9 @@ RendererOptions::RendererOptions(){
 
 	r_noMesh = Console::GetInstance().GetIntVariable(L, "r_noMesh", 0);
 	FB_REGISTER_CVAR(r_noMesh, r_noMesh, CVAR_CATEGORY_CLIENT, "do not render meshes");
+	
+	r_noPointLight = Console::GetInstance().GetIntVariable(L, "r_noPointLight", 0);
+	FB_REGISTER_CVAR(r_noPointLight, r_noPointLight, CVAR_CATEGORY_CLIENT, "do not render point light");
 
 	r_noSky = Console::GetInstance().GetIntVariable(L, "r_noSky", 0);
 	FB_REGISTER_CVAR(r_noSky, r_noSky, CVAR_CATEGORY_CLIENT, "do not render sky");

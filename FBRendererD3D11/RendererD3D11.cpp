@@ -142,6 +142,7 @@ public:
 
 	// only for debugging.
 	ShaderD3D11* mCurrentShaders[SHADER_TYPE_COUNT];
+	bool mDeviceRemoved;
 	
 
 	//-------------------------------------------------------------------
@@ -152,6 +153,7 @@ public:
 		, mColorFormat(PIXEL_FORMAT_R8G8B8A8_UNORM)
 		, mDepthStencilFormat(PIXEL_FORMAT_D24_UNORM_S8_UINT)
 		, mComputeShaderResultSize(0)
+		, mDeviceRemoved(false)
 	{
 		mMainThreadId = std::this_thread::get_id();
 		mMainThreadId2 = mMainThreadId;
@@ -508,7 +510,7 @@ public:
 		*/
 		sd.Windowed = true;
 		
-		IDXGISwapChain* pSwapChain;
+		IDXGISwapChain* pSwapChain;		
 		HRESULT hr = mDXGIFactory->CreateSwapChain(mDevice.get(), &sd, &pSwapChain);
 		if (FAILED(hr))
 		{
@@ -638,6 +640,15 @@ public:
 
 	unsigned GetMultiSampleCount() const{
 		return 1;
+	}
+
+	bool IsFullscreen() const {
+		auto it = mSwapChains.begin();
+		if (it == mSwapChains.end())
+			return false;
+		BOOL fullscreen;
+		it->second->GetFullscreenState(&fullscreen, 0);
+		return fullscreen;
 	}
 
 	bool IsMainThread() const {
@@ -2186,7 +2197,13 @@ public:
 		for (auto& it : mSwapChains)
 		{
 			HRESULT hr = it.second->Present(0, mStandBy ? DXGI_PRESENT_TEST : 0);
-			assert(!FAILED(hr));
+			if (hr == DXGI_ERROR_DEVICE_REMOVED) {
+				auto reason = mDevice->GetDeviceRemovedReason();
+				char buf[512];
+				sprintf_s(buf, "device removed reason : %d", reason);
+				OutputDebugString(buf);
+				mDeviceRemoved = true;
+			}			
 			if (hr == DXGI_STATUS_OCCLUDED) {
 				mStandBy = true;
 			}
@@ -3006,6 +3023,14 @@ bool RendererD3D11::ChangeFullscreenMode(HWindowId id, HWindow window, int mode)
 
 unsigned RendererD3D11::GetMultiSampleCount() const {
 	return mImpl->GetMultiSampleCount();
+}
+
+bool RendererD3D11::IsDeviceRemoved() const {
+	return mImpl->mDeviceRemoved;
+}
+
+bool RendererD3D11::IsFullscreen() const {
+	return mImpl->IsFullscreen();
 }
 
 // Resource creation

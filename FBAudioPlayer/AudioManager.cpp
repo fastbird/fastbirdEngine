@@ -151,8 +151,7 @@ public:
 
 	~Impl(){
 		Logger::Log(FB_DEFAULT_LOG_ARG, FormatString("(info) num alsources = %d, num generatedSources = %d", 
-			mALSources.size(), mNumGeneratedSources).c_str());
-		assert(mALSources.size() == mNumGeneratedSources);
+			mALSources.size(), mNumGeneratedSources).c_str());		
 		while (!mALSources.empty()){
 			auto src = mALSources.top();
 			mALSources.pop();
@@ -567,6 +566,8 @@ public:
 
 	// fb audio
 	AudioId PlayFBAudio(const char* path, AudioSourceType::Enum sourceType){
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 		auto parsedAudio = ParseFBAudio(path);
 		if (parsedAudio.mFilepath.empty())
 			return INVALID_AUDIO_ID;
@@ -574,6 +575,8 @@ public:
 	}
 
 	AudioId PlayFBAudio(const char* path, const Vec3Tuple& pos){
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 		auto parsedAudio = ParseFBAudio(path);
 		if (parsedAudio.mFilepath.empty())
 			return INVALID_AUDIO_ID;
@@ -584,6 +587,8 @@ public:
 
 	// normal audio
 	AudioId PlayAudio(const char* path, AudioSourceType::Enum sourceType){
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return INVALID_AUDIO_ID;
@@ -597,6 +602,8 @@ public:
 	}
 
 	AudioId PlayAudio(const char* path, const Vec3Tuple& pos) {
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 		if (_stricmp(FileSystem::GetExtension(path), ".fbaudio") == 0) {
 			return PlayFBAudio(path, pos);
 		}
@@ -607,6 +614,8 @@ public:
 	}
 
 	AudioId PlayAudioWithFadeIn(const char* path, const AudioProperty& prop, TIME_PRECISION inSec) {
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 		auto id = PlayAudio(path, prop);
 		if (id != INVALID_AUDIO_ID) {
 			auto fadeIn = SmoothGain::Create(id, 1.0f / inSec, 0.f, prop.mGain);
@@ -618,6 +627,8 @@ public:
 
 	AudioId PlayAudio(const char* path, const AudioProperty& property,
 		AudioSourceType::Enum type = AudioSourceType::Sound){		
+		if (!mEnabled)
+			return INVALID_AUDIO_ID;
 
 		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
@@ -1848,12 +1859,13 @@ bool AudioManager::AudioThreadFunc(){
 	using namespace std::chrono;
 	static auto tick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 	auto curTick = duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
-	auto dt = (curTick - tick) / (TIME_PRECISION)std::milli::den;
-	if (dt > 0.03f && sAudioManagerRaw){
+	auto deltaTick = curTick - tick;	
+	if (deltaTick > 300 && sAudioManagerRaw){
 		tick = curTick;
-		return mImpl->AudioThreadFunc(dt);
+		return mImpl->AudioThreadFunc(deltaTick / (TIME_PRECISION)std::milli::den);
 	}
 	else{
+		std::this_thread::sleep_for(milliseconds(300 - deltaTick));
 		return sAudioManagerRaw != 0;
 	}
 }

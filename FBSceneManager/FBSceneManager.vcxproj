@@ -141,6 +141,7 @@
     <ClInclude Include="PointLightManager.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="SceneManagerOptions.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="SceneObjectFlag.h" />
     <ClInclude Include="SceneObjectType.h" />
@@ -154,6 +155,7 @@
     <ClCompile Include="PointLightManager.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="SceneManagerOptions.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="SpatialObject.cpp" />
     <ClCompile Include="SpatialSceneObject.cpp" />
@@ -168,8 +170,14 @@
     <ProjectReference Include="..\FBAnimation\FBAnimation.vcxproj">
       <Project>{6614b11e-13db-40f6-b9de-b3d47419d872}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\FBConsole\FBConsole.vcxproj">
+      <Project>{ae082870-0e26-479c-9aab-c7d3c32a55ca}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\FBDebugLib\FBDebugLib.vcxproj">
       <Project>{7da79d73-7e78-48a6-a052-177cdf5e3b3c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\FBLua\FBLua.vcxproj">
+      <Project>{e6362f4a-1e01-45cd-87d3-d4a964683bd5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\FBMathLib\FBMathLib.vcxproj">
       <Project>{2df8e079-28e5-4e7d-9c6a-ff87c1329eb5}</Project>

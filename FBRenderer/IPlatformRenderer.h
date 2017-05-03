@@ -94,6 +94,8 @@ namespace fb{
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture) = 0;
 		virtual bool ChangeFullscreenMode(HWindowId id, HWindow window, int mode) = 0;
 		virtual unsigned GetMultiSampleCount() const = 0;
+		virtual bool IsDeviceRemoved() const = 0;
+		virtual bool IsFullscreen() const = 0;
 		
 
 		//-------------------------------------------------------------------

@@ -81,7 +81,7 @@ namespace fb{
 		// Engine Facade
 		//---------------------------------------------------------------------------
 		HWindowId CreateEngineWindow(int x, int y, int width, int height,
-			const char* wndClass, const char* title, unsigned style, unsigned exStyle,
+			const char* wndClass, const char* title, int icon, unsigned style, unsigned exStyle,
 			WNDPROC winProc);
 		void DestroyEngineWindow(HWindowId windowId);
 		HWindowId GetMainWindowHandleId() const;
@@ -243,6 +243,7 @@ namespace fb{
 		DirectionalLightPtr GetMainSceneLight(DirectionalLightIndex::Enum idx);
 		void DetachBlendingSky(IScenePtr scene);
 		void StopAllParticles();		
+		void AddParticleSearchPath(std::string path);
 
 		//---------------------------------------------------------------------------
 		// Audio
@@ -267,8 +268,8 @@ namespace fb{
 		float GetMusicGain() const;
 		void SetSoundGain(float gain, bool writeOptions);
 		float GetSoundGain() const;
+		void SetEnableAudio(bool enable);
 
-		//void SetEnabled(bool enabled);
 		void WriteOptions(const char* filename, const OptionsData& newdata);
 	};
 }

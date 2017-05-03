@@ -391,6 +391,7 @@ namespace fb
 	{
 		return Vec2I(GetNextMultipleOfFour(value.x), GetNextMultipleOfFour(value.y));
 	}
+
 	Real Saturate(Real v) {
 		return ClampRet(v, 0.f, 1.f);
 	}

@@ -33,7 +33,17 @@
 #include "FBEngineFacade/EngineFacade.h"
 #include "FBEngineFacade/MeshFacade.h"
 #include "FBSceneManager/Scene.h"
+#include "FBConsole/Console.h"
+#include "FBFileSystem/FileSystem.h"
 namespace fb{
+
+	int FileExists(lua_State* L) {
+		auto filepath = LuaUtils::checkstring(L, 1);
+		auto ret = FileSystem::Exists(filepath);
+		LuaUtils::pushboolean(L, ret);
+		return 1;
+	}
+
 	int GetMasterGain(lua_State* L) {		
 		auto masterGain = EngineFacade::GetInstance().GetMasterGain();
 		LuaUtils::pushnumber(L, masterGain);
@@ -172,8 +182,32 @@ namespace fb{
 		return 0;
 	}
 
+	int FBGetConsoleValue(lua_State* L) {
+		auto str = LuaUtils::checkstring(L, 1);
+		auto var = Console::GetInstance().GetVariable(str);
+		switch(var->mType) {
+		case CVAR_TYPE_INT:
+			LuaUtils::pushinteger(L, var->GetInt());
+			break;
+		case CVAR_TYPE_REAL:
+			LuaUtils::pushnumber(L, var->GetFloat());
+			break;
+		case CVAR_TYPE_STRING:
+			LuaUtils::pushstring(L, var->GetString().c_str());
+			break;
+		case CVAR_TYPE_VEC2I:
+			LuaUtils::pushVec2I(L, var->GetVec2I());
+			break;
+		default:
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Invalid console variable: %s", str).c_str());
+			return 0;
+		}
+		return 1;
+	}
+
 	void InitEngineLua(lua_State* L){		
-		LuaUtils::LoadConfig(L, "configEngine.lua");				
+		LuaUtils::LoadConfig(L, "configEngine.lua");
+		LUA_SETCFUNCTION(L, FBGetConsoleValue);		
 		LUA_SETCFUNCTION(L, FBConsole);
 		LUA_SETCFUNCTION(L, LoadMesh);
 		LUA_SETCFUNCTION(L, GenGGX);
@@ -192,5 +226,6 @@ namespace fb{
 		LUA_SETCFUNCTION(L, GetMasterGain);
 		LUA_SETCFUNCTION(L, GetMusicGain);
 		LUA_SETCFUNCTION(L, GetSoundGain);
+		LUA_SETCFUNCTION(L, FileExists);
 	}
 }

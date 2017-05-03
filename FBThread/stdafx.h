@@ -40,6 +40,7 @@
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <unordered_map>
 
 #include "FBDebugLib/Logger.h"
 #include "FBStringLib/StringLib.h"

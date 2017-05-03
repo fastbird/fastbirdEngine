@@ -79,6 +79,8 @@ namespace fb
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture);
 		bool ChangeFullscreenMode(HWindowId id, HWindow window, int mode);
 		unsigned GetMultiSampleCount() const;
+		bool IsDeviceRemoved() const OVERRIDE;
+		bool IsFullscreen() const OVERRIDE;
 
 		// Resource creation
 		void SetShaderCacheOption(bool useShaderCache, bool generateCache);
@@ -180,7 +182,7 @@ namespace fb
 		void SetRasterizerState(RasterizerStateD3D11* pRasterizerState);
 		void SetBlendState(BlendStateD3D11* pBlendState);
 		void SetDepthStencilState(DepthStencilStateD3D11* pDepthStencilState, int stencilRef);
-		void SetSamplerState(SamplerStateD3D11* pSamplerState, SHADER_TYPE shader, int slot);
+		void SetSamplerState(SamplerStateD3D11* pSamplerState, SHADER_TYPE shader, int slot);		
 	};
 }
 

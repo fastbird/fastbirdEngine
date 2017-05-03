@@ -38,8 +38,7 @@
 
 using namespace fb;
 
-namespace fb{
-	Timer* gpTimer = 0;
+namespace fb{	
 	void stripe_decoded(VideoPlayerOgg::Impl* player, th_ycbcr_buffer _src,
 		int _fragy0, int _fragy_end);
 }
@@ -90,9 +89,6 @@ public:
 		, mIsFirstFrame(true)
 	{
 		mPS = Renderer::GetInstance().CreateShader("EssentialEngineData/shaders/YUVMoviePS.hlsl", SHADER_TYPE_PS);
-		if (!gpTimer){
-			gpTimer = Timer::GetMainTimer().get();
-		}
 	}
 
 	~Impl(){

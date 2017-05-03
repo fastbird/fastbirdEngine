@@ -116,9 +116,9 @@ void Ray::SetDirection(const Vec3& dir)
 	mDirInv.y = mDir.y == 0.0f ? LARGE_Real : 1.0f / mDir.y;
 	mDirInv.z = mDir.z == 0.0f ? LARGE_Real : 1.0f / mDir.z;
 	mSigns = Vec3I(
-		mDir.x < 0.0 ? 1 : 0,
-		mDir.y < 0.0 ? 1 : 0,
-		mDir.z < 0.0 ? 1 : 0);
+		mDir.x < 0.0f ? 1 : 0,
+		mDir.y < 0.0f ? 1 : 0,
+		mDir.z < 0.0f ? 1 : 0);
 }
 
 float Ray::GetDirLen() const {

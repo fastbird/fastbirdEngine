@@ -47,23 +47,7 @@ namespace fb
 	extern __declspec(thread) ThreadInfo* GThreadDesc;
 	void SwitchThread();
 	void SetThreadName(DWORD ThreadID, const char* ThreadName);
-
-	//---------------------------------------------------------------------------
-	class FB_DLL_THREAD ThreadSafeCounter
-	{
-		FB_DECLARE_PIMPL_NON_COPYABLE(ThreadSafeCounter);
-
-	public:
-		ThreadSafeCounter();
-		ThreadSafeCounter(int _Value);
-		~ThreadSafeCounter();
-
-		int operator *() const;
-		int operator ++();
-		int operator --();
-		int operator +=(int Amount);
-		int operator -=(int Amount);
-	};
+	
 	//---------------------------------------------------------------------------
 	class Thread;
 	FB_DECLARE_SMART_PTR_STRUCT(ThreadHandle);
@@ -78,6 +62,7 @@ namespace fb
 		bool IsValid();
 		HANDLE GetNativeHandle();
 		void Join();
+		void SetPriority(int priority);
 	};
 
 	//---------------------------------------------------------------------------
@@ -104,6 +89,7 @@ namespace fb
 		bool IsRunning();
 		bool IsJoinable();
 		void Join();
+		void SetPriority(int priority);
 
 		// Interface
 		virtual bool Init() { return true; }

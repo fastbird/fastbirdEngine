@@ -69,88 +69,18 @@ void SetThreadName(DWORD ThreadID, const char* ThreadName)
 #endif
 }
 
+void FBSetThreadPriority(void* thread, int priority) {
+#if defined(_PLATFORM_WINDOWS_)
+	SetThreadPriority(thread, priority);
+#else
+
+#endif
+}
+
 static ThreadHandlePtr CreateThreadHandle(Thread* ThreadInstance, int StackSize,
 	char* ThreadName)
 {
 	return ThreadHandlePtr(new ThreadHandle(ThreadInstance, StackSize, ThreadName), [](ThreadHandle* obj){ delete obj; });
-}
-
-//---------------------------------------------------------------------------
-class ThreadSafeCounter::Impl{
-public:
-	std::atomic<int> mValue;
-
-	//---------------------------------------------------------------------------
-	Impl()
-		:mValue(0)
-	{
-	}
-
-	Impl(int count)
-		:mValue(count)
-	{
-	}
-
-	int operator*() const{
-		return mValue;
-	}
-
-	int operator++(){
-		return ++mValue;
-	}
-
-	int operator --()
-	{
-		return --mValue;
-	}
-
-	int operator +=(int Amount)
-	{
-		mValue += Amount;
-		return mValue;
-	}
-
-	int operator -=(int Amount)
-	{
-		mValue -= Amount;
-		return mValue;
-	}
-
-};
-
-ThreadSafeCounter::ThreadSafeCounter()
-	: mImpl(new Impl)
-{
-
-}
-ThreadSafeCounter::ThreadSafeCounter(int _Value)
-	: mImpl(new Impl(_Value))
-{
-
-}
-
-ThreadSafeCounter::~ThreadSafeCounter(){
-
-}
-
-int ThreadSafeCounter::operator *() const{
-	return mImpl->operator*();
-}
-
-int ThreadSafeCounter::operator ++(){
-	return mImpl->operator++();
-}
-
-int ThreadSafeCounter::operator --(){
-	return mImpl->operator--();
-}
-
-int ThreadSafeCounter::operator +=(int Amount){
-	return mImpl->operator+=(Amount);
-}
-
-int ThreadSafeCounter::operator -=(int Amount){
-	return mImpl->operator-=(Amount);
 }
 
 //---------------------------------------------------------------------------
@@ -206,6 +136,10 @@ public:
 		if (mThread.joinable())
 			mThread.join();
 	}
+
+	void SetPriority(int priority) {
+		FBSetThreadPriority(mThread.native_handle(), priority);
+	}
 };
 
 //---------------------------------------------------------------------------
@@ -232,6 +166,10 @@ bool ThreadHandle::IsValid()
 void ThreadHandle::Join()
 {
 	return mImpl->Join();
+}
+
+void ThreadHandle::SetPriority(int priority) {
+	mImpl->SetPriority(priority);
 }
 
 //---------------------------------------------------------------------------
@@ -313,6 +251,11 @@ public:
 			mThreadHandle->Join();
 	}
 
+	void SetPriority(int n) {
+		if (mThreadHandle)
+			mThreadHandle->SetPriority(n);
+	}
+
 	bool IsJoinable(){
 		return mThreadHandle && mThreadHandle->IsValid();
 	}
@@ -376,6 +319,10 @@ bool Thread::IsJoinable(){
 
 void Thread::Join(){
 	mImpl->Join();
+}
+
+void Thread::SetPriority(int n) {
+	mImpl->SetPriority(n);
 }
 
 }

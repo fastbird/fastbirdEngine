@@ -57,6 +57,8 @@ namespace fb{
 			IPlatformTexturePtr& outColorTexture, IPlatformTexturePtr& outDepthTexture);
 		bool ChangeFullscreenMode(HWindowId id, HWindow window, int mode);
 		unsigned GetMultiSampleCount() const;
+		bool IsDeviceRemoved() const OVERRIDE;
+		bool IsFullscreen() const OVERRIDE;
 
 
 		//-------------------------------------------------------------------

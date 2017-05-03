@@ -81,7 +81,7 @@ namespace fb
 	unsigned long GetNextPowerOfTwo(unsigned long Value);
 	Vec2I GetNextPowerOfTwo(const Vec2I& value);
 	unsigned GetNextMultipleOfFour(unsigned value);
-	Vec2I GetNextMultipleOfFour(const Vec2I value);
+	Vec2I GetNextMultipleOfFour(const Vec2I value);	
 
 	template <class T>
 	void Clamp(T& a, const T min, const T max)

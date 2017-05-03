@@ -110,6 +110,7 @@ public:
 	bool mForceAlphaBlending;
 	bool mCheckDistance;
 	float mCameraPulling;
+	FRAME_PRECISION mLastFrame = -1;
 
 	//---------------------------------------------------------------------------
 	Impl(MeshObject* self)
@@ -204,7 +205,14 @@ public:
 		if (mSelf->HasObjFlag(SceneObjectFlag::Hide))
 			return;
 		
-		if (renderParam.mRenderPass == RENDER_PASS::PASS_NORMAL) {
+		auto& renderer = Renderer::GetInstance();
+		auto renderOption = renderer.GetRendererOptions();
+		if (renderOption->r_noMesh)
+			return;
+
+		auto curFrame = gpTimer->GetFrame();
+		if (mLastFrame != curFrame) {
+			mLastFrame = curFrame;
 			auto& animatedLocation = mSelf->GetAnimatedLocation();
 			animatedLocation.GetHomogeneous(mObjectConstants.gWorld);
 			assert(renderParam.mScene);

@@ -96,7 +96,7 @@ namespace fb
 		void SetItemProperty(unsigned key, const char* comp, const char* prop, const char* val);
 
 		void VisualizeData(unsigned index);
-		void Scrolled();
+		Vec2 Scrolled();
 		void MoveToRecycle(unsigned index);
 		WndPtr CreateNewCard(unsigned index);
 		bool IsExisting(unsigned key);

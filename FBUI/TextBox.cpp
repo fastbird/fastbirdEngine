@@ -48,6 +48,7 @@ namespace fb
 		: mCursorPos(0)
 		, mPasswd(false)		
 		, mMatchHeight(false)
+		, mTextScrollingOffset(0, 0)
 	{
 		mUIObject = UIObject::Create(GetRenderTargetSize(), this);
 		mUIObject->mOwnerUI = this;
@@ -57,10 +58,15 @@ namespace fb
 		mUIObject->SetMultiline(true);
 		SetProperty(UIProperty::FIXED_TEXT_SIZE, "true");
 		SetProperty(UIProperty::MATCH_SIZE, "false");
+		this->SetChildrenContentEndFunc(std::bind(&TextBox::GetChildrenContentEnd, this));
 	}
 
 	TextBox::~TextBox()
 	{
+	}
+
+	float TextBox::GetChildrenContentEnd() {		
+		return mWNPos.y + GetTextBoxHeight() / (float)GetRenderTargetSize().y;
 	}
 
 	void TextBox::GatherVisit(std::vector<UIObject*>& v)
@@ -76,11 +82,25 @@ namespace fb
 		__super::GatherVisit(v);
 	}
 
-	void TextBox::SetWNScollingOffset(const Vec2& offset)
+	Vec2 TextBox::Scrolled() {
+		auto offset = __super::Scrolled();
+		const auto& rt = GetRenderTargetSize();
+		mTextScrollingOffset = offset * rt;
+		AlignText();
+		return offset;
+	}
+
+	void TextBox::SetWNScrollingOffset(const Vec2& offset)
 	{
-		__super::SetWNScollingOffset(offset);
+		__super::SetWNScrollingOffset(offset);		
+
 		if (mImage)
-			mImage->SetWNScollingOffset(offset);
+			mImage->SetWNScrollingOffset(offset);		
+		
+	}
+
+	void TextBox::SetTextOffset(const Vec2I& offset) {
+		mUIObject->SetTextOffset(offset + mTextScrollingOffset);
 	}
 
 	void TextBox::OnPosChanged(bool anim)
@@ -107,6 +127,7 @@ namespace fb
 		}
 
 		TriggerRedraw();
+		RefreshVScrollbar();
 	}
 
 	void TextBox::CalcTextWidth()

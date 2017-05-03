@@ -183,30 +183,42 @@ public:
 			DepthTexture(true);
 		}
 		{
-			RenderEventMarker marker("Cloud Volume Pass");
+			/*RenderEventMarker marker("Cloud Volume Pass");
 			memset(&renderParam, 0, sizeof(RenderParam));
 			memset(&renderParamOut, 0, sizeof(RenderParamOut));
 			renderParam.mRenderPass = PASS_DEPTH;
 			CloudVolumeTarget(true);			
 			renderer.SetLockDepthStencilState(true);
+			renderer.SetLockBlendState(true);
 			provider->BindBlendState(ResourceTypes::BlendStates::BlueMask);
 			renderParam.mCamera = renderer.GetCamera().get();
-			//renderParam.mLightCamera = mLightCamera.get();
 			scene->Render(renderParam, 0);
 			renderer.SetLockDepthStencilState(false);
+			renderer.SetLockBlendState(false);
 			DepthWriteShaderCloud();
 			provider->BindRasterizerState(ResourceTypes::RasterizerStates::CullFrontFace);
 			provider->BindDepthStencilState(ResourceTypes::DepthStencilStates::NoDepthWrite_LessEqual, 0);
 			provider->BindBlendState(ResourceTypes::BlendStates::GreenAlphaMaskAddMinus);
+			renderer.SetLockDepthStencilState(true);
+			renderer.SetLockBlendState(true);
+			renderer.SetLockRasterizerState(true);
 			scene->PreRenderCloudVolumes(renderParam, 0);
 			scene->RenderCloudVolumes(renderParam, 0);
+			renderer.SetLockRasterizerState(false);
+			renderer.SetLockBlendState(false);
 			renderer.RestoreRasterizerState();
 			provider->BindBlendState(ResourceTypes::BlendStates::RedAlphaMaskAddAdd);
+			renderer.SetLockRasterizerState(true);
+			renderer.SetLockBlendState(true);
 			scene->RenderCloudVolumes(renderParam, 0);
+			renderer.SetLockDepthStencilState(false);
+			renderer.SetLockBlendState(false);
+			renderer.SetLockRasterizerState(false);
 			renderer.RestoreRasterizerState();
 			renderer.RestoreBlendState();
 			renderer.RestoreDepthStencilState();
 			CloudVolumeTarget(false);
+			CloudVolumeTexture(true);*/
 		}
 		{
 			RenderEventMarker marker("GodRay Pre-occlusion Pass");
@@ -229,7 +241,7 @@ public:
 			auto& clearcolor = renderTarget->GetClearColor();
 			renderer.Clear(clearcolor.r(), clearcolor.g(), clearcolor.b(), clearcolor.a());
 			DepthTexture(true);
-			CloudVolumeTexture(true);
+			//CloudVolumeTexture(true);
 			renderer.SetBindShadowMap(true);
 			renderParam.mCamera = renderer.GetCamera().get();
 			

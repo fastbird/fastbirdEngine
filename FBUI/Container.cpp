@@ -535,6 +535,7 @@ bool Container::OnInputFromHandler(IInputInjectorPtr injector)
 
 void Container::NotifySizeChange() {
 	for (auto& child : mChildren){
+		child->SetParent(std::static_pointer_cast<Container>(mSelfPtr.lock()));
 		child->OnParentSizeChanged();
 	}
 }
@@ -563,6 +564,10 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
+	if (mName == "shipdesc") {
+		int a = 0;
+		a++;
+	}
 	if (mMatchHeight) {
 		auto scrollerV = mScrollerV.lock();
 		if (scrollerV) {
@@ -611,7 +616,7 @@ void Container::RefreshVScrollbar()
 			const Vec2& offset = scrollerV->GetOffset();
 			for (auto child : mChildren) {
 				if (child->GetType() != ComponentType::Scroller) {
-					child->SetWNScollingOffset(offset);
+					child->SetWNScrollingOffset(offset);
 				}
 			}
 		}
@@ -636,7 +641,7 @@ void Container::RefreshVScrollbar()
 				{
 					if (child->GetType() != ComponentType::Scroller)
 					{
-						child->SetWNScollingOffset(Vec2(0, 0));
+						child->SetWNScrollingOffset(Vec2(0, 0));
 					}
 				}
 			}
@@ -767,7 +772,8 @@ void Container::OnParentVisibleChanged(bool visible)
 void Container::SetScrolledFunc(ScrolledFunc func){
 	mScrolledFunc = func;
 }
-void Container::Scrolled()
+
+Vec2 Container::Scrolled()
 {
 	if (mScrolledFunc){
 		mScrolledFunc();
@@ -775,12 +781,13 @@ void Container::Scrolled()
 
 	auto scrollerV = mScrollerV.lock();
 	auto contentUI = mWndContentUI.lock();
+	Vec2 offset(0, 0);
 	if (scrollerV)
 	{
 		float visableRatio = scrollerV->GetNSize().y;
 		float movable = 1.0f - visableRatio;
 		float maxOffset = scrollerV->GetMaxOffset().y;
-		const Vec2& offset = scrollerV->GetOffset();
+		offset = scrollerV->GetOffset();
 		float curPos = -offset.y / maxOffset;
 		float nPosY = movable * curPos;
 		scrollerV->ChangeNPosY(nPosY);
@@ -789,7 +796,7 @@ void Container::Scrolled()
 			{
 				if (child->GetType() != ComponentType::Scroller)
 				{
-					child->SetWNScollingOffset(offset);
+					child->SetWNScrollingOffset(offset);
 				}
 			}
 		}
@@ -799,13 +806,14 @@ void Container::Scrolled()
 	{
 		contentUI->Scrolled();
 	}
+	return offset;
 }
 
-void Container::SetWNScollingOffset(const Vec2& offset)
+void Container::SetWNScrollingOffset(const Vec2& offset)
 {
 	// scrollbar offset
 	assert(GetType() != ComponentType::Scroller);
-	__super::SetWNScollingOffset(offset);
+	__super::SetWNScrollingOffset(offset);
 }
 
 bool Container::ParseXML(tinyxml2::XMLElement* pelem)
@@ -944,9 +952,14 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::SCROLLERV:
 	{
+		if (mName == "shipdesc") {
+			int a = 0;
+			a++;
+		}
 								  // SCROLLERV should set before TITLEBAR property.
 								  bool b = StringConverter::ParseBool(val);
 								  mUseScrollerV = b;
+									RefreshVScrollbar();
 								  return true;
 	}
 	case UIProperty::SCROLLERV_OFFSET:
@@ -1345,7 +1358,7 @@ void Container::AddChild(WinBasePtr child){
 		const Vec2& offset = scroller->GetOffset();
 		if (child->GetType() != ComponentType::Scroller)
 		{
-			child->SetWNScollingOffset(offset);
+			child->SetWNScrollingOffset(offset);
 		}
 	}
 }

@@ -27,6 +27,7 @@
 
 #include "stdafx.h"
 #include "AsyncObjects.h"
+#include "FBCommonHeaders/SpinLock.h"
 using namespace fb;
 
 //---------------------------------------------------------------------------
@@ -213,4 +214,92 @@ SyncEventPtr fb::CreateSyncEvent(bool ManualReset, char* Name)
 	assert(0 && " Not implemented.");
 	return 0;
 #endif
+}
+
+//---------------------------------------------------------------------------
+class ThreadSafeCounter::Impl {
+public:
+	std::atomic<int> mValue;
+	mutable SpinLockWaitNoSleep mLock;
+
+	//---------------------------------------------------------------------------
+	Impl()
+		:mValue(0)
+	{
+	}
+
+	Impl(int count)
+		:mValue(count)
+	{
+	}
+
+	int operator*() const {
+		//EnterSpinLock<SpinLockWaitNoSleep> lock(mLock);
+		return mValue;
+	}
+
+	int operator++() {
+		//EnterSpinLock<SpinLockWaitNoSleep> lock(mLock);
+		return ++mValue;
+	}
+
+	int operator --()
+	{
+		//EnterSpinLock<SpinLockWaitNoSleep> lock(mLock);
+		auto value = --mValue;
+		return value;
+	}
+
+	int operator +=(int Amount)
+	{
+		//EnterSpinLock<SpinLockWaitNoSleep> lock(mLock);
+		mValue += Amount;
+		return mValue;
+	}
+
+	int operator -=(int Amount)
+	{
+		//EnterSpinLock<SpinLockWaitNoSleep> lock(mLock);
+		mValue -= Amount;
+		return mValue;
+	}
+};
+
+ThreadSafeCounter::ThreadSafeCounter()
+	: mImpl(new Impl)
+{
+
+}
+ThreadSafeCounter::ThreadSafeCounter(int _Value)
+	: mImpl(new Impl(_Value))
+{
+
+}
+
+ThreadSafeCounter::~ThreadSafeCounter() {
+
+}
+
+int ThreadSafeCounter::operator *() const {
+	return mImpl->operator*();
+}
+
+int ThreadSafeCounter::operator ++() {
+	return mImpl->operator++();
+}
+
+int ThreadSafeCounter::operator --() {
+	return mImpl->operator--();
+}
+
+int ThreadSafeCounter::operator +=(int Amount) {
+	return mImpl->operator+=(Amount);
+}
+
+int ThreadSafeCounter::operator -=(int Amount) {
+	return mImpl->operator-=(Amount);
+}
+
+ThreadSafeCounter::operator int() const {
+	return mImpl->mValue;
 }

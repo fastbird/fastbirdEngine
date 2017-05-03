@@ -304,6 +304,7 @@ namespace fb{
 		bool IsLuminanceOnCpu() const;
 		void SetLockDepthStencilState(bool lock);
 		void SetLockBlendState(bool lock);
+		void SetLockRasterizerState(bool lock);
 		void SetFontTextureAtlas(const char* path);
 		void ClearFontScissor();
 		void UpdateLightFrustum();
@@ -318,6 +319,7 @@ namespace fb{
 		void PushRenderStates();
 		void PopRenderStates();
 		void BindIncrementalStencilState(int stencilRef);
+		void ReportResolutionChange(HWindowId handleId, HWindow window);
 		
 
 		//-------------------------------------------------------------------
@@ -347,6 +349,7 @@ namespace fb{
 		bool GetResolutionList(unsigned& outNum, Vec2I* list);
 		RendererOptionsPtr GetRendererOptions() const;
 		void SetMainWindowStyle(unsigned style);
+		bool IsFullscreen() const;
 
 		//-------------------------------------------------------------------
 		// Drawing

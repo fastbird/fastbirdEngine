@@ -28,7 +28,11 @@
 #include "stdafx.h"
 #include "PointLightManager.h"
 #include "PointLight.h"
+#include "SceneManager.h"
+#include "SceneManagerOptions.h"
 #include "FBCommonHeaders/Helpers.h"
+#include "FBRenderer/Renderer.h"
+#include "FBRenderer/RendererOptions.h"
 #include "EssentialEngineData/shaders/Constants.h"
 using namespace fb;
 
@@ -44,6 +48,9 @@ public:
 
 	PointLightPtr CreatePointLight(const Vec3& pos, Real range, const Vec3& color, Real intensity, Real lifeTime, bool manualDeletion)
 	{
+		if (mPointLights.size() > 20)
+			return nullptr;
+
 		auto scene = mScene.lock();
 		if (!scene){
 			Logger::Log(FB_ERROR_LOG_ARG, "No scene");
@@ -79,7 +86,12 @@ public:
 	}
 
 	void GatherPointLightData(const BoundingVolume* boundingVolume, const Transformation& transform, POINT_LIGHT_CONSTANTS* plConst)
-	{
+	{	
+		if (SceneManager::GetInstance().GetOptions()->r_noPointLight) {
+			plConst->gPointLightColor[0].w = 0;
+			return;
+		}
+
 		struct GatheredData
 		{
 			GatheredData(Real intensity, unsigned idx)

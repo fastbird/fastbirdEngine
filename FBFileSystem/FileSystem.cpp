@@ -71,9 +71,19 @@ void FileSystem::StopLogging(){
 	Logger::Release();
 }
 
-unsigned FileSystem::parse_fba(const char* path) {
+static std::unordered_map<std::string, unsigned> parsed_folders;
+unsigned FileSystem::parse_fba(const char* path_) {
+	std::string path = ValidCString(path_) ? path_ : "";
+	if (path.empty()) {
+		path = "./";
+	}
+	auto path_it = parsed_folders.find(path);
+	if (path_it != parsed_folders.end()) {
+		return path_it->second;
+	}
+
 	unsigned num = 0;
-	auto it = GetDirectoryIterator(path, false);
+	auto it = GetDirectoryIterator(path.c_str(), false);
 	while (it->HasNext()) {
 		std::string fba_path = it->GetNextFilePath();
 		if (IsDirectory(fba_path.c_str()))
@@ -96,6 +106,8 @@ unsigned FileSystem::parse_fba(const char* path) {
 			}
 		}
 	}
+
+	parsed_folders[path] = num;
 	return num;
 }
 
@@ -1494,7 +1506,7 @@ namespace fb {
 			auto readlen = element_size * element_count;
 			auto end = file.mCurrentPosition + readlen;
 			if (end >= data.size()) {
-				readlen = data.size() - file.mCurrentPosition;
+				readlen = (size_t)(data.size() - file.mCurrentPosition);
 			}
 			memcpy(buffer, &data[0] + file.mCurrentPosition, readlen);
 			file.mCurrentPosition += readlen;
@@ -1516,7 +1528,7 @@ namespace fb {
 			auto readlen = element_size * count;
 			auto end = file.mCurrentPosition + readlen;
 			if (end >= data.size()) {
-				readlen = data.size() - file.mCurrentPosition;
+				readlen = (size_t)(data.size() - file.mCurrentPosition);
 			}
 			if (readlen > buffer_size) {
 				readlen = buffer_size;
@@ -1595,7 +1607,7 @@ namespace fb {
 		}
 
 		if (file.mMemoryFile) {
-			return file.mCurrentPosition;
+			return (long)file.mCurrentPosition;
 		}
 		else {
 			return ftell(file.mFile);

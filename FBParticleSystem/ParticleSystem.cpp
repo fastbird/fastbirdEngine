@@ -39,7 +39,6 @@ using namespace fb;
 namespace fb{
 	void ClearParticleRenderObjects();
 }
-Timer* fb::gpTimer = Timer::GetMainTimer().get();
 class ParticleSystem::Impl
 {
 public:
@@ -86,7 +85,7 @@ public:
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
 			return;
 		}
-		mDirectories.push_back(directory);
+		mDirectories.insert(mDirectories.begin(), directory);
 	}
 
 	void Update(float elapsedTime, const Vec3& mainCamPos){
@@ -338,9 +337,10 @@ public:
 	}
 
 	void AddActiveParticle(ParticleEmitterPtr pEmitter){
-		assert(!ValueExistsInVector(mActiveParticles, pEmitter));
-		mActiveParticles.push_back(pEmitter);
 		DeleteValuesInVector(mPendingDeletes, pEmitter);
+		if (!ValueExistsInVector(mActiveParticles, pEmitter)) {
+			mActiveParticles.push_back(pEmitter);
+		}		
 	}
 
 	void RemoveDeactiveParticle(ParticleEmitterPtr pEmitter){

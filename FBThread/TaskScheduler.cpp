@@ -117,6 +117,12 @@ public:
 	//---------------------------------------------------------------------------
 	// Public
 	//---------------------------------------------------------------------------
+	void SetWorkerPriority(int priority) {
+		for (auto it : mWorkerThreads) {
+			it->SetPriority(priority);
+		}
+	}
+
 	void AddTask(TaskPtr NewTask){
 		if (sFinalize || mExiting)
 			return;		
@@ -207,22 +213,18 @@ public:
 		{
 			TaskPtr CurTask;
 			while (CurTask = mPendingTasksQueue.Deq())
-			{
-				//Log("Task %d Dequeued from pending", CurTask->mTaskID);
+			{				
 				if (CurTask->mScheduled)
 				{
 					if (!CurTask->mIsHashed)
-					{
-						// Fast path: the task is fully executed and not hashed
+					{						
 						if (CurTask->IsExecuted())
 						{
-							CurTask->OnExecuted();
-							//Log("Task %d OnExcuted()", CurTask->mTaskID);
+							CurTask->OnExecuted();							
 							CurTask = 0;
 						}
 						else
 						{
-							// Register task in dependencies hashmap
 							assert(!CurTask->mHashNext);
 							DWORD HashBin = (CurTask->mTaskID) &
 								(ARRAYCOUNT(mActiveTasksMap) - 1);
@@ -230,18 +232,16 @@ public:
 							assert(mActiveTasksMap[HashBin] != CurTask);
 							mActiveTasksMap[HashBin] = CurTask;
 							CurTask->mIsHashed = true;
-							CurTask->mMyHash = HashBin;
-							//Log("Task %d Hashed()", CurTask->mTaskID);
+							CurTask->mMyHash = HashBin;							
 						}
 					}
 				}
-				else
+				else // if not (CurTask->mScheduled)
 				{
 					TaskPtr* Dependencies = NULL;
 					int NumDependencies = CurTask->GetDependencies(Dependencies);
 					if (CurTask->mIsDependency || NumDependencies)
-					{
-						// Register task in dependencies hashmap
+					{						
 						assert(!CurTask->mHashNext);
 						DWORD HashBin = (CurTask->mTaskID) &
 							(ARRAYCOUNT(mActiveTasksMap) - 1);
@@ -399,6 +399,10 @@ TaskScheduler::TaskScheduler(int NumThreads)
 
 TaskScheduler::~TaskScheduler(){
 	Logger::Log(FB_DEFAULT_LOG_ARG, "TaskScheduler Deleted");
+}
+
+void TaskScheduler::SetWorkerPriority(int priority) {
+	mImpl->SetWorkerPriority(priority);
 }
 
 void TaskScheduler::AddTask(TaskPtr NewTask){

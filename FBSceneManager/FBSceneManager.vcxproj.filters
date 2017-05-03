@@ -16,6 +16,7 @@
     <ClInclude Include="SceneObjectType.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="PointLightManager.h" />
+    <ClInclude Include="SceneManagerOptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -27,5 +28,6 @@
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="PointLightManager.cpp" />
+    <ClCompile Include="SceneManagerOptions.cpp" />
   </ItemGroup>
 </Project>

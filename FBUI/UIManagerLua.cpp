@@ -248,7 +248,7 @@ namespace fb
 	int AddComponent(lua_State* L)
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);
-		const char* compName = LuaUtils::checkstring(L, 2);
+		const char* compName = LuaUtils::checkstring(L, 2);		
 		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
 		LuaObject compTable(L, 3);
 		if (comp)
@@ -680,30 +680,9 @@ namespace fb
 	int StartUIAnimation(lua_State* L)
 	{
 		const char* uiname = LuaUtils::checkstring(L, 1);
-		const char* compName = LuaUtils::checkstring(L, 2);
-		auto comp = UIManager::GetInstance().FindComp(uiname, compName);
+		const char* compName = LuaUtils::checkstring(L, 2);		
 		const char* animName = LuaUtils::checkstring(L, 3);
-
-		if (comp)
-		{
-			if (comp->GetNoBackground())
-			{
-				comp->SetProperty(UIProperty::NO_BACKGROUND, "false");
-				comp->SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0");
-			}
-			auto uiAnimation = comp->GetUIAnimation(animName);
-			if (!uiAnimation)
-			{
-				auto ganim = UIManager::GetInstance().GetGlobalAnimation(animName);
-				uiAnimation = ganim->Clone();
-				uiAnimation->SetGlobalAnim(true);
-				comp->SetUIAnimation(uiAnimation);
-			}
-			if (uiAnimation)
-			{
-				uiAnimation->SetActivated(true);
-			}
-		}
+		UIManager::GetInstance().StartUIAnimation(uiname, compName, animName);
 		return 0;
 	}
 

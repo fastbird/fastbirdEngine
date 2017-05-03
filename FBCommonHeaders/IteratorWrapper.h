@@ -56,6 +56,11 @@ namespace fb
 			return *mCurrent++;
 		}
 
+		Iterator GetNextIterator()
+		{
+			return mCurrent++;
+		}
+
 		void Advance(unsigned dist)
 		{
 			if (dist >= mNumElem)

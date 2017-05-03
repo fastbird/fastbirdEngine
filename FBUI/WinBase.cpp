@@ -1170,8 +1170,12 @@ void WinBase::AlignText()
 		}
 			break;
 		}
-		mUIObject->SetTextOffset(offset);
+		SetTextOffset(offset);
 	}
+}
+
+void WinBase::SetTextOffset(const Vec2I& offset) {
+	mUIObject->SetTextOffset(offset);
 }
 
 void WinBase::CalcTextWidth()
@@ -1265,6 +1269,26 @@ UIAnimationPtr WinBase::GetOrCreateUIAnimation(const char* name)
 		mAnimations[name]->SetTargetUI(mSelfPtr.lock());
 	}
 	return mAnimations[name];
+}
+
+void WinBase::StartUIAnimation(const char* animname) {
+	if (GetNoBackground())
+	{
+		SetProperty(UIProperty::NO_BACKGROUND, "false");
+		SetProperty(UIProperty::BACK_COLOR, "0, 0, 0, 0");
+	}
+	auto uiAnimation = GetUIAnimation(animname);
+	if (!uiAnimation)
+	{
+		auto ganim = UIManager::GetInstance().GetGlobalAnimation(animname);
+		uiAnimation = ganim->Clone();
+		uiAnimation->SetGlobalAnim(true);
+		SetUIAnimation(uiAnimation);
+	}
+	if (uiAnimation)
+	{
+		uiAnimation->SetActivated(true);
+	}
 }
 
 UIAnimationPtr WinBase::GetUIAnimation(const char* name)
@@ -2597,7 +2621,7 @@ void WinBase::UpdateAlphaTexture(){
 	}
 }
 
-void WinBase::SetWNScollingOffset(const Vec2& offset)
+void WinBase::SetWNScrollingOffset(const Vec2& offset)
 {
 	assert(GetType() != ComponentType::Scroller);
 	mWNScrollingOffset = offset;

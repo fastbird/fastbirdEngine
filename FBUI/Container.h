@@ -67,8 +67,8 @@ namespace fb
 		virtual bool SetVisibleChildren(bool show);
 		virtual void SetVisibleInternal(bool visible);
 		virtual void OnParentVisibleChanged(bool visible);
-		virtual void Scrolled();
-		virtual void SetWNScollingOffset(const Vec2& offset);
+		virtual Vec2 Scrolled();
+		virtual void SetWNScrollingOffset(const Vec2& offset);
 
 		virtual bool SetProperty(UIProperty::Enum, const char*);
 		virtual bool GetProperty(UIProperty::Enum prop, char val[], unsigned bufsize, bool notDefaultOnly);

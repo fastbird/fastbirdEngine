@@ -90,11 +90,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBNetwork", "FBNetwork\FBNe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBThread", "FBThread\FBThread.vcxproj", "{1582AC48-8338-476D-82F9-673ED6EF0F2E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDataPacker", "FBDataPackLib\fbd.vcxproj", "{0A08AF15-0F48-4402-902D-4151FA067F66}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDataPackerLib", "FBDataPackLib\fbd.vcxproj", "{0A08AF15-0F48-4402-902D-4151FA067F66}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDevDataPacker", "FBDevDataPacker\FBDevDataPacker.vcxproj", "{506878F0-085F-4F55-AB97-74CE793B7E40}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBColladaToFBMesh", "FBColladaToFBMesh\FBColladaToFBMesh.vcxproj", "{9CFB4DBE-E4FF-4623-AC7A-8252BE9F5B89}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FBDevColladaToFBMesh", "FBColladaToFBMesh\FBColladaToFBMesh.vcxproj", "{9CFB4DBE-E4FF-4623-AC7A-8252BE9F5B89}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -306,10 +306,8 @@ Global
 		{84A0648D-8E2E-4CCE-8264-E61EC504C1D3}.Release|x64.ActiveCfg = Release|x64
 		{84A0648D-8E2E-4CCE-8264-E61EC504C1D3}.Release|x64.Build.0 = Release|x64
 		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Debug|Win32.ActiveCfg = Debug|Win32
-		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Debug|Win32.Build.0 = Debug|Win32
 		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Debug|x64.ActiveCfg = Debug|Win32
 		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Release|Win32.ActiveCfg = Release|Win32
-		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Release|Win32.Build.0 = Release|Win32
 		{915A8C63-23CD-44EC-810E-97EAE02235E1}.Release|x64.ActiveCfg = Release|x64
 		{431C6068-51EC-4FC1-BBC2-7AC66F50B706}.Debug|Win32.ActiveCfg = Debug|Win32
 		{431C6068-51EC-4FC1-BBC2-7AC66F50B706}.Debug|Win32.Build.0 = Debug|Win32

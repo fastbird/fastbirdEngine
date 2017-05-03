@@ -46,13 +46,14 @@ public:
 	static TaskScheduler& GetInstance();
 	static bool HasInstance();
 	
+	void SetWorkerPriority(int priority);
 	void AddTask(TaskPtr NewTask);
 	bool IsFull() const;
 	bool IsHalfFull() const;
 	size_t GetNumTasks() const;
-	void PrepareQuit();
+	void PrepareQuit();	
 	bool _IsFinalized() const; // internal.
-	void _Schedule(); // internal.
+	void _Schedule(); // internal.	
 
 private:
 	friend class Task;

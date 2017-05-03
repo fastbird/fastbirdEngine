@@ -51,6 +51,8 @@ namespace fb
 		void Update(float dt);
 		void EnablePhysics();
 		void DisablePhysics();
+		void SetPhysicsId(const char* id) OVERRIDE;
+		const char* GetPhysicsId() const OVERRIDE;
 
 		btCollisionShape* CreateColShape(IPhysicsInterface* shapeProvider);
 		btCollisionShape* CreateColShapeForGroup(IPhysicsInterface* shapeProvider, const Vec3I& groupIdx);

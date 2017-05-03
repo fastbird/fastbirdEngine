@@ -26,7 +26,3 @@
 */
 
 #include "StdAfx.h"
-
-namespace fb{
-	Timer* gpTimer = Timer::GetMainTimer().get();
-}

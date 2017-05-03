@@ -99,6 +99,7 @@ public:
 		: mNextWindowId(MainWindowId)
 		, mLockSceneOverriding(false)
 	{
+		Timer::Create();
 		FileSystem::StartLoggingIfNot();
 		auto filepath = "_FBEngineFacade.log";		
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
@@ -195,7 +196,7 @@ public:
 	}
 
 	HWindowId CreateEngineWindow(int x, int y, int width, int height, const char* wndClass, 
-		const char* title, unsigned style, unsigned exStyle, WNDPROC winProc)
+		const char* title, int icon, unsigned style, unsigned exStyle, WNDPROC winProc)
 	{
 		Vec2I resol(width, height);
 		if (width == 0 || height == 0){
@@ -218,9 +219,9 @@ public:
 		int eWidth = rect.right - rect.left;
 		int eHeight = rect.bottom - rect.top;
 		WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
-			0, 0, GetModuleHandle(0), LoadIcon(0, IDI_APPLICATION),
+			0, 0, GetModuleHandle(0), (HICON)icon,
 			NULL, HBRUSH(COLOR_WINDOW + 1),
-			0, wndClass, LoadIcon(0, IDI_APPLICATION) };
+			0, wndClass, (HICON)icon };
 
 		WNDCLASSEX classInfo;
 		BOOL registered = GetClassInfoEx(GetModuleHandle(NULL), wndClass, &classInfo);
@@ -655,9 +656,9 @@ public:
 		return mAudioManager->GetSoundGain();
 	}
 
-	void SetEnabled(bool enabled){
-		mAudioManager->SetEnabled(enabled);
-		mMusicPlayer->SetEnabled(enabled);
+	void SetEnableAudio(bool enable) {
+		mAudioManager->SetEnabled(enable);
+		mMusicPlayer->SetEnabled(enable);
 	}
 
 	void WriteOptions(const char* filename, const OptionsData& newdata) {
@@ -752,9 +753,9 @@ lua_State* EngineFacade::GetLuaState() const {
 }
 
 HWindowId EngineFacade::CreateEngineWindow(int x, int y, int width, int height,
-	const char* wndClass, const char* title, unsigned style, unsigned exStyle,
+	const char* wndClass, const char* title, int icon, unsigned style, unsigned exStyle,
 	WNDPROC winProc){
-	return mImpl->CreateEngineWindow(x, y, width, height, wndClass, title, style, exStyle, winProc);
+	return mImpl->CreateEngineWindow(x, y, width, height, wndClass, title, icon, style, exStyle, winProc);
 }
 
 void EngineFacade::DestroyEngineWindow(HWindowId windowId){
@@ -1153,8 +1154,14 @@ intptr_t EngineFacade::WinProc(HWindow window, unsigned msg, uintptr_t wp, uintp
 		if (Renderer::HasInstance()) {
 			auto hwndId = Renderer::GetInstance().GetWindowHandleId(window);
 			if (hwndId != INVALID_HWND_ID && Renderer::HasInstance()) {
-				Renderer::GetInstance().OnWindowSizeChanged(window, Vec2I(width, height));
+				if (!Renderer::GetInstance().IsFullscreen()) {
+					Renderer::GetInstance().OnWindowSizeChanged(window, Vec2I(width, height));
+				}
+				else {
+					Renderer::GetInstance().ReportResolutionChange(hwndId, window);
+				}
 			}
+			
 		}
 		return 0;
 	}
@@ -1437,6 +1444,10 @@ void EngineFacade::StopAllParticles(){
 	mImpl->mParticleSystem->StopParticles();
 }
 
+void EngineFacade::AddParticleSearchPath(std::string path) {
+	mImpl->mParticleSystem->AddParticleSearchDirectory(path.c_str());
+}
+
 AudioId EngineFacade::PlayAudio(const char* filepath){
 	return mImpl->PlayAudio(filepath);
 }
@@ -1505,9 +1516,9 @@ float EngineFacade::GetSoundGain() const {
 	return mImpl->GetSoundGain();
 }
 
-//void EngineFacade::SetEnabled(bool enabled){
-//	mImpl->SetEnabled(enabled);
-//}
+void EngineFacade::SetEnableAudio(bool enable) {
+	mImpl->SetEnableAudio(enable);
+}
 
 void EngineFacade::WriteOptions(const char* filename, const OptionsData& newdata) {
 	mImpl->WriteOptions(filename, newdata);

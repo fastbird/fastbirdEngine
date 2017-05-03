@@ -28,16 +28,18 @@
 #pragma once
 #include "FBCommonHeaders/Types.h"
 namespace fb{	
+	FB_DECLARE_SMART_PTR(SceneManagerOptions);
 	FB_DECLARE_SMART_PTR(Camera);
 	FB_DECLARE_SMART_PTR(IScene);
 	FB_DECLARE_SMART_PTR(Scene);
 	FB_DECLARE_SMART_PTR(SceneManager);
 	class FB_DLL_SCENEMANAGER SceneManager{
 		FB_DECLARE_PIMPL_NON_COPYABLE(SceneManager);
-		SceneManager();		
+		SceneManager();				
 		~SceneManager();
-		
+
 	public:
+		
 		/** You have the ownership of returned scene. */
 		static SceneManagerPtr Create();
 		/** Returns the SceneManager as a reference.
@@ -56,5 +58,7 @@ namespace fb{
 		void Update(TIME_PRECISION dt);
 
 		void CopyDirectionalLight(IScenePtr destScene, int destLightSlot, IScenePtr srcScene, int srcLightSlot);
+
+		SceneManagerOptionsPtr GetOptions() const;
 	};
 }

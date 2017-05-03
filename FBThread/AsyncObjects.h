@@ -122,5 +122,24 @@ namespace fb
 	};
 
 	FB_DLL_THREAD SyncEventPtr CreateSyncEvent(bool ManualReset = false, char* Name = 0);
+
+	//---------------------------------------------------------------------------
+	class FB_DLL_THREAD ThreadSafeCounter
+	{
+		FB_DECLARE_PIMPL_NON_COPYABLE(ThreadSafeCounter);
+
+	public:
+		ThreadSafeCounter();
+		ThreadSafeCounter(int _Value);
+		~ThreadSafeCounter();
+
+		int operator *() const;
+		int operator ++();
+		int operator --();
+		int operator +=(int Amount);
+		int operator -=(int Amount);
+
+		operator int() const;
+	};
 }
 

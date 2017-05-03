@@ -96,7 +96,7 @@ public:
 
 	// IWinBase
 	ComponentType::Enum GetType() const { return ComponentType::ListBox; }
-	void Scrolled();
+	Vec2 Scrolled();
 	float GetContentHeight() const;
 
 protected:

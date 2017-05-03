@@ -107,7 +107,7 @@ namespace fb {
 			fba_path += FB_FBA_EXT;
 			auto target_path = FileSystem::ConcatPath(target_folder.c_str(), 
 				FileSystem::GetFileName(fba_path.c_str()).c_str());
-			FileSystem::CopyFile(fba_path.c_str(), target_path.c_str(), true, false);
+			FileSystem::Rename(fba_path.c_str(), target_path.c_str());
 			folders_data.push_back(
 				folder_data{ path, original_size, compressed_size, 
 				1.0f - (float)compressed_size / (float)original_size });			
@@ -461,7 +461,7 @@ namespace fb {
 			auto filepath = it->GetNextFilePath(&is_dir);
 			if (is_dir)
 				continue;
-			if (ignore(filepath)) {
+			if (FileSystem::HasExtension(filepath, ".fba") || ignore(filepath)) {
 				std::cout << FormatString("excluded: %s\n", filepath);
 				continue;
 			}

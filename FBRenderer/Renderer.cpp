@@ -85,7 +85,6 @@ using namespace fb;
 
 static const float defaultFontSize = 20.f;
 const HWindow Renderer::INVALID_HWND = (HWindow)-1;
-Timer* fb::gpTimer = 0;
 class Renderer::Impl{
 public:
 	typedef fb::Factory<IPlatformRenderer>::CreateCallback CreateCallback;
@@ -256,8 +255,6 @@ public:
 		auto filepath = "_FBRenderer.log";
 		FileSystem::BackupFile(filepath, 5, "Backup_Log");
 		Logger::Init(filepath);
-
-		gpTimer = Timer::GetMainTimer().get();
 		auto& envBindings = mSystemTextureBindings[SystemTextures::Environment];
 		envBindings.push_back(TextureBinding{ SHADER_TYPE_PS, 4 });
 		auto& depthBindings = mSystemTextureBindings[SystemTextures::Depth];
@@ -364,7 +361,7 @@ public:
 		mWindowSizes[id] = { width, height };		
 		IPlatformTexturePtr platformColorTexture;
 		IPlatformTexturePtr platformDepthTexture;
-		
+				
 		CanvasInitInfo ci(id, window, width, height, 0,
 			PIXEL_FORMAT_R8G8B8A8_UNORM, PIXEL_FORMAT_D24_UNORM_S8_UINT);
 		GetPlatformRenderer().InitCanvas(ci, platformColorTexture, platformDepthTexture);
@@ -648,6 +645,10 @@ public:
 			(Real)mRenderTargetConstants.gScreenSize.x,
 			(Real)mRenderTargetConstants.gScreenSize.y,
 			0.f, 1.0f);
+
+		if (mRendererOptions->r_fullscreen != 0) {
+			ChangeFullscreenMode(mRendererOptions->r_fullscreen);
+		}
 	}
 
 	void DeinitCanvas(HWindowId id){
@@ -834,6 +835,9 @@ public:
 
 		mConsoleRenderer->Render();
 		GetPlatformRenderer().Present();
+		if (GetPlatformRenderer().IsDeviceRemoved()) {
+
+		}
 
 		auto endTime = gpTimer->GetTickCount();
 		auto gap = (endTime - startTime) / (Real)gpTimer->GetFrequency();
@@ -2522,7 +2526,7 @@ public:
 	void OnWindowSizeChanged(HWindow window, const Vec2I& clientSize){
 		if (mWindowSizeInternallyChanging)
 			return;
-
+		
 		ChangeResolution(GetMainWindowHandle(), clientSize);
 	}	
 
@@ -2534,17 +2538,8 @@ public:
 			return;
 		auto rt = GetRenderTarget(handleId);
 		if (!rt)
-			return;
-		if (window == GetMainWindowHandle()) {
-			mRendererOptions->r_resolution = resol;
-			mScreenToNDCMatrix = MakeOrthogonalMatrix(0, 0,
-				(Real)resol.x,
-				(Real)resol.y,
-				0.f, 1.0f);			
-		}
+			return;		
 
-		
-		
 		if (!rt->GetRenderTargetTexture() || rt->GetRenderTargetTexture()->GetSize() == resol)
 			return;		
 		rt->RemoveTextures();
@@ -2555,14 +2550,44 @@ public:
 		bool success = GetPlatformRenderer().ChangeResolution(handleId, window, 
 			resol, color, depth);
 		if (success){			
-			rt->SetColorTexture(CreateTexture(color));
-			rt->SetDepthTexture(CreateTexture(depth));			
+			auto colorTexture = CreateTexture(color);
+			colorTexture->SetType(TEXTURE_TYPE_RENDER_TARGET);
+			auto depthTexture = CreateTexture(depth);
+			depthTexture->SetType(TEXTURE_TYPE_DEPTH_STENCIL);
+			rt->SetColorTexture(colorTexture);
+			rt->SetDepthTexture(depthTexture);
 		}
 
 		mDepthStencilTextureOverride.clear();
 		rt->Bind();
+		ReportResolutionChange(handleId, window);
+	}
+
+	void ReportResolutionChange(HWindowId handleId, HWindow window)
+	{		
+		if (window == GetMainWindowHandle()) {
+			auto libfullscreen = GetPlatformRenderer().IsFullscreen();
+			if (libfullscreen) {
+				if (mRendererOptions->r_fullscreen == 0 || mRendererOptions->r_fullscreen == 2) {
+					mRendererOptions->r_fullscreen = 1;
+				}
+			}
+			else {
+				if (mRendererOptions->r_fullscreen == 1) {
+					mRendererOptions->r_fullscreen = 0;
+				}
+			}
+
+			auto resol = GetRenderTargetSize(window);
+			mRendererOptions->r_resolution = resol;
+			mScreenToNDCMatrix = MakeOrthogonalMatrix(0, 0,
+				(Real)resol.x,
+				(Real)resol.y,
+				0.f, 1.0f);
+		}
+
 		auto& observers = mSelf->mObservers_[IRendererObserver::DefaultRenderEvent];
-		for (auto it = observers.begin(); it != observers.end(); /**/){
+		for (auto it = observers.begin(); it != observers.end(); /**/) {
 			IteratingWeakContainer(observers, it, observer);
 			observer->OnResolutionChanged(handleId, window);
 		}
@@ -3174,6 +3199,10 @@ public:
 		BlendState::SetLock(lock);
 	}
 
+	void SetLockRasterizerState(bool lock) {
+		RasterizerState::SetLock(lock);
+	}
+
 	void SetFontTextureAtlas(const char* path){
 		if (!ValidCString(path)){
 			Logger::Log(FB_ERROR_LOG_ARG, "Invalid arg.");
@@ -3435,6 +3464,10 @@ public:
 
 	void SetMainWindowStyle(unsigned style){
 		mMainWindowStyle = style;
+	}
+
+	bool IsFullscreen() const {
+		return GetPlatformRenderer().IsFullscreen();
 	}
 
 	//-------------------------------------------------------------------
@@ -4102,6 +4135,10 @@ void Renderer::SetLockBlendState(bool lock){
 	mImpl->SetLockBlendState(lock);
 }
 
+void Renderer::SetLockRasterizerState(bool lock) {
+	mImpl->SetLockRasterizerState(lock);
+}
+
 void Renderer::SetFontTextureAtlas(const char* path){
 	mImpl->SetFontTextureAtlas(path);
 }
@@ -4143,6 +4180,10 @@ void Renderer::PopRenderStates()
 
 void Renderer::BindIncrementalStencilState(int stencilRef) {
 	mImpl->BindIncrementalStencilState(stencilRef);
+}
+
+void Renderer::ReportResolutionChange(HWindowId handleId, HWindow window) {
+	mImpl->ReportResolutionChange(handleId, window);
 }
 
 //-------------------------------------------------------------------
@@ -4237,6 +4278,10 @@ RendererOptionsPtr Renderer::GetRendererOptions() const {
 
 void Renderer::SetMainWindowStyle(unsigned style){
 	mImpl->SetMainWindowStyle(style);
+}
+
+bool Renderer::IsFullscreen() const {
+	return mImpl->IsFullscreen();
 }
 
 //-------------------------------------------------------------------

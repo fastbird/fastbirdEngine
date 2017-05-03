@@ -710,7 +710,7 @@ public:
 			Real xr = std::get<0>(rtSize) / (Real)std::get<0>(windowSize);
 			Real yr = std::get<1>(rtSize) / (Real)std::get<1>(windowSize);
 			x = Round(x * xr);
-			y = Round(y * yr);
+			y = Round(y * yr);			
 		}
 #else
 		assert(0 && "Not implemented");

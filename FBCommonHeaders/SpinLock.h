@@ -86,10 +86,13 @@ namespace fb
 
 		void Unlock()
 		{
-			mLockSem = 0;
+			long expected = 1;
+			while (!mLockSem.compare_exchange_strong(expected, 0))
+				expected=1;
 		}
 	};
 	using SpinLockWaitSleep = SpinLock<true, true>;
+	using SpinLockWaitNoSleep = SpinLock<true, false>;
 
 	template <class T>
 	struct EnterSpinLock {

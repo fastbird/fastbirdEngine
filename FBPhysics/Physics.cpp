@@ -37,6 +37,7 @@
 #include "BulletFilterCallback.h"
 #include "BulletDebugDraw.h"
 #include "FBFileSystem/FileSystem.h"
+#include "FBCommonHeaders/Helpers.h"
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
@@ -150,6 +151,7 @@ public:
 
 	BulletFilterCallback* mFilterCallback;
 	bool mEnabled;
+	std::string mPhysicsId;
 
 	//-------------------------------------------------------------------
 	Impl(Physics* self)
@@ -280,6 +282,15 @@ public:
 
 	void DisablePhysics(){
 		mEnabled = false;
+	}
+
+	void SetPhysicsId(const char* id) {
+		if (ValidCString(id))
+			mPhysicsId = id;
+	}
+
+	const char* GetPhysicsId() {
+		return mPhysicsId.c_str();
 	}
 
 	btCollisionShape* CreateBulletColShape(CollisionShapePtr colShape){
@@ -1304,6 +1315,14 @@ void Physics::EnablePhysics() {
 
 void Physics::DisablePhysics() {
 	mImpl->DisablePhysics();
+}
+
+void Physics::SetPhysicsId(const char* id) {
+	mImpl->SetPhysicsId(id);
+}
+
+const char* Physics::GetPhysicsId() const {
+	return mImpl->GetPhysicsId();
 }
 
 btCollisionShape* Physics::CreateColShape(IPhysicsInterface* shapeProvider){
