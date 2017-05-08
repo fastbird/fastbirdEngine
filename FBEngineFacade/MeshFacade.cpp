@@ -627,12 +627,13 @@ public:
 		std::vector<MeshObjectPtr> meshes;
 		if (mMeshObject)
 			meshes.push_back(mMeshObject);
-		else{
+		else if (mMeshGroup) {
 			unsigned num = mMeshGroup->GetNumMeshes();
 			for (unsigned i = 0; i < num; ++i){
 				meshes.push_back(mMeshGroup->GetMeshObject(i));
 			}
 		}
+
 		for (auto& mesh : meshes){
 			unsigned numShapes = mesh->GetNumCollisionShapes();
 			for (unsigned s = 0; s < numShapes; ++s){

@@ -129,6 +129,11 @@ namespace fb{
 		static int CompareResourceFileModifiedTime(const char* resourceFile, const char* file);
 		static bool CheckSecurity(const char* filepath);		
 		static ByteArray ReadBinaryFile(const char* path);
+		template<size_t _Size>
+		static void ReadTail(char(&dest)[_Size], const char* filepath) {
+			_ReadTail(dest, _Size, filepath);
+		}
+		static void _ReadTail(char buffer[], size_t size, const char* filepath);
 		static bool WriteBinaryFile(const char* path, const char* data, size_t length);
 		static bool WriteBinaryFile(const char* path, const ByteArray& data);
 		static bool WriteTextFile(const char* path, const char* data, size_t length);

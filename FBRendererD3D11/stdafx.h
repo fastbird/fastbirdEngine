@@ -33,6 +33,8 @@ Required libraries: \b FBMemoryManager, \b FBDebugLib, \b FBMath
 */
 #pragma warning (disable : 4251)
 
+#include "FBCommonHeaders/targetver_win.h"
+
 #define FB_DLL_RENDERERD3D11 __declspec(dllexport)
 #define FB_DLL_FILESYSTEM __declspec(dllimport)
 #define FB_DLL_THREAD __declspec(dllimport)
@@ -53,7 +55,7 @@ Required libraries: \b FBMemoryManager, \b FBDebugLib, \b FBMath
 #include <atomic>
 #include <cinttypes>
 #include <unordered_set>
-#include <d3d9.h>
+//#include <d3d9.h>
 #include <assert.h>
 #include <DirectXTex/DirectXTex.h>
 #include <ScreenGrab/ScreenGrab.h>

@@ -76,6 +76,7 @@ namespace fb{
 		static const HWindowId INVALID_HWND_ID = (HWindowId)-1;
 		
 		void SetApplicationName(const char* applicationName);
+		void ReleaseLog();
 		lua_State* GetLuaState() const;
 		//---------------------------------------------------------------------------
 		// Engine Facade

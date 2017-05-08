@@ -36,6 +36,7 @@
     <ClInclude Include="RecursiveSpinLock.h" />
     <ClInclude Include="SpinLock.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="targetver_win.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="platform.h" />
     <ClInclude Include="VectorMap.h" />

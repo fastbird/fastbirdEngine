@@ -2234,11 +2234,11 @@ public:
 
 	// Debugging & Profiling
 	void BeginEvent(const char* name){
-		D3DPERF_BeginEvent(0xffffffff, AnsiToWide(name));
+		//D3DPERF_BeginEvent(0xffffffff, AnsiToWide(name));
 	}
 
 	void EndEvent(){
-		D3DPERF_EndEvent();
+		//D3DPERF_EndEvent();
 	}
 
 	void TakeScreenshot(const char* filename){

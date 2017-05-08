@@ -22,5 +22,6 @@
     <ClInclude Include="ProfilerSimple.h" />
     <ClInclude Include="VectorMapSerialization.h" />
     <ClInclude Include="CounterFromZero.h" />
+    <ClInclude Include="targetver_win.h" />
   </ItemGroup>
 </Project>

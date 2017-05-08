@@ -260,7 +260,7 @@ public:
 
 		if (!compiled_mesh) {
 			Logger::Log(FB_DEFAULT_LOG_ARG, FormatString(
-				"(info) %s not found", fbmesh_path.c_str()).c_str());
+				"(info) %s not found. Trying to load .dae file.", fbmesh_path.c_str()).c_str());
 
 			auto pColladaImporter = ColladaImporter::Create();
 			ColladaImporter::ImportOptions option;

@@ -35,6 +35,7 @@ A group containing header files only.
 
 #if defined(_WIN32)
 	#define _PLATFORM_WINDOWS_
+#include "targetver_win.h"
 #elif defined(__APPLE__)
 	#include "TargetConditionals.h"
 	#if TARGET_IPHONE_SIMULATOR

@@ -695,6 +695,26 @@ ByteArray FileSystem::ReadBinaryFile(const char* path){
 	return buffer;	
 }
 
+void FileSystem::_ReadTail(char buffer[], size_t size, const char* filepath){
+	FileSystem::Open file(filepath, "r",ErrorMode::PrintErrorMsg);
+	auto err = file.Error();
+	if (err) {
+		return;
+	}
+	fseek(file, 0, SEEK_END);
+	auto lSize = ftell(file);
+	if (size < lSize) {
+		fseek(file, -size, SEEK_END);
+		auto readed = fread(buffer, 1, size-1, file);
+		buffer[readed] = 0;
+	}
+	else {
+		rewind(file);
+		auto readed = fread(buffer, 1, size - 1, file);
+		buffer[readed] = 0;
+	}
+}
+
 bool FileSystem::WriteBinaryFile(const char* path, const char* data, size_t length){
 	if (!data || length == 0 || path == 0)
 		return false;

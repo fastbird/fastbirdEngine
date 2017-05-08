@@ -155,6 +155,10 @@ public:
 		LuaUtils::CloseLuaState(mLuaState);
 		mLuaState = 0;
 		FileSystem::StopLogging();
+		ReleaseLog();
+	}
+
+	void ReleaseLog() {
 		Logger::Release();
 	}
 
@@ -746,6 +750,10 @@ EngineFacade::~EngineFacade(){
 
 void EngineFacade::SetApplicationName(const char* applicationName){
 	FileSystem::SetApplicationName(applicationName);
+}
+
+void EngineFacade::ReleaseLog() {
+	mImpl->ReleaseLog();
 }
 
 lua_State* EngineFacade::GetLuaState() const {

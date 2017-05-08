@@ -33,6 +33,7 @@
 #include "FBFileSystem/FileSystem.h"
 using namespace fb;
 void NumTasks(StringVector& args);
+void EngineCrashTest(StringVector& args);
 
 EngineOptionsPtr EngineOptions::Create(lua_State* L) {
 	return std::make_shared<EngineOptions>(L);
@@ -59,6 +60,7 @@ EngineOptions::EngineOptions(lua_State* L){
 	FB_REGISTER_CVAR(AudioDebug, AudioDebug, CVAR_CATEGORY_CLIENT, "Audio debug");
 	
 	FB_REGISTER_CC(NumTasks, "NumTasks");
+	FB_REGISTER_CC(EngineCrashTest, "EngineCrashTest");
 }
 
 EngineOptions::~EngineOptions(){
@@ -74,4 +76,10 @@ void NumTasks(StringVector& args) {
 bool EngineOptions::OnChangeCVar(CVarPtr pCVar) {
 
 	return false;
+}
+
+void EngineCrashTest(StringVector& args) {
+	Logger::Log(FB_ERROR_LOG_ARG, "Engine Crash test!");
+	int* a = 0;
+	*a = 1;
 }
