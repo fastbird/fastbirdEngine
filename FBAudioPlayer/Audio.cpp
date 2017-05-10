@@ -56,7 +56,36 @@ public:
 	ALuint mAudioSource;
 	ALenum mAudioFormat;
 	ALenum mAudioChannel;
+	bool HasALError(const char* funcName) {
+		auto error = alGetError();
+		if (error == AL_OUT_OF_MEMORY) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(error) %s: out of memory.", funcName).c_str());			
+		}
+		else if (error == AL_INVALID_VALUE) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(error) %s: invalid value", funcName).c_str());			
+		}
+		else if (error == AL_INVALID_OPERATION) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(error) %s: There is no current context. ", funcName).c_str());			
+		}
+		else if (error == AL_INVALID_ENUM) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(errror) %s : The specified parameter is not valid. ", funcName).c_str());			
+		}
+		else if (error == AL_INVALID_NAME) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(errror) %s : The specified source name is not valid.", funcName).c_str());
+		}
+		else if(error != AL_NO_ERROR) {
+			Logger::Log(FB_ERROR_LOG_ARG, FormatString("(errror) %s : %d unknown error.", funcName, error).c_str());
+		}
 
+
+		if (error== AL_NO_ERROR) {
+			return false;
+		}
+		else {
+			mError = true;
+			return true;
+		}			
+	}
 	//---------------------------------------------------------------------------
 	Impl()
 		: mError(false)
@@ -80,6 +109,8 @@ public:
 			{
 				Logger::Log(FB_DEFAULT_LOG_ARG, "AL_SOFT_buffer_samples not supported");
 			}
+			if (HasALError("alIsExtensionPresent")) {
+			}
 		}
 	}
 
@@ -93,7 +124,9 @@ public:
 
 		if (mVorbisDspState.vi){
 			alDeleteBuffers(NUM_BUFFERS, mAudioBuffers);
+			if (HasALError("alDeleteBuffers")) {}
 			alDeleteSources(1, &mAudioSource);
+			if (HasALError("alDeleteSources")) {}
 			vorbis_dsp_clear(&mVorbisDspState);
 			mVorbisDspState.vi = 0;
 		}
@@ -147,16 +180,23 @@ public:
 			mAudioChannel = ChannelsToAL(mVorbisInfo.channels);
 			if (vorbis_synthesis_init(&mVorbisDspState, &mVorbisInfo) == 0){
 				alListener3f(AL_POSITION, 0, 0, 0);
+				if (HasALError("alListener3f")) {}
 				// AL Buffers
 				alGenBuffers(NUM_BUFFERS, mAudioBuffers);
-				assert(alGetError() == AL_NO_ERROR);
+				if (HasALError("alGenBuffers")) {
+					return false;
+				}
 				alGenSources(1, &mAudioSource);
-				assert(alGetError() == AL_NO_ERROR);
+				if (HasALError("alGenSources")) {
+					return false;
+				}
+				
 				alSource3f(mAudioSource, AL_POSITION, 0, 0, 0);
 				//alSourcei(mAudioSource, AL_SOURCE_RELATIVE, AL_TRUE);
 				//alSourcei(mAudioSource, AL_ROLLOFF_FACTOR, 0);
-				assert(alGetError() == AL_NO_ERROR && "Could not set source parameters");
-
+				if (HasALError("alSource3f")) {
+					return false;
+				}
 
 				mAudioFormat = GetAudioFormat(mAudioChannel, AL_SHORT_SOFT, alIsBufferFormatSupportedSOFT);
 				if (mAudioFormat == 0){
@@ -165,7 +205,9 @@ public:
 				}
 				else{
 					alSourceRewind(mAudioSource);
+					if (HasALError("alSourceRewind")) {}
 					alSourcei(mAudioSource, AL_BUFFER, 0);
+					if (HasALError("alSourcei")) {}
 
 					mConvSize = mConvSize / mVorbisInfo.channels;
 					vorbis_block_init(&mVorbisDspState, &mVorbisBlock);
@@ -178,6 +220,7 @@ public:
 						auto frames = BytesToFrames(samples * 2 * mVorbisInfo.channels, mAudioChannel, AL_SHORT_SOFT);
 						alBufferSamplesSOFT(mAudioBuffers[i], mVorbisInfo.rate, mAudioFormat,
 							frames, mAudioChannel, AL_SHORT_SOFT, mConvBuffer);
+						if (HasALError("alBufferSamplesSOFT")) {}
 
 					}
 					auto err = alGetError();
@@ -288,6 +331,7 @@ public:
 		mAudioBuffers[0] = alureCreateBufferFromFile(path);
 		if (!mAudioBuffers[0]){
 			Logger::Log(FB_ERROR_LOG_ARG, FormatString("Cannot load audio(%s)", path).c_str());
+			Logger::Log(FB_ERROR_LOG_ARG, alureGetErrorString());
 		}
 
 
@@ -302,6 +346,12 @@ public:
 		(-1.<=range<=1.) to whatever PCM format and write it out */
 		ALint processed, state;
 		alGetSourcei(mAudioSource, AL_SOURCE_STATE, &state);
+		if (alGetError() != AL_NO_ERROR)
+		{
+			Error("Error checking source state!");
+			return;
+		}
+
 		alGetSourcei(mAudioSource, AL_BUFFERS_PROCESSED, &processed);
 		if (alGetError() != AL_NO_ERROR)
 		{

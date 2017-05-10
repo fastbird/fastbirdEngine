@@ -564,10 +564,6 @@ bool Container::GetFocus(bool includeChildren /*= false*/) const
 
 void Container::RefreshVScrollbar()
 {
-	if (mName == "shipdesc") {
-		int a = 0;
-		a++;
-	}
 	if (mMatchHeight) {
 		auto scrollerV = mScrollerV.lock();
 		if (scrollerV) {
@@ -952,10 +948,6 @@ bool Container::SetProperty(UIProperty::Enum prop, const char* val)
 	{
 	case UIProperty::SCROLLERV:
 	{
-		if (mName == "shipdesc") {
-			int a = 0;
-			a++;
-		}
 								  // SCROLLERV should set before TITLEBAR property.
 								  bool b = StringConverter::ParseBool(val);
 								  mUseScrollerV = b;

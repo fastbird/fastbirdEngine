@@ -273,3 +273,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 APIDesign.~ml
+test1.txt
+pack_result.txt

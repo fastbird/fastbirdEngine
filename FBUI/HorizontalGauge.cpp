@@ -233,14 +233,6 @@ namespace fb
 
 	void HorizontalGauge::SetGaugeColorEmpty(const Color& color)
 	{
-		if (mGaugeBorderColor.r() != mGaugeBorderColor.r()) {
-			int a = 0;
-			a++;
-		}
-		if (mGaugeBorderColor.g() != mGaugeBorderColor.g()) {
-			int a = 0;
-			a++;
-		}
 		mGaugeColorEmpty = color;
 		SetPercentage(mPercentage);
 	}

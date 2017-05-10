@@ -82,6 +82,10 @@ bool NullPlatformRenderer::IsFullscreen() const {
 	return false;
 }
 
+GraphicDeviceInfo NullPlatformRenderer::GetDeviceInfo() const {
+	return GraphicDeviceInfo();
+}
+
 void NullPlatformRenderer::SetShaderCacheOption(bool useShaderCache, bool generateCache) {
 	
 }

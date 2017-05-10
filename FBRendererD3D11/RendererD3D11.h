@@ -81,6 +81,7 @@ namespace fb
 		unsigned GetMultiSampleCount() const;
 		bool IsDeviceRemoved() const OVERRIDE;
 		bool IsFullscreen() const OVERRIDE;
+		GraphicDeviceInfo GetDeviceInfo() const OVERRIDE;
 
 		// Resource creation
 		void SetShaderCacheOption(bool useShaderCache, bool generateCache);

@@ -590,10 +590,6 @@ public:
 					if (szType)
 						texture_type = TextureTypeFromString(szType);
 					ColorRamp cr;
-					if (strstr(filepath.c_str(), "Fire.dds")) {
-						int a = 0;
-						++a;
-					}
 					if (texture_type & TEXTURE_TYPE_COLOR_RAMP)
 					{
 						tinyxml2::XMLElement* barElem = pTexElem->FirstChildElement("Bar");

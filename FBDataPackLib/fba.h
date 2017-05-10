@@ -64,18 +64,29 @@ namespace fb {
 		unsigned compressed_size;
 		float compression_ratio;
 	};
-	
+
 	bool pack_data_folder(const std::string& target_folder, const std::string& source_folder,
-		unsigned resource_version, const std::string& password, const std::string& ignore_file,
+		unsigned resource_version, const std::string& password,
+		const std::string& ignore_file, const StringVector& includeOnly,
 		bool perform_validation, unsigned& out_original_size, unsigned& out_compressed_size,
 		std::vector<folder_data>& out_folders_data);
+
+	enum PackFolderResult {
+		PFR_ERROR,
+		PFR_SUCCESS,
+		PFR_EXCLUDED,
+	};
 	/// folderName usually the direct child folders.
 	/// for example, if you want to compress your_game_folder/data/actors:
 	/// The working directory should be your_game_folder/data
 	/// and the 'folder_name' should be actors
 	/// The output file path will be your_game_folder/data/actors.fba
-	bool pack_data_folder(const std::string& folder_name, unsigned resource_version, const std::string& password,
-		const std::string& ignore_file, bool perform_validation, unsigned& out_original_size, unsigned& out_compressed_size);
+	/// return 0 if there is an error.
+	/// return 1 if success.
+	/// return 2 if the folder is excluded.
+	PackFolderResult pack_data_folder(const std::string& folder_name, unsigned resource_version, const std::string& password,
+		const std::string& ignore_file, const StringVector& includeOnly, 
+		bool perform_validation, unsigned& out_original_size, unsigned& out_compressed_size);
 
 	bool parse_fba_headers(const char* path, pack_datum& data);
 

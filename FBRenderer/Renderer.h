@@ -44,6 +44,7 @@
 #include "FBSceneManager/IScene.h"
 #include "FBInputManager/IInputConsumer.h"
 #include "FBMathLib/Math.h"
+#include "GraphicDeviceInfo.h"
 struct lua_State;
 namespace fb{	
 	struct OBJECT_CONSTANTS;
@@ -350,6 +351,8 @@ namespace fb{
 		RendererOptionsPtr GetRendererOptions() const;
 		void SetMainWindowStyle(unsigned style);
 		bool IsFullscreen() const;
+		GraphicDeviceInfo GetDeviceInfo() const;
+		static std::string DeviceInfoToString(const GraphicDeviceInfo& info);
 
 		//-------------------------------------------------------------------
 		// Drawing

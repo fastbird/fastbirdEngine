@@ -356,10 +356,6 @@ size_t DropDown::AddDropDownItem(WinBasePtr winbase)
 }
 
 void DropDown::ClearDropDownItems(){
-	if (mName == "popPolicy") {
-		int a = 0;
-		a++;
-	}
 	auto holder = mHolder.lock();
 	if (holder){
 		holder->RemoveAllChildren();

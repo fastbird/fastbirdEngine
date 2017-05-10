@@ -81,6 +81,7 @@
     </ClInclude>
     <ClInclude Include="RendererKeys.h" />
     <ClInclude Include="InputDisplayer.h" />
+    <ClInclude Include="GraphicDeviceInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />

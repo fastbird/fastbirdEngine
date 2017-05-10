@@ -32,6 +32,7 @@
 #include "ShaderDefines.h"
 #include "InputElementDesc.h"
 #include "ShaderConstants.h"
+#include "GraphicDeviceInfo.h"
 #include <memory>
 
 namespace fb{
@@ -96,6 +97,7 @@ namespace fb{
 		virtual unsigned GetMultiSampleCount() const = 0;
 		virtual bool IsDeviceRemoved() const = 0;
 		virtual bool IsFullscreen() const = 0;
+		virtual GraphicDeviceInfo GetDeviceInfo() const = 0;
 		
 
 		//-------------------------------------------------------------------

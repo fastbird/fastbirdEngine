@@ -651,6 +651,29 @@ public:
 		return fullscreen;
 	}
 
+	GraphicDeviceInfo GetDeviceInfo() const {
+		GraphicDeviceInfo ret;
+		IDXGIDevice* pDXGIDevice;
+		auto hr = mDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&pDXGIDevice);
+		if (SUCCEEDED(hr)) {
+			IDXGIAdapter* pDXGIAdapter;
+			pDXGIDevice->GetAdapter(&pDXGIAdapter);
+			DXGI_ADAPTER_DESC desc;
+			pDXGIAdapter->GetDesc(&desc);
+			pDXGIDevice->Release();
+			pDXGIAdapter->Release();
+			wmemcpy(ret.Description, desc.Description, 128);
+			ret.VendorId = desc.VendorId;
+			ret.DeviceId = desc.DeviceId;
+			ret.SubSysId = desc.SubSysId;
+			ret.Revision = desc.Revision;
+			ret.DedicatedVideoMemory = desc.DedicatedVideoMemory;
+			ret.DedicatedSystemMemory = desc.DedicatedSystemMemory;
+			ret.SharedSystemMemory = desc.SharedSystemMemory;
+		}
+		return ret;
+	}
+
 	bool IsMainThread() const {
 		auto threadId = std::this_thread::get_id();
 		return threadId == mMainThreadId;// || threadId == mMainThreadId2;
@@ -3031,6 +3054,10 @@ bool RendererD3D11::IsDeviceRemoved() const {
 
 bool RendererD3D11::IsFullscreen() const {
 	return mImpl->IsFullscreen();
+}
+
+GraphicDeviceInfo RendererD3D11::GetDeviceInfo() const {
+	return mImpl->GetDeviceInfo();
 }
 
 // Resource creation

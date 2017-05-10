@@ -432,6 +432,9 @@ public:
 					{
 						btshape->setUserPointer(colShape->mUserPtr);
 					}
+					if (i == 0) {
+						compound->setUserPointer(colShape->mUserPtr);
+					}
 				}
 			}
 			return compound;
@@ -439,7 +442,11 @@ public:
 		else
 		{
 			auto colShape = colShapes[0];
-			return CreateBulletColShape(colShape);
+			auto btshape = CreateBulletColShape(colShape);
+			if (btshape) {
+				btshape->setUserPointer(colShape->mUserPtr);
+			}
+			return btshape;
 		}
 	}
 

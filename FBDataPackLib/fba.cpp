@@ -80,8 +80,8 @@ namespace fb {
 	}
 
 	bool pack_data_folder(const std::string& target_folder, const std::string& source_folder, unsigned resource_version,
-		const std::string& password, const std::string& ignore_file, bool perform_validation,
-		unsigned& total_original_size, unsigned& total_compressed_size, std::vector<folder_data>& folders_data)
+		const std::string& password, const std::string& ignore_file, const StringVector& includeOnly, 
+		bool perform_validation, unsigned& total_original_size, unsigned& total_compressed_size, std::vector<folder_data>& folders_data)
 	{
 		total_original_size = 0;
 		total_compressed_size = 0;
@@ -99,31 +99,32 @@ namespace fb {
 
 			unsigned original_size = 0;
 			unsigned compressed_size = 0;
-			if (!pack_data_folder(path, resource_version, password, ignore_file, perform_validation,
-				original_size, compressed_size)) {
+			auto ret = pack_data_folder(path, resource_version, password, ignore_file, includeOnly,
+				perform_validation, original_size, compressed_size);
+			if (ret == PFR_ERROR) {
 				return false;
 			}
-			auto fba_path = FileSystem::GetLastDirectory(FileSystem::AddEndingSlashIfNot(path).c_str());
-			fba_path += FB_FBA_EXT;
-			auto target_path = FileSystem::ConcatPath(target_folder.c_str(), 
-				FileSystem::GetFileName(fba_path.c_str()).c_str());
-			FileSystem::Rename(fba_path.c_str(), target_path.c_str());
-			folders_data.push_back(
-				folder_data{ path, original_size, compressed_size, 
-				1.0f - (float)compressed_size / (float)original_size });			
-			total_original_size += original_size;
-			total_compressed_size += compressed_size;
+			else if (ret == PFR_SUCCESS) {
+				auto fba_path = FileSystem::GetLastDirectory(FileSystem::AddEndingSlashIfNot(path).c_str());
+				fba_path += FB_FBA_EXT;
+				auto target_path = FileSystem::ConcatPath(target_folder.c_str(),
+					FileSystem::GetFileName(fba_path.c_str()).c_str());
+				FileSystem::Rename(fba_path.c_str(), target_path.c_str());
+				folders_data.push_back(folder_data{ path, original_size, compressed_size, 1.0f - (float)compressed_size / (float)original_size });
+				total_original_size += original_size;
+				total_compressed_size += compressed_size;
+			}
 		}
 		return true;
 	}
 
-	bool pack_data_folder(const std::string& data_folder, unsigned resource_version, 
-		const std::string& password, const std::string& ignore_file, bool perform_validation, 
-		unsigned& out_original_size, unsigned& out_compressed_size)
+	PackFolderResult pack_data_folder(const std::string& data_folder, unsigned resource_version,
+		const std::string& password, const std::string& ignore_file, const StringVector& includeOnly, 
+		bool perform_validation, unsigned& out_original_size, unsigned& out_compressed_size)
 	{
 		if (data_folder.empty()) {
 			std::cerr << "Invalid arg.\n";
-			return false;
+			return PFR_ERROR;
 		}
 
 		ignores.clear();
@@ -143,11 +144,25 @@ namespace fb {
 		if (found != std::string::npos) {
 			folder_name = folder_name.substr(found + 1);
 		}
+		if (!includeOnly.empty()) {
+			bool found = false;
+			for (const auto& i : includeOnly) {
+				if (i == folder_name) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				std::cout << FormatString("data folder excluded: %s\n", folder_name.c_str());
+				return PFR_EXCLUDED;
+			}
+		}
+
 		auto output_file_path = folder_name + FB_FBA_EXT;
 		std::ofstream result_file(output_file_path.c_str(), std::ofstream::binary);
 		if (!result_file) {
 			std::cerr << FormatString("Failed to open the output file(%s)\n", output_file_path.c_str());
-			return false;
+			return PFR_ERROR;
 		}
 		auto poar = std::make_shared<boost::archive::binary_oarchive>(result_file);
 		auto& oar = *poar;
@@ -197,7 +212,7 @@ namespace fb {
 			auto ret = compress(deflated_data, source_data);
 			if (ret != Z_OK) {
 				std::cerr << "Compression failed.\n";
-				return false;
+				return PFR_ERROR;
 			}
 #if FB_DATA_ENCRYPT
 			if (!password.empty()) {
@@ -228,9 +243,14 @@ namespace fb {
 		out_compressed_size = compressed_size;
 
 		if (perform_validation) {
-			return verify_fba_to_folder(output_file_path, data_folder, password, verify_bidirectional);
+			if (verify_fba_to_folder(output_file_path, data_folder, password, verify_bidirectional)) {
+				return PFR_SUCCESS;
+			}
+			else {
+				return PFR_ERROR;
+			}
 		}
-		return true;
+		return PFR_SUCCESS;
 	}
 
 	bool parse_fba_headers(const char* path, pack_datum& data) {

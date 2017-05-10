@@ -363,6 +363,11 @@ public:
 		Vec2I size = GetWindowClientSize(hwnd);
 		return InitCanvas(id, size.x, size.y);		
 	}
+
+	std::string GetGraphicDeviceInfo() const {
+		auto deviceInfo = mRenderer->GetDeviceInfo();
+		return mRenderer->DeviceInfoToString(deviceInfo);
+	}
 	
 	IVideoPlayerPtr CreateVideoPlayer(VideoPlayerType::Enum type){
 		IVideoPlayerPtr p;
@@ -840,6 +845,10 @@ bool EngineFacade::InitCanvas(HWindowId id, int width, int height) {
 
 bool EngineFacade::InitCanvas(HWindow hwnd){
 	return mImpl->InitCanvas(hwnd);
+}
+
+std::string EngineFacade::GetGraphicDeviceInfo() const {
+	return mImpl->GetGraphicDeviceInfo();
 }
 
 void EngineFacade::SetClearColor(const Color& color){

@@ -3470,6 +3470,10 @@ public:
 		return GetPlatformRenderer().IsFullscreen();
 	}
 
+	GraphicDeviceInfo GetDeviceInfo() const {
+		return GetPlatformRenderer().GetDeviceInfo();
+	}
+
 	//-------------------------------------------------------------------
 	// ISceneObserver
 	//-------------------------------------------------------------------
@@ -4282,6 +4286,23 @@ void Renderer::SetMainWindowStyle(unsigned style){
 
 bool Renderer::IsFullscreen() const {
 	return mImpl->IsFullscreen();
+}
+
+GraphicDeviceInfo Renderer::GetDeviceInfo() const {
+	return mImpl->GetDeviceInfo();
+}
+
+std::string Renderer::DeviceInfoToString(const GraphicDeviceInfo& info) {
+
+	return FormatString("VendorId: 0x%x\n\
+DeviceId: 0x%x\n\
+SubSysId: 0x%x\n\
+Revision: %u\n\
+DedicatedVideoMemory: %u mb\n\
+DedicatedSystemMemory: %u mb\n\
+SharedSystemMemory: %u mb\n", 
+info.VendorId, info.DeviceId, info.SubSysId, info.Revision, info.DedicatedVideoMemory/ 1048576, info.DedicatedSystemMemory / 1048576, info.SharedSystemMemory / 1048576);
+
 }
 
 //-------------------------------------------------------------------

@@ -153,6 +153,7 @@ namespace fb{
 		bool InitCanvas(HWindowId id, int width, int height);
 		/// Use this function if you didn't create a window with EngienFacade.
 		bool InitCanvas(HWindow hwnd);
+		std::string GetGraphicDeviceInfo() const;
 		void SetClearColor(const Color& color);
 		void AddRendererObserver(int rendererObserverType, IRendererObserverPtr observer);
 		void RemoveRendererObserver(int rendererObserverType, IRendererObserverPtr observer);

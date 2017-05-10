@@ -26,6 +26,7 @@
     <ClInclude Include="Font.h" />
     <ClInclude Include="GaussianDistribution.h" />
     <ClInclude Include="GeometryBuffer.h" />
+    <ClInclude Include="GraphicDeviceInfo.h" />
     <ClInclude Include="ICamera.h" />
     <ClInclude Include="ICameraObserver.h" />
     <ClInclude Include="InputDisplayer.h" />
