@@ -704,7 +704,7 @@ void FileSystem::_ReadTail(char buffer[], size_t size, const char* filepath){
 	fseek(file, 0, SEEK_END);
 	auto lSize = ftell(file);
 	if (size < lSize) {
-		fseek(file, -size, SEEK_END);
+		fseek(file, -(long)size, SEEK_END);
 		auto readed = fread(buffer, 1, size-1, file);
 		buffer[readed] = 0;
 	}

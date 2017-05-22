@@ -68,13 +68,14 @@ LuaObject::LuaObject()
 LuaObject::LuaObject(lua_State* L, int index, bool pop)
 	: LuaObject(L)
 {
-	LuaLock lock(L);
-	// the vaile at index is not poped.
-	if (!pop)
-		lua_pushvalue(L, index);
+	LuaLock lock(L);	
+	lua_pushvalue(L, index);
 	CheckType();
 	mRef = luaL_ref(L, LUA_REGISTRYINDEX);
 	AddUsedCount(mRef);
+	if (pop) {
+		lua_remove(L, index);
+	}
 }
 
 LuaObject::LuaObject(lua_State* L, const char* globalName)
@@ -136,19 +137,18 @@ LuaObject::~LuaObject()
 
 LuaObject& LuaObject::operator=(const LuaObject& other)
 {
-	mL = other.mL;
-	mType = LUA_TNONE;
-	mRef = LUA_NOREF;
-	FB_SAFE_DELETE(mSelf);
-
 	if (ReleaseUsedCount(mRef)) {		
 		LuaLock L(mL);
 		luaL_unref(L, LUA_REGISTRYINDEX, mRef);
 	}
+	FB_SAFE_DELETE(mSelf);
+
+
+	mL = other.mL;		
 
 	mRef = other.mRef;
-	mType = other.mType;
 	AddUsedCount(mRef);
+	mType = other.mType;	
 	mName = other.mName;
 	if (other.mSelf)
 	{
@@ -874,7 +874,8 @@ unsigned LuaObject::GetUnsigned(unsigned def) const
 	}
 	LuaLock L(mL);	
 	PushToStack();
-	unsigned u = lua_tounsigned(L, -1);
+	int ret = 0;
+	unsigned u = lua_tounsignedx(L, -1, &ret);
 	lua_pop(L, 1);
 	return u;
 }

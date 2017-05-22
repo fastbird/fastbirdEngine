@@ -55,6 +55,7 @@ lua.dll
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+Release_NoOpt/
 x64/
 x86/
 build/

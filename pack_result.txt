@@ -142,18 +142,18 @@ packing : EssentialEngineData/textures/working/ui.xcf
 packing : EssentialEngineData/ui/FBConfirmUI.ui
 packing : EssentialEngineData/ui/style.xml
 packing : EssentialEngineData/video/fastbirdengine2.ogv
-Results for folder(EssentialEngineData): total files(139), original size(7634574), compressed size(2673247), compression ratio(65.0%)
+Results for folder(EssentialEngineData): total files(139), original size(7634620), compressed size(2684730), compression ratio(64.8%)
 Validating EssentialEngineData.fba
 Validation done.
 
 Succeeded.
-Total folders(1)  original size(7,634,574)  compressed size(2,673,247)  compression ratio(65.0%)
+Total folders(1)  original size(7,634,620)  compressed size(2,684,730)  compression ratio(64.8%)
 
 Top original size:
-        EssentialEngineData:     original size(    7,634,574)   compressed size(    2,673,247) compression ratio( 65.0%) 
+        EssentialEngineData:     original size(    7,634,620)   compressed size(    2,684,730) compression ratio( 64.8%) 
 
 Top compressed size:
-        EssentialEngineData:     original size(    7,634,574)   compressed size(    2,673,247) compression ratio( 65.0%) 
+        EssentialEngineData:     original size(    7,634,620)   compressed size(    2,684,730) compression ratio( 64.8%) 
 
 Top bad ratio:
-        EssentialEngineData:     original size(    7,634,574)   compressed size(    2,673,247) compression ratio( 65.0%) 
+        EssentialEngineData:     original size(    7,634,620)   compressed size(    2,684,730) compression ratio( 64.8%) 
