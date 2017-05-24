@@ -579,7 +579,7 @@ public:
 			std::string fontPath = r_font.GetString();
 			if (fontPath.empty())
 			{
-				fontPath = "EssentialEngineData/fonts/font22.fnt";
+				fontPath = "EssentialEngineData/fonts/nanum_myungjo_20.fnt";
 			}
 			LoadFont(fontPath.c_str());			
 		}

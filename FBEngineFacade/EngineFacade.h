@@ -37,6 +37,9 @@
 #include "FBRenderer/ICamera.h"
 #include "FBRenderer/IRendererObserver.h"
 #include "RenderTargetParamEx.h"
+
+struct lua_State;
+
 namespace fb{
 	class ProfilerSimple;
 	class LuaObject;
