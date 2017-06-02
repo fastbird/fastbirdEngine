@@ -223,8 +223,8 @@ public:
 		int eWidth = rect.right - rect.left;
 		int eHeight = rect.bottom - rect.top;
 		WNDCLASSEX wndclass = { sizeof(WNDCLASSEX), CS_DBLCLKS, winProc,
-			0, 0, GetModuleHandle(0), (HICON)icon,
-			NULL, HBRUSH(COLOR_WINDOW + 1),
+			0, 0, GetModuleHandle(0), (HICON)icon, LoadCursor(nullptr, IDC_ARROW),
+			HBRUSH(COLOR_WINDOW + 1),
 			0, wndClass, (HICON)icon };
 
 		WNDCLASSEX classInfo;
