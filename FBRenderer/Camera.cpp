@@ -280,6 +280,15 @@ public:
 		mViewPropertyChanged = true;
 	}
 
+	void SetSphericalCoord(const Vec3& origin, float r, float theta, float phi) {
+		auto pos = SphericalToCartesian(r, theta, phi);
+		auto dir = -pos;
+		dir.SafeNormalize();
+		Quat q;
+		q.FromDirection(dir);
+		SetTransformation(pos + origin, q);
+	}
+
 	const Transformation& GetTransformation() const{
 		if (mOverridingCamera){
 			return mOverridingCamera->GetTransformation();
@@ -895,6 +904,10 @@ void Camera::SetTransformation(const Vec3& pos, const Quat& rot){
 
 void Camera::SetTransformation(const Transformation& t){
 	mImpl->SetTransformation(t);
+}
+
+void Camera::SetSphericalCoord(const Vec3& origin, float r, float theta, float phi) {
+	mImpl->SetSphericalCoord(origin, r, theta, phi);
 }
 
 const Transformation& Camera::GetTransformation() const{

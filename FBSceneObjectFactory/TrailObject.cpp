@@ -157,6 +157,14 @@ public:
 		}
 	}
 
+	void SetWidthMultiply(float mul) {
+		SetWidth(mWidth * mul);
+	}
+
+	void SetLengthMultiply(float mul) {
+		mMaxPoints = unsigned(mMaxPoints * mul);
+	}
+
 	// for manual trail
 	void AddPoint(const Vec3& worldPosA, const Vec3& worldPosB){
 		mLastPoint = worldPosB;
@@ -268,6 +276,13 @@ void TrailObject::AddPoint(const Vec3& worldPos) {
 
 void TrailObject::SetWidth(float width) {
 	mImpl->SetWidth(width);
+}
+void TrailObject::SetWidthMultiply(float mul) {
+	mImpl->SetWidthMultiply(mul);
+}
+
+void TrailObject::SetLengthMultiply(float mul) {
+	mImpl->SetLengthMultiply(mul);
 }
 
 void TrailObject::AddPoint(const Vec3& worldPosA, const Vec3& worldPosB) {

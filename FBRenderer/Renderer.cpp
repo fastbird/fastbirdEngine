@@ -2305,10 +2305,11 @@ public:
 			Vec3 dir;
 			Color color;
 		};
+		
 		DrawData dd[] = {
-			{camT.GetRight(), Color::Red},
-			{camT.GetForward(), Color::Green},
-			{camT.GetUp(), Color::Blue} };
+			{ camT.ApplyInverseDir(Vec3::UNIT_X) * 2.0f, Color::Red},
+			{ camT.ApplyInverseDir(Vec3::UNIT_Y) * 2.0f, Color::Green},
+			{ camT.ApplyInverseDir(Vec3::UNIT_Z) * 2.0f, Color::Blue} };
 		std::sort(dd, dd + 3, [](const DrawData& a, const DrawData&b) {
 			return a.dir.y > b.dir.y;
 		});

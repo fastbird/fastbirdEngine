@@ -236,7 +236,7 @@ public:
 		if (registered)
 		{
 			auto hWnd = CreateWindowEx(exStyle, wndClass, title,
-				style, x, y,
+				style, x!=-1 ? x : CW_USEDEFAULT, y!=-1 ? y : CW_USEDEFAULT,
 				eWidth, eHeight, 0, 0, GetModuleHandle(0), 0);
 			auto id = FindEmptyHwndId();
 			if (id == MainWindowId){

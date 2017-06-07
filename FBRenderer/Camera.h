@@ -74,6 +74,7 @@ namespace fb
 		Vec3 GetUp() const;
 		void SetTransformation(const Vec3& pos, const Quat& rot);
 		void SetTransformation(const Transformation& t);
+		void SetSphericalCoord(const Vec3& origin, float r, float theta, float phi);
 		const Transformation& GetTransformation() const;
 		const Vec3 GetDirection() const;
 		const Mat44& GetMatrix(MatrixType type);

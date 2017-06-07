@@ -41,6 +41,8 @@ namespace fb{
 		void SetOffset(const Transformation& offset);
 		void AddPoint(const Transformation& parentLocation);
 		void SetWidth(float width);
+		void SetWidthMultiply(float mul);
+		void SetLengthMultiply(float mul);
 		bool AttachToScene();
 		bool DetachFromScene();
 		MaterialPtr GetMaterial();

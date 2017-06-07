@@ -56,6 +56,8 @@ namespace fb{
 		//for billboard trail - automatically face to the camera
 		void AddPoint(const Vec3& worldPos);
 		void SetWidth(float width);
+		void SetWidthMultiply(float mul);
+		void SetLengthMultiply(float mul);
 		// for manual trail
 		void AddPoint(const Vec3& worldPosA, const Vec3& worldPosB);		
 		void SetMaxPoints(unsigned num);

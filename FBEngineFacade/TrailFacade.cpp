@@ -55,6 +55,14 @@ public:
 		mTrail->SetWidth(width);
 	}
 
+	void SetWidthMultiply(float mul) {
+		mTrail->SetWidthMultiply(mul);
+	}
+
+	void SetLengthMultiply(float mul) {
+		mTrail->SetLengthMultiply(mul);
+	}
+
 	bool AttachToScene(){
 		auto scene = EngineFacade::GetInstance().GetMainScene();
 		if (!scene)
@@ -101,6 +109,14 @@ void TrailFacade::AddPoint(const Transformation& parentLocation){
 
 void TrailFacade::SetWidth(float width){
 	mImpl->SetWidth(width);
+}
+
+void TrailFacade::SetWidthMultiply(float mul) {
+	mImpl->SetWidthMultiply(mul);
+}
+
+void TrailFacade::SetLengthMultiply(float mul) {
+	mImpl->SetLengthMultiply(mul);
 }
 
 bool TrailFacade::AttachToScene(){
