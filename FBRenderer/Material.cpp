@@ -609,16 +609,14 @@ public:
 							auto textureFileName = FileSystem::GetFileName(filepath.c_str());
 							std::string materialParentPath = FileSystem::GetParentPath(mUniqueData->mName.c_str());
 							bool stripped = true;
-							while (stripped && filepath != textureFileName) {
+							do{
 								filepath = FileSystem::StripFirstDirectoryPath(filepath.c_str(), &stripped);
 								std::string alternativePath = materialParentPath + "/" + filepath;
 								if (FileSystem::ResourceExists(alternativePath.c_str())) {
 									filepath = alternativePath;
 									break;
 								}
-
-							}
-
+							} while (stripped && filepath != textureFileName);
 						}
 						SetTexture(filepath.c_str(), shader, slot, samplerDesc, texture_type, true);
 					}

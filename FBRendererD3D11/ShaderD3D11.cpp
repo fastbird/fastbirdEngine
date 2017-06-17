@@ -57,9 +57,11 @@ public:
 	}
 
 	bool IsRelatedFile(const char* file){
-		if (ValidCString(file)){
-			std::string testing(file);
-			return ValueExistsInVector(mRelatedFiles, testing);
+		if (ValidCString(file)){			
+			for (const auto& v : mRelatedFiles) {
+				if (_stricmp(v.c_str(), file) == 0)
+					return true;
+			}			
 		}
 		return false;
 	}

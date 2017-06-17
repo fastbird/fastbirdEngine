@@ -205,11 +205,6 @@ public:
 		if (!sz || strlen(sz) == 0)
 			return std::string();
 
-		auto t = strstr(sz, "fighter");
-		if (t) {
-			int a = 0;
-			a++;
-		}
 		// example of 'sz'
 		// in case dae file exported from Blender.
 		// data_materials_hull2_material-material
@@ -472,11 +467,11 @@ public:
 						else {
 							// new combination
 							vertToIdx[vert] = nextIdx;
+							tri.v[k] = nextIdx;
 							indices.push_back(nextIdx++);
 							positions.push_back(vert.p);
 							normals.push_back(vert.n);
-							uvs.push_back(vert.uv);
-							tri.v[k] = nextIdx;
+							uvs.push_back(vert.uv);							
 						}						
 					}					
 					Vec3 vEdge1 = positions[tri.v[1]] - positions[tri.v[0]];
